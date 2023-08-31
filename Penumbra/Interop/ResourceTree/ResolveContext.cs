@@ -68,23 +68,10 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
     private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint sourceAddress, ResourceHandle* handle, bool @internal,
         bool withName)
     {
-        if (handle == null)
+        var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(handle), out var p) ? new FullPath(p) : FullPath.Empty;
+        if (fullPath.InternalName.IsEmpty)
             return null;
 
-        var name = handle->FileName();
-        if (name.IsEmpty)
-            return null;
-
-        if (name[0] == (byte)'|')
-        {
-            var pos = name.IndexOf((byte)'|', 1);
-            if (pos < 0)
-                return null;
-
-            name = name.Substring(pos + 1);
-        }
-
-        var fullPath  = new FullPath(Utf8GamePath.FromByteString(name, out var p) ? p : Utf8GamePath.Empty);
         var gamePaths = Collection.ReverseResolvePath(fullPath).ToList();
         fullPath = FilterFullPath(fullPath);
 
@@ -161,7 +148,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (mtrl == null)
             return null;
 
-        var resource = (MtrlResource*)mtrl->ResourceHandle;
+        var resource = mtrl->ResourceHandle;
         var node     = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint) mtrl, &resource->Handle, false, WithNames);
         if (node == null)
             return null;
@@ -182,7 +169,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
             if (WithNames)
             {
-                var name = samplers != null && i < samplers.Count ? samplers[i].Item2?.Name : null;
+                var name = samplers != null && i < samplers.Length ? samplers[i].ShpkSampler?.Name : null;
                 node.Children.Add(texNode.WithName(name ?? $"Texture #{i}"));
             }
             else
@@ -285,5 +272,26 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
     {
         var i = index.GetOffset(array.Length);
         return i >= 0 && i < array.Length ? array[i] : null;
+    }
+
+    internal static unsafe ByteString GetResourceHandlePath(ResourceHandle* handle)
+    {
+        if (handle == null)
+            return ByteString.Empty;
+
+        var name = handle->FileName();
+        if (name.IsEmpty)
+            return ByteString.Empty;
+
+        if (name[0] == (byte)'|')
+        {
+            var pos = name.IndexOf((byte)'|', 1);
+            if (pos < 0)
+                return ByteString.Empty;
+
+            name = name.Substring(pos + 1);
+        }
+
+        return name;
     }
 }

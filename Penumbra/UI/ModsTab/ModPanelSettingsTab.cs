@@ -195,21 +195,7 @@ public class ModPanelSettingsTab : ITab
                         _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, (uint)idx2);
 
                     if (option.Description.Length > 0)
-                    {
-                        var hovered = ImGui.IsItemHovered();
-                        ImGui.SameLine();
-                        using (var _ = ImRaii.PushFont(UiBuilder.IconFont))
-                        {
-                            using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled));
-                            ImGuiUtil.RightAlign(FontAwesomeIcon.InfoCircle.ToIconString(), ImGui.GetStyle().ItemSpacing.X);
-                        }
-
-                        if (hovered)
-                        {
-                            using var tt = ImRaii.Tooltip();
-                            ImGui.TextUnformatted(option.Description);
-                        }
-                    }
+                        ImGuiUtil.SelectableHelpMarker(option.Description);
 
                     id.Pop();
                 }

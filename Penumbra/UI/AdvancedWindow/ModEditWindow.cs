@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -17,10 +19,12 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.Interop.Services;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
@@ -42,6 +46,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly ModMergeTab         _modMergeTab;
     private readonly CommunicatorService _communicator;
     private readonly IDragDropManager    _dragDropManager;
+    private readonly GameEventManager    _gameEvents;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -137,6 +142,9 @@ public partial class ModEditWindow : Window, IDisposable
     {
         _left.Dispose();
         _right.Dispose();
+        _materialTab.Reset();
+        _modelTab.Reset();
+        _shaderPackageTab.Reset();
     }
 
     public override void Draw()
@@ -520,10 +528,33 @@ public partial class ModEditWindow : Window, IDisposable
         return new FullPath(path);
     }
 
+    private HashSet<Utf8GamePath> FindPathsStartingWith(ByteString prefix)
+    {
+        var ret = new HashSet<Utf8GamePath>();
+
+        foreach (var path in _activeCollections.Current.ResolvedFiles.Keys)
+        {
+            if (path.Path.StartsWith(prefix))
+                ret.Add(path);
+        }
+
+        if (_mod != null)
+            foreach (var option in _mod.Groups.SelectMany(g => g).Append(_mod.Default))
+            {
+                foreach (var path in option.Files.Keys)
+                {
+                    if (path.Path.StartsWith(prefix))
+                        ret.Add(path);
+                }
+            }
+
+        return ret;
+    }
+
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager)
+        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, GameEventManager gameEvents)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -539,14 +570,15 @@ public partial class ModEditWindow : Window, IDisposable
         _dragDropManager   = dragDropManager;
         _textures          = textures;
         _fileDialog        = fileDialog;
+        _gameEvents        = gameEvents;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
-            bytes => new MtrlTab(this, new MtrlFile(bytes)));
+            (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
-            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new MdlFile(bytes));
+            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, (bytes, _, _) => new MdlFile(bytes));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shaders", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
-            bytes => new ShpkTab(_fileDialog, bytes));
+            (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center             = new CombinedTexture(_left, _right);
         _textureSelectCombo = new TextureDrawer.PathSelectCombo(textures, editor);
         _quickImportViewer  = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
@@ -557,6 +589,9 @@ public partial class ModEditWindow : Window, IDisposable
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
         _editor?.Dispose();
+        _materialTab.Dispose();
+        _modelTab.Dispose();
+        _shaderPackageTab.Dispose();
         _left.Dispose();
         _right.Dispose();
         _center.Dispose();

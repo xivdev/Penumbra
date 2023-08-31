@@ -1,293 +1,783 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
+using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
-using Penumbra.Services;
+using Penumbra.GameData.Structs;
+using Penumbra.Interop.MaterialPreview;
+using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private sealed class MtrlTab : IWritable
+    private sealed class MtrlTab : IWritable, IDisposable
     {
+        private const int ShpkPrefixLength = 16;
+
+        private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk/"u8, true, true, true);
+
         private readonly ModEditWindow _edit;
         public readonly  MtrlFile      Mtrl;
+        public readonly  string        FilePath;
+        public readonly  bool          Writable;
 
-        public uint NewKeyId;
-        public uint NewKeyDefault;
-        public uint NewConstantId;
-        public int  NewConstantIdx;
-        public uint NewSamplerId;
-        public int  NewSamplerIdx;
+        private string[]? _shpkNames;
 
+        public string    ShaderHeader             = "Shader###Shader";
+        public FullPath  LoadedShpkPath           = FullPath.Empty;
+        public string    LoadedShpkPathName       = string.Empty;
+        public string    LoadedShpkDevkitPathName = string.Empty;
+        public string    ShaderComment            = string.Empty;
+        public ShpkFile? AssociatedShpk;
+        public JObject?  AssociatedShpkDevkit;
 
-        public          ShpkFile?      AssociatedShpk;
-        public readonly List< string > TextureLabels      = new(4);
-        public          FullPath       LoadedShpkPath     = FullPath.Empty;
-        public          string         LoadedShpkPathName = string.Empty;
-        public          float          TextureLabelWidth;
+        public readonly string   LoadedBaseDevkitPathName;
+        public readonly JObject? AssociatedBaseDevkit;
 
         // Shader Key State
-        public readonly List< string >           ShaderKeyLabels         = new(16);
-        public readonly Dictionary< uint, uint > DefinedShaderKeys       = new(16);
-        public readonly List< int >              MissingShaderKeyIndices = new(16);
-        public readonly List< uint >             AvailableKeyValues      = new(16);
-        public          string                   VertexShaders           = "Vertex Shaders: ???";
-        public          string                   PixelShaders            = "Pixel Shaders: ???";
+        public readonly
+            List<(string Label, int Index, string Description, bool MonoFont, IReadOnlyList<(string Label, uint Value, string Description)>
+                Values)> ShaderKeys = new(16);
+
+        public readonly HashSet<int> VertexShaders = new(16);
+        public readonly HashSet<int> PixelShaders  = new(16);
+        public          bool         ShadersKnown;
+        public          string       VertexShadersString = "Vertex Shaders: ???";
+        public          string       PixelShadersString  = "Pixel Shaders: ???";
+
+        // Textures & Samplers
+        public readonly List<(string Label, int TextureIndex, int SamplerIndex, string Description, bool MonoFont)> Textures = new(4);
+
+        public readonly HashSet<int>  UnfoldedTextures = new(4);
+        public readonly HashSet<uint> SamplerIds       = new(16);
+        public          float         TextureLabelWidth;
+        public          bool          UseColorDyeSet;
 
         // Material Constants
-        public readonly List< (string Name, bool ComponentOnly, int ParamValueOffset) > MaterialConstants        = new(16);
-        public readonly List< (string Name, uint Id, ushort ByteSize) >                 MissingMaterialConstants = new(16);
-        public readonly HashSet< uint >                                                 DefinedMaterialConstants = new(16);
+        public readonly
+            List<(string Header, List<(string Label, int ConstantIndex, Range Slice, string Description, bool MonoFont, IConstantEditor Editor)>
+                Constants)> Constants = new(16);
 
-        public string   MaterialConstantLabel  = "Constants###Constants";
-        public IndexSet OrphanedMaterialValues = new(0, false);
-        public int      AliasedMaterialValueCount;
-        public bool     HasMalformedMaterialConstants;
+        // Live-Previewers
+        public readonly List<LiveMaterialPreviewer> MaterialPreviewers     = new(4);
+        public readonly List<LiveColorSetPreviewer> ColorSetPreviewers     = new(4);
+        public          int                         HighlightedColorSetRow = -1;
+        public readonly Stopwatch                   HighlightTime          = new();
 
-        // Samplers
-        public readonly List< (string Label, string FileName) > Samplers         = new(4);
-        public readonly List< (string Name, uint Id) >          MissingSamplers  = new(4);
-        public readonly HashSet< uint >                         DefinedSamplers  = new(4);
-        public          IndexSet                                OrphanedSamplers = new(0, false);
-        public          int                                     AliasedSamplerCount;
-
-        public FullPath FindAssociatedShpk( out string defaultPath, out Utf8GamePath defaultGamePath )
+        public FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
         {
-            defaultPath = GamePaths.Shader.ShpkPath( Mtrl.ShaderPackage.Name );
-            if( !Utf8GamePath.FromString( defaultPath, out defaultGamePath, true ) )
-            {
+            defaultPath = GamePaths.Shader.ShpkPath(Mtrl.ShaderPackage.Name);
+            if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath, true))
                 return FullPath.Empty;
-            }
 
-            return _edit.FindBestMatch( defaultGamePath );
+            return _edit.FindBestMatch(defaultGamePath);
         }
 
-        public void LoadShpk( FullPath path )
+        public string[] GetShpkNames()
         {
+            if (null != _shpkNames)
+                return _shpkNames;
+
+            var names = new HashSet<string>(StandardShaderPackages);
+            names.UnionWith(_edit.FindPathsStartingWith(ShpkPrefix).Select(path => path.ToString()[ShpkPrefixLength..]));
+
+            _shpkNames = names.ToArray();
+            Array.Sort(_shpkNames);
+
+            return _shpkNames;
+        }
+
+        public void LoadShpk(FullPath path)
+        {
+            ShaderHeader = $"Shader ({Mtrl.ShaderPackage.Name})###Shader";
+
             try
             {
                 LoadedShpkPath = path;
                 var data = LoadedShpkPath.IsRooted
-                    ? File.ReadAllBytes( LoadedShpkPath.FullName )
-                    : _edit._dalamud.GameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
-                AssociatedShpk     = data?.Length > 0 ? new ShpkFile( data ) : throw new Exception( "Failure to load file data." );
+                    ? File.ReadAllBytes(LoadedShpkPath.FullName)
+                    : _edit._dalamud.GameData.GetFile(LoadedShpkPath.InternalName.ToString())?.Data;
+                AssociatedShpk     = data?.Length > 0 ? new ShpkFile(data) : throw new Exception("Failure to load file data.");
                 LoadedShpkPathName = path.ToPath();
             }
-            catch( Exception e )
+            catch (Exception e)
             {
                 LoadedShpkPath     = FullPath.Empty;
                 LoadedShpkPathName = string.Empty;
                 AssociatedShpk     = null;
-                Penumbra.Chat.NotificationMessage( $"Could not load {LoadedShpkPath.ToPath()}:\n{e}", "Penumbra Advanced Editing", NotificationType.Error );
+                Penumbra.Chat.NotificationMessage($"Could not load {LoadedShpkPath.ToPath()}:\n{e}", "Penumbra Advanced Editing",
+                    NotificationType.Error);
             }
 
+            if (LoadedShpkPath.InternalName.IsEmpty)
+            {
+                AssociatedShpkDevkit     = null;
+                LoadedShpkDevkitPathName = string.Empty;
+            }
+            else
+            {
+                AssociatedShpkDevkit =
+                    TryLoadShpkDevkit(Path.GetFileNameWithoutExtension(Mtrl.ShaderPackage.Name), out LoadedShpkDevkitPathName);
+            }
+
+            UpdateShaderKeys();
             Update();
         }
 
-        public void UpdateTextureLabels()
+        private JObject? TryLoadShpkDevkit(string shpkBaseName, out string devkitPathName)
         {
-            var samplers = Mtrl.GetSamplersByTexture( AssociatedShpk );
-            TextureLabels.Clear();
-            TextureLabelWidth = 50f * UiHelpers.Scale;
-            using( var _ = ImRaii.PushFont( UiBuilder.MonoFont ) )
+            try
             {
-                for( var i = 0; i < Mtrl.Textures.Length; ++i )
+                if (!Utf8GamePath.FromString("penumbra/shpk_devkit/" + shpkBaseName + ".json", out var devkitPath))
+                    throw new Exception("Could not assemble ShPk dev-kit path.");
+
+                var devkitFullPath = _edit.FindBestMatch(devkitPath);
+                if (!devkitFullPath.IsRooted)
+                    throw new Exception("Could not resolve ShPk dev-kit path.");
+
+                devkitPathName = devkitFullPath.FullName;
+                return JObject.Parse(File.ReadAllText(devkitFullPath.FullName));
+            }
+            catch
+            {
+                devkitPathName = string.Empty;
+                return null;
+            }
+        }
+
+        private T? TryGetShpkDevkitData<T>(string category, uint? id, bool mayVary) where T : class
+            => TryGetShpkDevkitData<T>(AssociatedShpkDevkit,  LoadedShpkDevkitPathName, category, id, mayVary)
+             ?? TryGetShpkDevkitData<T>(AssociatedBaseDevkit, LoadedBaseDevkitPathName, category, id, mayVary);
+
+        private T? TryGetShpkDevkitData<T>(JObject? devkit, string devkitPathName, string category, uint? id, bool mayVary) where T : class
+        {
+            if (devkit == null)
+                return null;
+
+            try
+            {
+                var data = devkit[category];
+                if (id.HasValue)
+                    data = data?[id.Value.ToString()];
+
+                if (mayVary && (data as JObject)?["Vary"] != null)
                 {
-                    var (sampler, shpkSampler) = samplers[ i ];
-                    var name = shpkSampler.HasValue ? shpkSampler.Value.Name : sampler.HasValue ? $"0x{sampler.Value.SamplerId:X8}" : $"#{i}";
-                    TextureLabels.Add( name );
-                    TextureLabelWidth = Math.Max( TextureLabelWidth, ImGui.CalcTextSize( name ).X );
+                    var selector = BuildSelector(data["Vary"]!
+                        .Select(key => (uint)key)
+                        .Select(key => Mtrl.GetShaderKey(key)?.Value ?? AssociatedShpk!.GetMaterialKeyById(key)!.Value.DefaultValue));
+                    var index = (int)data["Selectors"]![selector.ToString()]!;
+                    data = data["Items"]![index];
+                }
+
+                return data?.ToObject(typeof(T)) as T;
+            }
+            catch (Exception e)
+            {
+                // Some element in the JSON was undefined or invalid (wrong type, key that doesn't exist in the ShPk, index out of range, …)
+                Penumbra.Log.Error($"Error while traversing the ShPk dev-kit file at {devkitPathName}: {e}");
+                return null;
+            }
+        }
+
+        private void UpdateShaderKeys()
+        {
+            ShaderKeys.Clear();
+            if (AssociatedShpk != null)
+                foreach (var key in AssociatedShpk.MaterialKeys)
+                {
+                    var dkData     = TryGetShpkDevkitData<DevkitShaderKey>("ShaderKeys", key.Id, false);
+                    var hasDkLabel = !string.IsNullOrEmpty(dkData?.Label);
+
+                    var valueSet = new HashSet<uint>(key.Values);
+                    if (dkData != null)
+                        valueSet.UnionWith(dkData.Values.Keys);
+
+                    var mtrlKeyIndex = Mtrl.FindOrAddShaderKey(key.Id, key.DefaultValue);
+                    var values = valueSet.Select<uint, (string Label, uint Value, string Description)>(value =>
+                    {
+                        if (dkData != null && dkData.Values.TryGetValue(value, out var dkValue))
+                            return (dkValue.Label.Length > 0 ? dkValue.Label : $"0x{value:X8}", value, dkValue.Description);
+
+                        return ($"0x{value:X8}", value, string.Empty);
+                    }).ToArray();
+                    Array.Sort(values, (x, y) =>
+                    {
+                        if (x.Value == key.DefaultValue)
+                            return -1;
+                        if (y.Value == key.DefaultValue)
+                            return 1;
+
+                        return string.Compare(x.Label, y.Label, StringComparison.Ordinal);
+                    });
+                    ShaderKeys.Add((hasDkLabel ? dkData!.Label : $"0x{key.Id:X8}", mtrlKeyIndex, dkData?.Description ?? string.Empty,
+                        !hasDkLabel, values));
+                }
+            else
+                foreach (var (key, index) in Mtrl.ShaderPackage.ShaderKeys.WithIndex())
+                    ShaderKeys.Add(($"0x{key.Category:X8}", index, string.Empty, true, Array.Empty<(string, uint, string)>()));
+        }
+
+        private void UpdateShaders()
+        {
+            VertexShaders.Clear();
+            PixelShaders.Clear();
+            if (AssociatedShpk == null)
+            {
+                ShadersKnown = false;
+            }
+            else
+            {
+                ShadersKnown = true;
+                var systemKeySelectors  = AllSelectors(AssociatedShpk.SystemKeys).ToArray();
+                var sceneKeySelectors   = AllSelectors(AssociatedShpk.SceneKeys).ToArray();
+                var subViewKeySelectors = AllSelectors(AssociatedShpk.SubViewKeys).ToArray();
+                var materialKeySelector =
+                    BuildSelector(AssociatedShpk.MaterialKeys.Select(key => Mtrl.GetOrAddShaderKey(key.Id, key.DefaultValue).Value));
+                foreach (var systemKeySelector in systemKeySelectors)
+                {
+                    foreach (var sceneKeySelector in sceneKeySelectors)
+                    {
+                        foreach (var subViewKeySelector in subViewKeySelectors)
+                        {
+                            var selector = BuildSelector(systemKeySelector, sceneKeySelector, materialKeySelector, subViewKeySelector);
+                            var node     = AssociatedShpk.GetNodeBySelector(selector);
+                            if (node.HasValue)
+                                foreach (var pass in node.Value.Passes)
+                                {
+                                    VertexShaders.Add((int)pass.VertexShader);
+                                    PixelShaders.Add((int)pass.PixelShader);
+                                }
+                            else
+                                ShadersKnown = false;
+                        }
+                    }
+                }
+            }
+
+            var vertexShaders = VertexShaders.OrderBy(i => i).Select(i => $"#{i}");
+            var pixelShaders  = PixelShaders.OrderBy(i => i).Select(i => $"#{i}");
+
+            VertexShadersString = $"Vertex Shaders: {string.Join(", ", ShadersKnown ? vertexShaders : vertexShaders.Append("???"))}";
+            PixelShadersString  = $"Pixel Shaders: {string.Join(", ",  ShadersKnown ? pixelShaders : pixelShaders.Append("???"))}";
+
+            ShaderComment = TryGetShpkDevkitData<string>("Comment", null, true) ?? string.Empty;
+        }
+
+        private void UpdateTextures()
+        {
+            Textures.Clear();
+            SamplerIds.Clear();
+            if (AssociatedShpk == null)
+            {
+                SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
+                if (Mtrl.ColorSets.Any(c => c.HasRows))
+                    SamplerIds.Add(TableSamplerId);
+
+                foreach (var (sampler, index) in Mtrl.ShaderPackage.Samplers.WithIndex())
+                    Textures.Add(($"0x{sampler.SamplerId:X8}", sampler.TextureIndex, index, string.Empty, true));
+            }
+            else
+            {
+                foreach (var index in VertexShaders)
+                    SamplerIds.UnionWith(AssociatedShpk.VertexShaders[index].Samplers.Select(sampler => sampler.Id));
+                foreach (var index in PixelShaders)
+                    SamplerIds.UnionWith(AssociatedShpk.PixelShaders[index].Samplers.Select(sampler => sampler.Id));
+                if (!ShadersKnown)
+                {
+                    SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
+                    if (Mtrl.ColorSets.Any(c => c.HasRows))
+                        SamplerIds.Add(TableSamplerId);
+                }
+
+                foreach (var samplerId in SamplerIds)
+                {
+                    var shpkSampler = AssociatedShpk.GetSamplerById(samplerId);
+                    if (shpkSampler is not { Slot: 2 })
+                        continue;
+
+                    var dkData     = TryGetShpkDevkitData<DevkitSampler>("Samplers", samplerId, true);
+                    var hasDkLabel = !string.IsNullOrEmpty(dkData?.Label);
+
+                    var sampler = Mtrl.GetOrAddSampler(samplerId, dkData?.DefaultTexture ?? string.Empty, out var samplerIndex);
+                    Textures.Add((hasDkLabel ? dkData!.Label : shpkSampler.Value.Name, sampler.TextureIndex, samplerIndex,
+                        dkData?.Description ?? string.Empty, !hasDkLabel));
+                }
+
+                if (SamplerIds.Contains(TableSamplerId))
+                    Mtrl.FindOrAddColorSet();
+            }
+
+            Textures.Sort((x, y) => string.CompareOrdinal(x.Label, y.Label));
+
+            TextureLabelWidth = 50f * UiHelpers.Scale;
+
+            float helpWidth;
+            using (var _ = ImRaii.PushFont(UiBuilder.IconFont))
+            {
+                helpWidth = ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize(FontAwesomeIcon.InfoCircle.ToIconString()).X;
+            }
+
+            foreach (var (label, _, _, description, monoFont) in Textures)
+            {
+                if (!monoFont)
+                    TextureLabelWidth = Math.Max(TextureLabelWidth, ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
+            }
+
+            using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
+            {
+                foreach (var (label, _, _, description, monoFont) in Textures)
+                {
+                    if (monoFont)
+                        TextureLabelWidth = Math.Max(TextureLabelWidth,
+                            ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
                 }
             }
 
             TextureLabelWidth = TextureLabelWidth / UiHelpers.Scale + 4;
         }
 
-        public void UpdateShaderKeyLabels()
+        private void UpdateConstants()
         {
-            ShaderKeyLabels.Clear();
-            DefinedShaderKeys.Clear();
-            foreach( var (key, idx) in Mtrl.ShaderPackage.ShaderKeys.WithIndex() )
+            static List<T> FindOrAddGroup<T>(List<(string, List<T>)> groups, string name)
             {
-                ShaderKeyLabels.Add( $"#{idx}: 0x{key.Category:X8} = 0x{key.Value:X8}###{idx}: 0x{key.Category:X8}" );
-                DefinedShaderKeys.Add( key.Category, key.Value );
-            }
-
-            MissingShaderKeyIndices.Clear();
-            AvailableKeyValues.Clear();
-            var vertexShaders = new IndexSet( AssociatedShpk?.VertexShaders.Length ?? 0, false );
-            var pixelShaders  = new IndexSet( AssociatedShpk?.PixelShaders.Length  ?? 0, false );
-            if( AssociatedShpk != null )
-            {
-                MissingShaderKeyIndices.AddRange( AssociatedShpk.MaterialKeys.WithIndex().Where( k => !DefinedShaderKeys.ContainsKey( k.Value.Id ) ).WithoutValue() );
-
-                if( MissingShaderKeyIndices.Count > 0 && MissingShaderKeyIndices.All( i => AssociatedShpk.MaterialKeys[ i ].Id != NewKeyId ) )
+                foreach (var (groupName, group) in groups)
                 {
-                    var key = AssociatedShpk.MaterialKeys[ MissingShaderKeyIndices[ 0 ] ];
-                    NewKeyId      = key.Id;
-                    NewKeyDefault = key.DefaultValue;
+                    if (string.Equals(name, groupName, StringComparison.Ordinal))
+                        return group;
                 }
 
-                AvailableKeyValues.AddRange( AssociatedShpk.MaterialKeys.Select( k => DefinedShaderKeys.TryGetValue( k.Id, out var value ) ? value : k.DefaultValue ) );
-                foreach( var node in AssociatedShpk.Nodes )
+                var newGroup = new List<T>(16);
+                groups.Add((name, newGroup));
+                return newGroup;
+            }
+
+            Constants.Clear();
+            if (AssociatedShpk == null)
+            {
+                var fcGroup = FindOrAddGroup(Constants, "Further Constants");
+                foreach (var (constant, index) in Mtrl.ShaderPackage.Constants.WithIndex())
                 {
-                    if( node.MaterialKeys.WithIndex().All( key => key.Value == AvailableKeyValues[ key.Index ] ) )
+                    var values = Mtrl.GetConstantValues(constant);
+                    for (var i = 0; i < values.Length; i += 4)
                     {
-                        foreach( var pass in node.Passes )
+                        fcGroup.Add(($"0x{constant.Id:X8}", index, i..Math.Min(i + 4, values.Length), string.Empty, true,
+                            FloatConstantEditor.Default));
+                    }
+                }
+            }
+            else
+            {
+                var prefix = AssociatedShpk.GetConstantById(MaterialParamsConstantId)?.Name ?? string.Empty;
+                foreach (var shpkConstant in AssociatedShpk.MaterialParams)
+                {
+                    if ((shpkConstant.ByteSize & 0x3) != 0)
+                        continue;
+
+                    var constant        = Mtrl.GetOrAddConstant(shpkConstant.Id, shpkConstant.ByteSize >> 2, out var constantIndex);
+                    var values          = Mtrl.GetConstantValues(constant);
+                    var handledElements = new IndexSet(values.Length, false);
+
+                    var dkData = TryGetShpkDevkitData<DevkitConstant[]>("Constants", shpkConstant.Id, true);
+                    if (dkData != null)
+                        foreach (var dkConstant in dkData)
                         {
-                            vertexShaders.Add( ( int )pass.VertexShader );
-                            pixelShaders.Add( ( int )pass.PixelShader );
+                            var offset = (int)dkConstant.Offset;
+                            var length = values.Length - offset;
+                            if (dkConstant.Length.HasValue)
+                                length = Math.Min(length, (int)dkConstant.Length.Value);
+                            if (length <= 0)
+                                continue;
+
+                            var editor = dkConstant.CreateEditor();
+                            if (editor != null)
+                                FindOrAddGroup(Constants, dkConstant.Group.Length > 0 ? dkConstant.Group : "Further Constants")
+                                    .Add((dkConstant.Label, constantIndex, offset..(offset + length), dkConstant.Description, false, editor));
+                            handledElements.AddRange(offset, length);
+                        }
+
+                    var fcGroup = FindOrAddGroup(Constants, "Further Constants");
+                    foreach (var (start, end) in handledElements.Ranges(true))
+                    {
+                        if ((shpkConstant.ByteOffset & 0x3) == 0)
+                        {
+                            var offset = shpkConstant.ByteOffset >> 2;
+                            for (int i = (start & ~0x3) - (offset & 0x3), j = offset >> 2; i < end; i += 4, ++j)
+                            {
+                                var rangeStart = Math.Max(i, start);
+                                var rangeEnd   = Math.Min(i + 4, end);
+                                if (rangeEnd > rangeStart)
+                                    fcGroup.Add((
+                                        $"{prefix}[{j:D2}]{VectorSwizzle((offset + rangeStart) & 0x3, (offset + rangeEnd - 1) & 0x3)} (0x{shpkConstant.Id:X8})",
+                                        constantIndex, rangeStart..rangeEnd, string.Empty, true, FloatConstantEditor.Default));
+                            }
+                        }
+                        else
+                        {
+                            for (var i = start; i < end; i += 4)
+                            {
+                                fcGroup.Add(($"0x{shpkConstant.Id:X8}", constantIndex, i..Math.Min(i + 4, end), string.Empty, true,
+                                    FloatConstantEditor.Default));
+                            }
                         }
                     }
                 }
             }
 
-            VertexShaders = $"Vertex Shaders: {( vertexShaders.Count > 0 ? string.Join( ", ", vertexShaders.Select( i => $"#{i}" ) ) : "???" )}";
-            PixelShaders  = $"Pixel Shaders: {( pixelShaders.Count   > 0 ? string.Join( ", ", pixelShaders.Select( i => $"#{i}" ) ) : "???" )}";
-        }
-
-        public void UpdateConstantLabels()
-        {
-            var prefix = AssociatedShpk?.GetConstantById( MaterialParamsConstantId )?.Name ?? string.Empty;
-            MaterialConstantLabel = prefix.Length == 0 ? "Constants###Constants" : prefix + "###Constants";
-
-            DefinedMaterialConstants.Clear();
-            MaterialConstants.Clear();
-            HasMalformedMaterialConstants = false;
-            AliasedMaterialValueCount     = 0;
-            OrphanedMaterialValues        = new IndexSet( Mtrl.ShaderPackage.ShaderValues.Length, true );
-            foreach( var (constant, idx) in Mtrl.ShaderPackage.Constants.WithIndex() )
+            Constants.RemoveAll(group => group.Constants.Count == 0);
+            Constants.Sort((x, y) =>
             {
-                DefinedMaterialConstants.Add( constant.Id );
-                var values           = Mtrl.GetConstantValues( constant );
-                var paramValueOffset = -values.Length;
-                if( values.Length > 0 )
-                {
-                    var shpkParam       = AssociatedShpk?.GetMaterialParamById( constant.Id );
-                    var paramByteOffset = shpkParam?.ByteOffset ?? -1;
-                    if( ( paramByteOffset & 0x3 ) == 0 )
-                    {
-                        paramValueOffset = paramByteOffset >> 2;
-                    }
+                if (string.Equals(x.Header, "Further Constants", StringComparison.Ordinal))
+                    return 1;
+                if (string.Equals(y.Header, "Further Constants", StringComparison.Ordinal))
+                    return -1;
 
-                    var unique = OrphanedMaterialValues.RemoveRange( constant.ByteOffset >> 2, values.Length );
-                    AliasedMaterialValueCount += values.Length - unique;
-                }
-                else
-                {
-                    HasMalformedMaterialConstants = true;
-                }
-
-                var (name, componentOnly) = MaterialParamRangeName( prefix, paramValueOffset, values.Length );
-                var label = name == null
-                    ? $"#{idx:D2} (ID: 0x{constant.Id:X8})###{constant.Id}"
-                    : $"#{idx:D2}: {name} (ID: 0x{constant.Id:X8})###{constant.Id}";
-
-                MaterialConstants.Add( ( label, componentOnly, paramValueOffset ) );
-            }
-
-            MissingMaterialConstants.Clear();
-            if( AssociatedShpk != null )
+                return string.Compare(x.Header, y.Header, StringComparison.Ordinal);
+            });
+            // HACK the Replace makes w appear after xyz, for the cbuffer-location-based naming scheme
+            foreach (var (_, group) in Constants)
             {
-                var setIdx = false;
-                foreach( var param in AssociatedShpk.MaterialParams.Where( m => !DefinedMaterialConstants.Contains( m.Id ) ) )
-                {
-                    var (name, _) = MaterialParamRangeName( prefix, param.ByteOffset >> 2, param.ByteSize >> 2 );
-                    var label = name == null
-                        ? $"(ID: 0x{param.Id:X8})"
-                        : $"{name} (ID: 0x{param.Id:X8})";
-                    if( NewConstantId == param.Id )
-                    {
-                        setIdx         = true;
-                        NewConstantIdx = MissingMaterialConstants.Count;
-                    }
-
-                    MissingMaterialConstants.Add( ( label, param.Id, param.ByteSize ) );
-                }
-
-                if( !setIdx && MissingMaterialConstants.Count > 0 )
-                {
-                    NewConstantIdx = 0;
-                    NewConstantId  = MissingMaterialConstants[ 0 ].Id;
-                }
+                group.Sort((x, y) => string.CompareOrdinal(
+                    x.MonoFont ? x.Label.Replace("].w", "].{") : x.Label,
+                    y.MonoFont ? y.Label.Replace("].w", "].{") : y.Label));
             }
         }
 
-        public void UpdateSamplers()
+        public unsafe void BindToMaterialInstances()
         {
-            Samplers.Clear();
-            DefinedSamplers.Clear();
-            OrphanedSamplers = new IndexSet( Mtrl.Textures.Length, true );
-            foreach( var (sampler, idx) in Mtrl.ShaderPackage.Samplers.WithIndex() )
-            {
-                DefinedSamplers.Add( sampler.SamplerId );
-                if( !OrphanedSamplers.Remove( sampler.TextureIndex ) )
-                {
-                    ++AliasedSamplerCount;
-                }
+            UnbindFromMaterialInstances();
 
-                var shpk = AssociatedShpk?.GetSamplerById( sampler.SamplerId );
-                var label = shpk.HasValue
-                    ? $"#{idx}: {shpk.Value.Name} (ID: 0x{sampler.SamplerId:X8})##{sampler.SamplerId}"
-                    : $"#{idx} (ID: 0x{sampler.SamplerId:X8})##{sampler.SamplerId}";
-                var fileName = $"Texture #{sampler.TextureIndex} - {Path.GetFileName( Mtrl.Textures[ sampler.TextureIndex ].Path )}";
-                Samplers.Add( ( label, fileName ) );
+            var instances = MaterialInfo.FindMaterials(_edit._dalamud.Objects, FilePath);
+
+            var foundMaterials = new HashSet<nint>();
+            foreach (var materialInfo in instances)
+            {
+                var drawObject = (CharacterBase*)MaterialInfo.GetDrawObject(materialInfo.Type, _edit._dalamud.Objects);
+                var material   = materialInfo.GetDrawObjectMaterial(drawObject);
+                if (foundMaterials.Contains((nint)material))
+                    continue;
+
+                try
+                {
+                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, materialInfo));
+                    foundMaterials.Add((nint)material);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Carry on without that previewer.
+                }
             }
 
-            MissingSamplers.Clear();
-            if( AssociatedShpk != null )
+            UpdateMaterialPreview();
+
+            var colorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
+
+            if (!colorSet.HasValue)
+                return;
+
+            foreach (var materialInfo in instances)
             {
-                var setSampler = false;
-                foreach( var sampler in AssociatedShpk.Samplers.Where( s => s.Slot == 2 && !DefinedSamplers.Contains( s.Id ) ) )
+                try
                 {
-                    if( sampler.Id == NewSamplerId )
-                    {
-                        setSampler    = true;
-                        NewSamplerIdx = MissingSamplers.Count;
-                    }
-
-                    MissingSamplers.Add( ( sampler.Name, sampler.Id ) );
+                    ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, materialInfo));
                 }
-
-                if( !setSampler && MissingSamplers.Count > 0 )
+                catch (InvalidOperationException)
                 {
-                    NewSamplerIdx = 0;
-                    NewSamplerId  = MissingSamplers[ 0 ].Id;
+                    // Carry on without that previewer.
                 }
             }
+
+            UpdateColorSetPreview();
+        }
+
+        private void UnbindFromMaterialInstances()
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.Dispose();
+            MaterialPreviewers.Clear();
+
+            foreach (var previewer in ColorSetPreviewers)
+                previewer.Dispose();
+            ColorSetPreviewers.Clear();
+        }
+
+        private unsafe void UnbindFromDrawObjectMaterialInstances(nint characterBase)
+        {
+            for (var i = MaterialPreviewers.Count; i-- > 0;)
+            {
+                var previewer = MaterialPreviewers[i];
+                if ((nint)previewer.DrawObject != characterBase)
+                    continue;
+
+                previewer.Dispose();
+                MaterialPreviewers.RemoveAt(i);
+            }
+
+            for (var i = ColorSetPreviewers.Count; i-- > 0;)
+            {
+                var previewer = ColorSetPreviewers[i];
+                if ((nint)previewer.DrawObject != characterBase)
+                    continue;
+
+                previewer.Dispose();
+                ColorSetPreviewers.RemoveAt(i);
+            }
+        }
+
+        public void SetShaderPackageFlags(uint shPkFlags)
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.SetShaderPackageFlags(shPkFlags);
+        }
+
+        public void SetMaterialParameter(uint parameterCrc, Index offset, Span<float> value)
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.SetMaterialParameter(parameterCrc, offset, value);
+        }
+
+        public void SetSamplerFlags(uint samplerCrc, uint samplerFlags)
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.SetSamplerFlags(samplerCrc, samplerFlags);
+        }
+
+        private void UpdateMaterialPreview()
+        {
+            SetShaderPackageFlags(Mtrl.ShaderPackage.Flags);
+            foreach (var constant in Mtrl.ShaderPackage.Constants)
+            {
+                var values = Mtrl.GetConstantValues(constant);
+                if (values != null)
+                    SetMaterialParameter(constant.Id, 0, values);
+            }
+
+            foreach (var sampler in Mtrl.ShaderPackage.Samplers)
+                SetSamplerFlags(sampler.SamplerId, sampler.Flags);
+        }
+
+        public void HighlightColorSetRow(int rowIdx)
+        {
+            var oldRowIdx = HighlightedColorSetRow;
+
+            if (HighlightedColorSetRow != rowIdx)
+            {
+                HighlightedColorSetRow = rowIdx;
+                HighlightTime.Restart();
+            }
+
+            if (oldRowIdx >= 0)
+                UpdateColorSetRowPreview(oldRowIdx);
+            if (rowIdx >= 0)
+                UpdateColorSetRowPreview(rowIdx);
+        }
+
+        public void CancelColorSetHighlight()
+        {
+            var rowIdx = HighlightedColorSetRow;
+
+            HighlightedColorSetRow = -1;
+            HighlightTime.Reset();
+
+            if (rowIdx >= 0)
+                UpdateColorSetRowPreview(rowIdx);
+        }
+
+        public void UpdateColorSetRowPreview(int rowIdx)
+        {
+            if (ColorSetPreviewers.Count == 0)
+                return;
+
+            var maybeColorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
+            if (!maybeColorSet.HasValue)
+                return;
+
+            var colorSet         = maybeColorSet.Value;
+            var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
+
+            var row = colorSet.Rows[rowIdx];
+            if (maybeColorDyeSet.HasValue && UseColorDyeSet)
+            {
+                var stm = _edit._stainService.StmFile;
+                var dye = maybeColorDyeSet.Value.Rows[rowIdx];
+                if (stm.TryGetValue(dye.Template, _edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
+                    row.ApplyDyeTemplate(dye, dyes);
+            }
+
+            if (HighlightedColorSetRow == rowIdx)
+                ApplyHighlight(ref row, (float)HighlightTime.Elapsed.TotalSeconds);
+
+            foreach (var previewer in ColorSetPreviewers)
+            {
+                row.AsHalves().CopyTo(previewer.ColorSet.AsSpan()
+                    .Slice(LiveColorSetPreviewer.TextureWidth * 4 * rowIdx, LiveColorSetPreviewer.TextureWidth * 4));
+                previewer.ScheduleUpdate();
+            }
+        }
+
+        public void UpdateColorSetPreview()
+        {
+            if (ColorSetPreviewers.Count == 0)
+                return;
+
+            var maybeColorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
+            if (!maybeColorSet.HasValue)
+                return;
+
+            var colorSet         = maybeColorSet.Value;
+            var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
+
+            var rows = colorSet.Rows;
+            if (maybeColorDyeSet.HasValue && UseColorDyeSet)
+            {
+                var stm         = _edit._stainService.StmFile;
+                var stainId     = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
+                var colorDyeSet = maybeColorDyeSet.Value;
+                for (var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i)
+                {
+                    ref var row = ref rows[i];
+                    var     dye = colorDyeSet.Rows[i];
+                    if (stm.TryGetValue(dye.Template, stainId, out var dyes))
+                        row.ApplyDyeTemplate(dye, dyes);
+                }
+            }
+
+            if (HighlightedColorSetRow >= 0)
+                ApplyHighlight(ref rows[HighlightedColorSetRow], (float)HighlightTime.Elapsed.TotalSeconds);
+
+            foreach (var previewer in ColorSetPreviewers)
+            {
+                rows.AsHalves().CopyTo(previewer.ColorSet);
+                previewer.ScheduleUpdate();
+            }
+        }
+
+        private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, float time)
+        {
+            var level   = Math.Sin(time * 2.0 * Math.PI) * 0.25 + 0.5;
+            var levelSq = (float)(level * level);
+
+            row.Diffuse  = Vector3.Zero;
+            row.Specular = Vector3.Zero;
+            row.Emissive = new Vector3(levelSq);
         }
 
         public void Update()
         {
-            UpdateTextureLabels();
-            UpdateShaderKeyLabels();
-            UpdateConstantLabels();
-            UpdateSamplers();
+            UpdateShaders();
+            UpdateTextures();
+            UpdateConstants();
         }
 
-        public MtrlTab( ModEditWindow edit, MtrlFile file )
+        public MtrlTab(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
         {
-            _edit = edit;
-            Mtrl  = file;
-            LoadShpk( FindAssociatedShpk( out _, out _ ) );
+            _edit                = edit;
+            Mtrl                 = file;
+            FilePath             = filePath;
+            Writable             = writable;
+            UseColorDyeSet       = file.ColorDyeSets.Length > 0;
+            AssociatedBaseDevkit = TryLoadShpkDevkit("_base", out LoadedBaseDevkitPathName);
+            LoadShpk(FindAssociatedShpk(out _, out _));
+            if (writable)
+            {
+                _edit._gameEvents.CharacterBaseDestructor += UnbindFromDrawObjectMaterialInstances;
+                BindToMaterialInstances();
+            }
+        }
+
+        public void Dispose()
+        {
+            UnbindFromMaterialInstances();
+            if (Writable)
+                _edit._gameEvents.CharacterBaseDestructor -= UnbindFromDrawObjectMaterialInstances;
         }
 
         public bool Valid
-            => Mtrl.Valid;
+            => ShadersKnown && Mtrl.Valid;
 
         public byte[] Write()
-            => Mtrl.Write();
+        {
+            var output = Mtrl.Clone();
+            output.GarbageCollect(AssociatedShpk, SamplerIds, UseColorDyeSet);
+
+            return output.Write();
+        }
+
+        private sealed record DevkitShaderKeyValue(string Label = "", string Description = "");
+
+        private sealed class DevkitShaderKey
+        {
+            public string                                 Label       = string.Empty;
+            public string                                 Description = string.Empty;
+            public Dictionary<uint, DevkitShaderKeyValue> Values      = new();
+        }
+
+        private sealed record DevkitSampler(string Label = "", string Description = "", string DefaultTexture = "");
+
+        private enum DevkitConstantType
+        {
+            Hidden  = -1,
+            Float   = 0,
+            Integer = 1,
+            Color   = 2,
+            Enum    = 3,
+        }
+
+        private sealed record DevkitConstantValue(string Label = "", string Description = "", float Value = 0);
+
+        private sealed class DevkitConstant
+        {
+            public uint               Offset      = 0;
+            public uint?              Length      = null;
+            public string             Group       = string.Empty;
+            public string             Label       = string.Empty;
+            public string             Description = string.Empty;
+            public DevkitConstantType Type        = DevkitConstantType.Float;
+
+            public float? Minimum       = null;
+            public float? Maximum       = null;
+            public float? Speed         = null;
+            public float  RelativeSpeed = 0.0f;
+            public float  Factor        = 1.0f;
+            public float  Bias          = 0.0f;
+            public byte   Precision     = 3;
+            public string Unit          = string.Empty;
+
+            public bool SquaredRgb = false;
+            public bool Clamped    = false;
+
+            public DevkitConstantValue[] Values = Array.Empty<DevkitConstantValue>();
+
+            public IConstantEditor? CreateEditor()
+                => Type switch
+                {
+                    DevkitConstantType.Hidden => null,
+                    DevkitConstantType.Float => new FloatConstantEditor(Minimum, Maximum, Speed ?? 0.1f, RelativeSpeed, Factor, Bias, Precision,
+                        Unit),
+                    DevkitConstantType.Integer => new IntConstantEditor(ToInteger(Minimum), ToInteger(Maximum), Speed ?? 0.25f, RelativeSpeed,
+                        Factor, Bias, Unit),
+                    DevkitConstantType.Color => new ColorConstantEditor(SquaredRgb, Clamped),
+                    DevkitConstantType.Enum => new EnumConstantEditor(Array.ConvertAll(Values,
+                        value => (value.Label, value.Value, value.Description))),
+                    _ => FloatConstantEditor.Default,
+                };
+
+            private static int? ToInteger(float? value)
+                => value.HasValue ? (int)Math.Clamp(MathF.Round(value.Value), int.MinValue, int.MaxValue) : null;
+        }
     }
 }
