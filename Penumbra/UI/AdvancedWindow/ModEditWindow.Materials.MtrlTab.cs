@@ -16,6 +16,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.MaterialPreview;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
@@ -460,46 +461,19 @@ public partial class ModEditWindow
         {
             UnbindFromMaterialInstances();
 
-            var localPlayer = LocalPlayer(_edit._dalamud.Objects);
-            if (null == localPlayer)
-                return;
-
-            var drawObject = (CharacterBase*)localPlayer->GameObject.GetDrawObject();
-            if (null == drawObject)
-                return;
-
-            var instances = FindMaterial(drawObject, -1, FilePath);
-
-            var drawObjects = stackalloc CharacterBase*[4];
-            drawObjects[0] = drawObject;
-            drawObjects[1] = *((CharacterBase**)&localPlayer->DrawData.MainHand + 1);
-            drawObjects[2] = *((CharacterBase**)&localPlayer->DrawData.OffHand + 1);
-            drawObjects[3] = *((CharacterBase**)&localPlayer->DrawData.UnkF0 + 1);
-            for (var i = 0; i < 3; ++i)
-            {
-                var subActor = FindSubActor(localPlayer, i);
-                if (null == subActor)
-                    continue;
-
-                var subDrawObject = (CharacterBase*)subActor->GameObject.GetDrawObject();
-                if (null == subDrawObject)
-                    continue;
-
-                instances.AddRange(FindMaterial(subDrawObject, i, FilePath));
-                drawObjects[i + 1] = subDrawObject;
-            }
+            var instances = MaterialInfo.FindMaterials(_edit._dalamud.Objects, FilePath);
 
             var foundMaterials = new HashSet<nint>();
-            foreach (var (subActorType, childObjectIndex, modelSlot, materialSlot) in instances)
+            foreach (var materialInfo in instances)
             {
-                var material = GetDrawObjectMaterial(drawObjects[subActorType + 1], modelSlot, materialSlot);
+                var drawObject = (CharacterBase*)MaterialInfo.GetDrawObject(materialInfo.Type, _edit._dalamud.Objects);
+                var material   = materialInfo.GetDrawObjectMaterial(drawObject);
                 if (foundMaterials.Contains((nint)material))
                     continue;
 
                 try
                 {
-                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, subActorType, childObjectIndex, modelSlot,
-                        materialSlot));
+                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, materialInfo));
                     foundMaterials.Add((nint)material);
                 }
                 catch (InvalidOperationException)
@@ -515,12 +489,11 @@ public partial class ModEditWindow
             if (!colorSet.HasValue)
                 return;
 
-            foreach (var (subActorType, childObjectIndex, modelSlot, materialSlot) in instances)
+            foreach (var materialInfo in instances)
             {
                 try
                 {
-                    ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, subActorType,
-                        childObjectIndex, modelSlot, materialSlot));
+                    ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, materialInfo));
                 }
                 catch (InvalidOperationException)
                 {
