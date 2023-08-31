@@ -86,7 +86,7 @@ public readonly record struct MaterialInfo(DrawObjectType Type, int ModelSlot, i
 
     public static unsafe List<MaterialInfo> FindMaterials(IObjectTable objects, string materialPath)
     {
-        var needle = ByteString.FromString(materialPath.Replace('/', '\\'), out var m, true) ? m : ByteString.Empty;
+        var needle = ByteString.FromString(materialPath.Replace('\\', '/'), out var m, true) ? m : ByteString.Empty;
 
         var result = new List<MaterialInfo>(Enum.GetValues<DrawObjectType>().Length);
         foreach (var type in Enum.GetValues<DrawObjectType>())
