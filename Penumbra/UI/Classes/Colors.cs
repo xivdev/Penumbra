@@ -25,6 +25,7 @@ public enum ColorId
     NoModsAssignment,
     NoAssignment,
     SelectorPriority,
+    InGameHighlight,
 }
 
 public static class Colors
@@ -64,6 +65,7 @@ public static class Colors
             ColorId.NoModsAssignment     => ( 0x50000080, "'Use No Mods' Collection Assignment", "A collection assignment set to not use any mods at all."),
             ColorId.NoAssignment         => ( 0x00000000, "Unassigned Collection Assignment",    "A collection assignment that is not configured to any collection and thus just has no specific treatment."),
             ColorId.SelectorPriority     => ( 0xFF808080, "Mod Selector Priority",               "The priority displayed for non-zero priority mods in the mod selector."),
+            ColorId.InGameHighlight      => ( 0xFFEBCF89, "In-Game Highlight",                   "An in-game element that has been highlighted for ease of editing."),
             _                            => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

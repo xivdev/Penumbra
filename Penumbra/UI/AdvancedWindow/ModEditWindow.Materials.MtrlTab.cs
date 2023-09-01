@@ -19,6 +19,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Interop.MaterialPreview;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -668,12 +669,13 @@ public partial class ModEditWindow
 
         private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, float time)
         {
-            var level   = Math.Sin(time * 2.0 * Math.PI) * 0.25 + 0.5;
-            var levelSq = (float)(level * level);
+            var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
+            var baseColor = ColorId.InGameHighlight.Value();
+            var color     = level * new Vector3(baseColor & 0xFF, (baseColor >> 8) & 0xFF, (baseColor >> 16) & 0xFF);
 
             row.Diffuse  = Vector3.Zero;
             row.Specular = Vector3.Zero;
-            row.Emissive = new Vector3(levelSq);
+            row.Emissive = color * color;
         }
 
         public void Update()
