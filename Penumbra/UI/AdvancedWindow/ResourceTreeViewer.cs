@@ -15,6 +15,7 @@ public class ResourceTreeViewer
 {
     private readonly Configuration                 _config;
     private readonly ResourceTreeFactory           _treeFactory;
+    private readonly ChangedItemDrawer             _changedItemDrawer;
     private readonly int                           _actionCapacity;
     private readonly Action                        _onRefresh;
     private readonly Action<ResourceNode, Vector2> _drawActions;
@@ -22,15 +23,16 @@ public class ResourceTreeViewer
 
     private Task<ResourceTree[]>?      _task;
 
-    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, int actionCapacity, Action onRefresh,
-        Action<ResourceNode, Vector2> drawActions)
+    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer,
+        int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
     {
-        _config         = config;
-        _treeFactory    = treeFactory;
-        _actionCapacity = actionCapacity;
-        _onRefresh      = onRefresh;
-        _drawActions    = drawActions;
-        _unfolded       = new HashSet<nint>();
+        _config            = config;
+        _treeFactory       = treeFactory;
+        _changedItemDrawer = changedItemDrawer;
+        _actionCapacity    = actionCapacity;
+        _onRefresh         = onRefresh;
+        _drawActions       = drawActions;
+        _unfolded          = new HashSet<nint>();
     }
 
     public void Draw()
@@ -123,7 +125,23 @@ public class ResourceTreeViewer
             var unfolded = _unfolded.Contains(nodePathHash);
             using (var indent = ImRaii.PushIndent(level))
             {
-                ImGui.TableHeader((resourceNode.Children.Count > 0 ? unfolded ? "[-] " : "[+] " : string.Empty) + resourceNode.Name);
+                if (resourceNode.Children.Count > 0)
+                {
+                    using var font = ImRaii.PushFont(UiBuilder.IconFont);
+                    var icon = (unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString();
+                    var offset = (ImGui.GetFrameHeight() - ImGui.CalcTextSize(icon).X) / 2;
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+                    ImGui.TextUnformatted(icon);
+                    ImGui.SameLine(0f, offset + ImGui.GetStyle().ItemInnerSpacing.X);
+                }
+                else
+                {
+                    ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
+                    ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
+                }
+                _changedItemDrawer.DrawCategoryIcon(resourceNode.Icon);
+                ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
+                ImGui.TableHeader(resourceNode.Name);
                 if (ImGui.IsItemClicked() && resourceNode.Children.Count > 0)
                 {
                     if (unfolded)
@@ -171,6 +189,8 @@ public class ResourceTreeViewer
                     new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 ImGuiUtil.HoverTooltip("The actual path to this file is unavailable.\nIt may be managed by another plug-in.");
             }
+
+            mutedColor.Dispose();
 
             if (_actionCapacity > 0)
             {

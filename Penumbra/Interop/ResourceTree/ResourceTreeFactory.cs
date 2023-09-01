@@ -29,34 +29,35 @@ public class ResourceTreeFactory
         _actors             = actors;
     }
 
-    public ResourceTree[] FromObjectTable(bool withNames = true)
+    public ResourceTree[] FromObjectTable(bool withNames = true, bool redactExternalPaths = true)
     {
         var cache = new TreeBuildCache(_objects, _gameData);
 
         return cache.Characters
-            .Select(c => FromCharacter(c, cache, withNames))
+            .Select(c => FromCharacter(c, cache, withNames, redactExternalPaths))
             .OfType<ResourceTree>()
             .ToArray();
     }
 
     public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromCharacters(
         IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters,
-        bool withNames = true)
+        bool withUIData = true, bool redactExternalPaths = true)
     {
         var cache = new TreeBuildCache(_objects, _gameData);
         foreach (var character in characters)
         {
-            var tree = FromCharacter(character, cache, withNames);
+            var tree = FromCharacter(character, cache, withUIData, redactExternalPaths);
             if (tree != null)
                 yield return (character, tree);
         }
     }
 
-    public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, bool withNames = true)
-        => FromCharacter(character, new TreeBuildCache(_objects, _gameData), withNames);
+    public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, bool withUIData = true,
+        bool redactExternalPaths = true)
+        => FromCharacter(character, new TreeBuildCache(_objects, _gameData), withUIData, redactExternalPaths);
 
     private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache,
-        bool withNames = true)
+        bool withUIData = true, bool redactExternalPaths = true)
     {
         if (!character.IsValid())
             return null;
@@ -73,7 +74,7 @@ public class ResourceTreeFactory
         var (name, related) = GetCharacterName(character, cache);
         var tree = new ResourceTree(name, (nint)gameObjStruct, (nint)drawObjStruct, related, collectionResolveData.ModCollection.Name);
         var globalContext = new GlobalResolveContext(_config, _identifier.AwaitedService, cache, collectionResolveData.ModCollection,
-            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, withNames);
+            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, withUIData, redactExternalPaths);
         tree.LoadResources(globalContext);
         tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
         return tree;

@@ -76,9 +76,11 @@ public class ChangedItemDrawer : IDisposable
 
     /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
     public void DrawCategoryIcon(string name, object? data)
+        => DrawCategoryIcon(GetCategoryIcon(name, data));
+
+    public void DrawCategoryIcon(ChangedItemIcon iconType)
     {
-        var height   = ImGui.GetFrameHeight();
-        var iconType = GetCategoryIcon(name, data);
+        var height = ImGui.GetFrameHeight();
         if (!_icons.TryGetValue(iconType, out var icon))
         {
             ImGui.Dummy(new Vector2(height));
@@ -216,27 +218,13 @@ public class ChangedItemDrawer : IDisposable
     }
 
     /// <summary> Obtain the icon category corresponding to a changed item. </summary>
-    private static ChangedItemIcon GetCategoryIcon(string name, object? obj)
+    internal static ChangedItemIcon GetCategoryIcon(string name, object? obj)
     {
         var iconType = ChangedItemIcon.Unknown;
         switch (obj)
         {
             case EquipItem it:
-                iconType = it.Type.ToSlot() switch
-                {
-                    EquipSlot.MainHand => ChangedItemIcon.Mainhand,
-                    EquipSlot.OffHand  => ChangedItemIcon.Offhand,
-                    EquipSlot.Head     => ChangedItemIcon.Head,
-                    EquipSlot.Body     => ChangedItemIcon.Body,
-                    EquipSlot.Hands    => ChangedItemIcon.Hands,
-                    EquipSlot.Legs     => ChangedItemIcon.Legs,
-                    EquipSlot.Feet     => ChangedItemIcon.Feet,
-                    EquipSlot.Ears     => ChangedItemIcon.Ears,
-                    EquipSlot.Neck     => ChangedItemIcon.Neck,
-                    EquipSlot.Wrists   => ChangedItemIcon.Wrists,
-                    EquipSlot.RFinger  => ChangedItemIcon.Finger,
-                    _                  => ChangedItemIcon.Unknown,
-                };
+                iconType = GetCategoryIcon(it.Type.ToSlot());
                 break;
             case ModelChara m:
                 iconType = (CharacterBase.ModelType)m.Type switch
@@ -258,6 +246,23 @@ public class ChangedItemDrawer : IDisposable
 
         return iconType;
     }
+
+    internal static ChangedItemIcon GetCategoryIcon(EquipSlot slot)
+        => slot switch
+        {
+            EquipSlot.MainHand => ChangedItemIcon.Mainhand,
+            EquipSlot.OffHand  => ChangedItemIcon.Offhand,
+            EquipSlot.Head     => ChangedItemIcon.Head,
+            EquipSlot.Body     => ChangedItemIcon.Body,
+            EquipSlot.Hands    => ChangedItemIcon.Hands,
+            EquipSlot.Legs     => ChangedItemIcon.Legs,
+            EquipSlot.Feet     => ChangedItemIcon.Feet,
+            EquipSlot.Ears     => ChangedItemIcon.Ears,
+            EquipSlot.Neck     => ChangedItemIcon.Neck,
+            EquipSlot.Wrists   => ChangedItemIcon.Wrists,
+            EquipSlot.RFinger  => ChangedItemIcon.Finger,
+            _                  => ChangedItemIcon.Unknown,
+        };
 
     /// <summary> Return more detailed object information in text, if it exists. </summary>
     private static bool GetChangedItemObject(object? obj, out string text)
