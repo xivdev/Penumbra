@@ -11,21 +11,27 @@ using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.Interop.ResourceTree;
 
 internal record class GlobalResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, ModCollection Collection, int Skeleton, bool WithNames)
 {
+    public readonly Dictionary<nint, ResourceNode> Nodes = new(128);
+
     public ResolveContext CreateContext(EquipSlot slot, CharacterArmor equipment)
-        => new(Config, Identifier, TreeBuildCache, Collection, Skeleton, WithNames, slot, equipment);
+        => new(Config, Identifier, TreeBuildCache, Collection, Skeleton, WithNames, Nodes, slot, equipment);
 }
 
-internal record class ResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, ModCollection Collection, int Skeleton, bool WithNames, EquipSlot Slot,
-    CharacterArmor Equipment)
+internal record class ResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, ModCollection Collection, int Skeleton, bool WithNames,
+    Dictionary<nint, ResourceNode> Nodes, EquipSlot Slot, CharacterArmor Equipment)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
     private unsafe ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath, bool @internal)
     {
+        if (Nodes.TryGetValue((nint)resourceHandle, out var cached))
+            return cached;
+
         if (gamePath.IsEmpty)
             return null;
         if (!Utf8GamePath.FromByteString(ByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path, false))
@@ -36,6 +42,9 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
     private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool @internal, bool dx11)
     {
+        if (Nodes.TryGetValue((nint)resourceHandle, out var cached))
+            return cached;
+
         if (dx11)
         {
             var lastDirectorySeparator = gamePath.LastIndexOf((byte)'/');
@@ -69,7 +78,11 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (fullPath.InternalName.IsEmpty)
             fullPath = Collection.ResolvePath(gamePath) ?? new FullPath(gamePath);
 
-        return new(null, type, objectAddress, (nint)resourceHandle, gamePath, FilterFullPath(fullPath), GetResourceHandleLength(resourceHandle), @internal);
+        var node = new ResourceNode(null, type, objectAddress, (nint)resourceHandle, gamePath, FilterFullPath(fullPath), GetResourceHandleLength(resourceHandle), @internal);
+        if (resourceHandle != null)
+            Nodes.Add((nint)resourceHandle, node);
+
+        return node;
     }
 
     private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint objectAddress, ResourceHandle* handle, bool @internal,
@@ -95,6 +108,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
         return new ResourceNode(null, type, objectAddress, (nint)handle, gamePaths.ToArray(), fullPath, GetResourceHandleLength(handle), @internal);
     }
+
     public unsafe ResourceNode? CreateHumanSkeletonNode(GenderRace gr)
     {
         var raceSexIdStr = gr.ToRaceCode();
@@ -108,6 +122,9 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
     public unsafe ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
     {
+        if (Nodes.TryGetValue((nint)imc, out var cached))
+            return cached;
+
         var node = CreateNodeFromResourceHandle(ResourceType.Imc, 0, imc, true, false);
         if (node == null)
             return null;
@@ -118,16 +135,30 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
             node = node.WithName(name != null ? $"IMC: {name}" : null);
         }
 
+        Nodes.Add((nint)imc, node);
+
         return node;
     }
 
     public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex)
-        => CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->KernelTexture, &tex->Handle, false, WithNames);
+    {
+        if (Nodes.TryGetValue((nint)tex, out var cached))
+            return cached;
+
+        var node = CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->KernelTexture, &tex->Handle, false, WithNames);
+        if (node != null)
+            Nodes.Add((nint)tex, node);
+
+        return node;
+    }
 
     public unsafe ResourceNode? CreateNodeFromRenderModel(RenderModel* mdl)
     {
         if (mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara)
             return null;
+
+        if (Nodes.TryGetValue((nint)mdl->ResourceHandle, out var cached))
+            return cached;
 
         var node = CreateNodeFromResourceHandle(ResourceType.Mdl, (nint) mdl, mdl->ResourceHandle, false, false);
         if (node == null)
@@ -147,6 +178,8 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
                      ?? $"Material #{i}")
                     : mtrlNode);
         }
+
+        Nodes.Add((nint)mdl->ResourceHandle, node);
 
         return node;
     }
@@ -189,6 +222,9 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
             return null;
 
         var resource = mtrl->ResourceHandle;
+        if (Nodes.TryGetValue((nint)resource, out var cached))
+            return cached;
+
         var node     = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint) mtrl, &resource->Handle, false, WithNames);
         if (node == null)
             return null;
@@ -231,6 +267,8 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
             }
         }
 
+        Nodes.Add((nint)resource, node);
+
         return node;
     }
 
@@ -239,7 +277,29 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (sklb->SkeletonResourceHandle == null)
             return null;
 
-        return CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false, WithNames);
+        if (Nodes.TryGetValue((nint)sklb->SkeletonResourceHandle, out var cached))
+            return cached;
+
+        var node = CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false, WithNames);
+        if (node != null)
+            Nodes.Add((nint)sklb->SkeletonResourceHandle, node);
+
+        return node;
+    }
+
+    public unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(FFXIVClientStructs.FFXIV.Client.Graphics.Render.PartialSkeleton* sklb)
+    {
+        if (sklb->SkeletonParameterResourceHandle == null)
+            return null;
+
+        if (Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
+            return cached;
+
+        var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, true, WithNames);
+        if (node != null)
+            Nodes.Add((nint)sklb->SkeletonParameterResourceHandle, node);
+
+        return node;
     }
 
     private FullPath FilterFullPath(FullPath fullPath)
@@ -356,7 +416,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         return name;
     }
 
-    static unsafe ulong GetResourceHandleLength(ResourceHandle* handle)
+    private static unsafe ulong GetResourceHandleLength(ResourceHandle* handle)
     {
         if (handle == null)
             return 0;

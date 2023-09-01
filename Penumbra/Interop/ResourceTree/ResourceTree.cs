@@ -13,29 +13,33 @@ namespace Penumbra.Interop.ResourceTree;
 
 public class ResourceTree
 {
-    public readonly string             Name;
-    public readonly nint               SourceAddress;
-    public readonly bool               PlayerRelated;
-    public readonly string             CollectionName;
-    public readonly List<ResourceNode> Nodes;
+    public readonly string                Name;
+    public readonly nint                  GameObjectAddress;
+    public readonly nint                  DrawObjectAddress;
+    public readonly bool                  PlayerRelated;
+    public readonly string                CollectionName;
+    public readonly List<ResourceNode>    Nodes;
+    public readonly HashSet<ResourceNode> FlatNodes;
 
     public int           ModelId;
     public CustomizeData CustomizeData;
     public GenderRace    RaceCode;
 
-    public ResourceTree(string name, nint sourceAddress, bool playerRelated, string collectionName)
+    public ResourceTree(string name, nint gameObjectAddress, nint drawObjectAddress, bool playerRelated, string collectionName)
     {
-        Name           = name;
-        SourceAddress  = sourceAddress;
-        PlayerRelated  = playerRelated;
-        CollectionName = collectionName;
-        Nodes          = new List<ResourceNode>();
+        Name              = name;
+        GameObjectAddress = gameObjectAddress;
+        DrawObjectAddress = drawObjectAddress;
+        PlayerRelated     = playerRelated;
+        CollectionName    = collectionName;
+        Nodes             = new List<ResourceNode>();
+        FlatNodes         = new HashSet<ResourceNode>();
     }
 
     internal unsafe void LoadResources(GlobalResolveContext globalContext)
     {
-        var character = (Character*)SourceAddress;
-        var model     = (CharacterBase*)character->GameObject.GetDrawObject();
+        var character = (Character*)GameObjectAddress;
+        var model     = (CharacterBase*)DrawObjectAddress;
         var equipment = new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10);
         // var customize = new ReadOnlySpan<byte>( character->CustomizeData, 26 );
         ModelId       = character->CharacterData.ModelCharaId;
@@ -130,6 +134,10 @@ public class ResourceTree
             var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
             if (sklbNode != null)
                 nodes.Add(context.WithNames ? sklbNode.WithName($"{prefix}Skeleton #{i}") : sklbNode);
+
+            var skpNode = context.CreateParameterNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
+            if (skpNode != null)
+                nodes.Add(context.WithNames ? skpNode.WithName($"{prefix}Skeleton #{i} Parameters") : skpNode);
         }
     }
 }

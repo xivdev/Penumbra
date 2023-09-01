@@ -62,7 +62,8 @@ public class ResourceTreeFactory
             return null;
 
         var gameObjStruct = (GameObject*)character.Address;
-        if (gameObjStruct->GetDrawObject() == null)
+        var drawObjStruct = gameObjStruct->GetDrawObject();
+        if (drawObjStruct == null)
             return null;
 
         var collectionResolveData = _collectionResolver.IdentifyCollection(gameObjStruct, true);
@@ -70,10 +71,11 @@ public class ResourceTreeFactory
             return null;
 
         var (name, related) = GetCharacterName(character, cache);
-        var tree = new ResourceTree(name, (nint)gameObjStruct, related, collectionResolveData.ModCollection.Name);
+        var tree = new ResourceTree(name, (nint)gameObjStruct, (nint)drawObjStruct, related, collectionResolveData.ModCollection.Name);
         var globalContext = new GlobalResolveContext(_config, _identifier.AwaitedService, cache, collectionResolveData.ModCollection,
             ((Character*)gameObjStruct)->CharacterData.ModelCharaId, withNames);
         tree.LoadResources(globalContext);
+        tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
         return tree;
     }
 
