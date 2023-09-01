@@ -13,7 +13,7 @@ public partial class ModEditWindow
 {
     private interface IConstantEditor
     {
-        bool Draw(Span<float> values, bool disabled, float editorWidth);
+        bool Draw(Span<float> values, bool disabled);
     }
 
     private sealed class FloatConstantEditor : IConstantEditor
@@ -42,16 +42,18 @@ public partial class ModEditWindow
                 _format = $"{_format} {unit.Replace("%", "%%")}";
         }
 
-        public bool Draw(Span<float> values, bool disabled, float editorWidth)
+        public bool Draw(Span<float> values, bool disabled)
         {
-            var fieldWidth = (editorWidth - (values.Length - 1) * ImGui.GetStyle().ItemSpacing.X) / values.Length;
+            var spacing    = ImGui.GetStyle().ItemInnerSpacing.X;
+            var fieldWidth = (ImGui.CalcItemWidth() - (values.Length - 1) * spacing) / values.Length;
 
             var ret = false;
 
+            // Not using DragScalarN because of _relativeSpeed and other points of lost flexibility.
             for (var valueIdx = 0; valueIdx < values.Length; ++valueIdx)
             {
                 if (valueIdx > 0)
-                    ImGui.SameLine();
+                    ImGui.SameLine(0.0f, spacing);
 
                 ImGui.SetNextItemWidth(MathF.Round(fieldWidth * (valueIdx + 1)) - MathF.Round(fieldWidth * valueIdx));
 
@@ -101,16 +103,18 @@ public partial class ModEditWindow
                 _format = $"{_format} {unit.Replace("%", "%%")}";
         }
 
-        public bool Draw(Span<float> values, bool disabled, float editorWidth)
+        public bool Draw(Span<float> values, bool disabled)
         {
-            var fieldWidth = (editorWidth - (values.Length - 1) * ImGui.GetStyle().ItemSpacing.X) / values.Length;
+            var spacing    = ImGui.GetStyle().ItemInnerSpacing.X;
+            var fieldWidth = (ImGui.CalcItemWidth() - (values.Length - 1) * spacing) / values.Length;
 
             var ret = false;
 
+            // Not using DragScalarN because of _relativeSpeed and other points of lost flexibility.
             for (var valueIdx = 0; valueIdx < values.Length; ++valueIdx)
             {
                 if (valueIdx > 0)
-                    ImGui.SameLine();
+                    ImGui.SameLine(0.0f, spacing);
 
                 ImGui.SetNextItemWidth(MathF.Round(fieldWidth * (valueIdx + 1)) - MathF.Round(fieldWidth * valueIdx));
 
@@ -148,13 +152,12 @@ public partial class ModEditWindow
             _clamped    = clamped;
         }
 
-        public bool Draw(Span<float> values, bool disabled, float editorWidth)
+        public bool Draw(Span<float> values, bool disabled)
         {
             switch (values.Length)
             {
                 case 3:
                 {
-                    ImGui.SetNextItemWidth(editorWidth);
                     var value = new Vector3(values);
                     if (_squaredRgb)
                         value = PseudoSqrtRgb(value);
@@ -170,7 +173,6 @@ public partial class ModEditWindow
                 }
                 case 4:
                 {
-                    ImGui.SetNextItemWidth(editorWidth);
                     var value = new Vector4(values);
                     if (_squaredRgb)
                         value = PseudoSqrtRgb(value);
@@ -186,7 +188,7 @@ public partial class ModEditWindow
                     value.CopyTo(values);
                     return true;
                 }
-                default: return FloatConstantEditor.Default.Draw(values, disabled, editorWidth);
+                default: return FloatConstantEditor.Default.Draw(values, disabled);
             }
         }
     }
@@ -198,9 +200,10 @@ public partial class ModEditWindow
         public EnumConstantEditor(IReadOnlyList<(string Label, float Value, string Description)> values)
             => _values = values;
 
-        public bool Draw(Span<float> values, bool disabled, float editorWidth)
+        public bool Draw(Span<float> values, bool disabled)
         {
-            var fieldWidth = (editorWidth - (values.Length - 1) * ImGui.GetStyle().ItemSpacing.X) / values.Length;
+            var spacing    = ImGui.GetStyle().ItemInnerSpacing.X;
+            var fieldWidth = (ImGui.CalcItemWidth() - (values.Length - 1) * spacing) / values.Length;
 
             var ret = false;
 
@@ -208,7 +211,7 @@ public partial class ModEditWindow
             {
                 using var id = ImRaii.PushId(valueIdx);
                 if (valueIdx > 0)
-                    ImGui.SameLine();
+                    ImGui.SameLine(0.0f, spacing);
 
                 ImGui.SetNextItemWidth(MathF.Round(fieldWidth * (valueIdx + 1)) - MathF.Round(fieldWidth * valueIdx));
 
