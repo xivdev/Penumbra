@@ -178,7 +178,7 @@ public partial class ModEditWindow
 
                 if (mayVary && (data as JObject)?["Vary"] != null)
                 {
-                    var selector = BuildSelector(data["Vary"]!
+                    var selector = BuildSelector(data!["Vary"]!
                         .Select(key => (uint)key)
                         .Select(key => Mtrl.GetShaderKey(key)?.Value ?? AssociatedShpk!.GetMaterialKeyById(key)!.Value.DefaultValue));
                     var index = (int)data["Selectors"]![selector.ToString()]!;
