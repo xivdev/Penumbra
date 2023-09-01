@@ -717,7 +717,11 @@ public partial class ModEditWindow
             return output.Write();
         }
 
-        private sealed record DevkitShaderKeyValue(string Label = "", string Description = "");
+        private sealed class DevkitShaderKeyValue
+        {
+            public string Label       = string.Empty;
+            public string Description = string.Empty;
+        }
 
         private sealed class DevkitShaderKey
         {
@@ -726,7 +730,12 @@ public partial class ModEditWindow
             public Dictionary<uint, DevkitShaderKeyValue> Values      = new();
         }
 
-        private sealed record DevkitSampler(string Label = "", string Description = "", string DefaultTexture = "");
+        private sealed class DevkitSampler
+        {
+            public string Label          = string.Empty;
+            public string Description    = string.Empty;
+            public string DefaultTexture = string.Empty;
+        }
 
         private enum DevkitConstantType
         {
@@ -737,7 +746,12 @@ public partial class ModEditWindow
             Enum    = 3,
         }
 
-        private sealed record DevkitConstantValue(string Label = "", string Description = "", float Value = 0);
+        private sealed class DevkitConstantValue
+        {
+            public string Label       = string.Empty;
+            public string Description = string.Empty;
+            public float  Value       = 0;
+        }
 
         private sealed class DevkitConstant
         {
