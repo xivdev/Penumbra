@@ -259,7 +259,8 @@ public partial class ModEditWindow
                 if (buffer.Length > 0)
                 {
                     using var id = ImRaii.PushId($"##{constant.Id:X8}:{slice.Start}");
-                    if (editor.Draw(buffer[slice], disabled, 250.0f))
+                    ImGui.SetNextItemWidth(250.0f);
+                    if (editor.Draw(buffer[slice], disabled))
                     {
                         ret = true;
                         tab.SetMaterialParameter(constant.Id, slice.Start, buffer[slice]);
