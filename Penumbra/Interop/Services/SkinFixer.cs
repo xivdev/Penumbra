@@ -90,7 +90,7 @@ public sealed unsafe class SkinFixer : IDisposable
 
     private void OnCharacterBaseCreated(nint gameObject, ModCollection collection, nint drawObject)
     {
-        if (((CharacterBase*)drawObject)->GetModelType() != CharacterBase.ModelType.Human)
+        if (drawObject == 0 || ((CharacterBase*)drawObject)->GetModelType() != CharacterBase.ModelType.Human)
             return;
 
         Task.Run(() =>
