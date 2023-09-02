@@ -134,10 +134,6 @@ public class ResourceTree
             var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
             if (sklbNode != null)
                 nodes.Add(context.WithUIData ? sklbNode.WithUIData($"{prefix}Skeleton #{i}", sklbNode.Icon) : sklbNode);
-
-            var skpNode = context.CreateParameterNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
-            if (skpNode != null)
-                nodes.Add(context.WithUIData ? skpNode.WithUIData($"{prefix}Skeleton #{i} Parameters", skpNode.Icon) : skpNode);
         }
     }
 }

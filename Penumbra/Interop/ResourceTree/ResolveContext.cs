@@ -283,12 +283,17 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
         var node = CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false, WithUIData);
         if (node != null)
+        {
+            var skpNode = CreateParameterNodeFromPartialSkeleton(sklb);
+            if (skpNode != null)
+                node.Children.Add(skpNode);
             Nodes.Add((nint)sklb->SkeletonResourceHandle, node);
+        }
 
         return node;
     }
 
-    public unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(FFXIVClientStructs.FFXIV.Client.Graphics.Render.PartialSkeleton* sklb)
+    private unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(FFXIVClientStructs.FFXIV.Client.Graphics.Render.PartialSkeleton* sklb)
     {
         if (sklb->SkeletonParameterResourceHandle == null)
             return null;
@@ -298,7 +303,11 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
         var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, true, WithUIData);
         if (node != null)
+        {
+            if (WithUIData)
+                node = node.WithUIData("Skeleton Parameters", node.Icon);
             Nodes.Add((nint)sklb->SkeletonParameterResourceHandle, node);
+        }
 
         return node;
     }

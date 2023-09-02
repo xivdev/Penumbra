@@ -8,6 +8,7 @@ using OtterGui.Raii;
 using OtterGui;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
+using System.Linq;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -125,7 +126,10 @@ public class ResourceTreeViewer
             var unfolded = _unfolded.Contains(nodePathHash);
             using (var indent = ImRaii.PushIndent(level))
             {
-                if (resourceNode.Children.Count > 0)
+                var unfoldable = debugMode
+                    ? resourceNode.Children.Count > 0
+                    : resourceNode.Children.Any(child => !child.Internal);
+                if (unfoldable)
                 {
                     using var font = ImRaii.PushFont(UiBuilder.IconFont);
                     var icon = (unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString();
@@ -142,7 +146,7 @@ public class ResourceTreeViewer
                 _changedItemDrawer.DrawCategoryIcon(resourceNode.Icon);
                 ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 ImGui.TableHeader(resourceNode.Name);
-                if (ImGui.IsItemClicked() && resourceNode.Children.Count > 0)
+                if (ImGui.IsItemClicked() && unfoldable)
                 {
                     if (unfolded)
                         _unfolded.Remove(nodePathHash);
