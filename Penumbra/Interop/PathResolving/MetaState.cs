@@ -140,7 +140,7 @@ public unsafe class MetaState : IDisposable
     {
         _characterBaseCreateMetaChanges.Dispose();
         _characterBaseCreateMetaChanges = DisposableContainer.Empty;
-        if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero)
+        if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != nint.Zero)
             _communicator.CreatedCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection, drawObject);
         _lastCreatedCollection = ResolveData.Invalid;
