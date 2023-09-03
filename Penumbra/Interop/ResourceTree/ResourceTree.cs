@@ -56,12 +56,12 @@ public class ResourceTree
             var imc     = (ResourceHandle*)model->IMCArray[i];
             var imcNode = context.CreateNodeFromImc(imc);
             if (imcNode != null)
-                Nodes.Add(globalContext.WithUIData ? imcNode.WithUIData(imcNode.Name ?? $"IMC #{i}", imcNode.Icon) : imcNode);
+                Nodes.Add(globalContext.WithUiData ? imcNode.WithUIData(imcNode.Name ?? $"IMC #{i}", imcNode.Icon) : imcNode);
 
             var mdl     = (RenderModel*)model->Models[i];
             var mdlNode = context.CreateNodeFromRenderModel(mdl);
             if (mdlNode != null)
-                Nodes.Add(globalContext.WithUIData ? mdlNode.WithUIData(mdlNode.Name ?? $"Model #{i}", mdlNode.Icon) : mdlNode);
+                Nodes.Add(globalContext.WithUiData ? mdlNode.WithUIData(mdlNode.Name ?? $"Model #{i}", mdlNode.Icon) : mdlNode);
         }
 
         AddSkeleton(Nodes, globalContext.CreateContext(EquipSlot.Unknown, default), model->Skeleton);
@@ -92,14 +92,14 @@ public class ResourceTree
                     var imc     = (ResourceHandle*)subObject->IMCArray[i];
                     var imcNode = subObjectContext.CreateNodeFromImc(imc);
                     if (imcNode != null)
-                        subObjectNodes.Add(globalContext.WithUIData
+                        subObjectNodes.Add(globalContext.WithUiData
                             ? imcNode.WithUIData(imcNode.Name ?? $"{subObjectNamePrefix} #{subObjectIndex}, IMC #{i}", imcNode.Icon)
                             : imcNode);
 
                     var mdl     = (RenderModel*)subObject->Models[i];
                     var mdlNode = subObjectContext.CreateNodeFromRenderModel(mdl);
                     if (mdlNode != null)
-                        subObjectNodes.Add(globalContext.WithUIData
+                        subObjectNodes.Add(globalContext.WithUiData
                             ? mdlNode.WithUIData(mdlNode.Name ?? $"{subObjectNamePrefix} #{subObjectIndex}, Model #{i}", mdlNode.Icon)
                             : mdlNode);
                 }
@@ -117,11 +117,11 @@ public class ResourceTree
 
         var decalNode = context.CreateNodeFromTex((TextureResourceHandle*)human->Decal);
         if (decalNode != null)
-            Nodes.Add(globalContext.WithUIData ? decalNode.WithUIData(decalNode.Name ?? "Face Decal", decalNode.Icon) : decalNode);
+            Nodes.Add(globalContext.WithUiData ? decalNode.WithUIData(decalNode.Name ?? "Face Decal", decalNode.Icon) : decalNode);
 
         var legacyDecalNode = context.CreateNodeFromTex((TextureResourceHandle*)human->LegacyBodyDecal);
         if (legacyDecalNode != null)
-            Nodes.Add(globalContext.WithUIData ? legacyDecalNode.WithUIData(legacyDecalNode.Name ?? "Legacy Body Decal", legacyDecalNode.Icon) : legacyDecalNode);
+            Nodes.Add(globalContext.WithUiData ? legacyDecalNode.WithUIData(legacyDecalNode.Name ?? "Legacy Body Decal", legacyDecalNode.Icon) : legacyDecalNode);
     }
 
     private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, Skeleton* skeleton, string prefix = "")
@@ -133,7 +133,7 @@ public class ResourceTree
         {
             var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
             if (sklbNode != null)
-                nodes.Add(context.WithUIData ? sklbNode.WithUIData($"{prefix}Skeleton #{i}", sklbNode.Icon) : sklbNode);
+                nodes.Add(context.WithUiData ? sklbNode.WithUIData($"{prefix}Skeleton #{i}", sklbNode.Icon) : sklbNode);
         }
     }
 }

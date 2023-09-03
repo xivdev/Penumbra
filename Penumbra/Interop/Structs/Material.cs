@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 
@@ -41,4 +42,7 @@ public unsafe struct Material
         [FieldOffset( 0x10 )]
         public uint SamplerFlags;
     }
+
+    public ReadOnlySpan<TextureEntry> TextureSpan
+        => new(Textures, TextureCount);
 }
