@@ -182,9 +182,9 @@ public class ResourceTreeViewer
             ImGui.TableNextColumn();
             if (resourceNode.FullPath.FullName.Length > 0)
             {
-                ImGui.Selectable(resourceNode.FullPath.ToString(), false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                ImGui.Selectable(resourceNode.FullPath.ToPath(), false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 if (ImGui.IsItemClicked())
-                    ImGui.SetClipboardText(resourceNode.FullPath.ToString());
+                    ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
                 ImGuiUtil.HoverTooltip($"{resourceNode.FullPath}\n\nClick to copy to clipboard.");
             }
             else
