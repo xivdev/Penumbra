@@ -85,7 +85,7 @@ public class ResourceTreeViewer
                         (_actionCapacity - 1) * 3 * ImGuiHelpers.GlobalScale + _actionCapacity * ImGui.GetFrameHeight());
                 ImGui.TableHeadersRow();
 
-                DrawNodes(tree.Nodes, 0, 0);
+                DrawNodes(tree.Nodes, 0, unchecked(tree.DrawObjectAddress * 31));
             }
         }
     }
