@@ -554,7 +554,8 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, GameEventManager gameEvents)
+        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, GameEventManager gameEvents,
+        ChangedItemDrawer changedItemDrawer)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -581,7 +582,7 @@ public partial class ModEditWindow : Window, IDisposable
             (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center             = new CombinedTexture(_left, _right);
         _textureSelectCombo = new TextureDrawer.PathSelectCombo(textures, editor);
-        _quickImportViewer  = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
+        _quickImportViewer  = new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModEditWindow);
     }
 

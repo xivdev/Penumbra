@@ -8,6 +8,7 @@ using OtterGui.Raii;
 using OtterGui;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
+using System.Linq;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -15,22 +16,24 @@ public class ResourceTreeViewer
 {
     private readonly Configuration                 _config;
     private readonly ResourceTreeFactory           _treeFactory;
+    private readonly ChangedItemDrawer             _changedItemDrawer;
     private readonly int                           _actionCapacity;
     private readonly Action                        _onRefresh;
     private readonly Action<ResourceNode, Vector2> _drawActions;
-    private readonly HashSet<ResourceNode>         _unfolded;
+    private readonly HashSet<nint>                 _unfolded;
 
     private Task<ResourceTree[]>?      _task;
 
-    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, int actionCapacity, Action onRefresh,
-        Action<ResourceNode, Vector2> drawActions)
+    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer,
+        int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
     {
-        _config         = config;
-        _treeFactory    = treeFactory;
-        _actionCapacity = actionCapacity;
-        _onRefresh      = onRefresh;
-        _drawActions    = drawActions;
-        _unfolded       = new HashSet<ResourceNode>();
+        _config            = config;
+        _treeFactory       = treeFactory;
+        _changedItemDrawer = changedItemDrawer;
+        _actionCapacity    = actionCapacity;
+        _onRefresh         = onRefresh;
+        _drawActions       = drawActions;
+        _unfolded          = new HashSet<nint>();
     }
 
     public void Draw()
@@ -82,7 +85,7 @@ public class ResourceTreeViewer
                         (_actionCapacity - 1) * 3 * ImGuiHelpers.GlobalScale + _actionCapacity * ImGui.GetFrameHeight());
                 ImGui.TableHeadersRow();
 
-                DrawNodes(tree.Nodes, 0);
+                DrawNodes(tree.Nodes, 0, unchecked(tree.DrawObjectAddress * 31));
             }
         }
     }
@@ -101,7 +104,7 @@ public class ResourceTreeViewer
             }
         });
 
-    private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level)
+    private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash)
     {
         var debugMode   = _config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
@@ -111,24 +114,53 @@ public class ResourceTreeViewer
             if (resourceNode.Internal && !debugMode)
                 continue;
 
+            var textColor         = ImGui.GetColorU32(ImGuiCol.Text);
+            var textColorInternal = (textColor & 0x00FFFFFFu) | ((textColor & 0xFE000000u) >> 1); // Half opacity
+
+            using var mutedColor = ImRaii.PushColor(ImGuiCol.Text, textColorInternal, resourceNode.Internal);
+
+            var nodePathHash = unchecked(pathHash + resourceNode.ResourceHandle);
+
             using var id = ImRaii.PushId(index);
             ImGui.TableNextColumn();
-            var unfolded = _unfolded.Contains(resourceNode);
+            var unfolded = _unfolded.Contains(nodePathHash);
             using (var indent = ImRaii.PushIndent(level))
             {
-                ImGui.TableHeader((resourceNode.Children.Count > 0 ? unfolded ? "[-] " : "[+] " : string.Empty) + resourceNode.Name);
-                if (ImGui.IsItemClicked() && resourceNode.Children.Count > 0)
+                var unfoldable = debugMode
+                    ? resourceNode.Children.Count > 0
+                    : resourceNode.Children.Any(child => !child.Internal);
+                if (unfoldable)
+                {
+                    using var font = ImRaii.PushFont(UiBuilder.IconFont);
+                    var icon = (unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString();
+                    var offset = (ImGui.GetFrameHeight() - ImGui.CalcTextSize(icon).X) / 2;
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+                    ImGui.TextUnformatted(icon);
+                    ImGui.SameLine(0f, offset + ImGui.GetStyle().ItemInnerSpacing.X);
+                }
+                else
+                {
+                    ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
+                    ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
+                }
+                _changedItemDrawer.DrawCategoryIcon(resourceNode.Icon);
+                ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
+                ImGui.TableHeader(resourceNode.Name);
+                if (ImGui.IsItemClicked() && unfoldable)
                 {
                     if (unfolded)
-                        _unfolded.Remove(resourceNode);
+                        _unfolded.Remove(nodePathHash);
                     else
-                        _unfolded.Add(resourceNode);
+                        _unfolded.Add(nodePathHash);
                     unfolded = !unfolded;
                 }
 
                 if (debugMode)
+                {
+                    using var _ = ImRaii.PushFont(UiBuilder.MonoFont);
                     ImGuiUtil.HoverTooltip(
-                        $"Resource Type: {resourceNode.Type}\nSource Address: 0x{resourceNode.SourceAddress:X16}");
+                        $"Resource Type:   {resourceNode.Type}\nObject Address:  0x{resourceNode.ObjectAddress:X16}\nResource Handle: 0x{resourceNode.ResourceHandle:X16}\nLength:          0x{resourceNode.Length:X16}");
+                }
             }
 
             ImGui.TableNextColumn();
@@ -162,6 +194,8 @@ public class ResourceTreeViewer
                 ImGuiUtil.HoverTooltip("The actual path to this file is unavailable.\nIt may be managed by another plug-in.");
             }
 
+            mutedColor.Dispose();
+
             if (_actionCapacity > 0)
             {
                 ImGui.TableNextColumn();
@@ -171,7 +205,7 @@ public class ResourceTreeViewer
             }
 
             if (unfolded)
-                DrawNodes(resourceNode.Children, level + 1);
+                DrawNodes(resourceNode.Children, level + 1, unchecked(nodePathHash * 31));
         }
     }
 }
