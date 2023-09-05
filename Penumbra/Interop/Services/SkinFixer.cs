@@ -1,30 +1,22 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using Penumbra.Collections;
 using Penumbra.Communication;
 using Penumbra.GameData;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop.ResourceLoading;
-using Penumbra.Interop.SafeHandles;
 using Penumbra.Services;
-using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Interop.Services;
 
 public sealed unsafe class SkinFixer : IDisposable
 {
-    public static readonly Utf8GamePath SkinShpkPath =
-        Utf8GamePath.FromSpan("shader/sm5/shpk/skin.shpk"u8, out var p) ? p : Utf8GamePath.Empty;
+    public static ReadOnlySpan<byte> SkinShpkName
+        => "skin.shpk"u8;
 
     [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
     private readonly nint* _humanVTable = null!;
@@ -48,11 +40,12 @@ public sealed unsafe class SkinFixer : IDisposable
     private readonly ResourceLoader      _resources;
     private readonly CharacterUtility    _utility;
 
-    // CharacterBase to ShpkHandle
-    private readonly ConcurrentDictionary<nint, SafeResourceHandle> _skinShpks = new();
+    // MaterialResourceHandle set
+    private readonly ConcurrentDictionary<nint, Unit> _moddedSkinShpkMaterials = new();
 
     private readonly object _lock = new();
 
+    // ConcurrentDictionary.Count uses a lock in its current implementation.
     private int   _moddedSkinShpkCount = 0;
     private ulong _slowPathCallDelta   = 0;
 
@@ -69,82 +62,64 @@ public sealed unsafe class SkinFixer : IDisposable
         _utility              = utility;
         _communicator    = communicator;
         _onRenderMaterialHook = Hook<OnRenderMaterialDelegate>.FromAddress(_humanVTable[62], OnRenderHumanMaterial);
-        _communicator.CreatedCharacterBase.Subscribe(OnCharacterBaseCreated, CreatedCharacterBase.Priority.SkinFixer);
-        _gameEvents.CharacterBaseDestructor += OnCharacterBaseDestructor;
+        _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.SkinFixer);
+        _gameEvents.ResourceHandleDestructor += OnResourceHandleDestructor;
         _onRenderMaterialHook.Enable();
     }
 
     public void Dispose()
     {
         _onRenderMaterialHook.Dispose();
-        _communicator.CreatedCharacterBase.Unsubscribe(OnCharacterBaseCreated);
-        _gameEvents.CharacterBaseDestructor -= OnCharacterBaseDestructor;
-        foreach (var skinShpk in _skinShpks.Values)
-            skinShpk.Dispose();
-        _skinShpks.Clear();
+        _communicator.MtrlShpkLoaded.Unsubscribe(OnMtrlShpkLoaded);
+        _gameEvents.ResourceHandleDestructor -= OnResourceHandleDestructor;
+        _moddedSkinShpkMaterials.Clear();
         _moddedSkinShpkCount = 0;
     }
 
     public ulong GetAndResetSlowPathCallDelta()
         => Interlocked.Exchange(ref _slowPathCallDelta, 0);
 
-    private void OnCharacterBaseCreated(nint gameObject, ModCollection collection, nint drawObject)
+    private static bool IsSkinMaterial(Structs.MtrlResource* mtrlResource)
     {
-        if (((CharacterBase*)drawObject)->GetModelType() != CharacterBase.ModelType.Human)
-            return;
-
-        Task.Run(() =>
-        {
-            var skinShpk = SafeResourceHandle.CreateInvalid();
-            try
-            {
-                var data = collection.ToResolveData(gameObject);
-                if (data.Valid)
-                {
-                    var loadedShpk = _resources.LoadResolvedResource(ResourceCategory.Shader, ResourceType.Shpk, SkinShpkPath.Path, data);
-                    skinShpk = new SafeResourceHandle((ResourceHandle*)loadedShpk, false);
-                }
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Error while resolving skin.shpk for human {drawObject:X}: {e}");
-            }
-
-            if (!skinShpk.IsInvalid)
-            {
-                if (_skinShpks.TryAdd(drawObject, skinShpk))
-                {
-                    if ((nint)skinShpk.ResourceHandle != _utility.DefaultSkinShpkResource)
-                        Interlocked.Increment(ref _moddedSkinShpkCount);
-                }
-                else
-                {
-                    skinShpk.Dispose();
-                }
-            }
-        });
+        if (mtrlResource == null)
+            return false;
+        
+        var shpkName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlResource->ShpkString);
+        return SkinShpkName.SequenceEqual(shpkName);
     }
 
-    private void OnCharacterBaseDestructor(nint characterBase)
+    private void OnMtrlShpkLoaded(nint mtrlResourceHandle, nint gameObject)
     {
-        if (!_skinShpks.Remove(characterBase, out var skinShpk))
+        var mtrl = (Structs.MtrlResource*)mtrlResourceHandle;
+        var shpk = mtrl->ShpkResourceHandle;
+        if (shpk == null)
             return;
 
-        var handle = skinShpk.ResourceHandle;
-        skinShpk.Dispose();
-        if ((nint)handle != _utility.DefaultSkinShpkResource)
+        if (!IsSkinMaterial(mtrl))
+            return;
+
+        if ((nint)shpk != _utility.DefaultSkinShpkResource)
+        {
+            if (_moddedSkinShpkMaterials.TryAdd(mtrlResourceHandle, Unit.Instance))
+                Interlocked.Increment(ref _moddedSkinShpkCount);
+        }
+    }
+
+    private void OnResourceHandleDestructor(Structs.ResourceHandle* handle)
+    {
+        if (_moddedSkinShpkMaterials.TryRemove((nint)handle, out _))
             Interlocked.Decrement(ref _moddedSkinShpkCount);
     }
 
     private nint OnRenderHumanMaterial(nint human, OnRenderMaterialParams* param)
     {
         // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
-        if (!Enabled || _moddedSkinShpkCount == 0 || !_skinShpks.TryGetValue(human, out var skinShpk) || skinShpk.IsInvalid)
+        if (!Enabled || _moddedSkinShpkCount == 0)
             return _onRenderMaterialHook!.Original(human, param);
 
         var material     = param->Model->Materials[param->MaterialIndex];
-        var shpkResource = ((Structs.MtrlResource*)material->MaterialResourceHandle)->ShpkResourceHandle;
-        if ((nint)shpkResource != (nint)skinShpk.ResourceHandle)
+        var mtrlResource = (Structs.MtrlResource*)material->MaterialResourceHandle;
+        if (!IsSkinMaterial(mtrlResource))
             return _onRenderMaterialHook!.Original(human, param);
 
         Interlocked.Increment(ref _slowPathCallDelta);
@@ -158,7 +133,7 @@ public sealed unsafe class SkinFixer : IDisposable
         {
             try
             {
-                _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)skinShpk.ResourceHandle;
+                _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)mtrlResource->ShpkResourceHandle;
                 return _onRenderMaterialHook!.Original(human, param);
             }
             finally
