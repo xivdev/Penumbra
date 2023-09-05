@@ -16,9 +16,6 @@ public sealed class CreatedCharacterBase : EventWrapper<Action<nint, ModCollecti
     {
         /// <seealso cref="PenumbraApi.CreatedCharacterBase"/>
         Api = int.MinValue,
-
-        /// <seealso cref="Interop.Services.SkinFixer.OnCharacterBaseCreated"/>
-        SkinFixer = 0,
     }
 
     public CreatedCharacterBase()

@@ -11,6 +11,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -24,22 +25,24 @@ namespace Penumbra.Interop.PathResolving;
 /// </summary>
 public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>
 {
-    private readonly PerformanceTracker _performance;
-    private readonly ResourceLoader     _loader;
-    private readonly GameEventManager   _events;
+    private readonly PerformanceTracker  _performance;
+    private readonly ResourceLoader      _loader;
+    private readonly GameEventManager    _events;
+    private readonly CommunicatorService _communicator;
 
     private readonly ThreadLocal<ResolveData> _mtrlData = new(() => ResolveData.Invalid);
     private readonly ThreadLocal<ResolveData> _avfxData = new(() => ResolveData.Invalid);
 
     private readonly ConcurrentDictionary<nint, ResolveData> _subFileCollection = new();
 
-    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, GameEventManager events)
+    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, GameEventManager events, CommunicatorService communicator)
     {
         SignatureHelper.Initialise(this);
 
-        _performance = performance;
-        _loader      = loader;
-        _events      = events;
+        _performance  = performance;
+        _loader       = loader;
+        _events       = events;
+        _communicator = communicator;
 
         _loadMtrlShpkHook.Enable();
         _loadMtrlTexHook.Enable();
@@ -151,9 +154,11 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
     {
         using var performance = _performance.Measure(PerformanceType.LoadShaders);
         var       last        = _mtrlData.Value;
-        _mtrlData.Value = LoadFileHelper(mtrlResourceHandle);
+        var       mtrlData    = LoadFileHelper(mtrlResourceHandle);
+        _mtrlData.Value = mtrlData;
         var ret = _loadMtrlShpkHook.Original(mtrlResourceHandle);
         _mtrlData.Value = last;
+        _communicator.MtrlShpkLoaded.Invoke(mtrlResourceHandle, mtrlData.AssociatedGameObject);
         return ret;
     }
 

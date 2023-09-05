@@ -603,7 +603,7 @@ public class DebugTab : Window, ITab
             ImGui.SameLine();
             ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
             ImGui.SameLine();
-            ImGui.TextUnformatted($"Draw Objects with Modded skin.shpk: {_skinFixer.ModdedSkinShpkCount}");
+            ImGui.TextUnformatted($"Materials with Modded skin.shpk: {_skinFixer.ModdedSkinShpkCount}");
         }
 
         using var table = Table("##CharacterUtility", 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
