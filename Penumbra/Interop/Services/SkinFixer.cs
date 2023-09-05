@@ -1,15 +1,13 @@
 using System;
-using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Services;
-using Penumbra.Util;
 
 namespace Penumbra.Interop.Services;
 
@@ -37,30 +35,28 @@ public sealed unsafe class SkinFixer : IDisposable
 
     private readonly GameEventManager    _gameEvents;
     private readonly CommunicatorService _communicator;
-    private readonly ResourceLoader      _resources;
     private readonly CharacterUtility    _utility;
 
     // MaterialResourceHandle set
-    private readonly ConcurrentDictionary<nint, Unit> _moddedSkinShpkMaterials = new();
+    private readonly ConcurrentSet<nint> _moddedSkinShpkMaterials = new();
 
     private readonly object _lock = new();
 
     // ConcurrentDictionary.Count uses a lock in its current implementation.
-    private int   _moddedSkinShpkCount = 0;
-    private ulong _slowPathCallDelta   = 0;
+    private int   _moddedSkinShpkCount;
+    private ulong _slowPathCallDelta;
 
     public bool Enabled { get; internal set; } = true;
 
     public int ModdedSkinShpkCount
         => _moddedSkinShpkCount;
 
-    public SkinFixer(GameEventManager gameEvents, ResourceLoader resources, CharacterUtility utility, CommunicatorService communicator)
+    public SkinFixer(GameEventManager gameEvents, CharacterUtility utility, CommunicatorService communicator)
     {
         SignatureHelper.Initialise(this);
         _gameEvents           = gameEvents;
-        _resources            = resources;
         _utility              = utility;
-        _communicator    = communicator;
+        _communicator         = communicator;
         _onRenderMaterialHook = Hook<OnRenderMaterialDelegate>.FromAddress(_humanVTable[62], OnRenderHumanMaterial);
         _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.SkinFixer);
         _gameEvents.ResourceHandleDestructor += OnResourceHandleDestructor;
@@ -83,7 +79,7 @@ public sealed unsafe class SkinFixer : IDisposable
     {
         if (mtrlResource == null)
             return false;
-        
+
         var shpkName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlResource->ShpkString);
         return SkinShpkName.SequenceEqual(shpkName);
     }
@@ -95,19 +91,16 @@ public sealed unsafe class SkinFixer : IDisposable
         if (shpk == null)
             return;
 
-        if (!IsSkinMaterial(mtrl))
+        if (!IsSkinMaterial(mtrl) || (nint)shpk == _utility.DefaultSkinShpkResource)
             return;
 
-        if ((nint)shpk != _utility.DefaultSkinShpkResource)
-        {
-            if (_moddedSkinShpkMaterials.TryAdd(mtrlResourceHandle, Unit.Instance))
-                Interlocked.Increment(ref _moddedSkinShpkCount);
-        }
+        if (_moddedSkinShpkMaterials.TryAdd(mtrlResourceHandle))
+            Interlocked.Increment(ref _moddedSkinShpkCount);
     }
 
     private void OnResourceHandleDestructor(Structs.ResourceHandle* handle)
     {
-        if (_moddedSkinShpkMaterials.TryRemove((nint)handle, out _))
+        if (_moddedSkinShpkMaterials.TryRemove((nint)handle))
             Interlocked.Decrement(ref _moddedSkinShpkCount);
     }
 
@@ -115,12 +108,12 @@ public sealed unsafe class SkinFixer : IDisposable
     {
         // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
         if (!Enabled || _moddedSkinShpkCount == 0)
-            return _onRenderMaterialHook!.Original(human, param);
+            return _onRenderMaterialHook.Original(human, param);
 
         var material     = param->Model->Materials[param->MaterialIndex];
         var mtrlResource = (Structs.MtrlResource*)material->MaterialResourceHandle;
         if (!IsSkinMaterial(mtrlResource))
-            return _onRenderMaterialHook!.Original(human, param);
+            return _onRenderMaterialHook.Original(human, param);
 
         Interlocked.Increment(ref _slowPathCallDelta);
 
@@ -134,7 +127,7 @@ public sealed unsafe class SkinFixer : IDisposable
             try
             {
                 _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)mtrlResource->ShpkResourceHandle;
-                return _onRenderMaterialHook!.Original(human, param);
+                return _onRenderMaterialHook.Original(human, param);
             }
             finally
             {

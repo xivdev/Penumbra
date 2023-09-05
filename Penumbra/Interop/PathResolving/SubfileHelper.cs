@@ -154,7 +154,7 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
     {
         using var performance = _performance.Measure(PerformanceType.LoadShaders);
         var       last        = _mtrlData.Value;
-        var mtrlData = LoadFileHelper(mtrlResourceHandle);
+        var       mtrlData    = LoadFileHelper(mtrlResourceHandle);
         _mtrlData.Value = mtrlData;
         var ret = _loadMtrlShpkHook.Original(mtrlResourceHandle);
         _mtrlData.Value = last;
