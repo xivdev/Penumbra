@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -66,6 +67,7 @@ public class DebugTab : Window, ITab
     private readonly FrameworkManager          _framework;
     private readonly TextureManager            _textureManager;
     private readonly SkinFixer                 _skinFixer;
+    private readonly IdentifierService         _identifier;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
@@ -73,7 +75,7 @@ public class DebugTab : Window, ITab
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, SkinFixer skinFixer)
+        TextureManager textureManager, SkinFixer skinFixer, IdentifierService identifier)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse, false)
     {
         IsOpen = true;
@@ -107,6 +109,7 @@ public class DebugTab : Window, ITab
         _framework                 = framework;
         _textureManager            = textureManager;
         _skinFixer                 = skinFixer;
+        _identifier                = identifier;
     }
 
     public ReadOnlySpan<byte> Label
@@ -138,11 +141,9 @@ public class DebugTab : Window, ITab
         ImGui.NewLine();
         DrawDebugCharacterUtility();
         ImGui.NewLine();
-        DrawStainTemplates();
+        DrawData();
         ImGui.NewLine();
         DrawDebugTabMetaLists();
-        ImGui.NewLine();
-        DrawDebugResidentResources();
         ImGui.NewLine();
         DrawResourceProblems();
         ImGui.NewLine();
@@ -370,7 +371,9 @@ public class DebugTab : Window, ITab
         {
             ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
-            ImGuiUtil.DrawTableColumn((obj.Address == nint.Zero) ? string.Empty : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
+            ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
+                ? string.Empty
+                : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
             var identifier = _actorService.AwaitedService.FromObject(obj, false, true, false);
             ImGuiUtil.DrawTableColumn(_actorService.AwaitedService.ToString(identifier));
             var id = obj.ObjectKind == ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.DataId}" : identifier.DataId.ToString();
@@ -546,9 +549,49 @@ public class DebugTab : Window, ITab
         }
     }
 
+    private void DrawData()
+    {
+        if (!ImGui.CollapsingHeader("Game Data"))
+            return;
+
+        DrawEmotes();
+        DrawStainTemplates();
+    }
+
+    private string _emoteSearchFile = string.Empty;
+    private string _emoteSearchName = string.Empty;
+
+    private void DrawEmotes()
+    {
+        using var mainTree = TreeNode("Emotes");
+        if (!mainTree)
+            return;
+
+        ImGui.InputText("File Name",  ref _emoteSearchFile, 256);
+        ImGui.InputText("Emote Name", ref _emoteSearchName, 256);
+        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit, new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
+        if (!table)
+            return;
+
+        var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
+        var dummy = ImGuiClip.FilteredClippedDraw(_identifier.AwaitedService.Emotes, skips,
+            p => p.Key.Contains(_emoteSearchFile, StringComparison.OrdinalIgnoreCase)
+             && (_emoteSearchName.Length == 0
+                 || p.Value.Any(s => s.Name.ToDalamudString().TextValue.Contains(_emoteSearchName, StringComparison.OrdinalIgnoreCase))),
+            p =>
+            {
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(p.Key);
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(string.Join(", ", p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
+            });
+        ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
+    }
+
     private void DrawStainTemplates()
     {
-        if (!ImGui.CollapsingHeader("Staining Templates"))
+        using var mainTree = TreeNode("Staining Templates");
+        if (!mainTree)
             return;
 
         foreach (var (key, data) in _stains.StmFile.Entries)
@@ -625,16 +668,15 @@ public class DebugTab : Window, ITab
                 ImGui.TableNextRow();
                 continue;
             }
+
             UiHelpers.Text(resource);
             ImGui.TableNextColumn();
-            var data = (nint)ResourceHandle.GetData(resource);
+            var data   = (nint)ResourceHandle.GetData(resource);
             var length = ResourceHandle.GetLength(resource);
             if (ImGui.Selectable($"0x{data:X}"))
-            {
                 if (data != nint.Zero && length > 0)
                     ImGui.SetClipboardText(string.Join("\n",
                         new ReadOnlySpan<byte>((byte*)data, (int)length).ToArray().Select(b => b.ToString("X2"))));
-            }
 
             ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
             ImGui.TableNextColumn();
@@ -655,7 +697,9 @@ public class DebugTab : Window, ITab
                 ImGui.TextUnformatted($"{_characterUtility.DefaultResource(intern).Size}");
             }
             else
+            {
                 ImGui.TableNextColumn();
+            }
         }
     }
 
@@ -679,7 +723,8 @@ public class DebugTab : Window, ITab
     /// <summary> Draw information about the resident resource files. </summary>
     private unsafe void DrawDebugResidentResources()
     {
-        if (!ImGui.CollapsingHeader("Resident Resources"))
+        using var tree = TreeNode("Resident Resources");
+        if (!tree)
             return;
 
         if (_residentResources.Address == null || _residentResources.Address->NumResources == 0)
@@ -703,8 +748,10 @@ public class DebugTab : Window, ITab
     private static void DrawCopyableAddress(string label, nint address)
     {
         using (var _ = PushFont(UiBuilder.MonoFont))
+        {
             if (ImGui.Selectable($"0x{address:X16}    {label}"))
                 ImGui.SetClipboardText($"{address:X16}");
+        }
 
         ImGuiUtil.HoverTooltip("Click to copy address to clipboard.");
     }
@@ -789,9 +836,10 @@ public class DebugTab : Window, ITab
         if (!header)
             return;
 
-        DrawCopyableAddress("CharacterUtility", _characterUtility.Address);
+        DrawCopyableAddress("CharacterUtility",        _characterUtility.Address);
         DrawCopyableAddress("ResidentResourceManager", _residentResources.Address);
-        DrawCopyableAddress("Device", Device.Instance());
+        DrawCopyableAddress("Device",                  Device.Instance());
+        DrawDebugResidentResources();
     }
 
     /// <summary> Draw resources with unusual reference count. </summary>

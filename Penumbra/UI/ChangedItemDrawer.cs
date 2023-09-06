@@ -27,22 +27,23 @@ public class ChangedItemDrawer : IDisposable
     [Flags]
     public enum ChangedItemIcon : uint
     {
-        Head          = 0x0001,
-        Body          = 0x0002,
-        Hands         = 0x0004,
-        Legs          = 0x0008,
-        Feet          = 0x0010,
-        Ears          = 0x0020,
-        Neck          = 0x0040,
-        Wrists        = 0x0080,
-        Finger        = 0x0100,
-        Monster       = 0x0200,
-        Demihuman     = 0x0400,
-        Customization = 0x0800,
-        Action        = 0x1000,
-        Mainhand      = 0x2000,
-        Offhand       = 0x4000,
-        Unknown       = 0x8000,
+        Head          = 0x00_00_01,
+        Body          = 0x00_00_02,
+        Hands         = 0x00_00_04,
+        Legs          = 0x00_00_08,
+        Feet          = 0x00_00_10,
+        Ears          = 0x00_00_20,
+        Neck          = 0x00_00_40,
+        Wrists        = 0x00_00_80,
+        Finger        = 0x00_01_00,
+        Monster       = 0x00_02_00,
+        Demihuman     = 0x00_04_00,
+        Customization = 0x00_08_00,
+        Action        = 0x00_10_00,
+        Mainhand      = 0x00_20_00,
+        Offhand       = 0x00_40_00,
+        Unknown       = 0x00_80_00,
+        Emote         = 0x01_00_00,
     }
 
     public const ChangedItemIcon AllFlags     = (ChangedItemIcon)0xFFFF;
@@ -51,10 +52,11 @@ public class ChangedItemDrawer : IDisposable
     private readonly Configuration                            _config;
     private readonly ExcelSheet<Item>                         _items;
     private readonly CommunicatorService                      _communicator;
-    private readonly Dictionary<ChangedItemIcon, TextureWrap> _icons             = new(16);
+    private readonly Dictionary<ChangedItemIcon, TextureWrap> _icons = new(16);
     private          float                                    _smallestIconWidth;
 
-    public ChangedItemDrawer(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator, Configuration config)
+    public ChangedItemDrawer(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator,
+        Configuration config)
     {
         _items = gameData.GetExcelSheet<Item>()!;
         uiBuilder.RunWhenUiPrepared(() => CreateEquipSlotIcons(uiBuilder, gameData, textureProvider), true);
@@ -164,6 +166,7 @@ public class ChangedItemDrawer : IDisposable
             ChangedItemIcon.Offhand,
             ChangedItemIcon.Customization,
             ChangedItemIcon.Action,
+            ChangedItemIcon.Emote,
             ChangedItemIcon.Monster,
             ChangedItemIcon.Demihuman,
             ChangedItemIcon.Unknown,
@@ -182,14 +185,12 @@ public class ChangedItemDrawer : IDisposable
 
             using var popup = ImRaii.ContextPopupItem(type.ToString());
             if (popup)
-            {
                 if (ImGui.MenuItem("Enable Only This"))
                 {
                     _config.ChangedItemFilter = type;
                     _config.Save();
                     ImGui.CloseCurrentPopup();
                 }
-            }
 
             if (ImGui.IsItemHovered())
             {
@@ -238,6 +239,8 @@ public class ChangedItemDrawer : IDisposable
             {
                 if (name.StartsWith("Action: "))
                     iconType = ChangedItemIcon.Action;
+                else if (name.StartsWith("Emote: "))
+                    iconType = ChangedItemIcon.Emote;
                 else if (name.StartsWith("Customization: "))
                     iconType = ChangedItemIcon.Customization;
                 break;
@@ -306,6 +309,7 @@ public class ChangedItemDrawer : IDisposable
             ChangedItemIcon.Demihuman     => "Demi-Human",
             ChangedItemIcon.Customization => "Customization",
             ChangedItemIcon.Action        => "Action",
+            ChangedItemIcon.Emote         => "Emote",
             ChangedItemIcon.Mainhand      => "Weapon (Mainhand)",
             ChangedItemIcon.Offhand       => "Weapon (Offhand)",
             _                             => "Other",
@@ -354,21 +358,47 @@ public class ChangedItemDrawer : IDisposable
         Add(ChangedItemIcon.Demihuman,     textureProvider.GetTextureFromGame("ui/icon/062000/062041_hr1.tex", true));
         Add(ChangedItemIcon.Customization, textureProvider.GetTextureFromGame("ui/icon/062000/062043_hr1.tex", true));
         Add(ChangedItemIcon.Action,        textureProvider.GetTextureFromGame("ui/icon/062000/062001_hr1.tex", true));
+        Add(ChangedItemIcon.Emote,         LoadEmoteTexture(gameData, uiBuilder));
+        Add(ChangedItemIcon.Unknown,       LoadUnknownTexture(gameData, uiBuilder));
         Add(AllFlags,                      textureProvider.GetTextureFromGame("ui/icon/114000/114052_hr1.tex", true));
 
+        _smallestIconWidth = _icons.Values.Min(i => i.Width);
+
+        return true;
+    }
+
+    private static unsafe TextureWrap? LoadUnknownTexture(IDataManager gameData, UiBuilder uiBuilder)
+    {
         var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
         if (unk == null)
-            return true;
+            return null;
 
         var image = unk.GetRgbaImageData();
         var bytes = new byte[unk.Header.Height * unk.Header.Height * 4];
         var diff  = 2 * (unk.Header.Height - unk.Header.Width);
         for (var y = 0; y < unk.Header.Height; ++y)
             image.AsSpan(4 * y * unk.Header.Width, 4 * unk.Header.Width).CopyTo(bytes.AsSpan(4 * y * unk.Header.Height + diff));
-        Add(ChangedItemIcon.Unknown, uiBuilder.LoadImageRaw(bytes, unk.Header.Height, unk.Header.Height, 4));
 
-        _smallestIconWidth = _icons.Values.Min(i => i.Width);
+        return uiBuilder.LoadImageRaw(bytes, unk.Header.Height, unk.Header.Height, 4);
+    }
 
-        return true;
+    private static unsafe TextureWrap? LoadEmoteTexture(IDataManager gameData, UiBuilder uiBuilder)
+    {
+        var emote = gameData.GetFile<TexFile>("ui/icon/000000/000019_hr1.tex");
+        if (emote == null)
+            return null;
+
+        var image2 = emote.GetRgbaImageData();
+        fixed (byte* ptr = image2)
+        {
+            var color = (uint*)ptr;
+            for (var i = 0; i < image2.Length / 4; ++i)
+            {
+                if (color[i] == 0xFF000000)
+                    image2[i * 4 + 3] = 0;
+            }
+        }
+
+        return uiBuilder.LoadImageRaw(image2, emote.Header.Width, emote.Header.Height, 4);
     }
 }
