@@ -13,6 +13,7 @@ using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using static Penumbra.GameData.Enums.GenderRace;
 
 namespace Penumbra.Interop.PathResolving;
