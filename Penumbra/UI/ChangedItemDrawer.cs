@@ -46,7 +46,7 @@ public class ChangedItemDrawer : IDisposable
         Emote         = 0x01_00_00,
     }
 
-    public const ChangedItemIcon AllFlags     = (ChangedItemIcon)0xFFFF;
+    public const ChangedItemIcon AllFlags     = (ChangedItemIcon)0x01FFFF;
     public const ChangedItemIcon DefaultFlags = AllFlags & ~ChangedItemIcon.Offhand;
 
     private readonly Configuration                            _config;
