@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using ImGuiNET;
@@ -5,6 +6,7 @@ using OtterGui.Raii;
 using OtterGui;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Interop.PathResolving;
 using Penumbra.UI.CollectionTab;
 using Penumbra.UI.ModsTab;
 
@@ -16,11 +18,14 @@ public class CollectionSelectHeader
     private readonly ActiveCollections     _activeCollections;
     private readonly TutorialService       _tutorial;
     private readonly ModFileSystemSelector _selector;
+    private readonly CollectionResolver    _resolver;
 
-    public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModFileSystemSelector selector)
+    public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModFileSystemSelector selector,
+        CollectionResolver resolver)
     {
         _tutorial          = tutorial;
         _selector          = selector;
+        _resolver          = resolver;
         _activeCollections = collectionManager.Active;
         _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Name).ToList());
     }
@@ -28,16 +33,18 @@ public class CollectionSelectHeader
     /// <summary> Draw the header line that can quick switch between collections. </summary>
     public void Draw(bool spacing)
     {
-        using var style      = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0).Push(ImGuiStyleVar.ItemSpacing, new Vector2(0, spacing ? ImGui.GetStyle().ItemSpacing.Y : 0));
-        var       buttonSize = new Vector2(ImGui.GetContentRegionAvail().X / 8f, 0);
-
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
+            .Push(ImGuiStyleVar.ItemSpacing, new Vector2(0, spacing ? ImGui.GetStyle().ItemSpacing.Y : 0));
+        var comboWidth = ImGui.GetContentRegionAvail().X / 4f;
+        var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
         using (var _ = ImRaii.Group())
         {
-            DrawDefaultCollectionButton(3 * buttonSize);
-            ImGui.SameLine();
-            DrawInheritedCollectionButton(3 * buttonSize);
-            ImGui.SameLine();
-            _collectionCombo.Draw("##collectionSelector", 2 * buttonSize.X, ColorId.SelectedCollection.Value());
+            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo());
+            DrawCollectionButton(buttonSize, GetInterfaceCollectionInfo());
+            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo());
+            DrawCollectionButton(buttonSize, GetInheritedCollectionInfo());
+
+            _collectionCombo.Draw("##collectionSelector", comboWidth, ColorId.SelectedCollection.Value());
         }
 
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
@@ -46,31 +53,87 @@ public class CollectionSelectHeader
             ImGuiUtil.DrawTextButton("The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg);
     }
 
-    private void DrawDefaultCollectionButton(Vector2 width)
+    private enum CollectionState
     {
-        var name      = $"{TutorialService.DefaultCollection} ({_activeCollections.Default.Name})";
-        var isCurrent = _activeCollections.Default == _activeCollections.Current;
-        var isEmpty   = _activeCollections.Default == ModCollection.Empty;
-        var tt = isCurrent ? $"The current collection is already the configured {TutorialService.DefaultCollection}."
-            : isEmpty      ? $"The {TutorialService.DefaultCollection} is configured to be empty."
-                             : $"Set the {TutorialService.SelectedCollection} to the configured {TutorialService.DefaultCollection}.";
-        if (ImGuiUtil.DrawDisabledButton(name, width, tt, isCurrent || isEmpty))
-            _activeCollections.SetCollection(_activeCollections.Default, CollectionType.Current);
+        Empty,
+        Selected,
+        Unavailable,
+        Available,
     }
 
-    private void DrawInheritedCollectionButton(Vector2 width)
+    private CollectionState CheckCollection(ModCollection? collection, bool inheritance = false)
     {
-        var noModSelected = _selector.Selected == null;
-        var collection    = _selector.SelectedSettingCollection;
-        var modInherited  = collection != _activeCollections.Current;
-        var (name, tt) = (noModSelected, modInherited) switch
+        if (collection == null)
+            return CollectionState.Unavailable;
+        if (collection == ModCollection.Empty)
+            return CollectionState.Empty;
+        if (collection == _activeCollections.Current)
+            return inheritance ? CollectionState.Unavailable : CollectionState.Selected;
+
+        return CollectionState.Available;
+    }
+
+    private (ModCollection?, string, string, bool) GetDefaultCollectionInfo()
+    {
+        var collection = _activeCollections.Default;
+        return CheckCollection(collection) switch
         {
-            (true, _) => ("Inherited Collection", "No mod selected."),
-            (false, true) => ($"Inherited Collection ({collection.Name})",
-                "Set the current collection to the collection the selected mod inherits its settings from."),
-            (false, false) => ("Not Inherited", "The selected mod does not inherit its settings."),
+            CollectionState.Empty => (collection, "None", "The base collection is configured to use no mods.", true),
+            CollectionState.Selected => (collection, collection.Name,
+                "The configured base collection is already selected as the current collection.", true),
+            CollectionState.Available => (collection, collection.Name,
+                $"Select the configured base collection {collection.Name} as the current collection.", false),
+            _ => throw new Exception("Can not happen."),
         };
-        if (ImGuiUtil.DrawDisabledButton(name, width, tt, noModSelected || !modInherited))
-            _activeCollections.SetCollection(collection, CollectionType.Current);
+    }
+
+    private (ModCollection?, string, string, bool) GetPlayerCollectionInfo()
+    {
+        var collection = _resolver.PlayerCollection();
+        return CheckCollection(collection) switch
+        {
+            CollectionState.Empty => (collection, "None", "The base collection is configured to use no mods.", true),
+            CollectionState.Selected => (collection, collection.Name,
+                "The collection configured to apply to the loaded player character is already selected as the current collection.", true),
+            CollectionState.Available => (collection, collection.Name,
+                $"Select the collection {collection.Name} that applies to the loaded player character as the current collection.", false),
+            _ => throw new Exception("Can not happen."),
+        };
+    }
+
+    private (ModCollection?, string, string, bool) GetInterfaceCollectionInfo()
+    {
+        var collection = _activeCollections.Interface;
+        return CheckCollection(collection) switch
+        {
+            CollectionState.Empty => (collection, "None", "The interface collection is configured to use no mods.", true),
+            CollectionState.Selected => (collection, collection.Name,
+                "The configured interface collection is already selected as the current collection.", true),
+            CollectionState.Available => (collection, collection.Name,
+                $"Select the configured interface collection {collection.Name} as the current collection.", false),
+            _ => throw new Exception("Can not happen."),
+        };
+    }
+
+    private (ModCollection?, string, string, bool) GetInheritedCollectionInfo()
+    {
+        var collection = _selector.Selected == null ? null : _selector.SelectedSettingCollection;
+        return CheckCollection(collection, true) switch
+        {
+            CollectionState.Unavailable => (null, "Not Inherited",
+                "The settings of the selected mod are not inherited from another collection.", true),
+            CollectionState.Available => (collection, collection!.Name,
+                $"Select the collection {collection!.Name} from which the selected mod inherits its settings as the current collection.",
+                false),
+            _ => throw new Exception("Can not happen."),
+        };
+    }
+
+    private void DrawCollectionButton(Vector2 buttonWidth, (ModCollection?, string, string, bool) tuple)
+    {
+        var (collection, name, tooltip, disabled) = tuple;
+        if (ImGuiUtil.DrawDisabledButton(name, buttonWidth, tooltip, disabled))
+            _activeCollections.SetCollection(collection!, CollectionType.Current);
+        ImGui.SameLine();
     }
 }
