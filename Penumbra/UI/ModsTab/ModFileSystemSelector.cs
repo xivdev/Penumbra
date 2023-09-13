@@ -42,7 +42,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     public ModFileSystemSelector(KeyState keyState, CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
         ModImportManager modImportManager, IDragDropManager dragDrop)
-        : base(fileSystem, keyState, HandleException)
+        : base(fileSystem, keyState, HandleException, allowMultipleSelection: true)
     {
         _communicator      = communicator;
         _modManager        = modManager;
@@ -179,7 +179,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             var offset         = remainingSpace - requiredSize;
             if (ImGui.GetScrollMaxY() == 0)
                 offset -= ImGui.GetStyle().ItemInnerSpacing.X;
-        
+
             if (offset > ImGui.GetStyle().ItemSpacing.X)
                 ImGui.GetWindowDrawList().AddText(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value(), priorityString);
         }
@@ -341,7 +341,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void DrawHelpPopup()
     {
-        ImGuiUtil.HelpPopup("ExtendedHelp", new Vector2(1000 * UiHelpers.Scale, 34.5f * ImGui.GetTextLineHeightWithSpacing()), () =>
+        ImGuiUtil.HelpPopup("ExtendedHelp", new Vector2(1000 * UiHelpers.Scale, 36.5f * ImGui.GetTextLineHeightWithSpacing()), () =>
         {
             ImGui.Dummy(Vector2.UnitY * ImGui.GetTextLineHeight());
             ImGui.TextUnformatted("Mod Management");
@@ -380,6 +380,10 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             indent.Pop(1);
             ImGui.BulletText(
                 "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod.");
+            indent.Push();
+            ImGui.BulletText("You can select multiple mods and folders by holding Control while clicking them, and then drag all of them at once." );
+            ImGui.BulletText("Selected mods inside an also selected folder will be ignored when dragging and move inside their folder instead of directly into the target.");
+            indent.Pop(1);
             ImGui.BulletText("Right-clicking a folder opens a context menu.");
             ImGui.BulletText("Right-clicking empty space allows you to expand or collapse all folders at once.");
             ImGui.BulletText("Use the Filter Mods... input at the top to filter the list for mods whose name or path contain the text.");
@@ -471,7 +475,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         var leaf = (ModFileSystem.Leaf?)FileSystem.Root.GetAllDescendants(ISortMode<Mod>.Lexicographical)
             .FirstOrDefault(l => l is ModFileSystem.Leaf m && m.Value.ModPath.FullName == _lastSelectedDirectory);
-        Select(leaf);
+        Select(leaf, AllowMultipleSelection);
         _lastSelectedDirectory = string.Empty;
     }
 
