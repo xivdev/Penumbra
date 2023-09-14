@@ -30,6 +30,7 @@ public class ModPanelEditTab : ITab
     private readonly ModFileSystemSelector _selector;
     private readonly ModEditWindow         _editWindow;
     private readonly ModEditor             _editor;
+    private readonly Configuration         _config;
 
     private readonly TagButtons _modTags = new();
 
@@ -39,7 +40,7 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
-        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager)
+        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config)
     {
         _modManager       = modManager;
         _selector         = selector;
@@ -49,6 +50,7 @@ public class ModPanelEditTab : ITab
         _editor           = editor;
         _filenames        = filenames;
         _modExportManager = modExportManager;
+        _config           = config;
     }
 
     public ReadOnlySpan<byte> Label
@@ -162,17 +164,27 @@ public class ModPanelEditTab : ITab
 
         ImGui.SameLine();
         tt = backup.Exists
-            ? $"Delete existing mod export \"{backup.Name}\"."
+            ? $"Delete existing mod export \"{backup.Name}\" (hold {_config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
-        if (ImGuiUtil.DrawDisabledButton("Delete Export", buttonSize, tt, !backup.Exists))
+        if (ImGuiUtil.DrawDisabledButton("Delete Export", buttonSize, tt, !backup.Exists || !_config.DeleteModModifier.IsActive()))
             backup.Delete();
 
         tt = backup.Exists
-            ? $"Restore mod from exported file \"{backup.Name}\"."
+            ? $"Restore mod from exported file \"{backup.Name}\" (hold {_config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
         ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton("Restore From Export", buttonSize, tt, !backup.Exists))
+        if (ImGuiUtil.DrawDisabledButton("Restore From Export", buttonSize, tt, !backup.Exists || !_config.DeleteModModifier.IsActive()))
             backup.Restore(_modManager);
+        if (backup.Exists)
+        {
+            ImGui.SameLine();
+            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            {
+                ImGui.TextUnformatted(FontAwesomeIcon.CheckCircle.ToIconString());
+            }
+
+            ImGuiUtil.HoverTooltip($"Export exists in \"{backup.Name}\".");
+        }
     }
 
     /// <summary> Anything about editing the regular meta information about the mod. </summary>
