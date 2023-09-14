@@ -99,6 +99,7 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool FixMainWindow                 { get; set; } = false;
     public bool AutoDeduplicateOnImport       { get; set; } = true;
+    public bool UseFileSystemCompression      { get; set; } = true;
     public bool EnableHttpApi                 { get; set; } = true;
 
     public string DefaultModImportPath    { get; set; } = string.Empty;

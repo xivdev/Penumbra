@@ -12,6 +12,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Compression;
 using OtterGui.Raii;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -22,6 +23,7 @@ using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String;
@@ -236,7 +238,7 @@ public partial class ModEditWindow : Window, IDisposable
             var anyChanges = editor.MdlMaterialEditor.ModelFiles.Any(m => m.Changed);
             if (ImGuiUtil.DrawDisabledButton("Save All Changes", buttonSize,
                     anyChanges ? "Irreversibly rewrites all currently applied changes to model files." : "No changes made yet.", !anyChanges))
-                editor.MdlMaterialEditor.SaveAllModels();
+                editor.MdlMaterialEditor.SaveAllModels(editor.Compactor);
 
             ImGui.SameLine();
             if (ImGuiUtil.DrawDisabledButton("Revert All Changes", buttonSize,
@@ -572,17 +574,18 @@ public partial class ModEditWindow : Window, IDisposable
         _textures          = textures;
         _fileDialog        = fileDialog;
         _gameEvents        = gameEvents;
-        _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
+        _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
-        _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
+        _modelTab = new FileEditor<MdlFile>(this, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
             () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, (bytes, _, _) => new MdlFile(bytes));
-        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shaders", ".shpk",
+        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center             = new CombinedTexture(_left, _right);
         _textureSelectCombo = new TextureDrawer.PathSelectCombo(textures, editor);
-        _quickImportViewer  = new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
+        _quickImportViewer =
+            new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModEditWindow);
     }
 

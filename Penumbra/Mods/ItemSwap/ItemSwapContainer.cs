@@ -63,7 +63,6 @@ public class ItemSwapContainer
                             continue;
                         }
 
-
                         if( writeType == WriteType.UseSwaps && file.SwapToModdedExistsInGame && !file.DataWasChanged )
                         {
                             convertedSwaps.TryAdd( file.SwapFromRequestPath, file.SwapToModded );
@@ -73,7 +72,7 @@ public class ItemSwapContainer
                             var path  = file.GetNewPath( directory.FullName );
                             var bytes = file.FileData.Write();
                             Directory.CreateDirectory( Path.GetDirectoryName( path )! );
-                            File.WriteAllBytes( path, bytes );
+                            _manager.Compactor.WriteAllBytes( path, bytes );
                             convertedFiles.TryAdd( file.SwapFromRequestPath, new FullPath( path ) );
                         }
 

@@ -195,7 +195,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), iconSize,
                     "Save the changed mdl file.\nUse at own risk!", !info.Changed, true))
-                info.Save();
+                info.Save(_editor.Compactor);
 
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Recycle.ToIconString(), iconSize,

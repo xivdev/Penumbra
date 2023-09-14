@@ -22,7 +22,6 @@ public partial class TexToolsImporter
     private string _currentOptionName = string.Empty;
     private string _currentFileName   = string.Empty;
 
-
     public void DrawProgressInfo( Vector2 size )
     {
         if( _modPackCount == 0 )

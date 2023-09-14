@@ -10,7 +10,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using OtterTex;
-using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.UI;
 using Penumbra.UI.Classes;

@@ -7,6 +7,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Compression;
 using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Widgets;
@@ -39,6 +40,7 @@ public class SettingsTab : ITab
     private readonly DalamudServices             _dalamud;
     private readonly HttpApi                     _httpApi;
     private readonly DalamudSubstitutionProvider _dalamudSubstitutionProvider;
+    private readonly FileCompactor               _compactor;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -46,7 +48,7 @@ public class SettingsTab : ITab
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
         FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
         ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager, HttpApi httpApi,
-        DalamudSubstitutionProvider dalamudSubstitutionProvider)
+        DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor)
     {
         _config                      = config;
         _fontReloader                = fontReloader;
@@ -61,6 +63,9 @@ public class SettingsTab : ITab
         _modExportManager            = modExportManager;
         _httpApi                     = httpApi;
         _dalamudSubstitutionProvider = dalamudSubstitutionProvider;
+        _compactor                   = compactor;
+        if (_compactor.CanCompact)
+            _compactor.Enabled = _config.UseFileSystemCompression;
     }
 
     public void DrawHeader()
@@ -661,6 +666,7 @@ public class SettingsTab : ITab
         Checkbox("Auto Deduplicate on Import",
             "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
             _config.AutoDeduplicateOnImport, v => _config.AutoDeduplicateOnImport = v);
+        DrawCompressionBox();
         Checkbox("Keep Default Metadata Changes on Import",
             "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
           + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
@@ -671,6 +677,47 @@ public class SettingsTab : ITab
         DrawReloadResourceButton();
         DrawReloadFontsButton();
         ImGui.NewLine();
+    }
+
+    private void DrawCompressionBox()
+    {
+        if (!_compactor.CanCompact)
+            return;
+
+        Checkbox("Use Filesystem Compression",
+            "Use Windows functionality to transparently reduce storage size of mod files on your computer. This might cost performance, but seems to generally be beneficial to performance by shifting more responsibility to the underused CPU and away from the overused hard drives.",
+            _config.UseFileSystemCompression,
+            v =>
+            {
+                _config.UseFileSystemCompression = v;
+                _compactor.Enabled               = v;
+            });
+        ImGui.SameLine();
+        if (ImGuiUtil.DrawDisabledButton("Compress Existing Files", Vector2.Zero,
+                "Try to compress all files in your root directory. This will take a while.",
+                _compactor.MassCompactRunning || !_modManager.Valid))
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K);
+
+        ImGui.SameLine();
+        if (ImGuiUtil.DrawDisabledButton("Decompress Existing Files", Vector2.Zero,
+                "Try to decompress all files in your root directory. This will take a while.",
+                _compactor.MassCompactRunning || !_modManager.Valid))
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.None);
+
+        if (_compactor.MassCompactRunning)
+        {
+            ImGui.ProgressBar((float)_compactor.CurrentIndex / _compactor.TotalFiles,
+                new Vector2(ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X, ImGui.GetFrameHeight()),
+                _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
+            ImGui.SameLine();
+            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Ban.ToIconString(), UiHelpers.IconButtonSize, "Cancel the mass action.",
+                    !_compactor.MassCompactRunning, true))
+            _compactor.CancelMassCompact();
+        }
+        else
+        {
+            ImGui.Dummy(UiHelpers.IconButtonSize);
+        }
     }
 
     /// <summary> Draw two integral inputs for minimum dimensions of this window. </summary>

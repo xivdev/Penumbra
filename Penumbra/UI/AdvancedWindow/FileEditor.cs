@@ -9,6 +9,7 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Compression;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.GameData.Files;
@@ -21,11 +22,12 @@ namespace Penumbra.UI.AdvancedWindow;
 public class FileEditor<T> : IDisposable where T : class, IWritable
 {
     private readonly FileDialogService _fileDialog;
-    private readonly IDataManager       _gameData;
+    private readonly IDataManager      _gameData;
     private readonly ModEditWindow     _owner;
+    private readonly FileCompactor     _compactor;
 
-    public FileEditor(ModEditWindow owner, IDataManager gameData, Configuration config, FileDialogService fileDialog, string tabName,
-        string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
+    public FileEditor(ModEditWindow owner, IDataManager gameData, Configuration config, FileCompactor compactor, FileDialogService fileDialog,
+        string tabName, string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
         Func<byte[], string, bool, T?> parseFile)
     {
         _owner          = owner;
@@ -36,6 +38,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         _drawEdit       = drawEdit;
         _getInitialPath = getInitialPath;
         _parseFile      = parseFile;
+        _compactor      = compactor;
         _combo          = new Combo(config, getFiles);
     }
 
@@ -108,8 +111,8 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
                 {
                     _defaultException = null;
                     (_defaultFile as IDisposable)?.Dispose();
-                    _defaultFile      = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
-                    _defaultFile      = _parseFile(file.Data, _defaultPath, false);
+                    _defaultFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
+                    _defaultFile = _parseFile(file.Data, _defaultPath, false);
                 }
                 else
                 {
@@ -135,7 +138,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
                     try
                     {
-                        File.WriteAllBytes(name, _defaultFile?.Write() ?? throw new Exception("File invalid."));
+                        _compactor.WriteAllBytes(name, _defaultFile?.Write() ?? throw new Exception("File invalid."));
                     }
                     catch (Exception e)
                     {
@@ -169,8 +172,8 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         _currentException = null;
         _currentPath      = null;
         (_currentFile as IDisposable)?.Dispose();
-        _currentFile      = null;
-        _changed          = false;
+        _currentFile = null;
+        _changed     = false;
     }
 
     private void DrawFileSelectCombo()
@@ -209,7 +212,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         if (ImGuiUtil.DrawDisabledButton("Save to File", Vector2.Zero,
                 $"Save the selected {_fileType} file with all changes applied. This is not revertible.", !_changed))
         {
-            File.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
+            _compactor.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
             _changed = false;
         }
     }

@@ -13,6 +13,7 @@ using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;

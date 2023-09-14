@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OtterGui;
+using OtterGui.Compression;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
 /// <summary> A class that collects information about skin materials in a model file and handle changes on them. </summary>
 public class ModelMaterialInfo
@@ -40,7 +41,7 @@ public class ModelMaterialInfo
     }
 
     // Save a changed .mdl file.
-    public void Save()
+    public void Save(FileCompactor compactor)
     {
         if (!Changed)
             return;
@@ -50,7 +51,7 @@ public class ModelMaterialInfo
 
         try
         {
-            System.IO.File.WriteAllBytes(Path.FullName, File.Write());
+            compactor.WriteAllBytes(Path.FullName, File.Write());
             Changed = false;
         }
         catch (Exception e)

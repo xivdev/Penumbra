@@ -138,7 +138,7 @@ public class ModPanelEditTab : ITab
             _editor.LoadMod(_mod);
             _editor.MdlMaterialEditor.ReplaceAllMaterials("bibo",     "b");
             _editor.MdlMaterialEditor.ReplaceAllMaterials("bibopube", "c");
-            _editor.MdlMaterialEditor.SaveAllModels();
+            _editor.MdlMaterialEditor.SaveAllModels(_editor.Compactor);
             _editWindow.UpdateModels();
         }
 

@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using OtterGui;
-using Penumbra.Mods.Editor;
+using OtterGui.Compression;
 using Penumbra.Mods.Subclasses;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
 public class ModEditor : IDisposable
 {
@@ -15,6 +15,7 @@ public class ModEditor : IDisposable
     public readonly ModFileCollection Files;
     public readonly ModSwapEditor     SwapEditor;
     public readonly MdlMaterialEditor MdlMaterialEditor;
+    public readonly FileCompactor     Compactor;
 
     public Mod? Mod       { get; private set; }
     public int  GroupIdx  { get; private set; }
@@ -24,7 +25,8 @@ public class ModEditor : IDisposable
     public ISubMod?   Option { get; private set; }
 
     public ModEditor(ModNormalizer modNormalizer, ModMetaEditor metaEditor, ModFileCollection files,
-        ModFileEditor fileEditor, DuplicateManager duplicates, ModSwapEditor swapEditor, MdlMaterialEditor mdlMaterialEditor)
+        ModFileEditor fileEditor, DuplicateManager duplicates, ModSwapEditor swapEditor, MdlMaterialEditor mdlMaterialEditor,
+        FileCompactor compactor)
     {
         ModNormalizer     = modNormalizer;
         MetaEditor        = metaEditor;
@@ -33,6 +35,7 @@ public class ModEditor : IDisposable
         Duplicates        = duplicates;
         SwapEditor        = swapEditor;
         MdlMaterialEditor = mdlMaterialEditor;
+        Compactor         = compactor;
     }
 
     public void LoadMod(Mod mod)
