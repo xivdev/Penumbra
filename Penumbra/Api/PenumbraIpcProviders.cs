@@ -1,9 +1,6 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin;
 using Penumbra.GameData.Enums;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Collections.Manager;

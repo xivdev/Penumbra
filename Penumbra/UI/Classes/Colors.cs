@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using OtterGui.Custom;
 
 namespace Penumbra.UI.Classes;

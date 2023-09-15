@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Penumbra.Interop.Structs;
 
 public static class ShaderPackageUtility

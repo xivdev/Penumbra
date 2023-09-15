@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Threading.Tasks;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
-using System.Linq;
 
 namespace Penumbra.UI.AdvancedWindow;
 

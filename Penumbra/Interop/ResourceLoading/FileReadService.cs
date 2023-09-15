@@ -1,7 +1,3 @@
-using System;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;

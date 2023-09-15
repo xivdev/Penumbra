@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Numerics;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;

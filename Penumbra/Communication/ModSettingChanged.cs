@@ -1,4 +1,3 @@
-using System;
 using OtterGui.Classes;
 using Penumbra.Api;
 using Penumbra.Api.Enums;

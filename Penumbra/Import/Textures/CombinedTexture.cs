@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Numerics;
-using System.Threading.Tasks;
-
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture : IDisposable

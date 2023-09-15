@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;

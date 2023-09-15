@@ -1,6 +1,3 @@
-using System;
-using System.Runtime.InteropServices;
-using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;

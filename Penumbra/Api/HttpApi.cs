@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;

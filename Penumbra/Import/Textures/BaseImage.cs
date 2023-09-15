@@ -1,5 +1,3 @@
-using System;
-using System.Numerics;
 using Lumina.Data.Files;
 using OtterTex;
 using SixLabors.ImageSharp;

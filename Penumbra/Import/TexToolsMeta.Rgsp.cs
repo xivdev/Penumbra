@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;

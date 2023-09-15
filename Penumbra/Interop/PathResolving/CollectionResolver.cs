@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;

@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Lumina.Data.Files;
 using Lumina.Extensions;
 using OtterTex;

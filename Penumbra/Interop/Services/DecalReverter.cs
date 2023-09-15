@@ -1,4 +1,3 @@
-using System;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;

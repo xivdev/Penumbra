@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Dalamud.Plugin;
 using OtterGui.Filesystem;
 using Penumbra.Collections;

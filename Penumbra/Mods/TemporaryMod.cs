@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;

@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;

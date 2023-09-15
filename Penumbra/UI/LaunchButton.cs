@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Dalamud.Interface;
 using Dalamud.Plugin;
 using ImGuiScene;

@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Keys;
@@ -7,7 +6,6 @@ using Dalamud.Game.Gui;
 using Dalamud.Interface;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using System.Linq;
 using System.Reflection;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;

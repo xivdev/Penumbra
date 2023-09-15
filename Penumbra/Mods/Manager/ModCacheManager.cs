@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;

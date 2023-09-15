@@ -1,5 +1,3 @@
-using System;
-using System.Runtime.CompilerServices;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;

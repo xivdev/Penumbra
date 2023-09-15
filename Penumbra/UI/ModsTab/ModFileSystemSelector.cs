@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface;
 using Dalamud.Interface.DragDrop;

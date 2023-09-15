@@ -1,4 +1,3 @@
-using System;
 using OtterGui.Widgets;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.AdvancedWindow;

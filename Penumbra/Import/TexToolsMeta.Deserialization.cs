@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Lumina.Extensions;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;

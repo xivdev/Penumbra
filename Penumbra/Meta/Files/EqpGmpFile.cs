@@ -1,7 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Numerics;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;

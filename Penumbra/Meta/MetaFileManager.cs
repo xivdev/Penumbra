@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;

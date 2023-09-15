@@ -1,4 +1,3 @@
-using System;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Files;

@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Text;
 using Dalamud.Plugin;
 using ImGuiNET;

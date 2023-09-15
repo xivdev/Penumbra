@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;

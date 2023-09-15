@@ -1,8 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

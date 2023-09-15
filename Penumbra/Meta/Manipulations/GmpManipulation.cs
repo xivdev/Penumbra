@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;

@@ -1,7 +1,6 @@
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
-using System;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Interop.Structs;

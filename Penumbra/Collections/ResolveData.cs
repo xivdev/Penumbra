@@ -1,5 +1,3 @@
-using System;
-
 namespace Penumbra.Collections;
 
 public readonly struct ResolveData

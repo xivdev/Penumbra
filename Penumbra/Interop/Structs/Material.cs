@@ -1,5 +1,3 @@
-using System;
-using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 
 namespace Penumbra.Interop.Structs;

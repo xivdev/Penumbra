@@ -1,7 +1,4 @@
 using Penumbra.GameData.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Penumbra.Collections.Manager;
 

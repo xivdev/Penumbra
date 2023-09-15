@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui.Raii;

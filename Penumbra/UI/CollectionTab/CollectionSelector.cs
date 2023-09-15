@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;

@@ -1,10 +1,7 @@
 using OtterGui.Classes;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;

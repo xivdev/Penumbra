@@ -1,4 +1,3 @@
-using System;
 using Penumbra.Api.Enums;
 
 namespace Penumbra.Import.Structs;

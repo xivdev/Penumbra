@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;

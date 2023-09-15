@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Enums;
 using ImGuiNET;
 using OtterGui.Custom;

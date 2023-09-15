@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Threading.Tasks;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;

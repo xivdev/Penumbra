@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Data.Files;

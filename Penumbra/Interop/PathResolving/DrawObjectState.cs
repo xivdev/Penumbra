@@ -1,9 +1,5 @@
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.GameData;

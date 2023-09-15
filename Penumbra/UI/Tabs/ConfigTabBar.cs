@@ -1,4 +1,3 @@
-using System;
 using ImGuiNET;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;

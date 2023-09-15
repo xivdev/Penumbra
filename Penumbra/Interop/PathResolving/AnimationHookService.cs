@@ -1,5 +1,3 @@
-using System;
-using System.Threading;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;

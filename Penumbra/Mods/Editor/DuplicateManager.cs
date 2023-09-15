@@ -1,11 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;

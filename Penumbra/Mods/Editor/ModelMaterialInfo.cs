@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using OtterGui;
 using OtterGui.Compression;
 using Penumbra.GameData.Files;

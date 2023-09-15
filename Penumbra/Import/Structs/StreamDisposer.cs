@@ -1,6 +1,4 @@
 using Penumbra.Util;
-using System;
-using System.IO;
 
 namespace Penumbra.Import.Structs;
 

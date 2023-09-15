@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Util;

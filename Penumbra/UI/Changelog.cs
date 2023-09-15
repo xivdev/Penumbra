@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using OtterGui.Widgets;
 
 namespace Penumbra.UI;

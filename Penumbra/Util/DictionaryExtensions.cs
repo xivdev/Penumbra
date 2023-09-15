@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Penumbra.Util;
 
 public static class DictionaryExtensions

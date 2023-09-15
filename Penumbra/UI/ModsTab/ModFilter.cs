@@ -1,5 +1,3 @@
-using System;
-
 namespace Penumbra.UI.ModsTab;
 
 [Flags]

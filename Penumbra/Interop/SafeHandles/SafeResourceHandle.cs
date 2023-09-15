@@ -1,7 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Threading;
-using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+﻿using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 
 namespace Penumbra.Interop.SafeHandles;
 

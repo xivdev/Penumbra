@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;

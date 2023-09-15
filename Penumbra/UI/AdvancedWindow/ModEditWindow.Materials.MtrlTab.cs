@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
@@ -12,7 +6,6 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;

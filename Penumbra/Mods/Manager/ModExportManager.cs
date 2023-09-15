@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;

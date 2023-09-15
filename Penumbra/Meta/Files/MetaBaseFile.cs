@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Memory;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;

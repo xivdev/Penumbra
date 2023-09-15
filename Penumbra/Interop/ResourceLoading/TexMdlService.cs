@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;

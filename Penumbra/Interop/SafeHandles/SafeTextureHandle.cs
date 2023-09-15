@@ -1,7 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Threading;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+﻿using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.SafeHandles;

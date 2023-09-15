@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Runtime.InteropServices;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.Interop.Structs;

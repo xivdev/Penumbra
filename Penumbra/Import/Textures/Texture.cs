@@ -1,4 +1,3 @@
-using System;
 using ImGuiScene;
 using OtterTex;
 

@@ -1,7 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;

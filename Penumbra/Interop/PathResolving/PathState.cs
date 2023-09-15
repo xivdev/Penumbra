@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData;

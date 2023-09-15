@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Numerics;
-
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture

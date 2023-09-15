@@ -1,5 +1,3 @@
-using System;
-using System.Numerics;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Interface;
 using Dalamud.Plugin;

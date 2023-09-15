@@ -1,9 +1,4 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Filesystem;

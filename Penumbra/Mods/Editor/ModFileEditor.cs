@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;

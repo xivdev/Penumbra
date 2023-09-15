@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using System.IO;
-using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;

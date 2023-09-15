@@ -1,4 +1,3 @@
-using System;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Mods;

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Services;

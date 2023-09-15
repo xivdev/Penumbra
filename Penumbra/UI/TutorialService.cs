@@ -1,5 +1,3 @@
-using System;
-using System.Runtime.CompilerServices;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;

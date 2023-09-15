@@ -1,8 +1,6 @@
-using System;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
-using System.Collections.Generic;
 using Penumbra.Interop.Services;
 using Penumbra.String.Functions;
 

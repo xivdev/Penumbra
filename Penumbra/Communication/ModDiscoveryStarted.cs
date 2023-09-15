@@ -1,4 +1,3 @@
-using System;
 using OtterGui.Classes;
 
 namespace Penumbra.Communication;

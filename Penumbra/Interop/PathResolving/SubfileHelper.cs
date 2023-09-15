@@ -1,8 +1,4 @@
-using System;
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;

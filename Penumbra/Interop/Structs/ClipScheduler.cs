@@ -1,6 +1,3 @@
-using System;
-using System.Runtime.InteropServices;
-
 namespace Penumbra.Interop.Structs;
 
 [StructLayout( LayoutKind.Explicit )]
