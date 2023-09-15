@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Dalamud.Game;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
@@ -9,24 +8,24 @@ using Penumbra.Interop.SafeHandles;
 
 namespace Penumbra.Interop.MaterialPreview;
 
-public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
+public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
 {
     public const int TextureWidth  = 4;
-    public const int TextureHeight = MtrlFile.ColorSet.RowArray.NumRows;
+    public const int TextureHeight = MtrlFile.ColorTable.NumRows;
     public const int TextureLength = TextureWidth * TextureHeight * 4;
 
     private readonly Framework _framework;
 
-    private readonly Texture**         _colorSetTexture;
-    private readonly SafeTextureHandle _originalColorSetTexture;
+    private readonly Texture**         _colorTableTexture;
+    private readonly SafeTextureHandle _originalColorTableTexture;
 
-    private Half[] _colorSet;
+    private Half[] _colorTable;
     private bool   _updatePending;
 
-    public Half[] ColorSet
-        => _colorSet;
+    public Half[] ColorTable
+        => _colorTable;
 
-    public LiveColorSetPreviewer(IObjectTable objects, Framework framework, MaterialInfo materialInfo)
+    public LiveColorTablePreviewer(IObjectTable objects, Framework framework, MaterialInfo materialInfo)
         : base(objects, materialInfo)
     {
         _framework = framework;
@@ -35,17 +34,17 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
         if (mtrlHandle == null)
             throw new InvalidOperationException("Material doesn't have a resource handle");
 
-        var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorSetTextures;
+        var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorTableTextures;
         if (colorSetTextures == null)
-            throw new InvalidOperationException("Draw object doesn't have color set textures");
+            throw new InvalidOperationException("Draw object doesn't have color table textures");
 
-        _colorSetTexture = colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot);
+        _colorTableTexture = colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot);
 
-        _originalColorSetTexture = new SafeTextureHandle(*_colorSetTexture, true);
-        if (_originalColorSetTexture == null)
-            throw new InvalidOperationException("Material doesn't have a color set");
+        _originalColorTableTexture = new SafeTextureHandle(*_colorTableTexture, true);
+        if (_originalColorTableTexture == null)
+            throw new InvalidOperationException("Material doesn't have a color table");
 
-        _colorSet      = new Half[TextureLength];
+        _colorTable    = new Half[TextureLength];
         _updatePending = true;
 
         framework.Update += OnFrameworkUpdate;
@@ -58,9 +57,9 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
         base.Clear(disposing, reset);
 
         if (reset)
-            _originalColorSetTexture.Exchange(ref *(nint*)_colorSetTexture);
+            _originalColorTableTexture.Exchange(ref *(nint*)_colorTableTexture);
 
-        _originalColorSetTexture.Dispose();
+        _originalColorTableTexture.Dispose();
     }
 
     public void ScheduleUpdate()
@@ -87,16 +86,16 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
             return;
 
         bool success;
-        lock (_colorSet)
+        lock (_colorTable)
         {
-            fixed (Half* colorSet = _colorSet)
+            fixed (Half* colorTable = _colorTable)
             {
-                success = Structs.TextureUtility.InitializeContents(texture.Texture, colorSet);
+                success = Structs.TextureUtility.InitializeContents(texture.Texture, colorTable);
             }
         }
 
         if (success)
-            texture.Exchange(ref *(nint*)_colorSetTexture);
+            texture.Exchange(ref *(nint*)_colorTableTexture);
     }
 
     protected override bool IsStillValid()
@@ -104,11 +103,11 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
         if (!base.IsStillValid())
             return false;
 
-        var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorSetTextures;
+        var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorTableTextures;
         if (colorSetTextures == null)
             return false;
 
-        if (_colorSetTexture != colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot))
+        if (_colorTableTexture != colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot))
             return false;
 
         return true;

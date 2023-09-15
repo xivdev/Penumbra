@@ -25,7 +25,7 @@ public partial class ModEditWindow
         ret |= DrawMaterialShader(tab, disabled);
 
         ret |= DrawMaterialTextureChange(tab, disabled);
-        ret |= DrawMaterialColorSetChange(tab, disabled);
+        ret |= DrawMaterialColorTableChange(tab, disabled);
         ret |= DrawMaterialConstants(tab, disabled);
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
@@ -42,7 +42,7 @@ public partial class ModEditWindow
         if (ImGui.Button("Reload live preview"))
             tab.BindToMaterialInstances();
 
-        if (tab.MaterialPreviewers.Count != 0 || tab.ColorSetPreviewers.Count != 0)
+        if (tab.MaterialPreviewers.Count != 0 || tab.ColorTablePreviewers.Count != 0)
             return;
 
         ImGui.SameLine();
@@ -156,6 +156,13 @@ public partial class ModEditWindow
         {
             if (sets)
                 foreach (var set in file.UvSets)
+                    ImRaii.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
+        }
+
+        using (var sets = ImRaii.TreeNode("Color Sets", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            if (sets)
+                foreach (var set in file.ColorSets)
                     ImRaii.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
         }
 
