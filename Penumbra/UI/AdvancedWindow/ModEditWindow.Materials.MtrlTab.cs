@@ -67,7 +67,6 @@ public partial class ModEditWindow
         public readonly HashSet<int>  UnfoldedTextures = new(4);
         public readonly HashSet<uint> SamplerIds       = new(16);
         public          float         TextureLabelWidth;
-        public          bool          UseColorDyeSet;
 
         // Material Constants
         public readonly
@@ -75,10 +74,10 @@ public partial class ModEditWindow
                 Constants)> Constants = new(16);
 
         // Live-Previewers
-        public readonly List<LiveMaterialPreviewer> MaterialPreviewers     = new(4);
-        public readonly List<LiveColorSetPreviewer> ColorSetPreviewers     = new(4);
-        public          int                         HighlightedColorSetRow = -1;
-        public readonly Stopwatch                   HighlightTime          = new();
+        public readonly List<LiveMaterialPreviewer>   MaterialPreviewers       = new(4);
+        public readonly List<LiveColorTablePreviewer> ColorTablePreviewers     = new(4);
+        public          int                           HighlightedColorTableRow = -1;
+        public readonly Stopwatch                     HighlightTime            = new();
 
         public FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
         {
@@ -286,7 +285,7 @@ public partial class ModEditWindow
             if (AssociatedShpk == null)
             {
                 SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
-                if (Mtrl.ColorSets.Any(c => c.HasRows))
+                if (Mtrl.HasTable)
                     SamplerIds.Add(TableSamplerId);
 
                 foreach (var (sampler, index) in Mtrl.ShaderPackage.Samplers.WithIndex())
@@ -301,7 +300,7 @@ public partial class ModEditWindow
                 if (!ShadersKnown)
                 {
                     SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
-                    if (Mtrl.ColorSets.Any(c => c.HasRows))
+                    if (Mtrl.HasTable)
                         SamplerIds.Add(TableSamplerId);
                 }
 
@@ -320,7 +319,7 @@ public partial class ModEditWindow
                 }
 
                 if (SamplerIds.Contains(TableSamplerId))
-                    Mtrl.FindOrAddColorSet();
+                    Mtrl.HasTable = true;
             }
 
             Textures.Sort((x, y) => string.CompareOrdinal(x.Label, y.Label));
@@ -485,16 +484,14 @@ public partial class ModEditWindow
 
             UpdateMaterialPreview();
 
-            var colorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
-
-            if (!colorSet.HasValue)
+            if (!Mtrl.HasTable)
                 return;
 
             foreach (var materialInfo in instances)
             {
                 try
                 {
-                    ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, materialInfo));
+                    ColorTablePreviewers.Add(new LiveColorTablePreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, materialInfo));
                 }
                 catch (InvalidOperationException)
                 {
@@ -502,7 +499,7 @@ public partial class ModEditWindow
                 }
             }
 
-            UpdateColorSetPreview();
+            UpdateColorTablePreview();
         }
 
         private void UnbindFromMaterialInstances()
@@ -511,9 +508,9 @@ public partial class ModEditWindow
                 previewer.Dispose();
             MaterialPreviewers.Clear();
 
-            foreach (var previewer in ColorSetPreviewers)
+            foreach (var previewer in ColorTablePreviewers)
                 previewer.Dispose();
-            ColorSetPreviewers.Clear();
+            ColorTablePreviewers.Clear();
         }
 
         private unsafe void UnbindFromDrawObjectMaterialInstances(nint characterBase)
@@ -528,14 +525,14 @@ public partial class ModEditWindow
                 MaterialPreviewers.RemoveAt(i);
             }
 
-            for (var i = ColorSetPreviewers.Count; i-- > 0;)
+            for (var i = ColorTablePreviewers.Count; i-- > 0;)
             {
-                var previewer = ColorSetPreviewers[i];
+                var previewer = ColorTablePreviewers[i];
                 if ((nint)previewer.DrawObject != characterBase)
                     continue;
 
                 previewer.Dispose();
-                ColorSetPreviewers.RemoveAt(i);
+                ColorTablePreviewers.RemoveAt(i);
             }
         }
 
@@ -571,103 +568,94 @@ public partial class ModEditWindow
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
         }
 
-        public void HighlightColorSetRow(int rowIdx)
+        public void HighlightColorTableRow(int rowIdx)
         {
-            var oldRowIdx = HighlightedColorSetRow;
+            var oldRowIdx = HighlightedColorTableRow;
 
-            if (HighlightedColorSetRow != rowIdx)
+            if (HighlightedColorTableRow != rowIdx)
             {
-                HighlightedColorSetRow = rowIdx;
+                HighlightedColorTableRow = rowIdx;
                 HighlightTime.Restart();
             }
 
             if (oldRowIdx >= 0)
-                UpdateColorSetRowPreview(oldRowIdx);
+                UpdateColorTableRowPreview(oldRowIdx);
             if (rowIdx >= 0)
-                UpdateColorSetRowPreview(rowIdx);
+                UpdateColorTableRowPreview(rowIdx);
         }
 
-        public void CancelColorSetHighlight()
+        public void CancelColorTableHighlight()
         {
-            var rowIdx = HighlightedColorSetRow;
+            var rowIdx = HighlightedColorTableRow;
 
-            HighlightedColorSetRow = -1;
+            HighlightedColorTableRow = -1;
             HighlightTime.Reset();
 
             if (rowIdx >= 0)
-                UpdateColorSetRowPreview(rowIdx);
+                UpdateColorTableRowPreview(rowIdx);
         }
 
-        public void UpdateColorSetRowPreview(int rowIdx)
+        public void UpdateColorTableRowPreview(int rowIdx)
         {
-            if (ColorSetPreviewers.Count == 0)
+            if (ColorTablePreviewers.Count == 0)
                 return;
 
-            var maybeColorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
-            if (!maybeColorSet.HasValue)
+            if (!Mtrl.HasTable)
                 return;
 
-            var colorSet         = maybeColorSet.Value;
-            var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
-
-            var row = colorSet.Rows[rowIdx];
-            if (maybeColorDyeSet.HasValue && UseColorDyeSet)
+            var row = Mtrl.Table[rowIdx];
+            if (Mtrl.HasDyeTable)
             {
                 var stm = _edit._stainService.StmFile;
-                var dye = maybeColorDyeSet.Value.Rows[rowIdx];
+                var dye = Mtrl.DyeTable[rowIdx];
                 if (stm.TryGetValue(dye.Template, _edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
                     row.ApplyDyeTemplate(dye, dyes);
             }
 
-            if (HighlightedColorSetRow == rowIdx)
+            if (HighlightedColorTableRow == rowIdx)
                 ApplyHighlight(ref row, (float)HighlightTime.Elapsed.TotalSeconds);
 
-            foreach (var previewer in ColorSetPreviewers)
+            foreach (var previewer in ColorTablePreviewers)
             {
-                row.AsHalves().CopyTo(previewer.ColorSet.AsSpan()
-                    .Slice(LiveColorSetPreviewer.TextureWidth * 4 * rowIdx, LiveColorSetPreviewer.TextureWidth * 4));
+                row.AsHalves().CopyTo(previewer.ColorTable.AsSpan()
+                    .Slice(LiveColorTablePreviewer.TextureWidth * 4 * rowIdx, LiveColorTablePreviewer.TextureWidth * 4));
                 previewer.ScheduleUpdate();
             }
         }
 
-        public void UpdateColorSetPreview()
+        public void UpdateColorTablePreview()
         {
-            if (ColorSetPreviewers.Count == 0)
+            if (ColorTablePreviewers.Count == 0)
                 return;
 
-            var maybeColorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
-            if (!maybeColorSet.HasValue)
+            if (!Mtrl.HasTable)
                 return;
 
-            var colorSet         = maybeColorSet.Value;
-            var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
-
-            var rows = colorSet.Rows;
-            if (maybeColorDyeSet.HasValue && UseColorDyeSet)
+            var rows = Mtrl.Table;
+            if (Mtrl.HasDyeTable)
             {
                 var stm         = _edit._stainService.StmFile;
                 var stainId     = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
-                var colorDyeSet = maybeColorDyeSet.Value;
-                for (var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i)
+                for (var i = 0; i < MtrlFile.ColorTable.NumRows; ++i)
                 {
                     ref var row = ref rows[i];
-                    var     dye = colorDyeSet.Rows[i];
+                    var     dye = Mtrl.DyeTable[i];
                     if (stm.TryGetValue(dye.Template, stainId, out var dyes))
                         row.ApplyDyeTemplate(dye, dyes);
                 }
             }
 
-            if (HighlightedColorSetRow >= 0)
-                ApplyHighlight(ref rows[HighlightedColorSetRow], (float)HighlightTime.Elapsed.TotalSeconds);
+            if (HighlightedColorTableRow >= 0)
+                ApplyHighlight(ref rows[HighlightedColorTableRow], (float)HighlightTime.Elapsed.TotalSeconds);
 
-            foreach (var previewer in ColorSetPreviewers)
+            foreach (var previewer in ColorTablePreviewers)
             {
-                rows.AsHalves().CopyTo(previewer.ColorSet);
+                rows.AsHalves().CopyTo(previewer.ColorTable);
                 previewer.ScheduleUpdate();
             }
         }
 
-        private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, float time)
+        private static void ApplyHighlight(ref MtrlFile.ColorTable.Row row, float time)
         {
             var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
             var baseColor = ColorId.InGameHighlight.Value();
@@ -691,7 +679,6 @@ public partial class ModEditWindow
             Mtrl                 = file;
             FilePath             = filePath;
             Writable             = writable;
-            UseColorDyeSet       = file.ColorDyeSets.Length > 0;
             AssociatedBaseDevkit = TryLoadShpkDevkit("_base", out LoadedBaseDevkitPathName);
             LoadShpk(FindAssociatedShpk(out _, out _));
             if (writable)
@@ -714,7 +701,7 @@ public partial class ModEditWindow
         public byte[] Write()
         {
             var output = Mtrl.Clone();
-            output.GarbageCollect(AssociatedShpk, SamplerIds, UseColorDyeSet);
+            output.GarbageCollect(AssociatedShpk, SamplerIds);
 
             return output.Write();
         }

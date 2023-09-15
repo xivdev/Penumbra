@@ -11,5 +11,5 @@ public unsafe struct CharacterBaseExt
     public CharacterBase CharacterBase;
 
     [FieldOffset( 0x258 )]
-    public Texture** ColorSetTextures;
+    public Texture** ColorTableTextures;
 }
