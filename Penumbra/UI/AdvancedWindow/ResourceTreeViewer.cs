@@ -40,8 +40,6 @@ public class ResourceTreeViewer
         if (!child)
             return;
 
-        var textColorNonPlayer = ImGui.GetColorU32(ImGuiCol.Text);
-        var textColorPlayer    = (textColorNonPlayer & 0xFF000000u) | ((textColorNonPlayer & 0x00FEFEFE) >> 1) | 0x8000u; // Half green
         if (!_task.IsCompleted)
         {
             ImGui.NewLine();
@@ -55,17 +53,30 @@ public class ResourceTreeViewer
         }
         else if (_task.IsCompletedSuccessfully)
         {
+            var debugMode = _config.DebugMode;
             foreach (var (tree, index) in _task.Result.WithIndex())
             {
-                using (var c = ImRaii.PushColor(ImGuiCol.Text, tree.PlayerRelated ? textColorPlayer : textColorNonPlayer))
+                var headerColorId =
+                    tree.LocalPlayerRelated ? ColorId.ResTreeLocalPlayer :
+                    tree.PlayerRelated      ? ColorId.ResTreePlayer :
+                    tree.Networked          ? ColorId.ResTreeNetworked :
+                    ColorId.ResTreeNonNetworked;
+                using (var c = ImRaii.PushColor(ImGuiCol.Text, headerColorId.Value()))
                 {
-                    if (!ImGui.CollapsingHeader($"{tree.Name}##{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                    var isOpen = ImGui.CollapsingHeader($"{tree.Name}##{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
+                    if (debugMode)
+                    {
+                        using var _ = ImRaii.PushFont(UiBuilder.MonoFont);
+                        ImGuiUtil.HoverTooltip(
+                            $"Object Index:        {tree.GameObjectIndex}\nObject Address:      0x{tree.GameObjectAddress:X16}\nDraw Object Address: 0x{tree.DrawObjectAddress:X16}");
+                    }
+                    if (!isOpen)
                         continue;
                 }
 
                 using var id = ImRaii.PushId(index);
 
-                ImGui.Text($"Collection: {tree.CollectionName}");
+                ImGui.TextUnformatted($"Collection: {tree.CollectionName}");
 
                 using var table = ImRaii.Table("##ResourceTree", _actionCapacity > 0 ? 4 : 3,
                     ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
@@ -90,7 +101,9 @@ public class ResourceTreeViewer
         {
             try
             {
-                return _treeFactory.FromObjectTable();
+                return _treeFactory.FromObjectTable()
+                    .Select(entry => entry.ResourceTree)
+                    .ToArray();
             }
             finally
             {

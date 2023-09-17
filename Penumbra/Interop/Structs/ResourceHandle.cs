@@ -1,8 +1,8 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Api.Enums;
 using Penumbra.GameData;
-using Penumbra.GameData.Enums;
 using Penumbra.String;
 using Penumbra.String.Classes;
 

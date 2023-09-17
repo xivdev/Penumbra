@@ -12,9 +12,12 @@ namespace Penumbra.Interop.ResourceTree;
 public class ResourceTree
 {
     public readonly string                Name;
+    public readonly int                   GameObjectIndex;
     public readonly nint                  GameObjectAddress;
     public readonly nint                  DrawObjectAddress;
+    public readonly bool                  LocalPlayerRelated;
     public readonly bool                  PlayerRelated;
+    public readonly bool                  Networked;
     public readonly string                CollectionName;
     public readonly List<ResourceNode>    Nodes;
     public readonly HashSet<ResourceNode> FlatNodes;
@@ -23,15 +26,18 @@ public class ResourceTree
     public CustomizeData CustomizeData;
     public GenderRace    RaceCode;
 
-    public ResourceTree(string name, nint gameObjectAddress, nint drawObjectAddress, bool playerRelated, string collectionName)
+    public ResourceTree(string name, int gameObjectIndex, nint gameObjectAddress, nint drawObjectAddress, bool localPlayerRelated, bool playerRelated, bool networked, string collectionName)
     {
-        Name              = name;
-        GameObjectAddress = gameObjectAddress;
-        DrawObjectAddress = drawObjectAddress;
-        PlayerRelated     = playerRelated;
-        CollectionName    = collectionName;
-        Nodes             = new List<ResourceNode>();
-        FlatNodes         = new HashSet<ResourceNode>();
+        Name               = name;
+        GameObjectIndex    = gameObjectIndex;
+        GameObjectAddress  = gameObjectAddress;
+        DrawObjectAddress  = drawObjectAddress;
+        LocalPlayerRelated = localPlayerRelated;
+        Networked          = networked;
+        PlayerRelated      = playerRelated;
+        CollectionName     = collectionName;
+        Nodes              = new List<ResourceNode>();
+        FlatNodes          = new HashSet<ResourceNode>();
     }
 
     internal unsafe void LoadResources(GlobalResolveContext globalContext)
@@ -64,7 +70,7 @@ public class ResourceTree
 
         AddSkeleton(Nodes, globalContext.CreateContext(EquipSlot.Unknown, default), model->Skeleton);
 
-        if (character->GameObject.GetObjectKind() == (byte)ObjectKind.Pc)
+        if (model->GetModelType() == CharacterBase.ModelType.Human)
             AddHumanResources(globalContext, (HumanExt*)model);
     }
 

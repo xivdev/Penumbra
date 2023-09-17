@@ -1,6 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;

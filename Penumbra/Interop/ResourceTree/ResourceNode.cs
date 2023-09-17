@@ -1,4 +1,4 @@
-using Penumbra.GameData.Enums;
+using Penumbra.Api.Enums;
 using Penumbra.String.Classes;
 using ChangedItemIcon = Penumbra.UI.ChangedItemDrawer.ChangedItemIcon;
 
