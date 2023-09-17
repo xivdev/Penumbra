@@ -3,8 +3,8 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
+using Penumbra.Api.Enums;
 using Penumbra.GameData;
-using Penumbra.GameData.Enums;
 
 namespace Penumbra.Interop.ResourceLoading;
 

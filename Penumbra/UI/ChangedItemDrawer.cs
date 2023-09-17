@@ -15,6 +15,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
+using ApiChangedItemIcon = Penumbra.Api.Enums.ChangedItemIcon;
 
 namespace Penumbra.UI;
 
@@ -309,6 +310,29 @@ public class ChangedItemDrawer : IDisposable
             ChangedItemIcon.Mainhand      => "Weapon (Mainhand)",
             ChangedItemIcon.Offhand       => "Weapon (Offhand)",
             _                             => "Other",
+        };
+
+    internal static ApiChangedItemIcon ToApiIcon(ChangedItemIcon icon)
+        => icon switch
+        {
+            ChangedItemIcon.Head          => ApiChangedItemIcon.Head,
+            ChangedItemIcon.Body          => ApiChangedItemIcon.Body,
+            ChangedItemIcon.Hands         => ApiChangedItemIcon.Hands,
+            ChangedItemIcon.Legs          => ApiChangedItemIcon.Legs,
+            ChangedItemIcon.Feet          => ApiChangedItemIcon.Feet,
+            ChangedItemIcon.Ears          => ApiChangedItemIcon.Ears,
+            ChangedItemIcon.Neck          => ApiChangedItemIcon.Neck,
+            ChangedItemIcon.Wrists        => ApiChangedItemIcon.Wrists,
+            ChangedItemIcon.Finger        => ApiChangedItemIcon.Finger,
+            ChangedItemIcon.Monster       => ApiChangedItemIcon.Monster,
+            ChangedItemIcon.Demihuman     => ApiChangedItemIcon.Demihuman,
+            ChangedItemIcon.Customization => ApiChangedItemIcon.Customization,
+            ChangedItemIcon.Action        => ApiChangedItemIcon.Action,
+            ChangedItemIcon.Emote         => ApiChangedItemIcon.Emote,
+            ChangedItemIcon.Mainhand      => ApiChangedItemIcon.Mainhand,
+            ChangedItemIcon.Offhand       => ApiChangedItemIcon.Offhand,
+            ChangedItemIcon.Unknown       => ApiChangedItemIcon.Unknown,
+            _                             => ApiChangedItemIcon.None,
         };
 
     /// <summary> Apply Changed Item Counters to the Name if necessary. </summary>

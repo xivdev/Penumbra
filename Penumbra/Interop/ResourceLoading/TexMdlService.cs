@@ -1,8 +1,8 @@
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using Penumbra.Api.Enums;
 using Penumbra.GameData;
-using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceLoading;

@@ -1,3 +1,4 @@
+using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;

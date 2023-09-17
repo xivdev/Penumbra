@@ -1,6 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;

@@ -1,6 +1,8 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Files;
+using Penumbra.Interop.Services;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -8,18 +10,38 @@ namespace Penumbra.Interop.ResourceTree;
 internal class TreeBuildCache
 {
     private readonly IDataManager                    _dataManager;
+    private readonly ActorService                    _actors;
     private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = new();
+    private readonly uint                            _localPlayerId;
     public readonly  List<Character>                 Characters;
     public readonly  Dictionary<uint, Character>     CharactersById;
 
-    public TreeBuildCache(IObjectTable objects, IDataManager dataManager)
+    public TreeBuildCache(IObjectTable objects, IDataManager dataManager, ActorService actors)
     {
-        _dataManager = dataManager;
-        Characters   = objects.Where(c => c is Character ch && ch.IsValid()).Cast<Character>().ToList();
+        _dataManager   = dataManager;
+        _actors        = actors;
+        Characters     = objects.OfType<Character>().Where(ch => ch.IsValid()).ToList();
         CharactersById = Characters
             .Where(c => c.ObjectId != GameObject.InvalidGameObjectId)
             .GroupBy(c => c.ObjectId)
             .ToDictionary(c => c.Key, c => c.First());
+        _localPlayerId = Characters.Count > 0 && Characters[0].ObjectIndex == 0 ? Characters[0].ObjectId : GameObject.InvalidGameObjectId;
+    }
+
+    public unsafe bool IsLocalPlayerRelated(Character character)
+    {
+        if (_localPlayerId == GameObject.InvalidGameObjectId)
+            return false;
+
+        // Index 0 is the local player, index 1 is the mount/minion/accessory.
+        if (character.ObjectIndex < 2 || character.ObjectIndex == RedrawService.GPosePlayerIdx)
+            return true;
+
+        if (!_actors.AwaitedService.FromObject(character, out var owner, true, false, false).IsValid)
+            return false;
+
+        // Check for SMN/SCH pet, chocobo and other owned NPCs.
+        return owner != null && owner->ObjectID == _localPlayerId;
     }
 
     /// <summary> Try to read a shpk file from the given path and cache it on success. </summary>

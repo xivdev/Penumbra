@@ -27,21 +27,35 @@ public class ResourceTreeFactory
         _actors             = actors;
     }
 
-    public ResourceTree[] FromObjectTable(bool withNames = true, bool redactExternalPaths = true)
-    {
-        var cache = new TreeBuildCache(_objects, _gameData);
+    private TreeBuildCache CreateTreeBuildCache()
+        => new(_objects, _gameData, _actors);
 
-        return cache.Characters
-            .Select(c => FromCharacter(c, cache, withNames, redactExternalPaths))
-            .OfType<ResourceTree>()
-            .ToArray();
+    public IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> GetLocalPlayerRelatedCharacters()
+    {
+        var cache = CreateTreeBuildCache();
+
+        return cache.Characters.Where(cache.IsLocalPlayerRelated);
+    }
+
+    public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromObjectTable(
+        bool localPlayerRelatedOnly = false, bool withUIData = true, bool redactExternalPaths = true)
+    {
+        var cache      = CreateTreeBuildCache();
+        var characters = localPlayerRelatedOnly ? cache.Characters.Where(cache.IsLocalPlayerRelated) : cache.Characters;
+
+        foreach (var character in characters)
+        {
+            var tree = FromCharacter(character, cache, withUIData, redactExternalPaths);
+            if (tree != null)
+                yield return (character, tree);
+        }
     }
 
     public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromCharacters(
         IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters,
         bool withUIData = true, bool redactExternalPaths = true)
     {
-        var cache = new TreeBuildCache(_objects, _gameData);
+        var cache = CreateTreeBuildCache();
         foreach (var character in characters)
         {
             var tree = FromCharacter(character, cache, withUIData, redactExternalPaths);
@@ -52,7 +66,7 @@ public class ResourceTreeFactory
 
     public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, bool withUIData = true,
         bool redactExternalPaths = true)
-        => FromCharacter(character, new TreeBuildCache(_objects, _gameData), withUIData, redactExternalPaths);
+        => FromCharacter(character, CreateTreeBuildCache(), withUIData, redactExternalPaths);
 
     private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache,
         bool withUIData = true, bool redactExternalPaths = true)
@@ -69,8 +83,10 @@ public class ResourceTreeFactory
         if (!collectionResolveData.Valid)
             return null;
 
-        var (name, related) = GetCharacterName(character, cache);
-        var tree = new ResourceTree(name, (nint)gameObjStruct, (nint)drawObjStruct, related, collectionResolveData.ModCollection.Name);
+        var localPlayerRelated = cache.IsLocalPlayerRelated(character);
+        var (name, related)    = GetCharacterName(character, cache);
+        var networked          = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
+        var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related, networked, collectionResolveData.ModCollection.Name);
         var globalContext = new GlobalResolveContext(_config, _identifier.AwaitedService, cache, collectionResolveData.ModCollection,
             ((Character*)gameObjStruct)->CharacterData.ModelCharaId, withUIData, redactExternalPaths);
         tree.LoadResources(globalContext);

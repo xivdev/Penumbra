@@ -1,8 +1,8 @@
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
