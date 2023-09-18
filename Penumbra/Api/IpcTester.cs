@@ -1408,10 +1408,9 @@ public class IpcTester : IDisposable
         private readonly DalamudPluginInterface _pi;
         private readonly IObjectTable           _objects;
 
-        private string       _gameObjectIndices   = "0";
-        private bool         _mergeSameCollection = false;
-        private ResourceType _type                = ResourceType.Mtrl;
-        private bool         _withUIData          = false;
+        private string       _gameObjectIndices = "0";
+        private ResourceType _type              = ResourceType.Mtrl;
+        private bool         _withUIData        = false;
 
         private (string, IReadOnlyDictionary<string, string[]>?)[]?                        _lastGameObjectResourcePaths;
         private (string, IReadOnlyDictionary<string, string[]>?)[]?                        _lastPlayerResourcePaths;
@@ -1431,7 +1430,6 @@ public class IpcTester : IDisposable
                 return;
 
             ImGui.InputText("GameObject indices", ref _gameObjectIndices, 511);
-            ImGui.Checkbox("Merge entries that use the same collection", ref _mergeSameCollection);
             ImGuiUtil.GenericEnumCombo("Resource type", ImGui.CalcItemWidth(), _type, out _type, Enum.GetValues<ResourceType>());
             ImGui.Checkbox("Also get names and icons", ref _withUIData);
 
@@ -1443,7 +1441,7 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourcePaths"))
             {
                 var gameObjects   = GetSelectedGameObjects();
-                var resourcePaths = Ipc.GetGameObjectResourcePaths.Subscriber(_pi).Invoke(gameObjects, _mergeSameCollection);
+                var resourcePaths = Ipc.GetGameObjectResourcePaths.Subscriber(_pi).Invoke(gameObjects);
 
                 _lastGameObjectResourcePaths = gameObjects
                     .Select(GameObjectToString)
@@ -1456,7 +1454,7 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcePaths.Label, "Get local player resource paths");
             if (ImGui.Button("Get##PlayerResourcePaths"))
             {
-                _lastPlayerResourcePaths = Ipc.GetPlayerResourcePaths.Subscriber(_pi).Invoke(_mergeSameCollection)
+                _lastPlayerResourcePaths = Ipc.GetPlayerResourcePaths.Subscriber(_pi).Invoke()
                     .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<string, string[]>?)pair.Value))
                     .ToArray();
 

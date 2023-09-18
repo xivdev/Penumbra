@@ -6,37 +6,7 @@ namespace Penumbra.Interop.ResourceTree;
 
 internal static class ResourceTreeApiHelper
 {
-    public static Dictionary<ushort, IReadOnlyDictionary<string, string[]>> GetResourcePathDictionaries(IEnumerable<(Character, ResourceTree)> resourceTrees,
-        bool mergeSameCollection)
-        => mergeSameCollection ? GetResourcePathDictionariesMerged(resourceTrees) : GetResourcePathDictionariesUnmerged(resourceTrees);
-
-    private static Dictionary<ushort, IReadOnlyDictionary<string, string[]>> GetResourcePathDictionariesMerged(IEnumerable<(Character, ResourceTree)> resourceTrees)
-    {
-        var collections = new Dictionary<ushort, string>(4);
-        var pathDictionaries = new Dictionary<string, Dictionary<string, HashSet<string>>>(4);
-
-        foreach (var (gameObject, resourceTree) in resourceTrees)
-        {
-            if (collections.ContainsKey(gameObject.ObjectIndex))
-                continue;
-
-            collections.Add(gameObject.ObjectIndex, resourceTree.CollectionName);
-            if (!pathDictionaries.TryGetValue(resourceTree.CollectionName, out var pathDictionary))
-            {
-                pathDictionary = new();
-                pathDictionaries.Add(resourceTree.CollectionName, pathDictionary);
-            }
-
-            CollectResourcePaths(pathDictionary, resourceTree);
-        }
-
-        var pathRODictionaries = pathDictionaries.ToDictionary(pair => pair.Key,
-            pair => (IReadOnlyDictionary<string, string[]>)pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()).AsReadOnly());
-
-        return collections.ToDictionary(pair => pair.Key, pair => pathRODictionaries[pair.Value]);
-    }
-
-    private static Dictionary<ushort, IReadOnlyDictionary<string, string[]>> GetResourcePathDictionariesUnmerged(IEnumerable<(Character, ResourceTree)> resourceTrees)
+    public static Dictionary<ushort, IReadOnlyDictionary<string, string[]>> GetResourcePathDictionaries(IEnumerable<(Character, ResourceTree)> resourceTrees)
     {
         var pathDictionaries = new Dictionary<ushort, Dictionary<string, HashSet<string>>>(4);
 

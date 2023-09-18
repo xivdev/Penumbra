@@ -1016,19 +1016,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         };
     // @formatter:on
 
-    public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects, bool mergeSameCollection)
+    public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects)
     {
         var characters       = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
         var resourceTrees    = _resourceTreeFactory.FromCharacters(characters, false, false);
-        var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees, mergeSameCollection);
+        var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
         return Array.ConvertAll(gameObjects, obj => pathDictionaries.TryGetValue(obj, out var pathDict) ? pathDict : null);
     }
 
-    public IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>> GetPlayerResourcePaths(bool mergeSameCollection)
+    public IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>> GetPlayerResourcePaths()
     {
         var resourceTrees    = _resourceTreeFactory.FromObjectTable(true, false, false);
-        var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees, mergeSameCollection);
+        var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
         return pathDictionaries.AsReadOnly();
     }
