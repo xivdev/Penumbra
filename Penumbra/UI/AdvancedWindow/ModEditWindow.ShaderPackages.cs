@@ -489,16 +489,22 @@ public partial class ModEditWindow
                 continue;
 
             foreach (var (key, keyIdx) in node.SystemKeys.WithIndex())
+            {
                 ImRaii.TreeNode($"System Key 0x{tab.Shpk.SystemKeys[keyIdx].Id:X8} = 0x{key:X8}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            }
 
             foreach (var (key, keyIdx) in node.SceneKeys.WithIndex())
+            {
                 ImRaii.TreeNode($"Scene Key 0x{tab.Shpk.SceneKeys[keyIdx].Id:X8} = 0x{key:X8}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            }
 
             foreach (var (key, keyIdx) in node.MaterialKeys.WithIndex())
+            {
                 ImRaii.TreeNode($"Material Key 0x{tab.Shpk.MaterialKeys[keyIdx].Id:X8} = 0x{key:X8}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            }
 
             foreach (var (key, keyIdx) in node.SubViewKeys.WithIndex())
                 ImRaii.TreeNode($"Sub-View Key #{keyIdx} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
@@ -530,8 +536,10 @@ public partial class ModEditWindow
         {
             using var font = ImRaii.PushFont(UiBuilder.MonoFont);
             foreach (var selector in tab.Shpk.NodeSelectors)
+            {
                 ImRaii.TreeNode($"#{selector.Value:D4}: Selector: 0x{selector.Key:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet)
                     .Dispose();
+            }
         }
     }
 

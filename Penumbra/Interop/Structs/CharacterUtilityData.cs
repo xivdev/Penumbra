@@ -2,23 +2,23 @@ using Penumbra.GameData.Enums;
 
 namespace Penumbra.Interop.Structs;
 
-[StructLayout( LayoutKind.Explicit )]
+[StructLayout(LayoutKind.Explicit)]
 public unsafe struct CharacterUtilityData
 {
     public const int IndexTransparentTex = 72;
     public const int IndexDecalTex       = 73;
     public const int IndexSkinShpk       = 76;
 
-    public static readonly MetaIndex[] EqdpIndices = Enum.GetNames< MetaIndex >()
-       .Zip( Enum.GetValues< MetaIndex >() )
-       .Where( n => n.First.StartsWith( "Eqdp" ) )
-       .Select( n => n.Second ).ToArray();
+    public static readonly MetaIndex[] EqdpIndices = Enum.GetNames<MetaIndex>()
+        .Zip(Enum.GetValues<MetaIndex>())
+        .Where(n => n.First.StartsWith("Eqdp"))
+        .Select(n => n.Second).ToArray();
 
     public const int TotalNumResources = 87;
 
     /// <summary> Obtain the index for the eqdp file corresponding to the given race code and accessory. </summary>
-    public static MetaIndex EqdpIdx( GenderRace raceCode, bool accessory )
-        => +( int )raceCode switch
+    public static MetaIndex EqdpIdx(GenderRace raceCode, bool accessory)
+        => +(int)raceCode switch
         {
             0101 => accessory ? MetaIndex.Eqdp0101Acc : MetaIndex.Eqdp0101,
             0201 => accessory ? MetaIndex.Eqdp0201Acc : MetaIndex.Eqdp0201,
@@ -48,52 +48,52 @@ public unsafe struct CharacterUtilityData
             1404 => accessory ? MetaIndex.Eqdp1404Acc : MetaIndex.Eqdp1404,
             9104 => accessory ? MetaIndex.Eqdp9104Acc : MetaIndex.Eqdp9104,
             9204 => accessory ? MetaIndex.Eqdp9204Acc : MetaIndex.Eqdp9204,
-            _    => ( MetaIndex )( -1 ),
+            _    => (MetaIndex)(-1),
         };
 
-    [FieldOffset( 0 )]
+    [FieldOffset(0)]
     public void* VTable;
 
-    [FieldOffset( 8 )]
+    [FieldOffset(8)]
     public fixed ulong Resources[TotalNumResources];
 
-    [FieldOffset( 8 + ( int )MetaIndex.Eqp * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.Eqp * 8)]
     public ResourceHandle* EqpResource;
 
-    [FieldOffset( 8 + ( int )MetaIndex.Gmp * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.Gmp * 8)]
     public ResourceHandle* GmpResource;
 
-    public ResourceHandle* Resource( int idx )
-        => ( ResourceHandle* )Resources[ idx ];
+    public ResourceHandle* Resource(int idx)
+        => (ResourceHandle*)Resources[idx];
 
-    public ResourceHandle* Resource( MetaIndex idx )
-        => Resource( ( int )idx );
+    public ResourceHandle* Resource(MetaIndex idx)
+        => Resource((int)idx);
 
-    public ResourceHandle* EqdpResource( GenderRace raceCode, bool accessory )
-        => Resource( ( int )EqdpIdx( raceCode, accessory ) );
+    public ResourceHandle* EqdpResource(GenderRace raceCode, bool accessory)
+        => Resource((int)EqdpIdx(raceCode, accessory));
 
-    [FieldOffset( 8 + ( int )MetaIndex.HumanCmp * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.HumanCmp * 8)]
     public ResourceHandle* HumanCmpResource;
 
-    [FieldOffset( 8 + ( int )MetaIndex.FaceEst * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.FaceEst * 8)]
     public ResourceHandle* FaceEstResource;
 
-    [FieldOffset( 8 + ( int )MetaIndex.HairEst * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.HairEst * 8)]
     public ResourceHandle* HairEstResource;
 
-    [FieldOffset( 8 + ( int )MetaIndex.BodyEst * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.BodyEst * 8)]
     public ResourceHandle* BodyEstResource;
 
-    [FieldOffset( 8 + ( int )MetaIndex.HeadEst * 8 )]
+    [FieldOffset(8 + (int)MetaIndex.HeadEst * 8)]
     public ResourceHandle* HeadEstResource;
 
-    [FieldOffset( 8 + IndexTransparentTex * 8 )]
+    [FieldOffset(8 + IndexTransparentTex * 8)]
     public TextureResourceHandle* TransparentTexResource;
 
-    [FieldOffset( 8 + IndexDecalTex * 8 )]
+    [FieldOffset(8 + IndexDecalTex * 8)]
     public TextureResourceHandle* DecalTexResource;
 
-    [FieldOffset( 8 + IndexSkinShpk * 8 )]
+    [FieldOffset(8 + IndexSkinShpk * 8)]
     public ResourceHandle* SkinShpkResource;
 
     // not included resources have no known use case.

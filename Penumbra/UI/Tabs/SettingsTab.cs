@@ -703,12 +703,13 @@ public class SettingsTab : ITab
         if (_compactor.MassCompactRunning)
         {
             ImGui.ProgressBar((float)_compactor.CurrentIndex / _compactor.TotalFiles,
-                new Vector2(ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X, ImGui.GetFrameHeight()),
+                new Vector2(ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X,
+                    ImGui.GetFrameHeight()),
                 _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
             ImGui.SameLine();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Ban.ToIconString(), UiHelpers.IconButtonSize, "Cancel the mass action.",
                     !_compactor.MassCompactRunning, true))
-            _compactor.CancelMassCompact();
+                _compactor.CancelMassCompact();
         }
         else
         {

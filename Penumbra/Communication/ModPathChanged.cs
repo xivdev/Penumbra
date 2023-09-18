@@ -30,7 +30,7 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         /// <seealso cref="Mods.Manager.ModExportManager.OnModPathChange"/>
         ModExportManager = 0,
 
-        /// <seealso cref="Mods.ModFileSystem.OnModPathChange"/>
+        /// <seealso cref="Mods.Manager.ModFileSystem.OnModPathChange"/>
         ModFileSystem = 0,
 
         /// <seealso cref="Mods.Manager.ModManager.OnModPathChange"/>
@@ -48,6 +48,7 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeRemoval"/>
         CollectionCacheManagerRemoval = 100,
     }
+
     public ModPathChanged()
         : base(nameof(ModPathChanged))
     { }

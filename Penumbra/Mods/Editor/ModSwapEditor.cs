@@ -1,11 +1,12 @@
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
 public class ModSwapEditor
 {
-    private readonly ModManager                        _modManager;
+    private readonly ModManager                         _modManager;
     private readonly Dictionary<Utf8GamePath, FullPath> _swaps = new();
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> Swaps

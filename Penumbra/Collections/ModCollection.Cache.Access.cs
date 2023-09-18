@@ -92,7 +92,7 @@ public partial class ModCollection
     // Used for short periods of changed files.
     public MetaList.MetaReverter TemporarilySetEqdpFile(CharacterUtility utility, GenderRace genderRace, bool accessory)
         => _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory)
-         ?? utility.TemporarilyResetResource(Interop.Structs.CharacterUtilityData.EqdpIdx(genderRace, accessory));
+         ?? utility.TemporarilyResetResource(CharacterUtilityData.EqdpIdx(genderRace, accessory));
 
     public MetaList.MetaReverter TemporarilySetEqpFile(CharacterUtility utility)
         => _cache?.Meta.TemporarilySetEqpFile()

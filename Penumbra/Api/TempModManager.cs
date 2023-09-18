@@ -25,7 +25,7 @@ public class TempModManager : IDisposable
 
     public TempModManager(CommunicatorService communicator)
     {
-        _communicator                        =  communicator;
+        _communicator = communicator;
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.TempModManager);
     }
 

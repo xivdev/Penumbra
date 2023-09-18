@@ -10,7 +10,7 @@ namespace Penumbra.Interop.PathResolving;
 
 public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>
 {
-    private readonly IObjectTable      _objects;
+    private readonly IObjectTable     _objects;
     private readonly GameEventManager _gameEvents;
 
     private readonly Dictionary<nint, (nint GameObject, bool IsChild)> _drawObjectToGameObject = new();
@@ -72,7 +72,7 @@ public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, boo
     private unsafe void OnWeaponReloaded(nint _, nint gameObject)
     {
         _lastGameObject.Value!.Dequeue();
-        IterateDrawObjectTree((Object*) ((GameObject*) gameObject)->DrawObject, gameObject, false, false);
+        IterateDrawObjectTree((Object*)((GameObject*)gameObject)->DrawObject, gameObject, false, false);
     }
 
     private void OnCharacterBaseDestructor(nint characterBase)

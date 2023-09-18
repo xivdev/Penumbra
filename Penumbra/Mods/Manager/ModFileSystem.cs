@@ -2,11 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
-using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.Util;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Manager;
 
 public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 {

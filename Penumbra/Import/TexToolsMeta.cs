@@ -22,65 +22,63 @@ public partial class TexToolsMeta
     public static readonly TexToolsMeta Invalid = new(null!, string.Empty, 0);
 
     // The info class determines the files or table locations the changes need to apply to from the filename.
-    public readonly  uint                     Version;
-    public readonly  string                   FilePath;
-    public readonly  List< MetaManipulation > MetaManipulations = new();
-    private readonly bool                     _keepDefault      = false;
+    public readonly  uint                   Version;
+    public readonly  string                 FilePath;
+    public readonly  List<MetaManipulation> MetaManipulations = new();
+    private readonly bool                   _keepDefault      = false;
 
     private readonly MetaFileManager _metaFileManager;
 
-    public TexToolsMeta( MetaFileManager metaFileManager, IGamePathParser parser, byte[] data, bool keepDefault )
+    public TexToolsMeta(MetaFileManager metaFileManager, IGamePathParser parser, byte[] data, bool keepDefault)
     {
         _metaFileManager = metaFileManager;
-        _keepDefault = keepDefault;
+        _keepDefault     = keepDefault;
         try
         {
-            using var reader = new BinaryReader( new MemoryStream( data ) );
+            using var reader = new BinaryReader(new MemoryStream(data));
             Version  = reader.ReadUInt32();
-            FilePath = ReadNullTerminated( reader );
-            var metaInfo    = new MetaFileInfo( parser, FilePath );
+            FilePath = ReadNullTerminated(reader);
+            var metaInfo    = new MetaFileInfo(parser, FilePath);
             var numHeaders  = reader.ReadUInt32();
             var headerSize  = reader.ReadUInt32();
             var headerStart = reader.ReadUInt32();
-            reader.BaseStream.Seek( headerStart, SeekOrigin.Begin );
+            reader.BaseStream.Seek(headerStart, SeekOrigin.Begin);
 
-            List< (MetaManipulation.Type type, uint offset, int size) > entries = new();
-            for( var i = 0; i < numHeaders; ++i )
+            List<(MetaManipulation.Type type, uint offset, int size)> entries = new();
+            for (var i = 0; i < numHeaders; ++i)
             {
                 var currentOffset = reader.BaseStream.Position;
-                var type          = ( MetaManipulation.Type )reader.ReadUInt32();
+                var type          = (MetaManipulation.Type)reader.ReadUInt32();
                 var offset        = reader.ReadUInt32();
                 var size          = reader.ReadInt32();
-                entries.Add( ( type, offset, size ) );
-                reader.BaseStream.Seek( currentOffset + headerSize, SeekOrigin.Begin );
+                entries.Add((type, offset, size));
+                reader.BaseStream.Seek(currentOffset + headerSize, SeekOrigin.Begin);
             }
 
-            byte[]? ReadEntry( MetaManipulation.Type type )
+            byte[]? ReadEntry(MetaManipulation.Type type)
             {
-                var idx = entries.FindIndex( t => t.type == type );
-                if( idx < 0 )
-                {
+                var idx = entries.FindIndex(t => t.type == type);
+                if (idx < 0)
                     return null;
-                }
 
-                reader.BaseStream.Seek( entries[ idx ].offset, SeekOrigin.Begin );
-                return reader.ReadBytes( entries[ idx ].size );
+                reader.BaseStream.Seek(entries[idx].offset, SeekOrigin.Begin);
+                return reader.ReadBytes(entries[idx].size);
             }
 
-            DeserializeEqpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Eqp ) );
-            DeserializeGmpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Gmp ) );
-            DeserializeEqdpEntries( metaInfo, ReadEntry( MetaManipulation.Type.Eqdp ) );
-            DeserializeEstEntries( metaInfo, ReadEntry( MetaManipulation.Type.Est ) );
-            DeserializeImcEntries( metaInfo, ReadEntry( MetaManipulation.Type.Imc ) );
+            DeserializeEqpEntry(metaInfo, ReadEntry(MetaManipulation.Type.Eqp));
+            DeserializeGmpEntry(metaInfo, ReadEntry(MetaManipulation.Type.Gmp));
+            DeserializeEqdpEntries(metaInfo, ReadEntry(MetaManipulation.Type.Eqdp));
+            DeserializeEstEntries(metaInfo, ReadEntry(MetaManipulation.Type.Est));
+            DeserializeImcEntries(metaInfo, ReadEntry(MetaManipulation.Type.Imc));
         }
-        catch( Exception e )
+        catch (Exception e)
         {
             FilePath = "";
-            Penumbra.Log.Error( $"Error while parsing .meta file:\n{e}" );
+            Penumbra.Log.Error($"Error while parsing .meta file:\n{e}");
         }
     }
 
-    private TexToolsMeta( MetaFileManager metaFileManager, string filePath, uint version )
+    private TexToolsMeta(MetaFileManager metaFileManager, string filePath, uint version)
     {
         _metaFileManager = metaFileManager;
         FilePath         = filePath;
@@ -88,13 +86,11 @@ public partial class TexToolsMeta
     }
 
     // Read a null terminated string from a binary reader.
-    private static string ReadNullTerminated( BinaryReader reader )
+    private static string ReadNullTerminated(BinaryReader reader)
     {
         var builder = new StringBuilder();
-        for( var c = reader.ReadChar(); c != 0; c = reader.ReadChar() )
-        {
-            builder.Append( c );
-        }
+        for (var c = reader.ReadChar(); c != 0; c = reader.ReadChar())
+            builder.Append(c);
 
         return builder.ToString();
     }

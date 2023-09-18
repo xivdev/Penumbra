@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Services;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
 

@@ -5,7 +5,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-public sealed partial class Mod : IMod
+public sealed class Mod : IMod
 {
     public static readonly TemporaryMod ForcedFiles = new()
     {

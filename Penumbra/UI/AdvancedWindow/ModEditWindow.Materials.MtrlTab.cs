@@ -627,8 +627,8 @@ public partial class ModEditWindow
             var rows = Mtrl.Table;
             if (Mtrl.HasDyeTable)
             {
-                var stm         = _edit._stainService.StmFile;
-                var stainId     = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
+                var stm     = _edit._stainService.StmFile;
+                var stainId = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
                 for (var i = 0; i < MtrlFile.ColorTable.NumRows; ++i)
                 {
                     ref var row = ref rows[i];

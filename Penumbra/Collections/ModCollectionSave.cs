@@ -3,6 +3,7 @@ using Penumbra.Mods;
 using Penumbra.Services;
 using Newtonsoft.Json;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Util;
 
 namespace Penumbra.Collections;

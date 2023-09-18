@@ -1,5 +1,6 @@
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
@@ -7,7 +8,7 @@ namespace Penumbra.Mods;
 public class ModFileEditor
 {
     private readonly ModFileCollection _files;
-    private readonly ModManager       _modManager;
+    private readonly ModManager        _modManager;
 
     public bool Changes { get; private set; }
 

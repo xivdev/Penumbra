@@ -1,10 +1,9 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.ResourceWatcher;
 
 [Flags]
 public enum RecordType : byte

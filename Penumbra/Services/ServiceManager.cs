@@ -21,6 +21,7 @@ using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
+using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
 
 namespace Penumbra.Services;

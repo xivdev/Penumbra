@@ -81,6 +81,6 @@ public unsafe class FileReadService : IDisposable
     /// </summary>
     private nint GetResourceManager()
         => !_lastFileThreadResourceManager.IsValueCreated || _lastFileThreadResourceManager.Value == IntPtr.Zero
-            ? (nint) _resourceManager.ResourceManager
+            ? (nint)_resourceManager.ResourceManager
             : _lastFileThreadResourceManager.Value;
 }

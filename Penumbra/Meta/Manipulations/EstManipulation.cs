@@ -7,8 +7,8 @@ using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
-[StructLayout( LayoutKind.Sequential, Pack = 1 )]
-public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
 {
     public enum EstType : byte
     {
@@ -18,7 +18,7 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         Head = MetaIndex.HeadEst,
     }
 
-    public static string ToName( EstType type )
+    public static string ToName(EstType type)
         => type switch
         {
             EstType.Hair => "hair",
@@ -30,19 +30,19 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
 
     public ushort Entry { get; private init; } // SkeletonIdx.
 
-    [JsonConverter( typeof( StringEnumConverter ) )]
+    [JsonConverter(typeof(StringEnumConverter))]
     public Gender Gender { get; private init; }
 
-    [JsonConverter( typeof( StringEnumConverter ) )]
+    [JsonConverter(typeof(StringEnumConverter))]
     public ModelRace Race { get; private init; }
 
     public SetId SetId { get; private init; }
 
-    [JsonConverter( typeof( StringEnumConverter ) )]
+    [JsonConverter(typeof(StringEnumConverter))]
     public EstType Slot { get; private init; }
 
     [JsonConstructor]
-    public EstManipulation( Gender gender, ModelRace race, EstType slot, SetId setId, ushort entry )
+    public EstManipulation(Gender gender, ModelRace race, EstType slot, SetId setId, ushort entry)
     {
         Entry  = entry;
         Gender = gender;
@@ -51,49 +51,45 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         Slot   = slot;
     }
 
-    public EstManipulation Copy( ushort entry )
+    public EstManipulation Copy(ushort entry)
         => new(Gender, Race, Slot, SetId, entry);
 
 
     public override string ToString()
         => $"Est - {SetId} - {Slot} - {Race.ToName()} {Gender.ToName()}";
 
-    public bool Equals( EstManipulation other )
+    public bool Equals(EstManipulation other)
         => Gender == other.Gender
-         && Race  == other.Race
+         && Race == other.Race
          && SetId == other.SetId
-         && Slot  == other.Slot;
+         && Slot == other.Slot;
 
-    public override bool Equals( object? obj )
-        => obj is EstManipulation other && Equals( other );
+    public override bool Equals(object? obj)
+        => obj is EstManipulation other && Equals(other);
 
     public override int GetHashCode()
-        => HashCode.Combine( ( int )Gender, ( int )Race, SetId, ( int )Slot );
+        => HashCode.Combine((int)Gender, (int)Race, SetId, (int)Slot);
 
-    public int CompareTo( EstManipulation other )
+    public int CompareTo(EstManipulation other)
     {
-        var r = Race.CompareTo( other.Race );
-        if( r != 0 )
-        {
+        var r = Race.CompareTo(other.Race);
+        if (r != 0)
             return r;
-        }
 
-        var g = Gender.CompareTo( other.Gender );
-        if( g != 0 )
-        {
+        var g = Gender.CompareTo(other.Gender);
+        if (g != 0)
             return g;
-        }
 
-        var s = Slot.CompareTo( other.Slot );
-        return s != 0 ? s : SetId.Id.CompareTo( other.SetId.Id );
+        var s = Slot.CompareTo(other.Slot);
+        return s != 0 ? s : SetId.Id.CompareTo(other.SetId.Id);
     }
 
     public MetaIndex FileIndex()
-        => ( MetaIndex )Slot;
+        => (MetaIndex)Slot;
 
-    public bool Apply( EstFile file )
+    public bool Apply(EstFile file)
     {
-        return file.SetEntry( Names.CombinedRace( Gender, Race ), SetId.Id, Entry ) switch
+        return file.SetEntry(Names.CombinedRace(Gender, Race), SetId.Id, Entry) switch
         {
             EstFile.EstEntryChange.Unchanged => false,
             EstFile.EstEntryChange.Changed   => true,
@@ -109,6 +105,7 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
             return false;
         if (Names.CombinedRace(Gender, Race) == GenderRace.Unknown)
             return false;
+
         // No known check for set id or entry.
         return true;
     }

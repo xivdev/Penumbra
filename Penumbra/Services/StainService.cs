@@ -16,17 +16,18 @@ public class StainService : IDisposable
         { }
     }
 
-    public readonly StainData StainData;
-    public readonly FilterComboColors StainCombo;
-    public readonly StmFile StmFile;
+    public readonly StainData          StainData;
+    public readonly FilterComboColors  StainCombo;
+    public readonly StmFile            StmFile;
     public readonly StainTemplateCombo TemplateCombo;
 
     public StainService(StartTracker timer, DalamudPluginInterface pluginInterface, IDataManager dataManager)
     {
         using var t = timer.Measure(StartTimeType.Stains);
         StainData = new StainData(pluginInterface, dataManager, dataManager.Language);
-        StainCombo = new FilterComboColors(140, StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))));
-        StmFile = new StmFile(dataManager);
+        StainCombo = new FilterComboColors(140,
+            StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))));
+        StmFile       = new StmFile(dataManager);
         TemplateCombo = new StainTemplateCombo(StmFile.Entries.Keys.Prepend((ushort)0));
         Penumbra.Log.Verbose($"[{nameof(StainService)}] Created.");
     }

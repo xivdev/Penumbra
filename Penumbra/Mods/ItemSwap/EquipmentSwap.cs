@@ -249,10 +249,10 @@ public static class EquipmentSwap
     private static (ImcFile, Variant[], EquipItem[]) GetVariants(MetaFileManager manager, IObjectIdentifier identifier, EquipSlot slotFrom,
         SetId idFrom, SetId idTo, Variant variantFrom)
     {
-        var    entry = new ImcManipulation(slotFrom, variantFrom.Id, idFrom, default);
-        var    imc   = new ImcFile(manager, entry);
+        var         entry = new ImcManipulation(slotFrom, variantFrom.Id, idFrom, default);
+        var         imc   = new ImcFile(manager, entry);
         EquipItem[] items;
-        Variant[] variants;
+        Variant[]   variants;
         if (idFrom == idTo)
         {
             items = identifier.Identify(idFrom, variantFrom, slotFrom).ToArray();
@@ -264,8 +264,9 @@ public static class EquipmentSwap
         else
         {
             items = identifier.Identify(slotFrom.IsEquipment()
-                ? GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)
-                : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)).Select(kvp => kvp.Value).OfType<EquipItem>().ToArray();
+                    ? GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)
+                    : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)).Select(kvp => kvp.Value).OfType<EquipItem>()
+                .ToArray();
             variants = Enumerable.Range(0, imc.Count + 1).Select(i => (Variant)i).ToArray();
         }
 
@@ -283,11 +284,13 @@ public static class EquipmentSwap
         return new MetaSwap(manips, manipFrom, manipTo);
     }
 
-    public static MetaSwap CreateImc(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot,
+    public static MetaSwap CreateImc(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
+        Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot,
         SetId idFrom, SetId idTo, Variant variantFrom, Variant variantTo, ImcFile imcFileFrom, ImcFile imcFileTo)
         => CreateImc(manager, redirections, manips, slot, slot, idFrom, idTo, variantFrom, variantTo, imcFileFrom, imcFileTo);
 
-    public static MetaSwap CreateImc(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips,
+    public static MetaSwap CreateImc(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
+        Func<MetaManipulation, MetaManipulation> manips,
         EquipSlot slotFrom, EquipSlot slotTo, SetId idFrom, SetId idTo,
         Variant variantFrom, Variant variantTo, ImcFile imcFileFrom, ImcFile imcFileTo)
     {
@@ -401,7 +404,8 @@ public static class EquipmentSwap
         ref MtrlFile.Texture texture, ref bool dataWasChanged)
         => CreateTex(manager, redirections, prefix, EquipSlot.Unknown, EquipSlot.Unknown, idFrom, idTo, ref texture, ref dataWasChanged);
 
-    public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, char prefix, EquipSlot slotFrom, EquipSlot slotTo, SetId idFrom,
+    public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, char prefix, EquipSlot slotFrom,
+        EquipSlot slotTo, SetId idFrom,
         SetId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged)
     {
         var path        = texture.Path;
@@ -428,13 +432,15 @@ public static class EquipmentSwap
         return FileSwap.CreateSwap(manager, ResourceType.Tex, redirections, newPath, path, path);
     }
 
-    public static FileSwap CreateShader(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, ref string shaderName, ref bool dataWasChanged)
+    public static FileSwap CreateShader(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, ref string shaderName,
+        ref bool dataWasChanged)
     {
         var path = $"shader/sm5/shpk/{shaderName}";
         return FileSwap.CreateSwap(manager, ResourceType.Shpk, redirections, path, path);
     }
 
-    public static FileSwap CreateAtex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, ref string filePath, ref bool dataWasChanged)
+    public static FileSwap CreateAtex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, ref string filePath,
+        ref bool dataWasChanged)
     {
         var oldPath = filePath;
         filePath       = ItemSwap.AddSuffix(filePath, ".atex", $"_{Path.GetFileName(filePath).GetStableHashCode():x8}");

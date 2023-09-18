@@ -4,12 +4,13 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 
 namespace Penumbra.Interop.Structs;
 
-public unsafe static class TextureUtility
+public static unsafe class TextureUtility
 {
     private static readonly Functions Funcs = new();
 
     public static Texture* Create2D(Device* device, int* size, byte mipLevel, uint textureFormat, uint flags, uint unk)
-        => ((delegate* unmanaged<Device*, int*, byte, uint, uint, uint, Texture*>)Funcs.TextureCreate2D)(device, size, mipLevel, textureFormat, flags, unk);
+        => ((delegate* unmanaged<Device*, int*, byte, uint, uint, uint, Texture*>)Funcs.TextureCreate2D)(device, size, mipLevel, textureFormat,
+            flags, unk);
 
     public static bool InitializeContents(Texture* texture, void* contents)
         => ((delegate* unmanaged<Texture*, void*, bool>)Funcs.TextureInitializeContents)(texture, contents);

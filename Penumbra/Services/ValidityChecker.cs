@@ -1,4 +1,3 @@
-using System.Reflection;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
 
@@ -25,20 +24,21 @@ public class ValidityChecker
         DevPenumbraExists      = CheckDevPluginPenumbra(pi);
         IsNotInstalledPenumbra = CheckIsNotInstalled(pi);
         IsValidSourceRepo      = CheckSourceRepo(pi);
-		
+
         var assembly = Assembly.GetExecutingAssembly();
-        Version = assembly.GetName().Version?.ToString() ?? string.Empty;
+        Version    = assembly.GetName().Version?.ToString() ?? string.Empty;
         CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
     }
 
     public void LogExceptions()
     {
-        if( ImcExceptions.Count > 0 )
-            Penumbra.Chat.NotificationMessage( $"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.", "Warning", NotificationType.Warning );
+        if (ImcExceptions.Count > 0)
+            Penumbra.Chat.NotificationMessage($"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
+                "Warning", NotificationType.Warning);
     }
 
     // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
-    private static bool CheckDevPluginPenumbra( DalamudPluginInterface pi )
+    private static bool CheckDevPluginPenumbra(DalamudPluginInterface pi)
     {
 #if !DEBUG
         var path = Path.Combine( pi.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
@@ -59,7 +59,7 @@ public class ValidityChecker
     }
 
     // Check if the loaded version of Penumbra itself is in devPlugins.
-    private static bool CheckIsNotInstalled( DalamudPluginInterface pi )
+    private static bool CheckIsNotInstalled(DalamudPluginInterface pi)
     {
 #if !DEBUG
         var checkedDirectory = pi.AssemblyLocation.Directory?.Parent?.Parent?.Name;
@@ -76,7 +76,7 @@ public class ValidityChecker
     }
 
     // Check if the loaded version of Penumbra is installed from a valid source repo.
-    private static bool CheckSourceRepo( DalamudPluginInterface pi )
+    private static bool CheckSourceRepo(DalamudPluginInterface pi)
     {
 #if !DEBUG
         return pi.SourceRepository?.Trim().ToLowerInvariant() switch

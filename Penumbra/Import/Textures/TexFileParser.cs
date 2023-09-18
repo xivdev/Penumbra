@@ -79,8 +79,8 @@ public static class TexFileParser
         w.Write(header.Width);
         w.Write(header.Height);
         w.Write(header.Depth);
-        w.Write((byte) header.MipLevels);
-        w.Write((byte) 0); // TODO Lumina Update
+        w.Write((byte)header.MipLevels);
+        w.Write((byte)0); // TODO Lumina Update
         unsafe
         {
             w.Write(header.LodOffset[0]);

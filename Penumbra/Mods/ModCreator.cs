@@ -113,9 +113,7 @@ public partial class ModCreator
         }
 
         if (changes)
-        {
             _saveService.SaveAllOptionGroups(mod, true);
-        }
     }
 
     /// <summary> Load the default option for a given mod.</summary>

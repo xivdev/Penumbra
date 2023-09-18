@@ -37,7 +37,8 @@ public class ResourceNode
         Children = new List<ResourceNode>();
     }
 
-    public ResourceNode(UIData uiData, ResourceType type, nint objectAddress, nint resourceHandle, Utf8GamePath[] possibleGamePaths, FullPath fullPath,
+    public ResourceNode(UIData uiData, ResourceType type, nint objectAddress, nint resourceHandle, Utf8GamePath[] possibleGamePaths,
+        FullPath fullPath,
         ulong length, bool @internal)
     {
         Name              = uiData.Name;
@@ -69,7 +70,7 @@ public class ResourceNode
     }
 
     public ResourceNode WithUIData(string? name, ChangedItemIcon icon)
-        => string.Equals(Name, name, StringComparison.Ordinal) && Icon == icon ? this : new ResourceNode(new(name, icon), this);
+        => string.Equals(Name, name, StringComparison.Ordinal) && Icon == icon ? this : new ResourceNode(new UIData(name, icon), this);
 
     public ResourceNode WithUIData(UIData uiData)
         => string.Equals(Name, uiData.Name, StringComparison.Ordinal) && Icon == uiData.Icon ? this : new ResourceNode(uiData, this);
@@ -77,6 +78,6 @@ public class ResourceNode
     public readonly record struct UIData(string? Name, ChangedItemIcon Icon)
     {
         public readonly UIData PrependName(string prefix)
-            => Name == null ? this : new(prefix + Name, Icon);
+            => Name == null ? this : new UIData(prefix + Name, Icon);
     }
 }

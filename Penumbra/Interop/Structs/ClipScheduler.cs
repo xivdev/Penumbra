@@ -1,11 +1,11 @@
 namespace Penumbra.Interop.Structs;
 
-[StructLayout( LayoutKind.Explicit )]
+[StructLayout(LayoutKind.Explicit)]
 public unsafe struct ClipScheduler
 {
-    [FieldOffset( 0 )]
+    [FieldOffset(0)]
     public IntPtr* VTable;
 
-    [FieldOffset( 0x38 )]
+    [FieldOffset(0x38)]
     public IntPtr SchedulerTimeline;
 }

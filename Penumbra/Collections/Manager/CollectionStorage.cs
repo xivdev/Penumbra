@@ -5,6 +5,7 @@ using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
@@ -246,7 +247,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
         DirectoryInfo? newDirectory)
     {
-        switch (type)   
+        switch (type)
         {
             case ModPathChangeType.Added:
                 foreach (var collection in this)

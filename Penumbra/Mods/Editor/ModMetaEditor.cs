@@ -1,5 +1,6 @@
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Mods;
 
@@ -146,6 +147,7 @@ public class ModMetaEditor
                 }
             }
         }
+
         Split(currentOption.Manipulations);
     }
 

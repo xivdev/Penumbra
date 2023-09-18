@@ -42,10 +42,10 @@ public enum BasicTutorialSteps
 /// <summary> Service for the in-game tutorial. </summary>
 public class TutorialService
 {
-    public const string SelectedCollection    = "Selected Collection";
-    public const string DefaultCollection     = "Base Collection";
-    public const string InterfaceCollection   = "Interface Collection";
-    public const string AssignedCollections   = "Assigned Collections";
+    public const string SelectedCollection  = "Selected Collection";
+    public const string DefaultCollection   = "Base Collection";
+    public const string InterfaceCollection = "Interface Collection";
+    public const string AssignedCollections = "Assigned Collections";
 
     public const string SupportedRedrawModifiers = "    - nothing, to redraw all characters\n"
       + "    - 'self' or '<me>': your own character\n"
@@ -79,20 +79,26 @@ public class TutorialService
             .Register("Initial Setup, Step 3: Collections", "Collections are lists of settings for your installed mods.\n\n"
               + "This is our next stop!\n\n"
               + "Go here after setting up your root folder to continue the tutorial!")
-            .Register("Initial Setup, Step 4: Managing Collections", "On the left, we have the collection selector. Here, we can create new collections - either empty ones or by duplicating existing ones - and delete any collections not needed anymore.\n"
+            .Register("Initial Setup, Step 4: Managing Collections",
+                "On the left, we have the collection selector. Here, we can create new collections - either empty ones or by duplicating existing ones - and delete any collections not needed anymore.\n"
               + $"There will always be one collection called {ModCollection.DefaultCollectionName} that can not be deleted.")
             .Register($"Initial Setup, Step 5: {SelectedCollection}",
                 $"The {SelectedCollection} is the one we highlighted in the selector. It is the collection we are currently looking at and editing.\nAny changes we make in our mod settings later in the next tab will edit this collection.\n"
               + $"We should already have the collection named {ModCollection.DefaultCollectionName} selected, and for our simple setup, we do not need to do anything here.\n\n")
-            .Register("Initial Setup, Step 6: Simple Assignments", "Aside from being a collection of settings, we can also assign collections to different functions. This is used to make different mods apply to different characters.\n"
+            .Register("Initial Setup, Step 6: Simple Assignments",
+                "Aside from being a collection of settings, we can also assign collections to different functions. This is used to make different mods apply to different characters.\n"
               + "The Simple Assignments panel shows you the possible assignments that are enough for most people along with descriptions.\n"
               + $"If you are just starting, you can see that the {ModCollection.DefaultCollectionName} is currently assigned to {CollectionType.Default.ToName()} and {CollectionType.Interface.ToName()}.\n"
               + "You can also assign 'Use No Mods' instead of a collection by clicking on the function buttons.")
-            .Register("Individual Assignments", "In the Individual Assignments panel, you can manually create assignments for very specific characters or monsters, not just yourself or ones you can currently target.")
-            .Register("Group Assignments", "In the Group Assignments panel, you can create Assignments for more specific groups of characters based on race or age.")
-            .Register("Collection Details", "In the Collection Details panel, you can see a detailed overview over the usage of the currently selected collection, as well as remove outdated mod settings and setup inheritance.\n"
+            .Register("Individual Assignments",
+                "In the Individual Assignments panel, you can manually create assignments for very specific characters or monsters, not just yourself or ones you can currently target.")
+            .Register("Group Assignments",
+                "In the Group Assignments panel, you can create Assignments for more specific groups of characters based on race or age.")
+            .Register("Collection Details",
+                "In the Collection Details panel, you can see a detailed overview over the usage of the currently selected collection, as well as remove outdated mod settings and setup inheritance.\n"
               + "Inheritance can be used to make one collection take the settings of another as long as it does not setup the mod in question itself.")
-            .Register("Incognito Mode", "This button can toggle Incognito Mode, which shortens all collection names to two letters and a number,\n"
+            .Register("Incognito Mode",
+                "This button can toggle Incognito Mode, which shortens all collection names to two letters and a number,\n"
               + "and all displayed individual character names to their initials and world, in case you want to share screenshots.\n"
               + "It is strongly recommended to not show your characters name in public screenshots when using Penumbra.")
             .Deprecated()

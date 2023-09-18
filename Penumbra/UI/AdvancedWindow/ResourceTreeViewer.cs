@@ -17,7 +17,7 @@ public class ResourceTreeViewer
     private readonly Action<ResourceNode, Vector2> _drawActions;
     private readonly HashSet<nint>                 _unfolded;
 
-    private Task<ResourceTree[]>?      _task;
+    private Task<ResourceTree[]>? _task;
 
     public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer,
         int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
@@ -126,9 +126,9 @@ public class ResourceTreeViewer
                     : resourceNode.Children.Any(child => !child.Internal);
                 if (unfoldable)
                 {
-                    using var font = ImRaii.PushFont(UiBuilder.IconFont);
-                    var icon = (unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString();
-                    var offset = (ImGui.GetFrameHeight() - ImGui.CalcTextSize(icon).X) / 2;
+                    using var font   = ImRaii.PushFont(UiBuilder.IconFont);
+                    var       icon   = (unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString();
+                    var       offset = (ImGui.GetFrameHeight() - ImGui.CalcTextSize(icon).X) / 2;
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
                     ImGui.TextUnformatted(icon);
                     ImGui.SameLine(0f, offset + ImGui.GetStyle().ItemInnerSpacing.X);
@@ -138,6 +138,7 @@ public class ResourceTreeViewer
                     ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
                     ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 }
+
                 _changedItemDrawer.DrawCategoryIcon(resourceNode.Icon);
                 ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 ImGui.TableHeader(resourceNode.Name);

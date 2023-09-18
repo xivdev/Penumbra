@@ -14,6 +14,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using ChatService = Penumbra.Services.ChatService;
@@ -376,8 +377,10 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImGui.BulletText(
                 "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod.");
             indent.Push();
-            ImGui.BulletText("You can select multiple mods and folders by holding Control while clicking them, and then drag all of them at once." );
-            ImGui.BulletText("Selected mods inside an also selected folder will be ignored when dragging and move inside their folder instead of directly into the target.");
+            ImGui.BulletText(
+                "You can select multiple mods and folders by holding Control while clicking them, and then drag all of them at once.");
+            ImGui.BulletText(
+                "Selected mods inside an also selected folder will be ignored when dragging and move inside their folder instead of directly into the target.");
             indent.Pop(1);
             ImGui.BulletText("Right-clicking a folder opens a context menu.");
             ImGui.BulletText("Right-clicking empty space allows you to expand or collapse all folders at once.");

@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -15,7 +14,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.ResourceWatcher;
 
 public class ResourceWatcher : IDisposable, ITab
 {
@@ -28,7 +27,7 @@ public class ResourceWatcher : IDisposable, ITab
     private readonly ActorService            _actors;
     private readonly List<Record>            _records    = new();
     private readonly ConcurrentQueue<Record> _newRecords = new();
-    private readonly ResourceWatcherTable                   _table;
+    private readonly ResourceWatcherTable    _table;
     private          string                  _logFilter = string.Empty;
     private          Regex?                  _logRegex;
     private          int                     _newMaxEntries;

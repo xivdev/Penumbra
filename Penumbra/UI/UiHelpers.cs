@@ -114,8 +114,8 @@ public static class UiHelpers
             ScaleX5        = Scale * 5;
         }
 
-        IconButtonSize       = new Vector2(ImGui.GetFrameHeight());
+        IconButtonSize        = new Vector2(ImGui.GetFrameHeight());
         InputTextMinusButton3 = InputTextWidth.X - IconButtonSize.X - ScaleX3;
-        InputTextMinusButton = InputTextWidth.X - IconButtonSize.X - ImGui.GetStyle().ItemSpacing.X;
+        InputTextMinusButton  = InputTextWidth.X - IconButtonSize.X - ImGui.GetStyle().ItemSpacing.X;
     }
 }

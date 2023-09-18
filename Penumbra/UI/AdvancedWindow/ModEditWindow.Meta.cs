@@ -8,7 +8,6 @@ using Penumbra.Interop.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
 
@@ -66,20 +65,26 @@ public partial class ModEditWindow
         if (!child)
             return;
 
-        DrawEditHeader(_editor.MetaEditor.Eqp,  "Equipment Parameter Edits (EQP)###EQP", 5,  EqpRow.Draw,  EqpRow.DrawNew , _editor.MetaEditor.OtherEqpCount);
-        DrawEditHeader(_editor.MetaEditor.Eqdp, "Racial Model Edits (EQDP)###EQDP",      7,  EqdpRow.Draw, EqdpRow.DrawNew, _editor.MetaEditor.OtherEqdpCount);
-        DrawEditHeader(_editor.MetaEditor.Imc,  "Variant Edits (IMC)###IMC",             10, ImcRow.Draw,  ImcRow.DrawNew , _editor.MetaEditor.OtherImcCount);
-        DrawEditHeader(_editor.MetaEditor.Est,  "Extra Skeleton Parameters (EST)###EST", 7,  EstRow.Draw,  EstRow.DrawNew , _editor.MetaEditor.OtherEstCount);
-        DrawEditHeader(_editor.MetaEditor.Gmp,  "Visor/Gimmick Edits (GMP)###GMP",       7,  GmpRow.Draw,  GmpRow.DrawNew , _editor.MetaEditor.OtherGmpCount);
-        DrawEditHeader(_editor.MetaEditor.Rsp,  "Racial Scaling Edits (RSP)###RSP",      5,  RspRow.Draw,  RspRow.DrawNew , _editor.MetaEditor.OtherRspCount);
+        DrawEditHeader(_editor.MetaEditor.Eqp, "Equipment Parameter Edits (EQP)###EQP", 5, EqpRow.Draw, EqpRow.DrawNew,
+            _editor.MetaEditor.OtherEqpCount);
+        DrawEditHeader(_editor.MetaEditor.Eqdp, "Racial Model Edits (EQDP)###EQDP", 7, EqdpRow.Draw, EqdpRow.DrawNew,
+            _editor.MetaEditor.OtherEqdpCount);
+        DrawEditHeader(_editor.MetaEditor.Imc, "Variant Edits (IMC)###IMC", 10, ImcRow.Draw, ImcRow.DrawNew, _editor.MetaEditor.OtherImcCount);
+        DrawEditHeader(_editor.MetaEditor.Est, "Extra Skeleton Parameters (EST)###EST", 7, EstRow.Draw, EstRow.DrawNew,
+            _editor.MetaEditor.OtherEstCount);
+        DrawEditHeader(_editor.MetaEditor.Gmp, "Visor/Gimmick Edits (GMP)###GMP", 7, GmpRow.Draw, GmpRow.DrawNew,
+            _editor.MetaEditor.OtherGmpCount);
+        DrawEditHeader(_editor.MetaEditor.Rsp, "Racial Scaling Edits (RSP)###RSP", 5, RspRow.Draw, RspRow.DrawNew,
+            _editor.MetaEditor.OtherRspCount);
     }
 
 
     /// <summary> The headers for the different meta changes all have basically the same structure for different types.</summary>
-    private void DrawEditHeader<T>(IReadOnlyCollection<T> items, string label, int numColumns, Action<MetaFileManager, T, ModEditor, Vector2> draw,
+    private void DrawEditHeader<T>(IReadOnlyCollection<T> items, string label, int numColumns,
+        Action<MetaFileManager, T, ModEditor, Vector2> draw,
         Action<MetaFileManager, ModEditor, Vector2> drawNew, int otherCount)
     {
-        const ImGuiTableFlags flags  = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
+        const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
 
         var oldPos = ImGui.GetCursorPosY();
         var header = ImGui.CollapsingHeader($"{items.Count} {label}");
@@ -92,6 +97,7 @@ public partial class ModEditWindow
             ImGuiUtil.TextColored(ColorId.RedundantAssignment.Value() | 0xFF000000, text);
             ImGui.SetCursorPos(newPos);
         }
+
         if (!header)
             return;
 
@@ -223,7 +229,8 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (IdInput("##eqdpId", IdWidth, _new.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race), _new.Slot.IsAccessory(), setId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race),
+                    _new.Slot.IsAccessory(), setId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, _new.Gender, _new.Race, setId);
             }
 
@@ -232,7 +239,8 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.Race("##eqdpRace", _new.Race, out var race))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, race), _new.Slot.IsAccessory(), _new.SetId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, race),
+                    _new.Slot.IsAccessory(), _new.SetId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, _new.Gender, race, _new.SetId);
             }
 
@@ -241,7 +249,8 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.Gender("##eqdpGender", _new.Gender, out var gender))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(gender, _new.Race), _new.Slot.IsAccessory(), _new.SetId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(gender, _new.Race),
+                    _new.Slot.IsAccessory(), _new.SetId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, gender, _new.Race, _new.SetId);
             }
 
@@ -250,7 +259,8 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.EqdpEquipSlot("##eqdpSlot", _new.Slot, out var slot))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race), slot.IsAccessory(), _new.SetId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race),
+                    slot.IsAccessory(), _new.SetId);
                 _new = new EqdpManipulation(newDefaultEntry, slot, _new.Gender, _new.Race, _new.SetId);
             }
 
@@ -288,7 +298,8 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip(EquipSlotTooltip);
 
             // Values
-            var defaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(meta.Gender, meta.Race), meta.Slot.IsAccessory(), meta.SetId);
+            var defaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(meta.Gender, meta.Race), meta.Slot.IsAccessory(),
+                meta.SetId);
             var (defaultBit1, defaultBit2) = defaultEntry.ToBits(meta.Slot);
             var (bit1, bit2)               = meta.Entry.ToBits(meta.Slot);
             ImGui.TableNextColumn();
@@ -370,7 +381,8 @@ public partial class ModEditWindow
             if (_new.ObjectType is ObjectType.Equipment)
             {
                 if (Combos.EqpEquipSlot("##imcSlot", 100, _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot,
+                            _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -379,7 +391,8 @@ public partial class ModEditWindow
             else if (_new.ObjectType is ObjectType.Accessory)
             {
                 if (Combos.AccessorySlot("##imcSlot", _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot,
+                            _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -388,7 +401,8 @@ public partial class ModEditWindow
             else
             {
                 if (IdInput("##imcId2", 100 * UiHelpers.Scale, _new.SecondaryId.Id, out var setId2, 0, ushort.MaxValue, false))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant.Id, _new.EquipSlot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant.Id, _new.EquipSlot,
+                            _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -405,7 +419,8 @@ public partial class ModEditWindow
             if (_new.ObjectType is ObjectType.DemiHuman)
             {
                 if (Combos.EqpEquipSlot("##imcSlot", 70, _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot,
+                            _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -787,7 +802,8 @@ public partial class ModEditWindow
             using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
                 def < value ? ColorId.IncreasedMetaValue.Value() : ColorId.DecreasedMetaValue.Value(),
                 def != value);
-            if (ImGui.DragFloat("##rspValue", ref value, 0.001f, RspManipulation.MinValue, RspManipulation.MaxValue) && value is >= RspManipulation.MinValue and <= RspManipulation.MaxValue)
+            if (ImGui.DragFloat("##rspValue", ref value, 0.001f, RspManipulation.MinValue, RspManipulation.MaxValue)
+             && value is >= RspManipulation.MinValue and <= RspManipulation.MaxValue)
                 editor.MetaEditor.Change(meta.Copy(value));
 
             ImGuiUtil.HoverTooltip($"Default Value: {def:0.###}");

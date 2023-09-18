@@ -2,9 +2,9 @@ using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;

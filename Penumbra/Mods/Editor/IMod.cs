@@ -7,13 +7,13 @@ public interface IMod
 {
     LowerString Name { get; }
 
-    public int Index { get; }
+    public int Index    { get; }
     public int Priority { get; }
 
-    public ISubMod Default { get; }
-    public IReadOnlyList< IModGroup > Groups { get; }
+    public ISubMod                  Default { get; }
+    public IReadOnlyList<IModGroup> Groups  { get; }
 
-    public IEnumerable< SubMod > AllSubMods { get; }
+    public IEnumerable<SubMod> AllSubMods { get; }
 
     // Cache
     public int TotalManipulations { get; }

@@ -6,13 +6,14 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
+using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 

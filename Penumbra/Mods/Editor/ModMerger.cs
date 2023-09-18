@@ -5,6 +5,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.ModsTab;
@@ -174,7 +175,7 @@ public class ModMerger : IDisposable
             ret = new FullPath(MergeToMod!.ModPath, relPath);
             return true;
         }
-        
+
         foreach (var originalOption in mergeOptions)
         {
             foreach (var manip in originalOption.Manipulations)

@@ -4,10 +4,9 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Table;
-using Penumbra.GameData.Enums;
 using Penumbra.String;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.ResourceWatcher;
 
 internal sealed class ResourceWatcherTable : Table<Record>
 {

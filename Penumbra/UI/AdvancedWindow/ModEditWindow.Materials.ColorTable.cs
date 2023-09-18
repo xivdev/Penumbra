@@ -114,10 +114,8 @@ public partial class ModEditWindow
         {
             var ret = false;
             if (tab.Mtrl.HasDyeTable)
-            {
                 for (var i = 0; i < MtrlFile.ColorTable.NumRows; ++i)
                     ret |= tab.Mtrl.ApplyDyeTemplate(_stainService.StmFile, i, dyeId);
-            }
 
             tab.UpdateColorTablePreview();
 
@@ -259,9 +257,9 @@ public partial class ModEditWindow
         }
 
         using var id        = ImRaii.PushId(rowIdx);
-        ref   var row       = ref tab.Mtrl.Table[rowIdx];
+        ref var   row       = ref tab.Mtrl.Table[rowIdx];
         var       hasDye    = tab.Mtrl.HasDyeTable;
-        ref   var dye       = ref tab.Mtrl.DyeTable[rowIdx];
+        ref var   dye       = ref tab.Mtrl.DyeTable[rowIdx];
         var       floatSize = 70 * UiHelpers.Scale;
         var       intSize   = 45 * UiHelpers.Scale;
         ImGui.TableNextColumn();
@@ -301,7 +299,8 @@ public partial class ModEditWindow
         ImGui.SameLine();
         var tmpFloat = row.SpecularStrength;
         ImGui.SetNextItemWidth(floatSize);
-        if (ImGui.DragFloat("##SpecularStrength", ref tmpFloat, 0.01f, 0f, HalfMaxValue, "%.2f") && FixFloat(ref tmpFloat, row.SpecularStrength))
+        if (ImGui.DragFloat("##SpecularStrength", ref tmpFloat, 0.01f, 0f, HalfMaxValue, "%.2f")
+         && FixFloat(ref tmpFloat, row.SpecularStrength))
         {
             row.SpecularStrength = tmpFloat;
             ret                  = true;

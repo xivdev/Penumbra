@@ -45,7 +45,7 @@ public readonly struct EqdpCache : IDisposable
         foreach (var file in _eqdpFiles.OfType<ExpandedEqdpFile>())
         {
             var relevant = CharacterUtility.RelevantIndices[file.Index.Value];
-            file.Reset(_eqdpManipulations.Where(m => m.FileIndex() == relevant).Select(m => (SetId) m.SetId));
+            file.Reset(_eqdpManipulations.Where(m => m.FileIndex() == relevant).Select(m => (SetId)m.SetId));
         }
 
         _eqdpManipulations.Clear();

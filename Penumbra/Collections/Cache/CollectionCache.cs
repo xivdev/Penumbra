@@ -6,6 +6,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Collections.Cache;
 

@@ -633,7 +633,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         _modManager.AddMod(dir);
         if (_config.UseFileSystemCompression)
-            new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K);
+            new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
+                CompressionAlgorithm.Xpress8K);
         return PenumbraApiEc.Success;
     }
 

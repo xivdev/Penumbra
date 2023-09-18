@@ -4,6 +4,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Mods;
+using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
@@ -296,7 +297,7 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
         var changes = _editor.FileEditor.Changes;
-        tt      = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
+        tt = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, !changes))
         {
             var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, (SubMod)_editor.Option!);

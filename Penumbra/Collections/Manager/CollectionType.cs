@@ -427,13 +427,13 @@ public static class CollectionTypeExtensions
     public static string ToDescription(this CollectionType collectionType)
         => collectionType switch
         {
-            CollectionType.Default => "World, Music, Furniture, baseline for characters and monsters not specialized.",
-            CollectionType.Interface => "User Interface, Icons, Maps, Styles.",
-            CollectionType.Yourself => "Your characters, regardless of name, race or gender. Applies in the login screen.",
-            CollectionType.MalePlayerCharacter => "Baseline for male player characters.",
-            CollectionType.FemalePlayerCharacter => "Baseline for female player characters.",
-            CollectionType.MaleNonPlayerCharacter => "Baseline for humanoid male non-player characters.",
+            CollectionType.Default                  => "World, Music, Furniture, baseline for characters and monsters not specialized.",
+            CollectionType.Interface                => "User Interface, Icons, Maps, Styles.",
+            CollectionType.Yourself                 => "Your characters, regardless of name, race or gender. Applies in the login screen.",
+            CollectionType.MalePlayerCharacter      => "Baseline for male player characters.",
+            CollectionType.FemalePlayerCharacter    => "Baseline for female player characters.",
+            CollectionType.MaleNonPlayerCharacter   => "Baseline for humanoid male non-player characters.",
             CollectionType.FemaleNonPlayerCharacter => "Baseline for humanoid female non-player characters.",
-            _ => string.Empty,
+            _                                       => string.Empty,
         };
 }

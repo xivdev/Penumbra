@@ -59,7 +59,7 @@ public class DuplicateManager
     public void Clear()
     {
         _cancellationTokenSource.Cancel();
-        Worker     = Task.CompletedTask;
+        Worker = Task.CompletedTask;
         _duplicates.Clear();
         SavedSpace = 0;
     }

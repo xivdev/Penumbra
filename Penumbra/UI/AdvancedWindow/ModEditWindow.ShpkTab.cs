@@ -34,7 +34,7 @@ public partial class ModEditWindow
                 Shpk = new ShpkFile(bytes, false);
             }
 
-            Header    = $"Shader Package for DirectX {(int)Shpk.DirectXVersion}";
+            Header = $"Shader Package for DirectX {(int)Shpk.DirectXVersion}";
             Extension = Shpk.DirectXVersion switch
             {
                 ShpkFile.DxVersion.DirectX9  => ".cso",

@@ -565,7 +565,8 @@ public class DebugTab : Window, ITab
 
         ImGui.InputText("File Name",  ref _emoteSearchFile, 256);
         ImGui.InputText("Emote Name", ref _emoteSearchName, 256);
-        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit, new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
+        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit,
+            new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
         if (!table)
             return;
 

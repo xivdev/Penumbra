@@ -38,7 +38,7 @@ public static class Colors
     public const uint TutorialBorder      = 0xD00000FF;
     public const uint ReniColorButton     = CustomGui.ReniColorButton;
     public const uint ReniColorHovered    = CustomGui.ReniColorHovered;
-    public const uint ReniColorActive     = CustomGui.ReniColorActive ;
+    public const uint ReniColorActive     = CustomGui.ReniColorActive;
 
     public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
         => color switch

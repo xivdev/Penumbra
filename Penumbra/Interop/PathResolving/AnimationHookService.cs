@@ -17,7 +17,7 @@ namespace Penumbra.Interop.PathResolving;
 public unsafe class AnimationHookService : IDisposable
 {
     private readonly PerformanceTracker _performance;
-    private readonly IObjectTable        _objects;
+    private readonly IObjectTable       _objects;
     private readonly CollectionResolver _collectionResolver;
     private readonly DrawObjectState    _drawObjectState;
     private readonly CollectionResolver _resolver;
@@ -34,7 +34,7 @@ public unsafe class AnimationHookService : IDisposable
         _collectionResolver = collectionResolver;
         _drawObjectState    = drawObjectState;
         _resolver           = resolver;
-        _conditions    = conditions;
+        _conditions         = conditions;
 
         SignatureHelper.Initialise(this);
 
@@ -142,7 +142,7 @@ public unsafe class AnimationHookService : IDisposable
         if (_conditions[ConditionFlag.OccupiedInCutSceneEvent] || _conditions[ConditionFlag.WatchingCutscene78])
             return _loadTimelineResourcesHook.Original(timeline);
 
-        var       last        = _animationLoadData.Value;
+        var last = _animationLoadData.Value;
         _animationLoadData.Value = GetDataFromTimeline(timeline);
         var ret = _loadTimelineResourcesHook.Original(timeline);
         _animationLoadData.Value = last;
@@ -302,7 +302,7 @@ public unsafe class AnimationHookService : IDisposable
                 var idx              = getGameObjectIdx(timeline);
                 if (idx >= 0 && idx < _objects.Length)
                 {
-                    var obj          = (GameObject*)_objects.GetObjectAddress(idx);
+                    var obj = (GameObject*)_objects.GetObjectAddress(idx);
                     return obj != null ? _collectionResolver.IdentifyCollection(obj, true) : ResolveData.Invalid;
                 }
             }
@@ -378,7 +378,7 @@ public unsafe class AnimationHookService : IDisposable
         if (a6 == nint.Zero)
             return _apricotListenerSoundPlayHook!.Original(a1, a2, a3, a4, a5, a6);
 
-        var last       = _animationLoadData.Value;
+        var last = _animationLoadData.Value;
         // a6 is some instance of Apricot.IInstanceListenner, in some cases we can obtain the associated caster via vfunc 1.
         var gameObject = (*(delegate* unmanaged<nint, GameObject*>**)a6)[1](a6);
         if (gameObject != null)

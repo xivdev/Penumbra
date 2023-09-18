@@ -193,17 +193,18 @@ public partial class ModEditWindow
     private void OpenSaveAsDialog(string defaultExtension)
     {
         var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
-        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, defaultExtension, (a, b) =>
-        {
-            if (a)
+        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, defaultExtension,
+            (a, b) =>
             {
-                _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                if (b == _left.Path)
-                    AddReloadTask(_left.Path, false);
-                else if (b == _right.Path)
-                    AddReloadTask(_right.Path, true);
-            }
-        }, _mod!.ModPath.FullName, _forceTextureStartPath);
+                if (a)
+                {
+                    _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                    if (b == _left.Path)
+                        AddReloadTask(_left.Path, false);
+                    else if (b == _right.Path)
+                        AddReloadTask(_right.Path, true);
+                }
+            }, _mod!.ModPath.FullName, _forceTextureStartPath);
         _forceTextureStartPath = false;
     }
 

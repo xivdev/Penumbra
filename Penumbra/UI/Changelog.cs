@@ -47,13 +47,17 @@ public class PenumbraChangelog
 
     private static void Add7_3_0(Changelog log)
         => log.NextVersion("Version 0.7.3.0")
-            .RegisterEntry("Added the ability to drag and drop mod files from external sources (like a file explorer or browser) into Penumbras mod selector to import them.")
+            .RegisterEntry(
+                "Added the ability to drag and drop mod files from external sources (like a file explorer or browser) into Penumbras mod selector to import them.")
             .RegisterEntry("You can also drag and drop texture files into the textures tab of the Advanced Editing Window.", 1)
-            .RegisterEntry("Added a priority display to the mod selector using the currently selected collections priorities. This can be hidden in settings.")
+            .RegisterEntry(
+                "Added a priority display to the mod selector using the currently selected collections priorities. This can be hidden in settings.")
             .RegisterEntry("Added IPC for texture conversion, improved texture handling backend and threading.")
-            .RegisterEntry("Added Dalamud Substitution so that other plugins can more easily use replaced icons from Penumbras Interface collection when using Dalamuds new Texture Provider.")
+            .RegisterEntry(
+                "Added Dalamud Substitution so that other plugins can more easily use replaced icons from Penumbras Interface collection when using Dalamuds new Texture Provider.")
             .RegisterEntry("Added a filter to texture selection combos in the textures tab of the Advanced Editing Window.")
-            .RegisterEntry("Changed behaviour when failing to load group JSON files for mods - the pre-existing but failing files are now backed up before being deleted or overwritten.")
+            .RegisterEntry(
+                "Changed behaviour when failing to load group JSON files for mods - the pre-existing but failing files are now backed up before being deleted or overwritten.")
             .RegisterEntry("Further backend changes, mostly relating to the Glamourer rework.")
             .RegisterEntry("Fixed an issue with modded decals not loading correctly when used with the Glamourer rework.")
             .RegisterEntry("Fixed missing scaling with UI Scale for some combos.")
@@ -66,21 +70,31 @@ public class PenumbraChangelog
 
     private static void Add7_2_0(Changelog log)
         => log.NextVersion("Version 0.7.2.0")
-            .RegisterEntry("Added Changed Item Categories and icons that can filter for specific types of Changed Items, in the Changed Items Tab as well as in the Changed Items panel for specific mods..")
-            .RegisterEntry("Icons at the top can be clicked to filter, as well as right-clicked to open a context menu with the option to inverse-filter for them", 1)
+            .RegisterEntry(
+                "Added Changed Item Categories and icons that can filter for specific types of Changed Items, in the Changed Items Tab as well as in the Changed Items panel for specific mods..")
+            .RegisterEntry(
+                "Icons at the top can be clicked to filter, as well as right-clicked to open a context menu with the option to inverse-filter for them",
+                1)
             .RegisterEntry("There is also an ALL button that can be toggled.", 1)
-            .RegisterEntry("Modded files in the Font category now resolve from the Interface assignment instead of the base assignment, despite not technically being in the UI category.")
-            .RegisterEntry("Timeline files will no longer be associated with specific characters in cutscenes, since there is no way to correctly do this, and it could cause crashes if IVCS-requiring animations were used on characters without IVCS.")
+            .RegisterEntry(
+                "Modded files in the Font category now resolve from the Interface assignment instead of the base assignment, despite not technically being in the UI category.")
+            .RegisterEntry(
+                "Timeline files will no longer be associated with specific characters in cutscenes, since there is no way to correctly do this, and it could cause crashes if IVCS-requiring animations were used on characters without IVCS.")
             .RegisterEntry("File deletion in the Advanced Editing Window now also checks for your configured deletion key combo.")
-            .RegisterEntry("The Texture tab in the Advanced Editing Window now has some quick convert buttons to just convert the selected texture to a different format in-place.")
-            .RegisterEntry("These buttons only appear if only one texture is selected on the left side, it is not otherwise manipulated, and the texture is a .tex file.", 1)
+            .RegisterEntry(
+                "The Texture tab in the Advanced Editing Window now has some quick convert buttons to just convert the selected texture to a different format in-place.")
+            .RegisterEntry(
+                "These buttons only appear if only one texture is selected on the left side, it is not otherwise manipulated, and the texture is a .tex file.",
+                1)
             .RegisterEntry("The text part of the mod filter in the mod selector now also resets when right-clicking the drop-down arrow.")
             .RegisterEntry("The Dissolve Folder option in the mod selector context menu has been moved to the bottom.")
             .RegisterEntry("Somewhat improved IMC handling to prevent some issues.")
-            .RegisterEntry("Improved the handling of mod renames on mods with default-search names to correctly rename their search-name in (hopefully) all cases too.")
+            .RegisterEntry(
+                "Improved the handling of mod renames on mods with default-search names to correctly rename their search-name in (hopefully) all cases too.")
             .RegisterEntry("A lot of backend improvements and changes related to the pending Glamourer rework.")
             .RegisterEntry("Fixed an issue where the displayed active collection count in the support info was wrong.")
-            .RegisterEntry("Fixed an issue with created directories dealing badly with non-standard whitespace characters like half-width or non-breaking spaces.")
+            .RegisterEntry(
+                "Fixed an issue with created directories dealing badly with non-standard whitespace characters like half-width or non-breaking spaces.")
             .RegisterEntry("Fixed an issue with unknown animation and vfx edits not being recognized correctly.")
             .RegisterEntry("Fixed an issue where changing option descriptions to be empty was not working correctly.")
             .RegisterEntry("Fixed an issue with texture names in the resource tree of the On-Screen views.")
@@ -94,21 +108,29 @@ public class PenumbraChangelog
 
     private static void Add7_1_2(Changelog log)
         => log.NextVersion("Version 0.7.1.2")
-            .RegisterEntry("Changed threaded handling of collection caches. Maybe this fixes the startup problems some people are experiencing.")
-            .RegisterEntry("This is just testing and may not be the solution, or may even make things worse. Sorry if I have to put out multiple small patches again to get this right.", 1)
+            .RegisterEntry(
+                "Changed threaded handling of collection caches. Maybe this fixes the startup problems some people are experiencing.")
+            .RegisterEntry(
+                "This is just testing and may not be the solution, or may even make things worse. Sorry if I have to put out multiple small patches again to get this right.",
+                1)
             .RegisterEntry("Fixed Penumbra failing to load if the main configuration file is corrupted.")
             .RegisterEntry("Some miscellaneous small bug fixes.")
             .RegisterEntry("Slight changes in behaviour for deduplicator/normalizer, mostly backend.")
             .RegisterEntry("A typo in the 0.7.1.0 Changelog has been fixed.")
             .RegisterEntry("Fixed left rings not being valid for IMC entries after validation. (7.1.1)")
-            .RegisterEntry("Relaxed the scaling restrictions for RSP scaling values to go from 0.01 to 512.0 instead of the prior upper limit of 8.0, in interface as well as validation, to better support the fetish community. (7.1.1)");
+            .RegisterEntry(
+                "Relaxed the scaling restrictions for RSP scaling values to go from 0.01 to 512.0 instead of the prior upper limit of 8.0, in interface as well as validation, to better support the fetish community. (7.1.1)");
 
     private static void Add7_1_0(Changelog log)
         => log.NextVersion("Version 0.7.1.0")
             .RegisterEntry("Updated for patch 6.4 - there may be some oversights on edge cases, but I could not find any issues myself.")
-            .RegisterHighlight("This update changed some Dragoon skills that were moving the player character before to not do that anymore. If you have any mods that applied to those skills, please make sure that they do not contain any redirections for .tmb files. If skills that should no longer move your character still do that for some reason, this is detectable by the server.", 1)
-            .RegisterEntry("Added a Mod Merging tab in the Advanced Editing Window. This can help you merge multiple mods to one, or split off specific options from an existing mod into a new mod.")
-            .RegisterEntry("Added advanced options to configure the minimum allowed window size for the main window (to reduce it). This is not quite supported and may look bad, so only use it if you really need smaller windows.")
+            .RegisterHighlight(
+                "This update changed some Dragoon skills that were moving the player character before to not do that anymore. If you have any mods that applied to those skills, please make sure that they do not contain any redirections for .tmb files. If skills that should no longer move your character still do that for some reason, this is detectable by the server.",
+                1)
+            .RegisterEntry(
+                "Added a Mod Merging tab in the Advanced Editing Window. This can help you merge multiple mods to one, or split off specific options from an existing mod into a new mod.")
+            .RegisterEntry(
+                "Added advanced options to configure the minimum allowed window size for the main window (to reduce it). This is not quite supported and may look bad, so only use it if you really need smaller windows.")
             .RegisterEntry("The last tab selected in the main window is now saved and re-used when relaunching Penumbra.")
             .RegisterEntry("Added a hook to correctly associate some sounds that are played while weapons are drawn.")
             .RegisterEntry("Added a hook to correctly associate sounds that are played while dismounting.")
@@ -125,7 +147,8 @@ public class PenumbraChangelog
             .RegisterEntry("Fixed an issue with the file selectors not always opening at the expected locations. (0.7.0.7)")
             .RegisterEntry("Fixed some cache handling issues. (0.7.0.5 - 0.7.0.10)")
             .RegisterEntry("Fixed an issue with multiple collection context menus appearing for some identifiers (0.7.0.5)")
-            .RegisterEntry("Fixed an issue where the Update Bibo button did only work if the Advanced Editing window was opened before. (0.7.0.5)");
+            .RegisterEntry(
+                "Fixed an issue where the Update Bibo button did only work if the Advanced Editing window was opened before. (0.7.0.5)");
 
     private static void Add7_0_4(Changelog log)
         => log.NextVersion("Version 0.7.0.4")
@@ -145,26 +168,36 @@ public class PenumbraChangelog
             .RegisterEntry("Fixed a bug that showed the Your Character collection as redundant even if it was not.")
             .RegisterEntry("Fixed a bug that caused some required collection caches to not be built on startup and thus mods not to apply.")
             .RegisterEntry("Fixed a bug that showed the current collection as unused even if it was used.");
+
     private static void Add7_0_0(Changelog log)
         => log.NextVersion("Version 0.7.0.0")
-            .RegisterHighlight("The entire backend was reworked (this is still in progress). While this does not come with a lot of functionality changes, basically every file and functionality was touched.")
-            .RegisterEntry("This may have (re-)introduced some bugs that have not yet been noticed despite a long testing period - there are not many users of the testing branch.", 1)
+            .RegisterHighlight(
+                "The entire backend was reworked (this is still in progress). While this does not come with a lot of functionality changes, basically every file and functionality was touched.")
+            .RegisterEntry(
+                "This may have (re-)introduced some bugs that have not yet been noticed despite a long testing period - there are not many users of the testing branch.",
+                1)
             .RegisterEntry("If you encounter any - but especially breaking or lossy - bugs, please report them immediately.", 1)
-            .RegisterEntry("This also fixed or improved numerous bugs and issues that will not be listed here.", 1)
-            .RegisterEntry("GitHub currently reports 321 changed files with 34541 additions and 28464 deletions.", 1)
+            .RegisterEntry("This also fixed or improved numerous bugs and issues that will not be listed here.",              1)
+            .RegisterEntry("GitHub currently reports 321 changed files with 34541 additions and 28464 deletions.",            1)
             .RegisterEntry("Added Notifications on many failures that previously only wrote to log.")
             .RegisterEntry("Reworked the Collections Tab to hopefully be much more intuitive. It should be self-explanatory now.")
             .RegisterEntry("The tutorial was adapted to the new window, if you are unsure, maybe try restarting it.", 1)
-            .RegisterEntry("You can now toggle an incognito mode in the collection window so it shows shortened names of collections and players.", 1)
-            .RegisterEntry("You can get an overview about the current usage of a selected collection and its active and unused mod settings in the Collection Details panel.", 1)
+            .RegisterEntry(
+                "You can now toggle an incognito mode in the collection window so it shows shortened names of collections and players.", 1)
+            .RegisterEntry(
+                "You can get an overview about the current usage of a selected collection and its active and unused mod settings in the Collection Details panel.",
+                1)
             .RegisterEntry("The currently selected collection is now highlighted in green (default, configurable) in multiple places.", 1)
-            .RegisterEntry("Mods now have a 'Collections' panel in the Mod Panel containing an overview about usage of the mod in all collections.")
+            .RegisterEntry(
+                "Mods now have a 'Collections' panel in the Mod Panel containing an overview about usage of the mod in all collections.")
             .RegisterEntry("The 'Changed Items' and 'Effective Changes' tab now contain a collection selector.")
             .RegisterEntry("Added the On-Screen tab to find what files a specific character is actually using (by Ny).")
             .RegisterEntry("Added 3 Quick Move folders in the mod selector that can be setup in context menus for easier cleanup.")
-            .RegisterEntry("Added handling for certain animation files for mounts and fashion accessories to correctly associate them to players.")
+            .RegisterEntry(
+                "Added handling for certain animation files for mounts and fashion accessories to correctly associate them to players.")
             .RegisterEntry("The file selectors in the Advanced Mod Editing Window now use filterable combos.")
-            .RegisterEntry("The Advanced Mod Editing Window now shows the number of meta edits and file swaps in unselected options and highlights the option selector.")
+            .RegisterEntry(
+                "The Advanced Mod Editing Window now shows the number of meta edits and file swaps in unselected options and highlights the option selector.")
             .RegisterEntry("Added API/IPC to start unpacking and installing mods from external tools (by Sebastina).")
             .RegisterEntry("Hidden files and folders are now ignored for unused files in Advanced Mod Editing (by myr)")
             .RegisterEntry("Paths in mods are now automatically trimmed of whitespace on loading.")

@@ -208,6 +208,7 @@ public class CommandHandler : IDisposable
     {
         if (_config.MinimumSize.X == Configuration.Constants.MinimumSizeX && _config.MinimumSize.Y == Configuration.Constants.MinimumSizeY)
             return false;
+
         _config.MinimumSize.X = Configuration.Constants.MinimumSizeX;
         _config.MinimumSize.Y = Configuration.Constants.MinimumSizeY;
         _config.Save();

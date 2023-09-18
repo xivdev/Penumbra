@@ -6,7 +6,6 @@ using Dalamud.Game.Gui;
 using Dalamud.Interface;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using System.Reflection;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;

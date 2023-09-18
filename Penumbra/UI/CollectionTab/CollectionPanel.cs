@@ -22,7 +22,7 @@ public sealed class CollectionPanel : IDisposable
     private readonly ActiveCollections      _active;
     private readonly CollectionSelector     _selector;
     private readonly ActorService           _actors;
-    private readonly ITargetManager          _targets;
+    private readonly ITargetManager         _targets;
     private readonly IndividualAssignmentUi _individualAssignmentUi;
     private readonly InheritanceUi          _inheritanceUi;
     private readonly ModStorage             _mods;

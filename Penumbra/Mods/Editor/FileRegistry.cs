@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

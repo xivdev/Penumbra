@@ -7,6 +7,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Services;
@@ -331,7 +332,8 @@ public class ConfigMigrationService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection   = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict, Array.Empty<string>());
+            var collection = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict,
+                Array.Empty<string>());
             _saveService.ImmediateSave(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

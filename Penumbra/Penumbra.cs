@@ -20,6 +20,7 @@ using Penumbra.UI.Tabs;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
+using Penumbra.UI;
 
 namespace Penumbra;
 

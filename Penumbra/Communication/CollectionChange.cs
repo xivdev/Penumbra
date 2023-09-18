@@ -45,7 +45,6 @@ public sealed class CollectionChange : EventWrapper<Action<CollectionType, ModCo
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnCollectionChange"/>
         ModFileSystemSelector = 0,
-
     }
 
     public CollectionChange()

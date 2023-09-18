@@ -14,7 +14,7 @@ public sealed unsafe class DecalReverter : IDisposable
     public static readonly Utf8GamePath TransparentPath =
         Utf8GamePath.FromSpan("chara/common/texture/transparent.tex"u8, out var p) ? p : Utf8GamePath.Empty;
 
-    private readonly CharacterUtility _utility;
+    private readonly CharacterUtility               _utility;
     private readonly Structs.TextureResourceHandle* _decal;
     private readonly Structs.TextureResourceHandle* _transparent;
 
@@ -22,7 +22,7 @@ public sealed unsafe class DecalReverter : IDisposable
     {
         _utility = utility;
         var ptr = _utility.Address;
-        _decal = null;
+        _decal       = null;
         _transparent = null;
         if (!config.EnableMods)
             return;

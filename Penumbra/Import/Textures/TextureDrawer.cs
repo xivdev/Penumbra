@@ -103,7 +103,7 @@ public static class TextureDrawer
 
     public sealed class PathSelectCombo : FilterComboCache<(string, bool)>
     {
-        private int    _skipPrefix = 0;
+        private int _skipPrefix = 0;
 
         public PathSelectCombo(TextureManager textures, ModEditor editor)
             : base(() => CreateFiles(textures, editor))

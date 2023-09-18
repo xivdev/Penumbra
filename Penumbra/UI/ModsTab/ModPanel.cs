@@ -4,6 +4,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
