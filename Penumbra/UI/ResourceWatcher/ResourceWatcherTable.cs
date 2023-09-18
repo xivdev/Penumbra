@@ -5,7 +5,9 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Table;
 using Penumbra.Enums;
+using Penumbra.Interop.Structs;
 using Penumbra.String;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
@@ -24,6 +26,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             new ResourceCategoryColumn(config) { Label = "Category" },
             new ResourceTypeColumn(config) { Label     = "Type" },
             new HandleColumn { Label                   = "Resource" },
+            new LoadStateColumn { Label                = "State" },
             new RefCountColumn { Label                 = "#Ref" },
             new DateColumn { Label                     = "Time" }
         )
@@ -239,6 +242,92 @@ internal sealed class ResourceWatcherTable : Table<Record>
         {
             ImGui.TextUnformatted(item.ResourceType.ToString().ToLowerInvariant());
         }
+    }
+
+    private sealed class LoadStateColumn : ColumnFlags<LoadStateColumn.LoadStateFlag, Record>
+    {
+        public override float Width
+            => 50 * UiHelpers.Scale;
+
+        [Flags]
+        public enum LoadStateFlag : byte
+        {
+            Success   = 0x01,
+            Async     = 0x02,
+            Failed    = 0x04,
+            FailedSub = 0x08,
+            Unknown   = 0x10,
+            None      = 0xFF,
+        }
+
+        protected override string[] Names
+            => new[]
+            {
+                "Loaded",
+                "Loading",
+                "Failed",
+                "Dependency Failed",
+                "Unknown",
+                "None",
+            };
+
+        public LoadStateColumn()
+        {
+            AllFlags     = Enum.GetValues<LoadStateFlag>().Aggregate((v, f) => v | f);
+            _filterValue = AllFlags;
+        }
+
+        private LoadStateFlag _filterValue;
+
+        public override LoadStateFlag FilterValue
+            => _filterValue;
+
+        protected override void SetValue(LoadStateFlag value, bool enable)
+        {
+            if (enable)
+                _filterValue |= value;
+            else
+                _filterValue &= ~value;
+        }
+
+        public override bool FilterFunc(Record item)
+            => item.LoadState switch
+            {
+                LoadState.None              => FilterValue.HasFlag(LoadStateFlag.None),
+                LoadState.Success           => FilterValue.HasFlag(LoadStateFlag.Success),
+                LoadState.Async             => FilterValue.HasFlag(LoadStateFlag.Async),
+                LoadState.Failure           => FilterValue.HasFlag(LoadStateFlag.Failed),
+                LoadState.FailedSubResource => FilterValue.HasFlag(LoadStateFlag.FailedSub),
+                _                           => FilterValue.HasFlag(LoadStateFlag.Unknown),
+            };
+
+        public override void DrawColumn(Record item, int _)
+        {
+            if (item.LoadState == LoadState.None)
+                return;
+
+            var (icon, color, tt) = item.LoadState switch
+            {
+                LoadState.Success => (FontAwesomeIcon.CheckCircle, ColorId.IncreasedMetaValue.Value(),
+                    $"Successfully loaded ({(byte)item.LoadState})."),
+                LoadState.Async => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), $"Loading asynchronously ({(byte)item.LoadState})."),
+                LoadState.Failure => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
+                    $"Failed to load ({(byte)item.LoadState})."),
+                LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value(),
+                    $"Dependencies failed to load ({(byte)item.LoadState})."),
+                _ => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(), $"Unknown state ({(byte)item.LoadState})."),
+            };
+            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            {
+                using var c = ImRaii.PushColor(ImGuiCol.Text, color);
+                ImGui.TextUnformatted(icon.ToIconString());
+            }
+
+            ImGuiUtil.HoverTooltip(tt);
+        }
+
+        public override int Compare(Record lhs, Record rhs)
+            => lhs.LoadState.CompareTo(rhs.LoadState);
     }
 
     private sealed class HandleColumn : ColumnString<Record>

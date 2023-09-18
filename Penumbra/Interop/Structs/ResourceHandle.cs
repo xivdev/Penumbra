@@ -34,6 +34,15 @@ public unsafe struct ShaderPackageResourceHandle
     public ShaderPackage* ShaderPackage;
 }
 
+public enum LoadState : byte
+{
+    Success           = 0x07,
+    Async             = 0x03,
+    Failure           = 0x09,
+    FailedSubResource = 0x0A,
+    None              = 0xFF,
+}
+
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct ResourceHandle
 {
@@ -98,6 +107,9 @@ public unsafe struct ResourceHandle
 
     [FieldOffset(0x58)]
     public int FileNameLength;
+
+    [FieldOffset(0xA9)]
+    public LoadState LoadState;
 
     [FieldOffset(0xAC)]
     public uint RefCount;
