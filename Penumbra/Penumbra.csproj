@@ -90,10 +90,6 @@
         </None>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Enums\" />
-    </ItemGroup>
-
     <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">
         <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
             <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
