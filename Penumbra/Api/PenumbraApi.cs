@@ -1018,7 +1018,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects)
     {
         var characters       = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
-        var resourceTrees    = _resourceTreeFactory.FromCharacters(characters, false, false);
+        var resourceTrees    = _resourceTreeFactory.FromCharacters(characters, 0);
         var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
         return Array.ConvertAll(gameObjects, obj => pathDictionaries.TryGetValue(obj, out var pathDict) ? pathDict : null);
@@ -1026,7 +1026,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>> GetPlayerResourcePaths()
     {
-        var resourceTrees    = _resourceTreeFactory.FromObjectTable(true, false, false);
+        var resourceTrees    = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly);
         var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
         return pathDictionaries.AsReadOnly();
@@ -1035,7 +1035,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[] GetGameObjectResourcesOfType(ushort[] gameObjects, ResourceType type, bool withUIData)
     {
         var characters      = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
-        var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData, false);
+        var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUIData : 0);
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
         return Array.ConvertAll(gameObjects, obj => resDictionaries.TryGetValue(obj, out var resDict) ? resDict : null);
@@ -1043,7 +1043,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>> GetPlayerResourcesOfType(ResourceType type, bool withUIData)
     {
-        var resourceTrees   = _resourceTreeFactory.FromObjectTable(true, withUIData, false);
+        var resourceTrees   = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly | (withUIData ? ResourceTreeFactory.Flags.WithUIData : 0));
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
         return resDictionaries.AsReadOnly();

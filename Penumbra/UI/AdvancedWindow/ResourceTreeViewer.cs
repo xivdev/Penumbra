@@ -9,6 +9,11 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public class ResourceTreeViewer
 {
+    private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
+        ResourceTreeFactory.Flags.RedactExternalPaths |
+        ResourceTreeFactory.Flags.WithUIData |
+        ResourceTreeFactory.Flags.WithOwnership;
+
     private readonly Configuration                 _config;
     private readonly ResourceTreeFactory           _treeFactory;
     private readonly ChangedItemDrawer             _changedItemDrawer;
@@ -101,7 +106,7 @@ public class ResourceTreeViewer
         {
             try
             {
-                return _treeFactory.FromObjectTable()
+                return _treeFactory.FromObjectTable(ResourceTreeFactoryFlags)
                     .Select(entry => entry.ResourceTree)
                     .ToArray();
             }

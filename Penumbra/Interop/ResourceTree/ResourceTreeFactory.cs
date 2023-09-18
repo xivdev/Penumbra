@@ -27,49 +27,46 @@ public class ResourceTreeFactory
         _actors             = actors;
     }
 
-    private TreeBuildCache CreateTreeBuildCache()
-        => new(_objects, _gameData, _actors);
+    private TreeBuildCache CreateTreeBuildCache(bool withCharacters)
+        => new(_objects, _gameData, _actors, withCharacters);
 
     public IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> GetLocalPlayerRelatedCharacters()
     {
-        var cache = CreateTreeBuildCache();
+        var cache = CreateTreeBuildCache(true);
 
         return cache.Characters.Where(cache.IsLocalPlayerRelated);
     }
 
     public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromObjectTable(
-        bool localPlayerRelatedOnly = false, bool withUIData = true, bool redactExternalPaths = true)
+        Flags flags)
     {
-        var cache      = CreateTreeBuildCache();
-        var characters = localPlayerRelatedOnly ? cache.Characters.Where(cache.IsLocalPlayerRelated) : cache.Characters;
+        var cache      = CreateTreeBuildCache(true);
+        var characters = (flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.Characters.Where(cache.IsLocalPlayerRelated) : cache.Characters;
 
         foreach (var character in characters)
         {
-            var tree = FromCharacter(character, cache, withUIData, redactExternalPaths);
+            var tree = FromCharacter(character, cache, flags);
             if (tree != null)
                 yield return (character, tree);
         }
     }
 
     public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromCharacters(
-        IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters,
-        bool withUIData = true, bool redactExternalPaths = true)
+        IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters, Flags flags)
     {
-        var cache = CreateTreeBuildCache();
+        var cache = CreateTreeBuildCache((flags & Flags.WithOwnership) != 0);
         foreach (var character in characters)
         {
-            var tree = FromCharacter(character, cache, withUIData, redactExternalPaths);
+            var tree = FromCharacter(character, cache, flags);
             if (tree != null)
                 yield return (character, tree);
         }
     }
 
-    public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, bool withUIData = true,
-        bool redactExternalPaths = true)
-        => FromCharacter(character, CreateTreeBuildCache(), withUIData, redactExternalPaths);
+    public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, Flags flags)
+        => FromCharacter(character, CreateTreeBuildCache((flags & Flags.WithOwnership) != 0), flags);
 
-    private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache,
-        bool withUIData = true, bool redactExternalPaths = true)
+    private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache, Flags flags)
     {
         if (!character.IsValid())
             return null;
@@ -88,7 +85,7 @@ public class ResourceTreeFactory
         var networked          = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
         var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related, networked, collectionResolveData.ModCollection.Name);
         var globalContext = new GlobalResolveContext(_config, _identifier.AwaitedService, cache, collectionResolveData.ModCollection,
-            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, withUIData, redactExternalPaths);
+            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, (flags & Flags.WithUIData) != 0, (flags & Flags.RedactExternalPaths) != 0);
         tree.LoadResources(globalContext);
         tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
         return tree;
@@ -118,5 +115,14 @@ public class ResourceTreeFactory
         }
 
         return (name, playerRelated);
+    }
+
+    [Flags]
+    public enum Flags
+    {
+        RedactExternalPaths    = 1,
+        WithUIData             = 2,
+        LocalPlayerRelatedOnly = 4,
+        WithOwnership          = 8,
     }
 }
