@@ -17,6 +17,7 @@ using Penumbra.UI;
 using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Enums;
+using System.Diagnostics;
 
 namespace Penumbra.Api;
 
@@ -1407,6 +1408,7 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
         private readonly IObjectTable           _objects;
+        private readonly Stopwatch              _stopwatch = new();
 
         private string       _gameObjectIndices = "0";
         private ResourceType _type              = ResourceType.Mtrl;
@@ -1416,6 +1418,7 @@ public class IpcTester : IDisposable
         private (string, IReadOnlyDictionary<string, string[]>?)[]?                        _lastPlayerResourcePaths;
         private (string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[]? _lastGameObjectResourcesOfType;
         private (string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[]? _lastPlayerResourcesOfType;
+        private TimeSpan                                                                   _lastCallDuration;
 
         public ResourceTree(DalamudPluginInterface pi, IObjectTable objects)
         {
@@ -1441,8 +1444,11 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourcePaths"))
             {
                 var gameObjects   = GetSelectedGameObjects();
-                var resourcePaths = Ipc.GetGameObjectResourcePaths.Subscriber(_pi).Invoke(gameObjects);
+                var subscriber    = Ipc.GetGameObjectResourcePaths.Subscriber(_pi);
+                _stopwatch.Restart();
+                var resourcePaths = subscriber.Invoke(gameObjects);
 
+                _lastCallDuration            = _stopwatch.Elapsed;
                 _lastGameObjectResourcePaths = gameObjects
                     .Select(GameObjectToString)
                     .Zip(resourcePaths)
@@ -1454,7 +1460,12 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcePaths.Label, "Get local player resource paths");
             if (ImGui.Button("Get##PlayerResourcePaths"))
             {
-                _lastPlayerResourcePaths = Ipc.GetPlayerResourcePaths.Subscriber(_pi).Invoke()
+                var subscriber    = Ipc.GetPlayerResourcePaths.Subscriber(_pi);
+                _stopwatch.Restart();
+                var resourcePaths = subscriber.Invoke();
+
+                _lastCallDuration        = _stopwatch.Elapsed;
+                _lastPlayerResourcePaths = resourcePaths
                     .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<string, string[]>?)pair.Value))
                     .ToArray();
 
@@ -1465,8 +1476,11 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourcesOfType"))
             {
                 var gameObjects     = GetSelectedGameObjects();
-                var resourcesOfType = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi).Invoke(_type, _withUIData, gameObjects);
+                var subscriber      = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi);
+                _stopwatch.Restart();
+                var resourcesOfType = subscriber.Invoke(_type, _withUIData, gameObjects);
 
+                _lastCallDuration              = _stopwatch.Elapsed;
                 _lastGameObjectResourcesOfType = gameObjects
                     .Select(GameObjectToString)
                     .Zip(resourcesOfType)
@@ -1478,21 +1492,26 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcesOfType.Label, "Get local player resources of type");
             if (ImGui.Button("Get##PlayerResourcesOfType"))
             {
-                _lastPlayerResourcesOfType = Ipc.GetPlayerResourcesOfType.Subscriber(_pi).Invoke(_type, _withUIData)
+                var subscriber      = Ipc.GetPlayerResourcesOfType.Subscriber(_pi);
+                _stopwatch.Restart();
+                var resourcesOfType = subscriber.Invoke(_type, _withUIData);
+
+                _lastCallDuration          = _stopwatch.Elapsed;
+                _lastPlayerResourcesOfType = resourcesOfType
                     .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)pair.Value))
                     .ToArray();
 
                 ImGui.OpenPopup(nameof(Ipc.GetPlayerResourcesOfType));
             }
 
-            DrawPopup(nameof(Ipc.GetGameObjectResourcePaths), ref _lastGameObjectResourcePaths, DrawResourcePaths);
-            DrawPopup(nameof(Ipc.GetPlayerResourcePaths), ref _lastPlayerResourcePaths, DrawResourcePaths);
+            DrawPopup(nameof(Ipc.GetGameObjectResourcePaths), ref _lastGameObjectResourcePaths, DrawResourcePaths, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetPlayerResourcePaths), ref _lastPlayerResourcePaths, DrawResourcePaths, _lastCallDuration);
 
-            DrawPopup(nameof(Ipc.GetGameObjectResourcesOfType), ref _lastGameObjectResourcesOfType, DrawResourcesOfType);
-            DrawPopup(nameof(Ipc.GetPlayerResourcesOfType), ref _lastPlayerResourcesOfType, DrawResourcesOfType);
+            DrawPopup(nameof(Ipc.GetGameObjectResourcesOfType), ref _lastGameObjectResourcesOfType, DrawResourcesOfType, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetPlayerResourcesOfType), ref _lastPlayerResourcesOfType, DrawResourcesOfType, _lastCallDuration);
         }
 
-        private static void DrawPopup<T>(string popupId, ref T? result, Action<T> drawResult) where T : class
+        private static void DrawPopup<T>(string popupId, ref T? result, Action<T> drawResult, TimeSpan duration) where T : class
         {
             ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(1000, 500));
             using var popup = ImRaii.Popup(popupId);
@@ -1509,6 +1528,8 @@ public class IpcTester : IDisposable
             }
 
             drawResult(result);
+
+            ImGui.TextUnformatted($"Invoked in {duration.TotalMilliseconds} ms");
 
             if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
             {
