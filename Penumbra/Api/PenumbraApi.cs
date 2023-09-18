@@ -24,7 +24,6 @@ using Penumbra.Interop.Services;
 using Penumbra.UI;
 using TextureType = Penumbra.Api.Enums.TextureType;
 using Penumbra.Interop.ResourceTree;
-using System.Collections.Immutable;
 
 namespace Penumbra.Api;
 
@@ -1033,7 +1032,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return pathDictionaries.AsReadOnly();
     }
 
-    public IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[] GetGameObjectResourcesOfType(ushort[] gameObjects, ResourceType type, bool withUIData)
+    public IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[] GetGameObjectResourcesOfType(ResourceType type, bool withUIData,
+        params ushort[] gameObjects)
     {
         var characters      = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
         var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUIData : 0);
@@ -1042,9 +1042,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Array.ConvertAll(gameObjects, obj => resDictionaries.TryGetValue(obj, out var resDict) ? resDict : null);
     }
 
-    public IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>> GetPlayerResourcesOfType(ResourceType type, bool withUIData)
+    public IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>> GetPlayerResourcesOfType(ResourceType type,
+        bool withUIData)
     {
-        var resourceTrees   = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly | (withUIData ? ResourceTreeFactory.Flags.WithUIData : 0));
+        var resourceTrees = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly
+          | (withUIData ? ResourceTreeFactory.Flags.WithUIData : 0));
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
         return resDictionaries.AsReadOnly();

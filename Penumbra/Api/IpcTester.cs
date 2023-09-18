@@ -1465,7 +1465,7 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourcesOfType"))
             {
                 var gameObjects     = GetSelectedGameObjects();
-                var resourcesOfType = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi).Invoke(gameObjects, _type, _withUIData);
+                var resourcesOfType = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi).Invoke(_type, _withUIData, gameObjects);
 
                 _lastGameObjectResourcesOfType = gameObjects
                     .Select(GameObjectToString)
