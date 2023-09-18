@@ -16,16 +16,24 @@ internal class TreeBuildCache
     public readonly  List<Character>                 Characters;
     public readonly  Dictionary<uint, Character>     CharactersById;
 
-    public TreeBuildCache(IObjectTable objects, IDataManager dataManager, ActorService actors)
+    public TreeBuildCache(IObjectTable objects, IDataManager dataManager, ActorService actors, bool withCharacters)
     {
         _dataManager   = dataManager;
         _actors        = actors;
-        Characters     = objects.OfType<Character>().Where(ch => ch.IsValid()).ToList();
-        CharactersById = Characters
-            .Where(c => c.ObjectId != GameObject.InvalidGameObjectId)
-            .GroupBy(c => c.ObjectId)
-            .ToDictionary(c => c.Key, c => c.First());
-        _localPlayerId = Characters.Count > 0 && Characters[0].ObjectIndex == 0 ? Characters[0].ObjectId : GameObject.InvalidGameObjectId;
+        _localPlayerId = objects[0]?.ObjectId ?? GameObject.InvalidGameObjectId;
+        if (withCharacters)
+        {
+            Characters     = objects.OfType<Character>().Where(ch => ch.IsValid()).ToList();
+            CharactersById = Characters
+                .Where(c => c.ObjectId != GameObject.InvalidGameObjectId)
+                .GroupBy(c => c.ObjectId)
+                .ToDictionary(c => c.Key, c => c.First());
+        }
+        else
+        {
+            Characters     = new();
+            CharactersById = new();
+        }
     }
 
     public unsafe bool IsLocalPlayerRelated(Character character)
