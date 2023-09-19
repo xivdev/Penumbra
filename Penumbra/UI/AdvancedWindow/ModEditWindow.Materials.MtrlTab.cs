@@ -454,13 +454,12 @@ public partial class ModEditWindow
         {
             UnbindFromMaterialInstances();
 
-            var instances = MaterialInfo.FindMaterials(_edit._dalamud.Objects, FilePath);
+            var instances = MaterialInfo.FindMaterials(_edit._resourceTreeFactory.GetLocalPlayerRelatedCharacters().Select(ch => ch.Address), FilePath);
 
             var foundMaterials = new HashSet<nint>();
             foreach (var materialInfo in instances)
             {
-                var drawObject = (CharacterBase*)MaterialInfo.GetDrawObject(materialInfo.Type, _edit._dalamud.Objects);
-                var material   = materialInfo.GetDrawObjectMaterial(drawObject);
+                var material = materialInfo.GetDrawObjectMaterial(_edit._dalamud.Objects);
                 if (foundMaterials.Contains((nint)material))
                     continue;
 
