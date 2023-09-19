@@ -278,7 +278,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         return node;
     }
 
-    internal List<Utf8GamePath> FilterGamePaths(List<Utf8GamePath> gamePaths)
+    internal List<Utf8GamePath> FilterGamePaths(IReadOnlyCollection<Utf8GamePath> gamePaths)
     {
         var filtered = new List<Utf8GamePath>(gamePaths.Count);
         foreach (var path in gamePaths)

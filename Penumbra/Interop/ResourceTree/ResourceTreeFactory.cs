@@ -84,11 +84,12 @@ public class ResourceTreeFactory
             return null;
 
         var localPlayerRelated = cache.IsLocalPlayerRelated(character);
-        var (name, related)    = GetCharacterName(character, cache);
-        var networked          = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
-        var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related, networked, collectionResolveData.ModCollection.Name);
+        var (name, related) = GetCharacterName(character, cache);
+        var networked = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
+        var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
+            networked, collectionResolveData.ModCollection.Name);
         var globalContext = new GlobalResolveContext(_identifier.AwaitedService, cache,
-            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, (flags & Flags.WithUIData) != 0);
+            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, (flags & Flags.WithUiData) != 0);
         tree.LoadResources(globalContext);
         tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
         tree.ProcessPostfix((node, _) => tree.FlatNodes.Add(node));
@@ -104,42 +105,47 @@ public class ResourceTreeFactory
 
     private static void ResolveGamePaths(ResourceTree tree, ModCollection collection)
     {
-        var forwardSet = new HashSet<Utf8GamePath>();
-        var reverseSet = new HashSet<string>();
+        var forwardDictionary = new Dictionary<Utf8GamePath, FullPath?>();
+        var reverseDictionary = new Dictionary<string, HashSet<Utf8GamePath>>();
         foreach (var node in tree.FlatNodes)
         {
             if (node.PossibleGamePaths.Length == 0 && !node.FullPath.InternalName.IsEmpty)
-                reverseSet.Add(node.FullPath.ToPath());
+                reverseDictionary.TryAdd(node.FullPath.ToPath(), null!);
             else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
-                forwardSet.Add(node.GamePath);
+                forwardDictionary.TryAdd(node.GamePath, null);
         }
 
-        var forwardDictionary    = forwardSet.ToDictionary(path => path, collection.ResolvePath);
-        var reverseArray         = reverseSet.ToArray();
-        var reverseResolvedArray = collection.ReverseResolvePaths(reverseArray);
-        var reverseDictionary    = reverseArray.Zip(reverseResolvedArray).ToDictionary(pair => pair.First, pair => pair.Second);
+        foreach (var key in forwardDictionary.Keys)
+            forwardDictionary[key] = collection.ResolvePath(key);
+
+        var reverseResolvedArray = collection.ReverseResolvePaths(reverseDictionary.Keys);
+        foreach (var (key, set) in reverseDictionary.Keys.Zip(reverseResolvedArray))
+            reverseDictionary[key] = set;
 
         foreach (var node in tree.FlatNodes)
         {
             if (node.PossibleGamePaths.Length == 0 && !node.FullPath.InternalName.IsEmpty)
             {
-                if (reverseDictionary.TryGetValue(node.FullPath.ToPath(), out var resolvedSet))
+                if (!reverseDictionary.TryGetValue(node.FullPath.ToPath(), out var resolvedSet))
+                    continue;
+
+                IReadOnlyCollection<Utf8GamePath> resolvedList = resolvedSet;
+                if (resolvedList.Count > 1)
                 {
-                    var resolvedList = resolvedSet.ToList();
-                    if (resolvedList.Count > 1)
-                    {
-                        var filteredList = node.ResolveContext!.FilterGamePaths(resolvedList);
-                        if (filteredList.Count > 0)
-                            resolvedList = filteredList;
-                    }
-                    if (resolvedList.Count != 1)
-                    {
-                        Penumbra.Log.Information($"Found {resolvedList.Count} game paths while reverse-resolving {node.FullPath} in {collection.Name}:");
-                        foreach (var gamePath in resolvedList)
-                            Penumbra.Log.Information($"Game path: {gamePath}");
-                    }
-                    node.PossibleGamePaths = resolvedList.ToArray();
+                    var filteredList = node.ResolveContext!.FilterGamePaths(resolvedList);
+                    if (filteredList.Count > 0)
+                        resolvedList = filteredList;
                 }
+                
+                if (resolvedList.Count != 1)
+                {
+                    Penumbra.Log.Debug(
+                        $"Found {resolvedList.Count} game paths while reverse-resolving {node.FullPath} in {collection.Name}:");
+                    foreach (var gamePath in resolvedList)
+                        Penumbra.Log.Debug($"Game path: {gamePath}");
+                }
+
+                node.PossibleGamePaths = resolvedList.ToArray();
             }
             else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
             {
@@ -237,7 +243,7 @@ public class ResourceTreeFactory
     public enum Flags
     {
         RedactExternalPaths    = 1,
-        WithUIData             = 2,
+        WithUiData             = 2,
         LocalPlayerRelatedOnly = 4,
         WithOwnership          = 8,
     }

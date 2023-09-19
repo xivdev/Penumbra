@@ -11,7 +11,7 @@ public class ResourceTreeViewer
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
         ResourceTreeFactory.Flags.RedactExternalPaths |
-        ResourceTreeFactory.Flags.WithUIData |
+        ResourceTreeFactory.Flags.WithUiData |
         ResourceTreeFactory.Flags.WithOwnership;
 
     private readonly Configuration                 _config;

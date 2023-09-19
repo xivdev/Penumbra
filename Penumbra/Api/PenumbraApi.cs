@@ -1036,7 +1036,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         params ushort[] gameObjects)
     {
         var characters      = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
-        var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUIData : 0);
+        var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
         return Array.ConvertAll(gameObjects, obj => resDictionaries.TryGetValue(obj, out var resDict) ? resDict : null);
@@ -1046,7 +1046,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         bool withUIData)
     {
         var resourceTrees = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly
-          | (withUIData ? ResourceTreeFactory.Flags.WithUIData : 0));
+          | (withUIData ? ResourceTreeFactory.Flags.WithUiData : 0));
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
         return resDictionaries.AsReadOnly();
