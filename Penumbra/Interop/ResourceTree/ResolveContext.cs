@@ -2,7 +2,6 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui;
 using Penumbra.Api.Enums;
-using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -13,17 +12,17 @@ using Penumbra.UI;
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal record GlobalResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache,
-    ModCollection Collection, int Skeleton, bool WithUiData, bool RedactExternalPaths)
+internal record GlobalResolveContext(IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache,
+    int Skeleton, bool WithUiData)
 {
     public readonly Dictionary<nint, ResourceNode> Nodes = new(128);
 
     public ResolveContext CreateContext(EquipSlot slot, CharacterArmor equipment)
-        => new(Config, Identifier, TreeBuildCache, Collection, Skeleton, WithUiData, RedactExternalPaths, Nodes, slot, equipment);
+        => new(Identifier, TreeBuildCache, Skeleton, WithUiData, Nodes, slot, equipment);
 }
 
-internal record ResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, ModCollection Collection,
-    int Skeleton, bool WithUiData, bool RedactExternalPaths, Dictionary<nint, ResourceNode> Nodes, EquipSlot Slot, CharacterArmor Equipment)
+internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, int Skeleton, bool WithUiData,
+    Dictionary<nint, ResourceNode> Nodes, EquipSlot Slot, CharacterArmor Equipment)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
@@ -76,52 +75,28 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         Utf8GamePath gamePath, bool @internal)
     {
         var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(resourceHandle), out var p) ? new FullPath(p) : FullPath.Empty;
-        if (fullPath.InternalName.IsEmpty)
-            fullPath = Collection.ResolvePath(gamePath) ?? new FullPath(gamePath);
 
-        var node = new ResourceNode(default, type, objectAddress, (nint)resourceHandle, gamePath, FilterFullPath(fullPath),
-            GetResourceHandleLength(resourceHandle), @internal);
+        var node = new ResourceNode(type, objectAddress, (nint)resourceHandle, GetResourceHandleLength(resourceHandle), @internal, this)
+        {
+            GamePath = gamePath,
+            FullPath = fullPath,
+        };
         if (resourceHandle != null)
             Nodes.Add((nint)resourceHandle, node);
 
         return node;
     }
 
-    private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint objectAddress, ResourceHandle* handle, bool @internal,
-        bool withName)
+    private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint objectAddress, ResourceHandle* handle, bool @internal)
     {
         var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(handle), out var p) ? new FullPath(p) : FullPath.Empty;
         if (fullPath.InternalName.IsEmpty)
             return null;
 
-        var gamePaths = Collection.ReverseResolvePath(fullPath).ToList();
-        fullPath = FilterFullPath(fullPath);
-
-        if (gamePaths.Count > 1)
-            gamePaths = Filter(gamePaths);
-
-        if (gamePaths.Count == 1)
-            return new ResourceNode(withName ? GuessUIDataFromPath(gamePaths[0]) : default, type, objectAddress, (nint)handle, gamePaths[0],
-                fullPath,
-                GetResourceHandleLength(handle), @internal);
-
-        Penumbra.Log.Information($"Found {gamePaths.Count} game paths while reverse-resolving {fullPath} in {Collection.Name}:");
-        foreach (var gamePath in gamePaths)
-            Penumbra.Log.Information($"Game path: {gamePath}");
-
-        return new ResourceNode(default, type, objectAddress, (nint)handle, gamePaths.ToArray(), fullPath, GetResourceHandleLength(handle),
-            @internal);
-    }
-
-    public unsafe ResourceNode? CreateHumanSkeletonNode(GenderRace gr)
-    {
-        var raceSexIdStr = gr.ToRaceCode();
-        var path         = $"chara/human/c{raceSexIdStr}/skeleton/base/b0001/skl_c{raceSexIdStr}b0001.sklb";
-
-        if (!Utf8GamePath.FromString(path, out var gamePath))
-            return null;
-
-        return CreateNodeFromGamePath(ResourceType.Sklb, 0, null, gamePath, false);
+        return new ResourceNode(type, objectAddress, (nint)handle, GetResourceHandleLength(handle), @internal, this)
+        {
+            FullPath = fullPath,
+        };
     }
 
     public unsafe ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
@@ -129,15 +104,9 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         if (Nodes.TryGetValue((nint)imc, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Imc, 0, imc, true, false);
+        var node = CreateNodeFromResourceHandle(ResourceType.Imc, 0, imc, true);
         if (node == null)
             return null;
-
-        if (WithUiData)
-        {
-            var uiData = GuessModelUIData(node.GamePath);
-            node = node.WithUIData(uiData.PrependName("IMC: "));
-        }
 
         Nodes.Add((nint)imc, node);
 
@@ -149,7 +118,7 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         if (Nodes.TryGetValue((nint)tex, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->KernelTexture, &tex->Handle, false, WithUiData);
+        var node = CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->KernelTexture, &tex->Handle, false);
         if (node != null)
             Nodes.Add((nint)tex, node);
 
@@ -164,23 +133,20 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         if (Nodes.TryGetValue((nint)mdl->ResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Mdl, (nint)mdl, mdl->ResourceHandle, false, false);
+        var node = CreateNodeFromResourceHandle(ResourceType.Mdl, (nint)mdl, mdl->ResourceHandle, false);
         if (node == null)
             return null;
-
-        if (WithUiData)
-            node = node.WithUIData(GuessModelUIData(node.GamePath));
 
         for (var i = 0; i < mdl->MaterialCount; i++)
         {
             var mtrl     = (Material*)mdl->Materials[i];
             var mtrlNode = CreateNodeFromMaterial(mtrl);
             if (mtrlNode != null)
-                // Don't keep the material's name if it's redundant with the model's name.
-                node.Children.Add(WithUiData
-                    ? mtrlNode.WithUIData((string.Equals(mtrlNode.Name, node.Name, StringComparison.Ordinal) ? null : mtrlNode.Name)
-                     ?? $"Material #{i}", mtrlNode.Icon)
-                    : mtrlNode);
+            {
+                if (WithUiData)
+                    mtrlNode.FallbackName = $"Material #{i}";
+                node.Children.Add(mtrlNode);
+            }
         }
 
         Nodes.Add((nint)mdl->ResourceHandle, node);
@@ -190,18 +156,20 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
 
     private unsafe ResourceNode? CreateNodeFromMaterial(Material* mtrl)
     {
-        static ushort GetTextureIndex(ushort texFlags)
+        static ushort GetTextureIndex(Material* mtrl, ushort texFlags, HashSet<uint> alreadyVisitedSamplerIds)
         {
-            if ((texFlags & 0x001F) != 0x001F)
+            if ((texFlags & 0x001F) != 0x001F && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[texFlags & 0x001F].Id))
                 return (ushort)(texFlags & 0x001F);
-            if ((texFlags & 0x03E0) != 0x03E0)
+            if ((texFlags & 0x03E0) != 0x03E0 && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[(texFlags >> 5) & 0x001F].Id))
                 return (ushort)((texFlags >> 5) & 0x001F);
+            if ((texFlags & 0x7C00) != 0x7C00 && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[(texFlags >> 10) & 0x001F].Id))
+                return (ushort)((texFlags >> 10) & 0x001F);
 
-            return (ushort)((texFlags >> 10) & 0x001F);
+            return 0x001F;
         }
 
-        static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle)
-            => mtrl->TextureSpan.FindFirst(p => p.ResourceHandle == handle, out var p)
+        static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle, HashSet<uint> alreadyVisitedSamplerIds)
+            => mtrl->TextureSpan.FindFirst(p => p.ResourceHandle == handle && !alreadyVisitedSamplerIds.Contains(p.Id), out var p)
                 ? p.Id
                 : null;
 
@@ -217,16 +185,21 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         if (Nodes.TryGetValue((nint)resource, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint)mtrl, &resource->Handle, false, WithUiData);
+        var node = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint)mtrl, &resource->Handle, false);
         if (node == null)
             return null;
 
         var shpkNode = CreateNodeFromShpk(resource->ShpkResourceHandle, new ByteString(resource->ShpkString), false);
         if (shpkNode != null)
-            node.Children.Add(WithUiData ? shpkNode.WithUIData("Shader Package", 0) : shpkNode);
+        {
+            if (WithUiData)
+                shpkNode.Name = "Shader Package";
+            node.Children.Add(shpkNode);
+        }
         var shpkFile = WithUiData && shpkNode != null ? TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
         var shpk     = WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
+        var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->NumTex; i++)
         {
             var texNode = CreateNodeFromTex(resource->TexSpace[i].ResourceHandle, new ByteString(resource->TexString(i)), false,
@@ -239,26 +212,26 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
                 string? name = null;
                 if (shpk != null)
                 {
-                    var   index = GetTextureIndex(resource->TexSpace[i].Flags);
+                    var   index = GetTextureIndex(mtrl, resource->TexSpace[i].Flags, alreadyProcessedSamplerIds);
                     uint? samplerId;
                     if (index != 0x001F)
                         samplerId = mtrl->Textures[index].Id;
                     else
-                        samplerId = GetTextureSamplerId(mtrl, resource->TexSpace[i].ResourceHandle);
+                        samplerId = GetTextureSamplerId(mtrl, resource->TexSpace[i].ResourceHandle, alreadyProcessedSamplerIds);
                     if (samplerId.HasValue)
                     {
+                        alreadyProcessedSamplerIds.Add(samplerId.Value);
                         var samplerCrc = GetSamplerCrcById(shpk, samplerId.Value);
                         if (samplerCrc.HasValue)
                             name = shpkFile?.GetSamplerById(samplerCrc.Value)?.Name ?? $"Texture 0x{samplerCrc.Value:X8}";
                     }
                 }
 
-                node.Children.Add(texNode.WithUIData(name ?? $"Texture #{i}", 0));
+                texNode = texNode.Clone();
+                texNode.Name = name ?? $"Texture #{i}";
             }
-            else
-            {
-                node.Children.Add(texNode);
-            }
+
+            node.Children.Add(texNode);
         }
 
         Nodes.Add((nint)resource, node);
@@ -274,8 +247,7 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         if (Nodes.TryGetValue((nint)sklb->SkeletonResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false,
-            WithUiData);
+        var node = CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false);
         if (node != null)
         {
             var skpNode = CreateParameterNodeFromPartialSkeleton(sklb);
@@ -295,31 +267,18 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
         if (Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, true,
-            WithUiData);
+        var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, true);
         if (node != null)
         {
             if (WithUiData)
-                node = node.WithUIData("Skeleton Parameters", node.Icon);
+                node.FallbackName = "Skeleton Parameters";
             Nodes.Add((nint)sklb->SkeletonParameterResourceHandle, node);
         }
 
         return node;
     }
 
-    private FullPath FilterFullPath(FullPath fullPath)
-    {
-        if (!fullPath.IsRooted)
-            return fullPath;
-
-        var relPath = Path.GetRelativePath(Config.ModDirectory, fullPath.FullName);
-        if (!RedactExternalPaths || relPath == "." || !relPath.StartsWith('.') && !Path.IsPathRooted(relPath))
-            return fullPath.Exists ? fullPath : FullPath.Empty;
-
-        return FullPath.Empty;
-    }
-
-    private List<Utf8GamePath> Filter(List<Utf8GamePath> gamePaths)
+    internal List<Utf8GamePath> FilterGamePaths(List<Utf8GamePath> gamePaths)
     {
         var filtered = new List<Utf8GamePath>(gamePaths.Count);
         foreach (var path in gamePaths)
@@ -356,7 +315,7 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
             }
             : false;
 
-    private ResourceNode.UIData GuessModelUIData(Utf8GamePath gamePath)
+    internal ResourceNode.UiData GuessModelUIData(Utf8GamePath gamePath)
     {
         var path = gamePath.ToString().Split('/', StringSplitOptions.RemoveEmptyEntries);
         // Weapons intentionally left out.
@@ -371,7 +330,7 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
                         _                 => string.Empty,
                     }
                   + item.Name.ToString();
-                return new ResourceNode.UIData(name, ChangedItemDrawer.GetCategoryIcon(item.Name, item));
+                return new ResourceNode.UiData(name, ChangedItemDrawer.GetCategoryIcon(item.Name, item));
             }
 
         var dataFromPath = GuessUIDataFromPath(gamePath);
@@ -379,11 +338,11 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
             return dataFromPath;
 
         return isEquipment
-            ? new ResourceNode.UIData(Slot.ToName(), ChangedItemDrawer.GetCategoryIcon(Slot.ToSlot()))
-            : new ResourceNode.UIData(null,          ChangedItemDrawer.ChangedItemIcon.Unknown);
+            ? new ResourceNode.UiData(Slot.ToName(), ChangedItemDrawer.GetCategoryIcon(Slot.ToSlot()))
+            : new ResourceNode.UiData(null,          ChangedItemDrawer.ChangedItemIcon.Unknown);
     }
 
-    private ResourceNode.UIData GuessUIDataFromPath(Utf8GamePath gamePath)
+    internal ResourceNode.UiData GuessUIDataFromPath(Utf8GamePath gamePath)
     {
         foreach (var obj in Identifier.Identify(gamePath.ToString()))
         {
@@ -391,10 +350,10 @@ internal record ResolveContext(Configuration Config, IObjectIdentifier Identifie
             if (name.StartsWith("Customization:"))
                 name = name[14..].Trim();
             if (name != "Unknown")
-                return new ResourceNode.UIData(name, ChangedItemDrawer.GetCategoryIcon(obj.Key, obj.Value));
+                return new ResourceNode.UiData(name, ChangedItemDrawer.GetCategoryIcon(obj.Key, obj.Value));
         }
 
-        return new ResourceNode.UIData(null, ChangedItemDrawer.ChangedItemIcon.Unknown);
+        return new ResourceNode.UiData(null, ChangedItemDrawer.ChangedItemIcon.Unknown);
     }
 
     private static string? SafeGet(ReadOnlySpan<string> array, Index index)

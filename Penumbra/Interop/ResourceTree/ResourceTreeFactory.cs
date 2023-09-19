@@ -1,9 +1,12 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using Penumbra.Api.Enums;
+using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Services;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -84,11 +87,124 @@ public class ResourceTreeFactory
         var (name, related)    = GetCharacterName(character, cache);
         var networked          = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
         var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related, networked, collectionResolveData.ModCollection.Name);
-        var globalContext = new GlobalResolveContext(_config, _identifier.AwaitedService, cache, collectionResolveData.ModCollection,
-            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, (flags & Flags.WithUIData) != 0, (flags & Flags.RedactExternalPaths) != 0);
+        var globalContext = new GlobalResolveContext(_identifier.AwaitedService, cache,
+            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, (flags & Flags.WithUIData) != 0);
         tree.LoadResources(globalContext);
         tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
+        tree.ProcessPostfix((node, _) => tree.FlatNodes.Add(node));
+
+        ResolveGamePaths(tree, collectionResolveData.ModCollection);
+        if (globalContext.WithUiData)
+            ResolveUiData(tree);
+        FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) != 0 ? _config.ModDirectory : null);
+        Cleanup(tree);
+
         return tree;
+    }
+
+    private static void ResolveGamePaths(ResourceTree tree, ModCollection collection)
+    {
+        var forwardSet = new HashSet<Utf8GamePath>();
+        var reverseSet = new HashSet<string>();
+        foreach (var node in tree.FlatNodes)
+        {
+            if (node.PossibleGamePaths.Length == 0 && !node.FullPath.InternalName.IsEmpty)
+                reverseSet.Add(node.FullPath.ToPath());
+            else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
+                forwardSet.Add(node.GamePath);
+        }
+
+        var forwardDictionary    = forwardSet.ToDictionary(path => path, collection.ResolvePath);
+        var reverseArray         = reverseSet.ToArray();
+        var reverseResolvedArray = collection.ReverseResolvePaths(reverseArray);
+        var reverseDictionary    = reverseArray.Zip(reverseResolvedArray).ToDictionary(pair => pair.First, pair => pair.Second);
+
+        foreach (var node in tree.FlatNodes)
+        {
+            if (node.PossibleGamePaths.Length == 0 && !node.FullPath.InternalName.IsEmpty)
+            {
+                if (reverseDictionary.TryGetValue(node.FullPath.ToPath(), out var resolvedSet))
+                {
+                    var resolvedList = resolvedSet.ToList();
+                    if (resolvedList.Count > 1)
+                    {
+                        var filteredList = node.ResolveContext!.FilterGamePaths(resolvedList);
+                        if (filteredList.Count > 0)
+                            resolvedList = filteredList;
+                    }
+                    if (resolvedList.Count != 1)
+                    {
+                        Penumbra.Log.Information($"Found {resolvedList.Count} game paths while reverse-resolving {node.FullPath} in {collection.Name}:");
+                        foreach (var gamePath in resolvedList)
+                            Penumbra.Log.Information($"Game path: {gamePath}");
+                    }
+                    node.PossibleGamePaths = resolvedList.ToArray();
+                }
+            }
+            else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
+            {
+                if (forwardDictionary.TryGetValue(node.GamePath, out var resolved))
+                    node.FullPath = resolved ?? new FullPath(node.GamePath);
+            }
+        }
+    }
+
+    private static void ResolveUiData(ResourceTree tree)
+    {
+        foreach (var node in tree.FlatNodes)
+        {
+            if (node.Name != null || node.PossibleGamePaths.Length == 0)
+                continue;
+
+            var gamePath = node.PossibleGamePaths[0];
+            node.SetUiData(node.Type switch
+            {
+                ResourceType.Imc => node.ResolveContext!.GuessModelUIData(gamePath).PrependName("IMC: "),
+                ResourceType.Mdl => node.ResolveContext!.GuessModelUIData(gamePath),
+                _                => node.ResolveContext!.GuessUIDataFromPath(gamePath),
+            });
+        }
+
+        tree.ProcessPostfix((node, parent) =>
+        {
+            if (node.Name == parent?.Name)
+                node.Name = null;
+        });
+    }
+
+    private static void FilterFullPaths(ResourceTree tree, string? onlyWithinPath)
+    {
+        static bool ShallKeepPath(FullPath fullPath, string? onlyWithinPath)
+        {
+            if (!fullPath.IsRooted)
+                return true;
+
+            if (onlyWithinPath != null)
+            {
+                var relPath = Path.GetRelativePath(onlyWithinPath, fullPath.FullName);
+                if (relPath != "." && (relPath.StartsWith('.') || Path.IsPathRooted(relPath)))
+                    return false;
+            }
+
+            return fullPath.Exists;
+        }
+
+        foreach (var node in tree.FlatNodes)
+        {
+            if (!ShallKeepPath(node.FullPath, onlyWithinPath))
+                node.FullPath = FullPath.Empty;
+        }
+    }
+
+    private static void Cleanup(ResourceTree tree)
+    {
+        foreach (var node in tree.FlatNodes)
+        {
+            node.Name ??= node.FallbackName;
+
+            node.FallbackName   = null;
+            node.ResolveContext = null;
+        }
     }
 
     private unsafe (string Name, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character,
