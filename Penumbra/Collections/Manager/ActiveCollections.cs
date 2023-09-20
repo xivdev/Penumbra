@@ -408,19 +408,15 @@ public class ActiveCollections : ISavable, IDisposable
     public static bool Load(FilenameService fileNames, out JObject ret)
     {
         var file = fileNames.ActiveCollectionsFile;
-        if (File.Exists(file))
-            try
-            {
-                ret = JObject.Parse(File.ReadAllText(file));
-                return true;
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not read active collections from file {file}:\n{e}");
-            }
+        var jObj = BackupService.GetJObjectForFile(fileNames, file);
+        if (jObj == null)
+        {
+            ret = new JObject();
+            return false;
+        }
 
-        ret = new JObject();
-        return false;
+        ret = jObj;
+        return true;
     }
 
     public string RedundancyCheck(CollectionType type, ActorIdentifier id)

@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Services;
@@ -60,8 +62,8 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     // Used on construction and on mod rediscoveries.
     private void Reload()
     {
-        // TODO
-        if (Load(new FileInfo(_saveService.FileNames.FilesystemFile), _modManager, ModToIdentifier, ModToName))
+        var jObj = BackupService.GetJObjectForFile(_saveService.FileNames, _saveService.FileNames.FilesystemFile);
+        if (Load(jObj, _modManager, ModToIdentifier, ModToName))
             _saveService.ImmediateSave(this);
 
         Penumbra.Log.Debug("Reloaded mod filesystem.");
