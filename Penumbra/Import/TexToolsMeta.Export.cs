@@ -1,4 +1,3 @@
-using System.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;

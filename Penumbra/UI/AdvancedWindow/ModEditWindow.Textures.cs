@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;

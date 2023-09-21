@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using OtterGui.Classes;
 using OtterGui.Widgets;
 

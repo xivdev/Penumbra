@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;

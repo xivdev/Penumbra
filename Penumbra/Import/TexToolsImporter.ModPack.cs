@@ -4,7 +4,7 @@ using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Util;
-using SharpCompress.Archives.Zip;
+using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace Penumbra.Import;
 

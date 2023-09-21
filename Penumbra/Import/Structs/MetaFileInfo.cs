@@ -1,5 +1,4 @@
 using Penumbra.GameData.Enums;
-using System.Text.RegularExpressions;
 using Penumbra.GameData;
 
 namespace Penumbra.Import.Structs;

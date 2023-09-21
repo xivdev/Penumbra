@@ -4,7 +4,6 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Mods;
-using System.Globalization;
 using Dalamud.Utility;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
@@ -17,7 +16,6 @@ using Penumbra.UI;
 using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Enums;
-using System.Diagnostics;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.Api;

@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Services;

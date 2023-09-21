@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Dalamud.Game.ClientState.Objects.Enums;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Actors;

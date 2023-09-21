@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Actors;
