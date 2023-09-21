@@ -18,6 +18,7 @@ using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Enums;
 using System.Diagnostics;
+using Penumbra.GameData.Structs;
 
 namespace Penumbra.Api;
 
@@ -1450,7 +1451,7 @@ public class IpcTester : IDisposable
 
                 _lastCallDuration            = _stopwatch.Elapsed;
                 _lastGameObjectResourcePaths = gameObjects
-                    .Select(GameObjectToString)
+                    .Select(i => GameObjectToString(i))
                     .Zip(resourcePaths)
                     .ToArray();
 
@@ -1482,7 +1483,7 @@ public class IpcTester : IDisposable
 
                 _lastCallDuration              = _stopwatch.Elapsed;
                 _lastGameObjectResourcesOfType = gameObjects
-                    .Select(GameObjectToString)
+                    .Select(i => GameObjectToString(i))
                     .Zip(resourcesOfType)
                     .ToArray();
 
@@ -1630,9 +1631,9 @@ public class IpcTester : IDisposable
                     .SelectWhere(index => (ushort.TryParse(index.Trim(), out var i), i))
                     .ToArray();
 
-        private unsafe string GameObjectToString(ushort gameObjectIndex)
+        private unsafe string GameObjectToString(ObjectIndex gameObjectIndex)
         {
-            var gameObject = _objects[gameObjectIndex];
+            var gameObject = _objects[gameObjectIndex.Index];
 
             return gameObject != null
                 ? $"[{gameObjectIndex}] {gameObject.Name} ({gameObject.ObjectKind})"

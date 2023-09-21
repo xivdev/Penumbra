@@ -2,6 +2,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.String;
 
@@ -15,10 +16,10 @@ public enum DrawObjectType
     Vfx,
 };
 
-public readonly record struct MaterialInfo(ushort ObjectIndex, DrawObjectType Type, int ModelSlot, int MaterialSlot)
+public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectType Type, int ModelSlot, int MaterialSlot)
 {
     public nint GetCharacter(IObjectTable objects)
-        => objects.GetObjectAddress(ObjectIndex);
+        => objects.GetObjectAddress(ObjectIndex.Index);
 
     public nint GetDrawObject(nint address)
         => GetDrawObject(Type, address);
@@ -71,7 +72,7 @@ public readonly record struct MaterialInfo(ushort ObjectIndex, DrawObjectType Ty
             if (gameObject == null)
                 continue;
 
-            var index = gameObject->GameObject.ObjectIndex;
+            var index = (ObjectIndex) gameObject->GameObject.ObjectIndex;
 
             foreach (var type in Enum.GetValues<DrawObjectType>())
             {

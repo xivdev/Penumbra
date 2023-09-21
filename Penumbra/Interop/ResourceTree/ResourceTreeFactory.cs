@@ -30,21 +30,20 @@ public class ResourceTreeFactory
         _actors             = actors;
     }
 
-    private TreeBuildCache CreateTreeBuildCache(bool withCharacters)
-        => new(_objects, _gameData, _actors, withCharacters);
+    private TreeBuildCache CreateTreeBuildCache()
+        => new(_objects, _gameData, _actors);
 
     public IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> GetLocalPlayerRelatedCharacters()
     {
-        var cache = CreateTreeBuildCache(true);
-
-        return cache.Characters.Where(cache.IsLocalPlayerRelated);
+        var cache = CreateTreeBuildCache();
+        return cache.GetLocalPlayerRelatedCharacters();
     }
 
     public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromObjectTable(
         Flags flags)
     {
-        var cache      = CreateTreeBuildCache(true);
-        var characters = (flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.Characters.Where(cache.IsLocalPlayerRelated) : cache.Characters;
+        var cache      = CreateTreeBuildCache();
+        var characters = (flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters();
 
         foreach (var character in characters)
         {
@@ -57,7 +56,7 @@ public class ResourceTreeFactory
     public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromCharacters(
         IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters, Flags flags)
     {
-        var cache = CreateTreeBuildCache((flags & Flags.WithOwnership) != 0);
+        var cache = CreateTreeBuildCache();
         foreach (var character in characters)
         {
             var tree = FromCharacter(character, cache, flags);
@@ -67,7 +66,7 @@ public class ResourceTreeFactory
     }
 
     public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, Flags flags)
-        => FromCharacter(character, CreateTreeBuildCache((flags & Flags.WithOwnership) != 0), flags);
+        => FromCharacter(character, CreateTreeBuildCache(), flags);
 
     private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache, Flags flags)
     {
@@ -136,7 +135,7 @@ public class ResourceTreeFactory
                     if (filteredList.Count > 0)
                         resolvedList = filteredList;
                 }
-                
+
                 if (resolvedList.Count != 1)
                 {
                     Penumbra.Log.Debug(
@@ -216,27 +215,22 @@ public class ResourceTreeFactory
     private unsafe (string Name, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character,
         TreeBuildCache cache)
     {
-        var    identifier = _actors.AwaitedService.FromObject((GameObject*)character.Address, out var owner, true, false, false);
-        string name;
-        bool   playerRelated;
+        var identifier = _actors.AwaitedService.FromObject((GameObject*)character.Address, out var owner, true, false, false);
         switch (identifier.Type)
         {
-            case IdentifierType.Player:
-                name          = identifier.PlayerName.ToString();
-                playerRelated = true;
-                break;
-            case IdentifierType.Owned when cache.CharactersById.TryGetValue(owner->ObjectID, out var ownerChara):
-                var ownerName = GetCharacterName(ownerChara, cache);
-                name          = $"[{ownerName.Name}] {character.Name} ({identifier.Kind.ToName()})";
-                playerRelated = ownerName.PlayerRelated;
-                break;
-            default:
-                name          = $"{character.Name} ({identifier.Kind.ToName()})";
-                playerRelated = false;
+            case IdentifierType.Player: return (identifier.PlayerName.ToString(), true);
+            case IdentifierType.Owned:
+                var ownerChara = _objects.CreateObjectReference((nint)owner) as Dalamud.Game.ClientState.Objects.Types.Character;
+                if (ownerChara != null)
+                {
+                    var ownerName = GetCharacterName(ownerChara, cache);
+                    return ($"[{ownerName.Name}] {character.Name} ({identifier.Kind.ToName()})", ownerName.PlayerRelated);
+                }
+
                 break;
         }
 
-        return (name, playerRelated);
+        return ($"{character.Name} ({identifier.Kind.ToName()})", false);
     }
 
     [Flags]
