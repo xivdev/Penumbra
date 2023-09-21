@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using OtterGui.Tasks;
 using Penumbra.Mods.Manager;
 

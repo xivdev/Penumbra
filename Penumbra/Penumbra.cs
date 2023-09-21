@@ -1,4 +1,3 @@
-using System.Text;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;

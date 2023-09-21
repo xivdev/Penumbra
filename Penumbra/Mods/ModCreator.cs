@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

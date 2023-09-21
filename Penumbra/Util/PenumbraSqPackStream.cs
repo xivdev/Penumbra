@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using Lumina.Data.Structs;
 using Lumina.Extensions;
 

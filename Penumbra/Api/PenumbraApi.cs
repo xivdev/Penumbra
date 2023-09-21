@@ -7,7 +7,6 @@ using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using System.Diagnostics.CodeAnalysis;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Compression;
 using Penumbra.Api.Enums;

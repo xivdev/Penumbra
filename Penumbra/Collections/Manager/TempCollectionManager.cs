@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Penumbra.Api;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;

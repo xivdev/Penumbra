@@ -3,7 +3,6 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
-using System.Globalization;
 
 namespace Penumbra.UI.AdvancedWindow;
 

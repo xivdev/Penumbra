@@ -1,4 +1,3 @@
-using System.Text;
 using Dalamud.Hooking;
 using Penumbra.String;
 using Penumbra.String.Classes;

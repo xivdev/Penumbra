@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;

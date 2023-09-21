@@ -1,4 +1,3 @@
-using System.Globalization;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;

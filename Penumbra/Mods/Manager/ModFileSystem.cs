@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using OtterGui.Filesystem;

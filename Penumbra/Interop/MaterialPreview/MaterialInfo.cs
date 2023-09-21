@@ -2,6 +2,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.String;
 
@@ -9,40 +10,19 @@ namespace Penumbra.Interop.MaterialPreview;
 
 public enum DrawObjectType
 {
-    PlayerCharacter,
-    PlayerMainhand,
-    PlayerOffhand,
-    PlayerVfx,
-    MinionCharacter,
-    MinionUnk1,
-    MinionUnk2,
-    MinionUnk3,
+    Character,
+    Mainhand,
+    Offhand,
+    Vfx,
 };
 
-public readonly record struct MaterialInfo(DrawObjectType Type, int ModelSlot, int MaterialSlot)
+public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectType Type, int ModelSlot, int MaterialSlot)
 {
     public nint GetCharacter(IObjectTable objects)
-        => GetCharacter(Type, objects);
-
-    public static nint GetCharacter(DrawObjectType type, IObjectTable objects)
-        => type switch
-        {
-            DrawObjectType.PlayerCharacter => objects.GetObjectAddress(0),
-            DrawObjectType.PlayerMainhand  => objects.GetObjectAddress(0),
-            DrawObjectType.PlayerOffhand   => objects.GetObjectAddress(0),
-            DrawObjectType.PlayerVfx       => objects.GetObjectAddress(0),
-            DrawObjectType.MinionCharacter => objects.GetObjectAddress(1),
-            DrawObjectType.MinionUnk1      => objects.GetObjectAddress(1),
-            DrawObjectType.MinionUnk2      => objects.GetObjectAddress(1),
-            DrawObjectType.MinionUnk3      => objects.GetObjectAddress(1),
-            _                              => nint.Zero,
-        };
+        => objects.GetObjectAddress(ObjectIndex.Index);
 
     public nint GetDrawObject(nint address)
         => GetDrawObject(Type, address);
-
-    public static nint GetDrawObject(DrawObjectType type, IObjectTable objects)
-        => GetDrawObject(type, GetCharacter(type, objects));
 
     public static unsafe nint GetDrawObject(DrawObjectType type, nint address)
     {
@@ -52,17 +32,16 @@ public readonly record struct MaterialInfo(DrawObjectType Type, int ModelSlot, i
 
         return type switch
         {
-            DrawObjectType.PlayerCharacter => (nint)gameObject->GameObject.GetDrawObject(),
-            DrawObjectType.PlayerMainhand  => *((nint*)&gameObject->DrawData.MainHand + 1),
-            DrawObjectType.PlayerOffhand   => *((nint*)&gameObject->DrawData.OffHand + 1),
-            DrawObjectType.PlayerVfx       => *((nint*)&gameObject->DrawData.UnkF0 + 1),
-            DrawObjectType.MinionCharacter => (nint)gameObject->GameObject.GetDrawObject(),
-            DrawObjectType.MinionUnk1      => *((nint*)&gameObject->DrawData.MainHand + 1),
-            DrawObjectType.MinionUnk2      => *((nint*)&gameObject->DrawData.OffHand + 1),
-            DrawObjectType.MinionUnk3      => *((nint*)&gameObject->DrawData.UnkF0 + 1),
-            _                              => nint.Zero,
+            DrawObjectType.Character => (nint)gameObject->GameObject.GetDrawObject(),
+            DrawObjectType.Mainhand  => *((nint*)&gameObject->DrawData.MainHand + 1),
+            DrawObjectType.Offhand   => *((nint*)&gameObject->DrawData.OffHand + 1),
+            DrawObjectType.Vfx       => *((nint*)&gameObject->DrawData.UnkF0 + 1),
+            _                        => nint.Zero,
         };
     }
+
+    public unsafe Material* GetDrawObjectMaterial(IObjectTable objects)
+        => GetDrawObjectMaterial((CharacterBase*)GetDrawObject(GetCharacter(objects)));
 
     public unsafe Material* GetDrawObjectMaterial(CharacterBase* drawObject)
     {
@@ -82,33 +61,42 @@ public readonly record struct MaterialInfo(DrawObjectType Type, int ModelSlot, i
         return model->Materials[MaterialSlot];
     }
 
-    public static unsafe List<MaterialInfo> FindMaterials(IObjectTable objects, string materialPath)
+    public static unsafe List<MaterialInfo> FindMaterials(IEnumerable<nint> gameObjects, string materialPath)
     {
         var needle = ByteString.FromString(materialPath.Replace('\\', '/'), out var m, true) ? m : ByteString.Empty;
 
         var result = new List<MaterialInfo>(Enum.GetValues<DrawObjectType>().Length);
-        foreach (var type in Enum.GetValues<DrawObjectType>())
+        foreach (var objectPtr in gameObjects)
         {
-            var drawObject = (CharacterBase*)GetDrawObject(type, objects);
-            if (drawObject == null)
+            var gameObject = (Character*)objectPtr;
+            if (gameObject == null)
                 continue;
 
-            for (var i = 0; i < drawObject->SlotCount; ++i)
+            var index = (ObjectIndex) gameObject->GameObject.ObjectIndex;
+
+            foreach (var type in Enum.GetValues<DrawObjectType>())
             {
-                var model = drawObject->Models[i];
-                if (model == null)
+                var drawObject = (CharacterBase*)GetDrawObject(type, objectPtr);
+                if (drawObject == null)
                     continue;
 
-                for (var j = 0; j < model->MaterialCount; ++j)
+                for (var i = 0; i < drawObject->SlotCount; ++i)
                 {
-                    var material = model->Materials[j];
-                    if (material == null)
+                    var model = drawObject->Models[i];
+                    if (model == null)
                         continue;
 
-                    var mtrlHandle = material->MaterialResourceHandle;
-                    var path       = ResolveContext.GetResourceHandlePath((Structs.ResourceHandle*)mtrlHandle);
-                    if (path == needle)
-                        result.Add(new MaterialInfo(type, i, j));
+                    for (var j = 0; j < model->MaterialCount; ++j)
+                    {
+                        var material = model->Materials[j];
+                        if (material == null)
+                            continue;
+
+                        var mtrlHandle = material->MaterialResourceHandle;
+                        var path = ResolveContext.GetResourceHandlePath((Structs.ResourceHandle*)mtrlHandle);
+                        if (path == needle)
+                            result.Add(new MaterialInfo(index, type, i, j));
+                    }
                 }
             }
         }

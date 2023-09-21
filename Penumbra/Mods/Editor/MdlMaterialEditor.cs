@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using OtterGui;
 using OtterGui.Compression;
 using Penumbra.GameData.Enums;

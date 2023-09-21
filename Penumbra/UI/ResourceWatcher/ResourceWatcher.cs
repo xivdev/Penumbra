@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;

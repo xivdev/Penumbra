@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Filesystem;
