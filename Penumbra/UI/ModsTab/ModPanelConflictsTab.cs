@@ -38,6 +38,8 @@ public class ModPanelConflictsTab : ITab
         {
             if (ImGui.Selectable(conflict.Mod2.Name) && conflict.Mod2 is Mod otherMod)
                 _selector.SelectByValue(otherMod);
+            var hovered      = ImGui.IsItemHovered();
+            var rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);
 
             ImGui.SameLine();
             using (var color = ImRaii.PushColor(ImGuiCol.Text,
@@ -47,6 +49,16 @@ public class ModPanelConflictsTab : ITab
                     ? conflict.Mod2.Priority
                     : _collectionManager.Active.Current[conflict.Mod2.Index].Settings!.Priority;
                 ImGui.TextUnformatted($"(Priority {priority})");
+                hovered      |= ImGui.IsItemHovered();
+                rightClicked |= ImGui.IsItemClicked(ImGuiMouseButton.Right);
+            }
+
+            if (conflict.Mod2 is Mod otherMod2)
+            {
+                if (hovered)
+                    ImGui.SetTooltip("Click to jump to mod, Control + Right-Click to disable mod.");
+                if (rightClicked && ImGui.GetIO().KeyCtrl)
+                    _collectionManager.Editor.SetModState(_collectionManager.Active.Current, otherMod2, false);
             }
 
             using var indent = ImRaii.PushIndent(30f);
