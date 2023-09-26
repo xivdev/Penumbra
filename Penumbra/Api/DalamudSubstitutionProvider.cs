@@ -39,11 +39,10 @@ public class DalamudSubstitutionProvider : IDisposable
 
     public void ResetSubstitutions(IEnumerable<Utf8GamePath> paths)
     {
-        // TODO fix
-        //var transformed = paths
-        //    .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
-        //    .Select(p => p.ToString());
-        //_substitution.InvalidatePaths(transformed);
+        var transformed = paths
+            .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
+            .Select(p => p.ToString());
+        _substitution.InvalidatePaths(transformed);
     }
 
     public void Enable()
