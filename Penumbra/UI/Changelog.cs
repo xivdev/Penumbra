@@ -41,9 +41,66 @@ public class PenumbraChangelog
         Add7_1_2(Changelog);
         Add7_2_0(Changelog);
         Add7_3_0(Changelog);
+        Add8_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add8_0_0(Changelog log)
+        => log.NextVersion("Version 0.8.0.0")
+            .RegisterEntry(
+                "Penumbra now uses Windows' transparent file system compression by default (on Windows systems). You can disable this functionality in the settings.")
+            .RegisterImportant("You can retroactively compress your existing mods in the settings via the press of a button, too.", 1)
+            .RegisterEntry(
+                "In our tests, this not only was able to reduce storage space by 30-60%, it even decreased loading times since less I/O had to take place.",
+                1)
+            .RegisterEntry("Added emotes to changed item identification.")
+            .RegisterEntry(
+                "Added quick select buttons to switch to the current interface collection or the collection applying to the current player character in the mods tab, reworked their text and tooltips slightly.")
+            .RegisterHighlight("Drag & Drop of multiple mods and folders at once is now supported by holding Control while clicking them.")
+            .RegisterEntry("You can now disable conflicting mods from the Conflicts panel via Control + Right-click.")
+            .RegisterEntry("Added checks for your deletion-modifiers for restoring mods from backups or deleting backups.")
+            .RegisterEntry(
+                "Penumbra now should automatically try to restore your custom sort order (mod folders) and your active collections from backups if they fail to load. No guarantees though.")
+            .RegisterEntry("The resource watcher now displays a column providing load state information of resources.")
+            .RegisterEntry(
+                "Custom RSP scaling outside of the collection assigned to Base should now be respected for emotes that adjust your stance on height differences.")
+            .RegisterEntry(
+                "Mods that replace the skin shaders will not cause visual glitches like loss of head shadows or Free Company crest tattoos anymore (by Ny).")
+            .RegisterEntry("The Material editor has been improved (by Ny):")
+            .RegisterHighlight(
+                "Live-Preview for materials yourself or entities owned by you are currently using, so you can see color set edits in real time.",
+                1)
+            .RegisterEntry(
+                "Colors on the color table of a material can be highlighted on yourself or entities owned by you by hovering a button.", 1)
+            .RegisterEntry("The color table has improved color accuracy.",                                                               1)
+            .RegisterEntry("Materials with non-dyable color tables can be made dyable, and vice-versa.",                                 1)
+            .RegisterEntry("The 'Advanced Shader Resources' section has been split apart into dedicated sections.",                      1)
+            .RegisterEntry(
+                "Addition and removal of shader keys, textures, constants and a color table has been automated following shader requirements and can not be done manually anymore.",
+                1)
+            .RegisterEntry("Plain English names and tooltips can now be displayed instead of hexadecimal identifiers or code names by providing dev-kit files installed via certain mods.", 1)
+            .RegisterEntry("The Texture editor has been improved (by Ny):")
+            .RegisterHighlight("The overlay texture can now be combined in several ways and automatically resized to match the input texture.",
+                1)
+            .RegisterEntry("New color manipulation options have been added.",                  1)
+            .RegisterEntry("Modifications to the selected texture can now be saved in-place.", 1)
+            .RegisterEntry("The On-Screen tab has been improved (by Ny):")
+            .RegisterEntry("The character list will load more quickly.",                           1)
+            .RegisterEntry("It is now able to deal with characters under transformation effects.", 1)
+            .RegisterEntry(
+                "The headers are now color-coded to distinguish between you and other players, and between NPCs that are handled locally or on the server. Colors are customizable.",
+                1)
+            .RegisterEntry("More file types will be recognized and shown.",                           1)
+            .RegisterEntry("The actual paths for game files will be displayed and copied correctly.", 1)
+            .RegisterEntry("The Shader editor has been improved (by Ny):")
+            .RegisterEntry(
+                "New sections 'Shader Resources' and 'Shader Selection' have been added, expanding on some data that was in 'Further Content' before.",
+                1)
+            .RegisterEntry("A fail-safe mode for shader decompilation on platforms that do not fully support it has been added.", 1)
+            .RegisterEntry("Fixed invalid game paths generated for variants of customizations.")
+            .RegisterEntry("Lots of minor improvements across the codebase.")
+            .RegisterEntry("Some unnamed mounts were made available for actor identification. (0.7.3.2)");
 
     private static void Add7_3_0(Changelog log)
         => log.NextVersion("Version 0.7.3.0")
@@ -124,7 +181,7 @@ public class PenumbraChangelog
     private static void Add7_1_0(Changelog log)
         => log.NextVersion("Version 0.7.1.0")
             .RegisterEntry("Updated for patch 6.4 - there may be some oversights on edge cases, but I could not find any issues myself.")
-            .RegisterHighlight(
+            .RegisterImportant(
                 "This update changed some Dragoon skills that were moving the player character before to not do that anymore. If you have any mods that applied to those skills, please make sure that they do not contain any redirections for .tmb files. If skills that should no longer move your character still do that for some reason, this is detectable by the server.",
                 1)
             .RegisterEntry(
@@ -171,7 +228,7 @@ public class PenumbraChangelog
 
     private static void Add7_0_0(Changelog log)
         => log.NextVersion("Version 0.7.0.0")
-            .RegisterHighlight(
+            .RegisterImportant(
                 "The entire backend was reworked (this is still in progress). While this does not come with a lot of functionality changes, basically every file and functionality was touched.")
             .RegisterEntry(
                 "This may have (re-)introduced some bugs that have not yet been noticed despite a long testing period - there are not many users of the testing branch.",
@@ -375,10 +432,10 @@ public class PenumbraChangelog
             .RegisterEntry("You can now specify individual collections for players (by name) of specific worlds or any world.", 1)
             .RegisterEntry("You can also specify NPCs (by grouped name and type of NPC), and owned NPCs (by specifying an NPC and a Player).",
                 1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "Migration should move all current names that correspond to NPCs to the appropriate NPC group and all names that can be valid Player names to a Player of any world.",
                 1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "Please look through your Individual Collections to verify everything migrated correctly and corresponds to the game object you want. You might also want to change the 'Player (Any World)' collections to your specific homeworld.",
                 1)
             .RegisterEntry("You can also manually sort your Individual Collections by drag and drop now.",                 1)
@@ -424,7 +481,7 @@ public class PenumbraChangelog
             .RegisterEntry(
                 "I believe the problem is fixed with 0.5.11.1, but I can not be sure since it would occur only rarely. For the same reason, a testing build would not help (as it also did not with 0.5.11.0 itself).",
                 1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "If you do encounter this or similar problems in 0.5.11.1, please immediately let me know in Discord so I can revert the update again.",
                 1);
 
@@ -472,7 +529,7 @@ public class PenumbraChangelog
     private static void Add5_8_7(Changelog log)
         => log.NextVersion("Version 0.5.8.7")
             .RegisterEntry("Fixed some problems with metadata reloading and reverting and IMC files. (5.8.1 to 5.8.7).")
-            .RegisterHighlight(
+            .RegisterImportant(
                 "If you encounter any issues, please try completely restarting your game after updating (not just relogging), before reporting them.",
                 1);
 
@@ -482,11 +539,11 @@ public class PenumbraChangelog
             .RegisterEntry("Added an Interface Collection assignment.")
             .RegisterEntry("All your UI mods will have to be in the interface collection.",                                           1)
             .RegisterEntry("Files that are categorized as UI files by the game will only check for redirections in this collection.", 1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "Migration should have set your currently assigned Base Collection to the Interface Collection, please verify that.", 1)
             .RegisterEntry("New API / IPC for the Interface Collection added.", 1)
-            .RegisterHighlight("API / IPC consumers should verify whether they need to change resolving to the new collection.", 1)
-            .RegisterHighlight(
+            .RegisterImportant("API / IPC consumers should verify whether they need to change resolving to the new collection.", 1)
+            .RegisterImportant(
                 "If other plugins are not using your interface collection yet, you can just keep Interface and Base the same collection for the time being.")
             .RegisterEntry(
                 "Mods can now have default settings for each option group, that are shown while the mod is unconfigured and taken as initial values when configured.")
@@ -499,7 +556,7 @@ public class PenumbraChangelog
             .RegisterEntry("Should work with lot more texture types for .dds and .tex files, most notably BC7 compression.", 1)
             .RegisterEntry("Supports saving .tex and .dds files in multiple texture types and generating MipMaps for them.", 1)
             .RegisterEntry("Interface reworked a bit, gives more information and the overlay side can be collapsed.",        1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "May contain bugs or missing safeguards. Generally let me know what's missing, ugly, buggy, not working or could be improved. Not really feasible for me to test it all.",
                 1)
             .RegisterEntry(
@@ -524,9 +581,9 @@ public class PenumbraChangelog
         => log.NextVersion("Version 0.5.7.0")
             .RegisterEntry("Added a Changelog!")
             .RegisterEntry("Files in the UI category will no longer be deduplicated for the moment.")
-            .RegisterHighlight("If you experience UI-related crashes, please re-import your UI mods.", 1)
+            .RegisterImportant("If you experience UI-related crashes, please re-import your UI mods.", 1)
             .RegisterEntry("This is a temporary fix against those not-yet fully understood crashes and may be reworked later.", 1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "There is still a possibility of UI related mods crashing the game, we are still investigating - they behave very weirdly. If you continue to experience crashing, try disabling your UI mods.",
                 1)
             .RegisterEntry(
@@ -534,7 +591,7 @@ public class PenumbraChangelog
             .RegisterEntry(
                 "Penumbra Mod Pack ('.pmp') files are meant to be renames of any of the archive types that could already be imported that contain the necessary Penumbra meta files.",
                 1)
-            .RegisterHighlight(
+            .RegisterImportant(
                 "If you distribute any mod as an archive specifically for Penumbra, you should change its extension to '.pmp'. Supported base archive types are ZIP, 7-Zip and RAR.",
                 1)
             .RegisterEntry("Penumbra will now save mod backups with the file extension '.pmp'. They still are regular ZIP files.", 1)
