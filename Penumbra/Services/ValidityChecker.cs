@@ -5,10 +5,12 @@ namespace Penumbra.Services;
 
 public class ValidityChecker
 {
-    public const string Repository      = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
-    public const string SeaOfStars      = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";
-    public const string RepositoryLower = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
-    public const string SeaOfStarsLower = "https://raw.githubusercontent.com/ottermandias/seaofstars/main/repo.json";
+    public const string Repository         = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
+    public const string SeaOfStars         = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";
+    public const string RepositoryLower    = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
+    public const string SeaOfStarsLower    = "https://raw.githubusercontent.com/ottermandias/seaofstars/main/repo.json";
+    public const string RepositoryAltLower = "https://github.com/xivdev/penumbra/raw/master/repo.json";
+    public const string SeaOfStarsAltLower = "https://github.com/ottermandias/seaofstars/raw/main/repo.json;
 
     public readonly bool DevPenumbraExists;
     public readonly bool IsNotInstalledPenumbra;
@@ -84,6 +86,8 @@ public class ValidityChecker
             null                => false,
             RepositoryLower     => true,
             SeaOfStarsLower     => true,
+            RepositoryAltLower  => true,
+            SeaOfStarsAltLower  => true,
             _                   => false,
         };
 #else
