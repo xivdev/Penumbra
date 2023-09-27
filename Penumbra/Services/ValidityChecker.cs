@@ -10,7 +10,7 @@ public class ValidityChecker
     public const string RepositoryLower    = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
     public const string SeaOfStarsLower    = "https://raw.githubusercontent.com/ottermandias/seaofstars/main/repo.json";
     public const string RepositoryAltLower = "https://github.com/xivdev/penumbra/raw/master/repo.json";
-    public const string SeaOfStarsAltLower = "https://github.com/ottermandias/seaofstars/raw/main/repo.json;
+    public const string SeaOfStarsAltLower = "https://github.com/ottermandias/seaofstars/raw/main/repo.json";
 
     public readonly bool DevPenumbraExists;
     public readonly bool IsNotInstalledPenumbra;
