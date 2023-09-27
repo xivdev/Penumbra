@@ -65,6 +65,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SubscribeRightClickMain(() => ClearQuickMove(0, _config.QuickMoveFolder1, () => {_config.QuickMoveFolder1 = string.Empty; _config.Save();}), 110);
         SubscribeRightClickMain(() => ClearQuickMove(1, _config.QuickMoveFolder2, () => {_config.QuickMoveFolder2 = string.Empty; _config.Save();}), 120);
         SubscribeRightClickMain(() => ClearQuickMove(2, _config.QuickMoveFolder3, () => {_config.QuickMoveFolder3 = string.Empty; _config.Save();}), 130);
+        UnsubscribeRightClickLeaf(RenameLeaf);
+        SubscribeRightClickLeaf(RenameLeafMod, 1000);
         AddButton(AddNewModButton,    0);
         AddButton(AddImportModButton, 1);
         AddButton(AddHelpButton,      2);
@@ -267,6 +269,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
                 _modImportManager.AddUnpack(f);
             }, 0, modPath, _config.AlwaysOpenDefaultImport);
+    }
+    
+    private void RenameLeafMod(ModFileSystem.Leaf leaf)
+    {
+        ImGui.Separator();
+        RenameLeaf(leaf);
     }
 
     private void DeleteModButton(Vector2 size)
