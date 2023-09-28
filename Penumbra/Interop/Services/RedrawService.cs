@@ -100,10 +100,10 @@ public unsafe partial class RedrawService
 
 public sealed unsafe partial class RedrawService : IDisposable
 {
-    private readonly Framework      _framework;
+    private readonly IFramework      _framework;
     private readonly IObjectTable   _objects;
     private readonly ITargetManager _targets;
-    private readonly Condition      _conditions;
+    private readonly ICondition      _conditions;
 
     private readonly List<int> _queue           = new(100);
     private readonly List<int> _afterGPoseQueue = new(GPoseSlots);
@@ -111,7 +111,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
-    public RedrawService(Framework framework, IObjectTable objects, ITargetManager targets, Condition conditions)
+    public RedrawService(IFramework framework, IObjectTable objects, ITargetManager targets, ICondition conditions)
     {
         _framework        =  framework;
         _objects          =  objects;

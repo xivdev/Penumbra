@@ -126,12 +126,12 @@ public class IndividualAssignmentUi : IDisposable
     /// <summary> Create combos when ready. </summary>
     private void SetupCombos()
     {
-        _worldCombo                    =  new WorldCombo(_actorService.AwaitedService.Data.Worlds);
-        _mountCombo                    =  new NpcCombo("##mountCombo",     _actorService.AwaitedService.Data.Mounts);
-        _companionCombo                =  new NpcCombo("##companionCombo", _actorService.AwaitedService.Data.Companions);
-        _ornamentCombo                 =  new NpcCombo("##ornamentCombo",  _actorService.AwaitedService.Data.Ornaments);
-        _bnpcCombo                     =  new NpcCombo("##bnpcCombo",      _actorService.AwaitedService.Data.BNpcs);
-        _enpcCombo                     =  new NpcCombo("##enpcCombo",      _actorService.AwaitedService.Data.ENpcs);
+        _worldCombo                    =  new WorldCombo(_actorService.AwaitedService.Data.Worlds, Penumbra.Log);
+        _mountCombo                    =  new NpcCombo("##mountCombo",     _actorService.AwaitedService.Data.Mounts,     Penumbra.Log);
+        _companionCombo                =  new NpcCombo("##companionCombo", _actorService.AwaitedService.Data.Companions, Penumbra.Log);
+        _ornamentCombo                 =  new NpcCombo("##ornamentCombo",  _actorService.AwaitedService.Data.Ornaments,  Penumbra.Log);
+        _bnpcCombo                     =  new NpcCombo("##bnpcCombo",      _actorService.AwaitedService.Data.BNpcs,      Penumbra.Log);
+        _enpcCombo                     =  new NpcCombo("##enpcCombo",      _actorService.AwaitedService.Data.ENpcs,      Penumbra.Log);
         _ready                         =  true;
         _actorService.FinishedCreation -= SetupCombos;
     }

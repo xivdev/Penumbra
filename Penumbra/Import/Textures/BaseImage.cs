@@ -103,7 +103,7 @@ public readonly struct BaseImage : IDisposable
         {
             null           => 0,
             ScratchImage s => s.Meta.MipLevels,
-            TexFile t      => t.Header.MipLevels,
+            TexFile t      => t.Header.MipLevelsCount,
             _              => 1,
         };
 }

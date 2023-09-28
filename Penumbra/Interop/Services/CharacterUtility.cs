@@ -1,4 +1,4 @@
-using Dalamud.Game;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
@@ -6,7 +6,7 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe partial class CharacterUtility : IDisposable
+public unsafe class CharacterUtility : IDisposable
 {
     public record struct InternalIndex(int Value);
 
@@ -52,12 +52,12 @@ public unsafe partial class CharacterUtility : IDisposable
     public (nint Address, int Size) DefaultResource(InternalIndex idx)
         => _lists[idx.Value].DefaultResource;
 
-    private readonly Framework            _framework;
+    private readonly IFramework           _framework;
     public readonly  ActiveCollectionData Active;
 
-    public CharacterUtility(Framework framework, ActiveCollectionData active)
+    public CharacterUtility(IFramework framework, IGameInteropProvider interop, ActiveCollectionData active)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _lists = Enumerable.Range(0, RelevantIndices.Length)
             .Select(idx => new MetaList(this, new InternalIndex(idx)))
             .ToArray();

@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -30,9 +31,9 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
 
     private readonly ConcurrentDictionary<nint, ResolveData> _subFileCollection = new();
 
-    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, GameEventManager events, CommunicatorService communicator)
+    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, GameEventManager events, CommunicatorService communicator, IGameInteropProvider interop)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
 
         _performance  = performance;
         _loader       = loader;

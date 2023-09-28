@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -20,9 +21,9 @@ public unsafe class GameEventManager : IDisposable
     public event WeaponReloadingEvent?          WeaponReloading;
     public event WeaponReloadedEvent?           WeaponReloaded;
 
-    public GameEventManager()
+    public GameEventManager(IGameInteropProvider interop)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _characterDtorHook.Enable();
         _copyCharacterHook.Enable();
         _resourceHandleDestructorHook.Enable();

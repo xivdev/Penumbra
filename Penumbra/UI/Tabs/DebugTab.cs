@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -9,7 +10,6 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -33,6 +33,7 @@ using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Penumbra.Interop.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
+using ImGuiClip = OtterGui.ImGuiClip;
 
 namespace Penumbra.UI.Tabs;
 
@@ -72,7 +73,7 @@ public class DebugTab : Window, ITab
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, SkinFixer skinFixer, IdentifierService identifier)
-        : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse, false)
+        : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
         SizeConstraints = new WindowSizeConstraints

@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
@@ -8,11 +9,11 @@ namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class FileReadService : IDisposable
 {
-    public FileReadService(PerformanceTracker performance, ResourceManagerService resourceManager)
+    public FileReadService(PerformanceTracker performance, ResourceManagerService resourceManager, IGameInteropProvider interop)
     {
         _resourceManager = resourceManager;
         _performance     = performance;
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _readSqPackHook.Enable();
     }
 

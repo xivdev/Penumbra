@@ -13,7 +13,7 @@ public sealed class CollectionCombo : FilterComboCache<ModCollection>
     private readonly ImRaii.Color      _color = new();
 
     public CollectionCombo(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
-        : base(items)
+        : base(items, Penumbra.Log)
         => _collectionManager = manager;
 
     protected override void DrawFilter(int currentSelected, float width)

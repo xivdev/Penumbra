@@ -94,7 +94,7 @@ public static class TextureDrawer
                 ImGuiUtil.DrawTableColumn("Format");
                 ImGuiUtil.DrawTableColumn(t.Header.Format.ToString());
                 ImGuiUtil.DrawTableColumn("Mip Levels");
-                ImGuiUtil.DrawTableColumn(t.Header.MipLevels.ToString());
+                ImGuiUtil.DrawTableColumn(t.Header.MipLevelsCount.ToString());
                 ImGuiUtil.DrawTableColumn("Data Size");
                 ImGuiUtil.DrawTableColumn($"{Functions.HumanReadableSize(t.ImageData.Length)} ({t.ImageData.Length} Bytes)");
                 break;
@@ -106,7 +106,7 @@ public static class TextureDrawer
         private int _skipPrefix = 0;
 
         public PathSelectCombo(TextureManager textures, ModEditor editor)
-            : base(() => CreateFiles(textures, editor))
+            : base(() => CreateFiles(textures, editor), Penumbra.Log)
         { }
 
         protected override string ToString((string, bool) obj)

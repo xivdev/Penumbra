@@ -1,6 +1,4 @@
-using Dalamud.Game;
 using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
@@ -23,7 +21,7 @@ public class CommandHandler : IDisposable
 
     private readonly ICommandManager   _commandManager;
     private readonly RedrawService     _redrawService;
-    private readonly ChatGui           _chat;
+    private readonly IChatGui           _chat;
     private readonly Configuration     _config;
     private readonly ConfigWindow      _configWindow;
     private readonly ActorManager      _actors;
@@ -32,7 +30,7 @@ public class CommandHandler : IDisposable
     private readonly Penumbra          _penumbra;
     private readonly CollectionEditor  _collectionEditor;
 
-    public CommandHandler(Framework framework, ICommandManager commandManager, ChatGui chat, RedrawService redrawService, Configuration config,
+    public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService, Configuration config,
         ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorService actors, Penumbra penumbra,
         CollectionEditor collectionEditor)
     {

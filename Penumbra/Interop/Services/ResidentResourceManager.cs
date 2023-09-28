@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 
@@ -21,10 +22,8 @@ public unsafe class ResidentResourceManager
     public Structs.ResidentResourceManager* Address
         => *_residentResourceManagerAddress;
 
-    public ResidentResourceManager()
-    {
-        SignatureHelper.Initialise(this);
-    }
+    public ResidentResourceManager(IGameInteropProvider interop)
+        => interop.InitializeFromAttributes(this);
 
     // Reload certain player resources by force.
     public void Reload()

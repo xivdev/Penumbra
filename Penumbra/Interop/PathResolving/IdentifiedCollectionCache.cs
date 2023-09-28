@@ -85,7 +85,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
             _dirty = _cache.Count > 0;
     }
 
-    private void TerritoryClear(object? _1, ushort _2)
+    private void TerritoryClear(ushort _2)
         => _dirty = _cache.Count > 0;
 
     private void OnCharacterDestruct(Character* character)

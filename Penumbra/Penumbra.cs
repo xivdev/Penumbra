@@ -19,7 +19,9 @@ using Penumbra.UI.Tabs;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
+using Penumbra.Interop.Structs;
 using Penumbra.UI;
+using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
 
@@ -53,7 +55,7 @@ public class Penumbra : IDalamudPlugin
             var       startTimer = new StartTracker();
             using var timer      = startTimer.Measure(StartTimeType.Total);
             _services        = ServiceManager.CreateProvider(this, pluginInterface, Log, startTimer);
-            Chat      = _services.GetRequiredService<ChatService>();
+            Chat             = _services.GetRequiredService<ChatService>();
             _validityChecker = _services.GetRequiredService<ValidityChecker>();
             var startup = _services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
@@ -73,11 +75,13 @@ public class Penumbra : IDalamudPlugin
             _communicatorService = _services.GetRequiredService<CommunicatorService>();
             _services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
             _services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
+            _services.GetRequiredService<TextureUtility>();  // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
             using (var t = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
                 _services.GetRequiredService<PathResolver>();
             }
+
             _services.GetRequiredService<SkinFixer>();
 
             SetupInterface();
@@ -187,7 +191,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
         sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
-        sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsLinux() ? "Mac/Linux (Wine)" : "Windows")}\n");
+        sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");
         sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");

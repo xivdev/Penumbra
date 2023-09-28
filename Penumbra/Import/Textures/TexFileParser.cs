@@ -79,7 +79,7 @@ public static class TexFileParser
         w.Write(header.Width);
         w.Write(header.Height);
         w.Write(header.Depth);
-        w.Write((byte)header.MipLevels);
+        w.Write(header.MipLevelsCount);
         w.Write((byte)0); // TODO Lumina Update
         unsafe
         {
@@ -96,11 +96,11 @@ public static class TexFileParser
         var meta = scratch.Meta;
         var ret = new TexFile.TexHeader()
         {
-            Height    = (ushort)meta.Height,
-            Width     = (ushort)meta.Width,
-            Depth     = (ushort)Math.Max(meta.Depth, 1),
-            MipLevels = (byte)Math.Min(meta.MipLevels, 13),
-            Format    = meta.Format.ToTexFormat(),
+            Height         = (ushort)meta.Height,
+            Width          = (ushort)meta.Width,
+            Depth          = (ushort)Math.Max(meta.Depth, 1),
+            MipLevelsCount = (byte)Math.Min(meta.MipLevels, 13),
+            Format         = meta.Format.ToTexFormat(),
             Type = meta.Dimension switch
             {
                 _ when meta.IsCubeMap => TexFile.Attribute.TextureTypeCube,
@@ -143,7 +143,7 @@ public static class TexFileParser
             Height     = header.Height,
             Width      = header.Width,
             Depth      = Math.Max(header.Depth, (ushort)1),
-            MipLevels  = header.MipLevels,
+            MipLevels  = header.MipLevelsCount,
             ArraySize  = 1,
             Format     = header.Format.ToDXGI(),
             Dimension  = header.Type.ToDimension(),

@@ -1,8 +1,8 @@
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui.Log;
 
@@ -10,9 +10,9 @@ namespace Penumbra.Services;
 
 public class ChatService : OtterGui.Classes.ChatService
 {
-    private readonly ChatGui _chat;
+    private readonly IChatGui _chat;
 
-    public ChatService(Logger log, DalamudPluginInterface pi, ChatGui chat)
+    public ChatService(Logger log, DalamudPluginInterface pi, IChatGui chat)
         : base(log, pi)
         => _chat = chat;
 
@@ -37,7 +37,7 @@ public class ChatService : OtterGui.Classes.ChatService
 
         var payload = new SeString(payloadList);
 
-        _chat.PrintChat(new XivChatEntry
+        _chat.Print(new XivChatEntry
         {
             Message = payload,
         });

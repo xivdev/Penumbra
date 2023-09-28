@@ -1,6 +1,7 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Internal;
 using Dalamud.Plugin;
-using ImGuiScene;
+using Dalamud.Plugin.Services;
 
 namespace Penumbra.UI;
 
@@ -10,18 +11,18 @@ namespace Penumbra.UI;
 /// </summary>
 public class LaunchButton : IDisposable
 {
-    private readonly ConfigWindow    _configWindow;
-    private readonly UiBuilder       _uiBuilder;
-    private readonly TitleScreenMenu _title;
-    private readonly string          _fileName;
+    private readonly ConfigWindow     _configWindow;
+    private readonly UiBuilder        _uiBuilder;
+    private readonly ITitleScreenMenu _title;
+    private readonly string           _fileName;
 
-    private TextureWrap?                          _icon;
-    private TitleScreenMenu.TitleScreenMenuEntry? _entry;
+    private IDalamudTextureWrap?  _icon;
+    private TitleScreenMenuEntry? _entry;
 
     /// <summary>
     /// Register the launch button to be created on the next draw event.
     /// </summary>
-    public LaunchButton(DalamudPluginInterface pi, TitleScreenMenu title, ConfigWindow ui)
+    public LaunchButton(DalamudPluginInterface pi, ITitleScreenMenu title, ConfigWindow ui)
     {
         _uiBuilder    = pi.UiBuilder;
         _configWindow = ui;

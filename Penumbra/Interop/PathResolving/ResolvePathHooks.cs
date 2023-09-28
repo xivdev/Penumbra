@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using Penumbra.Collections;
@@ -35,21 +36,21 @@ public unsafe class ResolvePathHooks : IDisposable
 
     private readonly PathState _parent;
 
-    public ResolvePathHooks(PathState parent, nint* vTable, Type type)
+    public ResolvePathHooks(IGameInteropProvider interop, PathState parent, nint* vTable, Type type)
     {
         _parent               = parent;
-        _resolveDecalPathHook = Create<GeneralResolveDelegate>(vTable[83], type, ResolveDecalWeapon, ResolveDecal);
-        _resolveEidPathHook   = Create<EidResolveDelegate>(vTable[85], type, ResolveEidWeapon, ResolveEid);
-        _resolveImcPathHook   = Create<GeneralResolveDelegate>(vTable[81], type, ResolveImcWeapon, ResolveImc);
-        _resolveMPapPathHook  = Create<MPapResolveDelegate>(vTable[79], type, ResolveMPapWeapon, ResolveMPap);
-        _resolveMdlPathHook   = Create<GeneralResolveDelegate>(vTable[73], type, ResolveMdlWeapon, ResolveMdl, ResolveMdlHuman);
-        _resolveMtrlPathHook  = Create<MaterialResolveDelegate>(vTable[82], type, ResolveMtrlWeapon, ResolveMtrl);
-        _resolvePapPathHook   = Create<MaterialResolveDelegate>(vTable[76], type, ResolvePapWeapon,  ResolvePap, ResolvePapHuman);
-        _resolvePhybPathHook  = Create<GeneralResolveDelegate>(vTable[75], type, ResolvePhybWeapon, ResolvePhyb, ResolvePhybHuman);
-        _resolveSklbPathHook  = Create<GeneralResolveDelegate>(vTable[72], type, ResolveSklbWeapon, ResolveSklb, ResolveSklbHuman);
-        _resolveSkpPathHook   = Create<GeneralResolveDelegate>(vTable[74], type, ResolveSkpWeapon,  ResolveSkp,  ResolveSkpHuman);
-        _resolveTmbPathHook   = Create<EidResolveDelegate>(vTable[77], type, ResolveTmbWeapon, ResolveTmb);
-        _resolveVfxPathHook   = Create<MaterialResolveDelegate>(vTable[84], type, ResolveVfxWeapon, ResolveVfx);
+        _resolveDecalPathHook = Create<GeneralResolveDelegate>(interop, vTable[83], type, ResolveDecalWeapon, ResolveDecal);
+        _resolveEidPathHook   = Create<EidResolveDelegate>(interop, vTable[85], type, ResolveEidWeapon, ResolveEid);
+        _resolveImcPathHook   = Create<GeneralResolveDelegate>(interop, vTable[81], type, ResolveImcWeapon, ResolveImc);
+        _resolveMPapPathHook  = Create<MPapResolveDelegate>(interop, vTable[79], type, ResolveMPapWeapon, ResolveMPap);
+        _resolveMdlPathHook   = Create<GeneralResolveDelegate>(interop, vTable[73], type, ResolveMdlWeapon, ResolveMdl, ResolveMdlHuman);
+        _resolveMtrlPathHook  = Create<MaterialResolveDelegate>(interop, vTable[82], type, ResolveMtrlWeapon, ResolveMtrl);
+        _resolvePapPathHook   = Create<MaterialResolveDelegate>(interop, vTable[76], type, ResolvePapWeapon,  ResolvePap, ResolvePapHuman);
+        _resolvePhybPathHook  = Create<GeneralResolveDelegate>(interop, vTable[75], type, ResolvePhybWeapon, ResolvePhyb, ResolvePhybHuman);
+        _resolveSklbPathHook  = Create<GeneralResolveDelegate>(interop, vTable[72], type, ResolveSklbWeapon, ResolveSklb, ResolveSklbHuman);
+        _resolveSkpPathHook   = Create<GeneralResolveDelegate>(interop, vTable[74], type, ResolveSkpWeapon,  ResolveSkp,  ResolveSkpHuman);
+        _resolveTmbPathHook   = Create<EidResolveDelegate>(interop, vTable[77], type, ResolveTmbWeapon, ResolveTmb);
+        _resolveVfxPathHook   = Create<MaterialResolveDelegate>(interop, vTable[84], type, ResolveVfxWeapon, ResolveVfx);
     }
 
     public void Enable()
@@ -217,7 +218,7 @@ public unsafe class ResolvePathHooks : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(nint address, Type type, T weapon, T other, T human) where T : Delegate
+    private static Hook<T> Create<T>(IGameInteropProvider interop, nint address, Type type, T weapon, T other, T human) where T : Delegate
     {
         var del = type switch
         {
@@ -225,12 +226,12 @@ public unsafe class ResolvePathHooks : IDisposable
             Type.Weapon => weapon,
             _           => other,
         };
-        return Hook<T>.FromAddress(address, del);
+        return interop.HookFromAddress(address, del);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(nint address, Type type, T weapon, T other) where T : Delegate
-        => Create(address, type, weapon, other, other);
+    private static Hook<T> Create<T>(IGameInteropProvider interop, nint address, Type type, T weapon, T other) where T : Delegate
+        => Create(interop, address, type, weapon, other, other);
 
 
     // Implementation

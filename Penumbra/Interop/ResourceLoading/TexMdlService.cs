@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.Api.Enums;
@@ -19,9 +20,9 @@ public unsafe class TexMdlService
     public IReadOnlySet<ulong> CustomFileCrc
         => _customFileCrc;
 
-    public TexMdlService()
+    public TexMdlService(IGameInteropProvider interop)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _checkFileStateHook.Enable();
         _loadTexFileExternHook.Enable();
         _loadMdlFileExternHook.Enable();
