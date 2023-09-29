@@ -279,19 +279,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private void DeleteModButton(Vector2 size)
-    {
-        var keys = _config.DeleteModModifier.IsActive();
-        var tt = SelectedLeaf == null
-            ? "No mod selected."
-            : "Delete the currently selected mod entirely from your drive.\n"
-          + "This can not be undone.";
-        if (!keys)
-            tt += $"\nHold {_config.DeleteModModifier} while clicking to delete the mod.";
-
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), size, tt, SelectedLeaf == null || !keys, true)
-         && Selected != null)
-            _modManager.DeleteMod(Selected);
-    }
+        => DeleteSelectionButton(size, _config.DeleteModModifier, "mod", "mods", _modManager.DeleteMod);
 
     private void AddHelpButton(Vector2 size)
     {
