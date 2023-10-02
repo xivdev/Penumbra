@@ -70,6 +70,8 @@ public unsafe class MetaState : IDisposable
         _characterUtility   = characterUtility;
         _config             = config;
         interop.InitializeFromAttributes(this);
+        _calculateHeightHook =
+            interop.HookFromAddress<CalculateHeightDelegate>((nint)Character.MemberFunctionPointers.CalculateHeight, CalculateHeightDetour);
         _onModelLoadCompleteHook = interop.HookFromAddress<OnModelLoadCompleteDelegate>(_humanVTable[58], OnModelLoadCompleteDetour);
         _getEqpIndirectHook.Enable();
         _updateModelsHook.Enable();
@@ -249,8 +251,6 @@ public unsafe class MetaState : IDisposable
 
     private delegate ulong CalculateHeightDelegate(Character* character);
 
-    // TODO: use client structs
-    [Signature(Sigs.CalculateHeight, DetourName = nameof(CalculateHeightDetour))]
     private readonly Hook<CalculateHeightDelegate> _calculateHeightHook = null!;
 
     private ulong CalculateHeightDetour(Character* character)
