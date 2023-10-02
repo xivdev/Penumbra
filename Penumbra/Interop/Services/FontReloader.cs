@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Penumbra.GameData;
@@ -24,7 +25,7 @@ public unsafe class FontReloader
     private AtkModule*                                        _atkModule       = null!;
     private delegate* unmanaged<AtkModule*, bool, bool, void> _reloadFontsFunc = null!;
 
-    public FontReloader(Dalamud.Game.Framework dFramework)
+    public FontReloader(IFramework dFramework)
     {
         dFramework.RunOnFrameworkThread(() =>
         {

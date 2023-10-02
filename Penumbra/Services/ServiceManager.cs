@@ -13,6 +13,7 @@ using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -23,6 +24,7 @@ using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
+using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.Services;
 
@@ -88,7 +90,8 @@ public static class ServiceManager
             .AddSingleton<CreateFileWHook>()
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
-            .AddSingleton<RedrawService>();
+            .AddSingleton<RedrawService>()
+            .AddSingleton<TextureUtility>();
 
     private static IServiceCollection AddConfiguration(this IServiceCollection services)
         => services.AddTransient<ConfigMigrationService>()

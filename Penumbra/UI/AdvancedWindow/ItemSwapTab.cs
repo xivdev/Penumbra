@@ -129,7 +129,7 @@ public class ItemSwapTab : IDisposable, ITab
     private class ItemSelector : FilterComboCache<EquipItem>
     {
         public ItemSelector(ItemService data, FullEquipType type)
-            : base(() => data.AwaitedService[type])
+            : base(() => data.AwaitedService[type], Penumbra.Log)
         { }
 
         protected override string ToString(EquipItem obj)
@@ -139,7 +139,7 @@ public class ItemSwapTab : IDisposable, ITab
     private class WeaponSelector : FilterComboCache<FullEquipType>
     {
         public WeaponSelector()
-            : base(FullEquipTypeExtensions.WeaponTypes.Concat(FullEquipTypeExtensions.ToolTypes))
+            : base(FullEquipTypeExtensions.WeaponTypes.Concat(FullEquipTypeExtensions.ToolTypes), Penumbra.Log)
         { }
 
         protected override string ToString(FullEquipType type)

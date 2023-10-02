@@ -1,7 +1,5 @@
-using Dalamud.Game;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.SafeHandles;
 
@@ -13,7 +11,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
     public const int TextureHeight = MtrlFile.ColorTable.NumRows;
     public const int TextureLength = TextureWidth * TextureHeight * 4;
 
-    private readonly Framework _framework;
+    private readonly IFramework _framework;
 
     private readonly Texture**         _colorTableTexture;
     private readonly SafeTextureHandle _originalColorTableTexture;
@@ -24,7 +22,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
     public Half[] ColorTable
         => _colorTable;
 
-    public LiveColorTablePreviewer(IObjectTable objects, Framework framework, MaterialInfo materialInfo)
+    public LiveColorTablePreviewer(IObjectTable objects, IFramework framework, MaterialInfo materialInfo)
         : base(objects, materialInfo)
     {
         _framework = framework;
@@ -66,7 +64,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         _updatePending = true;
     }
 
-    private void OnFrameworkUpdate(Framework _)
+    private void OnFrameworkUpdate(IFramework _)
     {
         if (!_updatePending)
             return;

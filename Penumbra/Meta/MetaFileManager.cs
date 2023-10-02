@@ -29,7 +29,7 @@ public unsafe class MetaFileManager
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
         ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, IdentifierService identifier,
-        FileCompactor compactor)
+        FileCompactor compactor, IGameInteropProvider interop)
     {
         CharacterUtility  = characterUtility;
         ResidentResources = residentResources;
@@ -39,7 +39,7 @@ public unsafe class MetaFileManager
         ValidityChecker   = validityChecker;
         Identifier        = identifier;
         Compactor         = compactor;
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
     }
 
     public void WriteAllTexToolsMeta(Mod mod)

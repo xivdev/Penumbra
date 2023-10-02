@@ -12,7 +12,7 @@ public class StainService : IDisposable
     public sealed class StainTemplateCombo : FilterComboCache<ushort>
     {
         public StainTemplateCombo(IEnumerable<ushort> items)
-            : base(items)
+            : base(items, Penumbra.Log)
         { }
     }
 
@@ -21,12 +21,12 @@ public class StainService : IDisposable
     public readonly StmFile            StmFile;
     public readonly StainTemplateCombo TemplateCombo;
 
-    public StainService(StartTracker timer, DalamudPluginInterface pluginInterface, IDataManager dataManager)
+    public StainService(StartTracker timer, DalamudPluginInterface pluginInterface, IDataManager dataManager, IPluginLog dalamudLog)
     {
         using var t = timer.Measure(StartTimeType.Stains);
-        StainData = new StainData(pluginInterface, dataManager, dataManager.Language);
+        StainData = new StainData(pluginInterface, dataManager, dataManager.Language, dalamudLog);
         StainCombo = new FilterComboColors(140,
-            StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))));
+            StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))), Penumbra.Log);
         StmFile       = new StmFile(dataManager);
         TemplateCombo = new StainTemplateCombo(StmFile.Entries.Keys.Prepend((ushort)0));
         Penumbra.Log.Verbose($"[{nameof(StainService)}] Created.");

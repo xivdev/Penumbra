@@ -1,4 +1,4 @@
-using Dalamud.Game;
+using Dalamud.Plugin.Services;
 using OtterGui.Classes;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
@@ -382,7 +382,7 @@ public class CollectionCacheManager : IDisposable
     /// <summary>
     /// Update forced files only on framework.
     /// </summary>
-    private void OnFramework(Framework _)
+    private void OnFramework(IFramework _)
     {
         while (_changeQueue.TryDequeue(out var changeData))
             changeData.Apply();

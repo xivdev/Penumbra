@@ -279,7 +279,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         private readonly Configuration _config;
 
         public Combo(Configuration config, Func<IReadOnlyList<FileRegistry>> generator)
-            : base(generator)
+            : base(generator, Penumbra.Log)
             => _config = config;
 
         protected override bool DrawSelectable(int globalIdx, bool selected)

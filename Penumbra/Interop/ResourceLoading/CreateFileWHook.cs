@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
@@ -14,9 +15,9 @@ public unsafe class CreateFileWHook : IDisposable
 {
     public const int RequiredSize = 28;
 
-    public CreateFileWHook()
+    public CreateFileWHook(IGameInteropProvider interop)
     {
-        _createFileWHook = Hook<CreateFileWDelegate>.FromImport(null, "KERNEL32.dll", "CreateFileW", 0, CreateFileWDetour);
+        _createFileWHook = interop.HookFromImport<CreateFileWDelegate>(null, "KERNEL32.dll", "CreateFileW", 0, CreateFileWDetour);
         _createFileWHook.Enable();
     }
 

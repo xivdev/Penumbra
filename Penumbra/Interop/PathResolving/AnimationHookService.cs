@@ -21,13 +21,13 @@ public unsafe class AnimationHookService : IDisposable
     private readonly CollectionResolver _collectionResolver;
     private readonly DrawObjectState    _drawObjectState;
     private readonly CollectionResolver _resolver;
-    private readonly Condition          _conditions;
+    private readonly ICondition          _conditions;
 
     private readonly ThreadLocal<ResolveData> _animationLoadData  = new(() => ResolveData.Invalid, true);
     private readonly ThreadLocal<ResolveData> _characterSoundData = new(() => ResolveData.Invalid, true);
 
     public AnimationHookService(PerformanceTracker performance, IObjectTable objects, CollectionResolver collectionResolver,
-        DrawObjectState drawObjectState, CollectionResolver resolver, Condition conditions)
+        DrawObjectState drawObjectState, CollectionResolver resolver, ICondition conditions, IGameInteropProvider interop)
     {
         _performance        = performance;
         _objects            = objects;
@@ -36,7 +36,7 @@ public unsafe class AnimationHookService : IDisposable
         _resolver           = resolver;
         _conditions         = conditions;
 
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
 
         _loadCharacterSoundHook.Enable();
         _loadTimelineResourcesHook.Enable();

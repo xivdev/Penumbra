@@ -12,7 +12,7 @@ public class ModCombo : FilterComboCache<Mod>
         => obj.Name.Text;
 
     public ModCombo(Func<IReadOnlyList<Mod>> generator)
-        : base(generator)
+        : base(generator, Penumbra.Log)
     { }
 }
 

@@ -1,4 +1,4 @@
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 
 namespace Penumbra.Interop.Structs;

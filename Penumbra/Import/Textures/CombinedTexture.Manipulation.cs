@@ -2,7 +2,7 @@ using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using SixLabors.ImageSharp.PixelFormats;
-using Dalamud.Interface;
+using Dalamud.Interface.Utility;
 using Penumbra.UI;
 
 namespace Penumbra.Import.Textures;
@@ -13,11 +13,11 @@ public partial class CombinedTexture
     private Vector4   _constantLeft    = Vector4.Zero;
     private Matrix4x4 _multiplierRight = Matrix4x4.Identity;
     private Vector4   _constantRight   = Vector4.Zero;
-    private int       _offsetX         = 0;
-    private int       _offsetY         = 0;
-    private CombineOp _combineOp       = CombineOp.Over;
-    private ResizeOp  _resizeOp        = ResizeOp.None;
-    private Channels  _copyChannels    = Channels.Red | Channels.Green | Channels.Blue | Channels.Alpha;
+    private int       _offsetX;
+    private int       _offsetY;
+    private CombineOp _combineOp    = CombineOp.Over;
+    private ResizeOp  _resizeOp     = ResizeOp.None;
+    private Channels  _copyChannels = Channels.Red | Channels.Green | Channels.Blue | Channels.Alpha;
 
     private RgbaPixelData _leftPixels  = RgbaPixelData.Empty;
     private RgbaPixelData _rightPixels = RgbaPixelData.Empty;

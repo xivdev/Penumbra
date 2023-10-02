@@ -1,6 +1,6 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Internal;
 using Dalamud.Plugin.Services;
-using ImGuiScene;
 using Lumina.Data.Files;
 using OtterGui.Log;
 using OtterGui.Tasks;
@@ -19,7 +19,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
     private readonly IDataManager _gameData;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks    = new();
-    private          bool                                                           _disposed = false;
+    private          bool                                                           _disposed;
 
     public TextureManager(UiBuilder uiBuilder, IDataManager gameData, Logger logger)
     {
@@ -209,14 +209,14 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
     }
 
     /// <summary> Load a texture wrap for a given image. </summary>
-    public TextureWrap LoadTextureWrap(BaseImage image, byte[]? rgba = null, int width = 0, int height = 0)
+    public IDalamudTextureWrap LoadTextureWrap(BaseImage image, byte[]? rgba = null, int width = 0, int height = 0)
     {
         (rgba, width, height) = GetData(image, rgba, width, height);
         return LoadTextureWrap(rgba, width, height);
     }
 
     /// <summary> Load a texture wrap for a given image. </summary>
-    public TextureWrap LoadTextureWrap(byte[] rgba, int width, int height)
+    public IDalamudTextureWrap LoadTextureWrap(byte[] rgba, int width, int height)
         => _uiBuilder.LoadImageRaw(rgba, width, height, 4);
 
     /// <summary> Load any supported file from game data or drive depending on extension and if the path is rooted. </summary>
@@ -335,7 +335,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
         if (numMips == input.Meta.MipLevels)
             return input;
 
-        var flags = (Dalamud.Utility.Util.IsLinux() ? FilterFlags.ForceNonWIC : 0) | FilterFlags.SeparateAlpha;
+        var flags = (Dalamud.Utility.Util.IsWine() ? FilterFlags.ForceNonWIC : 0) | FilterFlags.SeparateAlpha;
         var ec    = input.GenerateMipMaps(out var ret, numMips, flags);
         if (ec != ErrorCode.Ok)
             throw new Exception(

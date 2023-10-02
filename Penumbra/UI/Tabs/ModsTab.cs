@@ -146,6 +146,7 @@ public class ModsTab : ITab
             ImGuiUtil.HoverTooltip(lower.Length > 0 ? $"Execute '/penumbra redraw {lower}'." : $"Execute '/penumbra redraw'.");
         }
 
+        using var id       = ImRaii.PushId("Redraw");
         using var disabled = ImRaii.Disabled(_clientState.LocalPlayer == null);
         ImGui.SameLine();
         var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 4 };

@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using OtterGui.Classes;
@@ -48,13 +49,13 @@ public sealed unsafe class SkinFixer : IDisposable
     public int ModdedSkinShpkCount
         => _moddedSkinShpkCount;
 
-    public SkinFixer(GameEventManager gameEvents, CharacterUtility utility, CommunicatorService communicator)
+    public SkinFixer(GameEventManager gameEvents, CharacterUtility utility, CommunicatorService communicator, IGameInteropProvider interop)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _gameEvents           = gameEvents;
         _utility              = utility;
         _communicator         = communicator;
-        _onRenderMaterialHook = Hook<OnRenderMaterialDelegate>.FromAddress(_humanVTable[62], OnRenderHumanMaterial);
+        _onRenderMaterialHook = interop.HookFromAddress<OnRenderMaterialDelegate>(_humanVTable[62], OnRenderHumanMaterial);
         _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.SkinFixer);
         _gameEvents.ResourceHandleDestructor += OnResourceHandleDestructor;
         _onRenderMaterialHook.Enable();

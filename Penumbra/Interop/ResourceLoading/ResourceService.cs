@@ -1,8 +1,8 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
-using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -16,19 +16,19 @@ public unsafe class ResourceService : IDisposable
     private readonly PerformanceTracker     _performance;
     private readonly ResourceManagerService _resourceManager;
 
-    public ResourceService(PerformanceTracker performance, ResourceManagerService resourceManager)
+    public ResourceService(PerformanceTracker performance, ResourceManagerService resourceManager, IGameInteropProvider interop)
     {
         _performance     = performance;
         _resourceManager = resourceManager;
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _getResourceSyncHook.Enable();
         _getResourceAsyncHook.Enable();
         _resourceHandleDestructorHook.Enable();
-        _incRefHook = Hook<ResourceHandlePrototype>.FromAddress(
+        _incRefHook = interop.HookFromAddress<ResourceHandlePrototype>(
             (nint)FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.MemberFunctionPointers.IncRef,
             ResourceHandleIncRefDetour);
         _incRefHook.Enable();
-        _decRefHook = Hook<ResourceHandleDecRefPrototype>.FromAddress(
+        _decRefHook = interop.HookFromAddress<ResourceHandleDecRefPrototype>(
             (nint)FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.MemberFunctionPointers.DecRef,
             ResourceHandleDecRefDetour);
         _decRefHook.Enable();

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
@@ -10,8 +11,8 @@ namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class ResourceManagerService
 {
-    public ResourceManagerService()
-        => SignatureHelper.Initialise(this);
+    public ResourceManagerService(IGameInteropProvider interop)
+        => interop.InitializeFromAttributes(this);
 
     /// <summary> The SE Resource Manager as pointer. </summary>
     public ResourceManager* ResourceManager

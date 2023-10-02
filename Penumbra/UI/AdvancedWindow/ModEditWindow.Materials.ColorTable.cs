@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -347,10 +348,11 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.GlossStrength;
         ImGui.SetNextItemWidth(floatSize);
-        if (ImGui.DragFloat("##GlossStrength", ref tmpFloat, Math.Max(0.1f, tmpFloat * 0.025f), HalfEpsilon, HalfMaxValue, "%.1f")
+        float glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
+        if (ImGui.DragFloat("##GlossStrength", ref tmpFloat, Math.Max(0.1f, tmpFloat * 0.025f), glossStrengthMin, HalfMaxValue, "%.1f")
          && FixFloat(ref tmpFloat, row.GlossStrength))
         {
-            row.GlossStrength = Math.Max(tmpFloat, HalfEpsilon);
+            row.GlossStrength = Math.Max(tmpFloat, glossStrengthMin);
             ret               = true;
             tab.UpdateColorTableRowPreview(rowIdx);
         }

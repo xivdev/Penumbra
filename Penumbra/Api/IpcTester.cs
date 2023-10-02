@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
@@ -15,7 +16,6 @@ using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
-using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.Api;

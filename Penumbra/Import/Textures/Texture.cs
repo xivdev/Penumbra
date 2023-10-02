@@ -1,4 +1,4 @@
-using ImGuiScene;
+using Dalamud.Interface.Internal;
 using OtterTex;
 
 namespace Penumbra.Import.Textures;
@@ -21,7 +21,7 @@ public sealed class Texture : IDisposable
     internal string? TmpPath;
 
     // If the load failed, an exception is stored.
-    public Exception? LoadError = null;
+    public Exception? LoadError;
 
     // The pixels of the main image in RGBA order.
     // Empty if LoadError != null or Path is empty.
@@ -29,7 +29,7 @@ public sealed class Texture : IDisposable
 
     // The ImGui wrapper to load the image.
     // null if LoadError != null or Path is empty.
-    public TextureWrap? TextureWrap = null;
+    public IDalamudTextureWrap? TextureWrap;
 
     // The base image in whatever format it has.
     public BaseImage BaseImage;
@@ -76,9 +76,9 @@ public sealed class Texture : IDisposable
 
         try
         {
-            (BaseImage, Type)                   = textures.Load(path);
-            (RgbaPixels, var width, var height) = BaseImage.GetPixelData();
-            TextureWrap                         = textures.LoadTextureWrap(BaseImage, RgbaPixels);
+            (BaseImage, Type)  = textures.Load(path);
+            (RgbaPixels, _, _) = BaseImage.GetPixelData();
+            TextureWrap        = textures.LoadTextureWrap(BaseImage, RgbaPixels);
             Loaded?.Invoke(true);
         }
         catch (Exception e)

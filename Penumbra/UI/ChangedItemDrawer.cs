@@ -1,9 +1,9 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
-using ImGuiScene;
 using Lumina.Data.Files;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
@@ -46,11 +46,11 @@ public class ChangedItemDrawer : IDisposable
     public const ChangedItemIcon AllFlags     = (ChangedItemIcon)0x01FFFF;
     public const ChangedItemIcon DefaultFlags = AllFlags & ~ChangedItemIcon.Offhand;
 
-    private readonly Configuration                            _config;
-    private readonly ExcelSheet<Item>                         _items;
-    private readonly CommunicatorService                      _communicator;
-    private readonly Dictionary<ChangedItemIcon, TextureWrap> _icons = new(16);
-    private          float                                    _smallestIconWidth;
+    private readonly Configuration                                    _config;
+    private readonly ExcelSheet<Item>                                 _items;
+    private readonly CommunicatorService                              _communicator;
+    private readonly Dictionary<ChangedItemIcon, IDalamudTextureWrap> _icons = new(16);
+    private          float                                            _smallestIconWidth;
 
     public ChangedItemDrawer(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator,
         Configuration config)
@@ -357,7 +357,7 @@ public class ChangedItemDrawer : IDisposable
         if (!equipTypeIcons.Valid)
             return false;
 
-        void Add(ChangedItemIcon icon, TextureWrap? tex)
+        void Add(ChangedItemIcon icon, IDalamudTextureWrap? tex)
         {
             if (tex != null)
                 _icons.Add(icon, tex);
@@ -387,7 +387,7 @@ public class ChangedItemDrawer : IDisposable
         return true;
     }
 
-    private static unsafe TextureWrap? LoadUnknownTexture(IDataManager gameData, UiBuilder uiBuilder)
+    private static unsafe IDalamudTextureWrap? LoadUnknownTexture(IDataManager gameData, UiBuilder uiBuilder)
     {
         var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
         if (unk == null)
@@ -402,7 +402,7 @@ public class ChangedItemDrawer : IDisposable
         return uiBuilder.LoadImageRaw(bytes, unk.Header.Height, unk.Header.Height, 4);
     }
 
-    private static unsafe TextureWrap? LoadEmoteTexture(IDataManager gameData, UiBuilder uiBuilder)
+    private static unsafe IDalamudTextureWrap? LoadEmoteTexture(IDataManager gameData, UiBuilder uiBuilder)
     {
         var emote = gameData.GetFile<TexFile>("ui/icon/000000/000019_hr1.tex");
         if (emote == null)

@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData;
@@ -34,16 +35,16 @@ public unsafe class PathState : IDisposable
     public IList<ResolveData> CurrentData
         => _resolveData.Values;
 
-    public PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility)
+    public PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility, IGameInteropProvider interop)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         CollectionResolver = collectionResolver;
         MetaState          = metaState;
         CharacterUtility   = characterUtility;
-        _human             = new ResolvePathHooks(this, _humanVTable,     ResolvePathHooks.Type.Human);
-        _weapon            = new ResolvePathHooks(this, _weaponVTable,    ResolvePathHooks.Type.Weapon);
-        _demiHuman         = new ResolvePathHooks(this, _demiHumanVTable, ResolvePathHooks.Type.Other);
-        _monster           = new ResolvePathHooks(this, _monsterVTable,   ResolvePathHooks.Type.Other);
+        _human             = new ResolvePathHooks(interop, this, _humanVTable,     ResolvePathHooks.Type.Human);
+        _weapon            = new ResolvePathHooks(interop, this, _weaponVTable,    ResolvePathHooks.Type.Weapon);
+        _demiHuman         = new ResolvePathHooks(interop, this, _demiHumanVTable, ResolvePathHooks.Type.Other);
+        _monster           = new ResolvePathHooks(interop, this, _monsterVTable,   ResolvePathHooks.Type.Other);
         _human.Enable();
         _weapon.Enable();
         _demiHuman.Enable();

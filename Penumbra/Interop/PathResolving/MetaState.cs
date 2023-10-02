@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -59,7 +60,7 @@ public unsafe class MetaState : IDisposable
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceLoader resources, GameEventManager gameEventManager, CharacterUtility characterUtility, Configuration config)
+        ResourceLoader resources, GameEventManager gameEventManager, CharacterUtility characterUtility, Configuration config, IGameInteropProvider interop)
     {
         _performance        = performance;
         _communicator       = communicator;
@@ -68,8 +69,8 @@ public unsafe class MetaState : IDisposable
         _gameEventManager   = gameEventManager;
         _characterUtility   = characterUtility;
         _config             = config;
-        SignatureHelper.Initialise(this);
-        _onModelLoadCompleteHook = Hook<OnModelLoadCompleteDelegate>.FromAddress(_humanVTable[58], OnModelLoadCompleteDetour);
+        interop.InitializeFromAttributes(this);
+        _onModelLoadCompleteHook = interop.HookFromAddress<OnModelLoadCompleteDelegate>(_humanVTable[58], OnModelLoadCompleteDetour);
         _getEqpIndirectHook.Enable();
         _updateModelsHook.Enable();
         _onModelLoadCompleteHook.Enable();

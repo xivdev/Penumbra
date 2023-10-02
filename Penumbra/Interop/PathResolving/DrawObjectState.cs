@@ -20,9 +20,9 @@ public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, boo
     public nint LastGameObject
         => _lastGameObject.IsValueCreated && _lastGameObject.Value!.Count > 0 ? _lastGameObject.Value.Peek() : nint.Zero;
 
-    public DrawObjectState(IObjectTable objects, GameEventManager gameEvents)
+    public DrawObjectState(IObjectTable objects, GameEventManager gameEvents, IGameInteropProvider interop)
     {
-        SignatureHelper.Initialise(this);
+        interop.InitializeFromAttributes(this);
         _enableDrawHook.Enable();
         _objects                            =  objects;
         _gameEvents                         =  gameEvents;

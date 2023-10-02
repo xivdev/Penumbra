@@ -36,10 +36,10 @@ public class CollectionSelectHeader
         var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
         using (var _ = ImRaii.Group())
         {
-            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo());
-            DrawCollectionButton(buttonSize, GetInterfaceCollectionInfo());
-            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo());
-            DrawCollectionButton(buttonSize, GetInheritedCollectionInfo());
+            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo(), 1);
+            DrawCollectionButton(buttonSize, GetInterfaceCollectionInfo(), 2);
+            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(), 3);
+            DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
 
             _collectionCombo.Draw("##collectionSelector", comboWidth, ColorId.SelectedCollection.Value());
         }
@@ -126,9 +126,10 @@ public class CollectionSelectHeader
         };
     }
 
-    private void DrawCollectionButton(Vector2 buttonWidth, (ModCollection?, string, string, bool) tuple)
+    private void DrawCollectionButton(Vector2 buttonWidth, (ModCollection?, string, string, bool) tuple, int id)
     {
         var (collection, name, tooltip, disabled) = tuple;
+        using var _ = ImRaii.PushId(id);
         if (ImGuiUtil.DrawDisabledButton(name, buttonWidth, tooltip, disabled))
             _activeCollections.SetCollection(collection!, CollectionType.Current);
         ImGui.SameLine();
