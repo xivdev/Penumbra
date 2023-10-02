@@ -60,7 +60,8 @@ public unsafe class MetaState : IDisposable
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceLoader resources, GameEventManager gameEventManager, CharacterUtility characterUtility, Configuration config, IGameInteropProvider interop)
+        ResourceLoader resources, GameEventManager gameEventManager, CharacterUtility characterUtility, Configuration config,
+        IGameInteropProvider interop)
     {
         _performance        = performance;
         _communicator       = communicator;

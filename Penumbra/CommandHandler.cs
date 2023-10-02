@@ -21,7 +21,7 @@ public class CommandHandler : IDisposable
 
     private readonly ICommandManager   _commandManager;
     private readonly RedrawService     _redrawService;
-    private readonly IChatGui           _chat;
+    private readonly IChatGui          _chat;
     private readonly Configuration     _config;
     private readonly ConfigWindow      _configWindow;
     private readonly ActorManager      _actors;
@@ -30,7 +30,8 @@ public class CommandHandler : IDisposable
     private readonly Penumbra          _penumbra;
     private readonly CollectionEditor  _collectionEditor;
 
-    public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService, Configuration config,
+    public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService,
+        Configuration config,
         ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorService actors, Penumbra penumbra,
         CollectionEditor collectionEditor)
     {
@@ -270,7 +271,7 @@ public class CommandHandler : IDisposable
         if (!GetModCollection(split[1], out var collection))
             return false;
 
-        var identifier = ActorIdentifier.Invalid;
+        var identifiers = Array.Empty<ActorIdentifier>();
         if (type is CollectionType.Individual)
         {
             if (split.Length == 2)
@@ -284,17 +285,22 @@ public class CommandHandler : IDisposable
             {
                 if (_redrawService.GetName(split[2].ToLowerInvariant(), out var obj))
                 {
-                    identifier = _actors.FromObject(obj, false, true, true);
+                    var identifier = _actors.FromObject(obj, false, true, true);
                     if (!identifier.IsValid)
                     {
                         _chat.Print(new SeStringBuilder().AddText("The placeholder ").AddGreen(split[2])
                             .AddText(" did not resolve to a game object with a valid identifier.").BuiltString);
                         return false;
                     }
+
+                    identifiers = new[]
+                    {
+                        identifier,
+                    };
                 }
                 else
                 {
-                    identifier = _actors.FromUserString(split[2]);
+                    identifiers = _actors.FromUserString(split[2], false);
                 }
             }
             catch (ActorManager.IdentifierParseError e)
@@ -306,55 +312,60 @@ public class CommandHandler : IDisposable
             }
         }
 
-        var oldCollection = _collectionManager.Active.ByType(type, identifier);
-        if (collection == oldCollection)
+        var anySuccess = false;
+        foreach (var identifier in identifiers.Distinct())
         {
-            _chat.Print(collection == null
-                ? $"The {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}" : string.Empty)} is already unassigned"
-                : $"{collection.Name} already is the {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
-            return false;
+            var oldCollection = _collectionManager.Active.ByType(type, identifier);
+            if (collection == oldCollection)
+            {
+                _chat.Print(collection == null
+                    ? $"The {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}" : string.Empty)} is already unassigned"
+                    : $"{collection.Name} already is the {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
+                continue;
+            }
+
+            var individualIndex = _collectionManager.Active.Individuals.Index(identifier);
+
+            if (oldCollection == null)
+            {
+                if (type.IsSpecial())
+                {
+                    _collectionManager.Active.CreateSpecialCollection(type);
+                }
+                else if (identifier.IsValid)
+                {
+                    var identifierGroup = _collectionManager.Active.Individuals.GetGroup(identifier);
+                    individualIndex = _collectionManager.Active.Individuals.Count;
+                    _collectionManager.Active.CreateIndividualCollection(identifierGroup);
+                }
+            }
+            else if (collection == null)
+            {
+                if (type.IsSpecial())
+                {
+                    _collectionManager.Active.RemoveSpecialCollection(type);
+                }
+                else if (individualIndex >= 0)
+                {
+                    _collectionManager.Active.RemoveIndividualCollection(individualIndex);
+                }
+                else
+                {
+                    _chat.Print(
+                        $"Can not remove the {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
+                    continue;
+                }
+
+                Print(
+                    $"Removed {oldCollection.Name} as {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
+                anySuccess = true;
+            }
+
+            _collectionManager.Active.SetCollection(collection!, type, individualIndex);
+            Print($"Assigned {collection!.Name} as {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
         }
 
-        var individualIndex = _collectionManager.Active.Individuals.Index(identifier);
-
-        if (oldCollection == null)
-        {
-            if (type.IsSpecial())
-            {
-                _collectionManager.Active.CreateSpecialCollection(type);
-            }
-            else if (identifier.IsValid)
-            {
-                var identifiers = _collectionManager.Active.Individuals.GetGroup(identifier);
-                individualIndex = _collectionManager.Active.Individuals.Count;
-                _collectionManager.Active.CreateIndividualCollection(identifiers);
-            }
-        }
-        else if (collection == null)
-        {
-            if (type.IsSpecial())
-            {
-                _collectionManager.Active.RemoveSpecialCollection(type);
-            }
-            else if (individualIndex >= 0)
-            {
-                _collectionManager.Active.RemoveIndividualCollection(individualIndex);
-            }
-            else
-            {
-                _chat.Print(
-                    $"Can not remove the {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
-                return false;
-            }
-
-            Print(
-                $"Removed {oldCollection.Name} as {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
-            return true;
-        }
-
-        _collectionManager.Active.SetCollection(collection!, type, individualIndex);
-        Print($"Assigned {collection!.Name} as {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
-        return true;
+        return anySuccess;
     }
 
     private bool SetMod(string arguments)
