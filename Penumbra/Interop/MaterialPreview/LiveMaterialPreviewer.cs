@@ -80,7 +80,8 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
 
         for (var i = 0; i < _shaderPackage->MaterialElementCount; ++i)
         {
-            ref var parameter = ref _shaderPackage->MaterialElements[i];
+            // TODO fix when CS updated
+            ref var parameter = ref ((ShaderPackage.MaterialElement*) ((byte*)_shaderPackage + 0xA0))[i];
             if (parameter.CRC == parameterCrc)
             {
                 if ((parameter.Offset & 0x3) != 0
