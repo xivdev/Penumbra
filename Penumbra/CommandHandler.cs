@@ -47,7 +47,8 @@ public class CommandHandler : IDisposable
         _collectionEditor  = collectionEditor;
         framework.RunOnFrameworkThread(() =>
         {
-            _commandManager.RemoveHandler(CommandName);
+            if (_commandManager.Commands.ContainsKey(CommandName))
+                _commandManager.RemoveHandler(CommandName);
             _commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Without arguments, toggles the main window. Use /penumbra help to get further command help.",
