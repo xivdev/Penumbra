@@ -2,6 +2,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.Api.Enums;
@@ -37,6 +38,10 @@ public unsafe class AnimationHookService : IDisposable
         _conditions         = conditions;
 
         interop.InitializeFromAttributes(this);
+        _loadCharacterSoundHook =
+            interop.HookFromAddress<LoadCharacterSound>(
+                (nint)FFXIVClientStructs.FFXIV.Client.Game.Character.Character.VfxContainer.MemberFunctionPointers.LoadCharacterSound,
+                LoadCharacterSoundDetour);
 
         _loadCharacterSoundHook.Enable();
         _loadTimelineResourcesHook.Enable();
@@ -113,9 +118,7 @@ public unsafe class AnimationHookService : IDisposable
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
     private delegate nint LoadCharacterSound(nint character, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7);
 
-    // TODO: Use ClientStructs
-    [Signature(Sigs.LoadCharacterSound, DetourName = nameof(LoadCharacterSoundDetour))]
-    private readonly Hook<LoadCharacterSound> _loadCharacterSoundHook = null!;
+    private readonly Hook<LoadCharacterSound> _loadCharacterSoundHook;
 
     private nint LoadCharacterSoundDetour(nint container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7)
     {
@@ -194,16 +197,18 @@ public unsafe class AnimationHookService : IDisposable
         _animationLoadData.Value = last;
     }
 
+    private delegate void SomeActionLoadDelegate(ActionTimelineManager* timelineManager);
+
     /// <summary> Seems to load character actions when zoning or changing class, maybe. </summary>
     [Signature(Sigs.LoadSomeAction, DetourName = nameof(SomeActionLoadDetour))]
-    private readonly Hook<CharacterBaseNoArgumentDelegate> _someActionLoadHook = null!;
+    private readonly Hook<SomeActionLoadDelegate> _someActionLoadHook = null!;
 
-    private void SomeActionLoadDetour(nint gameObject)
+    private void SomeActionLoadDetour(ActionTimelineManager* timelineManager)
     {
         using var performance = _performance.Measure(PerformanceType.LoadAction);
         var       last        = _animationLoadData.Value;
-        _animationLoadData.Value = _collectionResolver.IdentifyCollection((GameObject*)gameObject, true);
-        _someActionLoadHook.Original(gameObject);
+        _animationLoadData.Value = _collectionResolver.IdentifyCollection((GameObject*)timelineManager->Parent, true);
+        _someActionLoadHook.Original(timelineManager);
         _animationLoadData.Value = last;
     }
 

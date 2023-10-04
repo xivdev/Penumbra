@@ -33,9 +33,9 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
         return type switch
         {
             DrawObjectType.Character => (nint)gameObject->GameObject.GetDrawObject(),
-            DrawObjectType.Mainhand  => *((nint*)&gameObject->DrawData.MainHand + 1),
-            DrawObjectType.Offhand   => *((nint*)&gameObject->DrawData.OffHand + 1),
-            DrawObjectType.Vfx       => *((nint*)&gameObject->DrawData.UnkF0 + 1),
+            DrawObjectType.Mainhand  => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
+            DrawObjectType.Offhand   => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
+            DrawObjectType.Vfx       => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject,
             _                        => nint.Zero,
         };
     }
@@ -72,7 +72,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
             if (gameObject == null)
                 continue;
 
-            var index = (ObjectIndex) gameObject->GameObject.ObjectIndex;
+            var index = (ObjectIndex)gameObject->GameObject.ObjectIndex;
 
             foreach (var type in Enum.GetValues<DrawObjectType>())
             {
@@ -93,7 +93,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
                             continue;
 
                         var mtrlHandle = material->MaterialResourceHandle;
-                        var path = ResolveContext.GetResourceHandlePath((Structs.ResourceHandle*)mtrlHandle);
+                        var path       = ResolveContext.GetResourceHandlePath((Structs.ResourceHandle*)mtrlHandle);
                         if (path == needle)
                             result.Add(new MaterialInfo(index, type, i, j));
                     }
