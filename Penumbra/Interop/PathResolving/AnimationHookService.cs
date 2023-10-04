@@ -21,7 +21,7 @@ public unsafe class AnimationHookService : IDisposable
     private readonly CollectionResolver _collectionResolver;
     private readonly DrawObjectState    _drawObjectState;
     private readonly CollectionResolver _resolver;
-    private readonly ICondition          _conditions;
+    private readonly ICondition         _conditions;
 
     private readonly ThreadLocal<ResolveData> _animationLoadData  = new(() => ResolveData.Invalid, true);
     private readonly ThreadLocal<ResolveData> _characterSoundData = new(() => ResolveData.Invalid, true);
@@ -111,17 +111,19 @@ public unsafe class AnimationHookService : IDisposable
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
-    private delegate IntPtr LoadCharacterSound(IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7);
+    private delegate nint LoadCharacterSound(nint character, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7);
 
+    // TODO: Use ClientStructs
     [Signature(Sigs.LoadCharacterSound, DetourName = nameof(LoadCharacterSoundDetour))]
     private readonly Hook<LoadCharacterSound> _loadCharacterSoundHook = null!;
 
-    private IntPtr LoadCharacterSoundDetour(IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7)
+    private nint LoadCharacterSoundDetour(nint container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7)
     {
         using var performance = _performance.Measure(PerformanceType.LoadSound);
         var       last        = _characterSoundData.Value;
-        _characterSoundData.Value = _collectionResolver.IdentifyCollection((GameObject*)character, true);
-        var ret = _loadCharacterSoundHook.Original(character, unk1, unk2, unk3, unk4, unk5, unk6, unk7);
+        var       character   = *(GameObject**)(container + 8);
+        _characterSoundData.Value = _collectionResolver.IdentifyCollection(character, true);
+        var ret = _loadCharacterSoundHook.Original(container, unk1, unk2, unk3, unk4, unk5, unk6, unk7);
         _characterSoundData.Value = last;
         return ret;
     }
@@ -130,12 +132,12 @@ public unsafe class AnimationHookService : IDisposable
     /// The timeline object loads the requested .tmb and .pap files. The .tmb files load the respective .avfx files.
     /// We can obtain the associated game object from the timelines 28'th vfunc and use that to apply the correct collection.
     /// </summary>
-    private delegate ulong LoadTimelineResourcesDelegate(IntPtr timeline);
+    private delegate ulong LoadTimelineResourcesDelegate(nint timeline);
 
     [Signature(Sigs.LoadTimelineResources, DetourName = nameof(LoadTimelineResourcesDetour))]
     private readonly Hook<LoadTimelineResourcesDelegate> _loadTimelineResourcesHook = null!;
 
-    private ulong LoadTimelineResourcesDetour(IntPtr timeline)
+    private ulong LoadTimelineResourcesDetour(nint timeline)
     {
         using var performance = _performance.Measure(PerformanceType.TimelineResources);
         // Do not check timeline loading in cutscenes.
@@ -153,12 +155,12 @@ public unsafe class AnimationHookService : IDisposable
     /// Probably used when the base idle animation gets loaded.
     /// Make it aware of the correct collection to load the correct pap files.
     /// </summary>
-    private delegate void CharacterBaseNoArgumentDelegate(IntPtr drawBase);
+    private delegate void CharacterBaseNoArgumentDelegate(nint drawBase);
 
     [Signature(Sigs.CharacterBaseLoadAnimation, DetourName = nameof(CharacterBaseLoadAnimationDetour))]
     private readonly Hook<CharacterBaseNoArgumentDelegate> _characterBaseLoadAnimationHook = null!;
 
-    private void CharacterBaseLoadAnimationDetour(IntPtr drawObject)
+    private void CharacterBaseLoadAnimationDetour(nint drawObject)
     {
         using var performance = _performance.Measure(PerformanceType.LoadCharacterBaseAnimation);
         var       last        = _animationLoadData.Value;
@@ -171,17 +173,17 @@ public unsafe class AnimationHookService : IDisposable
     }
 
     /// <summary> Unknown what exactly this is but it seems to load a bunch of paps. </summary>
-    private delegate void LoadSomePap(IntPtr a1, int a2, IntPtr a3, int a4);
+    private delegate void LoadSomePap(nint a1, int a2, nint a3, int a4);
 
     [Signature(Sigs.LoadSomePap, DetourName = nameof(LoadSomePapDetour))]
     private readonly Hook<LoadSomePap> _loadSomePapHook = null!;
 
-    private void LoadSomePapDetour(IntPtr a1, int a2, IntPtr a3, int a4)
+    private void LoadSomePapDetour(nint a1, int a2, nint a3, int a4)
     {
         using var performance = _performance.Measure(PerformanceType.LoadPap);
         var       timelinePtr = a1 + Offsets.TimeLinePtr;
         var       last        = _animationLoadData.Value;
-        if (timelinePtr != IntPtr.Zero)
+        if (timelinePtr != nint.Zero)
         {
             var actorIdx = (int)(*(*(ulong**)timelinePtr + 1) >> 3);
             if (actorIdx >= 0 && actorIdx < _objects.Length)
@@ -206,12 +208,12 @@ public unsafe class AnimationHookService : IDisposable
     }
 
     /// <summary> Load a VFX specifically for a character. </summary>
-    private delegate IntPtr LoadCharacterVfxDelegate(byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4);
+    private delegate nint LoadCharacterVfxDelegate(byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4);
 
     [Signature(Sigs.LoadCharacterVfx, DetourName = nameof(LoadCharacterVfxDetour))]
     private readonly Hook<LoadCharacterVfxDelegate> _loadCharacterVfxHook = null!;
 
-    private IntPtr LoadCharacterVfxDetour(byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4)
+    private nint LoadCharacterVfxDetour(byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4)
     {
         using var performance = _performance.Measure(PerformanceType.LoadCharacterVfx);
         var       last        = _animationLoadData.Value;
@@ -296,7 +298,7 @@ public unsafe class AnimationHookService : IDisposable
     {
         try
         {
-            if (timeline != IntPtr.Zero)
+            if (timeline != nint.Zero)
             {
                 var getGameObjectIdx = ((delegate* unmanaged<nint, int>**)timeline)[0][Offsets.GetGameObjectIdxVfunc];
                 var idx              = getGameObjectIdx(timeline);
