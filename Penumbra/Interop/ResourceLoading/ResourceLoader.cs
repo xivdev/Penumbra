@@ -76,8 +76,7 @@ public unsafe class ResourceLoader : IDisposable
     }
 
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
-        Utf8GamePath original,
-        GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
+        Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
         if (returnValue != null)
             return;
@@ -93,7 +92,7 @@ public unsafe class ResourceLoader : IDisposable
 
         if (resolvedPath == null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
         {
-            returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
+            returnValue = _resources.GetOriginalResource(sync, ref category, ref type, ref hash, path.Path, parameters);
             ResourceLoaded?.Invoke(returnValue, path, resolvedPath, data);
             return;
         }
@@ -103,7 +102,7 @@ public unsafe class ResourceLoader : IDisposable
         hash = ComputeHash(resolvedPath.Value.InternalName, parameters);
         var oldPath = path;
         path        = p;
-        returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
+        returnValue = _resources.GetOriginalResource(sync, ref category, ref type, ref hash, path.Path, parameters);
         ResourceLoaded?.Invoke(returnValue, oldPath, resolvedPath.Value, data);
     }
 
