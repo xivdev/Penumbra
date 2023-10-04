@@ -24,6 +24,10 @@ public unsafe class GameEventManager : IDisposable
     public GameEventManager(IGameInteropProvider interop)
     {
         interop.InitializeFromAttributes(this);
+
+        _copyCharacterHook =
+            interop.HookFromAddress<CopyCharacterDelegate>((nint)CharacterSetup.MemberFunctionPointers.CopyFromCharacter, CopyCharacterDetour);
+
         _characterDtorHook.Enable();
         _copyCharacterHook.Enable();
         _resourceHandleDestructorHook.Enable();
@@ -78,19 +82,20 @@ public unsafe class GameEventManager : IDisposable
 
     #region Copy Character
 
-    private delegate ulong CopyCharacterDelegate(GameObject* target, GameObject* source, uint unk);
+    private delegate ulong CopyCharacterDelegate(CharacterSetup* target, GameObject* source, uint unk);
 
-    [Signature(Sigs.CopyCharacter, DetourName = nameof(CopyCharacterDetour))]
-    private readonly Hook<CopyCharacterDelegate> _copyCharacterHook = null!;
+    private readonly Hook<CopyCharacterDelegate> _copyCharacterHook;
 
-    private ulong CopyCharacterDetour(GameObject* target, GameObject* source, uint unk)
+    private ulong CopyCharacterDetour(CharacterSetup* target, GameObject* source, uint unk)
     {
+        // TODO: update when CS updated.
+        var character = ((Character**)target)[1];
         if (CopyCharacter != null)
             foreach (var subscriber in CopyCharacter.GetInvocationList())
             {
                 try
                 {
-                    ((CopyCharacterEvent)subscriber).Invoke((Character*)target, (Character*)source);
+                    ((CopyCharacterEvent)subscriber).Invoke(character, (Character*)source);
                 }
                 catch (Exception ex)
                 {

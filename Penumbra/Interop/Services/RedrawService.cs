@@ -1,4 +1,3 @@
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Enums;
@@ -20,8 +19,10 @@ public unsafe partial class RedrawService
     public const int GPoseEndIdx    = GPosePlayerIdx + GPoseSlots;
 
     private readonly string?[] _gPoseNames       = new string?[GPoseSlots];
-    private          int       _gPoseNameCounter = 0;
-    private          bool      _inGPose          = false;
+    private          int       _gPoseNameCounter;
+
+    private bool InGPose
+        => _clientState.IsGPosing;
 
     // VFuncs that disable and enable draw, used only for GPose actors.
     private static void DisableDraw(GameObject actor)
@@ -33,10 +34,7 @@ public unsafe partial class RedrawService
     // Check whether we currently are in GPose.
     // Also clear the name list.
     private void SetGPose()
-    {
-        _inGPose          = _objects[GPosePlayerIdx] != null;
-        _gPoseNameCounter = 0;
-    }
+        => _gPoseNameCounter = 0;
 
     private static bool IsGPoseActor(int idx)
         => idx is >= GPosePlayerIdx and < GPoseEndIdx;
@@ -50,7 +48,7 @@ public unsafe partial class RedrawService
     private bool FindCorrectActor(int idx, out GameObject? obj)
     {
         obj = _objects[idx];
-        if (!_inGPose || obj == null || IsGPoseActor(idx))
+        if (!InGPose || obj == null || IsGPoseActor(idx))
             return false;
 
         var name = obj.Name.ToString();
@@ -100,10 +98,11 @@ public unsafe partial class RedrawService
 
 public sealed unsafe partial class RedrawService : IDisposable
 {
-    private readonly IFramework      _framework;
+    private readonly IFramework     _framework;
     private readonly IObjectTable   _objects;
     private readonly ITargetManager _targets;
-    private readonly ICondition      _conditions;
+    private readonly ICondition     _conditions;
+    private readonly IClientState   _clientState;
 
     private readonly List<int> _queue           = new(100);
     private readonly List<int> _afterGPoseQueue = new(GPoseSlots);
@@ -111,12 +110,13 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
-    public RedrawService(IFramework framework, IObjectTable objects, ITargetManager targets, ICondition conditions)
+    public RedrawService(IFramework framework, IObjectTable objects, ITargetManager targets, ICondition conditions, IClientState clientState)
     {
         _framework        =  framework;
         _objects          =  objects;
         _targets          =  targets;
         _conditions       =  conditions;
+        _clientState      =  clientState;
         _framework.Update += OnUpdateEvent;
     }
 
@@ -241,7 +241,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     private void HandleAfterGPose()
     {
-        if (_afterGPoseQueue.Count == 0 || _inGPose)
+        if (_afterGPoseQueue.Count == 0 || InGPose)
             return;
 
         var numKept = 0;
