@@ -36,6 +36,7 @@ public partial class ModEditWindow
         "bguvscroll.shpk",
         "channeling.shpk",
         "characterglass.shpk",
+        "charactershadowoffset.shpk",
         "character.shpk",
         "cloud.shpk",
         "createviewposition.shpk",
