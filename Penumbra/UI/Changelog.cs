@@ -42,13 +42,13 @@ public class PenumbraChangelog
         Add7_2_0(Changelog);
         Add7_3_0(Changelog);
         Add8_0_0(Changelog);
-        Add8_1_0(Changelog);
+        Add8_1_1(Changelog);
     }
 
     #region Changelogs
 
-    private static void Add8_1_0(Changelog log)
-        => log.NextVersion("Version 0.8.1.0")
+    private static void Add8_1_1(Changelog log)
+        => log.NextVersion("Version 0.8.1.1")
             .RegisterImportant(
                 "Updated for 6.5 - Square Enix shuffled around a lot of things this update, so some things still might not work but have not been noticed yet. Please report any issues.")
             .RegisterEntry("Added support for chat commands to affect multiple individuals matching the supplied string at once.")
