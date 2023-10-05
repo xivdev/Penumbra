@@ -314,7 +314,7 @@ public class CommandHandler : IDisposable
         }
 
         var anySuccess = false;
-        foreach (var identifier in identifiers.Distinct())
+        foreach (var identifier in identifiers.Distinct().DefaultIfEmpty(ActorIdentifier.Invalid))
         {
             var oldCollection = _collectionManager.Active.ByType(type, identifier);
             if (collection == oldCollection)
@@ -360,6 +360,7 @@ public class CommandHandler : IDisposable
                 Print(
                     $"Removed {oldCollection.Name} as {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
                 anySuccess = true;
+                continue;
             }
 
             _collectionManager.Active.SetCollection(collection!, type, individualIndex);
