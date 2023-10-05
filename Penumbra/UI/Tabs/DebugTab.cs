@@ -858,7 +858,7 @@ public class DebugTab : Window, ITab
                 return;
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(r->Category.ToString());
+            ImGui.TextUnformatted(((ResourceCategory)r->Type.Value).ToString());
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(r->FileType.ToString("X"));
             ImGui.TableNextColumn();

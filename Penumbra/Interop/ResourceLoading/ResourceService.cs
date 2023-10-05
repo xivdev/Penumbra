@@ -110,26 +110,17 @@ public unsafe class ResourceService : IDisposable
         if (returnValue != null)
             return returnValue;
 
-        return GetOriginalResource(isSync, categoryId, resourceType, resourceHash, gamePath.Path.Path, pGetResParams, isUnk);
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, pGetResParams, isUnk);
     }
-
-    private ResourceHandle* GetOriginalResource(bool sync, ResourceCategory* categoryId, ResourceType* type, int* hash, byte* path,
-        GetResourceParameters* resourceParameters = null, bool unk = false)
-        => sync
-            ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, categoryId, type, hash, path,
-                resourceParameters)
-            : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, categoryId, type, hash, path,
-                resourceParameters, unk);
 
     /// <summary> Call the original GetResource function. </summary>
-    public ResourceHandle* GetOriginalResource(bool sync, ref ResourceCategory categoryId, ref ResourceType type, ref int hash, ByteString path,
+    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, ByteString path,
         GetResourceParameters* resourceParameters = null, bool unk = false)
-    {
-        var ptrCategory = (ResourceCategory*)Unsafe.AsPointer(ref categoryId);
-        var ptrType     = (ResourceType*)Unsafe.AsPointer(ref type);
-        var ptrHash     = (int*)Unsafe.AsPointer(ref hash);
-        return GetOriginalResource(sync, ptrCategory, ptrType, ptrHash, path.Path, resourceParameters, unk);
-    }
+        => sync
+            ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                resourceParameters)
+            : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                resourceParameters, unk);
 
     #endregion
 
