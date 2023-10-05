@@ -42,9 +42,20 @@ public class PenumbraChangelog
         Add7_2_0(Changelog);
         Add7_3_0(Changelog);
         Add8_0_0(Changelog);
+        Add8_1_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add8_1_0(Changelog log)
+        => log.NextVersion("Version 0.8.1.0")
+            .RegisterImportant(
+                "Updated for 6.5 - Square Enix shuffled around a lot of things this update, so some things still might not work but have not been noticed yet. Please report any issues.")
+            .RegisterEntry("Added support for chat commands to affect multiple individuals matching the supplied string at once.")
+            .RegisterEntry(
+                "Improved messaging: many warnings or errors appearing will stay a little longer and can now be looked at in a Messages tab (visible only if there have been any).")
+            .RegisterEntry("Fixed an issue with leading or trailing spaces when renaming mods.");
+
 
     private static void Add8_0_0(Changelog log)
         => log.NextVersion("Version 0.8.0.0")
@@ -79,7 +90,9 @@ public class PenumbraChangelog
             .RegisterEntry(
                 "Addition and removal of shader keys, textures, constants and a color table has been automated following shader requirements and can not be done manually anymore.",
                 1)
-            .RegisterEntry("Plain English names and tooltips can now be displayed instead of hexadecimal identifiers or code names by providing dev-kit files installed via certain mods.", 1)
+            .RegisterEntry(
+                "Plain English names and tooltips can now be displayed instead of hexadecimal identifiers or code names by providing dev-kit files installed via certain mods.",
+                1)
             .RegisterEntry("The Texture editor has been improved (by Ny):")
             .RegisterHighlight("The overlay texture can now be combined in several ways and automatically resized to match the input texture.",
                 1)
