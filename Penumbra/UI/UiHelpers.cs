@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -56,7 +57,7 @@ public static class UiHelpers
 
         var text = penumbra.GatherSupportInformation();
         ImGui.SetClipboardText(text);
-        Penumbra.Chat.NotificationMessage($"Copied Support Info to Clipboard.", "Success", NotificationType.Success);
+        Penumbra.Messager.NotificationMessage($"Copied Support Info to Clipboard.", NotificationType.Success, false);
     }
 
     /// <summary> Draw a button to open a specific directory in a file explorer.</summary>

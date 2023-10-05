@@ -1,5 +1,6 @@
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods;
@@ -102,9 +103,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     {
         if (!CanAddCollection(name, out var fixedName))
         {
-            Penumbra.Chat.NotificationMessage(
-                $"The new collection {name} would lead to the same path {fixedName} as one that already exists.", "Warning",
-                NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage(
+                $"The new collection {name} would lead to the same path {fixedName} as one that already exists.", NotificationType.Warning, false);
             return false;
         }
 
@@ -113,8 +113,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         _collections.Add(newCollection);
 
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
-        Penumbra.Chat.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", "Success",
-            NotificationType.Success);
+        Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
         return true;
     }
@@ -126,13 +125,13 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     {
         if (collection.Index <= ModCollection.Empty.Index || collection.Index >= _collections.Count)
         {
-            Penumbra.Chat.NotificationMessage("Can not remove the empty collection.", "Error", NotificationType.Error);
+            Penumbra.Messager.NotificationMessage("Can not remove the empty collection.", NotificationType.Error, false);
             return false;
         }
 
         if (collection.Index == DefaultNamed.Index)
         {
-            Penumbra.Chat.NotificationMessage("Can not remove the default collection.", "Error", NotificationType.Error);
+            Penumbra.Messager.NotificationMessage("Can not remove the default collection.", NotificationType.Error, false);
             return false;
         }
 
@@ -142,7 +141,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         for (var i = collection.Index; i < Count; ++i)
             _collections[i].Index = i;
 
-        Penumbra.Chat.NotificationMessage($"Deleted collection {collection.AnonymizedName}.", "Success", NotificationType.Success);
+        Penumbra.Messager.NotificationMessage($"Deleted collection {collection.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
         return true;
     }
@@ -185,23 +184,20 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             if (!IsValidName(name))
             {
                 // TODO: handle better.
-                Penumbra.Chat.NotificationMessage($"Collection of unsupported name found: {name} is not a valid collection name.",
-                    "Warning", NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage($"Collection of unsupported name found: {name} is not a valid collection name.", NotificationType.Warning);
                 continue;
             }
 
             if (ByName(name, out _))
             {
-                Penumbra.Chat.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.",
-                    "Warning", NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.", NotificationType.Warning);
                 continue;
             }
 
             var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings, inheritance);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
-                Penumbra.Chat.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", "Warning",
-                    NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", NotificationType.Warning);
             _collections.Add(collection);
         }
 
@@ -221,9 +217,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         if (AddCollection(ModCollection.DefaultCollectionName, null))
             return _collections[^1];
 
-        Penumbra.Chat.NotificationMessage(
-            $"Unknown problem creating a collection with the name {ModCollection.DefaultCollectionName}, which is required to exist.", "Error",
-            NotificationType.Error);
+        Penumbra.Messager.NotificationMessage(
+            $"Unknown problem creating a collection with the name {ModCollection.DefaultCollectionName}, which is required to exist.", NotificationType.Error);
         return Count > 1 ? _collections[1] : _collections[0];
     }
 

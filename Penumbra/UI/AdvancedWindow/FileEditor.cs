@@ -137,7 +137,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
                     }
                     catch (Exception e)
                     {
-                        Penumbra.Chat.NotificationMessage($"Could not export {_defaultPath}:\n{e}", "Error", NotificationType.Error);
+                        Penumbra.Messager.NotificationMessage(e, $"Could not export {_defaultPath}.", NotificationType.Error);
                     }
                 }, _getInitialPath(), false);
 

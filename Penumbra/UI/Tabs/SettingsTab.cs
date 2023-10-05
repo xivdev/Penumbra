@@ -851,10 +851,10 @@ public class SettingsTab : ITab
         UiHelpers.DrawSupportButton(_penumbra);
 
         ImGui.SetCursorPos(new Vector2(xPos, 0));
-        CustomGui.DrawDiscordButton(Penumbra.Chat, width);
+        CustomGui.DrawDiscordButton(Penumbra.Messager, width);
 
         ImGui.SetCursorPos(new Vector2(xPos, 2 * ImGui.GetFrameHeightWithSpacing()));
-        CustomGui.DrawGuideButton(Penumbra.Chat, width);
+        CustomGui.DrawGuideButton(Penumbra.Messager, width);
 
         ImGui.SetCursorPos(new Vector2(xPos, 3 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))

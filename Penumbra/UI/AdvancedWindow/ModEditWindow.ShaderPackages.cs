@@ -4,6 +4,7 @@ using ImGuiNET;
 using Lumina.Misc;
 using OtterGui.Raii;
 using OtterGui;
+using OtterGui.Classes;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -87,15 +88,14 @@ public partial class ModEditWindow
                 }
                 catch (Exception e)
                 {
-                    Penumbra.Chat.NotificationMessage($"Could not export {defaultName}{tab.Extension} to {name}:\n{e.Message}",
-                        "Penumbra Advanced Editing",
-                        NotificationType.Error);
+                    Penumbra.Messager.NotificationMessage(e, $"Could not export {defaultName}{tab.Extension} to {name}.",
+                        NotificationType.Error, false);
                     return;
                 }
 
-                Penumbra.Chat.NotificationMessage(
-                    $"Shader Program Blob {defaultName}{tab.Extension} exported successfully to {Path.GetFileName(name)}",
-                    "Penumbra Advanced Editing", NotificationType.Success);
+                Penumbra.Messager.NotificationMessage(
+                    $"Shader Program Blob {defaultName}{tab.Extension} exported successfully to {Path.GetFileName(name)}.",
+                    NotificationType.Success, false);
             }, null, false);
     }
 
@@ -116,8 +116,7 @@ public partial class ModEditWindow
                 }
                 catch (Exception e)
                 {
-                    Penumbra.Chat.NotificationMessage($"Could not import {name}:\n{e.Message}", "Penumbra Advanced Editing",
-                        NotificationType.Error);
+                    Penumbra.Messager.NotificationMessage(e, $"Could not import {name}.", NotificationType.Error, false);
                     return;
                 }
 
@@ -129,9 +128,8 @@ public partial class ModEditWindow
                 catch (Exception e)
                 {
                     tab.Shpk.SetInvalid();
-                    Penumbra.Chat.NotificationMessage($"Failed to update resources after importing {name}:\n{e.Message}",
-                        "Penumbra Advanced Editing",
-                        NotificationType.Error);
+                    Penumbra.Messager.NotificationMessage(e, $"Failed to update resources after importing {name}.", NotificationType.Error,
+                        false);
                     return;
                 }
 

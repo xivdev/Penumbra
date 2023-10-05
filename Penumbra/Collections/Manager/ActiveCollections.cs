@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
@@ -331,10 +332,8 @@ public class ActiveCollections : ISavable, IDisposable
          ?? (configChanged ? ModCollection.DefaultCollectionName : ModCollection.Empty.Name);
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
-            Penumbra.Chat.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Name}.",
-                "Load Failure",
-                NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage(
+                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Name}.", NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
         }
@@ -347,9 +346,8 @@ public class ActiveCollections : ISavable, IDisposable
         var interfaceName = jObject[nameof(Interface)]?.ToObject<string>() ?? Default.Name;
         if (!_storage.ByName(interfaceName, out var interfaceCollection))
         {
-            Penumbra.Chat.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Name}.",
-                "Load Failure", NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage(
+                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Name}.", NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
         }
@@ -362,9 +360,8 @@ public class ActiveCollections : ISavable, IDisposable
         var currentName = jObject[nameof(Current)]?.ToObject<string>() ?? Default.Name;
         if (!_storage.ByName(currentName, out var currentCollection))
         {
-            Penumbra.Chat.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollection.DefaultCollectionName}.",
-                "Load Failure", NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage(
+                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollection.DefaultCollectionName}.", NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
         }
@@ -381,8 +378,7 @@ public class ActiveCollections : ISavable, IDisposable
             {
                 if (!_storage.ByName(typeName, out var typeCollection))
                 {
-                    Penumbra.Chat.NotificationMessage($"Last choice of {name} Collection {typeName} is not available, removed.",
-                        "Load Failure",
+                    Penumbra.Messager.NotificationMessage($"Last choice of {name} Collection {typeName} is not available, removed.",
                         NotificationType.Warning);
                     configChanged = true;
                 }

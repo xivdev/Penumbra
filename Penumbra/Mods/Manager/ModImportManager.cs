@@ -1,4 +1,5 @@
 using Dalamud.Interface.Internal.Notifications;
+using OtterGui.Classes;
 using Penumbra.Import;
 using Penumbra.Mods.Editor;
 
@@ -42,8 +43,7 @@ public class ModImportManager : IDisposable
             if (File.Exists(s))
                 return true;
 
-            Penumbra.Chat.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", "Warning",
-                NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", NotificationType.Warning, false);
             return false;
         }).Select(s => new FileInfo(s)).ToArray();
 

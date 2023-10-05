@@ -1,6 +1,7 @@
 using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui.Classes;
 using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
@@ -46,10 +47,8 @@ public static class ActiveCollectionMigration
         {
             if (!storage.ByName(collectionName, out var collection))
             {
-                Penumbra.Chat.NotificationMessage(
-                    $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {ModCollection.Empty.Name}.",
-                    "Load Failure",
-                    NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage(
+                    $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {ModCollection.Empty.Name}.", NotificationType.Warning);
                 dict.Add(player, ModCollection.Empty);
             }
             else

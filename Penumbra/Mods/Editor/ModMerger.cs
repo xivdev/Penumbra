@@ -1,6 +1,7 @@
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using OtterGui;
+using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Meta.Manipulations;
@@ -81,9 +82,7 @@ public class ModMerger : IDisposable
         catch (Exception ex)
         {
             Error = ex;
-            Penumbra.Chat.NotificationMessage(
-                $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}, cleaning up changes.:\n{ex}", "Failure",
-                NotificationType.Error);
+            Penumbra.Messager.NotificationMessage(ex, $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}, cleaning up changes.", NotificationType.Error, false);
             FailureCleanup();
             DataCleanup();
         }

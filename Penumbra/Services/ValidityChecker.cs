@@ -1,5 +1,6 @@
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
+using OtterGui.Classes;
 
 namespace Penumbra.Services;
 
@@ -33,8 +34,7 @@ public class ValidityChecker
     public void LogExceptions()
     {
         if (ImcExceptions.Count > 0)
-            Penumbra.Chat.NotificationMessage($"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
-                "Warning", NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage($"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.", NotificationType.Warning);
     }
 
     // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.

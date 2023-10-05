@@ -19,7 +19,8 @@ public class ConfigTabBar : IDisposable
     public readonly DebugTab        Debug;
     public readonly ResourceTab     Resource;
     public readonly Watcher         Watcher;
-    public readonly OnScreenTab     OnScreenTab;
+    public readonly OnScreenTab     OnScreen;
+    public readonly MessagesTab     Messages;
 
     public readonly ITab[] Tabs;
 
@@ -28,7 +29,7 @@ public class ConfigTabBar : IDisposable
 
     public ConfigTabBar(CommunicatorService communicator, SettingsTab settings, ModsTab mods, CollectionsTab collections,
         ChangedItemsTab changedItems, EffectiveTab effective, DebugTab debug, ResourceTab resource, Watcher watcher,
-        OnScreenTab onScreenTab)
+        OnScreenTab onScreen, MessagesTab messages)
     {
         _communicator = communicator;
 
@@ -40,7 +41,8 @@ public class ConfigTabBar : IDisposable
         Debug        = debug;
         Resource     = resource;
         Watcher      = watcher;
-        OnScreenTab  = onScreenTab;
+        OnScreen     = onScreen;
+        Messages     = messages;
         Tabs = new ITab[]
         {
             Settings,
@@ -48,10 +50,11 @@ public class ConfigTabBar : IDisposable
             Mods,
             ChangedItems,
             Effective,
-            OnScreenTab,
+            OnScreen,
             Debug,
             Resource,
             Watcher,
+            Messages,
         };
         _communicator.SelectTab.Subscribe(OnSelectTab, Communication.SelectTab.Priority.ConfigTabBar);
     }
@@ -75,10 +78,11 @@ public class ConfigTabBar : IDisposable
             TabType.Collections      => Collections.Label,
             TabType.ChangedItems     => ChangedItems.Label,
             TabType.EffectiveChanges => Effective.Label,
-            TabType.OnScreen         => OnScreenTab.Label,
+            TabType.OnScreen         => OnScreen.Label,
             TabType.ResourceWatcher  => Watcher.Label,
             TabType.Debug            => Debug.Label,
             TabType.ResourceManager  => Resource.Label,
+            TabType.Messages         => Messages.Label,
             _                        => ReadOnlySpan<byte>.Empty,
         };
 
@@ -90,7 +94,8 @@ public class ConfigTabBar : IDisposable
         if (label == Settings.Label)     return TabType.Settings;
         if (label == ChangedItems.Label) return TabType.ChangedItems;
         if (label == Effective.Label)    return TabType.EffectiveChanges;
-        if (label == OnScreenTab.Label)  return TabType.OnScreen;
+        if (label == OnScreen.Label)     return TabType.OnScreen;
+        if (label == Messages.Label)     return TabType.Messages;
         if (label == Watcher.Label)      return TabType.ResourceWatcher;
         if (label == Debug.Label)        return TabType.Debug;
         if (label == Resource.Label)     return TabType.ResourceManager;

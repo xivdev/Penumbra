@@ -113,8 +113,7 @@ public partial class ModEditWindow
                 LoadedShpkPath     = FullPath.Empty;
                 LoadedShpkPathName = string.Empty;
                 AssociatedShpk     = null;
-                Penumbra.Chat.NotificationMessage($"Could not load {LoadedShpkPath.ToPath()}:\n{e}", "Penumbra Advanced Editing",
-                    NotificationType.Error);
+                Penumbra.Messager.NotificationMessage(e, $"Could not load {LoadedShpkPath.ToPath()}.", NotificationType.Error, false);
             }
 
             if (LoadedShpkPath.InternalName.IsEmpty)

@@ -41,7 +41,7 @@ public class BackupService
         {
             Penumbra.Log.Error($"Failed to load {fileName}, trying to restore from backup:\n{ex}");
             Backup.TryGetFile(new DirectoryInfo(fileNames.ConfigDirectory), fileName, out ret, out var messages, JObject.Parse);
-            Penumbra.Chat.NotificationMessage(messages);
+            Penumbra.Messager.NotificationMessage(messages);
         }
 
         return ret;

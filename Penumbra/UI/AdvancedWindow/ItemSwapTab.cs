@@ -4,6 +4,7 @@ using Dalamud.Utility;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -321,7 +322,7 @@ public class ItemSwapTab : IDisposable, ITab
         }
         catch (Exception e)
         {
-            Penumbra.Chat.NotificationMessage($"Could not create new Swap Option:\n{e}", "Error", NotificationType.Error);
+            Penumbra.Messager.NotificationMessage(e, "Could not create new Swap Option.", NotificationType.Error, false);
             try
             {
                 if (optionCreated && _selectedGroup != null)

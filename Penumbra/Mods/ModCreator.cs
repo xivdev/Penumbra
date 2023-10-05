@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
@@ -45,8 +46,7 @@ public partial class ModCreator
         }
         catch (Exception e)
         {
-            Penumbra.Chat.NotificationMessage($"Could not create directory for new Mod {newName}:\n{e}", "Failure",
-                NotificationType.Error);
+            Penumbra.Messager.NotificationMessage(e, $"Could not create directory for new Mod {newName}.", NotificationType.Error, false);
             return null;
         }
     }

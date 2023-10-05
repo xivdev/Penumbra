@@ -1,5 +1,6 @@
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
@@ -395,9 +396,9 @@ public class ModOptionEditor
             return true;
 
         if (message)
-            Penumbra.Chat.NotificationMessage(
+            Penumbra.Messager.NotificationMessage(
                 $"Could not name option {newName} because option with same filename {path} already exists.",
-                "Warning", NotificationType.Warning);
+                NotificationType.Warning, false);
 
         return false;
     }

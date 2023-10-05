@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 
@@ -54,9 +55,8 @@ public sealed class MultiModGroup : IModGroup
             {
                 if (ret.PrioritizedOptions.Count == IModGroup.MaxMultiOptions)
                 {
-                    Penumbra.Chat.NotificationMessage(
-                        $"Multi Group {ret.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.", "Warning",
-                        NotificationType.Warning);
+                    Penumbra.Messager.NotificationMessage(
+                        $"Multi Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.", NotificationType.Warning);
                     break;
                 }
 

@@ -1,5 +1,6 @@
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
@@ -143,14 +144,12 @@ public class InheritanceManager : IDisposable
                         continue;
 
                     changes = true;
-                    Penumbra.Chat.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", "Warning",
-                        NotificationType.Warning);
+                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", NotificationType.Warning);
                 }
                 else
                 {
-                    Penumbra.Chat.NotificationMessage(
-                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", "Warning",
-                        NotificationType.Warning);
+                    Penumbra.Messager.NotificationMessage(
+                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", NotificationType.Warning);
                     changes = true;
                 }
             }

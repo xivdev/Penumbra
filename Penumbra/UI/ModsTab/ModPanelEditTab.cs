@@ -6,6 +6,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -18,15 +19,15 @@ namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab : ITab
 {
-    private readonly ChatService           _chat;
-    private readonly FilenameService       _filenames;
-    private readonly ModManager            _modManager;
-    private readonly ModExportManager      _modExportManager;
-    private readonly ModFileSystem         _fileSystem;
-    private readonly ModFileSystemSelector _selector;
-    private readonly ModEditWindow         _editWindow;
-    private readonly ModEditor             _editor;
-    private readonly Configuration         _config;
+    private readonly Services.MessageService _messager;
+    private readonly FilenameService         _filenames;
+    private readonly ModManager              _modManager;
+    private readonly ModExportManager        _modExportManager;
+    private readonly ModFileSystem           _fileSystem;
+    private readonly ModFileSystemSelector   _selector;
+    private readonly ModEditWindow           _editWindow;
+    private readonly ModEditor               _editor;
+    private readonly Configuration           _config;
 
     private readonly TagButtons _modTags = new();
 
@@ -35,13 +36,13 @@ public class ModPanelEditTab : ITab
     private ModFileSystem.Leaf _leaf        = null!;
     private Mod                _mod         = null!;
 
-    public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
+    public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, Services.MessageService messager,
         ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config)
     {
         _modManager       = modManager;
         _selector         = selector;
         _fileSystem       = fileSystem;
-        _chat             = chat;
+        _messager         = messager;
         _editWindow       = editWindow;
         _editor           = editor;
         _filenames        = filenames;
@@ -75,7 +76,7 @@ public class ModPanelEditTab : ITab
             }
             catch (Exception e)
             {
-                _chat.NotificationMessage(e.Message, "Warning", NotificationType.Warning);
+                _messager.NotificationMessage(e.Message, NotificationType.Warning, false);
             }
 
         UiHelpers.DefaultLineSpace();

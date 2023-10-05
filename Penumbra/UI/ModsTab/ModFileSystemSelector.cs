@@ -18,14 +18,14 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using ChatService = Penumbra.Services.ChatService;
+using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI.ModsTab;
 
 public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>
 {
     private readonly CommunicatorService _communicator;
-    private readonly ChatService         _chat;
+    private readonly MessageService         _messager;
     private readonly Configuration       _config;
     private readonly FileDialogService   _fileDialog;
     private readonly ModManager          _modManager;
@@ -37,7 +37,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     public           ModCollection       SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector(IKeyState keyState, CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
-        CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
+        CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, MessageService messager,
         ModImportManager modImportManager, IDragDropManager dragDrop)
         : base(fileSystem, keyState, Penumbra.Log, HandleException, allowMultipleSelection: true)
     {
@@ -47,7 +47,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _config            = config;
         _tutorial          = tutorial;
         _fileDialog        = fileDialog;
-        _chat              = chat;
+        _messager              = messager;
         _modImportManager  = modImportManager;
         _dragDrop          = dragDrop;
 
@@ -326,9 +326,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         }
         catch (Exception e)
         {
-            _chat.NotificationMessage(
-                $"Could not move newly imported mod {mod.Name} to default import folder {_config.DefaultImportFolder}:\n{e}", "Warning",
-                NotificationType.Warning);
+            _messager.NotificationMessage(e, $"Could not move newly imported mod {mod.Name} to default import folder {_config.DefaultImportFolder}.", NotificationType.Warning);
         }
     }
 
@@ -392,7 +390,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private static void HandleException(Exception e)
-        => Penumbra.Chat.NotificationMessage(e.Message, "Failure", NotificationType.Warning);
+        => Penumbra.Messager.NotificationMessage(e, e.Message, NotificationType.Warning);
 
     #endregion
 

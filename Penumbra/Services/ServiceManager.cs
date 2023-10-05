@@ -65,7 +65,7 @@ public static class ServiceManager
             .AddSingleton<FilenameService>()
             .AddSingleton<BackupService>()
             .AddSingleton<CommunicatorService>()
-            .AddSingleton<ChatService>()
+            .AddSingleton<MessageService>()
             .AddSingleton<SaveService>()
             .AddSingleton<FileCompactor>();
 
@@ -165,6 +165,7 @@ public static class ServiceManager
             .AddSingleton<EffectiveTab>()
             .AddSingleton<OnScreenTab>()
             .AddSingleton<DebugTab>()
+            .AddSingleton<MessagesTab>()
             .AddSingleton<ResourceTab>()
             .AddSingleton<ConfigTabBar>()
             .AddSingleton<ResourceWatcher>()
