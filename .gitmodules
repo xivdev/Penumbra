@@ -1,16 +1,16 @@
 [submodule "OtterGui"]
 	path = OtterGui
-	url = git@github.com:Ottermandias/OtterGui.git
+	url = https://github.com/Ottermandias/OtterGui.git
 	branch = main
 [submodule "Penumbra.Api"]
 	path = Penumbra.Api
-	url = git@github.com:Ottermandias/Penumbra.Api.git
+	url = https://github.com/Ottermandias/Penumbra.Api.git
 	branch = main
 [submodule "Penumbra.String"]
 	path = Penumbra.String
-	url = git@github.com:Ottermandias/Penumbra.String.git
+	url = https://github.com/Ottermandias/Penumbra.String.git
 	branch = main
 [submodule "Penumbra.GameData"]
 	path = Penumbra.GameData
-	url = git@github.com:Ottermandias/Penumbra.GameData.git
+	url = https://github.com/Ottermandias/Penumbra.GameData.git
 	branch = main
