@@ -43,9 +43,15 @@ public class PenumbraChangelog
         Add7_3_0(Changelog);
         Add8_0_0(Changelog);
         Add8_1_1(Changelog);
+        Add8_1_2(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add8_1_2(Changelog log)
+        => log.NextVersion("Version 0.8.1.2")
+            .RegisterEntry("Fixed an issue keeping mods selected after their deletion.")
+            .RegisterEntry("Maybe fixed an issue causing individual assignments to get lost on game start.");
 
     private static void Add8_1_1(Changelog log)
         => log.NextVersion("Version 0.8.1.1")
