@@ -27,7 +27,10 @@ public partial class IndividualCollections
     public bool ReadJObject(SaveService saver, ActiveCollections parent, JArray? obj, CollectionStorage storage)
     {
         if (_actorService.Valid)
-            return ReadJObjectInternal(obj, storage);
+        {
+            var ret = ReadJObjectInternal(obj, storage);
+            return ret;
+        }
 
         void Func()
         {
@@ -38,14 +41,19 @@ public partial class IndividualCollections
             _actorService.FinishedCreation -= Func;
         }
 
+        Penumbra.Log.Debug("[Collections] Delayed reading individual assignments until actor service is ready...");
         _actorService.FinishedCreation += Func;
         return false;
     }
 
     private bool ReadJObjectInternal(JArray? obj, CollectionStorage storage)
     {
+        Penumbra.Log.Debug("[Collections] Reading individual assignments...");
         if (obj == null)
+        {
+            Penumbra.Log.Debug($"[Collections] Finished reading {Count} individual assignments...");
             return true;
+        }
 
         var changes = false;
         foreach (var data in obj)
@@ -58,7 +66,7 @@ public partial class IndividualCollections
                 {
                     changes = true;
                     Penumbra.Messager.NotificationMessage("Could not load an unknown individual collection, removed.",
-                        NotificationType.Warning);
+                        NotificationType.Error);
                     continue;
                 }
 
@@ -85,6 +93,8 @@ public partial class IndividualCollections
                 Penumbra.Messager.NotificationMessage(e, $"Could not load an unknown individual collection, removed.", NotificationType.Error);
             }
         }
+
+        Penumbra.Log.Debug($"Finished reading {Count} individual assignments...");
 
         return changes;
     }

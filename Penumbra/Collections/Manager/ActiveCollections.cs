@@ -325,6 +325,7 @@ public class ActiveCollections : ISavable, IDisposable
     /// </summary>
     private void LoadCollections()
     {
+        Penumbra.Log.Debug("[Collections] Reading collection assignments...");
         var configChanged = !Load(_saveService.FileNames, out var jObject);
 
         // Load the default collection. If the string does not exist take the Default name if no file existed or the Empty name if one existed.
@@ -388,6 +389,8 @@ public class ActiveCollections : ISavable, IDisposable
                 }
             }
         }
+
+        Penumbra.Log.Debug("[Collections] Loaded non-individual collection assignments.");
 
         configChanged |= ActiveCollectionMigration.MigrateIndividualCollections(_storage, Individuals, jObject);
         configChanged |= Individuals.ReadJObject(_saveService, this, jObject[nameof(Individuals)] as JArray, _storage);

@@ -3,7 +3,7 @@ using Penumbra.Util;
 namespace Penumbra.Import.Structs;
 
 // Create an automatically disposing SqPack stream.
-public class StreamDisposer : PenumbraSqPackStream, IDisposable
+public class StreamDisposer : PenumbraSqPackStream
 {
     private readonly FileStream _fileStream;
 
@@ -11,13 +11,10 @@ public class StreamDisposer : PenumbraSqPackStream, IDisposable
         : base(stream)
         => _fileStream = stream;
 
-    public new void Dispose()
+    protected override void Dispose(bool _)
     {
         var filePath = _fileStream.Name;
-
-        base.Dispose();
         _fileStream.Dispose();
-
         File.Delete(filePath);
     }
 }

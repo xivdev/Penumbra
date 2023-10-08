@@ -176,6 +176,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// </summary>
     private void ReadCollections(out ModCollection defaultNamedCollection)
     {
+        Penumbra.Log.Debug("[Collections] Reading saved collections...");
         foreach (var file in _saveService.FileNames.CollectionFiles)
         {
             if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance))
@@ -202,6 +203,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         }
 
         defaultNamedCollection = SetDefaultNamedCollection();
+        Penumbra.Log.Debug($"[Collections] Found {Count} saved collections.");
     }
 
     /// <summary>

@@ -327,7 +327,11 @@ public class PenumbraSqPackStream : IDisposable
     public void Dispose()
     {
         Reader.Dispose();
+        Dispose(true);
     }
+
+    protected virtual void Dispose(bool _)
+    { }
 
     public class PenumbraFileInfo
     {
