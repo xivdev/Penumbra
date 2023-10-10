@@ -29,10 +29,11 @@ public sealed class ImportPopup : Window
           | ImGuiWindowFlags.NoDocking
           | ImGuiWindowFlags.NoTitleBar, true)
     {
-        _modImportManager  = modImportManager;
-        IsOpen             = true;
-        RespectCloseHotkey = false;
-        Collapsed          = false;
+        _modImportManager   = modImportManager;
+        DisableWindowSounds = true;
+        IsOpen              = true;
+        RespectCloseHotkey  = false;
+        Collapsed           = false;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = Vector2.Zero,
