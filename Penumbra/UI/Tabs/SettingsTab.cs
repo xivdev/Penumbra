@@ -830,7 +830,8 @@ public class SettingsTab : ITab
         }
         else
         {
-            Checkbox("Wait for Plugins on Startup", "This changes a setting in the Dalamud Configuration found at /xlsettings -> General.",
+            Checkbox("Wait for Plugins on Startup",
+                "Some mods need to change files that are loaded once when the game starts and never afterwards.\nThis can cause issues with Penumbra loading after the files are already loaded.\nThis setting causes the game to wait until certain plugins have finished loading, making those mods work (in the base collection).\n\nThis changes a setting in the Dalamud Configuration found at /xlsettings -> General.",
                 value,
                 v => _dalamud.SetDalamudConfig(DalamudServices.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup"));
         }
