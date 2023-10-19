@@ -118,7 +118,7 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<string, string, int, PenumbraApiEc>                                     RemoveTemporaryMod;
 
     // Resource Tree
-    internal readonly FuncProvider<ushort[], IReadOnlyList<(string, string)>>                                                                     GetSerializedResourceTrees;
+    internal readonly FuncProvider<bool, ushort[], IReadOnlyList<(string, string)>>                                                               GetSerializedResourceTrees;
     internal readonly FuncProvider<ushort[], IReadOnlyDictionary<string, string[]>?[]>                                                            GetGameObjectResourcePaths;
     internal readonly FuncProvider<IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>>>                                            GetPlayerResourcePaths;
     internal readonly FuncProvider<ResourceType, bool, ushort[], IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[]>                 GetGameObjectResourcesOfType;
