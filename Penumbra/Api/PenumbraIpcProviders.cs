@@ -6,7 +6,6 @@ using Penumbra.Api.Helpers;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.Util;
 
 namespace Penumbra.Api;
 
@@ -119,6 +118,7 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<string, string, int, PenumbraApiEc>                                     RemoveTemporaryMod;
 
     // Resource Tree
+    internal readonly FuncProvider<ushort[], IReadOnlyList<(string, string)>>                                                                     GetSerializedResourceTrees;
     internal readonly FuncProvider<ushort[], IReadOnlyDictionary<string, string[]>?[]>                                                            GetGameObjectResourcePaths;
     internal readonly FuncProvider<IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>>>                                            GetPlayerResourcePaths;
     internal readonly FuncProvider<ResourceType, bool, ushort[], IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[]>                 GetGameObjectResourcesOfType;
@@ -243,6 +243,7 @@ public class PenumbraIpcProviders : IDisposable
         RemoveTemporaryMod              = Ipc.RemoveTemporaryMod.Provider(pi, Api.RemoveTemporaryMod);
 
         // ResourceTree
+        GetSerializedResourceTrees   = Ipc.GetSerializedResourceTrees.Provider(pi, Api.GetSerializedResourceTrees);
         GetGameObjectResourcePaths   = Ipc.GetGameObjectResourcePaths.Provider(pi, Api.GetGameObjectResourcePaths);
         GetPlayerResourcePaths       = Ipc.GetPlayerResourcePaths.Provider(pi, Api.GetPlayerResourcePaths);
         GetGameObjectResourcesOfType = Ipc.GetGameObjectResourcesOfType.Provider(pi, Api.GetGameObjectResourcesOfType);

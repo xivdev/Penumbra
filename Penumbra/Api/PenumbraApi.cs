@@ -1014,6 +1014,20 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         };
     // @formatter:on
 
+    public IReadOnlyList<(string, string)> GetSerializedResourceTrees(ushort[] gameObjects)
+    {
+        var characters = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
+        var resourceTrees = _resourceTreeFactory.FromCharacters(characters, ResourceTreeFactory.Flags.RedactExternalPaths |
+        ResourceTreeFactory.Flags.WithUiData |
+        ResourceTreeFactory.Flags.WithOwnership);
+        var settings = new JsonSerializerSettings
+        {
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        };
+
+        return resourceTrees.Select(x => (x.ResourceTree.Name, JsonConvert.SerializeObject(x.ResourceTree, settings))).ToList();
+    }
+
     public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects)
     {
         var characters       = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
