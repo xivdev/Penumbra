@@ -17,6 +17,7 @@ using Penumbra.UI;
 using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Structs;
+using Newtonsoft.Json.Linq;
 
 namespace Penumbra.Api;
 
@@ -1418,6 +1419,7 @@ public class IpcTester : IDisposable
         private (string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[]? _lastGameObjectResourcesOfType;
         private (string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[]? _lastPlayerResourcesOfType;
         private TimeSpan                                                                   _lastCallDuration;
+        private (string First, Tuple<string, string> Second)[]?                            _lastSerializedResourceTrees;
 
         public ResourceTree(DalamudPluginInterface pi, IObjectTable objects)
         {
@@ -1503,11 +1505,29 @@ public class IpcTester : IDisposable
                 ImGui.OpenPopup(nameof(Ipc.GetPlayerResourcesOfType));
             }
 
+            DrawIntro(Ipc.GetSerializedResourceTrees.Label, "Get serialized resource trees");
+            if (ImGui.Button("Get##SerializedResourceTrees"))
+            {
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber = Ipc.GetSerializedResourceTrees.Subscriber(_pi);
+                _stopwatch.Restart();
+                var trees = subscriber.Invoke(_withUIData, gameObjects);
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastSerializedResourceTrees = gameObjects
+                    .Select(i => GameObjectToString(i))
+                    .Zip(trees)
+                    .Select(pair => (pair.First, Tuple.Create(pair.Second.Item1, pair.Second.Item2)))
+                    .ToArray();
+
+                ImGui.OpenPopup(nameof(Ipc.GetSerializedResourceTrees));
+            }
+
             DrawPopup(nameof(Ipc.GetGameObjectResourcePaths), ref _lastGameObjectResourcePaths, DrawResourcePaths, _lastCallDuration);
             DrawPopup(nameof(Ipc.GetPlayerResourcePaths), ref _lastPlayerResourcePaths, DrawResourcePaths, _lastCallDuration);
 
             DrawPopup(nameof(Ipc.GetGameObjectResourcesOfType), ref _lastGameObjectResourcesOfType, DrawResourcesOfType, _lastCallDuration);
             DrawPopup(nameof(Ipc.GetPlayerResourcesOfType), ref _lastPlayerResourcesOfType, DrawResourcesOfType, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetSerializedResourceTrees), ref _lastSerializedResourceTrees, DrawSerializedResourceTrees, _lastCallDuration);
         }
 
         private static void DrawPopup<T>(string popupId, ref T? result, Action<T> drawResult, TimeSpan duration) where T : class
@@ -1585,6 +1605,99 @@ public class IpcTester : IDisposable
                         ImGui.TextUnformatted(gamePath);
                 }
             });
+        }
+
+        private (string, JToken?) _lastSerializedTree = (string.Empty, null);
+        private void DrawSerializedResourceTrees((string, Tuple<string, string>?)[] result)
+        {
+            DrawWithHeaders(result, tree =>
+            {
+                var unformattedJson = tree.Item2;
+                if (unformattedJson == null)
+                    return;
+
+                if (_lastSerializedTree.Item1 != unformattedJson)
+                {
+                    var json = JToken.Parse(unformattedJson);
+                    _lastSerializedTree = (unformattedJson, json);
+                }
+
+                // copy button
+                if (ImGui.Button("Copy##SerializedTree"))
+                    ImGui.SetClipboardText(unformattedJson);
+
+                // single column table, full width
+                using var table = ImRaii.Table(string.Empty, 1, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV);
+                if (!table)
+                    return;
+
+                ImGui.TableSetupColumn("Tree", ImGuiTableColumnFlags.WidthStretch);
+
+
+                DrawJsonTree(_lastSerializedTree.Item2);
+            });
+        }
+
+        private void DrawJsonTree(JToken item)
+        {
+            ImGui.TableNextColumn();
+
+            switch (item)
+            {
+                case JArray array:
+                    {
+                        for (var i = 0; i < array.Count; ++i)
+                        {
+                            using var arrNode = ImRaii.TreeNode($"{i}");
+                            if (!arrNode)
+                                continue;
+
+                            DrawJsonTree(array[i]);
+                        }
+
+                        break;
+                    }
+                case JObject obj:
+                    {
+                        foreach (var (key, value) in obj)
+                        {
+                            if (value is JValue)
+                            {
+                                using var _ = ImRaii.TreeNode($"{key}: {value}", ImGuiTreeNodeFlags.Leaf);
+                                continue;
+                            }
+
+                            if (value is JArray arr)
+                            {
+                                using var arrNode = ImRaii.TreeNode($"{key} [{arr.Count}]");
+                                if (!arrNode) 
+                                    continue;
+
+                                DrawJsonTree(arr);
+                                continue;
+                            }
+
+                            using var objNode = ImRaii.TreeNode(key);
+                            if (!objNode)
+                                continue;
+
+                            if (value != null)
+                            {
+                                DrawJsonTree(value);
+                            }
+                            else
+                            {
+                                using var _ = ImRaii.TreeNode($"null", ImGuiTreeNodeFlags.Leaf);
+                            }
+                        }
+                        break;
+                    }
+                case JValue value:
+                    {
+                        using var _ = ImRaii.TreeNode(value.ToString(), ImGuiTreeNodeFlags.Leaf);
+                        break;
+                    }
+            }
         }
 
         private void DrawResourcesOfType((string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[] result)
