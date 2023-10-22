@@ -90,13 +90,13 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
             return (identifier, SpecialResult.Invalid);
 
         if (_actorService.AwaitedService.ResolvePartyBannerPlayer(identifier.Special, out var id))
-            return (id, SpecialResult.PartyBanner);
+            return _config.UseCharacterCollectionsInCards ? (id, SpecialResult.PartyBanner) : (identifier, SpecialResult.Invalid);
 
         if (_actorService.AwaitedService.ResolvePvPBannerPlayer(identifier.Special, out id))
-            return (id, SpecialResult.PvPBanner);
+            return _config.UseCharacterCollectionsInCards ? (id, SpecialResult.PvPBanner) : (identifier, SpecialResult.Invalid);
 
         if (_actorService.AwaitedService.ResolveMahjongPlayer(identifier.Special, out id))
-            return (id, SpecialResult.Mahjong);
+            return _config.UseCharacterCollectionsInCards ? (id, SpecialResult.Mahjong) : (identifier, SpecialResult.Invalid);
 
         switch (identifier.Special)
         {
