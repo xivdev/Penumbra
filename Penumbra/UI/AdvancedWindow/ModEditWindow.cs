@@ -598,7 +598,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     private void OnModPathChanged(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
     {
-        if (type is ModPathChangeType.Reloaded)
+        if (type is ModPathChangeType.Reloaded or ModPathChangeType.Moved)
             ChangeMod(mod);
     }
 }
