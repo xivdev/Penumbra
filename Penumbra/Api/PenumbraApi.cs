@@ -388,6 +388,30 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return (resolved, reverseResolved.Select(a => a.Select(p => p.ToString()).ToArray()).ToArray());
     }
 
+    public async Task<(string[], string[][])> ResolvePlayerPathsAsync(string[] forward, string[] reverse)
+    {
+        CheckInitialized();
+        if (!_config.EnableMods)
+            return (forward, reverse.Select(p => new[]
+            {
+                p,
+            }).ToArray());
+
+        return await Task.Run(async () =>
+        {
+            var playerCollection = await _dalamud.Framework.RunOnFrameworkThread(_collectionResolver.PlayerCollection).ConfigureAwait(false);
+            var forwardTask = Task.Run(() =>
+            {
+                var forwardRet = new string[forward.Length];
+                Parallel.For(0, forward.Length, idx => forwardRet[idx] = ResolvePath(forward[idx], _modManager, playerCollection));
+                return forwardRet;
+            }).ConfigureAwait(false);
+            var reverseTask     = Task.Run(() => playerCollection.ReverseResolvePaths(reverse)).ConfigureAwait(false);
+            var reverseResolved = (await reverseTask).Select(a => a.Select(p => p.ToString()).ToArray()).ToArray();
+            return (await forwardTask, reverseResolved);
+        });
+    }
+
     public T? GetFile<T>(string gamePath) where T : FileResource
         => GetFileIntern<T>(ResolveDefaultPath(gamePath));
 

@@ -53,15 +53,16 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly EventProvider<nint, string, string>           GameObjectResourcePathResolved;
 
     // Resolve
-    internal readonly FuncProvider<string, string>                             ResolveDefaultPath;
-    internal readonly FuncProvider<string, string>                             ResolveInterfacePath;
-    internal readonly FuncProvider<string, string>                             ResolvePlayerPath;
-    internal readonly FuncProvider<string, int, string>                        ResolveGameObjectPath;
-    internal readonly FuncProvider<string, string, string>                     ResolveCharacterPath;
-    internal readonly FuncProvider<string, string, string[]>                   ReverseResolvePath;
-    internal readonly FuncProvider<string, int, string[]>                      ReverseResolveGameObjectPath;
-    internal readonly FuncProvider<string, string[]>                           ReverseResolvePlayerPath;
-    internal readonly FuncProvider<string[], string[], (string[], string[][])> ResolvePlayerPaths;
+    internal readonly FuncProvider<string, string>                                   ResolveDefaultPath;
+    internal readonly FuncProvider<string, string>                                   ResolveInterfacePath;
+    internal readonly FuncProvider<string, string>                                   ResolvePlayerPath;
+    internal readonly FuncProvider<string, int, string>                              ResolveGameObjectPath;
+    internal readonly FuncProvider<string, string, string>                           ResolveCharacterPath;
+    internal readonly FuncProvider<string, string, string[]>                         ReverseResolvePath;
+    internal readonly FuncProvider<string, int, string[]>                            ReverseResolveGameObjectPath;
+    internal readonly FuncProvider<string, string[]>                                 ReverseResolvePlayerPath;
+    internal readonly FuncProvider<string[], string[], (string[], string[][])>       ResolvePlayerPaths;
+    internal readonly FuncProvider<string[], string[], Task<(string[], string[][])>> ResolvePlayerPathsAsync;
 
     // Collections
     internal readonly FuncProvider<IList<string>>                                                  GetCollections;
@@ -119,10 +120,15 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<string, string, int, PenumbraApiEc>                                     RemoveTemporaryMod;
 
     // Resource Tree
-    internal readonly FuncProvider<ushort[], IReadOnlyDictionary<string, string[]>?[]>                                                            GetGameObjectResourcePaths;
-    internal readonly FuncProvider<IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>>>                                            GetPlayerResourcePaths;
-    internal readonly FuncProvider<ResourceType, bool, ushort[], IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[]>                 GetGameObjectResourcesOfType;
-    internal readonly FuncProvider<ResourceType, bool, IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>>> GetPlayerResourcesOfType;
+    internal readonly FuncProvider<ushort[], IReadOnlyDictionary<string, string[]>?[]>                 GetGameObjectResourcePaths;
+    internal readonly FuncProvider<IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>>> GetPlayerResourcePaths;
+
+    internal readonly FuncProvider<ResourceType, bool, ushort[], IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[]>
+        GetGameObjectResourcesOfType;
+
+    internal readonly
+        FuncProvider<ResourceType, bool, IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>>>
+        GetPlayerResourcesOfType;
 
     public PenumbraIpcProviders(DalamudServices dalamud, IPenumbraApi api, ModManager modManager, CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)
@@ -184,6 +190,7 @@ public class PenumbraIpcProviders : IDisposable
         ReverseResolveGameObjectPath = Ipc.ReverseResolveGameObjectPath.Provider(pi, Api.ReverseResolveGameObjectPath);
         ReverseResolvePlayerPath     = Ipc.ReverseResolvePlayerPath.Provider(pi, Api.ReverseResolvePlayerPath);
         ResolvePlayerPaths           = Ipc.ResolvePlayerPaths.Provider(pi, Api.ResolvePlayerPaths);
+        ResolvePlayerPathsAsync      = Ipc.ResolvePlayerPathsAsync.Provider(pi, Api.ResolvePlayerPathsAsync);
 
         // Collections
         GetCollections             = Ipc.GetCollections.Provider(pi, Api.GetCollections);
@@ -301,6 +308,7 @@ public class PenumbraIpcProviders : IDisposable
         ReverseResolveGameObjectPath.Dispose();
         ReverseResolvePlayerPath.Dispose();
         ResolvePlayerPaths.Dispose();
+        ResolvePlayerPathsAsync.Dispose();
 
         // Collections
         GetCollections.Dispose();

@@ -23,7 +23,7 @@ public class CollectionCache : IDisposable
     private readonly ModCollection                                    _collection;
     public readonly  CollectionModData                                ModData       = new();
     public readonly  SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
-    public readonly  Dictionary<Utf8GamePath, ModPath>                ResolvedFiles = new();
+    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>      ResolvedFiles = new();
     public readonly  MetaCache                                        Meta;
     public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
 
@@ -146,7 +146,7 @@ public class CollectionCache : IDisposable
             ModData.RemovePath(modPath.Mod, path);
             if (fullPath.FullName.Length > 0)
             {
-                ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
+                ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, fullPath, modPath.Path,
                     Mod.ForcedFiles);
             }
@@ -157,7 +157,7 @@ public class CollectionCache : IDisposable
         }
         else if (fullPath.FullName.Length > 0)
         {
-            ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
+            ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
             InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, fullPath, FullPath.Empty, Mod.ForcedFiles);
         }
     }

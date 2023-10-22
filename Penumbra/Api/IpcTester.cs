@@ -16,6 +16,7 @@ using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
+using ImGuiScene;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.Api;
@@ -566,10 +567,11 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private string _currentResolvePath      = string.Empty;
-        private string _currentResolveCharacter = string.Empty;
-        private string _currentReversePath      = string.Empty;
-        private int    _currentReverseIdx       = 0;
+        private string                       _currentResolvePath      = string.Empty;
+        private string                       _currentResolveCharacter = string.Empty;
+        private string                       _currentReversePath      = string.Empty;
+        private int                          _currentReverseIdx       = 0;
+        private Task<(string[], string[][])> _task                    = Task.FromException<(string[], string[][])>(new Exception());
 
         public Resolve(DalamudPluginInterface pi)
             => _pi = pi;
@@ -645,37 +647,55 @@ public class IpcTester : IDisposable
                 }
             }
 
-            DrawIntro(Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)");
-            if (_currentResolvePath.Length > 0 || _currentReversePath.Length > 0)
-            {
-                var forwardArray = _currentResolvePath.Length > 0
-                    ? new[]
-                    {
-                        _currentResolvePath,
-                    }
-                    : Array.Empty<string>();
-                var reverseArray = _currentReversePath.Length > 0
-                    ? new[]
-                    {
-                        _currentReversePath,
-                    }
-                    : Array.Empty<string>();
-                var ret  = Ipc.ResolvePlayerPaths.Subscriber(_pi).Invoke(forwardArray, reverseArray);
-                var text = string.Empty;
-                if (ret.Item1.Length > 0)
+            var forwardArray = _currentResolvePath.Length > 0
+                ? new[]
                 {
-                    if (ret.Item2.Length > 0)
-                        text = $"Forward: {ret.Item1[0]} | Reverse: {string.Join("; ", ret.Item2[0])}.";
-                    else
-                        text = $"Forward: {ret.Item1[0]}.";
+                    _currentResolvePath,
                 }
-                else if (ret.Item2.Length > 0)
+                : Array.Empty<string>();
+            var reverseArray = _currentReversePath.Length > 0
+                ? new[]
                 {
-                    text = $"Reverse: {string.Join("; ", ret.Item2[0])}.";
+                    _currentReversePath,
+                }
+                : Array.Empty<string>();
+
+            string ConvertText((string[], string[][]) data)
+            {
+                var text = string.Empty;
+                if (data.Item1.Length > 0)
+                {
+                    if (data.Item2.Length > 0)
+                        text = $"Forward: {data.Item1[0]} | Reverse: {string.Join("; ", data.Item2[0])}.";
+                    else
+                        text = $"Forward: {data.Item1[0]}.";
+                }
+                else if (data.Item2.Length > 0)
+                {
+                    text = $"Reverse: {string.Join("; ", data.Item2[0])}.";
                 }
 
-                ImGui.TextUnformatted(text);
+                return text;
             }
+
+            ;
+
+            DrawIntro(Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)");
+            if (forwardArray.Length > 0 || reverseArray.Length > 0)
+            {
+                var ret = Ipc.ResolvePlayerPaths.Subscriber(_pi).Invoke(forwardArray, reverseArray);
+                ImGui.TextUnformatted(ConvertText(ret));
+            }
+
+            DrawIntro(Ipc.ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)");
+            if (ImGui.Button("Start"))
+                _task = Ipc.ResolvePlayerPathsAsync.Subscriber(_pi).Invoke(forwardArray, reverseArray);
+            var hovered = ImGui.IsItemHovered();
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted(_task.Status.ToString());
+            if ((hovered || ImGui.IsItemHovered()) && _task.IsCompletedSuccessfully)
+                ImGui.SetTooltip(ConvertText(_task.Result));
         }
     }
 
@@ -1442,12 +1462,12 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetGameObjectResourcePaths.Label, "Get GameObject resource paths");
             if (ImGui.Button("Get##GameObjectResourcePaths"))
             {
-                var gameObjects   = GetSelectedGameObjects();
-                var subscriber    = Ipc.GetGameObjectResourcePaths.Subscriber(_pi);
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber  = Ipc.GetGameObjectResourcePaths.Subscriber(_pi);
                 _stopwatch.Restart();
                 var resourcePaths = subscriber.Invoke(gameObjects);
 
-                _lastCallDuration            = _stopwatch.Elapsed;
+                _lastCallDuration = _stopwatch.Elapsed;
                 _lastGameObjectResourcePaths = gameObjects
                     .Select(i => GameObjectToString(i))
                     .Zip(resourcePaths)
@@ -1459,11 +1479,11 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcePaths.Label, "Get local player resource paths");
             if (ImGui.Button("Get##PlayerResourcePaths"))
             {
-                var subscriber    = Ipc.GetPlayerResourcePaths.Subscriber(_pi);
+                var subscriber = Ipc.GetPlayerResourcePaths.Subscriber(_pi);
                 _stopwatch.Restart();
                 var resourcePaths = subscriber.Invoke();
 
-                _lastCallDuration        = _stopwatch.Elapsed;
+                _lastCallDuration = _stopwatch.Elapsed;
                 _lastPlayerResourcePaths = resourcePaths
                     .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<string, string[]>?)pair.Value))
                     .ToArray();
@@ -1474,12 +1494,12 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetGameObjectResourcesOfType.Label, "Get GameObject resources of type");
             if (ImGui.Button("Get##GameObjectResourcesOfType"))
             {
-                var gameObjects     = GetSelectedGameObjects();
-                var subscriber      = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi);
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber  = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi);
                 _stopwatch.Restart();
                 var resourcesOfType = subscriber.Invoke(_type, _withUIData, gameObjects);
 
-                _lastCallDuration              = _stopwatch.Elapsed;
+                _lastCallDuration = _stopwatch.Elapsed;
                 _lastGameObjectResourcesOfType = gameObjects
                     .Select(i => GameObjectToString(i))
                     .Zip(resourcesOfType)
@@ -1491,11 +1511,11 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcesOfType.Label, "Get local player resources of type");
             if (ImGui.Button("Get##PlayerResourcesOfType"))
             {
-                var subscriber      = Ipc.GetPlayerResourcesOfType.Subscriber(_pi);
+                var subscriber = Ipc.GetPlayerResourcesOfType.Subscriber(_pi);
                 _stopwatch.Restart();
                 var resourcesOfType = subscriber.Invoke(_type, _withUIData);
 
-                _lastCallDuration          = _stopwatch.Elapsed;
+                _lastCallDuration = _stopwatch.Elapsed;
                 _lastPlayerResourcesOfType = resourcesOfType
                     .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)pair.Value))
                     .ToArray();
@@ -1504,10 +1524,10 @@ public class IpcTester : IDisposable
             }
 
             DrawPopup(nameof(Ipc.GetGameObjectResourcePaths), ref _lastGameObjectResourcePaths, DrawResourcePaths, _lastCallDuration);
-            DrawPopup(nameof(Ipc.GetPlayerResourcePaths), ref _lastPlayerResourcePaths, DrawResourcePaths, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetPlayerResourcePaths),     ref _lastPlayerResourcePaths,     DrawResourcePaths, _lastCallDuration);
 
             DrawPopup(nameof(Ipc.GetGameObjectResourcesOfType), ref _lastGameObjectResourcesOfType, DrawResourcesOfType, _lastCallDuration);
-            DrawPopup(nameof(Ipc.GetPlayerResourcesOfType), ref _lastPlayerResourcesOfType, DrawResourcesOfType, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetPlayerResourcesOfType),     ref _lastPlayerResourcesOfType,     DrawResourcesOfType, _lastCallDuration);
         }
 
         private static void DrawPopup<T>(string popupId, ref T? result, Action<T> drawResult, TimeSpan duration) where T : class
@@ -1573,7 +1593,7 @@ public class IpcTester : IDisposable
                     return;
 
                 ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.6f);
-                ImGui.TableSetupColumn("Game Paths", ImGuiTableColumnFlags.WidthStretch, 0.4f);
+                ImGui.TableSetupColumn("Game Paths",  ImGuiTableColumnFlags.WidthStretch, 0.4f);
                 ImGui.TableHeadersRow();
 
                 foreach (var (actualPath, gamePaths) in paths)
@@ -1596,7 +1616,7 @@ public class IpcTester : IDisposable
                     return;
 
                 ImGui.TableSetupColumn("Resource Handle", ImGuiTableColumnFlags.WidthStretch, 0.15f);
-                ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, _withUIData ? 0.55f : 0.85f);
+                ImGui.TableSetupColumn("Actual Path",     ImGuiTableColumnFlags.WidthStretch, _withUIData ? 0.55f : 0.85f);
                 if (_withUIData)
                     ImGui.TableSetupColumn("Icon & Name", ImGuiTableColumnFlags.WidthStretch, 0.3f);
                 ImGui.TableHeadersRow();
@@ -1626,8 +1646,8 @@ public class IpcTester : IDisposable
 
         private ushort[] GetSelectedGameObjects()
             => _gameObjectIndices.Split(',')
-                    .SelectWhere(index => (ushort.TryParse(index.Trim(), out var i), i))
-                    .ToArray();
+                .SelectWhere(index => (ushort.TryParse(index.Trim(), out var i), i))
+                .ToArray();
 
         private unsafe string GameObjectToString(ObjectIndex gameObjectIndex)
         {
