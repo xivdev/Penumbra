@@ -1,14 +1,15 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
+using static Penumbra.Interop.Structs.StructExtensions;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -36,7 +37,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (!Utf8GamePath.FromByteString(ByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path, false))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->Handle, path, @internal);
+        return CreateNodeFromGamePath(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path, @internal);
     }
 
     private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool @internal, bool dx11)
@@ -68,7 +69,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (!Utf8GamePath.FromByteString(gamePath, out var path))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Tex, (nint)resourceHandle->KernelTexture, &resourceHandle->Handle, path, @internal);
+        return CreateNodeFromGamePath(ResourceType.Tex, (nint)resourceHandle->Texture, &resourceHandle->ResourceHandle, path, @internal);
     }
 
     private unsafe ResourceNode CreateNodeFromGamePath(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
@@ -118,22 +119,22 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (Nodes.TryGetValue((nint)tex, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->KernelTexture, &tex->Handle, false);
+        var node = CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, false);
         if (node != null)
             Nodes.Add((nint)tex, node);
 
         return node;
     }
 
-    public unsafe ResourceNode? CreateNodeFromRenderModel(RenderModel* mdl)
+    public unsafe ResourceNode? CreateNodeFromRenderModel(Model* mdl)
     {
-        if (mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara)
+        if (mdl == null || mdl->ModelResourceHandle == null || mdl->ModelResourceHandle->ResourceHandle.Type.Category != ResourceHandleType.HandleCategory.Chara)
             return null;
 
-        if (Nodes.TryGetValue((nint)mdl->ResourceHandle, out var cached))
+        if (Nodes.TryGetValue((nint)mdl->ModelResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Mdl, (nint)mdl, mdl->ResourceHandle, false);
+        var node = CreateNodeFromResourceHandle(ResourceType.Mdl, (nint)mdl, &mdl->ModelResourceHandle->ResourceHandle, false);
         if (node == null)
             return null;
 
@@ -149,7 +150,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             }
         }
 
-        Nodes.Add((nint)mdl->ResourceHandle, node);
+        Nodes.Add((nint)mdl->ModelResourceHandle, node);
 
         return node;
     }
@@ -169,27 +170,27 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         }
 
         static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle, HashSet<uint> alreadyVisitedSamplerIds)
-            => mtrl->TextureSpan.FindFirst(p => p.ResourceHandle == handle && !alreadyVisitedSamplerIds.Contains(p.Id), out var p)
+            => mtrl->TexturesSpan.FindFirst(p => p.Texture == handle && !alreadyVisitedSamplerIds.Contains(p.Id), out var p)
                 ? p.Id
                 : null;
 
         static uint? GetSamplerCrcById(ShaderPackage* shpk, uint id)
-            => new ReadOnlySpan<ShaderPackageUtility.Sampler>(shpk->Samplers, shpk->SamplerCount).FindFirst(s => s.Id == id, out var s)
-                ? s.Crc
+            => shpk->SamplersSpan.FindFirst(s => s.Id == id, out var s)
+                ? s.CRC
                 : null;
 
         if (mtrl == null)
             return null;
 
-        var resource = mtrl->ResourceHandle;
+        var resource = mtrl->MaterialResourceHandle;
         if (Nodes.TryGetValue((nint)resource, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint)mtrl, &resource->Handle, false);
+        var node = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, false);
         if (node == null)
             return null;
 
-        var shpkNode = CreateNodeFromShpk(resource->ShpkResourceHandle, new ByteString(resource->ShpkString), false);
+        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName), false);
         if (shpkNode != null)
         {
             if (WithUiData)
@@ -200,10 +201,10 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         var shpk     = WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
         var alreadyProcessedSamplerIds = new HashSet<uint>();
-        for (var i = 0; i < resource->NumTex; i++)
+        for (var i = 0; i < resource->TextureCount; i++)
         {
-            var texNode = CreateNodeFromTex(resource->TexSpace[i].ResourceHandle, new ByteString(resource->TexString(i)), false,
-                resource->TexIsDX11(i));
+            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new ByteString(resource->TexturePath(i)), false,
+                resource->Textures[i].IsDX11);
             if (texNode == null)
                 continue;
 
@@ -212,12 +213,12 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
                 string? name = null;
                 if (shpk != null)
                 {
-                    var   index = GetTextureIndex(mtrl, resource->TexSpace[i].Flags, alreadyProcessedSamplerIds);
+                    var   index = GetTextureIndex(mtrl, resource->Textures[i].Flags, alreadyProcessedSamplerIds);
                     uint? samplerId;
                     if (index != 0x001F)
                         samplerId = mtrl->Textures[index].Id;
                     else
-                        samplerId = GetTextureSamplerId(mtrl, resource->TexSpace[i].ResourceHandle, alreadyProcessedSamplerIds);
+                        samplerId = GetTextureSamplerId(mtrl, resource->Textures[i].TextureResourceHandle, alreadyProcessedSamplerIds);
                     if (samplerId.HasValue)
                     {
                         alreadyProcessedSamplerIds.Add(samplerId.Value);
@@ -367,7 +368,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (handle == null)
             return ByteString.Empty;
 
-        var name = handle->FileName();
+        var name = handle->FileName.AsByteString();
         if (name.IsEmpty)
             return ByteString.Empty;
 
@@ -388,6 +389,6 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (handle == null)
             return 0;
 
-        return ResourceHandle.GetLength(handle);
+        return handle->GetLength();
     }
 }

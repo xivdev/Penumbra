@@ -19,9 +19,18 @@ public static class UiHelpers
     public static unsafe void Text(byte* s, int length)
         => ImGuiNative.igTextUnformatted(s, s + length);
 
+    /// <summary> Draw text given by a byte span. </summary>
+    public static unsafe void Text(ReadOnlySpan<byte> s)
+    {
+        fixed (byte* pS = s)
+        {
+            Text(pS, s.Length);
+        }
+    }
+
     /// <summary> Draw the name of a resource file. </summary>
     public static unsafe void Text(ResourceHandle* resource)
-        => Text(resource->FileName().Path, resource->FileNameLength);
+        => Text(resource->CsHandle.FileName.AsSpan());
 
     /// <summary> Draw a ByteString as a selectable. </summary>
     public static unsafe bool Selectable(ByteString s, bool selected)

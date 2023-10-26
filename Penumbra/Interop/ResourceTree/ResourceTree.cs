@@ -1,9 +1,9 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Structs;
 using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 
@@ -50,11 +50,12 @@ public class ResourceTree
     {
         var character = (Character*)GameObjectAddress;
         var model     = (CharacterBase*)DrawObjectAddress;
+        var human     = model->GetModelType() == CharacterBase.ModelType.Human ? (Human*)model : null;
         var equipment = new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10);
         // var customize = new ReadOnlySpan<byte>( character->CustomizeData, 26 );
         ModelId       = character->CharacterData.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
-        RaceCode      = model->GetModelType() == CharacterBase.ModelType.Human ? (GenderRace)((Human*)model)->RaceSexId : GenderRace.Unknown;
+        RaceCode      = human != null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
 
         for (var i = 0; i < model->SlotCount; ++i)
         {
@@ -72,7 +73,7 @@ public class ResourceTree
                 Nodes.Add(imcNode);
             }
 
-            var mdl     = (RenderModel*)model->Models[i];
+            var mdl     = model->Models[i];
             var mdlNode = context.CreateNodeFromRenderModel(mdl);
             if (mdlNode != null)
             {
@@ -84,13 +85,13 @@ public class ResourceTree
 
         AddSkeleton(Nodes, globalContext.CreateContext(EquipSlot.Unknown, default), model->Skeleton);
 
-        if (model->GetModelType() == CharacterBase.ModelType.Human)
-            AddHumanResources(globalContext, (HumanExt*)model);
+        if (human != null)
+            AddHumanResources(globalContext, human);
     }
 
-    private unsafe void AddHumanResources(GlobalResolveContext globalContext, HumanExt* human)
+    private unsafe void AddHumanResources(GlobalResolveContext globalContext, Human* human)
     {
-        var firstSubObject = (CharacterBase*)human->Human.CharacterBase.DrawObject.Object.ChildObject;
+        var firstSubObject = (CharacterBase*)human->CharacterBase.DrawObject.Object.ChildObject;
         if (firstSubObject != null)
         {
             var subObjectNodes = new List<ResourceNode>();
@@ -116,7 +117,7 @@ public class ResourceTree
                         subObjectNodes.Add(imcNode);
                     }
 
-                    var mdl     = (RenderModel*)subObject->Models[i];
+                    var mdl     = subObject->Models[i];
                     var mdlNode = subObjectContext.CreateNodeFromRenderModel(mdl);
                     if (mdlNode != null)
                     {
@@ -137,7 +138,7 @@ public class ResourceTree
 
         var context = globalContext.CreateContext(EquipSlot.Unknown, default);
 
-        var decalNode = context.CreateNodeFromTex((TextureResourceHandle*)human->Decal);
+        var decalNode = context.CreateNodeFromTex(human->Decal);
         if (decalNode != null)
         {
             if (globalContext.WithUiData)
@@ -149,7 +150,7 @@ public class ResourceTree
             Nodes.Add(decalNode);
         }
 
-        var legacyDecalNode = context.CreateNodeFromTex((TextureResourceHandle*)human->LegacyBodyDecal);
+        var legacyDecalNode = context.CreateNodeFromTex(human->LegacyBodyDecal);
         if (legacyDecalNode != null)
         {
             if (globalContext.WithUiData)

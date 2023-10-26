@@ -31,7 +31,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         if (mtrlHandle == null)
             throw new InvalidOperationException("Material doesn't have a resource handle");
 
-        var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorTableTextures;
+        var colorSetTextures = DrawObject->ColorTableTextures;
         if (colorSetTextures == null)
             throw new InvalidOperationException("Draw object doesn't have color table textures");
 
@@ -79,7 +79,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         textureSize[1] = TextureHeight;
 
         using var texture =
-            new SafeTextureHandle(Structs.TextureUtility.Create2D(Device.Instance(), textureSize, 1, 0x2460, 0x80000804, 7), false);
+            new SafeTextureHandle(Device.Instance()->CreateTexture2D(textureSize, 1, 0x2460, 0x80000804, 7), false);
         if (texture.IsInvalid)
             return;
 
@@ -88,7 +88,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         {
             fixed (Half* colorTable = _colorTable)
             {
-                success = Structs.TextureUtility.InitializeContents(texture.Texture, colorTable);
+                success = texture.Texture->InitializeContents(colorTable);
             }
         }
 
@@ -101,7 +101,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         if (!base.IsStillValid())
             return false;
 
-        var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorTableTextures;
+        var colorSetTextures = DrawObject->ColorTableTextures;
         if (colorSetTextures == null)
             return false;
 

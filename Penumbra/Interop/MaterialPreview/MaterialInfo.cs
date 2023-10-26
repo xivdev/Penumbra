@@ -93,7 +93,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
                             continue;
 
                         var mtrlHandle = material->MaterialResourceHandle;
-                        var path       = ResolveContext.GetResourceHandlePath((Structs.ResourceHandle*)mtrlHandle);
+                        var path       = ResolveContext.GetResourceHandlePath(&mtrlHandle->ResourceHandle);
                         if (path == needle)
                             result.Add(new MaterialInfo(index, type, i, j));
                     }
