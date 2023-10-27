@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.Communication;
 
@@ -7,7 +8,7 @@ namespace Penumbra.Communication;
 /// Triggered when a Changed Item in Penumbra is clicked.
 /// <list type="number">
 ///     <item>Parameter is the clicked mouse button. </item>
-///     <item>Parameter is the clicked object data if any.. </item>
+///     <item>Parameter is the clicked object data if any. </item>
 /// </list>
 /// </summary>
 public sealed class ChangedItemClick : EventWrapper<Action<MouseButton, object?>, ChangedItemClick.Priority>
