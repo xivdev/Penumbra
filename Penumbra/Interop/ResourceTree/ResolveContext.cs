@@ -268,7 +268,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, true);
+        var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, false);
         if (node != null)
         {
             if (WithUiData)
