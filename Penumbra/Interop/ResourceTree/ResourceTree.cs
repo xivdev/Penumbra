@@ -50,9 +50,14 @@ public class ResourceTree
     {
         var character = (Character*)GameObjectAddress;
         var model     = (CharacterBase*)DrawObjectAddress;
-        var human     = model->GetModelType() == CharacterBase.ModelType.Human ? (Human*)model : null;
-        var equipment = new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10);
-        // var customize = new ReadOnlySpan<byte>( character->CustomizeData, 26 );
+        var modelType = model->GetModelType();
+        var human     = modelType == CharacterBase.ModelType.Human ? (Human*)model : null;
+        var equipment = modelType switch
+        {
+            CharacterBase.ModelType.Human     => new ReadOnlySpan<CharacterArmor>(&human->Head, 10),
+            CharacterBase.ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10),
+            _                                 => ReadOnlySpan<CharacterArmor>.Empty,
+        };
         ModelId       = character->CharacterData.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
         RaceCode      = human != null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
@@ -91,50 +96,51 @@ public class ResourceTree
 
     private unsafe void AddHumanResources(GlobalResolveContext globalContext, Human* human)
     {
-        var firstSubObject = (CharacterBase*)human->CharacterBase.DrawObject.Object.ChildObject;
-        if (firstSubObject != null)
+        var subObjectIndex = 0;
+        var weaponIndex    = 0;
+        var subObjectNodes = new List<ResourceNode>();
+        foreach (var baseSubObject in human->CharacterBase.DrawObject.Object.ChildObjects)
         {
-            var subObjectNodes = new List<ResourceNode>();
-            var subObject      = firstSubObject;
-            var subObjectIndex = 0;
-            do
+            if (baseSubObject->GetObjectType() != FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType.CharacterBase)
+                continue;
+            var subObject = (CharacterBase*)baseSubObject;
+
+            var weapon              = subObject->GetModelType() == CharacterBase.ModelType.Weapon ? (Weapon*)subObject : null;
+            var subObjectNamePrefix = weapon != null ? "Weapon" : "Fashion Acc.";
+            // This way to tell apart MainHand and OffHand is not always accurate, but seems good enough for what we're doing with it.
+            var subObjectContext = globalContext.CreateContext(
+                weapon != null ? (weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand) : EquipSlot.Unknown,
+                weapon != null ? new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, (byte)weapon->ModelUnknown) : default
+            );
+
+            for (var i = 0; i < subObject->SlotCount; ++i)
             {
-                var weapon              = subObject->GetModelType() == CharacterBase.ModelType.Weapon ? (Weapon*)subObject : null;
-                var subObjectNamePrefix = weapon != null ? "Weapon" : "Fashion Acc.";
-                var subObjectContext = globalContext.CreateContext(
-                    weapon != null ? EquipSlot.MainHand : EquipSlot.Unknown,
-                    weapon != null ? new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, (byte)weapon->ModelUnknown) : default
-                );
-
-                for (var i = 0; i < subObject->SlotCount; ++i)
+                var imc     = (ResourceHandle*)subObject->IMCArray[i];
+                var imcNode = subObjectContext.CreateNodeFromImc(imc);
+                if (imcNode != null)
                 {
-                    var imc     = (ResourceHandle*)subObject->IMCArray[i];
-                    var imcNode = subObjectContext.CreateNodeFromImc(imc);
-                    if (imcNode != null)
-                    {
-                        if (globalContext.WithUiData)
-                            imcNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, IMC #{i}";
-                        subObjectNodes.Add(imcNode);
-                    }
-
-                    var mdl     = subObject->Models[i];
-                    var mdlNode = subObjectContext.CreateNodeFromRenderModel(mdl);
-                    if (mdlNode != null)
-                    {
-                        if (globalContext.WithUiData)
-                            mdlNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, Model #{i}";
-                        subObjectNodes.Add(mdlNode);
-                    }
+                    if (globalContext.WithUiData)
+                        imcNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, IMC #{i}";
+                    subObjectNodes.Add(imcNode);
                 }
 
-                AddSkeleton(subObjectNodes, subObjectContext, subObject->Skeleton, $"{subObjectNamePrefix} #{subObjectIndex}, ");
+                var mdl     = subObject->Models[i];
+                var mdlNode = subObjectContext.CreateNodeFromRenderModel(mdl);
+                if (mdlNode != null)
+                {
+                    if (globalContext.WithUiData)
+                        mdlNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, Model #{i}";
+                    subObjectNodes.Add(mdlNode);
+                }
+            }
 
-                subObject = (CharacterBase*)subObject->DrawObject.Object.NextSiblingObject;
-                ++subObjectIndex;
-            } while (subObject != null && subObject != firstSubObject);
+            AddSkeleton(subObjectNodes, subObjectContext, subObject->Skeleton, $"{subObjectNamePrefix} #{subObjectIndex}, ");
 
-            Nodes.InsertRange(0, subObjectNodes);
+            ++subObjectIndex;
+            if (weapon != null)
+                ++weaponIndex;
         }
+        Nodes.InsertRange(0, subObjectNodes);
 
         var context = globalContext.CreateContext(EquipSlot.Unknown, default);
 
