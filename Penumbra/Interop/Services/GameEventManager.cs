@@ -4,6 +4,7 @@ using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Services;
@@ -27,7 +28,13 @@ public unsafe class GameEventManager : IDisposable
 
         _copyCharacterHook =
             interop.HookFromAddress<CopyCharacterDelegate>((nint)CharacterSetup.MemberFunctionPointers.CopyFromCharacter, CopyCharacterDetour);
-
+        _characterBaseCreateHook =
+            interop.HookFromAddress<CharacterBaseCreateDelegate>((nint)CharacterBase.MemberFunctionPointers.Create, CharacterBaseCreateDetour);
+        _characterBaseDestructorHook =
+            interop.HookFromAddress<CharacterBaseDestructorEvent>((nint)CharacterBase.MemberFunctionPointers.Destroy,
+                CharacterBaseDestructorDetour);
+        _weaponReloadHook =
+            interop.HookFromAddress<WeaponReloadFunc>((nint)DrawDataContainer.MemberFunctionPointers.LoadWeapon, WeaponReloadDetour);
         _characterDtorHook.Enable();
         _copyCharacterHook.Enable();
         _resourceHandleDestructorHook.Enable();
@@ -148,8 +155,7 @@ public unsafe class GameEventManager : IDisposable
 
     private delegate nint CharacterBaseCreateDelegate(uint a, nint b, nint c, byte d);
 
-    [Signature(Sigs.CharacterBaseCreate, DetourName = nameof(CharacterBaseCreateDetour))]
-    private readonly Hook<CharacterBaseCreateDelegate> _characterBaseCreateHook = null!;
+    private readonly Hook<CharacterBaseCreateDelegate> _characterBaseCreateHook;
 
     private nint CharacterBaseCreateDetour(uint a, nint b, nint c, byte d)
     {
@@ -194,8 +200,7 @@ public unsafe class GameEventManager : IDisposable
 
     public delegate void CharacterBaseDestructorEvent(nint drawBase);
 
-    [Signature(Sigs.CharacterBaseDestructor, DetourName = nameof(CharacterBaseDestructorDetour))]
-    private readonly Hook<CharacterBaseDestructorEvent> _characterBaseDestructorHook = null!;
+    private readonly Hook<CharacterBaseDestructorEvent> _characterBaseDestructorHook;
 
     private void CharacterBaseDestructorDetour(IntPtr drawBase)
     {
@@ -222,8 +227,7 @@ public unsafe class GameEventManager : IDisposable
 
     private delegate void WeaponReloadFunc(nint a1, uint a2, nint a3, byte a4, byte a5, byte a6, byte a7);
 
-    [Signature(Sigs.WeaponReload, DetourName = nameof(WeaponReloadDetour))]
-    private readonly Hook<WeaponReloadFunc> _weaponReloadHook = null!;
+    private readonly Hook<WeaponReloadFunc> _weaponReloadHook;
 
     private void WeaponReloadDetour(nint a1, uint a2, nint a3, byte a4, byte a5, byte a6, byte a7)
     {
