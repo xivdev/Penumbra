@@ -31,7 +31,7 @@ public class ResourceNode : ICloneable
     }
 
     public bool Internal
-        => Type is ResourceType.Imc;
+        => Type is ResourceType.Eid or ResourceType.Imc;
 
     internal ResourceNode(ResourceType type, nint objectAddress, nint resourceHandle, ulong length, ResolveContext? resolveContext)
     {

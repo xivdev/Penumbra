@@ -62,6 +62,15 @@ public class ResourceTree
         CustomizeData = character->DrawData.CustomizeData;
         RaceCode      = human != null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
 
+        var eid     = (ResourceHandle*)model->EID;
+        var eidNode = globalContext.CreateContext(EquipSlot.Unknown, default).CreateNodeFromEid(eid);
+        if (eidNode != null)
+        {
+            if (globalContext.WithUiData)
+                eidNode.FallbackName = "EID";
+            Nodes.Add(eidNode);
+        }
+
         for (var i = 0; i < model->SlotCount; ++i)
         {
             var context = globalContext.CreateContext(
@@ -112,6 +121,15 @@ public class ResourceTree
                 weapon != null ? (weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand) : EquipSlot.Unknown,
                 weapon != null ? new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, (byte)weapon->ModelUnknown) : default
             );
+
+            var eid     = (ResourceHandle*)subObject->EID;
+            var eidNode = subObjectContext.CreateNodeFromEid(eid);
+            if (eidNode != null)
+            {
+                if (globalContext.WithUiData)
+                    eidNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, EID";
+                Nodes.Add(eidNode);
+            }
 
             for (var i = 0; i < subObject->SlotCount; ++i)
             {

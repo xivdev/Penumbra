@@ -107,6 +107,16 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         return node;
     }
 
+    public unsafe ResourceNode? CreateNodeFromEid(ResourceHandle* eid)
+    {
+        if (eid == null)
+            return null;
+
+        var path = Utf8GamePath.Empty; // TODO
+
+        return GetOrCreateNode(ResourceType.Eid, 0, eid, path);
+    }
+
     public unsafe ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
     {
         if (imc == null)
