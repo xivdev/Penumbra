@@ -42,7 +42,7 @@ public unsafe class PathState : IDisposable
         MetaState          = metaState;
         CharacterUtility   = characterUtility;
         _human             = new ResolvePathHooks(interop, this, _humanVTable,     ResolvePathHooks.Type.Human);
-        _weapon            = new ResolvePathHooks(interop, this, _weaponVTable,    ResolvePathHooks.Type.Weapon);
+        _weapon            = new ResolvePathHooks(interop, this, _weaponVTable,    ResolvePathHooks.Type.Other);
         _demiHuman         = new ResolvePathHooks(interop, this, _demiHumanVTable, ResolvePathHooks.Type.Other);
         _monster           = new ResolvePathHooks(interop, this, _monsterVTable,   ResolvePathHooks.Type.Other);
         _human.Enable();
