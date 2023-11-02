@@ -19,11 +19,10 @@ internal record GlobalResolveContext(IObjectIdentifier Identifier, TreeBuildCach
     public readonly Dictionary<nint, ResourceNode> Nodes = new(128);
 
     public ResolveContext CreateContext(EquipSlot slot, CharacterArmor equipment)
-        => new(Identifier, TreeBuildCache, Skeleton, WithUiData, Nodes, slot, equipment);
+        => new(this, slot, equipment);
 }
 
-internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, int Skeleton, bool WithUiData,
-    Dictionary<nint, ResourceNode> Nodes, EquipSlot Slot, CharacterArmor Equipment)
+internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, CharacterArmor Equipment)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
@@ -32,7 +31,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (resourceHandle == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)resourceHandle, out var cached))
+        if (Global.Nodes.TryGetValue((nint)resourceHandle, out var cached))
             return cached;
 
         if (gamePath.IsEmpty)
@@ -48,7 +47,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (resourceHandle == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)resourceHandle, out var cached))
+        if (Global.Nodes.TryGetValue((nint)resourceHandle, out var cached))
             return cached;
 
         if (dx11)
@@ -98,7 +97,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             FullPath = fullPath,
         };
         if (autoAdd)
-            Nodes.Add((nint)resourceHandle, node);
+            Global.Nodes.Add((nint)resourceHandle, node);
 
         return node;
     }
@@ -108,7 +107,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (imc == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)imc, out var cached))
+        if (Global.Nodes.TryGetValue((nint)imc, out var cached))
             return cached;
 
         return CreateNode(ResourceType.Imc, 0, imc, Utf8GamePath.Empty);
@@ -119,7 +118,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (tex == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)tex, out var cached))
+        if (Global.Nodes.TryGetValue((nint)tex, out var cached))
             return cached;
 
         return CreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, Utf8GamePath.Empty);
@@ -130,7 +129,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)mdl->ModelResourceHandle, out var cached))
+        if (Global.Nodes.TryGetValue((nint)mdl->ModelResourceHandle, out var cached))
             return cached;
 
         var node = CreateNode(ResourceType.Mdl, (nint)mdl, &mdl->ModelResourceHandle->ResourceHandle, Utf8GamePath.Empty, false);
@@ -141,13 +140,13 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             var mtrlNode = CreateNodeFromMaterial(mtrl);
             if (mtrlNode != null)
             {
-                if (WithUiData)
+                if (Global.WithUiData)
                     mtrlNode.FallbackName = $"Material #{i}";
                 node.Children.Add(mtrlNode);
             }
         }
 
-        Nodes.Add((nint)mdl->ModelResourceHandle, node);
+        Global.Nodes.Add((nint)mdl->ModelResourceHandle, node);
 
         return node;
     }
@@ -180,7 +179,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             return null;
 
         var resource = mtrl->MaterialResourceHandle;
-        if (Nodes.TryGetValue((nint)resource, out var cached))
+        if (Global.Nodes.TryGetValue((nint)resource, out var cached))
             return cached;
 
         var node = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, Utf8GamePath.Empty, false);
@@ -190,12 +189,12 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName));
         if (shpkNode != null)
         {
-            if (WithUiData)
+            if (Global.WithUiData)
                 shpkNode.Name = "Shader Package";
             node.Children.Add(shpkNode);
         }
-        var shpkFile = WithUiData && shpkNode != null ? TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
-        var shpk     = WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
+        var shpkFile = Global.WithUiData && shpkNode != null ? Global.TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
+        var shpk     = Global.WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
         var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->TextureCount; i++)
@@ -205,7 +204,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             if (texNode == null)
                 continue;
 
-            if (WithUiData)
+            if (Global.WithUiData)
             {
                 string? name = null;
                 if (shpk != null)
@@ -232,7 +231,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             node.Children.Add(texNode);
         }
 
-        Nodes.Add((nint)resource, node);
+        Global.Nodes.Add((nint)resource, node);
 
         return node;
     }
@@ -242,7 +241,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (sklb == null || sklb->SkeletonResourceHandle == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)sklb->SkeletonResourceHandle, out var cached))
+        if (Global.Nodes.TryGetValue((nint)sklb->SkeletonResourceHandle, out var cached))
             return cached;
 
         var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, Utf8GamePath.Empty, false);
@@ -251,7 +250,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             var skpNode = CreateParameterNodeFromPartialSkeleton(sklb);
             if (skpNode != null)
                 node.Children.Add(skpNode);
-            Nodes.Add((nint)sklb->SkeletonResourceHandle, node);
+            Global.Nodes.Add((nint)sklb->SkeletonResourceHandle, node);
         }
 
         return node;
@@ -262,15 +261,15 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (sklb == null || sklb->SkeletonParameterResourceHandle == null)
             return null;
 
-        if (Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
+        if (Global.Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
             return cached;
 
         var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, Utf8GamePath.Empty, false);
         if (node != null)
         {
-            if (WithUiData)
+            if (Global.WithUiData)
                 node.FallbackName = "Skeleton Parameters";
-            Nodes.Add((nint)sklb->SkeletonParameterResourceHandle, node);
+            Global.Nodes.Add((nint)sklb->SkeletonParameterResourceHandle, node);
         }
 
         return node;
@@ -297,7 +296,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
             {
                 "accessory" => IsMatchEquipment(path[2..], $"a{Equipment.Set.Id:D4}"),
                 "equipment" => IsMatchEquipment(path[2..], $"e{Equipment.Set.Id:D4}"),
-                "monster"   => SafeGet(path, 2) == $"m{Skeleton:D4}",
+                "monster"   => SafeGet(path, 2) == $"m{Global.Skeleton:D4}",
                 "weapon"    => IsMatchEquipment(path[2..], $"w{Equipment.Set.Id:D4}"),
                 _           => null,
             },
@@ -319,7 +318,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         // Weapons intentionally left out.
         var isEquipment = SafeGet(path, 0) == "chara" && SafeGet(path, 1) is "accessory" or "equipment";
         if (isEquipment)
-            foreach (var item in Identifier.Identify(Equipment.Set, Equipment.Variant, Slot.ToSlot()))
+            foreach (var item in Global.Identifier.Identify(Equipment.Set, Equipment.Variant, Slot.ToSlot()))
             {
                 var name = Slot switch
                     {
@@ -342,7 +341,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
 
     internal ResourceNode.UiData GuessUIDataFromPath(Utf8GamePath gamePath)
     {
-        foreach (var obj in Identifier.Identify(gamePath.ToString()))
+        foreach (var obj in Global.Identifier.Identify(gamePath.ToString()))
         {
             var name = obj.Key;
             if (name.StartsWith("Customization:"))

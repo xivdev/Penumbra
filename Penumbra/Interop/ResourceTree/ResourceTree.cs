@@ -179,7 +179,7 @@ public class ResourceTree
             var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
             if (sklbNode != null)
             {
-                if (context.WithUiData)
+                if (context.Global.WithUiData)
                     sklbNode.FallbackName = $"{prefix}Skeleton #{i}";
                 nodes.Add(sklbNode);
             }
