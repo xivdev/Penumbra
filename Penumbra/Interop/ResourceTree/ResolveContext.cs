@@ -27,8 +27,11 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
-    private unsafe ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath, bool @internal)
+    private unsafe ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath)
     {
+        if (resourceHandle == null)
+            return null;
+
         if (Nodes.TryGetValue((nint)resourceHandle, out var cached))
             return cached;
 
@@ -37,11 +40,14 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         if (!Utf8GamePath.FromByteString(ByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path, false))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path, @internal);
+        return CreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
     }
 
-    private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool @internal, bool dx11)
+    private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool dx11)
     {
+        if (resourceHandle == null)
+            return null;
+
         if (Nodes.TryGetValue((nint)resourceHandle, out var cached))
             return cached;
 
@@ -65,82 +71,73 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
                 gamePath = tmp.Path.Clone();
             }
         }
+        else
+        {
+            // Make sure the game path is owned, otherwise stale trees could cause crashes (access violations) or other memory safety issues.
+            if (!gamePath.IsOwned)
+                gamePath = gamePath.Clone();
+        }
 
         if (!Utf8GamePath.FromByteString(gamePath, out var path))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Tex, (nint)resourceHandle->Texture, &resourceHandle->ResourceHandle, path, @internal);
+        return CreateNode(ResourceType.Tex, (nint)resourceHandle->Texture, &resourceHandle->ResourceHandle, path);
     }
 
-    private unsafe ResourceNode CreateNodeFromGamePath(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
-        Utf8GamePath gamePath, bool @internal)
+    private unsafe ResourceNode CreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
+        Utf8GamePath gamePath, bool autoAdd = true)
     {
+        if (resourceHandle == null)
+            throw new ArgumentNullException(nameof(resourceHandle));
+
         var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(resourceHandle), out var p) ? new FullPath(p) : FullPath.Empty;
 
-        var node = new ResourceNode(type, objectAddress, (nint)resourceHandle, GetResourceHandleLength(resourceHandle), @internal, this)
+        var node = new ResourceNode(type, objectAddress, (nint)resourceHandle, GetResourceHandleLength(resourceHandle), this)
         {
             GamePath = gamePath,
             FullPath = fullPath,
         };
-        if (resourceHandle != null)
+        if (autoAdd)
             Nodes.Add((nint)resourceHandle, node);
 
         return node;
     }
 
-    private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint objectAddress, ResourceHandle* handle, bool @internal)
-    {
-        var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(handle), out var p) ? new FullPath(p) : FullPath.Empty;
-        if (fullPath.InternalName.IsEmpty)
-            return null;
-
-        return new ResourceNode(type, objectAddress, (nint)handle, GetResourceHandleLength(handle), @internal, this)
-        {
-            FullPath = fullPath,
-        };
-    }
-
     public unsafe ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
     {
+        if (imc == null)
+            return null;
+
         if (Nodes.TryGetValue((nint)imc, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Imc, 0, imc, true);
-        if (node == null)
-            return null;
-
-        Nodes.Add((nint)imc, node);
-
-        return node;
+        return CreateNode(ResourceType.Imc, 0, imc, Utf8GamePath.Empty);
     }
 
     public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex)
     {
+        if (tex == null)
+            return null;
+
         if (Nodes.TryGetValue((nint)tex, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, false);
-        if (node != null)
-            Nodes.Add((nint)tex, node);
-
-        return node;
+        return CreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, Utf8GamePath.Empty);
     }
 
     public unsafe ResourceNode? CreateNodeFromRenderModel(Model* mdl)
     {
-        if (mdl == null || mdl->ModelResourceHandle == null || mdl->ModelResourceHandle->ResourceHandle.Type.Category != ResourceHandleType.HandleCategory.Chara)
+        if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
 
         if (Nodes.TryGetValue((nint)mdl->ModelResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Mdl, (nint)mdl, &mdl->ModelResourceHandle->ResourceHandle, false);
-        if (node == null)
-            return null;
+        var node = CreateNode(ResourceType.Mdl, (nint)mdl, &mdl->ModelResourceHandle->ResourceHandle, Utf8GamePath.Empty, false);
 
         for (var i = 0; i < mdl->MaterialCount; i++)
         {
-            var mtrl     = (Material*)mdl->Materials[i];
+            var mtrl     = mdl->Materials[i];
             var mtrlNode = CreateNodeFromMaterial(mtrl);
             if (mtrlNode != null)
             {
@@ -179,18 +176,18 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
                 ? s.CRC
                 : null;
 
-        if (mtrl == null)
+        if (mtrl == null || mtrl->MaterialResourceHandle == null)
             return null;
 
         var resource = mtrl->MaterialResourceHandle;
         if (Nodes.TryGetValue((nint)resource, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, false);
+        var node = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, Utf8GamePath.Empty, false);
         if (node == null)
             return null;
 
-        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName), false);
+        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName));
         if (shpkNode != null)
         {
             if (WithUiData)
@@ -203,7 +200,7 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->TextureCount; i++)
         {
-            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new ByteString(resource->TexturePath(i)), false,
+            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new ByteString(resource->TexturePath(i)),
                 resource->Textures[i].IsDX11);
             if (texNode == null)
                 continue;
@@ -240,15 +237,15 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         return node;
     }
 
-    public unsafe ResourceNode? CreateNodeFromPartialSkeleton(FFXIVClientStructs.FFXIV.Client.Graphics.Render.PartialSkeleton* sklb)
+    public unsafe ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb)
     {
-        if (sklb->SkeletonResourceHandle == null)
+        if (sklb == null || sklb->SkeletonResourceHandle == null)
             return null;
 
         if (Nodes.TryGetValue((nint)sklb->SkeletonResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false);
+        var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, Utf8GamePath.Empty, false);
         if (node != null)
         {
             var skpNode = CreateParameterNodeFromPartialSkeleton(sklb);
@@ -260,15 +257,15 @@ internal record ResolveContext(IObjectIdentifier Identifier, TreeBuildCache Tree
         return node;
     }
 
-    private unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(FFXIVClientStructs.FFXIV.Client.Graphics.Render.PartialSkeleton* sklb)
+    private unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb)
     {
-        if (sklb->SkeletonParameterResourceHandle == null)
+        if (sklb == null || sklb->SkeletonParameterResourceHandle == null)
             return null;
 
         if (Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
             return cached;
 
-        var node = CreateNodeFromResourceHandle(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, false);
+        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, Utf8GamePath.Empty, false);
         if (node != null)
         {
             if (WithUiData)

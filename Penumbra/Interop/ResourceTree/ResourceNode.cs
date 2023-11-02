@@ -15,7 +15,6 @@ public class ResourceNode : ICloneable
     public          Utf8GamePath[]     PossibleGamePaths;
     public          FullPath           FullPath;
     public readonly ulong              Length;
-    public readonly bool               Internal;
     public readonly List<ResourceNode> Children;
     internal        ResolveContext?    ResolveContext;
 
@@ -31,14 +30,16 @@ public class ResourceNode : ICloneable
         }
     }
 
-    internal ResourceNode(ResourceType type, nint objectAddress, nint resourceHandle, ulong length, bool @internal, ResolveContext? resolveContext)
+    public bool Internal
+        => Type is ResourceType.Imc;
+
+    internal ResourceNode(ResourceType type, nint objectAddress, nint resourceHandle, ulong length, ResolveContext? resolveContext)
     {
         Type              = type;
         ObjectAddress     = objectAddress;
         ResourceHandle    = resourceHandle;
         PossibleGamePaths = Array.Empty<Utf8GamePath>();
         Length            = length;
-        Internal          = @internal;
         Children          = new List<ResourceNode>();
         ResolveContext    = resolveContext;
     }
@@ -54,7 +55,6 @@ public class ResourceNode : ICloneable
         PossibleGamePaths = other.PossibleGamePaths;
         FullPath          = other.FullPath;
         Length            = other.Length;
-        Internal          = other.Internal;
         Children          = other.Children;
         ResolveContext    = other.ResolveContext;
     }
