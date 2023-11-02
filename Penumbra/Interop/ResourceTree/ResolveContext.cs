@@ -1,6 +1,8 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.Interop;
 using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
@@ -9,6 +11,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
+using static Penumbra.Interop.Structs.CharacterBaseUtility;
 using static Penumbra.Interop.Structs.StructExtensions;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -18,11 +21,11 @@ internal record GlobalResolveContext(IObjectIdentifier Identifier, TreeBuildCach
 {
     public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
-    public ResolveContext CreateContext(EquipSlot slot, CharacterArmor equipment)
-        => new(this, slot, equipment);
+    public unsafe ResolveContext CreateContext(CharacterBase* characterBase, uint slotIndex, EquipSlot slot, CharacterArmor equipment)
+        => new(this, characterBase, slotIndex, slot, equipment);
 }
 
-internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, CharacterArmor Equipment)
+internal record ResolveContext(GlobalResolveContext Global, Pointer<CharacterBase> CharacterBase, uint SlotIndex, EquipSlot Slot, CharacterArmor Equipment)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
@@ -112,7 +115,8 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (eid == null)
             return null;
 
-        var path = Utf8GamePath.Empty; // TODO
+        if (!Utf8GamePath.FromByteString(ResolveEidPath(CharacterBase), out var path))
+            return null;
 
         return GetOrCreateNode(ResourceType.Eid, 0, eid, path);
     }
@@ -122,17 +126,19 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (imc == null)
             return null;
 
-        var path = Utf8GamePath.Empty; // TODO
+        if (!Utf8GamePath.FromByteString(ResolveImcPath(CharacterBase, SlotIndex), out var path))
+            return null;
 
         return GetOrCreateNode(ResourceType.Imc, 0, imc, path);
     }
 
-    public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex)
+    public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex, string gamePath)
     {
         if (tex == null)
             return null;
 
-        var path = Utf8GamePath.Empty; // TODO
+        if (!Utf8GamePath.FromString(gamePath, out var path))
+            return null;
 
         return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, path);
     }
@@ -142,7 +148,8 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
 
-        var path = Utf8GamePath.Empty; // TODO
+        if (!Utf8GamePath.FromByteString(ResolveMdlPath(CharacterBase, SlotIndex), out var path))
+            return null;
 
         if (Global.Nodes.TryGetValue((path, (nint)mdl->ModelResourceHandle), out var cached))
             return cached;
@@ -253,12 +260,13 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         return node;
     }
 
-    public unsafe ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb)
+    public unsafe ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
     {
         if (sklb == null || sklb->SkeletonResourceHandle == null)
             return null;
 
-        var path = Utf8GamePath.Empty; // TODO
+        if (!Utf8GamePath.FromByteString(ResolveSklbPath(CharacterBase, partialSkeletonIndex), out var path))
+            return null;
 
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonResourceHandle), out var cached))
             return cached;
@@ -266,7 +274,7 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
         if (node != null)
         {
-            var skpNode = CreateParameterNodeFromPartialSkeleton(sklb);
+            var skpNode = CreateParameterNodeFromPartialSkeleton(sklb, partialSkeletonIndex);
             if (skpNode != null)
                 node.Children.Add(skpNode);
             Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
@@ -275,12 +283,13 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         return node;
     }
 
-    private unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb)
+    private unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
     {
         if (sklb == null || sklb->SkeletonParameterResourceHandle == null)
             return null;
 
-        var path = Utf8GamePath.Empty; // TODO
+        if (!Utf8GamePath.FromByteString(ResolveSkpPath(CharacterBase, partialSkeletonIndex), out var path))
+            return null;
 
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonParameterResourceHandle), out var cached))
             return cached;
