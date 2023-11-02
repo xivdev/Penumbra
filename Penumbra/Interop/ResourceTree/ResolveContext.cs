@@ -16,7 +16,7 @@ namespace Penumbra.Interop.ResourceTree;
 internal record GlobalResolveContext(IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache,
     int Skeleton, bool WithUiData)
 {
-    public readonly Dictionary<nint, ResourceNode> Nodes = new(128);
+    public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
     public ResolveContext CreateContext(EquipSlot slot, CharacterArmor equipment)
         => new(this, slot, equipment);
@@ -30,25 +30,18 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
     {
         if (resourceHandle == null)
             return null;
-
-        if (Global.Nodes.TryGetValue((nint)resourceHandle, out var cached))
-            return cached;
-
         if (gamePath.IsEmpty)
             return null;
         if (!Utf8GamePath.FromByteString(ByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path, false))
             return null;
 
-        return CreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
+        return GetOrCreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
     }
 
     private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool dx11)
     {
         if (resourceHandle == null)
             return null;
-
-        if (Global.Nodes.TryGetValue((nint)resourceHandle, out var cached))
-            return cached;
 
         if (dx11)
         {
@@ -80,7 +73,19 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (!Utf8GamePath.FromByteString(gamePath, out var path))
             return null;
 
-        return CreateNode(ResourceType.Tex, (nint)resourceHandle->Texture, &resourceHandle->ResourceHandle, path);
+        return GetOrCreateNode(ResourceType.Tex, (nint)resourceHandle->Texture, &resourceHandle->ResourceHandle, path);
+    }
+
+    private unsafe ResourceNode GetOrCreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
+        Utf8GamePath gamePath)
+    {
+        if (resourceHandle == null)
+            throw new ArgumentNullException(nameof(resourceHandle));
+
+        if (Global.Nodes.TryGetValue((gamePath, (nint)resourceHandle), out var cached))
+            return cached;
+
+        return CreateNode(type, objectAddress, resourceHandle, gamePath);
     }
 
     private unsafe ResourceNode CreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
@@ -97,7 +102,7 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
             FullPath = fullPath,
         };
         if (autoAdd)
-            Global.Nodes.Add((nint)resourceHandle, node);
+            Global.Nodes.Add((gamePath, (nint)resourceHandle), node);
 
         return node;
     }
@@ -107,10 +112,9 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (imc == null)
             return null;
 
-        if (Global.Nodes.TryGetValue((nint)imc, out var cached))
-            return cached;
+        var path = Utf8GamePath.Empty; // TODO
 
-        return CreateNode(ResourceType.Imc, 0, imc, Utf8GamePath.Empty);
+        return GetOrCreateNode(ResourceType.Imc, 0, imc, path);
     }
 
     public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex)
@@ -118,10 +122,9 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (tex == null)
             return null;
 
-        if (Global.Nodes.TryGetValue((nint)tex, out var cached))
-            return cached;
+        var path = Utf8GamePath.Empty; // TODO
 
-        return CreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, Utf8GamePath.Empty);
+        return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, path);
     }
 
     public unsafe ResourceNode? CreateNodeFromRenderModel(Model* mdl)
@@ -129,10 +132,12 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
 
-        if (Global.Nodes.TryGetValue((nint)mdl->ModelResourceHandle, out var cached))
+        var path = Utf8GamePath.Empty; // TODO
+
+        if (Global.Nodes.TryGetValue((path, (nint)mdl->ModelResourceHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Mdl, (nint)mdl, &mdl->ModelResourceHandle->ResourceHandle, Utf8GamePath.Empty, false);
+        var node = CreateNode(ResourceType.Mdl, (nint)mdl, &mdl->ModelResourceHandle->ResourceHandle, path, false);
 
         for (var i = 0; i < mdl->MaterialCount; i++)
         {
@@ -146,7 +151,7 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
             }
         }
 
-        Global.Nodes.Add((nint)mdl->ModelResourceHandle, node);
+        Global.Nodes.Add((path, (nint)mdl->ModelResourceHandle), node);
 
         return node;
     }
@@ -178,11 +183,13 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (mtrl == null || mtrl->MaterialResourceHandle == null)
             return null;
 
+        var path = Utf8GamePath.Empty; // TODO
+
         var resource = mtrl->MaterialResourceHandle;
-        if (Global.Nodes.TryGetValue((nint)resource, out var cached))
+        if (Global.Nodes.TryGetValue((path, (nint)resource), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, Utf8GamePath.Empty, false);
+        var node = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
         if (node == null)
             return null;
 
@@ -231,7 +238,7 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
             node.Children.Add(texNode);
         }
 
-        Global.Nodes.Add((nint)resource, node);
+        Global.Nodes.Add((path, (nint)resource), node);
 
         return node;
     }
@@ -241,16 +248,18 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (sklb == null || sklb->SkeletonResourceHandle == null)
             return null;
 
-        if (Global.Nodes.TryGetValue((nint)sklb->SkeletonResourceHandle, out var cached))
+        var path = Utf8GamePath.Empty; // TODO
+
+        if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonResourceHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, Utf8GamePath.Empty, false);
+        var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
         if (node != null)
         {
             var skpNode = CreateParameterNodeFromPartialSkeleton(sklb);
             if (skpNode != null)
                 node.Children.Add(skpNode);
-            Global.Nodes.Add((nint)sklb->SkeletonResourceHandle, node);
+            Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
         }
 
         return node;
@@ -261,15 +270,17 @@ internal record ResolveContext(GlobalResolveContext Global, EquipSlot Slot, Char
         if (sklb == null || sklb->SkeletonParameterResourceHandle == null)
             return null;
 
-        if (Global.Nodes.TryGetValue((nint)sklb->SkeletonParameterResourceHandle, out var cached))
+        var path = Utf8GamePath.Empty; // TODO
+
+        if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonParameterResourceHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, Utf8GamePath.Empty, false);
+        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, path, false);
         if (node != null)
         {
             if (Global.WithUiData)
                 node.FallbackName = "Skeleton Parameters";
-            Global.Nodes.Add((nint)sklb->SkeletonParameterResourceHandle, node);
+            Global.Nodes.Add((path, (nint)sklb->SkeletonParameterResourceHandle), node);
         }
 
         return node;
