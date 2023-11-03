@@ -65,6 +65,7 @@ public class DebugTab : Window, ITab
     private readonly TextureManager            _textureManager;
     private readonly SkinFixer                 _skinFixer;
     private readonly IdentifierService         _identifier;
+    private readonly RedrawService             _redraws;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
@@ -72,7 +73,7 @@ public class DebugTab : Window, ITab
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, SkinFixer skinFixer, IdentifierService identifier)
+        TextureManager textureManager, SkinFixer skinFixer, IdentifierService identifier, RedrawService redraws)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -107,6 +108,7 @@ public class DebugTab : Window, ITab
         _textureManager            = textureManager;
         _skinFixer                 = skinFixer;
         _identifier                = identifier;
+        _redraws                   = redraws;
     }
 
     public ReadOnlySpan<byte> Label
@@ -315,6 +317,48 @@ public class DebugTab : Window, ITab
                         ImGuiUtil.DrawTableColumn(task.Key.ToString()!);
                         ImGuiUtil.DrawTableColumn(task.Value.Item1.Status.ToString());
                     }
+            }
+        }
+
+        using (var tree = TreeNode("Redraw Service"))
+        {
+            if (tree)
+            {
+                using var table = Table("##redraws", 3, ImGuiTableFlags.RowBg);
+                if (table)
+                {
+                    ImGuiUtil.DrawTableColumn("In GPose");
+                    ImGuiUtil.DrawTableColumn(_redraws.InGPose.ToString());
+                    ImGui.TableNextColumn();
+
+                    ImGuiUtil.DrawTableColumn("Target");
+                    ImGuiUtil.DrawTableColumn(_redraws.Target.ToString());
+                    ImGui.TableNextColumn();
+
+                    foreach (var (objectIdx, idx) in _redraws.Queue.WithIndex())
+                    {
+                        var (actualIdx, state) = objectIdx < 0 ? (~objectIdx, "Queued") : (objectIdx, "Invisible");
+                        ImGuiUtil.DrawTableColumn($"Redraw Queue #{idx}");
+                        ImGuiUtil.DrawTableColumn(actualIdx.ToString());
+                        ImGuiUtil.DrawTableColumn(state);
+                    }
+
+                    foreach (var (objectIdx, idx) in _redraws.AfterGPoseQueue.WithIndex())
+                    {
+                        var (actualIdx, state) = objectIdx < 0 ? (~objectIdx, "Queued") : (objectIdx, "Invisible");
+                        ImGuiUtil.DrawTableColumn($"GPose Queue #{idx}");
+                        ImGuiUtil.DrawTableColumn(actualIdx.ToString());
+                        ImGuiUtil.DrawTableColumn(state);
+                    }
+
+                    foreach (var (name, idx) in _redraws.GPoseNames.OfType<string>().WithIndex())
+                    {
+                        ImGuiUtil.DrawTableColumn($"GPose Name #{idx}");
+                        ImGuiUtil.DrawTableColumn(name);
+                        ImGui.TableNextColumn();
+                    }
+
+                }
             }
         }
     }

@@ -18,10 +18,13 @@ public unsafe partial class RedrawService
     public const int GPoseSlots     = 42;
     public const int GPoseEndIdx    = GPosePlayerIdx + GPoseSlots;
 
-    private readonly string?[] _gPoseNames       = new string?[GPoseSlots];
+    private readonly string?[] _gPoseNames = new string?[GPoseSlots];
     private          int       _gPoseNameCounter;
 
-    private bool InGPose
+    internal IReadOnlyList<string?> GPoseNames
+        => _gPoseNames;
+
+    internal bool InGPose
         => _clientState.IsGPosing;
 
     // VFuncs that disable and enable draw, used only for GPose actors.
@@ -107,6 +110,15 @@ public sealed unsafe partial class RedrawService : IDisposable
     private readonly List<int> _queue           = new(100);
     private readonly List<int> _afterGPoseQueue = new(GPoseSlots);
     private          int       _target          = -1;
+
+    internal IReadOnlyList<int> Queue
+        => _queue;
+
+    internal IReadOnlyList<int> AfterGPoseQueue
+        => _afterGPoseQueue;
+
+    internal int Target
+        => _target;
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
