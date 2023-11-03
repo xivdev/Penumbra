@@ -19,6 +19,7 @@ using Penumbra.UI.Tabs;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
@@ -111,13 +112,13 @@ public class Penumbra : IDalamudPlugin
         _services.GetRequiredService<PenumbraIpcProviders>();
         _communicatorService.ChangedItemHover.Subscribe(it =>
         {
-            if (it is Item)
+            if (it is (Item, FullEquipType))
                 ImGui.TextUnformatted("Left Click to create an item link in chat.");
         }, ChangedItemHover.Priority.Link);
 
         _communicatorService.ChangedItemClick.Subscribe((button, it) =>
         {
-            if (button == MouseButton.Left && it is Item item)
+            if (button == MouseButton.Left && it is (Item item, FullEquipType type))
                 Messager.LinkItem(item);
         }, ChangedItemClick.Priority.Link);
     }
