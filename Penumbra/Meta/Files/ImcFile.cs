@@ -65,6 +65,13 @@ public unsafe class ImcFile : MetaBaseFile
         return ptr == null ? new ImcEntry() : *ptr;
     }
 
+    public ImcEntry GetEntry(int partIdx, Variant variantIdx, out bool exists)
+    {
+        var ptr = VariantPtr(Data, partIdx, variantIdx);
+        exists = ptr != null;
+        return exists ? *ptr : new ImcEntry();
+    }
+
     public static int PartIndex(EquipSlot slot)
         => slot switch
         {

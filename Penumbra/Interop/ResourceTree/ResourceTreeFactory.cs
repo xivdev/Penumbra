@@ -1,5 +1,4 @@
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -18,9 +17,10 @@ public class ResourceTreeFactory
     private readonly IdentifierService  _identifier;
     private readonly Configuration      _config;
     private readonly ActorService       _actors;
+    private readonly PathState          _pathState;
 
     public ResourceTreeFactory(IDataManager gameData, IObjectTable objects, CollectionResolver resolver, IdentifierService identifier,
-        Configuration config, ActorService actors)
+        Configuration config, ActorService actors, PathState pathState)
     {
         _gameData           = gameData;
         _objects            = objects;
@@ -28,6 +28,7 @@ public class ResourceTreeFactory
         _identifier         = identifier;
         _config             = config;
         _actors             = actors;
+        _pathState          = pathState;
     }
 
     private TreeBuildCache CreateTreeBuildCache()
@@ -87,13 +88,17 @@ public class ResourceTreeFactory
         var networked = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
         var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
             networked, collectionResolveData.ModCollection.Name);
-        var globalContext = new GlobalResolveContext(_identifier.AwaitedService, cache,
-            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, (flags & Flags.WithUiData) != 0);
-        tree.LoadResources(globalContext);
+        var globalContext = new GlobalResolveContext(_identifier.AwaitedService, collectionResolveData.ModCollection,
+            cache, (flags & Flags.WithUiData) != 0);
+        using (var _ = _pathState.EnterInternalResolve())
+        {
+            tree.LoadResources(globalContext);
+        }
         tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
         tree.ProcessPostfix((node, _) => tree.FlatNodes.Add(node));
 
-        ResolveGamePaths(tree, collectionResolveData.ModCollection);
+        // This is currently unneeded as we can resolve all paths by querying the draw object:
+        // ResolveGamePaths(tree, collectionResolveData.ModCollection);
         if (globalContext.WithUiData)
             ResolveUiData(tree);
         FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) != 0 ? _config.ModDirectory : null);
@@ -128,23 +133,15 @@ public class ResourceTreeFactory
                 if (!reverseDictionary.TryGetValue(node.FullPath.ToPath(), out var resolvedSet))
                     continue;
 
-                IReadOnlyCollection<Utf8GamePath> resolvedList = resolvedSet;
-                if (resolvedList.Count > 1)
-                {
-                    var filteredList = node.ResolveContext!.FilterGamePaths(resolvedList);
-                    if (filteredList.Count > 0)
-                        resolvedList = filteredList;
-                }
-
-                if (resolvedList.Count != 1)
+                if (resolvedSet.Count != 1)
                 {
                     Penumbra.Log.Debug(
-                        $"Found {resolvedList.Count} game paths while reverse-resolving {node.FullPath} in {collection.Name}:");
-                    foreach (var gamePath in resolvedList)
+                        $"Found {resolvedSet.Count} game paths while reverse-resolving {node.FullPath} in {collection.Name}:");
+                    foreach (var gamePath in resolvedSet)
                         Penumbra.Log.Debug($"Game path: {gamePath}");
                 }
 
-                node.PossibleGamePaths = resolvedList.ToArray();
+                node.PossibleGamePaths = resolvedSet.ToArray();
             }
             else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
             {

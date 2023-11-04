@@ -1,4 +1,5 @@
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
@@ -185,6 +186,23 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     /// <summary> Try to obtain a manipulated IMC file. </summary>
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
         => _imcCache.GetImcFile(path, out file);
+
+    public ImcEntry GetImcEntry(Utf8GamePath path, EquipSlot slot, Variant variantIdx, out bool exists)
+        => GetImcFile(path, out var file)
+            ? file.GetEntry(Meta.Files.ImcFile.PartIndex(slot), variantIdx, out exists)
+            : Meta.Files.ImcFile.GetDefault(_manager, path, slot, variantIdx, out exists);
+
+    internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, SetId setId)
+    {
+        var eqdpFile = _eqdpCache.EqdpFile(race, accessory);
+        if (eqdpFile != null)
+            return setId.Id < eqdpFile.Count ? eqdpFile[setId] : default;
+        else
+            return Meta.Files.ExpandedEqdpFile.GetDefault(_manager, race, accessory, setId);
+    }
+
+    internal ushort GetEstEntry(EstManipulation.EstType type, GenderRace genderRace, SetId setId)
+        => _estCache.GetEstEntry(_manager, type, genderRace, setId);
 
     /// <summary> Use this when CharacterUtility becomes ready. </summary>
     private void ApplyStoredManipulations()

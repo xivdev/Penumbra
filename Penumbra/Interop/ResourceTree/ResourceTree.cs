@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.String.Classes;
 using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 
@@ -64,25 +65,13 @@ public class ResourceTree
         CustomizeData = character->DrawData.CustomizeData;
         RaceCode      = human != null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
 
-        var genericContext = globalContext.CreateContext(model, 0xFFFFFFFFu, EquipSlot.Unknown, default);
-
-        var eid     = (ResourceHandle*)model->EID;
-        var eidNode = genericContext.CreateNodeFromEid(eid);
-        if (eidNode != null)
-        {
-            if (globalContext.WithUiData)
-                eidNode.FallbackName = "EID";
-            Nodes.Add(eidNode);
-        }
+        var genericContext = globalContext.CreateContext(model);
 
         for (var i = 0; i < model->SlotCount; ++i)
         {
-            var slotContext = globalContext.CreateContext(
-                model,
-                (uint)i,
-                i < equipment.Length ? ((uint)i).ToEquipSlot() : EquipSlot.Unknown,
-                i < equipment.Length ? equipment[i] : default
-            );
+            var slotContext = i < equipment.Length
+                ? globalContext.CreateContext(model, (uint)i, ((uint)i).ToEquipSlot(), equipment[i])
+                : globalContext.CreateContext(model, (uint)i);
 
             var imc     = (ResourceHandle*)model->IMCArray[i];
             var imcNode = slotContext.CreateNodeFromImc(imc);
@@ -94,7 +83,7 @@ public class ResourceTree
             }
 
             var mdl     = model->Models[i];
-            var mdlNode = slotContext.CreateNodeFromRenderModel(mdl);
+            var mdlNode = slotContext.CreateNodeFromModel(mdl, imcNode?.GamePath ?? Utf8GamePath.Empty);
             if (mdlNode != null)
             {
                 if (globalContext.WithUiData)
@@ -103,77 +92,68 @@ public class ResourceTree
             }
         }
 
-        AddSkeleton(Nodes, genericContext, model->Skeleton);
+        AddSkeleton(Nodes, genericContext, model->EID, model->Skeleton);
 
-        AddSubObjects(globalContext, model);
+        AddWeapons(globalContext, model);
 
         if (human != null)
             AddHumanResources(globalContext, human);
     }
 
-    private unsafe void AddSubObjects(GlobalResolveContext globalContext, CharacterBase* model)
+    private unsafe void AddWeapons(GlobalResolveContext globalContext, CharacterBase* model)
     {
-        var subObjectIndex = 0;
-        var weaponIndex    = 0;
-        var subObjectNodes = new List<ResourceNode>();
+        var weaponIndex = 0;
+        var weaponNodes = new List<ResourceNode>();
         foreach (var baseSubObject in model->DrawObject.Object.ChildObjects)
         {
             if (baseSubObject->GetObjectType() != FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType.CharacterBase)
                 continue;
             var subObject = (CharacterBase*)baseSubObject;
 
-            var weapon              = subObject->GetModelType() == CharacterBase.ModelType.Weapon ? (Weapon*)subObject : null;
-            var subObjectNamePrefix = weapon != null ? "Weapon" : "Fashion Acc.";
+            if (subObject->GetModelType() != CharacterBase.ModelType.Weapon)
+                continue;
+            var weapon  = (Weapon*)subObject;
+
             // This way to tell apart MainHand and OffHand is not always accurate, but seems good enough for what we're doing with it.
-            var slot      = weapon != null ? (weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand) : EquipSlot.Unknown;
-            var equipment = weapon != null ? new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, (byte)weapon->ModelUnknown) : default;
+            var slot       = weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand;
+            var equipment  = new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, (byte)weapon->ModelUnknown);
+            var weaponType = weapon->SecondaryId;
 
-            var genericContext = globalContext.CreateContext(subObject, 0xFFFFFFFFu, slot, equipment);
-
-            var eid     = (ResourceHandle*)subObject->EID;
-            var eidNode = genericContext.CreateNodeFromEid(eid);
-            if (eidNode != null)
-            {
-                if (globalContext.WithUiData)
-                    eidNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, EID";
-                Nodes.Add(eidNode);
-            }
+            var genericContext = globalContext.CreateContext(subObject, 0xFFFFFFFFu, slot, equipment, weaponType);
 
             for (var i = 0; i < subObject->SlotCount; ++i)
             {
-                var slotContext = globalContext.CreateContext(subObject, (uint)i, slot, equipment);
+                var slotContext = globalContext.CreateContext(subObject, (uint)i, slot, equipment, weaponType);
 
                 var imc     = (ResourceHandle*)subObject->IMCArray[i];
                 var imcNode = slotContext.CreateNodeFromImc(imc);
                 if (imcNode != null)
                 {
                     if (globalContext.WithUiData)
-                        imcNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, IMC #{i}";
-                    subObjectNodes.Add(imcNode);
+                        imcNode.FallbackName = $"Weapon #{weaponIndex}, IMC #{i}";
+                    weaponNodes.Add(imcNode);
                 }
 
                 var mdl     = subObject->Models[i];
-                var mdlNode = slotContext.CreateNodeFromRenderModel(mdl);
+                var mdlNode = slotContext.CreateNodeFromModel(mdl, imcNode?.GamePath ?? Utf8GamePath.Empty);
                 if (mdlNode != null)
                 {
                     if (globalContext.WithUiData)
-                        mdlNode.FallbackName = $"{subObjectNamePrefix} #{subObjectIndex}, Model #{i}";
-                    subObjectNodes.Add(mdlNode);
+                        mdlNode.FallbackName = $"Weapon #{weaponIndex}, Model #{i}";
+                    weaponNodes.Add(mdlNode);
                 }
             }
 
-            AddSkeleton(subObjectNodes, genericContext, subObject->Skeleton, $"{subObjectNamePrefix} #{subObjectIndex}, ");
+            AddSkeleton(weaponNodes, genericContext, subObject->EID, subObject->Skeleton, $"Weapon #{weaponIndex}, ");
 
-            ++subObjectIndex;
-            if (weapon != null)
-                ++weaponIndex;
+            ++weaponIndex;
         }
-        Nodes.InsertRange(0, subObjectNodes);
+        Nodes.InsertRange(0, weaponNodes);
     }
 
     private unsafe void AddHumanResources(GlobalResolveContext globalContext, Human* human)
     {
-        var genericContext = globalContext.CreateContext(&human->CharacterBase, 0xFFFFFFFFu, EquipSlot.Unknown, default);
+        var genericContext = globalContext.CreateContext(&human->CharacterBase);
 
         var decalId = (byte)(human->Customize[(int)CustomizeIndex.Facepaint] & 0x7F);
         var decalPath = decalId != 0
@@ -208,8 +188,16 @@ public class ResourceTree
         }
     }
 
-    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, Skeleton* skeleton, string prefix = "")
+    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, string prefix = "")
     {
+        var eidNode = context.CreateNodeFromEid((ResourceHandle*)eid);
+        if (eidNode != null)
+        {
+            if (context.Global.WithUiData)
+                eidNode.FallbackName = $"{prefix}EID";
+            Nodes.Add(eidNode);
+        }
+
         if (skeleton == null)
             return;
 

@@ -90,7 +90,8 @@ public static class ServiceManager
             .AddSingleton<CreateFileWHook>()
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
-            .AddSingleton<RedrawService>();
+            .AddSingleton<RedrawService>()
+            .AddSingleton<ModelResourceHandleUtility>();
 
     private static IServiceCollection AddConfiguration(this IServiceCollection services)
         => services.AddTransient<ConfigMigrationService>()
