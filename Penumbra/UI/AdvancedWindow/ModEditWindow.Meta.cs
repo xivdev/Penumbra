@@ -27,6 +27,7 @@ public partial class ModEditWindow
     private const string GenderTooltip          = "Gender";
     private const string ObjectTypeTooltip      = "Object Type";
     private const string SecondaryIdTooltip     = "Secondary ID";
+    private const string PrimaryIDTooltip       = "Primary ID";
     private const string VariantIdTooltip       = "Variant ID";
     private const string EstTypeTooltip         = "EST Type";
     private const string RacialTribeTooltip     = "Racial Tribe";
@@ -415,6 +416,8 @@ public partial class ModEditWindow
                     _new.Entry).Copy(GetDefault(metaFileManager, _new)
                  ?? new ImcEntry());
 
+            ImGuiUtil.HoverTooltip(VariantIdTooltip);
+
             ImGui.TableNextColumn();
             if (_new.ObjectType is ObjectType.DemiHuman)
             {
@@ -431,7 +434,6 @@ public partial class ModEditWindow
                 ImGui.Dummy(new Vector2(70 * UiHelpers.Scale, 0));
             }
 
-            ImGuiUtil.HoverTooltip(VariantIdTooltip);
 
             // Values
             using var disabled = ImRaii.Disabled();
@@ -475,7 +477,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
             ImGui.TextUnformatted(meta.PrimaryId.ToString());
-            ImGuiUtil.HoverTooltip("Primary ID");
+            ImGuiUtil.HoverTooltip(PrimaryIDTooltip);
 
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
@@ -498,7 +500,10 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
             if (meta.ObjectType is ObjectType.DemiHuman)
+            {
                 ImGui.TextUnformatted(meta.EquipSlot.ToName());
+                ImGuiUtil.HoverTooltip(EquipSlotTooltip);
+            }
 
             // Values
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
