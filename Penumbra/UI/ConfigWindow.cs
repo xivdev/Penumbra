@@ -32,7 +32,7 @@ public sealed class ConfigWindow : Window
 
         RespectCloseHotkey = true;
         tutorial.UpdateTutorialStep();
-        IsOpen = _config.DebugMode;
+        IsOpen = _config.OpenWindowAtStart;
     }
 
     public void Setup(Penumbra penumbra, ConfigTabBar configTabs)
