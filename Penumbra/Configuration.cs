@@ -35,6 +35,7 @@ public class Configuration : IPluginConfiguration, ISavable
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
 
+    public bool OpenWindowAtStart              { get; set; } = false;
     public bool HideUiInGPose                  { get; set; } = false;
     public bool HideUiInCutscenes              { get; set; } = true;
     public bool HideUiWhenUiHidden             { get; set; } = false;

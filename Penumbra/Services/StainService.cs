@@ -26,7 +26,8 @@ public class StainService : IDisposable
         using var t = timer.Measure(StartTimeType.Stains);
         StainData = new StainData(pluginInterface, dataManager, dataManager.Language, dalamudLog);
         StainCombo = new FilterComboColors(140,
-            StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))), Penumbra.Log);
+            () => StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(),
+            Penumbra.Log);
         StmFile       = new StmFile(dataManager);
         TemplateCombo = new StainTemplateCombo(StmFile.Entries.Keys.Prepend((ushort)0));
         Penumbra.Log.Verbose($"[{nameof(StainService)}] Created.");

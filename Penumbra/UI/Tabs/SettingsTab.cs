@@ -345,22 +345,25 @@ public class SettingsTab : ITab
     /// <summary> Draw the window hiding state checkboxes.  </summary>
     private void DrawHidingSettings()
     {
+        Checkbox("Open Config Window at Game Start", "Whether the Penumbra main window should be open or closed after launching the game.",
+            _config.OpenWindowAtStart,               v => _config.OpenWindowAtStart = v);
+
         Checkbox("Hide Config Window when UI is Hidden",
-            "Hide the penumbra main window when you manually hide the in-game user interface.", _config.HideUiWhenUiHidden,
+            "Hide the Penumbra main window when you manually hide the in-game user interface.", _config.HideUiWhenUiHidden,
             v =>
             {
                 _config.HideUiWhenUiHidden           = v;
                 _dalamud.UiBuilder.DisableUserUiHide = !v;
             });
         Checkbox("Hide Config Window when in Cutscenes",
-            "Hide the penumbra main window when you are currently watching a cutscene.", _config.HideUiInCutscenes,
+            "Hide the Penumbra main window when you are currently watching a cutscene.", _config.HideUiInCutscenes,
             v =>
             {
                 _config.HideUiInCutscenes                = v;
                 _dalamud.UiBuilder.DisableCutsceneUiHide = !v;
             });
         Checkbox("Hide Config Window when in GPose",
-            "Hide the penumbra main window when you are currently in GPose mode.", _config.HideUiInGPose,
+            "Hide the Penumbra main window when you are currently in GPose mode.", _config.HideUiInGPose,
             v =>
             {
                 _config.HideUiInGPose                 = v;
