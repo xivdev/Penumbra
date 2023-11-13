@@ -13,7 +13,6 @@ namespace Penumbra.Interop.ResourceTree;
 
 internal partial record ResolveContext
 {
-
     private Utf8GamePath ResolveModelPath()
     {
         // Correctness:
@@ -83,27 +82,57 @@ internal partial record ResolveContext
         {
             ModelType.Human when SlotIndex < 10 && mtrlFileName[8] != (byte)'b' => ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName),
             ModelType.DemiHuman                                                 => ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName),
-            ModelType.Weapon                                                    => ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName),
+            ModelType.Weapon                                                    => ResolveWeaponMaterialPath(modelPath, imcPath, mtrlFileName),
             _                                                                   => ResolveMaterialPathNative(mtrlFileName),
         };
     }
 
     private unsafe Utf8GamePath ResolveEquipmentMaterialPath(Utf8GamePath modelPath, Utf8GamePath imcPath, byte* mtrlFileName)
     {
-        var fileName      = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
-        var modelPathSpan = modelPath.Path.Span;
-        var baseDirectory = modelPathSpan[..modelPathSpan.IndexOf("/model/"u8)];
-
-        var variant = ResolveMaterialVariant(imcPath);
+        var variant  = ResolveMaterialVariant(imcPath);
+        var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
-        baseDirectory.CopyTo(pathBuffer);
-        "/material/v"u8.CopyTo(pathBuffer[baseDirectory.Length..]);
-        WriteZeroPaddedNumber(pathBuffer.Slice(baseDirectory.Length + 11, 4), variant);
-        pathBuffer[baseDirectory.Length + 15] = (byte)'/';
-        fileName.CopyTo(pathBuffer[(baseDirectory.Length + 16)..]);
+        pathBuffer            = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
-        return Utf8GamePath.FromSpan(pathBuffer[..(baseDirectory.Length + 16 + fileName.Length)], out var path) ? path.Clone() : Utf8GamePath.Empty;
+        return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
+    }
+
+    private unsafe Utf8GamePath ResolveWeaponMaterialPath(Utf8GamePath modelPath, Utf8GamePath imcPath, byte* mtrlFileName)
+    {
+        var setIdHigh = Equipment.Set.Id / 100;
+        // All MCH (20??) weapons' materials C are one and the same
+        if (setIdHigh is 20 && mtrlFileName[14] == (byte)'c')
+            return Utf8GamePath.FromString(GamePaths.Weapon.Mtrl.Path(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
+
+        // MNK (03??, 16??), NIN (18??) and DNC (26??) offhands share materials with the corresponding mainhand
+        if (setIdHigh is 3 or 16 or 18 or 26)
+        {
+            var setIdLow = Equipment.Set.Id % 100;
+            if (setIdLow > 50)
+            {
+                var variant  = ResolveMaterialVariant(imcPath);
+                var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
+
+                var mirroredSetId = (ushort)(Equipment.Set.Id - 50);
+
+                Span<byte> mirroredFileName = stackalloc byte[32];
+                mirroredFileName = mirroredFileName[..fileName.Length];
+                fileName.CopyTo(mirroredFileName);
+                WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId);
+
+                Span<byte> pathBuffer = stackalloc byte[260];
+                pathBuffer            = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
+
+                var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
+                if (weaponPosition >= 0)
+                    WriteZeroPaddedNumber(pathBuffer[(weaponPosition + 9)..(weaponPosition + 13)], mirroredSetId);
+
+                return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
+            }
+        }
+
+        return ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName);
     }
 
     private byte ResolveMaterialVariant(Utf8GamePath imcPath)
@@ -117,6 +146,23 @@ internal partial record ResolveContext
             return Equipment.Variant.Id;
 
         return entry.MaterialId;
+    }
+
+    private static Span<byte> AssembleMaterialPath(Span<byte> materialPathBuffer, ReadOnlySpan<byte> modelPath, byte variant, ReadOnlySpan<byte> mtrlFileName)
+    {
+        var modelPosition = modelPath.IndexOf("/model/"u8);
+        if (modelPosition < 0)
+            return Span<byte>.Empty;
+
+        var baseDirectory = modelPath[..modelPosition];
+
+        baseDirectory.CopyTo(materialPathBuffer);
+        "/material/v"u8.CopyTo(materialPathBuffer[baseDirectory.Length..]);
+        WriteZeroPaddedNumber(materialPathBuffer.Slice(baseDirectory.Length + 11, 4), variant);
+        materialPathBuffer[baseDirectory.Length + 15] = (byte)'/';
+        mtrlFileName.CopyTo(materialPathBuffer[(baseDirectory.Length + 16)..]);
+
+        return materialPathBuffer[..(baseDirectory.Length + 16 + mtrlFileName.Length)];
     }
 
     private static void WriteZeroPaddedNumber(Span<byte> destination, ushort number)
