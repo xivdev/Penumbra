@@ -78,20 +78,21 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
-        // Safety:
-        // Resolving a material path through the game's code can dereference null pointers for equipment materials.
+        // Safety and correctness:
+        // Resolving a material path through the game's code can dereference null pointers for materials that involve IMC metadata.
         return ModelType switch
         {
             ModelType.Human when SlotIndex < 10 && mtrlFileName[8] != (byte)'b' => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.DemiHuman                                                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.Weapon                                                    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.Monster                                                   => ResolveMonsterMaterialPath(modelPath, imc, mtrlFileName),
             _                                                                   => ResolveMaterialPathNative(mtrlFileName),
         };
     }
 
     private unsafe Utf8GamePath ResolveEquipmentMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
-        var variant  = ResolveMaterialVariant(imc);
+        var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
@@ -113,7 +114,7 @@ internal partial record ResolveContext
             var setIdLow = Equipment.Set.Id % 100;
             if (setIdLow > 50)
             {
-                var variant  = ResolveMaterialVariant(imc);
+                var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
                 var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
                 var mirroredSetId = (ushort)(Equipment.Set.Id - 50);
@@ -137,18 +138,30 @@ internal partial record ResolveContext
         return ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName);
     }
 
-    private unsafe byte ResolveMaterialVariant(ResourceHandle* imc)
+    private unsafe Utf8GamePath ResolveMonsterMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
+    {
+        // TODO: Submit this (Monster->Variant) to ClientStructs
+        var variant  = ResolveMaterialVariant(imc, ((byte*)CharacterBase.Value)[0x8F4]);
+        var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
+
+        Span<byte> pathBuffer = stackalloc byte[260];
+        pathBuffer            = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
+
+        return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
+    }
+
+    private unsafe byte ResolveMaterialVariant(ResourceHandle* imc, Variant variant)
     {
         var imcFileData = imc->GetDataSpan();
         if (imcFileData.IsEmpty)
         {
             Penumbra.Log.Warning($"IMC resource handle with path {GetResourceHandlePath(imc, false)} doesn't have a valid data span");
-            return Equipment.Variant.Id;
+            return variant.Id;
         }
 
-        var entry = ImcFile.GetEntry(imcFileData, Slot, Equipment.Variant, out var exists);
+        var entry = ImcFile.GetEntry(imcFileData, Slot, variant, out var exists);
         if (!exists)
-            return Equipment.Variant.Id;
+            return variant.Id;
 
         return entry.MaterialId;
     }
