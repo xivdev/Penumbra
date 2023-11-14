@@ -187,11 +187,6 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
         => _imcCache.GetImcFile(path, out file);
 
-    public ImcEntry GetImcEntry(Utf8GamePath path, EquipSlot slot, Variant variantIdx, out bool exists)
-        => GetImcFile(path, out var file)
-            ? file.GetEntry(Meta.Files.ImcFile.PartIndex(slot), variantIdx, out exists)
-            : Meta.Files.ImcFile.GetDefault(_manager, path, slot, variantIdx, out exists);
-
     internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, SetId setId)
     {
         var eqdpFile = _eqdpCache.EqdpFile(race, accessory);

@@ -148,7 +148,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
         return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, path);
     }
 
-    public unsafe ResourceNode? CreateNodeFromModel(Model* mdl, Utf8GamePath imcPath)
+    public unsafe ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc)
     {
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
@@ -169,7 +169,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
                 continue;
 
             var mtrlFileName = GetMaterialFileNameBySlot(mdlResource, (uint)i);
-            var mtrlNode     = CreateNodeFromMaterial(mtrl, ResolveMaterialPath(path, imcPath, mtrlFileName));
+            var mtrlNode     = CreateNodeFromMaterial(mtrl, ResolveMaterialPath(path, imc, mtrlFileName));
             if (mtrlNode != null)
             {
                 if (Global.WithUiData)
@@ -358,7 +358,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
         return i >= 0 && i < array.Length ? array[i] : null;
     }
 
-    internal static unsafe ByteString GetResourceHandlePath(ResourceHandle* handle)
+    internal static unsafe ByteString GetResourceHandlePath(ResourceHandle* handle, bool stripPrefix = true)
     {
         if (handle == null)
             return ByteString.Empty;
@@ -367,7 +367,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
         if (name.IsEmpty)
             return ByteString.Empty;
 
-        if (name[0] == (byte)'|')
+        if (stripPrefix && name[0] == (byte)'|')
         {
             var pos = name.IndexOf((byte)'|', 1);
             if (pos < 0)

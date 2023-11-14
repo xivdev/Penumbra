@@ -83,7 +83,7 @@ public class ResourceTree
             }
 
             var mdl     = model->Models[i];
-            var mdlNode = slotContext.CreateNodeFromModel(mdl, imcNode?.GamePath ?? Utf8GamePath.Empty);
+            var mdlNode = slotContext.CreateNodeFromModel(mdl, imc);
             if (mdlNode != null)
             {
                 if (globalContext.WithUiData)
@@ -135,7 +135,7 @@ public class ResourceTree
                 }
 
                 var mdl     = subObject->Models[i];
-                var mdlNode = slotContext.CreateNodeFromModel(mdl, imcNode?.GamePath ?? Utf8GamePath.Empty);
+                var mdlNode = slotContext.CreateNodeFromModel(mdl, imc);
                 if (mdlNode != null)
                 {
                     if (globalContext.WithUiData)

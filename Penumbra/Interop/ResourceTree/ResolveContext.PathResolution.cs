@@ -1,8 +1,10 @@
 using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -74,22 +76,22 @@ internal partial record ResolveContext
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
-    private unsafe Utf8GamePath ResolveMaterialPath(Utf8GamePath modelPath, Utf8GamePath imcPath, byte* mtrlFileName)
+    private unsafe Utf8GamePath ResolveMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
         // Safety:
         // Resolving a material path through the game's code can dereference null pointers for equipment materials.
         return ModelType switch
         {
-            ModelType.Human when SlotIndex < 10 && mtrlFileName[8] != (byte)'b' => ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName),
-            ModelType.DemiHuman                                                 => ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName),
-            ModelType.Weapon                                                    => ResolveWeaponMaterialPath(modelPath, imcPath, mtrlFileName),
+            ModelType.Human when SlotIndex < 10 && mtrlFileName[8] != (byte)'b' => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.DemiHuman                                                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.Weapon                                                    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
             _                                                                   => ResolveMaterialPathNative(mtrlFileName),
         };
     }
 
-    private unsafe Utf8GamePath ResolveEquipmentMaterialPath(Utf8GamePath modelPath, Utf8GamePath imcPath, byte* mtrlFileName)
+    private unsafe Utf8GamePath ResolveEquipmentMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
-        var variant  = ResolveMaterialVariant(imcPath);
+        var variant  = ResolveMaterialVariant(imc);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
@@ -98,7 +100,7 @@ internal partial record ResolveContext
         return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
     }
 
-    private unsafe Utf8GamePath ResolveWeaponMaterialPath(Utf8GamePath modelPath, Utf8GamePath imcPath, byte* mtrlFileName)
+    private unsafe Utf8GamePath ResolveWeaponMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
         var setIdHigh = Equipment.Set.Id / 100;
         // All MCH (20??) weapons' materials C are one and the same
@@ -111,7 +113,7 @@ internal partial record ResolveContext
             var setIdLow = Equipment.Set.Id % 100;
             if (setIdLow > 50)
             {
-                var variant  = ResolveMaterialVariant(imcPath);
+                var variant  = ResolveMaterialVariant(imc);
                 var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
                 var mirroredSetId = (ushort)(Equipment.Set.Id - 50);
@@ -132,16 +134,19 @@ internal partial record ResolveContext
             }
         }
 
-        return ResolveEquipmentMaterialPath(modelPath, imcPath, mtrlFileName);
+        return ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName);
     }
 
-    private byte ResolveMaterialVariant(Utf8GamePath imcPath)
+    private unsafe byte ResolveMaterialVariant(ResourceHandle* imc)
     {
-        var metaCache = Global.Collection.MetaCache;
-        if (metaCache == null)
+        var imcFileData = imc->GetDataSpan();
+        if (imcFileData.IsEmpty)
+        {
+            Penumbra.Log.Warning($"IMC resource handle with path {GetResourceHandlePath(imc, false)} doesn't have a valid data span");
             return Equipment.Variant.Id;
+        }
 
-        var entry = metaCache.GetImcEntry(imcPath, Slot, Equipment.Variant, out var exists);
+        var entry = ImcFile.GetEntry(imcFileData, Slot, Equipment.Variant, out var exists);
         if (!exists)
             return Equipment.Variant.Id;
 
