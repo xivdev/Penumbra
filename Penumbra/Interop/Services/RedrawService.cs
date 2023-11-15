@@ -4,6 +4,8 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Housing;
+using FFXIVClientStructs.Interop;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
@@ -101,6 +103,8 @@ public unsafe partial class RedrawService
 
 public sealed unsafe partial class RedrawService : IDisposable
 {
+    private const int FurnitureIdx = 1337;
+
     private readonly IFramework     _framework;
     private readonly IObjectTable   _objects;
     private readonly ITargetManager _targets;
@@ -154,11 +158,11 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             DisableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType } mount)
+        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
-            *ActorDrawState(mount) |= DrawState.Invisibility;
+            *ActorDrawState(mountOrOrnament) |= DrawState.Invisibility;
             if (gPose)
-                DisableDraw(mount);
+                DisableDraw(mountOrOrnament);
         }
     }
 
@@ -173,11 +177,11 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             EnableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType } mount)
+        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
-            *ActorDrawState(mount) &= ~DrawState.Invisibility;
+            *ActorDrawState(mountOrOrnament) &= ~DrawState.Invisibility;
             if (gPose)
-                EnableDraw(mount);
+                EnableDraw(mountOrOrnament);
         }
 
         GameObjectRedrawn?.Invoke(actor!.Address, tableIndex);
@@ -231,6 +235,12 @@ public sealed unsafe partial class RedrawService : IDisposable
         for (var i = 0; i < _queue.Count; ++i)
         {
             var idx = _queue[i];
+            if (idx == ~FurnitureIdx)
+            {
+                DisableFurniture();
+                continue;
+            }
+
             if (FindCorrectActor(idx < 0 ? ~idx : idx, out var obj))
                 _afterGPoseQueue.Add(idx < 0 ? idx : ~idx);
 
@@ -323,6 +333,12 @@ public sealed unsafe partial class RedrawService : IDisposable
             "mouseover" => (_targets.MouseOverTarget, true),
             _           => (null, false),
         };
+        if (!ret && lowerName.Length > 1 && lowerName[0] == '#' && ushort.TryParse(lowerName[1..], out var objectIndex))
+        {
+            ret   = true;
+            actor = _objects[objectIndex];
+        }
+
         return ret;
     }
 
@@ -334,8 +350,10 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public void RedrawObject(string name, RedrawType settings)
     {
-        var lowerName = name.ToLowerInvariant();
-        if (GetName(lowerName, out var target))
+        var lowerName = name.ToLowerInvariant().Trim();
+        if (lowerName == "furniture")
+            _queue.Add(~FurnitureIdx);
+        else if (GetName(lowerName, out var target))
             RedrawObject(target, settings);
         else
             foreach (var actor in _objects.Where(a => a.Name.ToString().ToLowerInvariant() == lowerName))
@@ -346,5 +364,25 @@ public sealed unsafe partial class RedrawService : IDisposable
     {
         foreach (var actor in _objects)
             RedrawObject(actor, settings);
+    }
+
+    private void DisableFurniture()
+    {
+        var housingManager = HousingManager.Instance();
+        if (housingManager == null) 
+            return;
+        var currentTerritory = housingManager->CurrentTerritory;
+        if (currentTerritory == null) 
+            return;
+        if (!housingManager->IsInside())
+            return;
+
+        foreach (var f in currentTerritory->FurnitureSpan.PointerEnumerator())
+        {
+            var gameObject = f->Index >= 0 ? currentTerritory->HousingObjectManager.ObjectsSpan[f->Index].Value : null;
+            if (gameObject == null) 
+                continue;
+            gameObject->DisableDraw();
+        }
     }
 }
