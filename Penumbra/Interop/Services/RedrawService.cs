@@ -154,11 +154,11 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             DisableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType } mount)
+        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
-            *ActorDrawState(mount) |= DrawState.Invisibility;
+            *ActorDrawState(mountOrOrnament) |= DrawState.Invisibility;
             if (gPose)
-                DisableDraw(mount);
+                DisableDraw(mountOrOrnament);
         }
     }
 
@@ -173,11 +173,11 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             EnableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType } mount)
+        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
-            *ActorDrawState(mount) &= ~DrawState.Invisibility;
+            *ActorDrawState(mountOrOrnament) &= ~DrawState.Invisibility;
             if (gPose)
-                EnableDraw(mount);
+                EnableDraw(mountOrOrnament);
         }
 
         GameObjectRedrawn?.Invoke(actor!.Address, tableIndex);
@@ -323,6 +323,12 @@ public sealed unsafe partial class RedrawService : IDisposable
             "mouseover" => (_targets.MouseOverTarget, true),
             _           => (null, false),
         };
+        if (!ret && lowerName.Length > 1 && lowerName[0] == '#' && ushort.TryParse(lowerName[1..], out var objectIndex))
+        {
+            ret   = true;
+            actor = _objects[objectIndex];
+        }
+
         return ret;
     }
 
