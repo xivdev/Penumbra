@@ -235,12 +235,6 @@ public sealed unsafe partial class RedrawService : IDisposable
         for (var i = 0; i < _queue.Count; ++i)
         {
             var idx = _queue[i];
-            if (idx == FurnitureIdx)
-            {
-                EnableFurniture();
-                continue;
-            }
-
             if (idx == ~FurnitureIdx)
             {
                 DisableFurniture();
@@ -380,6 +374,8 @@ public sealed unsafe partial class RedrawService : IDisposable
         var currentTerritory = housingManager->CurrentTerritory;
         if (currentTerritory == null) 
             return;
+        if (!housingManager->IsInside())
+            return;
 
         foreach (var f in currentTerritory->FurnitureSpan.PointerEnumerator())
         {
@@ -387,24 +383,6 @@ public sealed unsafe partial class RedrawService : IDisposable
             if (gameObject == null) 
                 continue;
             gameObject->DisableDraw();
-        }
-    }
-
-    private void EnableFurniture()
-    {
-        var housingManager = HousingManager.Instance();
-        if (housingManager == null)
-            return;
-        var currentTerritory = housingManager->CurrentTerritory;
-        if (currentTerritory == null)
-            return;
-
-        foreach (var f in currentTerritory->FurnitureSpan.PointerEnumerator())
-        {
-            var gameObject = f->Index >= 0 ? currentTerritory->HousingObjectManager.ObjectsSpan[f->Index].Value : null;
-            if (gameObject == null)
-                continue;
-            gameObject->EnableDraw();
         }
     }
 }
