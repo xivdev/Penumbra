@@ -6,6 +6,7 @@ using ImGuiNET;
 using OtterGui.Widgets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.UI.AdvancedWindow;
 using Penumbra.Util;
 
 namespace Penumbra.Services;
@@ -61,11 +62,11 @@ public class StainService : IDisposable
 
             ImGui.SameLine();
             var frame = new Vector2(ImGui.GetTextLineHeight());
-            ImGui.ColorButton("D", new Vector4(colors.Diffuse, 1), 0, frame);
+            ImGui.ColorButton("D", new Vector4(ModEditWindow.PseudoSqrtRgb(colors.Diffuse), 1), 0, frame);
             ImGui.SameLine();
-            ImGui.ColorButton("E", new Vector4(colors.Emissive, 1), 0, frame);
+            ImGui.ColorButton("S", new Vector4(ModEditWindow.PseudoSqrtRgb(colors.Specular), 1), 0, frame);
             ImGui.SameLine();
-            ImGui.ColorButton("S", new Vector4(colors.Specular, 1), 0, frame);
+            ImGui.ColorButton("E", new Vector4(ModEditWindow.PseudoSqrtRgb(colors.Emissive), 1), 0, frame);
             return ret;
         }
     }
