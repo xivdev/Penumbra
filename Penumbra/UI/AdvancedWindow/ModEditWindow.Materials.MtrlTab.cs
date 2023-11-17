@@ -1,6 +1,5 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
 using OtterGui;
