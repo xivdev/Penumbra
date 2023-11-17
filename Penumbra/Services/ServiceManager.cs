@@ -95,7 +95,8 @@ public static class ServiceManager
 
     private static IServiceCollection AddConfiguration(this IServiceCollection services)
         => services.AddTransient<ConfigMigrationService>()
-            .AddSingleton<Configuration>();
+            .AddSingleton<Configuration>()
+            .AddSingleton<EphemeralConfig>();
 
     private static IServiceCollection AddCollections(this IServiceCollection services)
         => services.AddSingleton<CollectionStorage>()

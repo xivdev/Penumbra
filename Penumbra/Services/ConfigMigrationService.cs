@@ -1,14 +1,20 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Enums;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
+using Penumbra.UI;
 using Penumbra.UI.Classes;
+using Penumbra.UI.ResourceWatcher;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra.Services;
 
@@ -26,7 +32,7 @@ public class ConfigMigrationService
     public string                     CurrentCollection    = ModCollection.DefaultCollectionName;
     public string                     DefaultCollection    = ModCollection.DefaultCollectionName;
     public string                     ForcedCollection     = string.Empty;
-    public Dictionary<string, string> CharacterCollections = new();
+    public Dictionary<string, string> CharacterCollections = [];
     public Dictionary<string, string> ModSortOrder         = new();
     public bool                       InvertModListOrder;
     public bool                       SortFoldersFirst;
@@ -71,7 +77,39 @@ public class ConfigMigrationService
         Version4To5();
         Version5To6();
         Version6To7();
+        Version7To8();
         AddColors(config, true);
+    }
+
+    // Migrate to ephemeral config.
+    private void Version7To8()
+    {
+        if (_config.Version != 7)
+            return;
+
+        _config.Version           = 8;
+        _config.Ephemeral.Version = 8;
+
+        _config.Ephemeral.LastSeenVersion       = _data["LastSeenVersion"]?.ToObject<int>() ?? _config.Ephemeral.LastSeenVersion;
+        _config.Ephemeral.DebugSeparateWindow   = _data["DebugSeparateWindow"]?.ToObject<bool>() ?? _config.Ephemeral.DebugSeparateWindow;
+        _config.Ephemeral.TutorialStep          = _data["TutorialStep"]?.ToObject<int>() ?? _config.Ephemeral.TutorialStep;
+        _config.Ephemeral.EnableResourceLogging = _data["EnableResourceLogging"]?.ToObject<bool>() ?? _config.Ephemeral.EnableResourceLogging;
+        _config.Ephemeral.ResourceLoggingFilter = _data["ResourceLoggingFilter"]?.ToObject<string>() ?? _config.Ephemeral.ResourceLoggingFilter;
+        _config.Ephemeral.EnableResourceWatcher = _data["EnableResourceWatcher"]?.ToObject<bool>() ?? _config.Ephemeral.EnableResourceWatcher;
+        _config.Ephemeral.OnlyAddMatchingResources =
+            _data["OnlyAddMatchingResources"]?.ToObject<bool>() ?? _config.Ephemeral.OnlyAddMatchingResources;
+        _config.Ephemeral.ResourceWatcherResourceTypes = _data["ResourceWatcherResourceTypes"]?.ToObject<ResourceTypeFlag>()
+         ?? _config.Ephemeral.ResourceWatcherResourceTypes;
+        _config.Ephemeral.ResourceWatcherResourceCategories = _data["ResourceWatcherResourceCategories"]?.ToObject<ResourceCategoryFlag>()
+         ?? _config.Ephemeral.ResourceWatcherResourceCategories;
+        _config.Ephemeral.ResourceWatcherRecordTypes =
+            _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Ephemeral.ResourceWatcherRecordTypes;
+        _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionsTab.PanelMode>() ?? _config.Ephemeral.CollectionPanel;
+        _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
+        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemDrawer.ChangedItemIcon>()
+         ?? _config.Ephemeral.ChangedItemFilter;
+        _config.Ephemeral.FixMainWindow = _data["FixMainWindow"]?.ToObject<bool>() ?? _config.Ephemeral.FixMainWindow;
+        _config.Ephemeral.Save();
     }
 
     // Gendered special collections were added.
@@ -93,8 +131,8 @@ public class ConfigMigrationService
         if (_config.Version != 5)
             return;
 
-        if (_config.TutorialStep == 25)
-            _config.TutorialStep = 27;
+        if (_config.Ephemeral.TutorialStep == 25)
+            _config.Ephemeral.TutorialStep = 27;
 
         _config.Version = 6;
     }

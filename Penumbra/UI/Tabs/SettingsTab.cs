@@ -78,8 +78,8 @@ public class SettingsTab : ITab
             return;
 
         DrawEnabledBox();
-        Checkbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.FixMainWindow,
-            v => _config.FixMainWindow = v);
+        EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
+            v => _config.Ephemeral.FixMainWindow = v);
 
         ImGui.NewLine();
         DrawRootFolder();
@@ -101,6 +101,21 @@ public class SettingsTab : ITab
         {
             setter(tmp);
             _config.Save();
+        }
+
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker(label, tooltip);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private void EphemeralCheckbox(string label, string tooltip, bool current, Action<bool> setter)
+    {
+        using var id  = ImRaii.PushId(label);
+        var       tmp = current;
+        if (ImGui.Checkbox(string.Empty, ref tmp) && tmp != current)
+        {
+            setter(tmp);
+            _config.Ephemeral.Save();
         }
 
         ImGui.SameLine();
@@ -384,7 +399,10 @@ public class SettingsTab : ITab
             {
                 _config.HideChangedItemFilters = v;
                 if (v)
-                    _config.ChangedItemFilter = ChangedItemDrawer.AllFlags;
+                {
+                    _config.Ephemeral.ChangedItemFilter = ChangedItemDrawer.AllFlags;
+                    _config.Ephemeral.Save();
+                }
             });
         Checkbox("Hide Priority Numbers in Mod Selector",
             "Hides the bracketed non-zero priority numbers displayed in the mod selector when there is enough space for them.",
@@ -863,8 +881,8 @@ public class SettingsTab : ITab
         ImGui.SetCursorPos(new Vector2(xPos, 3 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))
         {
-            _config.TutorialStep = 0;
-            _config.Save();
+            _config.Ephemeral.TutorialStep = 0;
+            _config.Ephemeral.Save();
         }
 
         ImGui.SetCursorPos(new Vector2(xPos, 4 * ImGui.GetFrameHeightWithSpacing()));

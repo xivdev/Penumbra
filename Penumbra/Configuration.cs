@@ -5,17 +5,13 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Widgets;
-using Penumbra.Api.Enums;
-using Penumbra.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
-using Penumbra.UI.Tabs;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
@@ -26,9 +22,11 @@ public class Configuration : IPluginConfiguration, ISavable
     [JsonIgnore]
     private readonly SaveService _saveService;
 
+    [JsonIgnore]
+    public readonly EphemeralConfig Ephemeral;
+
     public int Version { get; set; } = Constants.CurrentVersion;
 
-    public int                  LastSeenVersion      { get; set; } = PenumbraChangelog.LastChangelogVersion;
     public ChangeLogDisplayType ChangeLogDisplayType { get; set; } = ChangeLogDisplayType.New;
 
     public bool   EnableMods      { get; set; } = true;
@@ -53,52 +51,33 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool HideRedrawBar             { get; set; } = false;
     public int  OptionGroupCollapsibleMin { get; set; } = 5;
 
-    public bool    DebugSeparateWindow = false;
-    public Vector2 MinimumSize         = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
+    public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else
     public bool DebugMode { get; set; } = false;
 #endif
-
-    public int TutorialStep { get; set; } = 0;
-
-    public bool   EnableResourceLogging     { get; set; } = false;
-    public string ResourceLoggingFilter     { get; set; } = string.Empty;
-    public bool   EnableResourceWatcher     { get; set; } = false;
-    public bool   OnlyAddMatchingResources  { get; set; } = true;
-    public int    MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
-
-    public ResourceTypeFlag     ResourceWatcherResourceTypes      { get; set; } = ResourceExtensions.AllResourceTypes;
-    public ResourceCategoryFlag ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
-    public RecordType           ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
-
+    public int MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
 
     [JsonConverter(typeof(SortModeConverter))]
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode<Mod> SortMode = ISortMode<Mod>.FoldersFirst;
 
-    public bool                     ScaleModSelector        { get; set; } = false;
-    public float                    ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
-    public int                      ModSelectorScaledSize   { get; set; } = Constants.DefaultScaledSize;
-    public bool                     OpenFoldersByDefault    { get; set; } = false;
-    public int                      SingleGroupRadioMax     { get; set; } = 2;
-    public string                   DefaultImportFolder     { get; set; } = string.Empty;
-    public string                   QuickMoveFolder1        { get; set; } = string.Empty;
-    public string                   QuickMoveFolder2        { get; set; } = string.Empty;
-    public string                   QuickMoveFolder3        { get; set; } = string.Empty;
-    public DoubleModifier           DeleteModModifier       { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
-    public CollectionsTab.PanelMode CollectionPanel         { get; set; } = CollectionsTab.PanelMode.SimpleAssignment;
-    public TabType                  SelectedTab             { get; set; } = TabType.Settings;
-
-    public ChangedItemDrawer.ChangedItemIcon ChangedItemFilter { get; set; } = ChangedItemDrawer.DefaultFlags;
-
-    public bool PrintSuccessfulCommandsToChat { get; set; } = true;
-    public bool FixMainWindow                 { get; set; } = false;
-    public bool AutoDeduplicateOnImport       { get; set; } = true;
-    public bool UseFileSystemCompression      { get; set; } = true;
-    public bool EnableHttpApi                 { get; set; } = true;
+    public bool           ScaleModSelector              { get; set; } = false;
+    public float          ModSelectorAbsoluteSize       { get; set; } = Constants.DefaultAbsoluteSize;
+    public int            ModSelectorScaledSize         { get; set; } = Constants.DefaultScaledSize;
+    public bool           OpenFoldersByDefault          { get; set; } = false;
+    public int            SingleGroupRadioMax           { get; set; } = 2;
+    public string         DefaultImportFolder           { get; set; } = string.Empty;
+    public string         QuickMoveFolder1              { get; set; } = string.Empty;
+    public string         QuickMoveFolder2              { get; set; } = string.Empty;
+    public string         QuickMoveFolder3              { get; set; } = string.Empty;
+    public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
+    public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
+    public bool           AutoDeduplicateOnImport       { get; set; } = true;
+    public bool           UseFileSystemCompression      { get; set; } = true;
+    public bool           EnableHttpApi                 { get; set; } = true;
 
     public string DefaultModImportPath    { get; set; } = string.Empty;
     public bool   AlwaysOpenDefaultImport { get; set; } = false;
@@ -112,9 +91,10 @@ public class Configuration : IPluginConfiguration, ISavable
     /// Load the current configuration.
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
-    public Configuration(CharacterUtility utility, ConfigMigrationService migrator, SaveService saveService)
+    public Configuration(CharacterUtility utility, ConfigMigrationService migrator, SaveService saveService, EphemeralConfig ephemeral)
     {
         _saveService = saveService;
+        Ephemeral    = ephemeral;
         Load(utility, migrator);
     }
 
@@ -148,12 +128,12 @@ public class Configuration : IPluginConfiguration, ISavable
 
     /// <summary> Save the current configuration. </summary>
     public void Save()
-        => _saveService.DelaySave(this);
+        => _saveService.QueueSave(this);
 
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
-        public const int   CurrentVersion      = 7;
+        public const int   CurrentVersion      = 8;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;

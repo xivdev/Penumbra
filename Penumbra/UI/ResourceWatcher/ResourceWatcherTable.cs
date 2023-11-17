@@ -13,7 +13,7 @@ namespace Penumbra.UI.ResourceWatcher;
 
 internal sealed class ResourceWatcherTable : Table<Record>
 {
-    public ResourceWatcherTable(Configuration config, IReadOnlyCollection<Record> records)
+    public ResourceWatcherTable(EphemeralConfig config, IReadOnlyCollection<Record> records)
         : base("##records",
             records,
             new PathColumn { Label                     = "Path" },
@@ -86,9 +86,9 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
     private sealed class RecordTypeColumn : ColumnFlags<RecordType, Record>
     {
-        private readonly Configuration _config;
+        private readonly EphemeralConfig _config;
 
-        public RecordTypeColumn(Configuration config)
+        public RecordTypeColumn(EphemeralConfig config)
         {
             AllFlags = ResourceWatcher.AllRecords;
             _config  = config;
@@ -174,9 +174,9 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
     private sealed class ResourceCategoryColumn : ColumnFlags<ResourceCategoryFlag, Record>
     {
-        private readonly Configuration _config;
+        private readonly EphemeralConfig _config;
 
-        public ResourceCategoryColumn(Configuration config)
+        public ResourceCategoryColumn(EphemeralConfig config)
         {
             _config  = config;
             AllFlags = ResourceExtensions.AllResourceCategories;
@@ -209,9 +209,9 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
     private sealed class ResourceTypeColumn : ColumnFlags<ResourceTypeFlag, Record>
     {
-        private readonly Configuration _config;
+        private readonly EphemeralConfig _config;
 
-        public ResourceTypeColumn(Configuration config)
+        public ResourceTypeColumn(EphemeralConfig config)
         {
             _config  = config;
             AllFlags = Enum.GetValues<ResourceTypeFlag>().Aggregate((v, f) => v | f);

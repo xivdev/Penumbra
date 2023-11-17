@@ -11,17 +11,19 @@ public class FilenameService
     public readonly string CollectionDirectory;
     public readonly string LocalDataDirectory;
     public readonly string ConfigFile;
+    public readonly string EphemeralConfigFile;
     public readonly string FilesystemFile;
     public readonly string ActiveCollectionsFile;
 
     public FilenameService(DalamudPluginInterface pi)
     {
         ConfigDirectory       = pi.ConfigDirectory.FullName;
-        CollectionDirectory   = Path.Combine(pi.GetPluginConfigDirectory(), "collections");
-        LocalDataDirectory    = Path.Combine(pi.ConfigDirectory.FullName,   "mod_data");
+        CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");
+        LocalDataDirectory    = Path.Combine(pi.ConfigDirectory.FullName, "mod_data");
         ConfigFile            = pi.ConfigFile.FullName;
-        FilesystemFile        = Path.Combine(pi.GetPluginConfigDirectory(), "sort_order.json");
-        ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName,   "active_collections.json");
+        FilesystemFile        = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
+        ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
+        EphemeralConfigFile   = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
     }
 
     /// <summary> Obtain the path of a collection file given its name.</summary>

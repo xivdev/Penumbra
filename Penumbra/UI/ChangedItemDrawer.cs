@@ -70,7 +70,7 @@ public class ChangedItemDrawer : IDisposable
 
     /// <summary> Check if a changed item should be drawn based on its category. </summary>
     public bool FilterChangedItem(string name, object? data, LowerString filter)
-        => (_config.ChangedItemFilter == AllFlags || _config.ChangedItemFilter.HasFlag(GetCategoryIcon(name, data)))
+        => (_config.Ephemeral.ChangedItemFilter == AllFlags || _config.Ephemeral.ChangedItemFilter.HasFlag(GetCategoryIcon(name, data)))
          && (filter.IsEmpty || filter.IsContained(ChangedItemFilterName(name, data)));
 
     /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
@@ -172,20 +172,20 @@ public class ChangedItemDrawer : IDisposable
         void DrawIcon(ChangedItemIcon type)
         {
             var icon = _icons[type];
-            var flag = _config.ChangedItemFilter.HasFlag(type);
+            var flag = _config.Ephemeral.ChangedItemFilter.HasFlag(type);
             ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             {
-                _config.ChangedItemFilter = flag ? _config.ChangedItemFilter & ~type : _config.ChangedItemFilter | type;
-                _config.Save();
+                _config.Ephemeral.ChangedItemFilter = flag ? _config.Ephemeral.ChangedItemFilter & ~type : _config.Ephemeral.ChangedItemFilter | type;
+                _config.Ephemeral.Save();
             }
 
             using var popup = ImRaii.ContextPopupItem(type.ToString());
             if (popup)
                 if (ImGui.MenuItem("Enable Only This"))
                 {
-                    _config.ChangedItemFilter = type;
-                    _config.Save();
+                    _config.Ephemeral.ChangedItemFilter = type;
+                    _config.Ephemeral.Save();
                     ImGui.CloseCurrentPopup();
                 }
 
@@ -206,12 +206,12 @@ public class ChangedItemDrawer : IDisposable
 
         ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
         ImGui.Image(_icons[AllFlags].ImGuiHandle, size, Vector2.Zero, Vector2.One,
-            _config.ChangedItemFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
-            _config.ChangedItemFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));
+            _config.Ephemeral.ChangedItemFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
+            _config.Ephemeral.ChangedItemFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));
         if (ImGui.IsItemClicked())
         {
-            _config.ChangedItemFilter = _config.ChangedItemFilter == AllFlags ? 0 : AllFlags;
-            _config.Save();
+            _config.Ephemeral.ChangedItemFilter = _config.Ephemeral.ChangedItemFilter == AllFlags ? 0 : AllFlags;
+            _config.Ephemeral.Save();
         }
     }
 

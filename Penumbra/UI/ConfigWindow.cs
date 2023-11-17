@@ -39,7 +39,7 @@ public sealed class ConfigWindow : Window
     {
         _penumbra             = penumbra;
         _configTabs           = configTabs;
-        _configTabs.SelectTab = _config.SelectedTab;
+        _configTabs.SelectTab = _config.Ephemeral.SelectedTab;
     }
 
     public override bool DrawConditions()
@@ -47,7 +47,7 @@ public sealed class ConfigWindow : Window
 
     public override void PreDraw()
     {
-        if (_config.FixMainWindow)
+        if (_config.Ephemeral.FixMainWindow)
             Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
         else
             Flags &= ~(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
@@ -99,10 +99,10 @@ public sealed class ConfigWindow : Window
             else
             {
                 var type = _configTabs.Draw();
-                if (type != _config.SelectedTab)
+                if (type != _config.Ephemeral.SelectedTab)
                 {
-                    _config.SelectedTab = type;
-                    _config.Save();
+                    _config.Ephemeral.SelectedTab = type;
+                    _config.Ephemeral.Save();
                 }
             }
 

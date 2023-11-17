@@ -184,8 +184,8 @@ public class CommandHandler : IDisposable
 
     private bool SetUiLockState(string arguments)
     {
-        var value = ParseTrueFalseToggle(arguments) ?? !_config.FixMainWindow;
-        if (value == _config.FixMainWindow)
+        var value = ParseTrueFalseToggle(arguments) ?? !_config.Ephemeral.FixMainWindow;
+        if (value == _config.Ephemeral.FixMainWindow)
             return false;
 
         if (value)
@@ -199,8 +199,8 @@ public class CommandHandler : IDisposable
             _configWindow.Flags &= ~(ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
         }
 
-        _config.FixMainWindow = value;
-        _config.Save();
+        _config.Ephemeral.FixMainWindow = value;
+        _config.Ephemeral.Save();
         return true;
     }
 

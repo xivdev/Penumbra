@@ -55,10 +55,10 @@ public class TutorialService
       + "    - 'furniture': most indoor furniture, does not currently work outdoors\n"
       + "    - any specific actor name to redraw all actors of that exactly matching name.";
 
-    private readonly Configuration _config;
-    private readonly Tutorial      _tutorial;
+    private readonly EphemeralConfig _config;
+    private readonly Tutorial        _tutorial;
 
-    public TutorialService(Configuration config)
+    public TutorialService(EphemeralConfig config)
     {
         _config = config;
         _tutorial = new Tutorial()

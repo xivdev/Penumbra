@@ -115,7 +115,7 @@ public class DebugTab : Window, ITab
         => "Debug"u8;
 
     public bool IsVisible
-        => _config.DebugMode && !_config.DebugSeparateWindow;
+        => _config is { DebugMode: true, Ephemeral.DebugSeparateWindow: false };
 
 #if DEBUG
     private const string DebugVersionString = "(Debug)";
@@ -201,12 +201,12 @@ public class DebugTab : Window, ITab
         if (!ImGui.CollapsingHeader("General"))
             return;
 
-        var separateWindow = _config.DebugSeparateWindow;
+        var separateWindow = _config.Ephemeral.DebugSeparateWindow;
         if (ImGui.Checkbox("Draw as Separate Window", ref separateWindow))
         {
-            IsOpen                      = true;
-            _config.DebugSeparateWindow = separateWindow;
-            _config.Save();
+            IsOpen                                = true;
+            _config.Ephemeral.DebugSeparateWindow = separateWindow;
+            _config.Ephemeral.Save();
         }
 
         using (var table = Table("##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit))
@@ -949,11 +949,11 @@ public class DebugTab : Window, ITab
         => DrawContent();
 
     public override bool DrawConditions()
-        => _config.DebugMode && _config.DebugSeparateWindow;
+        => _config.DebugMode && _config.Ephemeral.DebugSeparateWindow;
 
     public override void OnClose()
     {
-        _config.DebugSeparateWindow = false;
-        _config.Save();
+        _config.Ephemeral.DebugSeparateWindow = false;
+        _config.Ephemeral.Save();
     }
 }

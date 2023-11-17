@@ -627,12 +627,20 @@ public class PenumbraChangelog
     #endregion
 
     private (int, ChangeLogDisplayType) ConfigData()
-        => (_config.LastSeenVersion, _config.ChangeLogDisplayType);
+        => (_config.Ephemeral.LastSeenVersion, _config.ChangeLogDisplayType);
 
     private void Save(int version, ChangeLogDisplayType type)
     {
-        _config.LastSeenVersion      = version;
-        _config.ChangeLogDisplayType = type;
-        _config.Save();
+        if (_config.Ephemeral.LastSeenVersion != version)
+        {
+            _config.Ephemeral.LastSeenVersion = version;
+            _config.Ephemeral.Save();
+        }
+
+        if (_config.ChangeLogDisplayType != type)
+        {
+            _config.ChangeLogDisplayType = type;
+            _config.Save();
+        }
     }
 }

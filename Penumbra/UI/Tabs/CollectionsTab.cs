@@ -16,7 +16,7 @@ namespace Penumbra.UI.Tabs;
 
 public class CollectionsTab : IDisposable, ITab
 {
-    private readonly Configuration      _config;
+    private readonly EphemeralConfig    _config;
     private readonly CollectionSelector _selector;
     private readonly CollectionPanel    _panel;
     private readonly TutorialService    _tutorial;
@@ -42,7 +42,7 @@ public class CollectionsTab : IDisposable, ITab
     public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator,
         CollectionManager collectionManager, ModStorage modStorage, ActorService actors, ITargetManager targets, TutorialService tutorial)
     {
-        _config   = configuration;
+        _config   = configuration.Ephemeral;
         _tutorial = tutorial;
         _selector = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial);
         _panel    = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage);

@@ -21,6 +21,7 @@ public class ResourceWatcher : IDisposable, ITab
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
 
     private readonly Configuration           _config;
+    private readonly EphemeralConfig         _ephemeral;
     private readonly ResourceService         _resources;
     private readonly ResourceLoader          _loader;
     private readonly ActorService            _actors;
@@ -35,14 +36,15 @@ public class ResourceWatcher : IDisposable, ITab
     {
         _actors                             =  actors;
         _config                             =  config;
+        _ephemeral                          =  config.Ephemeral;
         _resources                          =  resources;
         _loader                             =  loader;
-        _table                              =  new ResourceWatcherTable(config, _records);
+        _table                              =  new ResourceWatcherTable(config.Ephemeral, _records);
         _resources.ResourceRequested        += OnResourceRequested;
         _resources.ResourceHandleDestructor += OnResourceDestroyed;
         _loader.ResourceLoaded              += OnResourceLoaded;
         _loader.FileLoaded                  += OnFileLoaded;
-        UpdateFilter(_config.ResourceLoggingFilter, false);
+        UpdateFilter(_ephemeral.ResourceLoggingFilter, false);
         _newMaxEntries = _config.MaxResourceWatcherRecords;
     }
 
@@ -71,11 +73,11 @@ public class ResourceWatcher : IDisposable, ITab
         UpdateRecords();
 
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetTextLineHeightWithSpacing() / 2);
-        var isEnabled = _config.EnableResourceWatcher;
+        var isEnabled = _ephemeral.EnableResourceWatcher;
         if (ImGui.Checkbox("Enable", ref isEnabled))
         {
-            _config.EnableResourceWatcher = isEnabled;
-            _config.Save();
+            _ephemeral.EnableResourceWatcher = isEnabled;
+            _ephemeral.Save();
         }
 
         ImGui.SameLine();
@@ -85,19 +87,19 @@ public class ResourceWatcher : IDisposable, ITab
             Clear();
 
         ImGui.SameLine();
-        var onlyMatching = _config.OnlyAddMatchingResources;
+        var onlyMatching = _ephemeral.OnlyAddMatchingResources;
         if (ImGui.Checkbox("Store Only Matching", ref onlyMatching))
         {
-            _config.OnlyAddMatchingResources = onlyMatching;
-            _config.Save();
+            _ephemeral.OnlyAddMatchingResources = onlyMatching;
+            _ephemeral.Save();
         }
 
         ImGui.SameLine();
-        var writeToLog = _config.EnableResourceLogging;
+        var writeToLog = _ephemeral.EnableResourceLogging;
         if (ImGui.Checkbox("Write to Log", ref writeToLog))
         {
-            _config.EnableResourceLogging = writeToLog;
-            _config.Save();
+            _ephemeral.EnableResourceLogging = writeToLog;
+            _ephemeral.Save();
         }
 
         ImGui.SameLine();
@@ -136,8 +138,8 @@ public class ResourceWatcher : IDisposable, ITab
 
         if (config)
         {
-            _config.ResourceLoggingFilter = newString;
-            _config.Save();
+            _ephemeral.ResourceLoggingFilter = newString;
+            _ephemeral.Save();
         }
     }
 
@@ -196,20 +198,20 @@ public class ResourceWatcher : IDisposable, ITab
         Utf8GamePath original,
         GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
-        if (_config.EnableResourceLogging && FilterMatch(original.Path, out var match))
+        if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
             Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested {(sync ? "synchronously." : "asynchronously.")}");
 
-        if (!_config.EnableResourceWatcher)
+        if (!_ephemeral.EnableResourceWatcher)
             return;
 
         var record = Record.CreateRequest(original.Path, sync);
-        if (!_config.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }
 
     private unsafe void OnResourceLoaded(ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData data)
     {
-        if (_config.EnableResourceLogging)
+        if (_ephemeral.EnableResourceLogging)
         {
             var log   = FilterMatch(path.Path, out var name);
             var name2 = string.Empty;
@@ -224,41 +226,41 @@ public class ResourceWatcher : IDisposable, ITab
             }
         }
 
-        if (!_config.EnableResourceWatcher)
+        if (!_ephemeral.EnableResourceWatcher)
             return;
 
         var record = manipulatedPath == null
             ? Record.CreateDefaultLoad(path.Path, handle, data.ModCollection, Name(data))
             : Record.CreateLoad(manipulatedPath.Value.InternalName, path.Path, handle, data.ModCollection, Name(data));
-        if (!_config.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }
 
     private unsafe void OnFileLoaded(ResourceHandle* resource, ByteString path, bool success, bool custom, ByteString _)
     {
-        if (_config.EnableResourceLogging && FilterMatch(path, out var match))
+        if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
             Penumbra.Log.Information(
                 $"[ResourceLoader] [FILE] [{resource->FileType}] Loading {match} from {(custom ? "local files" : "SqPack")} into 0x{(ulong)resource:X} returned {success}.");
 
-        if (!_config.EnableResourceWatcher)
+        if (!_ephemeral.EnableResourceWatcher)
             return;
 
         var record = Record.CreateFileLoad(path, resource, success, custom);
-        if (!_config.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }
 
     private unsafe void OnResourceDestroyed(ResourceHandle* resource)
     {
-        if (_config.EnableResourceLogging && FilterMatch(resource->FileName(), out var match))
+        if (_ephemeral.EnableResourceLogging && FilterMatch(resource->FileName(), out var match))
             Penumbra.Log.Information(
                 $"[ResourceLoader] [DEST] [{resource->FileType}] Destroyed {match} at 0x{(ulong)resource:X}.");
 
-        if (!_config.EnableResourceWatcher)
+        if (!_ephemeral.EnableResourceWatcher)
             return;
 
         var record = Record.CreateDestruction(resource);
-        if (!_config.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }
 
