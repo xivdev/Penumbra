@@ -52,21 +52,23 @@ public class EphemeralConfig : ISavable
             errorArgs.ErrorContext.Handled = true;
         }
 
-        if (File.Exists(_saveService.FileNames.EphemeralConfigFile))
-            try
+        if (!File.Exists(_saveService.FileNames.EphemeralConfigFile))
+            return;
+
+        try
+        {
+            var text = File.ReadAllText(_saveService.FileNames.EphemeralConfigFile);
+            JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
             {
-                var text = File.ReadAllText(_saveService.FileNames.EphemeralConfigFile);
-                JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
-                {
-                    Error = HandleDeserializationError,
-                });
-            }
-            catch (Exception ex)
-            {
-                Penumbra.Messager.NotificationMessage(ex,
-                    "Error reading ephemeral Configuration, reverting to default.",
-                    "Error reading ephemeral Configuration", NotificationType.Error);
-            }
+                Error = HandleDeserializationError,
+            });
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Messager.NotificationMessage(ex,
+                "Error reading ephemeral Configuration, reverting to default.",
+                "Error reading ephemeral Configuration", NotificationType.Error);
+        }
     }
 
     /// <summary> Save the current configuration. </summary>
