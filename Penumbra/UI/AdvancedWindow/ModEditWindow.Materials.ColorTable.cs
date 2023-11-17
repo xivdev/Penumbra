@@ -528,7 +528,7 @@ public partial class ModEditWindow
     private static float PseudoSqrtRgb(float x)
         => x < 0.0f ? -MathF.Sqrt(-x) : MathF.Sqrt(x);
 
-    private static Vector3 PseudoSqrtRgb(Vector3 vec)
+    internal static Vector3 PseudoSqrtRgb(Vector3 vec)
         => new(PseudoSqrtRgb(vec.X), PseudoSqrtRgb(vec.Y), PseudoSqrtRgb(vec.Z));
 
     private static Vector4 PseudoSqrtRgb(Vector4 vec)
