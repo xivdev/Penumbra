@@ -48,7 +48,7 @@ public class EphemeralConfig : ISavable
         static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
         {
             Penumbra.Log.Error(
-                $"Error parsing Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
+                $"Error parsing ephemeral Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
             errorArgs.ErrorContext.Handled = true;
         }
 
