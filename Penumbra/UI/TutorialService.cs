@@ -52,6 +52,7 @@ public class TutorialService
       + "    - 'target' or '<t>': your target\n"
       + "    - 'focus' or '<f>: your focus target\n"
       + "    - 'mouseover' or '<mo>': the actor you are currently hovering over\n"
+      + "    - 'furniture': most indoor furniture, does not currently work outdoors\n"
       + "    - any specific actor name to redraw all actors of that exactly matching name.";
 
     private readonly Configuration _config;

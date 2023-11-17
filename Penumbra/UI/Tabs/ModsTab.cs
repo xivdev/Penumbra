@@ -1,9 +1,11 @@
+using Dalamud.Game.ClientState.Objects;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.UI.Classes;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
@@ -26,10 +28,12 @@ public class ModsTab : ITab
     private readonly Configuration          _config;
     private readonly IClientState           _clientState;
     private readonly CollectionSelectHeader _collectionHeader;
+    private readonly ITargetManager         _targets;
+    private readonly IObjectTable           _objectTable;
 
     public ModsTab(ModManager modManager, CollectionManager collectionManager, ModFileSystemSelector selector, ModPanel panel,
         TutorialService tutorial, RedrawService redrawService, Configuration config, IClientState clientState,
-        CollectionSelectHeader collectionHeader)
+        CollectionSelectHeader collectionHeader, ITargetManager targets, IObjectTable objectTable)
     {
         _modManager        = modManager;
         _activeCollections = collectionManager.Active;
@@ -40,6 +44,8 @@ public class ModsTab : ITab
         _config            = config;
         _clientState       = clientState;
         _collectionHeader  = collectionHeader;
+        _targets           = targets;
+        _objectTable       = objectTable;
     }
 
     public bool IsVisible
@@ -133,29 +139,54 @@ public class ModsTab : ITab
         if (hovered)
             ImGui.SetTooltip($"The supported modifiers for '/penumbra redraw' are:\n{TutorialService.SupportedRedrawModifiers}");
 
-        void DrawButton(Vector2 size, string label, string lower)
+        void DrawButton(Vector2 size, string label, string lower, string additionalTooltip)
         {
-            if (ImGui.Button(label, size))
+            using (var disabled = ImRaii.Disabled(additionalTooltip.Length > 0))
             {
-                if (lower.Length > 0)
-                    _redrawService.RedrawObject(lower, RedrawType.Redraw);
-                else
-                    _redrawService.RedrawAll(RedrawType.Redraw);
+                if (ImGui.Button(label, size))
+                {
+                    if (lower.Length > 0)
+                        _redrawService.RedrawObject(lower, RedrawType.Redraw);
+                    else
+                        _redrawService.RedrawAll(RedrawType.Redraw);
+                }
             }
 
-            ImGuiUtil.HoverTooltip(lower.Length > 0 ? $"Execute '/penumbra redraw {lower}'." : $"Execute '/penumbra redraw'.");
+            ImGuiUtil.HoverTooltip(lower.Length > 0
+                ? $"Execute '/penumbra redraw {lower}'.{additionalTooltip}"
+                : $"Execute '/penumbra redraw'.{additionalTooltip}", ImGuiHoveredFlags.AllowWhenDisabled);
         }
 
         using var id       = ImRaii.PushId("Redraw");
         using var disabled = ImRaii.Disabled(_clientState.LocalPlayer == null);
         ImGui.SameLine();
-        var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 4 };
-        DrawButton(buttonWidth, "All", string.Empty);
+        var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 5 };
+        var tt = _objectTable.GetObjectAddress(0) == nint.Zero
+            ? "\nCan only be used when you are logged in and your character is available."
+            : string.Empty;
+        DrawButton(buttonWidth, "All", string.Empty, tt);
         ImGui.SameLine();
-        DrawButton(buttonWidth, "Self", "self");
+        DrawButton(buttonWidth, "Self", "self", tt);
         ImGui.SameLine();
-        DrawButton(buttonWidth, "Target", "target");
+
+        tt = _targets.Target == null && _targets.GPoseTarget == null
+            ? "\nCan only be used when you have a target."
+            : string.Empty;
+        DrawButton(buttonWidth, "Target", "target", tt);
         ImGui.SameLine();
-        DrawButton(frameHeight with { X = ImGui.GetContentRegionAvail().X - 1 }, "Focus", "focus");
+
+        tt = _targets.FocusTarget == null
+            ? "\nCan only be used when you have a focus target."
+            : string.Empty;
+        DrawButton(buttonWidth, "Focus", "focus", tt);
+        ImGui.SameLine();
+
+        tt = !IsIndoors()
+            ? "\nCan currently only be used for indoor furniture."
+            : string.Empty;
+        DrawButton(frameHeight with { X = ImGui.GetContentRegionAvail().X - 1 }, "Furniture", "furniture", tt);
     }
+
+    private static unsafe bool IsIndoors()
+        => HousingManager.Instance()->IsInside();
 }
