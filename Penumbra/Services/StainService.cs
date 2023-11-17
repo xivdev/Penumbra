@@ -17,8 +17,6 @@ public class StainService : IDisposable
         private readonly StmFile           _stmFile;
         private readonly FilterComboColors _stainCombo;
 
-        private float _rightOffset;
-
         public StainTemplateCombo(FilterComboColors stainCombo, StmFile stmFile)
             : base(stmFile.Entries.Keys.Prepend((ushort)0), Penumbra.Log)
         {
@@ -28,7 +26,6 @@ public class StainService : IDisposable
 
         protected override float GetFilterWidth()
         {
-            using var font     = ImRaii.PushFont(UiBuilder.MonoFont);
             var       baseSize = ImGui.CalcTextSize("0000").X + ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemInnerSpacing.X;
             if (_stainCombo.CurrentSelection.Key == 0)
                 return baseSize;
@@ -38,12 +35,21 @@ public class StainService : IDisposable
         protected override string ToString(ushort obj)
             => $"{obj,4}";
 
-        protected override void DrawList(float width, float itemHeight)
+        protected override void DrawFilter(int currentSelected, float width)
         {
-            using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
-                ImGui.GetStyle().ItemSpacing with { X = ImGui.GetStyle().ItemInnerSpacing.X });
-            base.DrawList(width, itemHeight);
+            using var font = ImRaii.PushFont(UiBuilder.DefaultFont);
+            base.DrawFilter(currentSelected, width);
+        }
+
+        public override bool Draw(string label, string preview, string tooltip, ref int currentSelection, float previewWidth, float itemHeight,
+            ImGuiComboFlags flags = ImGuiComboFlags.None)
+        {
+            using var font  = ImRaii.PushFont(UiBuilder.MonoFont);
+            using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(1, 0.5f))
+                .Push(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = ImGui.GetStyle().ItemInnerSpacing.X });
+            var spaceSize = ImGui.CalcTextSize(" ").X;
+            var spaces    = (int) (previewWidth / spaceSize) - 1;
+            return base.Draw(label, preview.PadLeft(spaces), tooltip, ref currentSelection, previewWidth, itemHeight, flags);
         }
 
         protected override bool DrawSelectable(int globalIdx, bool selected)
