@@ -5,6 +5,9 @@ namespace Penumbra.Interop.Structs;
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct RenderModel
 {
+    [FieldOffset(0)]
+    public Model Model;
+
     [FieldOffset(0x18)]
     public RenderModel* PreviousModel;
 

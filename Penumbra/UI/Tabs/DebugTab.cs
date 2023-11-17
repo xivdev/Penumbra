@@ -713,8 +713,8 @@ public class DebugTab : Window, ITab
 
             UiHelpers.Text(resource);
             ImGui.TableNextColumn();
-            var data   = (nint)ResourceHandle.GetData(resource);
-            var length = ResourceHandle.GetLength(resource);
+            var data   = (nint)resource->CsHandle.GetData();
+            var length = resource->CsHandle.GetLength();
             if (ImGui.Selectable($"0x{data:X}"))
                 if (data != nint.Zero && length > 0)
                     ImGui.SetClipboardText(string.Join("\n",

@@ -91,7 +91,7 @@ public static class ServiceManager
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
             .AddSingleton<RedrawService>()
-            .AddSingleton<TextureUtility>();
+            .AddSingleton<ModelResourceHandleUtility>();
 
     private static IServiceCollection AddConfiguration(this IServiceCollection services)
         => services.AddTransient<ConfigMigrationService>()

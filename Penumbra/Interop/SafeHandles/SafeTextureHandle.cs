@@ -1,5 +1,4 @@
 ﻿using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.SafeHandles;
 
@@ -18,7 +17,7 @@ public unsafe class SafeTextureHandle : SafeHandle
             throw new ArgumentException("Non-owning SafeTextureHandle with IncRef is unsupported");
 
         if (incRef && handle != null)
-            TextureUtility.IncRef(handle);
+            handle->IncRef();
         SetHandle((nint)handle);
     }
 
@@ -43,7 +42,7 @@ public unsafe class SafeTextureHandle : SafeHandle
         }
 
         if (handle != 0)
-            TextureUtility.DecRef((Texture*)handle);
+            ((Texture*)handle)->DecRef();
 
         return true;
     }

@@ -102,8 +102,6 @@ public unsafe class MetaState : IDisposable
     public DisposableContainer ResolveEqdpData(ModCollection collection, GenderRace race, bool equipment, bool accessory)
     {
         var races = race.Dependencies();
-        if (races.Length == 0)
-            return DisposableContainer.Empty;
 
         var equipmentEnumerable = equipment
             ? races.Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, false))

@@ -1,5 +1,6 @@
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
@@ -59,6 +60,26 @@ public struct EstCache : IDisposable
         };
 
         return manager.TemporarilySetFile(file, idx);
+    }
+
+    private readonly EstFile? GetEstFile(EstManipulation.EstType type)
+    {
+        return type switch
+        {
+            EstManipulation.EstType.Face => _estFaceFile,
+            EstManipulation.EstType.Hair => _estHairFile,
+            EstManipulation.EstType.Body => _estBodyFile,
+            EstManipulation.EstType.Head => _estHeadFile,
+            _                            => null,
+        };
+    }
+
+    internal ushort GetEstEntry(MetaFileManager manager, EstManipulation.EstType type, GenderRace genderRace, SetId setId)
+    {
+        var file = GetEstFile(type);
+        return file != null
+            ? file[genderRace, setId.Id]
+            : EstFile.GetDefault(manager, type, genderRace, setId);
     }
 
     public void Reset()

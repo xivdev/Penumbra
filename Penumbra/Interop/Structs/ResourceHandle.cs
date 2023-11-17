@@ -1,10 +1,8 @@
-using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
-using Penumbra.GameData;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using CsHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 
 namespace Penumbra.Interop.Structs;
 
@@ -14,24 +12,8 @@ public unsafe struct TextureResourceHandle
     [FieldOffset(0x0)]
     public ResourceHandle Handle;
 
-    [FieldOffset(0x38)]
-    public IntPtr Unk;
-
-    [FieldOffset(0x118)]
-    public Texture* KernelTexture;
-
-    [FieldOffset(0x20)]
-    public IntPtr NewKernelTexture;
-}
-
-[StructLayout(LayoutKind.Explicit)]
-public unsafe struct ShaderPackageResourceHandle
-{
     [FieldOffset(0x0)]
-    public ResourceHandle Handle;
-
-    [FieldOffset(0xB0)]
-    public ShaderPackage* ShaderPackage;
+    public CsHandle.TextureResourceHandle CsHandle;
 }
 
 public enum LoadState : byte
@@ -59,27 +41,14 @@ public unsafe struct ResourceHandle
         public ulong DataLength;
     }
 
-    public const int SsoSize = 15;
+    public readonly ByteString FileName()
+        => CsHandle.FileName.AsByteString();
 
-    public byte* FileNamePtr()
-    {
-        if (FileNameLength > SsoSize)
-            return FileNameData;
+    public readonly bool GamePath(out Utf8GamePath path)
+        => Utf8GamePath.FromSpan(CsHandle.FileName.AsSpan(), out path);
 
-        fixed (byte** name = &FileNameData)
-        {
-            return (byte*)name;
-        }
-    }
-
-    public ByteString FileName()
-        => ByteString.FromByteStringUnsafe(FileNamePtr(), FileNameLength, true);
-
-    public ReadOnlySpan<byte> FileNameAsSpan()
-        => new(FileNamePtr(), FileNameLength);
-
-    public bool GamePath(out Utf8GamePath path)
-        => Utf8GamePath.FromSpan(FileNameAsSpan(), out path);
+    [FieldOffset(0x00)]
+    public CsHandle.ResourceHandle CsHandle;
 
     [FieldOffset(0x00)]
     public void** VTable;
@@ -90,17 +59,8 @@ public unsafe struct ResourceHandle
     [FieldOffset(0x0C)]
     public ResourceType FileType;
 
-    [FieldOffset(0x10)]
-    public uint Id;
-
     [FieldOffset(0x28)]
     public uint FileSize;
-
-    [FieldOffset(0x2C)]
-    public uint FileSize2;
-
-    [FieldOffset(0x34)]
-    public uint FileSize3;
 
     [FieldOffset(0x48)]
     public byte* FileNameData;
@@ -113,13 +73,6 @@ public unsafe struct ResourceHandle
 
     [FieldOffset(0xAC)]
     public uint RefCount;
-
-    // May return null.
-    public static byte* GetData(ResourceHandle* handle)
-        => ((delegate* unmanaged< ResourceHandle*, byte* >)handle->VTable[Offsets.ResourceHandleGetDataVfunc])(handle);
-
-    public static ulong GetLength(ResourceHandle* handle)
-        => ((delegate* unmanaged< ResourceHandle*, ulong >)handle->VTable[Offsets.ResourceHandleGetLengthVfunc])(handle);
 
 
     // Only use these if you know what you are doing.

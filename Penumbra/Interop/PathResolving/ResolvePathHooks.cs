@@ -143,7 +143,7 @@ public unsafe class ResolvePathHooks : IDisposable
     private nint ResolveMdlHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
     {
         var data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var eqdp = slotIndex > 9
+        using var eqdp = slotIndex > 9 || _parent.InInternalResolve
             ? DisposableContainer.Empty
             : _parent.MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace(drawObject), slotIndex < 5, slotIndex > 4);
         return ResolvePath(data, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
@@ -176,6 +176,10 @@ public unsafe class ResolvePathHooks : IDisposable
     private DisposableContainer GetEstChanges(nint drawObject, out ResolveData data)
     {
         data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        if (_parent.InInternalResolve)
+        {
+            return DisposableContainer.Empty;
+        }
         return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstManipulation.EstType.Face),
             data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Body),
             data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Hair),

@@ -2,6 +2,7 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData;
@@ -73,19 +74,19 @@ public sealed unsafe class SkinFixer : IDisposable
     public ulong GetAndResetSlowPathCallDelta()
         => Interlocked.Exchange(ref _slowPathCallDelta, 0);
 
-    private static bool IsSkinMaterial(Structs.MtrlResource* mtrlResource)
+    private static bool IsSkinMaterial(MaterialResourceHandle* mtrlResource)
     {
         if (mtrlResource == null)
             return false;
 
-        var shpkName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlResource->ShpkString);
+        var shpkName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlResource->ShpkName);
         return SkinShpkName.SequenceEqual(shpkName);
     }
 
     private void OnMtrlShpkLoaded(nint mtrlResourceHandle, nint gameObject)
     {
-        var mtrl = (Structs.MtrlResource*)mtrlResourceHandle;
-        var shpk = mtrl->ShpkResourceHandle;
+        var mtrl = (MaterialResourceHandle*)mtrlResourceHandle;
+        var shpk = mtrl->ShaderPackageResourceHandle;
         if (shpk == null)
             return;
 
@@ -109,7 +110,7 @@ public sealed unsafe class SkinFixer : IDisposable
             return _onRenderMaterialHook.Original(human, param);
 
         var material     = param->Model->Materials[param->MaterialIndex];
-        var mtrlResource = (Structs.MtrlResource*)material->MaterialResourceHandle;
+        var mtrlResource = material->MaterialResourceHandle;
         if (!IsSkinMaterial(mtrlResource))
             return _onRenderMaterialHook.Original(human, param);
 
@@ -124,7 +125,7 @@ public sealed unsafe class SkinFixer : IDisposable
         {
             try
             {
-                _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)mtrlResource->ShpkResourceHandle;
+                _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)mtrlResource->ShaderPackageResourceHandle;
                 return _onRenderMaterialHook.Original(human, param);
             }
             finally

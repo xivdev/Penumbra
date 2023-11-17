@@ -30,10 +30,14 @@ public unsafe class PathState : IDisposable
     private readonly ResolvePathHooks _demiHuman;
     private readonly ResolvePathHooks _monster;
 
-    private readonly ThreadLocal<ResolveData> _resolveData = new(() => ResolveData.Invalid, true);
+    private readonly ThreadLocal<ResolveData> _resolveData     = new(() => ResolveData.Invalid, true);
+    private readonly ThreadLocal<uint>        _internalResolve = new(() => 0, false);
 
     public IList<ResolveData> CurrentData
         => _resolveData.Values;
+
+    public bool InInternalResolve
+        => _internalResolve.Value != 0u;
 
     public PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility, IGameInteropProvider interop)
     {
@@ -55,6 +59,7 @@ public unsafe class PathState : IDisposable
     public void Dispose()
     {
         _resolveData.Dispose();
+        _internalResolve.Dispose();
         _human.Dispose();
         _weapon.Dispose();
         _demiHuman.Dispose();
@@ -80,7 +85,10 @@ public unsafe class PathState : IDisposable
         if (path == nint.Zero)
             return path;
 
-        _resolveData.Value = collection.ToResolveData(gameObject);
+        if (!InInternalResolve)
+        {
+            _resolveData.Value = collection.ToResolveData(gameObject);
+        }
         return path;
     }
 
@@ -90,7 +98,37 @@ public unsafe class PathState : IDisposable
         if (path == nint.Zero)
             return path;
 
-        _resolveData.Value = data;
+        if (!InInternalResolve)
+        {
+            _resolveData.Value = data;
+        }
         return path;
+    }
+
+    /// <summary>
+    /// Temporarily disables metadata mod application and resolve data capture on the current thread. <para />
+    /// Must be called to prevent race conditions between Penumbra's internal path resolution (for example for Resource Trees) and the game's path resolution. <para />
+    /// Please note that this will make path resolution cases that depend on metadata incorrect.
+    /// </summary>
+    /// <returns> A struct that will undo this operation when disposed. Best used with: <code>using (var _ = pathState.EnterInternalResolve()) { ... }</code> </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public InternalResolveRaii EnterInternalResolve()
+        => new(this);
+
+    public readonly ref struct InternalResolveRaii
+    {
+        private readonly ThreadLocal<uint> _internalResolve;
+
+        public InternalResolveRaii(PathState parent)
+        {
+            _internalResolve = parent._internalResolve;
+            ++_internalResolve.Value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public readonly void Dispose()
+        {
+            --_internalResolve.Value;
+        }
     }
 }

@@ -18,7 +18,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         if (mtrlHandle == null)
             throw new InvalidOperationException("Material doesn't have a resource handle");
 
-        var shpkHandle = ((Structs.MtrlResource*)mtrlHandle)->ShpkResourceHandle;
+        var shpkHandle = mtrlHandle->ShaderPackageResourceHandle;
         if (shpkHandle == null)
             throw new InvalidOperationException("Material doesn't have a ShPk resource handle");
 
@@ -61,7 +61,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         if (!CheckValidity())
             return;
 
-        ((Structs.Material*)Material)->ShaderPackageFlags = shPkFlags;
+        Material->ShaderFlags = shPkFlags;
     }
 
     public void SetMaterialParameter(uint parameterCrc, Index offset, Span<float> value)

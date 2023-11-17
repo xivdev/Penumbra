@@ -65,6 +65,13 @@ public unsafe class ImcFile : MetaBaseFile
         return ptr == null ? new ImcEntry() : *ptr;
     }
 
+    public ImcEntry GetEntry(int partIdx, Variant variantIdx, out bool exists)
+    {
+        var ptr = VariantPtr(Data, partIdx, variantIdx);
+        exists = ptr != null;
+        return exists ? *ptr : new ImcEntry();
+    }
+
     public static int PartIndex(EquipSlot slot)
         => slot switch
         {
@@ -161,11 +168,19 @@ public unsafe class ImcFile : MetaBaseFile
         if (file == null)
             throw new Exception();
 
-        fixed (byte* ptr = file.Data)
+        return GetEntry(file.Data, slot, variantIdx, out exists);
+    }
+
+    public static ImcEntry GetEntry(ReadOnlySpan<byte> imcFileData, EquipSlot slot, Variant variantIdx, out bool exists)
+    {
+        fixed (byte* ptr = imcFileData)
         {
             var entry = VariantPtr(ptr, PartIndex(slot), variantIdx);
             if (entry == null)
+            {
+                exists = false;
                 return new ImcEntry();
+            }
 
             exists = true;
             return *entry;

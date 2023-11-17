@@ -99,10 +99,10 @@ public class ResourceTab : ITab
             UiHelpers.Text(resource);
             if (ImGui.IsItemClicked())
             {
-                var data = Interop.Structs.ResourceHandle.GetData(resource);
+                var data = resource->CsHandle.GetData();
                 if (data != null)
                 {
-                    var length = (int)Interop.Structs.ResourceHandle.GetLength(resource);
+                    var length = (int)resource->CsHandle.GetLength();
                     ImGui.SetClipboardText(string.Join(" ",
                         new ReadOnlySpan<byte>(data, length).ToArray().Select(b => b.ToString("X2"))));
                 }
