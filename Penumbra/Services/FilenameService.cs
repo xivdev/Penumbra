@@ -5,26 +5,15 @@ using Penumbra.Mods;
 
 namespace Penumbra.Services;
 
-public class FilenameService
+public class FilenameService(DalamudPluginInterface pi)
 {
-    public readonly string ConfigDirectory;
-    public readonly string CollectionDirectory;
-    public readonly string LocalDataDirectory;
-    public readonly string ConfigFile;
-    public readonly string EphemeralConfigFile;
-    public readonly string FilesystemFile;
-    public readonly string ActiveCollectionsFile;
-
-    public FilenameService(DalamudPluginInterface pi)
-    {
-        ConfigDirectory       = pi.ConfigDirectory.FullName;
-        CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");
-        LocalDataDirectory    = Path.Combine(pi.ConfigDirectory.FullName, "mod_data");
-        ConfigFile            = pi.ConfigFile.FullName;
-        FilesystemFile        = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
-        ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
-        EphemeralConfigFile   = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
-    }
+    public readonly string ConfigDirectory       = pi.ConfigDirectory.FullName;
+    public readonly string CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");
+    public readonly string LocalDataDirectory    = Path.Combine(pi.ConfigDirectory.FullName, "mod_data");
+    public readonly string ConfigFile            = pi.ConfigFile.FullName;
+    public readonly string EphemeralConfigFile   = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
+    public readonly string FilesystemFile        = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
+    public readonly string ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
 
     /// <summary> Obtain the path of a collection file given its name.</summary>
     public string CollectionFile(ModCollection collection)
@@ -33,7 +22,6 @@ public class FilenameService
     /// <summary> Obtain the path of a collection file given its name. </summary>
     public string CollectionFile(string collectionName)
         => Path.Combine(CollectionDirectory, $"{collectionName}.json");
-
 
     /// <summary> Obtain the path of the local data file given a mod directory. Returns an empty string if the mod is temporary. </summary>
     public string LocalDataFile(Mod mod)

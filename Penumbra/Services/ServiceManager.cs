@@ -149,6 +149,7 @@ public static class ServiceManager
             .AddSingleton<CommandHandler>()
             .AddSingleton<SettingsTab>()
             .AddSingleton<ModsTab>()
+            .AddSingleton<MultiModPanel>()
             .AddSingleton<ModPanel>()
             .AddSingleton<ModFileSystemSelector>()
             .AddSingleton<CollectionSelectHeader>()
