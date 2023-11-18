@@ -517,7 +517,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
           + "Enter c:[string] to filter for mods changing specific items.\n"
           + "Enter t:[string] to filter for mods set to specific tags.\n"
           + "Enter n:[string] to filter only for mod names and no paths.\n"
-          + "Enter a:[string] to filter for mods by specific authors.";
+          + "Enter a:[string] to filter for mods by specific authors.\n\n"
+          + "Use None as a placeholder value that only matches empty lists or names.";
     }
 
     /// <summary> Appropriately identify and set the string filter and its type. </summary>
@@ -531,12 +532,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                 {
                     'n' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 1),
                     'N' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 1),
-                    'a' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 2),
-                    'A' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 2),
-                    'c' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 3),
-                    'C' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 3),
-                    't' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 4),
-                    'T' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 4),
+                    'a' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 2),
+                    'A' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 2),
+                    'c' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 3),
+                    'C' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 3),
+                    't' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 4),
+                    'T' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 4),
                     _   => (new LowerString(filterValue), 0),
                 },
             _ => (new LowerString(filterValue), 0),
@@ -544,6 +545,16 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         return true;
     }
+
+    private const int EmptyOffset = 128;
+
+    private static (LowerString, int) ParseFilter(string value, int id)
+    {
+        value = value[2..];
+        var lower = new LowerString(value);
+        return (lower, lower.Lower is "none" ? id + EmptyOffset : id);
+    }
+
 
     /// <summary>
     /// Check the state filter for a specific pair of has/has-not flags.
@@ -584,13 +595,16 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         return _filterType switch
         {
-            -1 => false,
-            0  => !(leaf.FullName().Contains(_modFilter.Lower, IgnoreCase) || mod.Name.Contains(_modFilter)),
-            1  => !mod.Name.Contains(_modFilter),
-            2  => !mod.Author.Contains(_modFilter),
-            3  => !mod.LowerChangedItemsString.Contains(_modFilter.Lower),
-            4  => !mod.AllTagsLower.Contains(_modFilter.Lower),
-            _  => false, // Should never happen
+            -1              => false,
+            0               => !(leaf.FullName().Contains(_modFilter.Lower, IgnoreCase) || mod.Name.Contains(_modFilter)),
+            1               => !mod.Name.Contains(_modFilter),
+            2               => !mod.Author.Contains(_modFilter),
+            3               => !mod.LowerChangedItemsString.Contains(_modFilter.Lower),
+            4               => !mod.AllTagsLower.Contains(_modFilter.Lower),
+            2 + EmptyOffset => !mod.Author.IsEmpty,
+            3 + EmptyOffset => mod.LowerChangedItemsString.Length > 0,
+            4 + EmptyOffset => mod.AllTagsLower.Length > 0,
+            _               => false, // Should never happen
         };
     }
 
