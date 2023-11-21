@@ -154,8 +154,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
             return null;
         var mdlResource = mdl->ModelResourceHandle;
 
-        if (!Utf8GamePath.FromByteString(ResolveMdlPath(CharacterBase, SlotIndex), out var path))
-            return null;
+        var path = ResolveModelPath();
 
         if (Global.Nodes.TryGetValue((path, (nint)mdlResource), out var cached))
             return cached;
