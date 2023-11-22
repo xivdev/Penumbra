@@ -44,9 +44,37 @@ public class PenumbraChangelog
         Add8_0_0(Changelog);
         Add8_1_1(Changelog);
         Add8_1_2(Changelog);
+        Add8_2_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add8_2_0(Changelog log)
+        => log.NextVersion("Version 0.8.2.0")
+            .RegisterHighlight(
+                "You can now redraw indoor furniture. This may not be entirely stable and might break some customizable decoration like wallpapered walls.")
+            .RegisterEntry("The redraw bar has been slightly improved and disables currently unavailable redraw commands now.")
+            .RegisterEntry("Redrawing players now also actively redraws any accessories they are using.")
+            .RegisterEntry("Power-users can now redraw game objects by index via chat command.")
+            .RegisterHighlight(
+                "You can now filter for the special case 'None' for filters where that makes sense (like Tags or Changed Items).")
+            .RegisterHighlight("When selecting multiple mods, you can now add or remove tags from them at once.")
+            .RegisterEntry(
+                "The dye template combo in advanced material editing now displays the currently selected dye as it would appear with the respective template.")
+            .RegisterEntry("Fixed an issue with the changed item identification for left rings.")
+            .RegisterEntry("Updated BNPC data.")
+            .RegisterEntry(
+                "Some configuration like the currently selected tab states are now stored in a separate file that is not backed up and saved less often.")
+            .RegisterEntry("Added option to open the Penumbra main window at game start independently of Debug Mode.")
+            .RegisterEntry("Fixed some tooltips in the advanced editing window. (0.8.1.8)")
+            .RegisterEntry("Fixed clicking to linked changed items not working. (0.8.1.8)")
+            .RegisterEntry("Support correct handling of offhand-parts for two-handed weapons for changed items. (0.8.1.7)")
+            .RegisterEntry("Fixed renaming the mod directory not updating paths in the advanced window. (0.8.1.6)")
+            .RegisterEntry("Fixed portraits not respecting your card settings. (0.8.1.6)")
+            .RegisterEntry("Added ReverseResolvePlayerPathsAsync for IPC. (0.8.1.6)")
+            .RegisterEntry("Expanded the tooltip for Wait for Plugins on Startup. (0.8.1.5)")
+            .RegisterEntry("Disabled window sounds for some popup windows. (0.8.1.5)")
+            .RegisterEntry("Added support for middle-clicking mods to enable/disable them. (0.8.1.5)");
 
     private static void Add8_1_2(Changelog log)
         => log.NextVersion("Version 0.8.1.2")
