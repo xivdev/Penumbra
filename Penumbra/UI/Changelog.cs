@@ -61,6 +61,7 @@ public class PenumbraChangelog
             .RegisterHighlight("When selecting multiple mods, you can now add or remove tags from them at once.")
             .RegisterEntry(
                 "The dye template combo in advanced material editing now displays the currently selected dye as it would appear with the respective template.")
+            .RegisterEntry("The On-Screen tab and associated functionality has been heavily improved by Ny.")
             .RegisterEntry("Fixed an issue with the changed item identification for left rings.")
             .RegisterEntry("Updated BNPC data.")
             .RegisterEntry(
