@@ -8,7 +8,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceLoading;
 
-public unsafe class TexMdlService
+public unsafe class TexMdlService : IDisposable
 {
     /// <summary>  Custom ulong flag to signal our files as opposed to SE files. </summary>
     public static readonly IntPtr CustomFileFlag = new(0xDEADBEEF);
