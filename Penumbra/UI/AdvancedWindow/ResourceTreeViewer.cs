@@ -47,10 +47,8 @@ public class ResourceTreeViewer
 
     public void Draw()
     {
-        if (ImGui.Button("Refresh Character List") || _task == null)
-            _task = RefreshCharacterList();
-
-        DrawFilters();
+        DrawControls();
+        _task ??= RefreshCharacterList();
 
         using var child = ImRaii.Child("##Data");
         if (!child)
@@ -73,7 +71,7 @@ public class ResourceTreeViewer
             foreach (var (tree, index) in _task.Result.WithIndex())
             {
                 var category = Classify(tree);
-                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(_nameFilter))
+                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 using (var c = ImRaii.PushColor(ImGuiCol.Text, CategoryColor(category).Value()))
@@ -111,8 +109,14 @@ public class ResourceTreeViewer
         }
     }
 
-    private void DrawFilters()
+    private void DrawControls()
     {
+        var yOffset = (ChangedItemDrawer.TypeFilterIconSize.Y - ImGui.GetFrameHeight()) / 2f;
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + yOffset);
+
+        if (ImGui.Button("Refresh Character List"))
+            _task = RefreshCharacterList();
+
         ImGui.SameLine();
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
 
@@ -134,7 +138,7 @@ public class ResourceTreeViewer
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
 
         ImGui.SameLine();
-        _changedItemDrawer.DrawTypeFilter(ref _typeFilter);
+        _changedItemDrawer.DrawTypeFilter(ref _typeFilter, -yOffset);
 
         ImGui.InputTextWithHint("##TreeNameFilter", "Filter by Character/Entity Name...", ref _nameFilter, 128);
     }
