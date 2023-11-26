@@ -28,6 +28,8 @@ public partial class ModEditWindow
             return;
         }
 
+        if (DrawOptionSelectHeader())
+            _quickImportActions.Clear();
         _quickImportViewer.Draw();
     }
 
