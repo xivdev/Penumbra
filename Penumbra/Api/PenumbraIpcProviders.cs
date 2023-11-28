@@ -130,8 +130,8 @@ public class PenumbraIpcProviders : IDisposable
         FuncProvider<ResourceType, bool, IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>>>
         GetPlayerResourcesOfType;
 
-    internal readonly FuncProvider<bool, ushort[], IEnumerable<Ipc.ResourceNode>?[]>                    GetGameObjectResourceTrees;
-    internal readonly FuncProvider<bool, IReadOnlyDictionary<ushort, IEnumerable<Ipc.ResourceNode>>>    GetPlayerResourceTrees;
+    internal readonly FuncProvider<bool, ushort[], Ipc.ResourceTree?[]>                         GetGameObjectResourceTrees;
+    internal readonly FuncProvider<bool, IReadOnlyDictionary<ushort, Ipc.ResourceTree>>         GetPlayerResourceTrees;
 
     public PenumbraIpcProviders(DalamudServices dalamud, IPenumbraApi api, ModManager modManager, CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)

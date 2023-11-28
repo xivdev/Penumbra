@@ -74,7 +74,7 @@ internal static class ResourceTreeApiHelper
                 pair => (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>)pair.Value.AsReadOnly());
     }
 
-    public static Dictionary<ushort, IEnumerable<Ipc.ResourceNode>> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
+    public static Dictionary<ushort, Ipc.ResourceTree> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
     {
         static Ipc.ResourceNode GetIpcNode(ResourceNode node) =>
             new()
@@ -89,16 +89,21 @@ internal static class ResourceTreeApiHelper
                 Children = node.Children.Select(GetIpcNode).ToArray(),
             };
 
-        static IEnumerable<Ipc.ResourceNode> GetIpcNodes(ResourceTree tree) =>
-            tree.Nodes.Select(GetIpcNode).ToArray();
+        static Ipc.ResourceTree GetIpcTree(ResourceTree tree) =>
+            new()
+            {
+                Name = tree.Name,
+                RaceCode = (ushort)tree.RaceCode,
+                Nodes = tree.Nodes.Select(GetIpcNode).ToArray(),
+            };
 
-        var resDictionary = new Dictionary<ushort, IEnumerable<Ipc.ResourceNode>>(4);
+        var resDictionary = new Dictionary<ushort, Ipc.ResourceTree>(4);
         foreach (var (gameObject, resourceTree) in resourceTrees)
         {
             if (resDictionary.ContainsKey(gameObject.ObjectIndex))
                 continue;
 
-            resDictionary.Add(gameObject.ObjectIndex, GetIpcNodes(resourceTree));
+            resDictionary.Add(gameObject.ObjectIndex, GetIpcTree(resourceTree));
         }
 
         return resDictionary;
