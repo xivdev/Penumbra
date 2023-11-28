@@ -1084,6 +1084,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Array.ConvertAll(gameObjects, obj => resDictionary.TryGetValue(obj, out var nodes) ? nodes : null);
     }
 
+    public IReadOnlyDictionary<ushort, IEnumerable<Ipc.ResourceNode>> GetPlayerResourceTrees(bool withUIData)
+    {
+        var resourceTrees = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly
+          | (withUIData ? ResourceTreeFactory.Flags.WithUiData : 0));
+        var resDictionary = ResourceTreeApiHelper.EncapsulateResourceTrees(resourceTrees);
+
+        return resDictionary.AsReadOnly();
+    }
 
     // TODO: cleanup when incrementing API
     public string GetMetaManipulations(string characterName)

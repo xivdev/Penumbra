@@ -76,10 +76,9 @@ internal static class ResourceTreeApiHelper
 
     public static Dictionary<ushort, IEnumerable<Ipc.ResourceNode>> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
     {
-        static Ipc.ResourceNode GetIpcNode(ResourceNode[] tree, ResourceNode node) =>
+        static Ipc.ResourceNode GetIpcNode(ResourceNode node) =>
             new()
             {
-                ChildrenIndices = node.Children.Select(c => Array.IndexOf(tree, c)).ToArray(),
                 Type = node.Type,
                 Icon = ChangedItemDrawer.ToApiIcon(node.Icon),
                 Name = node.Name,
@@ -87,13 +86,11 @@ internal static class ResourceTreeApiHelper
                 ActualPath = node.FullPath.ToString(),
                 ObjectAddress = node.ObjectAddress,
                 ResourceHandle = node.ResourceHandle,
+                Children = node.Children.Select(GetIpcNode).ToArray(),
             };
 
-        static IEnumerable<Ipc.ResourceNode> GetIpcNodes(ResourceTree tree)
-        {
-            var nodes = tree.FlatNodes.ToArray();
-            return nodes.Select(n => GetIpcNode(nodes, n)).ToArray();
-        }
+        static IEnumerable<Ipc.ResourceNode> GetIpcNodes(ResourceTree tree) =>
+            tree.Nodes.Select(GetIpcNode).ToArray();
 
         var resDictionary = new Dictionary<ushort, IEnumerable<Ipc.ResourceNode>>(4);
         foreach (var (gameObject, resourceTree) in resourceTrees)
