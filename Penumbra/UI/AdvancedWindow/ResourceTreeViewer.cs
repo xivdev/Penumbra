@@ -23,6 +23,10 @@ public class ResourceTreeViewer
     private readonly Action<ResourceNode, Vector2> _drawActions;
     private readonly HashSet<nint>                 _unfolded;
 
+    private TreeCategory                      _categoryFilter;
+    private ChangedItemDrawer.ChangedItemIcon _typeFilter;
+    private string                            _nameFilter;
+
     private Task<ResourceTree[]>? _task;
 
     public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer,
@@ -35,12 +39,16 @@ public class ResourceTreeViewer
         _onRefresh         = onRefresh;
         _drawActions       = drawActions;
         _unfolded          = new HashSet<nint>();
+
+        _categoryFilter = AllCategories;
+        _typeFilter     = ChangedItemDrawer.AllFlags;
+        _nameFilter     = string.Empty;
     }
 
     public void Draw()
     {
-        if (ImGui.Button("Refresh Character List") || _task == null)
-            _task = RefreshCharacterList();
+        DrawControls();
+        _task ??= RefreshCharacterList();
 
         using var child = ImRaii.Child("##Data");
         if (!child)
@@ -62,12 +70,11 @@ public class ResourceTreeViewer
             var debugMode = _config.DebugMode;
             foreach (var (tree, index) in _task.Result.WithIndex())
             {
-                var headerColorId =
-                    tree.LocalPlayerRelated ? ColorId.ResTreeLocalPlayer :
-                    tree.PlayerRelated      ? ColorId.ResTreePlayer :
-                    tree.Networked          ? ColorId.ResTreeNetworked :
-                    ColorId.ResTreeNonNetworked;
-                using (var c = ImRaii.PushColor(ImGuiCol.Text, headerColorId.Value()))
+                var category = Classify(tree);
+                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                using (var c = ImRaii.PushColor(ImGuiCol.Text, CategoryColor(category).Value()))
                 {
                     var isOpen = ImGui.CollapsingHeader($"{tree.Name}##{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
                     if (debugMode)
@@ -102,6 +109,40 @@ public class ResourceTreeViewer
         }
     }
 
+    private void DrawControls()
+    {
+        var yOffset = (ChangedItemDrawer.TypeFilterIconSize.Y - ImGui.GetFrameHeight()) / 2f;
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + yOffset);
+
+        if (ImGui.Button("Refresh Character List"))
+            _task = RefreshCharacterList();
+
+        ImGui.SameLine();
+        ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+
+        using (var id = ImRaii.PushId("TreeCategoryFilter"))
+        {
+            var spacing        = ImGui.GetStyle().ItemInnerSpacing.X;
+            var categoryFilter = (uint)_categoryFilter;
+            foreach (var category in Enum.GetValues<TreeCategory>())
+            {
+                ImGui.SameLine(0.0f, spacing);
+                using var c = ImRaii.PushColor(ImGuiCol.CheckMark, CategoryColor(category).Value());
+                ImGui.CheckboxFlags($"##{category}", ref categoryFilter, (uint)category);
+                ImGuiUtil.HoverTooltip(CategoryFilterDescription(category));
+            }
+            _categoryFilter = (TreeCategory)categoryFilter;
+        }
+
+        ImGui.SameLine();
+        ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+
+        ImGui.SameLine();
+        _changedItemDrawer.DrawTypeFilter(ref _typeFilter, -yOffset);
+
+        ImGui.InputTextWithHint("##TreeNameFilter", "Filter by Character/Entity Name...", ref _nameFilter, 128);
+    }
+
     private Task<ResourceTree[]> RefreshCharacterList()
         => Task.Run(() =>
         {
@@ -120,12 +161,27 @@ public class ResourceTreeViewer
 
     private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash)
     {
+
         var debugMode   = _config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
         var cellHeight  = _actionCapacity > 0 ? frameHeight : 0.0f;
+
+        NodeVisibility GetNodeVisibility(ResourceNode node)
+        {
+            if (node.Internal && !debugMode)
+                return NodeVisibility.Hidden;
+
+            if (_typeFilter.HasFlag(node.Icon))
+                return NodeVisibility.Visible;
+            if ((_typeFilter & node.DescendentIcons) != 0)
+                return NodeVisibility.DescendentsOnly;
+            return NodeVisibility.Hidden;
+        }
+
         foreach (var (resourceNode, index) in resourceNodes.WithIndex())
         {
-            if (resourceNode.Internal && !debugMode)
+            var visibility = GetNodeVisibility(resourceNode);
+            if (visibility == NodeVisibility.Hidden)
                 continue;
 
             var textColor         = ImGui.GetColorU32(ImGuiCol.Text);
@@ -140,9 +196,8 @@ public class ResourceTreeViewer
             var unfolded = _unfolded.Contains(nodePathHash);
             using (var indent = ImRaii.PushIndent(level))
             {
-                var unfoldable = debugMode
-                    ? resourceNode.Children.Count > 0
-                    : resourceNode.Children.Any(child => !child.Internal);
+                var hasVisibleChildren = resourceNode.Children.Any(child => GetNodeVisibility(child) != NodeVisibility.Hidden);
+                var unfoldable         = hasVisibleChildren && visibility != NodeVisibility.DescendentsOnly;
                 if (unfoldable)
                 {
                     using var font   = ImRaii.PushFont(UiBuilder.IconFont);
@@ -154,6 +209,11 @@ public class ResourceTreeViewer
                 }
                 else
                 {
+                    if (hasVisibleChildren && !unfolded)
+                    {
+                        _unfolded.Add(nodePathHash);
+                        unfolded = true;
+                    }
                     ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
                     ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 }
@@ -200,7 +260,7 @@ public class ResourceTreeViewer
                 ImGui.Selectable(resourceNode.FullPath.ToPath(), false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
-                ImGuiUtil.HoverTooltip($"{resourceNode.FullPath}\n\nClick to copy to clipboard.");
+                ImGuiUtil.HoverTooltip($"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.");
             }
             else
             {
@@ -222,5 +282,50 @@ public class ResourceTreeViewer
             if (unfolded)
                 DrawNodes(resourceNode.Children, level + 1, unchecked(nodePathHash * 31));
         }
+    }
+
+    [Flags]
+    private enum TreeCategory : uint
+    {
+        LocalPlayer  = 1,
+        Player       = 2,
+        Networked    = 4,
+        NonNetworked = 8,
+    }
+
+    private const TreeCategory AllCategories = (TreeCategory)(((uint)TreeCategory.NonNetworked << 1) - 1);
+
+    private static TreeCategory Classify(ResourceTree tree)
+        => tree.LocalPlayerRelated ? TreeCategory.LocalPlayer :
+           tree.PlayerRelated ? TreeCategory.Player :
+           tree.Networked ? TreeCategory.Networked :
+           TreeCategory.NonNetworked;
+
+    private static ColorId CategoryColor(TreeCategory category)
+        => category switch
+        {
+            TreeCategory.LocalPlayer  => ColorId.ResTreeLocalPlayer,
+            TreeCategory.Player       => ColorId.ResTreePlayer,
+            TreeCategory.Networked    => ColorId.ResTreeNetworked,
+            TreeCategory.NonNetworked => ColorId.ResTreeNonNetworked,
+            _                         => throw new ArgumentException(),
+        };
+
+    private static string CategoryFilterDescription(TreeCategory category)
+        => category switch
+        {
+            TreeCategory.LocalPlayer  => "Show you and what you own (mount, minion, accessory, pets and so on).",
+            TreeCategory.Player       => "Show other players and what they own.",
+            TreeCategory.Networked    => "Show non-player entities handled by the game server.",
+            TreeCategory.NonNetworked => "Show non-player entities handled locally.",
+            _                         => throw new ArgumentException(),
+        };
+
+    [Flags]
+    private enum NodeVisibility : uint
+    {
+        Hidden          = 0,
+        Visible         = 1,
+        DescendentsOnly = 2,
     }
 }

@@ -52,6 +52,9 @@ public class ChangedItemDrawer : IDisposable
     private readonly Dictionary<ChangedItemIcon, IDalamudTextureWrap> _icons = new(16);
     private          float                                            _smallestIconWidth;
 
+    public static Vector2 TypeFilterIconSize
+        => new(2 * ImGui.GetTextLineHeight());
+
     public ChangedItemDrawer(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator,
         Configuration config)
     {
@@ -145,8 +148,20 @@ public class ChangedItemDrawer : IDisposable
         if (_config.HideChangedItemFilters)
             return;
 
+        var typeFilter = _config.Ephemeral.ChangedItemFilter;
+        if (DrawTypeFilter(ref typeFilter, 0.0f))
+        {
+            _config.Ephemeral.ChangedItemFilter = typeFilter;
+            _config.Ephemeral.Save();
+        }
+    }
+
+    /// <summary> Draw a header line with the different icon types to filter them. </summary>
+    public bool DrawTypeFilter(ref ChangedItemIcon typeFilter, float yOffset)
+    {
+        var       ret   = false;
         using var _     = ImRaii.PushId("ChangedItemIconFilter");
-        var       size  = new Vector2(2 * ImGui.GetTextLineHeight());
+        var       size  = TypeFilterIconSize;
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         var order = new[]
         {
@@ -169,23 +184,25 @@ public class ChangedItemDrawer : IDisposable
             ChangedItemIcon.Unknown,
         };
 
-        void DrawIcon(ChangedItemIcon type)
+        bool DrawIcon(ChangedItemIcon type, ref ChangedItemIcon typeFilter)
         {
+            var ret  = false;
             var icon = _icons[type];
-            var flag = _config.Ephemeral.ChangedItemFilter.HasFlag(type);
+            var flag = typeFilter.HasFlag(type);
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + yOffset);
             ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             {
-                _config.Ephemeral.ChangedItemFilter = flag ? _config.Ephemeral.ChangedItemFilter & ~type : _config.Ephemeral.ChangedItemFilter | type;
-                _config.Ephemeral.Save();
+                typeFilter = flag ? typeFilter & ~type : typeFilter | type;
+                ret        = true;
             }
 
             using var popup = ImRaii.ContextPopupItem(type.ToString());
             if (popup)
                 if (ImGui.MenuItem("Enable Only This"))
                 {
-                    _config.Ephemeral.ChangedItemFilter = type;
-                    _config.Ephemeral.Save();
+                    typeFilter = type;
+                    ret        = true;
                     ImGui.CloseCurrentPopup();
                 }
 
@@ -196,23 +213,27 @@ public class ChangedItemDrawer : IDisposable
                 ImGui.SameLine();
                 ImGuiUtil.DrawTextButton(ToDescription(type), new Vector2(0, _smallestIconWidth), 0);
             }
+
+            return ret;
         }
 
         foreach (var iconType in order)
         {
-            DrawIcon(iconType);
+            ret |= DrawIcon(iconType, ref typeFilter);
             ImGui.SameLine();
         }
 
-        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
+        ImGui.SetCursorPos(new(ImGui.GetContentRegionMax().X - size.X, ImGui.GetCursorPosY() + yOffset));
         ImGui.Image(_icons[AllFlags].ImGuiHandle, size, Vector2.Zero, Vector2.One,
-            _config.Ephemeral.ChangedItemFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
-            _config.Ephemeral.ChangedItemFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));
+            typeFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
+            typeFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));
         if (ImGui.IsItemClicked())
         {
-            _config.Ephemeral.ChangedItemFilter = _config.Ephemeral.ChangedItemFilter == AllFlags ? 0 : AllFlags;
-            _config.Ephemeral.Save();
+            typeFilter = typeFilter == AllFlags ? 0 : AllFlags;
+            ret        = true;
         }
+
+        return ret;
     }
 
     /// <summary> Obtain the icon category corresponding to a changed item. </summary>

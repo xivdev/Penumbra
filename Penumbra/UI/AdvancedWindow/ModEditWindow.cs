@@ -381,18 +381,25 @@ public partial class ModEditWindow : Window, IDisposable
         }
     }
 
-    private void DrawOptionSelectHeader()
+    private bool DrawOptionSelectHeader()
     {
         const string defaultOption = "Default Option";
         using var    style         = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
         var          width         = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
+        var          ret           = false;
         if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
                 _editor.Option!.IsDefault))
+        {
             _editor.LoadOption(-1, 0);
+            ret = true;
+        }
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
+        {
             _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
+            ret = true;
+        }
 
         ImGui.SameLine();
         ImGui.SetNextItemWidth(width.X);
@@ -400,14 +407,19 @@ public partial class ModEditWindow : Window, IDisposable
         using var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value());
         using var combo = ImRaii.Combo("##optionSelector", _editor.Option.FullName);
         if (!combo)
-            return;
+            return ret;
 
         foreach (var (option, idx) in _mod!.AllSubMods.WithIndex())
         {
             using var id = ImRaii.PushId(idx);
             if (ImGui.Selectable(option.FullName, option == _editor.Option))
+            {
                 _editor.LoadOption(option.GroupIdx, option.OptionIdx);
+                ret = true;
+            }
         }
+
+        return ret;
     }
 
     private string _newSwapKey   = string.Empty;

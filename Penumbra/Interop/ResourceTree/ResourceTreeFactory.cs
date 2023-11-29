@@ -171,6 +171,9 @@ public class ResourceTreeFactory
         {
             if (node.Name == parent?.Name)
                 node.Name = null;
+
+            if (parent != null)
+                parent.DescendentIcons |= node.Icon | node.DescendentIcons;
         });
     }
 
