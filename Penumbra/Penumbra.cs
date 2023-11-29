@@ -85,6 +85,7 @@ public class Penumbra : IDalamudPlugin
 
             _services.GetRequiredService<SkinFixer>();
 
+            _services.GetRequiredService<DalamudSubstitutionProvider>(); // Initialize before Interface.
             SetupInterface();
             SetupApi();
 
