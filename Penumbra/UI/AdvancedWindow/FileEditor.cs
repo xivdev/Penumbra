@@ -287,7 +287,9 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
             var file = Items[globalIdx];
             bool ret;
             using (var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
+            {
                 ret = ImGui.Selectable(file.RelPath.ToString(), selected);
+            }
 
             if (ImGui.IsItemHovered())
             {
