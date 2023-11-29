@@ -11,9 +11,7 @@ namespace Penumbra.UI.AdvancedWindow;
 public class ResourceTreeViewer
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
-        ResourceTreeFactory.Flags.RedactExternalPaths |
-        ResourceTreeFactory.Flags.WithUiData |
-        ResourceTreeFactory.Flags.WithOwnership;
+        ResourceTreeFactory.Flags.RedactExternalPaths | ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
 
     private readonly Configuration                 _config;
     private readonly ResourceTreeFactory           _treeFactory;
@@ -83,6 +81,7 @@ public class ResourceTreeViewer
                         ImGuiUtil.HoverTooltip(
                             $"Object Index:        {tree.GameObjectIndex}\nObject Address:      0x{tree.GameObjectAddress:X16}\nDraw Object Address: 0x{tree.DrawObjectAddress:X16}");
                     }
+
                     if (!isOpen)
                         continue;
                 }
@@ -117,29 +116,29 @@ public class ResourceTreeViewer
         if (ImGui.Button("Refresh Character List"))
             _task = RefreshCharacterList();
 
-        ImGui.SameLine();
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+        var checkSpacing = ImGui.GetStyle().ItemInnerSpacing.X;
+        var checkPadding = 10 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X;
+        ImGui.SameLine(0, checkPadding);
 
         using (var id = ImRaii.PushId("TreeCategoryFilter"))
         {
-            var spacing        = ImGui.GetStyle().ItemInnerSpacing.X;
             var categoryFilter = (uint)_categoryFilter;
             foreach (var category in Enum.GetValues<TreeCategory>())
             {
-                ImGui.SameLine(0.0f, spacing);
                 using var c = ImRaii.PushColor(ImGuiCol.CheckMark, CategoryColor(category).Value());
                 ImGui.CheckboxFlags($"##{category}", ref categoryFilter, (uint)category);
                 ImGuiUtil.HoverTooltip(CategoryFilterDescription(category));
+                ImGui.SameLine(0.0f, checkSpacing);
             }
+
             _categoryFilter = (TreeCategory)categoryFilter;
         }
 
-        ImGui.SameLine();
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+        ImGui.SameLine(0, checkPadding);
 
-        ImGui.SameLine();
         _changedItemDrawer.DrawTypeFilter(ref _typeFilter, -yOffset);
 
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
         ImGui.InputTextWithHint("##TreeNameFilter", "Filter by Character/Entity Name...", ref _nameFilter, 128);
     }
 
@@ -161,7 +160,6 @@ public class ResourceTreeViewer
 
     private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash)
     {
-
         var debugMode   = _config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
         var cellHeight  = _actionCapacity > 0 ? frameHeight : 0.0f;
@@ -175,6 +173,7 @@ public class ResourceTreeViewer
                 return NodeVisibility.Visible;
             if ((_typeFilter & node.DescendentIcons) != 0)
                 return NodeVisibility.DescendentsOnly;
+
             return NodeVisibility.Hidden;
         }
 
@@ -214,6 +213,7 @@ public class ResourceTreeViewer
                         _unfolded.Add(nodePathHash);
                         unfolded = true;
                     }
+
                     ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
                     ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 }
@@ -297,9 +297,9 @@ public class ResourceTreeViewer
 
     private static TreeCategory Classify(ResourceTree tree)
         => tree.LocalPlayerRelated ? TreeCategory.LocalPlayer :
-           tree.PlayerRelated ? TreeCategory.Player :
-           tree.Networked ? TreeCategory.Networked :
-           TreeCategory.NonNetworked;
+            tree.PlayerRelated     ? TreeCategory.Player :
+            tree.Networked         ? TreeCategory.Networked :
+                                     TreeCategory.NonNetworked;
 
     private static ColorId CategoryColor(TreeCategory category)
         => category switch
