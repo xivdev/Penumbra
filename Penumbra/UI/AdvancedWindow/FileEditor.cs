@@ -285,7 +285,11 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         protected override bool DrawSelectable(int globalIdx, bool selected)
         {
             var file = Items[globalIdx];
-            var ret  = ImGui.Selectable(file.RelPath.ToString(), selected);
+            bool ret;
+            using (var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
+            {
+                ret = ImGui.Selectable(file.RelPath.ToString(), selected);
+            }
 
             if (ImGui.IsItemHovered())
             {

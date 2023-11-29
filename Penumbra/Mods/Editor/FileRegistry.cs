@@ -10,6 +10,7 @@ public class FileRegistry : IEquatable<FileRegistry>
     public          Utf8RelPath                   RelPath  { get; private init; }
     public          long                          FileSize { get; private init; }
     public          int                           CurrentUsage;
+    public          bool                          IsOnPlayer;
 
     public static bool FromFile(DirectoryInfo modPath, FileInfo file, [NotNullWhen(true)] out FileRegistry? registry)
     {
@@ -26,6 +27,7 @@ public class FileRegistry : IEquatable<FileRegistry>
             RelPath      = relPath,
             FileSize     = file.Length,
             CurrentUsage = 0,
+            IsOnPlayer   = false,
         };
         return true;
     }
