@@ -7,6 +7,7 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Enums;
@@ -569,15 +570,15 @@ public partial class ModEditWindow : Window, IDisposable
         _fileDialog        = fileDialog;
         _gameEvents        = gameEvents;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
-            () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
+            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlFile>(this, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
-            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, (bytes, _, _) => new MdlFile(bytes));
+            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, (bytes, _, _) => new MdlFile(bytes));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
-            () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
+            () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center              = new CombinedTexture(_left, _right);
-        _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor);
+        _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;
         _quickImportViewer   =
             new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);

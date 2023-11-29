@@ -101,24 +101,25 @@ public static class TextureDrawer
         }
     }
 
-    public sealed class PathSelectCombo : FilterComboCache<(string, bool)>
+    public sealed class PathSelectCombo : FilterComboCache<(string Path, bool Game, bool IsOnPlayer)>
     {
         private int _skipPrefix = 0;
 
-        public PathSelectCombo(TextureManager textures, ModEditor editor)
-            : base(() => CreateFiles(textures, editor), Penumbra.Log)
+        public PathSelectCombo(TextureManager textures, ModEditor editor, Func<ISet<string>> getPlayerResources)
+            : base(() => CreateFiles(textures, editor, getPlayerResources), Penumbra.Log)
         { }
 
-        protected override string ToString((string, bool) obj)
-            => obj.Item1;
+        protected override string ToString((string Path, bool Game, bool IsOnPlayer) obj)
+            => obj.Path;
 
         protected override bool DrawSelectable(int globalIdx, bool selected)
         {
-            var (path, game) = Items[globalIdx];
+            var (path, game, isOnPlayer) = Items[globalIdx];
             bool ret;
             using (var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value(), game))
             {
-                var equals = string.Equals(CurrentSelection.Item1, path, StringComparison.OrdinalIgnoreCase);
+                color.Push(ImGuiCol.Text, ColorId.HandledConflictMod.Value(), isOnPlayer);
+                var equals = string.Equals(CurrentSelection.Path, path, StringComparison.OrdinalIgnoreCase);
                 var p      = game ? $"--> {path}" : path[_skipPrefix..];
                 ret = ImGui.Selectable(p, selected) && !equals;
             }
@@ -129,11 +130,16 @@ public static class TextureDrawer
             return ret;
         }
 
-        private static IReadOnlyList<(string, bool)> CreateFiles(TextureManager textures, ModEditor editor)
-            => editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
+        private static IReadOnlyList<(string Path, bool Game, bool IsOnPlayer)> CreateFiles(TextureManager textures, ModEditor editor, Func<ISet<string>> getPlayerResources)
+        {
+            var playerResources = getPlayerResources();
+
+            return editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
                     .Prepend((f.File.FullName, false)))
                 .Where(p => p.Item2 ? textures.GameFileExists(p.Item1) : File.Exists(p.Item1))
+                .Select(p => (p.Item1, p.Item2, playerResources.Contains(p.Item1)))
                 .ToList();
+        }
 
         public bool Draw(string label, string tooltip, string current, int skipPrefix, out string newPath)
         {

@@ -3,6 +3,7 @@ using ImGuiNET;
 using Lumina.Data;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Mods;
@@ -18,6 +19,25 @@ public partial class ModEditWindow
     private readonly ResourceTreeViewer                                        _quickImportViewer;
     private readonly Dictionary<FullPath, IWritable?>                          _quickImportWritables = new();
     private readonly Dictionary<(Utf8GamePath, IWritable?), QuickImportAction> _quickImportActions   = new();
+
+    private HashSet<string> GetPlayerResourcesOfType(ResourceType type)
+    {
+        var resources = ResourceTreeApiHelper.GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
+            .Values
+            .SelectMany(resources => resources.Values)
+            .Select(resource => resource.Item1);
+
+        return new(resources, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private IReadOnlyList<FileRegistry> PopulateIsOnPlayer(IReadOnlyList<FileRegistry> files, ResourceType type)
+    {
+        var playerResources = GetPlayerResourcesOfType(type);
+        foreach (var file in files)
+            file.IsOnPlayer = playerResources.Contains(file.File.ToPath());
+
+        return files;
+    }
 
     private void DrawQuickImportTab()
     {
