@@ -86,7 +86,7 @@ internal static class ResourceTreeApiHelper
                 ActualPath = node.FullPath.ToString(),
                 ObjectAddress = node.ObjectAddress,
                 ResourceHandle = node.ResourceHandle,
-                Children = node.Children.Select(GetIpcNode).ToArray(),
+                Children = node.Children.Select(GetIpcNode).ToList(),
             };
 
         static Ipc.ResourceTree GetIpcTree(ResourceTree tree) =>
@@ -94,7 +94,7 @@ internal static class ResourceTreeApiHelper
             {
                 Name = tree.Name,
                 RaceCode = (ushort)tree.RaceCode,
-                Nodes = tree.Nodes.Select(GetIpcNode).ToArray(),
+                Nodes = tree.Nodes.Select(GetIpcNode).ToList(),
             };
 
         var resDictionary = new Dictionary<ushort, Ipc.ResourceTree>(4);
