@@ -375,6 +375,8 @@ public class PenumbraIpcProviders : IDisposable
         GetPlayerResourcePaths.Dispose();
         GetGameObjectResourcesOfType.Dispose();
         GetPlayerResourcesOfType.Dispose();
+        GetGameObjectResourceTrees.Dispose();
+        GetPlayerResourceTrees.Dispose();
 
         Disposed.Invoke();
         Disposed.Dispose();
