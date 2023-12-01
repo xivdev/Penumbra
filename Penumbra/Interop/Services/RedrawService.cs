@@ -245,24 +245,24 @@ public sealed unsafe partial class RedrawService : IDisposable
             if (FindCorrectActor(idx < 0 ? ~idx : idx, out var obj))
                 _afterGPoseQueue.Add(idx < 0 ? idx : ~idx);
 
-            if (obj != null)
+            if (obj == null)
+                continue;
+
+            if (idx < 0)
             {
-                if (idx < 0)
+                if (DelayRedraw(obj))
                 {
-                    if (DelayRedraw(obj))
-                    {
-                        _queue[numKept++] = ~ObjectTableIndex(obj);
-                    }
-                    else
-                    {
-                        WriteInvisible(obj);
-                        _queue[numKept++] = ObjectTableIndex(obj);
-                    }
+                    _queue[numKept++] = ~ObjectTableIndex(obj);
                 }
                 else
                 {
-                    WriteVisible(obj);
+                    WriteInvisible(obj);
+                    _queue[numKept++] = ObjectTableIndex(obj);
                 }
+            }
+            else
+            {
+                WriteVisible(obj);
             }
         }
 
