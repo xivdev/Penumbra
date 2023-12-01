@@ -130,6 +130,9 @@ public class PenumbraIpcProviders : IDisposable
         FuncProvider<ResourceType, bool, IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>>>
         GetPlayerResourcesOfType;
 
+    internal readonly FuncProvider<bool, ushort[], Ipc.ResourceTree?[]>                         GetGameObjectResourceTrees;
+    internal readonly FuncProvider<bool, IReadOnlyDictionary<ushort, Ipc.ResourceTree>>         GetPlayerResourceTrees;
+
     public PenumbraIpcProviders(DalamudServices dalamud, IPenumbraApi api, ModManager modManager, CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)
     {
@@ -254,6 +257,8 @@ public class PenumbraIpcProviders : IDisposable
         GetPlayerResourcePaths       = Ipc.GetPlayerResourcePaths.Provider(pi, Api.GetPlayerResourcePaths);
         GetGameObjectResourcesOfType = Ipc.GetGameObjectResourcesOfType.Provider(pi, Api.GetGameObjectResourcesOfType);
         GetPlayerResourcesOfType     = Ipc.GetPlayerResourcesOfType.Provider(pi, Api.GetPlayerResourcesOfType);
+        GetGameObjectResourceTrees   = Ipc.GetGameObjectResourceTrees.Provider(pi, Api.GetGameObjectResourceTrees);
+        GetPlayerResourceTrees       = Ipc.GetPlayerResourceTrees.Provider(pi, Api.GetPlayerResourceTrees);
 
         Tester = new IpcTester(config, dalamud, this, modManager, collections, tempMods, tempCollections, saveService);
 
@@ -370,6 +375,8 @@ public class PenumbraIpcProviders : IDisposable
         GetPlayerResourcePaths.Dispose();
         GetGameObjectResourcesOfType.Dispose();
         GetPlayerResourcesOfType.Dispose();
+        GetGameObjectResourceTrees.Dispose();
+        GetPlayerResourceTrees.Dispose();
 
         Disposed.Invoke();
         Disposed.Dispose();

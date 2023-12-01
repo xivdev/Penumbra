@@ -1,5 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Types;
+using Penumbra.Api;
 using Penumbra.Api.Enums;
+using Penumbra.String.Classes;
 using Penumbra.UI;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -70,5 +72,40 @@ internal static class ResourceTreeApiHelper
 
         return resDictionaries.ToDictionary(pair => pair.Key,
                 pair => (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>)pair.Value.AsReadOnly());
+    }
+
+    public static Dictionary<ushort, Ipc.ResourceTree> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
+    {
+        static Ipc.ResourceNode GetIpcNode(ResourceNode node) =>
+            new()
+            {
+                Type = node.Type,
+                Icon = ChangedItemDrawer.ToApiIcon(node.Icon),
+                Name = node.Name,
+                GamePath = node.GamePath.Equals(Utf8GamePath.Empty) ? null : node.GamePath.ToString(),
+                ActualPath = node.FullPath.ToString(),
+                ObjectAddress = node.ObjectAddress,
+                ResourceHandle = node.ResourceHandle,
+                Children = node.Children.Select(GetIpcNode).ToList(),
+            };
+
+        static Ipc.ResourceTree GetIpcTree(ResourceTree tree) =>
+            new()
+            {
+                Name = tree.Name,
+                RaceCode = (ushort)tree.RaceCode,
+                Nodes = tree.Nodes.Select(GetIpcNode).ToList(),
+            };
+
+        var resDictionary = new Dictionary<ushort, Ipc.ResourceTree>(4);
+        foreach (var (gameObject, resourceTree) in resourceTrees)
+        {
+            if (resDictionary.ContainsKey(gameObject.ObjectIndex))
+                continue;
+
+            resDictionary.Add(gameObject.ObjectIndex, GetIpcTree(resourceTree));
+        }
+
+        return resDictionary;
     }
 }

@@ -16,8 +16,8 @@ using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
-using ImGuiScene;
 using Penumbra.GameData.Structs;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.Api;
 
@@ -1437,6 +1437,8 @@ public class IpcTester : IDisposable
         private (string, IReadOnlyDictionary<string, string[]>?)[]?                        _lastPlayerResourcePaths;
         private (string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[]? _lastGameObjectResourcesOfType;
         private (string, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)[]? _lastPlayerResourcesOfType;
+        private (string, Ipc.ResourceTree?)[]?                                             _lastGameObjectResourceTrees;
+        private (string, Ipc.ResourceTree)[]?                                              _lastPlayerResourceTrees;
         private TimeSpan                                                                   _lastCallDuration;
 
         public ResourceTree(DalamudPluginInterface pi, IObjectTable objects)
@@ -1523,11 +1525,46 @@ public class IpcTester : IDisposable
                 ImGui.OpenPopup(nameof(Ipc.GetPlayerResourcesOfType));
             }
 
+            DrawIntro(Ipc.GetGameObjectResourceTrees.Label, "Get GameObject resource trees");
+            if (ImGui.Button("Get##GameObjectResourceTrees"))
+            {
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber = Ipc.GetGameObjectResourceTrees.Subscriber(_pi);
+                _stopwatch.Restart();
+                var trees = subscriber.Invoke(_withUIData, gameObjects);
+
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastGameObjectResourceTrees = gameObjects
+                    .Select(i => GameObjectToString(i))
+                    .Zip(trees)
+                    .ToArray();
+
+                ImGui.OpenPopup(nameof(Ipc.GetGameObjectResourceTrees));
+            }
+
+            DrawIntro(Ipc.GetPlayerResourceTrees.Label, "Get local player resource trees");
+            if (ImGui.Button("Get##PlayerResourceTrees"))
+            {
+                var subscriber = Ipc.GetPlayerResourceTrees.Subscriber(_pi);
+                _stopwatch.Restart();
+                var trees = subscriber.Invoke(_withUIData);
+
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastPlayerResourceTrees = trees
+                    .Select(pair => (GameObjectToString(pair.Key), pair.Value))
+                    .ToArray();
+
+                ImGui.OpenPopup(nameof(Ipc.GetPlayerResourceTrees));
+            }
+
             DrawPopup(nameof(Ipc.GetGameObjectResourcePaths), ref _lastGameObjectResourcePaths, DrawResourcePaths, _lastCallDuration);
             DrawPopup(nameof(Ipc.GetPlayerResourcePaths),     ref _lastPlayerResourcePaths,     DrawResourcePaths, _lastCallDuration);
 
             DrawPopup(nameof(Ipc.GetGameObjectResourcesOfType), ref _lastGameObjectResourcesOfType, DrawResourcesOfType, _lastCallDuration);
             DrawPopup(nameof(Ipc.GetPlayerResourcesOfType),     ref _lastPlayerResourcesOfType,     DrawResourcesOfType, _lastCallDuration);
+
+            DrawPopup(nameof(Ipc.GetGameObjectResourceTrees), ref _lastGameObjectResourceTrees, DrawResourceTrees, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetPlayerResourceTrees),     ref _lastPlayerResourceTrees,     DrawResourceTrees!, _lastCallDuration);
         }
 
         private static void DrawPopup<T>(string popupId, ref T? result, Action<T> drawResult, TimeSpan duration) where T : class
@@ -1635,6 +1672,70 @@ public class IpcTester : IDisposable
                         ImGui.TextUnformatted(name);
                     }
                 }
+            });
+        }
+
+        private void DrawResourceTrees((string, Ipc.ResourceTree?)[] result)
+        {
+            DrawWithHeaders(result, tree =>
+            {
+                ImGui.TextUnformatted($"Name: {tree.Name}\nRaceCode: {(GenderRace)tree.RaceCode}");
+
+                using var table = ImRaii.Table(string.Empty, _withUIData ? 7 : 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Resizable);
+                if (!table)
+                    return;
+
+                if (_withUIData)
+                {
+                    ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                    ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthStretch, 0.1f);
+                    ImGui.TableSetupColumn("Icon", ImGuiTableColumnFlags.WidthStretch, 0.15f);
+                }
+                else
+                {
+                    ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                }
+                ImGui.TableSetupColumn("Game Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                ImGui.TableSetupColumn("Object Address", ImGuiTableColumnFlags.WidthStretch, 0.2f);
+                ImGui.TableSetupColumn("Resource Handle", ImGuiTableColumnFlags.WidthStretch, 0.2f);
+                ImGui.TableHeadersRow();
+
+                void DrawNode(Ipc.ResourceNode node)
+                {
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    var hasChildren = node.Children.Any();
+                    using var treeNode = ImRaii.TreeNode(
+                        $"{(_withUIData ? (node.Name ?? "Unknown") : node.Type)}##{node.ObjectAddress:X8}",
+                        hasChildren ?
+                            ImGuiTreeNodeFlags.SpanFullWidth :
+                            (ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen));
+                    if (_withUIData)
+                    {
+                        ImGui.TableNextColumn();
+                        TextUnformattedMono(node.Type.ToString());
+                        ImGui.TableNextColumn();
+                        TextUnformattedMono(node.Icon.ToString());
+                    }
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(node.GamePath ?? "Unknown");
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(node.ActualPath);
+                    ImGui.TableNextColumn();
+                    TextUnformattedMono($"0x{node.ObjectAddress:X8}");
+                    ImGui.TableNextColumn();
+                    TextUnformattedMono($"0x{node.ResourceHandle:X8}");
+
+                    if (treeNode)
+                    {
+                        foreach (var child in node.Children)
+                            DrawNode(child);
+                    }
+                }
+
+                foreach (var node in tree.Nodes)
+                    DrawNode(node);
             });
         }
 
