@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Enums;
-using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.ResourceWatcher;

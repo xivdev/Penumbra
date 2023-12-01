@@ -11,6 +11,7 @@ using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Structs;
+using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
 namespace Penumbra.Interop.Services;
 
@@ -248,8 +249,15 @@ public sealed unsafe partial class RedrawService : IDisposable
             {
                 if (idx < 0)
                 {
-                    WriteInvisible(obj);
-                    _queue[numKept++] = ObjectTableIndex(obj);
+                    if (DelayRedraw(obj))
+                    {
+                        _queue[numKept++] = ~ObjectTableIndex(obj);
+                    }
+                    else
+                    {
+                        WriteInvisible(obj);
+                        _queue[numKept++] = ObjectTableIndex(obj);
+                    }
                 }
                 else
                 {
@@ -260,6 +268,30 @@ public sealed unsafe partial class RedrawService : IDisposable
 
         _queue.RemoveRange(numKept, _queue.Count - numKept);
     }
+
+    private static uint GetCurrentAnimationId(GameObject obj)
+    {
+        var gameObj = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)obj.Address;
+        if (gameObj == null || !gameObj->IsCharacter())
+            return 0;
+
+        var chara = (Character*)gameObj;
+        var ptr   = (byte*)&chara->ActionTimelineManager + 0xF0;
+        return *(uint*)ptr;
+    }
+
+    private static bool DelayRedraw(GameObject obj)
+        => ((Character*)obj.Address)->Mode switch
+        {
+            (Character.CharacterModes)6 => // fishing
+                GetCurrentAnimationId(obj) switch
+                {
+                    278 => true, // line out.
+                    283 => true, // reeling in
+                    _   => false,
+                },
+            _ => false,
+        };
 
     private void HandleAfterGPose()
     {
@@ -369,10 +401,11 @@ public sealed unsafe partial class RedrawService : IDisposable
     private void DisableFurniture()
     {
         var housingManager = HousingManager.Instance();
-        if (housingManager == null) 
+        if (housingManager == null)
             return;
+
         var currentTerritory = housingManager->CurrentTerritory;
-        if (currentTerritory == null) 
+        if (currentTerritory == null)
             return;
         if (!housingManager->IsInside())
             return;
@@ -380,8 +413,9 @@ public sealed unsafe partial class RedrawService : IDisposable
         foreach (var f in currentTerritory->FurnitureSpan.PointerEnumerator())
         {
             var gameObject = f->Index >= 0 ? currentTerritory->HousingObjectManager.ObjectsSpan[f->Index].Value : null;
-            if (gameObject == null) 
+            if (gameObject == null)
                 continue;
+
             gameObject->DisableDraw();
         }
     }
