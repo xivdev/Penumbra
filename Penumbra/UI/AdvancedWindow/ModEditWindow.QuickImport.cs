@@ -22,12 +22,13 @@ public partial class ModEditWindow
 
     private HashSet<string> GetPlayerResourcesOfType(ResourceType type)
     {
-        var resources = ResourceTreeApiHelper.GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
+        var resources = ResourceTreeApiHelper
+            .GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
             .Values
             .SelectMany(resources => resources.Values)
             .Select(resource => resource.Item1);
 
-        return new(resources, StringComparer.OrdinalIgnoreCase);
+        return new HashSet<string>(resources, StringComparer.OrdinalIgnoreCase);
     }
 
     private IReadOnlyList<FileRegistry> PopulateIsOnPlayer(IReadOnlyList<FileRegistry> files, ResourceType type)
@@ -198,7 +199,7 @@ public partial class ModEditWindow
             if (mod == null)
                 return new QuickImportAction(editor, optionName, gamePath);
 
-            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod);
+            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod, owner._config.ReplaceNonAsciiOnImport);
             var targetPath = new FullPath(Path.Combine(preferredPath.FullName, gamePath.ToString())).FullName;
             if (File.Exists(targetPath))
                 return new QuickImportAction(editor, optionName, gamePath);
@@ -226,7 +227,7 @@ public partial class ModEditWindow
             return fileRegistry;
         }
 
-        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, ISubMod subMod)
+        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, ISubMod subMod, bool replaceNonAscii)
         {
             var path    = mod.ModPath;
             var subDirs = 0;
@@ -237,13 +238,13 @@ public partial class ModEditWindow
             var fullName = subMod.FullName;
             if (fullName.EndsWith(": " + name))
             {
-                path    = ModCreator.NewOptionDirectory(path, fullName[..^(name.Length + 2)]);
-                path    = ModCreator.NewOptionDirectory(path, name);
+                path    = ModCreator.NewOptionDirectory(path, fullName[..^(name.Length + 2)], replaceNonAscii);
+                path    = ModCreator.NewOptionDirectory(path, name,                           replaceNonAscii);
                 subDirs = 2;
             }
             else
             {
-                path    = ModCreator.NewOptionDirectory(path, fullName);
+                path    = ModCreator.NewOptionDirectory(path, fullName, replaceNonAscii);
                 subDirs = 1;
             }
 

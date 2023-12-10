@@ -35,7 +35,7 @@ public partial class TexToolsImporter
 
         var modList = modListRaw.Select(m => JsonConvert.DeserializeObject<SimpleMod>(m, JsonSettings)!).ToList();
 
-        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetFileNameWithoutExtension(modPackFile.Name));
+        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetFileNameWithoutExtension(modPackFile.Name), _config.ReplaceNonAsciiOnImport, true);
         // Create a new ModMeta from the TTMP mod list info
         _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description,
             null, null);
@@ -88,7 +88,7 @@ public partial class TexToolsImporter
         _currentOptionName = DefaultTexToolsData.DefaultOption;
         Penumbra.Log.Information("    -> Importing Simple V2 ModPack");
 
-        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName);
+        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName, _config.ReplaceNonAsciiOnImport, true);
         _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty(modList.Description)
             ? "Mod imported from TexTools mod pack"
             : modList.Description, modList.Version, modList.Url);
@@ -131,7 +131,7 @@ public partial class TexToolsImporter
         _currentNumOptions = GetOptionCount(modList);
         _currentModName    = modList.Name;
 
-        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName);
+        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, _currentModName, _config.ReplaceNonAsciiOnImport, true);
         _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version,
             modList.Url);
 
@@ -168,7 +168,7 @@ public partial class TexToolsImporter
                 {
                     var name = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
                     options.Clear();
-                    var groupFolder = ModCreator.NewSubFolderName(_currentModDirectory, name)
+                    var groupFolder = ModCreator.NewSubFolderName(_currentModDirectory, name, _config.ReplaceNonAsciiOnImport)
                      ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
                             numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
 
@@ -178,7 +178,7 @@ public partial class TexToolsImporter
                         var option = allOptions[i + optionIdx];
                         _token.ThrowIfCancellationRequested();
                         _currentOptionName = option.Name;
-                        var optionFolder = ModCreator.NewSubFolderName(groupFolder, option.Name)
+                        var optionFolder = ModCreator.NewSubFolderName(groupFolder, option.Name, _config.ReplaceNonAsciiOnImport)
                          ?? new DirectoryInfo(Path.Combine(groupFolder.FullName, $"Option {i + optionIdx + 1}"));
                         ExtractSimpleModList(optionFolder, option.ModsJsons);
                         options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option));

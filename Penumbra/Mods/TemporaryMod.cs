@@ -52,7 +52,7 @@ public class TemporaryMod : IMod
         DirectoryInfo? dir = null;
         try
         {
-            dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Name);
+            dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Name, config.ReplaceNonAsciiOnImport, true);
             var fileDir = Directory.CreateDirectory(Path.Combine(dir.FullName, "files"));
             modManager.DataEditor.CreateMeta(dir, collection.Name, character ?? config.DefaultModAuthor,
                 $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null);

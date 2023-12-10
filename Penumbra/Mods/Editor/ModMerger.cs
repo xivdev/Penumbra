@@ -4,7 +4,6 @@ using OtterGui;
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
@@ -15,6 +14,7 @@ namespace Penumbra.Mods.Editor;
 
 public class ModMerger : IDisposable
 {
+    private readonly Configuration         _config;
     private readonly CommunicatorService   _communicator;
     private readonly ModOptionEditor       _editor;
     private readonly ModFileSystemSelector _selector;
@@ -40,13 +40,14 @@ public class ModMerger : IDisposable
     public          Exception?            Error { get; private set; }
 
     public ModMerger(ModManager mods, ModOptionEditor editor, ModFileSystemSelector selector, DuplicateManager duplicates,
-        CommunicatorService communicator, ModCreator creator)
+        CommunicatorService communicator, ModCreator creator, Configuration config)
     {
         _editor                    =  editor;
         _selector                  =  selector;
         _duplicates                =  duplicates;
         _communicator              =  communicator;
         _creator                   =  creator;
+        _config                    =  config;
         _mods                      =  mods;
         _selector.SelectionChanged += OnSelectionChange;
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModMerger);
@@ -82,7 +83,8 @@ public class ModMerger : IDisposable
         catch (Exception ex)
         {
             Error = ex;
-            Penumbra.Messager.NotificationMessage(ex, $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}, cleaning up changes.", NotificationType.Error, false);
+            Penumbra.Messager.NotificationMessage(ex, $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}, cleaning up changes.",
+                NotificationType.Error, false);
             FailureCleanup();
             DataCleanup();
         }
@@ -138,10 +140,10 @@ public class ModMerger : IDisposable
         var (option, optionCreated) = _editor.FindOrAddOption(MergeToMod!, groupIdx, optionName);
         if (optionCreated)
             _createdOptions.Add(option);
-        var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName);
+        var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.ReplaceNonAsciiOnImport);
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
-        dir = ModCreator.NewOptionDirectory(dir, optionName);
+        dir = ModCreator.NewOptionDirectory(dir, optionName, _config.ReplaceNonAsciiOnImport);
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
         CopyFiles(dir);

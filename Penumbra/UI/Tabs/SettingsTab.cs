@@ -535,6 +535,9 @@ public class SettingsTab : ITab
     /// <summary> Draw all settings pertaining to import and export of mods. </summary>
     private void DrawModHandlingSettings()
     {
+        Checkbox("Replace Non-Standard Symbols On Import",
+            "Replace all non-ASCII symbols in mod and option names with underscores when importing mods.", _config.ReplaceNonAsciiOnImport,
+            v => _config.ReplaceNonAsciiOnImport = v);
         Checkbox("Always Open Import at Default Directory",
             "Open the import window at the location specified here every time, forgetting your previous path.",
             _config.AlwaysOpenDefaultImport, v => _config.AlwaysOpenDefaultImport = v);

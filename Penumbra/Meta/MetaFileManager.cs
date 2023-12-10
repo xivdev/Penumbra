@@ -49,13 +49,13 @@ public unsafe class MetaFileManager
             TexToolsMeta.WriteTexToolsMeta(this, mod.Default.Manipulations, mod.ModPath);
             foreach (var group in mod.Groups)
             {
-                var dir = ModCreator.NewOptionDirectory(mod.ModPath, group.Name);
+                var dir = ModCreator.NewOptionDirectory(mod.ModPath, group.Name, Config.ReplaceNonAsciiOnImport);
                 if (!dir.Exists)
                     dir.Create();
 
                 foreach (var option in group.OfType<SubMod>())
                 {
-                    var optionDir = ModCreator.NewOptionDirectory(dir, option.Name);
+                    var optionDir = ModCreator.NewOptionDirectory(dir, option.Name, Config.ReplaceNonAsciiOnImport);
                     if (!optionDir.Exists)
                         optionDir.Create();
 

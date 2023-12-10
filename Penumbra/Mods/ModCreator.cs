@@ -16,30 +16,15 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-public partial class ModCreator
+public partial class ModCreator(SaveService _saveService, Configuration _config, ModDataEditor _dataEditor, MetaFileManager _metaFileManager,
+    IGamePathParser _gamePathParser)
 {
-    private readonly Configuration   _config;
-    private readonly SaveService     _saveService;
-    private readonly ModDataEditor   _dataEditor;
-    private readonly MetaFileManager _metaFileManager;
-    private readonly IGamePathParser _gamePathParser;
-
-    public ModCreator(SaveService saveService, Configuration config, ModDataEditor dataEditor, MetaFileManager metaFileManager,
-        IGamePathParser gamePathParser)
-    {
-        _saveService     = saveService;
-        _config          = config;
-        _dataEditor      = dataEditor;
-        _metaFileManager = metaFileManager;
-        _gamePathParser  = gamePathParser;
-    }
-
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
     public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "")
     {
         try
         {
-            var newDir = CreateModFolder(basePath, newName);
+            var newDir = CreateModFolder(basePath, newName, _config.ReplaceNonAsciiOnImport, true);
             _dataEditor.CreateMeta(newDir, newName, _config.DefaultModAuthor, description, "1.0", string.Empty);
             CreateDefaultFiles(newDir);
             return newDir;
@@ -138,13 +123,13 @@ public partial class ModCreator
     ///    - Unique, by appending (digit) for duplicates.<br/>
     ///    - Containing no symbols invalid for FFXIV or windows paths.<br/>
     /// </summary>
-    public static DirectoryInfo CreateModFolder(DirectoryInfo outDirectory, string modListName, bool create = true)
+    public static DirectoryInfo CreateModFolder(DirectoryInfo outDirectory, string modListName, bool onlyAscii, bool create)
     {
         var name = modListName;
         if (name.Length == 0)
             name = "_";
 
-        var newModFolderBase = NewOptionDirectory(outDirectory, name);
+        var newModFolderBase = NewOptionDirectory(outDirectory, name, onlyAscii);
         var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
         if (newModFolder.Length == 0)
             throw new IOException("Could not create mod folder: too many folders of the same name exist.");
@@ -238,9 +223,9 @@ public partial class ModCreator
     /// Create the name for a group or option subfolder based on its parent folder and given name.
     /// subFolderName should never be empty, and the result is unique and contains no invalid symbols.
     /// </summary>
-    public static DirectoryInfo? NewSubFolderName(DirectoryInfo parentFolder, string subFolderName)
+    public static DirectoryInfo? NewSubFolderName(DirectoryInfo parentFolder, string subFolderName, bool onlyAscii)
     {
-        var newModFolderBase = NewOptionDirectory(parentFolder, subFolderName);
+        var newModFolderBase = NewOptionDirectory(parentFolder, subFolderName, onlyAscii);
         var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
         return newModFolder.Length == 0 ? null : new DirectoryInfo(newModFolder);
     }
@@ -325,14 +310,14 @@ public partial class ModCreator
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
-    public static DirectoryInfo NewOptionDirectory(DirectoryInfo baseDir, string optionName)
+    public static DirectoryInfo NewOptionDirectory(DirectoryInfo baseDir, string optionName, bool onlyAscii)
     {
-        var option = ReplaceBadXivSymbols(optionName);
+        var option = ReplaceBadXivSymbols(optionName, onlyAscii);
         return new DirectoryInfo(Path.Combine(baseDir.FullName, option.Length > 0 ? option : "_"));
     }
 
     /// <summary> Normalize for nicer names, and remove invalid symbols or invalid paths. </summary>
-    public static string ReplaceBadXivSymbols(string s, string replacement = "_")
+    public static string ReplaceBadXivSymbols(string s, bool onlyAscii, string replacement = "_")
     {
         switch (s)
         {
@@ -344,6 +329,8 @@ public partial class ModCreator
         foreach (var c in s.Normalize(NormalizationForm.FormKC))
         {
             if (c.IsInvalidInPath())
+                sb.Append(replacement);
+            else if (onlyAscii && c.IsInvalidAscii())
                 sb.Append(replacement);
             else
                 sb.Append(c);

@@ -217,7 +217,7 @@ public sealed class ModManager : ModStorage, IDisposable
         if (oldName == newName)
             return NewDirectoryState.Identical;
 
-        var fixedNewName = ModCreator.ReplaceBadXivSymbols(newName);
+        var fixedNewName = ModCreator.ReplaceBadXivSymbols(newName, _config.ReplaceNonAsciiOnImport);
         if (fixedNewName != newName)
             return NewDirectoryState.ContainsInvalidSymbols;
 

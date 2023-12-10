@@ -6,11 +6,10 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
-public class ModNormalizer
+public class ModNormalizer(ModManager _modManager, Configuration _config)
 {
-    private readonly ModManager                                     _modManager;
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = new();
 
     public  Mod    Mod { get; private set; } = null!;
@@ -24,9 +23,6 @@ public class ModNormalizer
 
     public bool Running
         => !Worker.IsCompleted;
-
-    public ModNormalizer(ModManager modManager)
-        => _modManager = modManager;
 
     public void Normalize(Mod mod)
     {
@@ -175,10 +171,10 @@ public class ModNormalizer
                 for (var i = _redirections[groupIdx + 1].Count; i < group.Count; ++i)
                     _redirections[groupIdx + 1].Add(new Dictionary<Utf8GamePath, FullPath>());
 
-                var groupDir = ModCreator.CreateModFolder(directory, group.Name);
+                var groupDir = ModCreator.CreateModFolder(directory, group.Name, _config.ReplaceNonAsciiOnImport, true);
                 foreach (var option in group.OfType<SubMod>())
                 {
-                    var optionDir = ModCreator.CreateModFolder(groupDir, option.Name);
+                    var optionDir = ModCreator.CreateModFolder(groupDir, option.Name, _config.ReplaceNonAsciiOnImport, true);
 
                     newDict = _redirections[groupIdx + 1][option.OptionIdx];
                     newDict.Clear();
@@ -228,7 +224,8 @@ public class ModNormalizer
         }
         catch (Exception e)
         {
-            Penumbra.Messager.NotificationMessage(e, $"Could not move old files out of the way while normalizing mod {Mod.Name}.", NotificationType.Error, false);
+            Penumbra.Messager.NotificationMessage(e, $"Could not move old files out of the way while normalizing mod {Mod.Name}.",
+                NotificationType.Error, false);
         }
 
         return false;
@@ -251,7 +248,8 @@ public class ModNormalizer
         }
         catch (Exception e)
         {
-            Penumbra.Messager.NotificationMessage(e, $"Could not move new files into the mod while normalizing mod {Mod.Name}.", NotificationType.Error, false);
+            Penumbra.Messager.NotificationMessage(e, $"Could not move new files into the mod while normalizing mod {Mod.Name}.",
+                NotificationType.Error, false);
             foreach (var dir in Mod.ModPath.EnumerateDirectories())
             {
                 if (dir.FullName.Equals(_oldDirName,           StringComparison.OrdinalIgnoreCase)

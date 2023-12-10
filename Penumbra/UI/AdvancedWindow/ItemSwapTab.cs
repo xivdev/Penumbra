@@ -25,6 +25,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public class ItemSwapTab : IDisposable, ITab
 {
+    private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
     private readonly ItemService         _itemService;
     private readonly CollectionManager   _collectionManager;
@@ -32,13 +33,14 @@ public class ItemSwapTab : IDisposable, ITab
     private readonly MetaFileManager     _metaFileManager;
 
     public ItemSwapTab(CommunicatorService communicator, ItemService itemService, CollectionManager collectionManager,
-        ModManager modManager, IdentifierService identifier, MetaFileManager metaFileManager)
+        ModManager modManager, IdentifierService identifier, MetaFileManager metaFileManager, Configuration config)
     {
         _communicator      = communicator;
         _itemService       = itemService;
         _collectionManager = collectionManager;
         _modManager        = modManager;
         _metaFileManager   = metaFileManager;
+        _config            = config;
         _swapData          = new ItemSwapContainer(metaFileManager, identifier);
 
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
@@ -296,7 +298,7 @@ public class ItemSwapTab : IDisposable, ITab
         {
             optionFolderName =
                 ModCreator.NewSubFolderName(new DirectoryInfo(Path.Combine(_mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName)),
-                    _newOptionName);
+                    _newOptionName, _config.ReplaceNonAsciiOnImport);
             if (optionFolderName?.Exists == true)
                 throw new Exception($"The folder {optionFolderName.FullName} for the option already exists.");
 
