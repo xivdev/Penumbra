@@ -45,9 +45,23 @@ public class PenumbraChangelog
         Add8_1_1(Changelog);
         Add8_1_2(Changelog);
         Add8_2_0(Changelog);
+        Add8_3_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add8_3_0(Changelog log)
+        => log.NextVersion("Version 0.8.3.0")
+            .RegisterHighlight("Improved the UI for the On-Screen tabs with highlighting of used paths, filtering and more selections. (by Ny)")
+            .RegisterEntry("Added an option to replace non-ASCII symbols with underscores for folder paths on mod import since this causes problems on some WINE systems. This option is off by default.")
+            .RegisterEntry(
+                "Added support for the Changed Item Icons to load modded icons, but this depends on a not-yet-released Dalamud update.")
+            .RegisterEntry(
+                "Penumbra should no longer redraw characters while they are fishing, but wait for them to reel in, because that could cause soft-locks. This may cause other issues, but I have not found any.")
+            .RegisterEntry(
+                "Hopefully fixed a bug on mod import where files were being read while they were still saving, causing Penumbra to create wrong options.")
+            .RegisterEntry("Fixed a few display issues.")
+            .RegisterEntry("Added some IPC functionality for Xande. (by Asriel)");
 
     private static void Add8_2_0(Changelog log)
         => log.NextVersion("Version 0.8.2.0")
