@@ -372,7 +372,7 @@ public class ConfigMigrationService
             var emptyStorage = new ModStorage();
             var collection = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict,
                 Array.Empty<string>());
-            _saveService.ImmediateSave(new ModCollectionSave(emptyStorage, collection));
+            _saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)
         {

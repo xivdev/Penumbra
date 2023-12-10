@@ -177,7 +177,7 @@ public partial class ModCreator
             return;
 
         _saveService.SaveAllOptionGroups(mod, false);
-        _saveService.ImmediateSave(new ModSaveGroup(mod.ModPath, mod.Default));
+        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default));
     }
 
 
@@ -261,7 +261,7 @@ public partial class ModCreator
                     DefaultSettings = defaultSettings,
                 };
                 group.PrioritizedOptions.AddRange(subMods.OfType<SubMod>().Select((s, idx) => (s, idx)));
-                _saveService.ImmediateSave(new ModSaveGroup(baseFolder, group, index));
+                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index));
                 break;
             }
             case GroupType.Single:
@@ -274,7 +274,7 @@ public partial class ModCreator
                     DefaultSettings = defaultSettings,
                 };
                 group.OptionData.AddRange(subMods.OfType<SubMod>());
-                _saveService.ImmediateSave(new ModSaveGroup(baseFolder, group, index));
+                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index));
                 break;
             }
         }
@@ -321,7 +321,7 @@ public partial class ModCreator
         }
 
         IncorporateMetaChanges(mod.Default, directory, true);
-        _saveService.ImmediateSave(new ModSaveGroup(mod, -1));
+        _saveService.ImmediateSaveSync(new ModSaveGroup(mod, -1));
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>

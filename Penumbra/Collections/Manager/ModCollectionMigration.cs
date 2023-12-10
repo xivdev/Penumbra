@@ -14,7 +14,7 @@ internal static class ModCollectionMigration
     {
         var changes = MigrateV0ToV1(collection, ref version);
         if (changes)
-            saver.ImmediateSave(new ModCollectionSave(mods, collection));
+            saver.ImmediateSaveSync(new ModCollectionSave(mods, collection));
     }
 
     /// <summary> Migrate a mod collection from Version 0 to Version 1, which introduced support for inheritance. </summary>

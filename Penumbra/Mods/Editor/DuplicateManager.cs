@@ -82,7 +82,7 @@ public class DuplicateManager
             {
                 var sub = (SubMod)subMod;
                 sub.FileData = dict;
-                _saveService.ImmediateSave(new ModSaveGroup(mod, groupIdx));
+                _saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx));
             }
         }
 

@@ -36,7 +36,8 @@ public sealed class SaveService : SaveServiceBase<FilenameService>
             }
         }
 
-        for (var i = 0; i < mod.Groups.Count; ++i)
+        for (var i = 0; i < mod.Groups.Count - 1; ++i)
             ImmediateSave(new ModSaveGroup(mod, i));
+        ImmediateSaveSync(new ModSaveGroup(mod, mod.Groups.Count - 1));
     }
 }
