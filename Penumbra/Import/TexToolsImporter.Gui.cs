@@ -33,7 +33,7 @@ public partial class TexToolsImporter
         else
         {
             ImGui.NewLine();
-            var percentage = _modPackCount / (float)_currentModPackIdx;
+            var percentage = (float)_currentModPackIdx / _modPackCount;
             ImGui.ProgressBar(percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}");
             ImGui.NewLine();
             if (State == ImporterState.DeduplicatingFiles)
