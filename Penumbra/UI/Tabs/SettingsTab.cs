@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -84,6 +85,7 @@ public class SettingsTab : ITab
         ImGui.NewLine();
         DrawRootFolder();
         DrawDirectoryButtons();
+        DrawFileSystemWarningIfNeeded();
         ImGui.NewLine();
 
         DrawGeneralSettings();
@@ -203,6 +205,25 @@ public class SettingsTab : ITab
                 : ".";
 
         _fileDialog.OpenFolderPicker("Choose Mod Directory", (b, s) => _newModDirectory = b ? s : _newModDirectory, startDir, false);
+    }
+
+    private static void DrawFileSystemWarningIfNeeded()
+    {
+        var (isSane, variableToSet) = Penumbra.IsFileSystemSane();
+        if (isSane)
+            return;
+
+        var tooltip = $"Please run XIVLauncher with a UTF-8 locale, for example by setting the following environment variable:\n\n{variableToSet}=C.UTF-8";
+
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 1.0f - ImGui.GetStyle().ItemSpacing.X);
+        ImGui.Dummy(new Vector2(1.0f));
+        ImGuiComponents.HelpMarker(tooltip);
+        ImGui.SameLine();
+        using (var _ = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
+        {
+            ImGui.TextUnformatted("Your XIVLauncher is misconfigured, which can cause issues with special characters in mods.");
+        }
+        ImGuiUtil.HoverTooltip(tooltip);
     }
 
     /// <summary>

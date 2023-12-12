@@ -193,7 +193,10 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
         sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
-        sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");
+        var isWine = Dalamud.Utility.Util.IsWine();
+        sb.Append($"> **`Operating System:            `** {(isWine ? "Mac/Linux (Wine)" : "Windows")}\n");
+        if (isWine)
+            sb.Append($"> **`Character Type Locale:       `** {GatherFileSystemSanityCheckVariables()}\n");
         sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
@@ -244,5 +247,47 @@ public class Penumbra : IDalamudPlugin
             PrintCollection(collection, collection._cache!);
 
         return sb.ToString();
+    }
+
+    // Relevant variables, sorted by priority. LC_CTYPE is the most specific (but not the highest priority), so it will be preferred for advising the user unless LC_ALL is involved.
+    private static readonly (string VariableToCheck, string VariableToSet)[] FileSystemSanityCheckVariables =
+    {
+        ("LC_ALL",   "LC_ALL"),
+        ("LC_CTYPE", "LC_CTYPE"),
+        ("LANG",     "LC_CTYPE"),
+    };
+
+    private static string GatherFileSystemSanityCheckVariables()
+    {
+        var sb = new StringBuilder();
+        foreach (var (variableToCheck, _) in FileSystemSanityCheckVariables)
+        {
+            var value = Environment.GetEnvironmentVariable(variableToCheck);
+            if (!string.IsNullOrEmpty(value))
+                sb.Append($"`{variableToCheck}={value}`, ");
+        }
+        return sb.Length > 0
+            ? sb.ToString(0, sb.Length - 2)
+            : "Unset";
+    }
+
+    public static (bool IsSane, string VariableToSet) IsFileSystemSane()
+    {
+        // This is a Wine-only issue.
+        if (!Dalamud.Utility.Util.IsWine())
+            return (true, string.Empty);
+
+        foreach (var (variableToCheck, variableToSet) in FileSystemSanityCheckVariables)
+        {
+            var value = Environment.GetEnvironmentVariable(variableToCheck);
+            if (!string.IsNullOrEmpty(value))
+            {
+                return value.EndsWith(".UTF-8", StringComparison.OrdinalIgnoreCase)
+                    ? (true,  string.Empty)
+                    : (false, variableToSet);
+            }
+        }
+
+        return (false, "LC_CTYPE");
     }
 }
