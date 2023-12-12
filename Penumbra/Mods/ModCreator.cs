@@ -16,16 +16,18 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-public partial class ModCreator(SaveService _saveService, Configuration _config, ModDataEditor _dataEditor, MetaFileManager _metaFileManager,
+public partial class ModCreator(SaveService _saveService, Configuration config, ModDataEditor _dataEditor, MetaFileManager _metaFileManager,
     IGamePathParser _gamePathParser)
 {
+    public readonly Configuration Config = config;
+
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
     public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "")
     {
         try
         {
-            var newDir = CreateModFolder(basePath, newName, _config.ReplaceNonAsciiOnImport, true);
-            _dataEditor.CreateMeta(newDir, newName, _config.DefaultModAuthor, description, "1.0", string.Empty);
+            var newDir = CreateModFolder(basePath, newName, Config.ReplaceNonAsciiOnImport, true);
+            _dataEditor.CreateMeta(newDir, newName, Config.DefaultModAuthor, description, "1.0", string.Empty);
             CreateDefaultFiles(newDir);
             return newDir;
         }
@@ -86,7 +88,8 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
             if (group != null && mod.Groups.All(g => g.Name != group.Name))
             {
                 changes = changes
-                 || _saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name) != file.FullName;
+                 || _saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
+                 != Path.Combine(file.DirectoryName!, ReplaceBadXivSymbols(file.Name, true));
                 mod.Groups.Add(group);
             }
             else
@@ -96,13 +99,13 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
         }
 
         if (changes)
-            _saveService.SaveAllOptionGroups(mod, true);
+            _saveService.SaveAllOptionGroups(mod, true, Config.ReplaceNonAsciiOnImport);
     }
 
     /// <summary> Load the default option for a given mod.</summary>
     public void LoadDefaultOption(Mod mod)
     {
-        var defaultFile = _saveService.FileNames.OptionGroupFile(mod, -1);
+        var defaultFile = _saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
         mod.Default.SetPosition(-1, 0);
         try
         {
@@ -161,8 +164,8 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
         if (!changes)
             return;
 
-        _saveService.SaveAllOptionGroups(mod, false);
-        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default));
+        _saveService.SaveAllOptionGroups(mod, false, Config.ReplaceNonAsciiOnImport);
+        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
     }
 
 
@@ -188,7 +191,7 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
                         continue;
 
                     var meta = new TexToolsMeta(_metaFileManager, _gamePathParser, File.ReadAllBytes(file.FullName),
-                        _config.KeepDefaultMetaChanges);
+                        Config.KeepDefaultMetaChanges);
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
@@ -201,7 +204,7 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
                         continue;
 
                     var rgsp = TexToolsMeta.FromRgspFile(_metaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
-                        _config.KeepDefaultMetaChanges);
+                        Config.KeepDefaultMetaChanges);
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
@@ -246,7 +249,7 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
                     DefaultSettings = defaultSettings,
                 };
                 group.PrioritizedOptions.AddRange(subMods.OfType<SubMod>().Select((s, idx) => (s, idx)));
-                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index));
+                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
             case GroupType.Single:
@@ -259,7 +262,7 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
                     DefaultSettings = defaultSettings,
                 };
                 group.OptionData.AddRange(subMods.OfType<SubMod>());
-                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index));
+                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
         }
@@ -306,7 +309,7 @@ public partial class ModCreator(SaveService _saveService, Configuration _config,
         }
 
         IncorporateMetaChanges(mod.Default, directory, true);
-        _saveService.ImmediateSaveSync(new ModSaveGroup(mod, -1));
+        _saveService.ImmediateSaveSync(new ModSaveGroup(mod, -1, Config.ReplaceNonAsciiOnImport));
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>

@@ -39,8 +39,9 @@ public readonly struct ModSaveGroup : ISavable
     private readonly IModGroup?    _group;
     private readonly int           _groupIdx;
     private readonly ISubMod?      _defaultMod;
+    private readonly bool          _onlyAscii;
 
-    public ModSaveGroup(Mod mod, int groupIdx)
+    public ModSaveGroup(Mod mod, int groupIdx, bool onlyAscii)
     {
         _basePath = mod.ModPath;
         _groupIdx = groupIdx;
@@ -48,24 +49,27 @@ public readonly struct ModSaveGroup : ISavable
             _defaultMod = mod.Default;
         else
             _group = mod.Groups[_groupIdx];
+        _onlyAscii = onlyAscii;
     }
 
-    public ModSaveGroup(DirectoryInfo basePath, IModGroup group, int groupIdx)
+    public ModSaveGroup(DirectoryInfo basePath, IModGroup group, int groupIdx, bool onlyAscii)
     {
-        _basePath = basePath;
-        _group    = group;
-        _groupIdx = groupIdx;
+        _basePath  = basePath;
+        _group     = group;
+        _groupIdx  = groupIdx;
+        _onlyAscii = onlyAscii;
     }
 
-    public ModSaveGroup(DirectoryInfo basePath, ISubMod @default)
+    public ModSaveGroup(DirectoryInfo basePath, ISubMod @default, bool onlyAscii)
     {
         _basePath   = basePath;
         _groupIdx   = -1;
         _defaultMod = @default;
+        _onlyAscii  = onlyAscii;
     }
 
     public string ToFilename(FilenameService fileNames)
-        => fileNames.OptionGroupFile(_basePath.FullName, _groupIdx, _group?.Name ?? string.Empty);
+        => fileNames.OptionGroupFile(_basePath.FullName, _groupIdx, _group?.Name ?? string.Empty, _onlyAscii);
 
     public void Save(StreamWriter writer)
     {

@@ -18,7 +18,7 @@ public sealed class SaveService : SaveServiceBase<FilenameService>
     { }
 
     /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
-    public void SaveAllOptionGroups(Mod mod, bool backup)
+    public void SaveAllOptionGroups(Mod mod, bool backup, bool onlyAscii)
     {
         foreach (var file in FileNames.GetOptionGroupFiles(mod))
         {
@@ -37,7 +37,7 @@ public sealed class SaveService : SaveServiceBase<FilenameService>
         }
 
         for (var i = 0; i < mod.Groups.Count - 1; ++i)
-            ImmediateSave(new ModSaveGroup(mod, i));
-        ImmediateSaveSync(new ModSaveGroup(mod, mod.Groups.Count - 1));
+            ImmediateSave(new ModSaveGroup(mod, i, onlyAscii));
+        ImmediateSaveSync(new ModSaveGroup(mod, mod.Groups.Count - 1, onlyAscii));
     }
 }
