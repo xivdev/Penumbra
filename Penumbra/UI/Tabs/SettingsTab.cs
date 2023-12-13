@@ -213,7 +213,7 @@ public class SettingsTab : ITab
         if (isSane)
             return;
 
-        var tooltip = $"Please run XIVLauncher with a UTF-8 locale, for example by setting the following environment variable:\n\n{variableToSet}=C.UTF-8";
+        var tooltip = $"Your current configuration may cause problems with Unicode characters in mods. For the best experience, please configure Wine to use UTF-8 file paths for the game. This can be achieved by passing the following environment variable to XIVLauncher, for example:\n\n{variableToSet}=C.UTF-8";
 
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() - 1.0f - ImGui.GetStyle().ItemSpacing.X);
         ImGui.Dummy(new Vector2(1.0f));
@@ -221,7 +221,7 @@ public class SettingsTab : ITab
         ImGui.SameLine();
         using (var _ = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
         {
-            ImGui.TextUnformatted("Your XIVLauncher is misconfigured, which can cause issues with special characters in mods.");
+            ImGui.TextUnformatted("For the best experience, please configure Wine to use UTF-8 file paths.");
         }
         ImGuiUtil.HoverTooltip(tooltip);
     }

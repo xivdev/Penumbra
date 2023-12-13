@@ -282,7 +282,7 @@ public class Penumbra : IDalamudPlugin
             var value = Environment.GetEnvironmentVariable(variableToCheck);
             if (!string.IsNullOrEmpty(value))
             {
-                return value.EndsWith(".UTF-8", StringComparison.OrdinalIgnoreCase)
+                return value.EndsWith(".UTF-8", StringComparison.OrdinalIgnoreCase) || value.EndsWith(".utf8", StringComparison.OrdinalIgnoreCase)
                     ? (true,  string.Empty)
                     : (false, variableToSet);
             }
