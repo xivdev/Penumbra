@@ -475,10 +475,11 @@ public class ModPanelEditTab : ITab
             if (!table)
                 return;
 
-            ImGui.TableSetupColumn("idx",     ImGuiTableColumnFlags.WidthFixed, 60 * UiHelpers.Scale);
+            var maxWidth = ImGui.CalcTextSize("Option #88.").X;
+            ImGui.TableSetupColumn("idx",     ImGuiTableColumnFlags.WidthFixed, maxWidth);
             ImGui.TableSetupColumn("default", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight());
             ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthFixed,
-                UiHelpers.InputTextWidth.X - 72 * UiHelpers.Scale - ImGui.GetFrameHeight() - UiHelpers.IconButtonSize.X);
+                UiHelpers.InputTextWidth.X - maxWidth - 12 * UiHelpers.Scale - ImGui.GetFrameHeight() - UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("delete",      ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("priority",    ImGuiTableColumnFlags.WidthFixed, 50 * UiHelpers.Scale);
@@ -644,7 +645,7 @@ public class ModPanelEditTab : ITab
                 _                => "Unknown",
             };
 
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X - 3 * (UiHelpers.IconButtonSize.X - 4 * UiHelpers.Scale));
+        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X - 2 * UiHelpers.IconButtonSize.X - 2 * ImGui.GetStyle().ItemSpacing.X);
         using var combo = ImRaii.Combo("##GroupType", GroupTypeName(group.Type));
         if (!combo)
             return;
