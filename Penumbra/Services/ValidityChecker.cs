@@ -26,7 +26,7 @@ public class ValidityChecker
         IsNotInstalledPenumbra = CheckIsNotInstalled(pi);
         IsValidSourceRepo      = CheckSourceRepo(pi);
 
-        var assembly = Assembly.GetExecutingAssembly();
+        var assembly = GetType().Assembly;
         Version    = assembly.GetName().Version?.ToString() ?? string.Empty;
         CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
     }

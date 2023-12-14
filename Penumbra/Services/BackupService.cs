@@ -14,11 +14,7 @@ public class BackupService
         Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), files);
     }
 
-    public static void CreatePermanentBackup(FilenameService fileNames)
-        => Backup.CreatePermanentBackup(Penumbra.Log, new DirectoryInfo(fileNames.ConfigDirectory), PenumbraFiles(fileNames),
-            "pre_ephemeral_config");
-
-    // Collect all relevant files for penumbra configuration.
+    /// <summary> Collect all relevant files for penumbra configuration. </summary>
     private static IReadOnlyList<FileInfo> PenumbraFiles(FilenameService fileNames)
     {
         var list = fileNames.CollectionFiles.ToList();
