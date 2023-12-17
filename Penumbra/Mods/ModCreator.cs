@@ -5,7 +5,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
-using Penumbra.GameData;
+using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
@@ -17,7 +17,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods;
 
 public partial class ModCreator(SaveService _saveService, Configuration config, ModDataEditor _dataEditor, MetaFileManager _metaFileManager,
-    IGamePathParser _gamePathParser)
+    GamePathParser _gamePathParser)
 {
     public readonly Configuration Config = config;
 

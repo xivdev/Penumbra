@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Interop;
 using Penumbra.String;
 using static Penumbra.GameData.Files.ShpkFile;
 

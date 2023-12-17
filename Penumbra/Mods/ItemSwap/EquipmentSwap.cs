@@ -1,5 +1,4 @@
 using Penumbra.Api.Enums;
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
@@ -41,7 +40,7 @@ public static class EquipmentSwap
                 : Array.Empty<EquipSlot>();
     }
 
-    public static EquipItem[] CreateTypeSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
+    public static EquipItem[] CreateTypeSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips,
         EquipSlot slotFrom, EquipItem itemFrom, EquipSlot slotTo, EquipItem itemTo)
     {
@@ -99,7 +98,7 @@ public static class EquipmentSwap
         return affectedItems;
     }
 
-    public static EquipItem[] CreateItemSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
+    public static EquipItem[] CreateItemSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips, EquipItem itemFrom,
         EquipItem itemTo, bool rFinger = true, bool lFinger = true)
     {
@@ -247,7 +246,7 @@ public static class EquipmentSwap
         variant = i.Variant;
     }
 
-    private static (ImcFile, Variant[], EquipItem[]) GetVariants(MetaFileManager manager, IObjectIdentifier identifier, EquipSlot slotFrom,
+    private static (ImcFile, Variant[], EquipItem[]) GetVariants(MetaFileManager manager, ObjectIdentification identifier, EquipSlot slotFrom,
         SetId idFrom, SetId idTo, Variant variantFrom)
     {
         var         entry = new ImcManipulation(slotFrom, variantFrom.Id, idFrom, default);
@@ -256,11 +255,8 @@ public static class EquipmentSwap
         Variant[]   variants;
         if (idFrom == idTo)
         {
-            items = identifier.Identify(idFrom, variantFrom, slotFrom).ToArray();
-            variants = new[]
-            {
-                variantFrom,
-            };
+            items    = identifier.Identify(idFrom, 0, variantFrom, slotFrom).ToArray();
+            variants = [variantFrom];
         }
         else
         {

@@ -1,5 +1,6 @@
 using Penumbra.GameData.Enums;
 using Penumbra.GameData;
+using Penumbra.GameData.Data;
 
 namespace Penumbra.Import.Structs;
 
@@ -47,7 +48,7 @@ public partial struct MetaFileInfo
             _                        => false,
         };
 
-    public MetaFileInfo(IGamePathParser parser, string fileName)
+    public MetaFileInfo(GamePathParser parser, string fileName)
     {
         // Set the primary type from the gamePath start.
         PrimaryType   = parser.PathToObjectType(fileName);

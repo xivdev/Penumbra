@@ -22,10 +22,10 @@ public class CollectionCache : IDisposable
     private readonly CollectionCacheManager                           _manager;
     private readonly ModCollection                                    _collection;
     public readonly  CollectionModData                                ModData       = new();
-    public readonly  SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
+    private readonly SortedList<string, (SingleArray<IMod>, object?)> _changedItems = [];
     public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>      ResolvedFiles = new();
     public readonly  MetaCache                                        Meta;
-    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
+    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      ConflictDict = [];
 
     public int Calculating = -1;
 
@@ -33,10 +33,10 @@ public class CollectionCache : IDisposable
         => _collection.AnonymizedName;
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
-        => _conflicts.Values;
+        => ConflictDict.Values;
 
     public SingleArray<ModConflicts> Conflicts(IMod mod)
-        => _conflicts.TryGetValue(mod, out var c) ? c : new SingleArray<ModConflicts>();
+        => ConflictDict.TryGetValue(mod, out SingleArray<ModConflicts> c) ? c : new SingleArray<ModConflicts>();
 
     private int _changedItemsSaveCounter = -1;
 
@@ -195,7 +195,7 @@ public class CollectionCache : IDisposable
                     $"Invalid mod state, removing {mod.Name} and associated manipulation {manipulation} returned current mod {mp.Name}.");
         }
 
-        _conflicts.Remove(mod);
+        ConflictDict.Remove(mod);
         foreach (var conflict in conflicts)
         {
             if (conflict.HasPriority)
@@ -206,9 +206,9 @@ public class CollectionCache : IDisposable
             {
                 var newConflicts = Conflicts(conflict.Mod2).Remove(c => c.Mod2 == mod);
                 if (newConflicts.Count > 0)
-                    _conflicts[conflict.Mod2] = newConflicts;
+                    ConflictDict[conflict.Mod2] = newConflicts;
                 else
-                    _conflicts.Remove(conflict.Mod2);
+                    ConflictDict.Remove(conflict.Mod2);
             }
         }
 
@@ -336,9 +336,9 @@ public class CollectionCache : IDisposable
             return false;
         });
         if (changedConflicts.Count == 0)
-            _conflicts.Remove(mod);
+            ConflictDict.Remove(mod);
         else
-            _conflicts[mod] = changedConflicts;
+            ConflictDict[mod] = changedConflicts;
     }
 
     // Add a new conflict between the added mod and the existing mod.
@@ -373,9 +373,9 @@ public class CollectionCache : IDisposable
         {
             // Add the same conflict list to both conflict directions.
             var conflictList = new List<object> { data };
-            _conflicts[addedMod] = addedConflicts.Append(new ModConflicts(existingMod, conflictList, existingPriority < addedPriority,
+            ConflictDict[addedMod] = addedConflicts.Append(new ModConflicts(existingMod, conflictList, existingPriority < addedPriority,
                 existingPriority != addedPriority));
-            _conflicts[existingMod] = existingConflicts.Append(new ModConflicts(addedMod, conflictList,
+            ConflictDict[existingMod] = existingConflicts.Append(new ModConflicts(addedMod, conflictList,
                 existingPriority >= addedPriority,
                 existingPriority != addedPriority));
         }
@@ -426,7 +426,7 @@ public class CollectionCache : IDisposable
             _changedItems.Clear();
             // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.
-            var identifier = _manager.MetaFileManager.Identifier.AwaitedService;
+            var identifier = _manager.MetaFileManager.Identifier;
             var items      = new SortedList<string, object?>(512);
 
             void AddItems(IMod mod)

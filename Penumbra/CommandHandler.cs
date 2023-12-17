@@ -32,7 +32,7 @@ public class CommandHandler : IDisposable
 
     public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService,
         Configuration config,
-        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorService actors, Penumbra penumbra,
+        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors, Penumbra penumbra,
         CollectionEditor collectionEditor)
     {
         _commandManager    = commandManager;
@@ -41,7 +41,7 @@ public class CommandHandler : IDisposable
         _configWindow      = configWindow;
         _modManager        = modManager;
         _collectionManager = collectionManager;
-        _actors            = actors.AwaitedService;
+        _actors            = actors;
         _chat              = chat;
         _penumbra          = penumbra;
         _collectionEditor  = collectionEditor;

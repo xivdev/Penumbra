@@ -1,24 +1,30 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
+using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.DataContainers;
+using Penumbra.GameData.DataContainers.Bases;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Structs;
 using Penumbra.Import.Textures;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -31,22 +37,39 @@ using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBa
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
-using Penumbra.Interop.Services;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using ImGuiClip = OtterGui.ImGuiClip;
 
-namespace Penumbra.UI.Tabs;
+namespace Penumbra.UI.Tabs.Debug;
+
+public class Diagnostics(IServiceProvider provider)
+{
+    public void DrawDiagnostics()
+    {
+        if (!ImGui.CollapsingHeader("Diagnostics"))
+            return;
+
+        using var table = ImRaii.Table("##data", 4, ImGuiTableFlags.RowBg);
+        foreach (var type in typeof(IAsyncDataContainer).Assembly.GetTypes()
+                     .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
+        {
+            var container = (IAsyncDataContainer) provider.GetRequiredService(type);
+            ImGuiUtil.DrawTableColumn(container.Name);
+            ImGuiUtil.DrawTableColumn(container.Time.ToString());
+            ImGuiUtil.DrawTableColumn(Functions.HumanReadableSize(container.Memory));
+            ImGuiUtil.DrawTableColumn(container.TotalCount.ToString());
+        }
+    }
+}
 
 public class DebugTab : Window, ITab
 {
-    private readonly StartTracker              _timer;
     private readonly PerformanceTracker        _performance;
     private readonly Configuration             _config;
     private readonly CollectionManager         _collectionManager;
     private readonly ModManager                _modManager;
     private readonly ValidityChecker           _validityChecker;
     private readonly HttpApi                   _httpApi;
-    private readonly ActorService              _actorService;
+    private readonly ActorManager              _actors;
     private readonly DalamudServices           _dalamud;
     private readonly StainService              _stains;
     private readonly CharacterUtility          _characterUtility;
@@ -64,16 +87,17 @@ public class DebugTab : Window, ITab
     private readonly FrameworkManager          _framework;
     private readonly TextureManager            _textureManager;
     private readonly SkinFixer                 _skinFixer;
-    private readonly IdentifierService         _identifier;
     private readonly RedrawService             _redraws;
+    private readonly DictEmotes                _emotes;
+    private readonly Diagnostics               _diagnostics;
 
-    public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
-        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
+    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
+        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors,
         DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, SkinFixer skinFixer, IdentifierService identifier, RedrawService redraws)
+        TextureManager textureManager, SkinFixer skinFixer, RedrawService redraws, DictEmotes emotes, Diagnostics diagnostics)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -82,14 +106,13 @@ public class DebugTab : Window, ITab
             MinimumSize = new Vector2(200,  200),
             MaximumSize = new Vector2(2000, 2000),
         };
-        _timer                     = timer;
         _performance               = performance;
         _config                    = config;
         _collectionManager         = collectionManager;
         _validityChecker           = validityChecker;
         _modManager                = modManager;
         _httpApi                   = httpApi;
-        _actorService              = actorService;
+        _actors                    = actors;
         _dalamud                   = dalamud;
         _stains                    = stains;
         _characterUtility          = characterUtility;
@@ -107,8 +130,9 @@ public class DebugTab : Window, ITab
         _framework                 = framework;
         _textureManager            = textureManager;
         _skinFixer                 = skinFixer;
-        _identifier                = identifier;
         _redraws                   = redraws;
+        _emotes                    = emotes;
+        _diagnostics               = diagnostics;
     }
 
     public ReadOnlySpan<byte> Label
@@ -130,6 +154,7 @@ public class DebugTab : Window, ITab
             return;
 
         DrawDebugTabGeneral();
+        _diagnostics.DrawDiagnostics();
         DrawPerformanceTab();
         ImGui.NewLine();
         DrawPathResolverDebug();
@@ -357,7 +382,6 @@ public class DebugTab : Window, ITab
                         ImGuiUtil.DrawTableColumn(name);
                         ImGui.TableNextColumn();
                     }
-
                 }
             }
         }
@@ -372,10 +396,7 @@ public class DebugTab : Window, ITab
         using (var start = TreeNode("Startup Performance", ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (start)
-            {
-                _timer.Draw("##startTimer", TimingExtensions.ToName);
                 ImGui.NewLine();
-            }
         }
 
         _performance.Draw("##performance", "Enable Runtime Performance Tracking", TimingExtensions.ToName);
@@ -391,22 +412,10 @@ public class DebugTab : Window, ITab
         if (!table)
             return;
 
-        void DrawSpecial(string name, ActorIdentifier id)
-        {
-            if (!id.IsValid)
-                return;
-
-            ImGuiUtil.DrawTableColumn(name);
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(_actorService.AwaitedService.ToString(id));
-            ImGuiUtil.DrawTableColumn(string.Empty);
-        }
-
-        DrawSpecial("Current Player",  _actorService.AwaitedService.GetCurrentPlayer());
-        DrawSpecial("Current Inspect", _actorService.AwaitedService.GetInspectPlayer());
-        DrawSpecial("Current Card",    _actorService.AwaitedService.GetCardPlayer());
-        DrawSpecial("Current Glamour", _actorService.AwaitedService.GetGlamourPlayer());
+        DrawSpecial("Current Player",  _actors.GetCurrentPlayer());
+        DrawSpecial("Current Inspect", _actors.GetInspectPlayer());
+        DrawSpecial("Current Card",    _actors.GetCardPlayer());
+        DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
 
         foreach (var obj in _dalamud.Objects)
         {
@@ -415,10 +424,24 @@ public class DebugTab : Window, ITab
             ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
                 ? string.Empty
                 : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
-            var identifier = _actorService.AwaitedService.FromObject(obj, false, true, false);
-            ImGuiUtil.DrawTableColumn(_actorService.AwaitedService.ToString(identifier));
+            var identifier = _actors.FromObject(obj, false, true, false);
+            ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
             var id = obj.ObjectKind == ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.DataId}" : identifier.DataId.ToString();
             ImGuiUtil.DrawTableColumn(id);
+        }
+
+        return;
+
+        void DrawSpecial(string name, ActorIdentifier id)
+        {
+            if (!id.IsValid)
+                return;
+
+            ImGuiUtil.DrawTableColumn(name);
+            ImGuiUtil.DrawTableColumn(string.Empty);
+            ImGuiUtil.DrawTableColumn(string.Empty);
+            ImGuiUtil.DrawTableColumn(_actors.ToString(id));
+            ImGuiUtil.DrawTableColumn(string.Empty);
         }
     }
 
@@ -616,7 +639,7 @@ public class DebugTab : Window, ITab
             return;
 
         var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
-        var dummy = ImGuiClip.FilteredClippedDraw(_identifier.AwaitedService.Emotes, skips,
+        var dummy = ImGuiClip.FilteredClippedDraw(_emotes, skips,
             p => p.Key.Contains(_emoteSearchFile, StringComparison.OrdinalIgnoreCase)
              && (_emoteSearchName.Length == 0
                  || p.Value.Any(s => s.Name.ToDalamudString().TextValue.Contains(_emoteSearchName, StringComparison.OrdinalIgnoreCase))),

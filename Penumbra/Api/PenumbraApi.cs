@@ -95,7 +95,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private DalamudServices       _dalamud;
     private TempCollectionManager _tempCollections;
     private TempModManager        _tempMods;
-    private ActorService          _actors;
+    private ActorManager          _actors;
     private CollectionResolver    _collectionResolver;
     private CutsceneService       _cutsceneService;
     private ModImportManager      _modImportManager;
@@ -108,7 +108,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public unsafe PenumbraApi(CommunicatorService communicator, ModManager modManager, ResourceLoader resourceLoader,
         Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
-        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService,
+        TempModManager tempMods, ActorManager actors, CollectionResolver collectionResolver, CutsceneService cutsceneService,
         ModImportManager modImportManager, CollectionEditor collectionEditor, RedrawService redrawService, ModFileSystem modFileSystem,
         ConfigWindow configWindow, TextureManager textureManager, ResourceTreeFactory resourceTreeFactory)
     {
@@ -889,13 +889,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        if (!_actors.Valid)
-            return PenumbraApiEc.SystemDisposed;
-
         if (actorIndex < 0 || actorIndex >= _dalamud.Objects.Length)
             return PenumbraApiEc.InvalidArgument;
 
-        var identifier = _actors.AwaitedService.FromObject(_dalamud.Objects[actorIndex], false, false, true);
+        var identifier = _actors.FromObject(_dalamud.Objects[actorIndex], false, false, true);
         if (!identifier.IsValid)
             return PenumbraApiEc.InvalidArgument;
 
@@ -1143,11 +1140,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private unsafe ActorIdentifier AssociatedIdentifier(int gameObjectIdx)
     {
-        if (gameObjectIdx < 0 || gameObjectIdx >= _dalamud.Objects.Length || !_actors.Valid)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _dalamud.Objects.Length)
             return ActorIdentifier.Invalid;
 
         var ptr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_dalamud.Objects.GetObjectAddress(gameObjectIdx);
-        return _actors.AwaitedService.FromObject(ptr, out _, false, true, true);
+        return _actors.FromObject(ptr, out _, false, true, true);
     }
 
     // Resolve a path given by string for a specific collection.
@@ -1241,12 +1238,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     // TODO: replace all usages with ActorIdentifier stuff when incrementing API
     private ActorIdentifier NameToIdentifier(string name, ushort worldId)
     {
-        if (!_actors.Valid)
-            return ActorIdentifier.Invalid;
-
         // Verified to be valid name beforehand.
         var b = ByteString.FromStringUnsafe(name, false);
-        return _actors.AwaitedService.CreatePlayer(b, worldId);
+        return _actors.CreatePlayer(b, worldId);
     }
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int _1, int _2, bool inherited)

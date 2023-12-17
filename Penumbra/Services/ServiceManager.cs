@@ -7,7 +7,10 @@ using Penumbra.Api;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
+using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
+using Penumbra.GameData.DataContainers;
+using Penumbra.GameData.DataContainers.Bases;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceLoading;
@@ -24,17 +27,17 @@ using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
+using Penumbra.UI.Tabs.Debug;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.Services;
 
 public static class ServiceManager
 {
-    public static ServiceProvider CreateProvider(Penumbra penumbra, DalamudPluginInterface pi, Logger log, StartTracker startTimer)
+    public static ServiceProvider CreateProvider(Penumbra penumbra, DalamudPluginInterface pi, Logger log)
     {
         var services = new ServiceCollection()
             .AddSingleton(log)
-            .AddSingleton(startTimer)
             .AddSingleton(penumbra)
             .AddDalamud(pi)
             .AddMeta()
@@ -47,7 +50,9 @@ public static class ServiceManager
             .AddResolvers()
             .AddInterface()
             .AddModEditor()
-            .AddApi();
+            .AddApi()
+            .AddDataContainers()
+            .AddAsyncServices();
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
@@ -56,6 +61,22 @@ public static class ServiceManager
     {
         var dalamud = new DalamudServices(pi);
         dalamud.AddServices(services);
+        return services;
+    }
+
+    private static IServiceCollection AddDataContainers(this IServiceCollection services)
+    {
+        foreach (var type in typeof(IDataContainer).Assembly.GetExportedTypes()
+                     .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IDataContainer))))
+            services.AddSingleton(type);
+        return services;
+    }
+
+    private static IServiceCollection AddAsyncServices(this IServiceCollection services)
+    {
+        foreach (var type in typeof(IDataContainer).Assembly.GetExportedTypes()
+                     .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncService))))
+            services.AddSingleton(type);
         return services;
     }
 
@@ -71,17 +92,19 @@ public static class ServiceManager
 
 
     private static IServiceCollection AddGameData(this IServiceCollection services)
-        => services.AddSingleton<IGamePathParser, GamePathParser>()
-            .AddSingleton<IdentifierService>()
+        => services.AddSingleton<GamePathParser>()
             .AddSingleton<StainService>()
-            .AddSingleton<ItemService>()
-            .AddSingleton<ActorService>()
             .AddSingleton<HumanModelList>();
 
     private static IServiceCollection AddInterop(this IServiceCollection services)
         => services.AddSingleton<GameEventManager>()
             .AddSingleton<FrameworkManager>()
             .AddSingleton<CutsceneService>()
+            .AddSingleton(p =>
+            {
+                var cutsceneService = p.GetRequiredService<CutsceneService>();
+                return new CutsceneResolver(cutsceneService.GetParentIndex);
+            })
             .AddSingleton<CharacterUtility>()
             .AddSingleton<ResourceManagerService>()
             .AddSingleton<ResourceService>()
@@ -173,7 +196,8 @@ public static class ServiceManager
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ItemSwapTab>()
             .AddSingleton<ModMergeTab>()
-            .AddSingleton<ChangedItemDrawer>();
+            .AddSingleton<ChangedItemDrawer>()
+            .AddSingleton(p => new Diagnostics(p));
 
     private static IServiceCollection AddModEditor(this IServiceCollection services)
         => services.AddSingleton<ModFileCollection>()

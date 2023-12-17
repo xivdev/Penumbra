@@ -1,4 +1,5 @@
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,7 +7,6 @@ using OtterGui;
 using OtterGui.Log;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.Interop.ResourceLoading;
@@ -19,6 +19,7 @@ using Penumbra.UI.Tabs;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.UI;
@@ -31,7 +32,7 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static readonly Logger      Log = new();
+    public static readonly Logger         Log = new();
     public static          MessageService Messager { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
@@ -53,10 +54,8 @@ public class Penumbra : IDalamudPlugin
     {
         try
         {
-            var       startTimer = new StartTracker();
-            using var timer      = startTimer.Measure(StartTimeType.Total);
-            _services        = ServiceManager.CreateProvider(this, pluginInterface, Log, startTimer);
-            Messager             = _services.GetRequiredService<MessageService>();
+            _services        = ServiceManager.CreateProvider(this, pluginInterface, Log);
+            Messager         = _services.GetRequiredService<MessageService>();
             _validityChecker = _services.GetRequiredService<ValidityChecker>();
             var startup = _services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
@@ -74,14 +73,11 @@ public class Penumbra : IDalamudPlugin
             _tempCollections     = _services.GetRequiredService<TempCollectionManager>();
             _redrawService       = _services.GetRequiredService<RedrawService>();
             _communicatorService = _services.GetRequiredService<CommunicatorService>();
-            _services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
-            _services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
+            _services.GetRequiredService<ResourceService>();            // Initialize because not required anywhere else.
+            _services.GetRequiredService<ModCacheManager>();            // Initialize because not required anywhere else.
             _services.GetRequiredService<ModelResourceHandleUtility>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
-            using (var t = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
-            {
-                _services.GetRequiredService<PathResolver>();
-            }
+            _services.GetRequiredService<PathResolver>();
 
             _services.GetRequiredService<SkinFixer>();
 
@@ -108,8 +104,7 @@ public class Penumbra : IDalamudPlugin
 
     private void SetupApi()
     {
-        using var timer = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
-        var       api   = _services.GetRequiredService<IPenumbraApi>();
+        var api = _services.GetRequiredService<IPenumbraApi>();
         _services.GetRequiredService<PenumbraIpcProviders>();
         _communicatorService.ChangedItemHover.Subscribe(it =>
         {
@@ -128,8 +123,7 @@ public class Penumbra : IDalamudPlugin
     {
         AsyncTask.Run(() =>
             {
-                using var tInterface = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
-                var       system     = _services.GetRequiredService<PenumbraWindowSystem>();
+                var system = _services.GetRequiredService<PenumbraWindowSystem>();
                 system.Window.Setup(this, _services.GetRequiredService<ConfigTabBar>());
                 _services.GetRequiredService<CommandHandler>();
                 if (!_disposed)

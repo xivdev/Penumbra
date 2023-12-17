@@ -7,6 +7,7 @@ using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.String;
@@ -19,7 +20,7 @@ using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.M
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal record GlobalResolveContext(IObjectIdentifier Identifier, ModCollection Collection, TreeBuildCache TreeBuildCache, bool WithUiData)
+internal record GlobalResolveContext(ObjectIdentification Identifier, ModCollection Collection, TreeBuildCache TreeBuildCache, bool WithUiData)
 {
     public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
@@ -28,8 +29,13 @@ internal record GlobalResolveContext(IObjectIdentifier Identifier, ModCollection
         => new(this, characterBase, slotIndex, slot, equipment, weaponType);
 }
 
-internal partial record ResolveContext(GlobalResolveContext Global, Pointer<CharacterBase> CharacterBase, uint SlotIndex,
-    EquipSlot Slot, CharacterArmor Equipment, WeaponType WeaponType)
+internal partial record ResolveContext(
+    GlobalResolveContext Global,
+    Pointer<CharacterBase> CharacterBase,
+    uint SlotIndex,
+    EquipSlot Slot,
+    CharacterArmor Equipment,
+    WeaponType WeaponType)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
@@ -152,6 +158,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
     {
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
+
         var mdlResource = mdl->ModelResourceHandle;
 
         var path = ResolveModelPath();
@@ -224,6 +231,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
                 shpkNode.Name = "Shader Package";
             node.Children.Add(shpkNode);
         }
+
         var shpkFile = Global.WithUiData && shpkNode != null ? Global.TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
         var shpk     = Global.WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
@@ -255,7 +263,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
                     }
                 }
 
-                texNode = texNode.Clone();
+                texNode      = texNode.Clone();
                 texNode.Name = name ?? $"Texture #{i}";
             }
 
@@ -310,13 +318,13 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
         return node;
     }
 
-    internal ResourceNode.UiData GuessModelUIData(Utf8GamePath gamePath)
+    internal ResourceNode.UiData GuessModelUiData(Utf8GamePath gamePath)
     {
         var path = gamePath.ToString().Split('/', StringSplitOptions.RemoveEmptyEntries);
         // Weapons intentionally left out.
         var isEquipment = SafeGet(path, 0) == "chara" && SafeGet(path, 1) is "accessory" or "equipment";
         if (isEquipment)
-            foreach (var item in Global.Identifier.Identify(Equipment.Set, Equipment.Variant, Slot.ToSlot()))
+            foreach (var item in Global.Identifier.Identify(Equipment.Set, 0, Equipment.Variant, Slot.ToSlot()))
             {
                 var name = Slot switch
                     {
@@ -324,11 +332,11 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
                         EquipSlot.LFinger => "L: ",
                         _                 => string.Empty,
                     }
-                  + item.Name.ToString();
+                  + item.Name;
                 return new ResourceNode.UiData(name, ChangedItemDrawer.GetCategoryIcon(item.Name, item));
             }
 
-        var dataFromPath = GuessUIDataFromPath(gamePath);
+        var dataFromPath = GuessUiDataFromPath(gamePath);
         if (dataFromPath.Name != null)
             return dataFromPath;
 
@@ -337,7 +345,7 @@ internal partial record ResolveContext(GlobalResolveContext Global, Pointer<Char
             : new ResourceNode.UiData(null,          ChangedItemDrawer.ChangedItemIcon.Unknown);
     }
 
-    internal ResourceNode.UiData GuessUIDataFromPath(Utf8GamePath gamePath)
+    internal ResourceNode.UiData GuessUiDataFromPath(Utf8GamePath gamePath)
     {
         foreach (var obj in Global.Identifier.Identify(gamePath.ToString()))
         {

@@ -1,4 +1,5 @@
 using Penumbra.GameData;
+using Penumbra.GameData.Data;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
@@ -28,7 +29,7 @@ public partial class TexToolsMeta
 
     private readonly MetaFileManager _metaFileManager;
 
-    public TexToolsMeta(MetaFileManager metaFileManager, IGamePathParser parser, byte[] data, bool keepDefault)
+    public TexToolsMeta(MetaFileManager metaFileManager, GamePathParser parser, byte[] data, bool keepDefault)
     {
         _metaFileManager = metaFileManager;
         _keepDefault     = keepDefault;

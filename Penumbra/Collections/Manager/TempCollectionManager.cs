@@ -14,10 +14,10 @@ public class TempCollectionManager : IDisposable
 
     private readonly CommunicatorService               _communicator;
     private readonly CollectionStorage                 _storage;
-    private readonly ActorService                      _actors;
+    private readonly ActorManager                      _actors;
     private readonly Dictionary<string, ModCollection> _customCollections = new();
 
-    public TempCollectionManager(Configuration config, CommunicatorService communicator, ActorService actors, CollectionStorage storage)
+    public TempCollectionManager(Configuration config, CommunicatorService communicator, ActorManager actors, CollectionStorage storage)
     {
         _communicator = communicator;
         _actors       = actors;
@@ -111,7 +111,7 @@ public class TempCollectionManager : IDisposable
         if (!ByteString.FromString(characterName, out var byteString, false))
             return false;
 
-        var identifier = _actors.AwaitedService.CreatePlayer(byteString, worldId);
+        var identifier = _actors.CreatePlayer(byteString, worldId);
         if (!identifier.IsValid)
             return false;
 
@@ -123,7 +123,7 @@ public class TempCollectionManager : IDisposable
         if (!ByteString.FromString(characterName, out var byteString, false))
             return false;
 
-        var identifier = _actors.AwaitedService.CreatePlayer(byteString, worldId);
+        var identifier = _actors.CreatePlayer(byteString, worldId);
         return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Name);
     }
 }
