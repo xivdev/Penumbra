@@ -13,12 +13,12 @@ using ImGuiNET;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers;
-using Penumbra.GameData.DataContainers.Bases;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Structs;
 using Penumbra.Import.Textures;
@@ -49,7 +49,7 @@ public class Diagnostics(IServiceProvider provider)
             return;
 
         using var table = ImRaii.Table("##data", 4, ImGuiTableFlags.RowBg);
-        foreach (var type in typeof(IAsyncDataContainer).Assembly.GetTypes()
+        foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
             var container = (IAsyncDataContainer) provider.GetRequiredService(type);

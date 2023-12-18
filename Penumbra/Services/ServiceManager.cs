@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui.Classes;
 using OtterGui.Compression;
 using OtterGui.Log;
+using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
@@ -74,8 +75,8 @@ public static class ServiceManager
 
     private static IServiceCollection AddAsyncServices(this IServiceCollection services)
     {
-        foreach (var type in typeof(IDataContainer).Assembly.GetExportedTypes()
-                     .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncService))))
+        foreach (var type in typeof(ActorManager).Assembly.GetExportedTypes()
+                     .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IService))))
             services.AddSingleton(type);
         return services;
     }

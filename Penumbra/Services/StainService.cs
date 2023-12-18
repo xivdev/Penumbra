@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
+using OtterGui.Log;
 using OtterGui.Widgets;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
@@ -76,9 +77,9 @@ public class StainService : IDisposable
     public readonly StmFile            StmFile;
     public readonly StainTemplateCombo TemplateCombo;
 
-    public StainService(DalamudPluginInterface pluginInterface, IDataManager dataManager, IPluginLog dalamudLog)
+    public StainService(DalamudPluginInterface pluginInterface, IDataManager dataManager, Logger logger)
     {
-        StainData = new DictStains(pluginInterface, dalamudLog, dataManager);
+        StainData = new DictStains(pluginInterface, logger, dataManager);
         StainCombo = new FilterComboColors(140,
             () => StainData.Value.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(),
             Penumbra.Log);
