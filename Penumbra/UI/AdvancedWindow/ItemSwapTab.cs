@@ -221,7 +221,7 @@ public class ItemSwapTab : IDisposable, ITab
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera),
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Ear, Names.CombinedRace(_currentGender, ModelRace.Viera),
                         (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
