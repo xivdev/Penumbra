@@ -25,8 +25,8 @@ internal record GlobalResolveContext(ObjectIdentification Identifier, ModCollect
     public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
     public unsafe ResolveContext CreateContext(CharacterBase* characterBase, uint slotIndex = 0xFFFFFFFFu,
-        EquipSlot slot = EquipSlot.Unknown, CharacterArmor equipment = default, WeaponType weaponType = default)
-        => new(this, characterBase, slotIndex, slot, equipment, weaponType);
+        EquipSlot slot = EquipSlot.Unknown, CharacterArmor equipment = default, SecondaryId secondaryId = default)
+        => new(this, characterBase, slotIndex, slot, equipment, secondaryId);
 }
 
 internal partial record ResolveContext(
@@ -35,7 +35,7 @@ internal partial record ResolveContext(
     uint SlotIndex,
     EquipSlot Slot,
     CharacterArmor Equipment,
-    WeaponType WeaponType)
+    SecondaryId SecondaryId)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 

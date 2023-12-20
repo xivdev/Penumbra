@@ -12,10 +12,10 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct ImcManipulation : IMetaManipulation<ImcManipulation>
 {
-    public ImcEntry Entry       { get; private init; }
-    public SetId    PrimaryId   { get; private init; }
-    public SetId    SecondaryId { get; private init; }
-    public Variant  Variant     { get; private init; }
+    public ImcEntry  Entry       { get; private init; }
+    public PrimaryId PrimaryId   { get; private init; }
+    public PrimaryId SecondaryId { get; private init; }
+    public Variant   Variant     { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public ObjectType ObjectType { get; private init; }
@@ -26,7 +26,7 @@ public readonly struct ImcManipulation : IMetaManipulation<ImcManipulation>
     [JsonConverter(typeof(StringEnumConverter))]
     public BodySlot BodySlot { get; private init; }
 
-    public ImcManipulation(EquipSlot equipSlot, ushort variant, SetId primaryId, ImcEntry entry)
+    public ImcManipulation(EquipSlot equipSlot, ushort variant, PrimaryId primaryId, ImcEntry entry)
     {
         Entry       = entry;
         PrimaryId   = primaryId;
@@ -42,7 +42,7 @@ public readonly struct ImcManipulation : IMetaManipulation<ImcManipulation>
     // so we change the unused value to something nonsensical in that case, just so they do not compare equal,
     // and clamp the variant to 255.
     [JsonConstructor]
-    internal ImcManipulation(ObjectType objectType, BodySlot bodySlot, SetId primaryId, SetId secondaryId, ushort variant,
+    internal ImcManipulation(ObjectType objectType, BodySlot bodySlot, PrimaryId primaryId, PrimaryId secondaryId, ushort variant,
         EquipSlot equipSlot, ImcEntry entry)
     {
         Entry      = entry;

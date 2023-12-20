@@ -139,7 +139,7 @@ public class ModCacheManager : IDisposable
         {
             case ModPathChangeType.Added:
             case ModPathChangeType.Reloaded:
-                Refresh(mod);
+                RefreshWithChangedItems(mod);
                 break;
         }
     }
@@ -151,10 +151,28 @@ public class ModCacheManager : IDisposable
     }
 
     private void OnModDiscoveryFinished()
-        => Parallel.ForEach(_modManager, Refresh);
+    {
+        if (!_identifier.Awaiter.IsCompletedSuccessfully || _updatingItems)
+        {
+            Parallel.ForEach(_modManager, RefreshWithoutChangedItems);
+        }
+        else
+        {
+            _updatingItems = true;
+            Parallel.ForEach(_modManager, RefreshWithChangedItems);
+            _updatingItems = false;
+        }
+    }
 
     private void OnIdentifierCreation()
-        => Parallel.ForEach(_modManager, UpdateChangedItems);
+    {
+        if (_updatingItems)
+            return;
+
+        _updatingItems = true;
+        Parallel.ForEach(_modManager, UpdateChangedItems);
+        _updatingItems = false;
+    }
 
     private static void UpdateFileCount(Mod mod)
         => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count);
@@ -173,15 +191,8 @@ public class ModCacheManager : IDisposable
 
     private void UpdateChangedItems(Mod mod)
     {
-        if (_updatingItems)
-            return;
-
-        _updatingItems = true;
         var changedItems = (SortedList<string, object?>)mod.ChangedItems;
         changedItems.Clear();
-        if (!_identifier.Awaiter.IsCompletedSuccessfully)
-            return;
-
         foreach (var gamePath in mod.AllSubMods.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
             _identifier.Identify(changedItems, gamePath.ToString());
 
@@ -189,7 +200,6 @@ public class ModCacheManager : IDisposable
             ComputeChangedItems(_identifier, changedItems, manip);
 
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
-        _updatingItems              = false;
     }
 
     private static void UpdateCounts(Mod mod)
@@ -210,10 +220,16 @@ public class ModCacheManager : IDisposable
         }
     }
 
-    private void Refresh(Mod mod)
+    private void RefreshWithChangedItems(Mod mod)
     {
         UpdateTags(mod);
         UpdateCounts(mod);
         UpdateChangedItems(mod);
+    }
+
+    private void RefreshWithoutChangedItems(Mod mod)
+    {
+        UpdateTags(mod);
+        UpdateCounts(mod);
     }
 }

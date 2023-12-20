@@ -74,12 +74,12 @@ public struct EstCache : IDisposable
         };
     }
 
-    internal ushort GetEstEntry(MetaFileManager manager, EstManipulation.EstType type, GenderRace genderRace, SetId setId)
+    internal ushort GetEstEntry(MetaFileManager manager, EstManipulation.EstType type, GenderRace genderRace, PrimaryId primaryId)
     {
         var file = GetEstFile(type);
         return file != null
-            ? file[genderRace, setId.Id]
-            : EstFile.GetDefault(manager, type, genderRace, setId);
+            ? file[genderRace, primaryId.Id]
+            : EstFile.GetDefault(manager, type, genderRace, primaryId);
     }
 
     public void Reset()

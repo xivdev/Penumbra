@@ -38,7 +38,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     public int Count
         => (Length - DataOffset) / EqdpEntrySize;
 
-    public EqdpEntry this[SetId id]
+    public EqdpEntry this[PrimaryId id]
     {
         get
         {
@@ -79,7 +79,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         MemoryUtility.MemSet(myDataPtr, 0, Length - (int)((byte*)myDataPtr - Data));
     }
 
-    public void Reset(IEnumerable<SetId> entries)
+    public void Reset(IEnumerable<PrimaryId> entries)
     {
         foreach (var entry in entries)
             this[entry] = GetDefault(entry);
@@ -101,18 +101,18 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         Reset();
     }
 
-    public EqdpEntry GetDefault(SetId setId)
-        => GetDefault(Manager, Index, setId);
+    public EqdpEntry GetDefault(PrimaryId primaryId)
+        => GetDefault(Manager, Index, primaryId);
 
-    public static EqdpEntry GetDefault(MetaFileManager manager, CharacterUtility.InternalIndex idx, SetId setId)
-        => GetDefault((byte*)manager.CharacterUtility.DefaultResource(idx).Address, setId);
+    public static EqdpEntry GetDefault(MetaFileManager manager, CharacterUtility.InternalIndex idx, PrimaryId primaryId)
+        => GetDefault((byte*)manager.CharacterUtility.DefaultResource(idx).Address, primaryId);
 
-    public static EqdpEntry GetDefault(byte* data, SetId setId)
+    public static EqdpEntry GetDefault(byte* data, PrimaryId primaryId)
     {
         var blockSize       = *(ushort*)(data + IdentifierSize);
         var totalBlockCount = *(ushort*)(data + IdentifierSize + 2);
 
-        var blockIdx = setId.Id / blockSize;
+        var blockIdx = primaryId.Id / blockSize;
         if (blockIdx >= totalBlockCount)
             return 0;
 
@@ -121,9 +121,9 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
             return 0;
 
         var blockData = (ushort*)(data + IdentifierSize + PreambleSize + totalBlockCount * 2 + block * 2);
-        return (EqdpEntry)(*(blockData + setId.Id % blockSize));
+        return (EqdpEntry)(*(blockData + primaryId.Id % blockSize));
     }
 
-    public static EqdpEntry GetDefault(MetaFileManager manager, GenderRace raceCode, bool accessory, SetId setId)
-        => GetDefault(manager, CharacterUtility.ReverseIndices[(int)CharacterUtilityData.EqdpIdx(raceCode, accessory)], setId);
+    public static EqdpEntry GetDefault(MetaFileManager manager, GenderRace raceCode, bool accessory, PrimaryId primaryId)
+        => GetDefault(manager, CharacterUtility.ReverseIndices[(int)CharacterUtilityData.EqdpIdx(raceCode, accessory)], primaryId);
 }

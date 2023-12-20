@@ -169,6 +169,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         ImRaii.TreeNode(leaf.Value.Name, flags).Dispose();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
         {
+            _modManager.SetKnown(leaf.Value);
             var (setting, collection) = _collectionManager.Active.Current[leaf.Value.Index];
             if (_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {

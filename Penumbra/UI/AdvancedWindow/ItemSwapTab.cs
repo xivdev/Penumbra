@@ -210,26 +210,26 @@ public class ItemSwapTab : IDisposable, ITab
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Ear, Names.CombinedRace(_currentGender, ModelRace.Viera),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Weapon: break;

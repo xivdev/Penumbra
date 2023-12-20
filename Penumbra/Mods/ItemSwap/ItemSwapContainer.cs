@@ -145,7 +145,7 @@ public class ItemSwapContainer
         return ret;
     }
 
-    public bool LoadCustomization(MetaFileManager manager, BodySlot slot, GenderRace race, SetId from, SetId to,
+    public bool LoadCustomization(MetaFileManager manager, BodySlot slot, GenderRace race, PrimaryId from, PrimaryId to,
         ModCollection? collection = null)
     {
         var pathResolver = PathResolver(collection);
