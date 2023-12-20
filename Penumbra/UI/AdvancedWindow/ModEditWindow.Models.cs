@@ -1,9 +1,7 @@
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
