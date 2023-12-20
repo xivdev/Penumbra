@@ -1,6 +1,8 @@
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
+using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
@@ -10,26 +12,113 @@ public partial class ModEditWindow
 {
     private readonly FileEditor<MdlFile> _modelTab;
 
+    private static List<TagButtons> _submeshAttributeTagWidgets = new();
+
     private static bool DrawModelPanel(MdlFile file, bool disabled)
     {
-        var ret = false;
-        for (var i = 0; i < file.Materials.Length; ++i)
+        var submeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
+        if (_submeshAttributeTagWidgets.Count != submeshTotal)
         {
-            using var id  = ImRaii.PushId(i);
-            var       tmp = file.Materials[i];
-            if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
-                    disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
-             && tmp.Length > 0
-             && tmp != file.Materials[i])
-            {
-                file.Materials[i] = tmp;
-                ret               = true;
-            }
+            _submeshAttributeTagWidgets.Clear();
+            _submeshAttributeTagWidgets.AddRange(
+                Enumerable.Range(0, submeshTotal).Select(_ => new TagButtons())
+            );
         }
+
+        var ret = false;
+
+        for (var i = 0; i < file.Meshes.Length; ++i)
+            ret |= DrawMeshDetails(file, i, disabled);
 
         ret |= DrawOtherModelDetails(file, disabled);
 
         return !disabled && ret;
+    }
+
+    private static bool DrawMeshDetails(MdlFile file, int meshIndex, bool disabled)
+    {
+        if (!ImGui.CollapsingHeader($"Mesh {meshIndex}"))
+            return false;
+
+        using var id = ImRaii.PushId(meshIndex); 
+
+        var mesh = file.Meshes[meshIndex];
+
+        var ret = false;
+
+        // Mesh material.
+        var temp = file.Materials[mesh.MaterialIndex];
+        if (
+            ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
+            && temp.Length > 0
+            && temp != file.Materials[mesh.MaterialIndex]
+        ) {
+            file.Materials[mesh.MaterialIndex] = temp;
+            ret = true;
+        }
+
+        // Submeshes.
+        for (var submeshOffset = 0; submeshOffset < mesh.SubMeshCount; submeshOffset++)
+            ret |= DrawSubMeshDetails(file, mesh.SubMeshIndex + submeshOffset, disabled);
+
+        return ret;
+    }
+
+    private static bool DrawSubMeshDetails(MdlFile file, int submeshIndex, bool disabled)
+    {
+        using var id = ImRaii.PushId(submeshIndex);
+
+        var submesh = file.SubMeshes[submeshIndex];
+        var widget = _submeshAttributeTagWidgets[submeshIndex];
+
+        var attributes = Enumerable
+            .Range(0, 32)
+            .Where(index => ((submesh.AttributeIndexMask >> index) & 1) == 1)
+            .Select(index => file.Attributes[index])
+            .ToArray();
+
+        UiHelpers.DefaultLineSpace();
+        var tagIndex = widget.Draw($"Submesh {submeshIndex} Attributes", "", attributes, out var editedAttribute, !disabled);
+        if (tagIndex >= 0)
+        {
+            // Eagerly remove the edited attribute from the attribute mask.
+            if (tagIndex < attributes.Length)
+            {
+                var previousAttributeIndex = file.Attributes.IndexOf(attributes[tagIndex]);
+                submesh.AttributeIndexMask &= ~(1u << previousAttributeIndex);
+                
+                // If no other submeshes use this attribute, remove it.
+                var usages = file.SubMeshes
+                    .Where(submesh => ((submesh.AttributeIndexMask >> previousAttributeIndex) & 1) == 1)
+                    .Count();
+                if (usages <= 1)
+                {
+                    // TODO THIS BLOWS UP ALL OTHER INDICES BEYOND WHAT WE JUST REMOVED - I NEED TO VIRTUALISE THIS SHIT
+                    // file.Attributes = file.Attributes.RemoveItems(previousAttributeIndex);
+                }
+            }
+
+            // If there's a new or edited name, add it to the mask, and the attribute list if it's not already known.
+            if (editedAttribute != "")
+            {
+                var attributeIndex = file.Attributes.IndexOf(editedAttribute);
+                if (attributeIndex == -1)
+                {
+                    file.Attributes.AddItem(editedAttribute);
+                    attributeIndex = file.Attributes.Length - 1;
+                }
+                submesh.AttributeIndexMask |= 1u << attributeIndex;
+            }
+
+            file.SubMeshes[submeshIndex] = submesh;
+
+            return true;
+        }
+
+        ImGui.SameLine();
+        ImGui.Text($"{Convert.ToString(submesh.AttributeIndexMask, 2)}");
+
+        return false;
     }
 
     private static bool DrawOtherModelDetails(MdlFile file, bool _)
