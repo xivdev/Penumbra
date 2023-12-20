@@ -15,7 +15,7 @@ public class ValidityChecker
     public readonly bool IsNotInstalledPenumbra;
     public readonly bool IsValidSourceRepo;
 
-    public readonly List<Exception> ImcExceptions = new();
+    public readonly List<Exception> ImcExceptions = [];
 
     public readonly string Version;
     public readonly string CommitHash;

@@ -190,9 +190,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             var itemPos        = ImGui.GetItemRectMax().X;
             var maxWidth       = ImGui.GetWindowPos().X + ImGui.GetWindowContentRegionMax().X;
             var priorityString = $"[{state.Priority}]";
-            var requiredSize   = ImGui.CalcTextSize(priorityString).X;
+            var Size   = ImGui.CalcTextSize(priorityString).X;
             var remainingSpace = maxWidth - itemPos;
-            var offset         = remainingSpace - requiredSize;
+            var offset         = remainingSpace - Size;
             if (ImGui.GetScrollMaxY() == 0)
                 offset -= ImGui.GetStyle().ItemInnerSpacing.X;
 

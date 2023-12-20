@@ -103,7 +103,7 @@ public partial class ModEditWindow
                 LoadedShpkPath = path;
                 var data = LoadedShpkPath.IsRooted
                     ? File.ReadAllBytes(LoadedShpkPath.FullName)
-                    : _edit._dalamud.GameData.GetFile(LoadedShpkPath.InternalName.ToString())?.Data;
+                    : _edit._gameData.GetFile(LoadedShpkPath.InternalName.ToString())?.Data;
                 AssociatedShpk     = data?.Length > 0 ? new ShpkFile(data) : throw new Exception("Failure to load file data.");
                 LoadedShpkPathName = path.ToPath();
             }
@@ -457,13 +457,13 @@ public partial class ModEditWindow
             var foundMaterials = new HashSet<nint>();
             foreach (var materialInfo in instances)
             {
-                var material = materialInfo.GetDrawObjectMaterial(_edit._dalamud.Objects);
+                var material = materialInfo.GetDrawObjectMaterial(_edit._objects);
                 if (foundMaterials.Contains((nint)material))
                     continue;
 
                 try
                 {
-                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, materialInfo));
+                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._objects, materialInfo));
                     foundMaterials.Add((nint)material);
                 }
                 catch (InvalidOperationException)
@@ -481,7 +481,7 @@ public partial class ModEditWindow
             {
                 try
                 {
-                    ColorTablePreviewers.Add(new LiveColorTablePreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, materialInfo));
+                    ColorTablePreviewers.Add(new LiveColorTablePreviewer(_edit._objects, _edit._framework, materialInfo));
                 }
                 catch (InvalidOperationException)
                 {

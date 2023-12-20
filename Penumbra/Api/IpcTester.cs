@@ -40,23 +40,24 @@ public class IpcTester : IDisposable
     private readonly Temporary        _temporary;
     private readonly ResourceTree     _resourceTree;
 
-    public IpcTester(Configuration config, DalamudServices dalamud, PenumbraIpcProviders ipcProviders, ModManager modManager,
-        CollectionManager collections, TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService)
+    public IpcTester(Configuration config, DalamudPluginInterface pi, IObjectTable objects, IClientState clientState,
+        PenumbraIpcProviders ipcProviders, ModManager modManager, CollectionManager collections, TempModManager tempMods,
+        TempCollectionManager tempCollections, SaveService saveService)
     {
         _ipcProviders     = ipcProviders;
-        _pluginState      = new PluginState(dalamud.PluginInterface);
-        _ipcConfiguration = new IpcConfiguration(dalamud.PluginInterface);
-        _ui               = new Ui(dalamud.PluginInterface);
-        _redrawing        = new Redrawing(dalamud);
-        _gameState        = new GameState(dalamud.PluginInterface);
-        _resolve          = new Resolve(dalamud.PluginInterface);
-        _collections      = new Collections(dalamud.PluginInterface);
-        _meta             = new Meta(dalamud.PluginInterface);
-        _mods             = new Mods(dalamud.PluginInterface);
-        _modSettings      = new ModSettings(dalamud.PluginInterface);
-        _editing          = new Editing(dalamud.PluginInterface);
-        _temporary        = new Temporary(dalamud.PluginInterface, modManager, collections, tempMods, tempCollections, saveService, config);
-        _resourceTree     = new ResourceTree(dalamud.PluginInterface, dalamud.Objects);
+        _pluginState      = new PluginState(pi);
+        _ipcConfiguration = new IpcConfiguration(pi);
+        _ui               = new Ui(pi);
+        _redrawing        = new Redrawing(pi, objects, clientState);
+        _gameState        = new GameState(pi);
+        _resolve          = new Resolve(pi);
+        _collections      = new Collections(pi);
+        _meta             = new Meta(pi);
+        _mods             = new Mods(pi);
+        _modSettings      = new ModSettings(pi);
+        _editing          = new Editing(pi);
+        _temporary        = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService, config);
+        _resourceTree     = new ResourceTree(pi, objects);
         UnsubscribeEvents();
     }
 
@@ -398,17 +399,21 @@ public class IpcTester : IDisposable
 
     private class Redrawing
     {
-        private readonly DalamudServices              _dalamud;
+        private readonly DalamudPluginInterface       _pi;
+        private readonly IClientState                 _clientState;
+        private readonly IObjectTable                 _objects;
         public readonly  EventSubscriber<IntPtr, int> Redrawn;
 
         private string _redrawName        = string.Empty;
         private int    _redrawIndex       = 0;
         private string _lastRedrawnString = "None";
 
-        public Redrawing(DalamudServices dalamud)
+        public Redrawing(DalamudPluginInterface pi, IObjectTable objects, IClientState clientState)
         {
-            _dalamud = dalamud;
-            Redrawn  = Ipc.GameObjectRedrawn.Subscriber(_dalamud.PluginInterface, SetLastRedrawn);
+            _pi          = pi;
+            _objects     = objects;
+            _clientState = clientState;
+            Redrawn      = Ipc.GameObjectRedrawn.Subscriber(_pi, SetLastRedrawn);
         }
 
         public void Draw()
@@ -426,25 +431,25 @@ public class IpcTester : IDisposable
             ImGui.InputTextWithHint("##redrawName", "Name...", ref _redrawName, 32);
             ImGui.SameLine();
             if (ImGui.Button("Redraw##Name"))
-                Ipc.RedrawObjectByName.Subscriber(_dalamud.PluginInterface).Invoke(_redrawName, RedrawType.Redraw);
+                Ipc.RedrawObjectByName.Subscriber(_pi).Invoke(_redrawName, RedrawType.Redraw);
 
             DrawIntro(Ipc.RedrawObject.Label, "Redraw Player Character");
-            if (ImGui.Button("Redraw##pc") && _dalamud.ClientState.LocalPlayer != null)
-                Ipc.RedrawObject.Subscriber(_dalamud.PluginInterface).Invoke(_dalamud.ClientState.LocalPlayer, RedrawType.Redraw);
+            if (ImGui.Button("Redraw##pc") && _clientState.LocalPlayer != null)
+                Ipc.RedrawObject.Subscriber(_pi).Invoke(_clientState.LocalPlayer, RedrawType.Redraw);
 
             DrawIntro(Ipc.RedrawObjectByIndex.Label, "Redraw by Index");
             var tmp = _redrawIndex;
             ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
-            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _dalamud.Objects.Length))
-                _redrawIndex = Math.Clamp(tmp, 0, _dalamud.Objects.Length);
+            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _objects.Length))
+                _redrawIndex = Math.Clamp(tmp, 0, _objects.Length);
 
             ImGui.SameLine();
             if (ImGui.Button("Redraw##Index"))
-                Ipc.RedrawObjectByIndex.Subscriber(_dalamud.PluginInterface).Invoke(_redrawIndex, RedrawType.Redraw);
+                Ipc.RedrawObjectByIndex.Subscriber(_pi).Invoke(_redrawIndex, RedrawType.Redraw);
 
             DrawIntro(Ipc.RedrawAll.Label, "Redraw All");
             if (ImGui.Button("Redraw##All"))
-                Ipc.RedrawAll.Subscriber(_dalamud.PluginInterface).Invoke(RedrawType.Redraw);
+                Ipc.RedrawAll.Subscriber(_pi).Invoke(RedrawType.Redraw);
 
             DrawIntro(Ipc.GameObjectRedrawn.Label, "Last Redrawn Object:");
             ImGui.TextUnformatted(_lastRedrawnString);
@@ -453,12 +458,12 @@ public class IpcTester : IDisposable
         private void SetLastRedrawn(IntPtr address, int index)
         {
             if (index < 0
-             || index > _dalamud.Objects.Length
+             || index > _objects.Length
              || address == IntPtr.Zero
-             || _dalamud.Objects[index]?.Address != address)
+             || _objects[index]?.Address != address)
                 _lastRedrawnString = "Invalid";
 
-            _lastRedrawnString = $"{_dalamud.Objects[index]!.Name} (0x{address:X}, {index})";
+            _lastRedrawnString = $"{_objects[index]!.Name} (0x{address:X}, {index})";
         }
     }
 
@@ -1529,7 +1534,7 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourceTrees"))
             {
                 var gameObjects = GetSelectedGameObjects();
-                var subscriber = Ipc.GetGameObjectResourceTrees.Subscriber(_pi);
+                var subscriber  = Ipc.GetGameObjectResourceTrees.Subscriber(_pi);
                 _stopwatch.Restart();
                 var trees = subscriber.Invoke(_withUIData, gameObjects);
 
@@ -1563,7 +1568,7 @@ public class IpcTester : IDisposable
             DrawPopup(nameof(Ipc.GetGameObjectResourcesOfType), ref _lastGameObjectResourcesOfType, DrawResourcesOfType, _lastCallDuration);
             DrawPopup(nameof(Ipc.GetPlayerResourcesOfType),     ref _lastPlayerResourcesOfType,     DrawResourcesOfType, _lastCallDuration);
 
-            DrawPopup(nameof(Ipc.GetGameObjectResourceTrees), ref _lastGameObjectResourceTrees, DrawResourceTrees, _lastCallDuration);
+            DrawPopup(nameof(Ipc.GetGameObjectResourceTrees), ref _lastGameObjectResourceTrees, DrawResourceTrees,  _lastCallDuration);
             DrawPopup(nameof(Ipc.GetPlayerResourceTrees),     ref _lastPlayerResourceTrees,     DrawResourceTrees!, _lastCallDuration);
         }
 
@@ -1695,9 +1700,10 @@ public class IpcTester : IDisposable
                 {
                     ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthStretch, 0.5f);
                 }
-                ImGui.TableSetupColumn("Game Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
-                ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
-                ImGui.TableSetupColumn("Object Address", ImGuiTableColumnFlags.WidthStretch, 0.2f);
+
+                ImGui.TableSetupColumn("Game Path",       ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                ImGui.TableSetupColumn("Actual Path",     ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                ImGui.TableSetupColumn("Object Address",  ImGuiTableColumnFlags.WidthStretch, 0.2f);
                 ImGui.TableSetupColumn("Resource Handle", ImGuiTableColumnFlags.WidthStretch, 0.2f);
                 ImGui.TableHeadersRow();
 
@@ -1707,10 +1713,10 @@ public class IpcTester : IDisposable
                     ImGui.TableNextColumn();
                     var hasChildren = node.Children.Any();
                     using var treeNode = ImRaii.TreeNode(
-                        $"{(_withUIData ? (node.Name ?? "Unknown") : node.Type)}##{node.ObjectAddress:X8}",
-                        hasChildren ?
-                            ImGuiTreeNodeFlags.SpanFullWidth :
-                            (ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen));
+                        $"{(_withUIData ? node.Name ?? "Unknown" : node.Type)}##{node.ObjectAddress:X8}",
+                        hasChildren
+                            ? ImGuiTreeNodeFlags.SpanFullWidth
+                            : ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen);
                     if (_withUIData)
                     {
                         ImGui.TableNextColumn();
@@ -1718,6 +1724,7 @@ public class IpcTester : IDisposable
                         ImGui.TableNextColumn();
                         TextUnformattedMono(node.Icon.ToString());
                     }
+
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted(node.GamePath ?? "Unknown");
                     ImGui.TableNextColumn();
@@ -1728,10 +1735,8 @@ public class IpcTester : IDisposable
                     TextUnformattedMono($"0x{node.ResourceHandle:X8}");
 
                     if (treeNode)
-                    {
                         foreach (var child in node.Children)
                             DrawNode(child);
-                    }
                 }
 
                 foreach (var node in tree.Nodes)

@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
@@ -70,7 +71,6 @@ public class DebugTab : Window, ITab
     private readonly ValidityChecker           _validityChecker;
     private readonly HttpApi                   _httpApi;
     private readonly ActorManager              _actors;
-    private readonly DalamudServices           _dalamud;
     private readonly StainService              _stains;
     private readonly CharacterUtility          _characterUtility;
     private readonly ResidentResourceManager   _residentResources;
@@ -90,14 +90,16 @@ public class DebugTab : Window, ITab
     private readonly RedrawService             _redraws;
     private readonly DictEmotes                _emotes;
     private readonly Diagnostics               _diagnostics;
+    private readonly IObjectTable              _objects;
+    private readonly IClientState              _clientState;
+    private readonly IpcTester                 _ipcTester;
 
-    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
-        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors,
-        DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
+    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, IObjectTable objects, IClientState clientState,
+        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, SkinFixer skinFixer, RedrawService redraws, DictEmotes emotes, Diagnostics diagnostics)
+        TextureManager textureManager, SkinFixer skinFixer, RedrawService redraws, DictEmotes emotes, Diagnostics diagnostics, IpcTester ipcTester)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -113,7 +115,6 @@ public class DebugTab : Window, ITab
         _modManager                = modManager;
         _httpApi                   = httpApi;
         _actors                    = actors;
-        _dalamud                   = dalamud;
         _stains                    = stains;
         _characterUtility          = characterUtility;
         _residentResources         = residentResources;
@@ -133,6 +134,9 @@ public class DebugTab : Window, ITab
         _redraws                   = redraws;
         _emotes                    = emotes;
         _diagnostics               = diagnostics;
+        _ipcTester            = ipcTester;
+        _objects                   = objects;
+        _clientState               = clientState;
     }
 
     public ReadOnlySpan<byte> Label
@@ -417,7 +421,7 @@ public class DebugTab : Window, ITab
         DrawSpecial("Current Card",    _actors.GetCardPlayer());
         DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
 
-        foreach (var obj in _dalamud.Objects)
+        foreach (var obj in _objects)
         {
             ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
@@ -827,7 +831,7 @@ public class DebugTab : Window, ITab
     /// <summary> Draw information about the models, materials and resources currently loaded by the local player. </summary>
     private unsafe void DrawPlayerModelInfo()
     {
-        var player = _dalamud.ClientState.LocalPlayer;
+        var player = _clientState.LocalPlayer;
         var name   = player?.Name.ToString() ?? "NULL";
         if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || player == null)
             return;
@@ -952,11 +956,11 @@ public class DebugTab : Window, ITab
     {
         if (!ImGui.CollapsingHeader("IPC"))
         {
-            _ipc.Tester.UnsubscribeEvents();
+            _ipcTester.UnsubscribeEvents();
             return;
         }
 
-        _ipc.Tester.Draw();
+        _ipcTester.Draw();
     }
 
     /// <summary> Helper to print a property and its value in a 2-column table. </summary>

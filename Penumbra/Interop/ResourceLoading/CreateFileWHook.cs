@@ -13,7 +13,7 @@ namespace Penumbra.Interop.ResourceLoading;
 /// </summary>
 public unsafe class CreateFileWHook : IDisposable
 {
-    public const int RequiredSize = 28;
+    public const int Size = 28;
 
     public CreateFileWHook(IGameInteropProvider interop)
     {
@@ -57,8 +57,8 @@ public unsafe class CreateFileWHook : IDisposable
         ptr[22] = (byte)(l >> 16);
         ptr[24] = (byte)(l >> 24);
 
-        ptr[RequiredSize - 2] = 0;
-        ptr[RequiredSize - 1] = 0;
+        ptr[Size - 2] = 0;
+        ptr[Size - 1] = 0;
     }
 
     public void Dispose()

@@ -15,7 +15,6 @@ using CurrentSettings = ValueTuple<PenumbraApiEc, (bool, int, IDictionary<string
 public class PenumbraIpcProviders : IDisposable
 {
     internal readonly IPenumbraApi Api;
-    internal readonly IpcTester    Tester;
 
     // Plugin State
     internal readonly EventProvider                              Initialized;
@@ -133,10 +132,9 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<bool, ushort[], Ipc.ResourceTree?[]>                         GetGameObjectResourceTrees;
     internal readonly FuncProvider<bool, IReadOnlyDictionary<ushort, Ipc.ResourceTree>>         GetPlayerResourceTrees;
 
-    public PenumbraIpcProviders(DalamudServices dalamud, IPenumbraApi api, ModManager modManager, CollectionManager collections,
+    public PenumbraIpcProviders(DalamudPluginInterface pi, IPenumbraApi api, ModManager modManager, CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)
     {
-        var pi = dalamud.PluginInterface;
         Api = api;
 
         // Plugin State
@@ -260,15 +258,11 @@ public class PenumbraIpcProviders : IDisposable
         GetGameObjectResourceTrees   = Ipc.GetGameObjectResourceTrees.Provider(pi, Api.GetGameObjectResourceTrees);
         GetPlayerResourceTrees       = Ipc.GetPlayerResourceTrees.Provider(pi, Api.GetPlayerResourceTrees);
 
-        Tester = new IpcTester(config, dalamud, this, modManager, collections, tempMods, tempCollections, saveService);
-
         Initialized.Invoke();
     }
 
     public void Dispose()
     {
-        Tester.Dispose();
-
         // Plugin State
         Initialized.Dispose();
         ApiVersion.Dispose();

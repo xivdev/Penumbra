@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Plugin.Services;
 using Lumina.Data;
 using Newtonsoft.Json;
 using OtterGui;
@@ -88,11 +89,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private CommunicatorService _communicator;
     private Lumina.GameData?    _lumina;
 
+    private IDataManager          _gameData;
+    private IFramework            _framework;
+    private IObjectTable          _objects;
     private ModManager            _modManager;
     private ResourceLoader        _resourceLoader;
     private Configuration         _config;
     private CollectionManager     _collectionManager;
-    private DalamudServices       _dalamud;
     private TempCollectionManager _tempCollections;
     private TempModManager        _tempMods;
     private ActorManager          _actors;
@@ -106,18 +109,20 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private TextureManager        _textureManager;
     private ResourceTreeFactory   _resourceTreeFactory;
 
-    public unsafe PenumbraApi(CommunicatorService communicator, ModManager modManager, ResourceLoader resourceLoader,
-        Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
-        TempModManager tempMods, ActorManager actors, CollectionResolver collectionResolver, CutsceneService cutsceneService,
-        ModImportManager modImportManager, CollectionEditor collectionEditor, RedrawService redrawService, ModFileSystem modFileSystem,
-        ConfigWindow configWindow, TextureManager textureManager, ResourceTreeFactory resourceTreeFactory)
+    public unsafe PenumbraApi(CommunicatorService communicator, IDataManager gameData, IFramework framework, IObjectTable objects,
+        ModManager modManager, ResourceLoader resourceLoader, Configuration config, CollectionManager collectionManager,
+        TempCollectionManager tempCollections, TempModManager tempMods, ActorManager actors, CollectionResolver collectionResolver,
+        CutsceneService cutsceneService, ModImportManager modImportManager, CollectionEditor collectionEditor, RedrawService redrawService,
+        ModFileSystem modFileSystem, ConfigWindow configWindow, TextureManager textureManager, ResourceTreeFactory resourceTreeFactory)
     {
         _communicator        = communicator;
+        _gameData            = gameData;
+        _framework           = framework;
+        _objects             = objects;
         _modManager          = modManager;
         _resourceLoader      = resourceLoader;
         _config              = config;
         _collectionManager   = collectionManager;
-        _dalamud             = dalamud;
         _tempCollections     = tempCollections;
         _tempMods            = tempMods;
         _actors              = actors;
@@ -130,7 +135,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _configWindow        = configWindow;
         _textureManager      = textureManager;
         _resourceTreeFactory = resourceTreeFactory;
-        _lumina              = _dalamud.GameData.GameData;
+        _lumina              = gameData.GameData;
 
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _communicator.ModPathChanged.Subscribe(ModPathChangeSubscriber, ModPathChanged.Priority.Api);
@@ -153,7 +158,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _resourceLoader      = null!;
         _config              = null!;
         _collectionManager   = null!;
-        _dalamud             = null!;
         _tempCollections     = null!;
         _tempMods            = null!;
         _actors              = null!;
@@ -166,6 +170,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _configWindow        = null!;
         _textureManager      = null!;
         _resourceTreeFactory = null!;
+        _framework           = null!;
     }
 
     public event ChangedItemClick? ChangedItemClicked
@@ -399,7 +404,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         return await Task.Run(async () =>
         {
-            var playerCollection = await _dalamud.Framework.RunOnFrameworkThread(_collectionResolver.PlayerCollection).ConfigureAwait(false);
+            var playerCollection = await _framework.RunOnFrameworkThread(_collectionResolver.PlayerCollection).ConfigureAwait(false);
             var forwardTask = Task.Run(() =>
             {
                 var forwardRet = new string[forward.Length];
@@ -851,7 +856,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        if (!ActorManager.VerifyPlayerName(character.AsSpan()) || tag.Length == 0)
+        if (!ActorIdentifierFactory.VerifyPlayerName(character.AsSpan()) || tag.Length == 0)
             return (PenumbraApiEc.InvalidArgument, string.Empty);
 
         var identifier = NameToIdentifier(character, ushort.MaxValue);
@@ -889,10 +894,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        if (actorIndex < 0 || actorIndex >= _dalamud.Objects.Length)
+        if (actorIndex < 0 || actorIndex >= _objects.Length)
             return PenumbraApiEc.InvalidArgument;
 
-        var identifier = _actors.FromObject(_dalamud.Objects[actorIndex], false, false, true);
+        var identifier = _actors.FromObject(_objects[actorIndex], false, false, true);
         if (!identifier.IsValid)
             return PenumbraApiEc.InvalidArgument;
 
@@ -1037,7 +1042,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects)
     {
-        var characters       = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
+        var characters       = gameObjects.Select(index => _objects[index]).OfType<Character>();
         var resourceTrees    = _resourceTreeFactory.FromCharacters(characters, 0);
         var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
@@ -1055,7 +1060,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[] GetGameObjectResourcesOfType(ResourceType type, bool withUIData,
         params ushort[] gameObjects)
     {
-        var characters      = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
+        var characters      = gameObjects.Select(index => _objects[index]).OfType<Character>();
         var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
@@ -1074,7 +1079,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public Ipc.ResourceTree?[] GetGameObjectResourceTrees(bool withUIData, params ushort[] gameObjects)
     {
-        var characters = gameObjects.Select(index => _dalamud.Objects[index]).OfType<Character>();
+        var characters    = gameObjects.Select(index => _objects[index]).OfType<Character>();
         var resourceTrees = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionary = ResourceTreeApiHelper.EncapsulateResourceTrees(resourceTrees);
 
@@ -1126,10 +1131,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private unsafe bool AssociatedCollection(int gameObjectIdx, out ModCollection collection)
     {
         collection = _collectionManager.Active.Default;
-        if (gameObjectIdx < 0 || gameObjectIdx >= _dalamud.Objects.Length)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Length)
             return false;
 
-        var ptr  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_dalamud.Objects.GetObjectAddress(gameObjectIdx);
+        var ptr  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(gameObjectIdx);
         var data = _collectionResolver.IdentifyCollection(ptr, false);
         if (data.Valid)
             collection = data.ModCollection;
@@ -1140,10 +1145,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private unsafe ActorIdentifier AssociatedIdentifier(int gameObjectIdx)
     {
-        if (gameObjectIdx < 0 || gameObjectIdx >= _dalamud.Objects.Length)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Length)
             return ActorIdentifier.Invalid;
 
-        var ptr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_dalamud.Objects.GetObjectAddress(gameObjectIdx);
+        var ptr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(gameObjectIdx);
         return _actors.FromObject(ptr, out _, false, true, true);
     }
 
@@ -1168,7 +1173,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             if (Path.IsPathRooted(resolvedPath))
                 return _lumina?.GetFileFromDisk<T>(resolvedPath);
 
-            return _dalamud.GameData.GetFile<T>(resolvedPath);
+            return _gameData.GetFile<T>(resolvedPath);
         }
         catch (Exception e)
         {
