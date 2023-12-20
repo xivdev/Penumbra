@@ -55,6 +55,7 @@ public unsafe class AnimationHookService : IDisposable
         _unkParasolAnimationHook.Enable();
         _dismountHook.Enable();
         _apricotListenerSoundPlayHook.Enable();
+        _footStepHook.Enable();
     }
 
     public bool HandleFiles(ResourceType type, Utf8GamePath _, out ResolveData resolveData)
@@ -113,6 +114,7 @@ public unsafe class AnimationHookService : IDisposable
         _unkParasolAnimationHook.Dispose();
         _dismountHook.Dispose();
         _apricotListenerSoundPlayHook.Dispose();
+        _footStepHook.Dispose();
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
@@ -324,7 +326,7 @@ public unsafe class AnimationHookService : IDisposable
 
     private delegate void UnkMountAnimationDelegate(DrawObject* drawObject, uint unk1, byte unk2, uint unk3);
 
-    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 89 54 24", DetourName = nameof(UnkMountAnimationDetour))]
+    [Signature(Sigs.UnkMountAnimation, DetourName = nameof(UnkMountAnimationDetour))]
     private readonly Hook<UnkMountAnimationDelegate> _unkMountAnimationHook = null!;
 
     private void UnkMountAnimationDetour(DrawObject* drawObject, uint unk1, byte unk2, uint unk3)
@@ -335,10 +337,9 @@ public unsafe class AnimationHookService : IDisposable
         _animationLoadData.Value = last;
     }
 
-
     private delegate void UnkParasolAnimationDelegate(DrawObject* drawObject, int unk1);
 
-    [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 89 54 24 ?? 57 48 83 EC ?? 48 8B F9", DetourName = nameof(UnkParasolAnimationDetour))]
+    [Signature(Sigs.UnkParasolAnimation, DetourName = nameof(UnkParasolAnimationDetour))]
     private readonly Hook<UnkParasolAnimationDelegate> _unkParasolAnimationHook = null!;
 
     private void UnkParasolAnimationDetour(DrawObject* drawObject, int unk1)
@@ -349,7 +350,7 @@ public unsafe class AnimationHookService : IDisposable
         _animationLoadData.Value = last;
     }
 
-    [Signature("E8 ?? ?? ?? ?? F6 43 ?? ?? 74 ?? 48 8B CB", DetourName = nameof(DismountDetour))]
+    [Signature(Sigs.Dismount, DetourName = nameof(DismountDetour))]
     private readonly Hook<DismountDelegate> _dismountHook = null!;
 
     private delegate void DismountDelegate(nint a1, nint a2);
@@ -375,7 +376,7 @@ public unsafe class AnimationHookService : IDisposable
         _animationLoadData.Value = last;
     }
 
-    [Signature("48 89 6C 24 ?? 41 54 41 56 41 57 48 81 EC", DetourName = nameof(ApricotListenerSoundPlayDetour))]
+    [Signature(Sigs.ApricotListenerSoundPlay, DetourName = nameof(ApricotListenerSoundPlayDetour))]
     private readonly Hook<ApricotListenerSoundPlayDelegate> _apricotListenerSoundPlayHook = null!;
 
     private delegate nint ApricotListenerSoundPlayDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
@@ -405,5 +406,18 @@ public unsafe class AnimationHookService : IDisposable
         var ret = _apricotListenerSoundPlayHook!.Original(a1, a2, a3, a4, a5, a6);
         _animationLoadData.Value = last;
         return ret;
+    }
+
+    private delegate void FootStepDelegate(GameObject* gameObject, int id, int unk);
+
+    [Signature(Sigs.FootStepSound, DetourName = nameof(FootStepDetour))]
+    private readonly Hook<FootStepDelegate> _footStepHook = null!;
+
+    private void FootStepDetour(GameObject* gameObject, int id, int unk)
+    {
+        var last = _animationLoadData.Value;
+        _animationLoadData.Value = _collectionResolver.IdentifyCollection(gameObject, true);
+        _footStepHook.Original(gameObject, id, unk);
+        _animationLoadData.Value = last;
     }
 }
