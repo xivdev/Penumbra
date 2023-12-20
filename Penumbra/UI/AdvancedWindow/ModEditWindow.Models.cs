@@ -1,4 +1,5 @@
 using ImGuiNET;
+using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
@@ -71,54 +72,71 @@ public partial class ModEditWindow
         var submesh = file.SubMeshes[submeshIndex];
         var widget = _submeshAttributeTagWidgets[submeshIndex];
 
-        var attributes = Enumerable
-            .Range(0, 32)
-            .Where(index => ((submesh.AttributeIndexMask >> index) & 1) == 1)
-            .Select(index => file.Attributes[index])
-            .ToArray();
+        var attributes = HydrateAttributes(file, submesh.AttributeIndexMask).ToArray();
 
         UiHelpers.DefaultLineSpace();
         var tagIndex = widget.Draw($"Submesh {submeshIndex} Attributes", "", attributes, out var editedAttribute, !disabled);
         if (tagIndex >= 0)
         {
-            // Eagerly remove the edited attribute from the attribute mask.
-            if (tagIndex < attributes.Length)
-            {
-                var previousAttributeIndex = file.Attributes.IndexOf(attributes[tagIndex]);
-                submesh.AttributeIndexMask &= ~(1u << previousAttributeIndex);
-                
-                // If no other submeshes use this attribute, remove it.
-                var usages = file.SubMeshes
-                    .Where(submesh => ((submesh.AttributeIndexMask >> previousAttributeIndex) & 1) == 1)
-                    .Count();
-                if (usages <= 1)
-                {
-                    // TODO THIS BLOWS UP ALL OTHER INDICES BEYOND WHAT WE JUST REMOVED - I NEED TO VIRTUALISE THIS SHIT
-                    // file.Attributes = file.Attributes.RemoveItems(previousAttributeIndex);
-                }
-            }
-
-            // If there's a new or edited name, add it to the mask, and the attribute list if it's not already known.
-            if (editedAttribute != "")
-            {
-                var attributeIndex = file.Attributes.IndexOf(editedAttribute);
-                if (attributeIndex == -1)
-                {
-                    file.Attributes.AddItem(editedAttribute);
-                    attributeIndex = file.Attributes.Length - 1;
-                }
-                submesh.AttributeIndexMask |= 1u << attributeIndex;
-            }
-
-            file.SubMeshes[submeshIndex] = submesh;
+            EditSubmeshAttribute(
+                file,
+                submeshIndex,
+                tagIndex < attributes.Length ? attributes[tagIndex] : null,
+                editedAttribute != "" ? editedAttribute : null
+            );
 
             return true;
         }
 
-        ImGui.SameLine();
-        ImGui.Text($"{Convert.ToString(submesh.AttributeIndexMask, 2)}");
-
         return false;
+    }
+
+    private static void EditSubmeshAttribute(MdlFile file, int changedSubmeshIndex, string? old, string? new_)
+    {
+        // Build a hydrated view of all attributes in the model
+        var submeshAttributes = file.SubMeshes
+            .Select(submesh => HydrateAttributes(file, submesh.AttributeIndexMask).ToList())
+            .ToArray();
+
+        // Make changes to the submesh we're actually editing here.
+        var changedSubmesh = submeshAttributes[changedSubmeshIndex];
+
+        if (old != null)
+            changedSubmesh.Remove(old);
+
+        if (new_ != null)
+            changedSubmesh.Add(new_);
+
+        // Re-serialize all the attributes.
+        var allAttributes = new List<string>();
+        foreach (var (attributes, submeshIndex) in submeshAttributes.WithIndex())
+        {
+            var mask = 0u;
+
+            foreach (var attribute in attributes)
+            {
+                var attributeIndex = allAttributes.IndexOf(attribute);
+                if (attributeIndex == -1)
+                {
+                    allAttributes.Add(attribute);
+                    attributeIndex = allAttributes.Count() - 1;
+                }
+
+                mask |= 1u << attributeIndex;
+            }
+
+            file.SubMeshes[submeshIndex].AttributeIndexMask = mask;
+        }
+
+        file.Attributes = allAttributes.ToArray();
+    }
+
+    private static IEnumerable<string> HydrateAttributes(MdlFile file, uint mask)
+    {
+        return Enumerable
+            .Range(0, 32)
+            .Where(index => ((mask >> index) & 1) == 1)
+            .Select(index => file.Attributes[index]);
     }
 
     private static bool DrawOtherModelDetails(MdlFile file, bool _)
