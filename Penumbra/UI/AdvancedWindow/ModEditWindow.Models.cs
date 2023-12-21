@@ -28,8 +28,9 @@ public partial class ModEditWindow
 
         var ret = false;
 
-        for (var i = 0; i < file.Meshes.Length; ++i)
-            ret |= DrawMeshDetails(tab, i, disabled);
+        if (ImGui.CollapsingHeader($"{file.Meshes.Length} Meshes###meshes"))
+            for (var i = 0; i < file.Meshes.Length; ++i)
+                ret |= DrawMeshDetails(tab, i, disabled);
 
         ret |= DrawOtherModelDetails(file, disabled);
 
@@ -38,7 +39,8 @@ public partial class ModEditWindow
 
     private static bool DrawMeshDetails(MdlTab tab, int meshIndex, bool disabled)
     {
-        if (!ImGui.CollapsingHeader($"Mesh {meshIndex}"))
+        using var meshNode = ImRaii.TreeNode($"Mesh {meshIndex}", ImGuiTreeNodeFlags.DefaultOpen);
+        if (!meshNode)
             return false;
 
         using var id = ImRaii.PushId(meshIndex); 
