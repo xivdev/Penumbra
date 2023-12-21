@@ -58,35 +58,32 @@ public partial class ModEditWindow
 
         // Submeshes.
         for (var submeshOffset = 0; submeshOffset < mesh.SubMeshCount; submeshOffset++)
-            ret |= DrawSubMeshDetails(file, mesh.SubMeshIndex + submeshOffset, disabled);
-
-        return ret;
-    }
-
-    private static bool DrawSubMeshDetails(MdlFile file, int submeshIndex, bool disabled)
-    {
-        using var id = ImRaii.PushId(submeshIndex);
-
-        var submesh = file.SubMeshes[submeshIndex];
-        var widget = _submeshAttributeTagWidgets[submeshIndex];
-
-        var attributes = HydrateAttributes(file, submesh.AttributeIndexMask).ToArray();
-
-        UiHelpers.DefaultLineSpace();
-        var tagIndex = widget.Draw($"Submesh {submeshIndex} Attributes", "", attributes, out var editedAttribute, !disabled);
-        if (tagIndex >= 0)
         {
-            EditSubmeshAttribute(
-                file,
-                submeshIndex,
-                tagIndex < attributes.Length ? attributes[tagIndex] : null,
-                editedAttribute != "" ? editedAttribute : null
-            );
+            using var submeshId = ImRaii.PushId(submeshOffset);
 
-            return true;
+            var submeshIndex = mesh.SubMeshIndex + submeshOffset;
+
+            var submesh = file.SubMeshes[submeshIndex];
+            var widget = _submeshAttributeTagWidgets[submeshIndex];
+
+            var attributes = HydrateAttributes(file, submesh.AttributeIndexMask).ToArray();
+
+            UiHelpers.DefaultLineSpace();
+            var tagIndex = widget.Draw($"Submesh {submeshOffset} Attributes", "", attributes, out var editedAttribute, !disabled);
+            if (tagIndex >= 0)
+            {
+                EditSubmeshAttribute(
+                    file,
+                    submeshIndex,
+                    tagIndex < attributes.Length ? attributes[tagIndex] : null,
+                    editedAttribute != "" ? editedAttribute : null
+                );
+
+                ret = true;
+            }
         }
 
-        return false;
+        return ret;
     }
 
     private static void EditSubmeshAttribute(MdlFile file, int changedSubmeshIndex, string? old, string? new_)
