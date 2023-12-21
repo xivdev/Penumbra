@@ -29,32 +29,33 @@ public partial class ModEditWindow
         var ret = false;
 
         for (var i = 0; i < file.Meshes.Length; ++i)
-            ret |= DrawMeshDetails(file, i, disabled);
+            ret |= DrawMeshDetails(tab, i, disabled);
 
         ret |= DrawOtherModelDetails(file, disabled);
 
         return !disabled && ret;
     }
 
-    private static bool DrawMeshDetails(MdlFile file, int meshIndex, bool disabled)
+    private static bool DrawMeshDetails(MdlTab tab, int meshIndex, bool disabled)
     {
         if (!ImGui.CollapsingHeader($"Mesh {meshIndex}"))
             return false;
 
         using var id = ImRaii.PushId(meshIndex); 
 
+        var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
 
         var ret = false;
 
         // Mesh material.
-        var temp = file.Materials[mesh.MaterialIndex];
+        var temp = tab.GetMeshMaterial(meshIndex);
         if (
             ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
             && temp.Length > 0
-            && temp != file.Materials[mesh.MaterialIndex]
+            && temp != tab.GetMeshMaterial(meshIndex)
         ) {
-            file.Materials[mesh.MaterialIndex] = temp;
+            tab.SetMeshMaterial(meshIndex, temp);
             ret = true;
         }
 
@@ -64,20 +65,16 @@ public partial class ModEditWindow
             using var submeshId = ImRaii.PushId(submeshOffset);
 
             var submeshIndex = mesh.SubMeshIndex + submeshOffset;
-
-            var submesh = file.SubMeshes[submeshIndex];
             var widget = _submeshAttributeTagWidgets[submeshIndex];
-
-            var attributes = HydrateAttributes(file, submesh.AttributeIndexMask).ToArray();
+            var attributes = tab.GetSubmeshAttributes(submeshIndex);
 
             UiHelpers.DefaultLineSpace();
             var tagIndex = widget.Draw($"Submesh {submeshOffset} Attributes", "", attributes, out var editedAttribute, !disabled);
             if (tagIndex >= 0)
             {
-                EditSubmeshAttribute(
-                    file,
+                tab.UpdateSubmeshAttribute(
                     submeshIndex,
-                    tagIndex < attributes.Length ? attributes[tagIndex] : null,
+                    tagIndex < attributes.Count() ? attributes.ElementAt(tagIndex) : null,
                     editedAttribute != "" ? editedAttribute : null
                 );
 
@@ -86,54 +83,6 @@ public partial class ModEditWindow
         }
 
         return ret;
-    }
-
-    private static void EditSubmeshAttribute(MdlFile file, int changedSubmeshIndex, string? old, string? new_)
-    {
-        // Build a hydrated view of all attributes in the model
-        var submeshAttributes = file.SubMeshes
-            .Select(submesh => HydrateAttributes(file, submesh.AttributeIndexMask).ToList())
-            .ToArray();
-
-        // Make changes to the submesh we're actually editing here.
-        var changedSubmesh = submeshAttributes[changedSubmeshIndex];
-
-        if (old != null)
-            changedSubmesh.Remove(old);
-
-        if (new_ != null)
-            changedSubmesh.Add(new_);
-
-        // Re-serialize all the attributes.
-        var allAttributes = new List<string>();
-        foreach (var (attributes, submeshIndex) in submeshAttributes.WithIndex())
-        {
-            var mask = 0u;
-
-            foreach (var attribute in attributes)
-            {
-                var attributeIndex = allAttributes.IndexOf(attribute);
-                if (attributeIndex == -1)
-                {
-                    allAttributes.Add(attribute);
-                    attributeIndex = allAttributes.Count() - 1;
-                }
-
-                mask |= 1u << attributeIndex;
-            }
-
-            file.SubMeshes[submeshIndex].AttributeIndexMask = mask;
-        }
-
-        file.Attributes = allAttributes.ToArray();
-    }
-
-    private static IEnumerable<string> HydrateAttributes(MdlFile file, uint mask)
-    {
-        return Enumerable
-            .Range(0, 32)
-            .Where(index => ((mask >> index) & 1) == 1)
-            .Select(index => file.Attributes[index]);
     }
 
     private static bool DrawOtherModelDetails(MdlFile file, bool _)
