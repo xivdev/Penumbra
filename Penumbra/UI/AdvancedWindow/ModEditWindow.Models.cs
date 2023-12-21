@@ -9,12 +9,14 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private readonly FileEditor<MdlFile> _modelTab;
+    private readonly FileEditor<MdlTab> _modelTab;
 
     private static List<TagButtons> _submeshAttributeTagWidgets = new();
 
-    private static bool DrawModelPanel(MdlFile file, bool disabled)
+    private static bool DrawModelPanel(MdlTab tab, bool disabled)
     {
+        var file = tab.Mdl;
+
         var submeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
         if (_submeshAttributeTagWidgets.Count != submeshTotal)
         {
