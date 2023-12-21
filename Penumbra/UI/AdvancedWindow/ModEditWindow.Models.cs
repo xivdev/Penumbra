@@ -135,6 +135,13 @@ public partial class ModEditWindow
             }
         }
 
+        using (var materials = ImRaii.TreeNode("Materials", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            if (materials)
+                foreach (var material in file.Materials)
+                    ImRaii.TreeNode(material, ImGuiTreeNodeFlags.Leaf).Dispose();
+        }
+
         using (var attributes = ImRaii.TreeNode("Attributes", ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (attributes)
