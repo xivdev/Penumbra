@@ -28,13 +28,29 @@ public partial class ModEditWindow
 
         var ret = false;
 
-        if (ImGui.CollapsingHeader($"{file.Meshes.Length} Meshes###meshes"))
-            for (var i = 0; i < file.Meshes.Length; ++i)
-                ret |= DrawMeshDetails(tab, i, disabled);
+        if (ImGui.CollapsingHeader($"Meshes ({file.Meshes.Length})###meshes"))
+            for (var i = 0; i < file.LodCount; ++i)
+                ret |= DrawLodDetails(tab, i, disabled);
 
         ret |= DrawOtherModelDetails(file, disabled);
 
         return !disabled && ret;
+    }
+
+    private static bool DrawLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    {
+        using var lodNode = ImRaii.TreeNode($"LOD {lodIndex}", ImGuiTreeNodeFlags.DefaultOpen);
+        if (!lodNode)
+            return false;
+
+        var lod = tab.Mdl.Lods[lodIndex];
+
+        var ret = false;
+
+        for (var meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
+            ret |= DrawMeshDetails(tab, lod.MeshIndex + meshOffset, disabled);
+
+        return ret;
     }
 
     private static bool DrawMeshDetails(MdlTab tab, int meshIndex, bool disabled)
