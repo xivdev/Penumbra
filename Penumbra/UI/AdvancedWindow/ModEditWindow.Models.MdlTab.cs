@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
@@ -24,11 +23,13 @@ public partial class ModEditWindow
             // Meshes using the removed material are redirected to material 0, and those after the index are corrected.
             for (var meshIndex = 0; meshIndex < Mdl.Meshes.Length; meshIndex++)
             {
-                var mesh = Mdl.Meshes[meshIndex];
-                if (mesh.MaterialIndex == materialIndex)
-                    mesh.MaterialIndex = 0;
-                else if (mesh.MaterialIndex > materialIndex)
-                    mesh.MaterialIndex -= 1;
+                var newIndex = Mdl.Meshes[meshIndex].MaterialIndex;
+                if (newIndex == materialIndex)
+                    newIndex = 0;
+                else if (newIndex > materialIndex)
+                    newIndex -= 1;
+
+                Mdl.Meshes[meshIndex].MaterialIndex = newIndex;
             }
 
             Mdl.Materials = Mdl.Materials.RemoveItems(materialIndex);

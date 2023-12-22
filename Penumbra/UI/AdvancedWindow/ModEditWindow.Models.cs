@@ -158,27 +158,28 @@ public partial class ModEditWindow
 
         var ret = false;
 
-        // Mesh material.
-        // var temp = tab.GetMeshMaterial(meshIndex);
-        // if (
-        //     ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
-        //     && temp.Length > 0
-        //     && temp != tab.GetMeshMaterial(meshIndex)
-        // ) {
-        //     tab.SetMeshMaterial(meshIndex, temp);
-        //     ret = true;
-        // }
+        // Mesh material
         ImGui.TableNextColumn();
         ImGui.Text("Material");
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
-        using (var materialCombo = ImRaii.Combo("##material", "TODO material"))
+        using (var materialCombo = ImRaii.Combo("##material", tab.Mdl.Materials[mesh.MaterialIndex]))
         {
-            // todo
+            if (materialCombo)
+            {
+                foreach (var (material, materialIndex) in tab.Mdl.Materials.WithIndex())
+                {
+                    if (ImGui.Selectable(material, mesh.MaterialIndex == materialIndex))
+                    {
+                        file.Meshes[meshIndex].MaterialIndex = (ushort)materialIndex;
+                        ret = true;
+                    }
+                }
+            }
         }
 
-        // Submeshes.
+        // Submeshes
         for (var submeshOffset = 0; submeshOffset < mesh.SubMeshCount; submeshOffset++)
         {
             using var submeshId = ImRaii.PushId(submeshOffset);
