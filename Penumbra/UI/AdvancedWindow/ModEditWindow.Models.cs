@@ -15,19 +15,19 @@ public partial class ModEditWindow
 
     private readonly FileEditor<MdlTab> _modelTab;
 
-    private static string _modelNewMaterial = string.Empty;
-    private static List<TagButtons> _submeshAttributeTagWidgets = new();
+    private          string           _modelNewMaterial           = string.Empty;
+    private readonly List<TagButtons> _subMeshAttributeTagWidgets = [];
 
-    private static bool DrawModelPanel(MdlTab tab, bool disabled)
+    private bool DrawModelPanel(MdlTab tab, bool disabled)
     {
         var file = tab.Mdl;
 
-        var submeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
-        if (_submeshAttributeTagWidgets.Count != submeshTotal)
+        var subMeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
+        if (_subMeshAttributeTagWidgets.Count != subMeshTotal)
         {
-            _submeshAttributeTagWidgets.Clear();
-            _submeshAttributeTagWidgets.AddRange(
-                Enumerable.Range(0, submeshTotal).Select(_ => new TagButtons())
+            _subMeshAttributeTagWidgets.Clear();
+            _subMeshAttributeTagWidgets.AddRange(
+                Enumerable.Range(0, subMeshTotal).Select(_ => new TagButtons())
             );
         }
 
@@ -44,93 +44,92 @@ public partial class ModEditWindow
         return !disabled && ret;
     }
 
-    private static bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
+    private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
     {
         if (!ImGui.CollapsingHeader("Materials"))
             return false;
 
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = ImRaii.Table(string.Empty, disabled ? 2 : 3, ImGuiTableFlags.SizingFixedFit);
         if (!table)
             return false;
 
-        var ret = false;
+        var ret       = false;
         var materials = tab.Mdl.Materials;
 
-        ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed, 80 * UiHelpers.Scale);
-        ImGui.TableSetupColumn("path", ImGuiTableColumnFlags.WidthStretch, 1);
-        ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+        ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed,   80 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("path",  ImGuiTableColumnFlags.WidthStretch, 1);
+        if (!disabled)
+            ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
 
-        var inputFlags = ImGuiInputTextFlags.None;
-        if (disabled)
-            inputFlags |= ImGuiInputTextFlags.ReadOnly;
-
+        var inputFlags = disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None;
         for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
-        {
-            using var id = ImRaii.PushId(materialIndex);
+            ret |= DrawMaterialRow(tab, disabled, materials, materialIndex, inputFlags);
 
-            ImGui.TableNextColumn();
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text($"Material #{materialIndex + 1}");
+        if (materials.Length >= MdlMaterialMaximum || disabled)
+            return ret;
 
-            var temp = materials[materialIndex];
-            ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth(-1);
-            if (
-                ImGui.InputText($"##material{materialIndex}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags)
-                && temp.Length > 0
-                && temp != materials[materialIndex]
-            ) {
-                materials[materialIndex] = temp;
-                ret = true;
-            }
+        ImGui.TableNextColumn();
 
-            ImGui.TableNextColumn();
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth(-1);
+        ImGui.InputTextWithHint("##newMaterial", "Add new material...", ref _modelNewMaterial, Utf8GamePath.MaxGamePathLength, inputFlags);
+        var validName = _modelNewMaterial.Length > 0 && _modelNewMaterial[0] == '/';
+        ImGui.TableNextColumn();
+        if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, string.Empty, !validName, true))
+            return ret;
 
-            // Need to have at least one material.
-            if (materials.Length <= 1)
-                continue;
-
-            if (ImGuiUtil.DrawDisabledButton(
-                FontAwesomeIcon.Trash.ToIconString(),
-                UiHelpers.IconButtonSize,
-                "Delete this material.\nAny meshes targeting this material will be updated to use material #1.\nHold Control while clicking to delete.",
-                disabled || !ImGui.GetIO().KeyCtrl,
-                true
-            )) {
-                tab.RemoveMaterial(materialIndex);
-                ret = true;
-            }
-        }
-
-        if (materials.Length < MdlMaterialMaximum)
-        {
-            ImGui.TableNextColumn();
-
-            ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint($"##newMaterial", "Add new material...", ref _modelNewMaterial, Utf8GamePath.MaxGamePathLength, inputFlags);
-            
-            var validName = _modelNewMaterial != "";
-            ImGui.TableNextColumn();
-            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, "description", disabled || !validName, true))
-            {
-                tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
-                _modelNewMaterial = string.Empty;
-                ret = true;
-            }
-        }
-    
-        return ret;
+        tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
+        _modelNewMaterial = string.Empty;
+        return true;
     }
 
-    private static bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    private bool DrawMaterialRow(MdlTab tab, bool disabled, string[] materials, int materialIndex, ImGuiInputTextFlags inputFlags)
     {
-        using var lodNode = ImRaii.TreeNode($"Level of Detail #{lodIndex}", ImGuiTreeNodeFlags.DefaultOpen);
+        using var id  = ImRaii.PushId(materialIndex);
+        var       ret = false;
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted($"Material #{materialIndex + 1}");
+
+        var temp = materials[materialIndex];
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth(-1);
+        if (ImGui.InputText($"##material{materialIndex}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags)
+         && temp.Length > 0
+         && temp != materials[materialIndex]
+           )
+        {
+            materials[materialIndex] = temp;
+            ret                      = true;
+        }
+
+        if (disabled)
+            return ret;
+
+        ImGui.TableNextColumn();
+
+        // Need to have at least one material.
+        if (materials.Length <= 1)
+            return ret;
+
+        var tt             = "Delete this material.\nAny meshes targeting this material will be updated to use material #1.";
+        var modifierActive = _config.DeleteModModifier.IsActive();
+        if (!modifierActive)
+            tt += $"\nHold {_config.DeleteModModifier} to delete.";
+        if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, tt, !modifierActive, true))
+            return ret;
+
+        tab.RemoveMaterial(materialIndex);
+        return true;
+    }
+
+    private bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    {
+        using var lodNode = ImRaii.TreeNode($"Level of Detail #{lodIndex + 1}", ImGuiTreeNodeFlags.DefaultOpen);
         if (!lodNode)
             return false;
 
         var lod = tab.Mdl.Lods[lodIndex];
-
         var ret = false;
 
         for (var meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
@@ -139,74 +138,87 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static bool DrawModelMeshDetails(MdlTab tab, int meshIndex, bool disabled)
+    private bool DrawModelMeshDetails(MdlTab tab, int meshIndex, bool disabled)
     {
-        using var meshNode = ImRaii.TreeNode($"Mesh #{meshIndex}", ImGuiTreeNodeFlags.DefaultOpen);
+        using var meshNode = ImRaii.TreeNode($"Mesh #{meshIndex + 1}", ImGuiTreeNodeFlags.DefaultOpen);
         if (!meshNode)
             return false;
 
-        using var id = ImRaii.PushId(meshIndex); 
+        using var id    = ImRaii.PushId(meshIndex);
         using var table = ImRaii.Table(string.Empty, 2, ImGuiTableFlags.SizingFixedFit);
         if (!table)
             return false;
 
-        ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthFixed, 100 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("name",  ImGuiTableColumnFlags.WidthFixed,   100 * UiHelpers.Scale);
         ImGui.TableSetupColumn("field", ImGuiTableColumnFlags.WidthStretch, 1);
 
         var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
 
-        var ret = false;
 
         // Mesh material
         ImGui.TableNextColumn();
-        ImGui.Text("Material");
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted("Material");
 
         ImGui.TableNextColumn();
+        var ret = DrawMaterialCombo(tab, meshIndex, disabled);
+
+        // Sub meshes
+        for (var subMeshOffset = 0; subMeshOffset < mesh.SubMeshCount; subMeshOffset++)
+            ret |= DrawSubMeshAttributes(tab, meshIndex, disabled, subMeshOffset);
+
+        return ret;
+    }
+
+    private bool DrawMaterialCombo(MdlTab tab, int meshIndex, bool disabled)
+    {
+        var       mesh = tab.Mdl.Meshes[meshIndex];
+        using var _    = ImRaii.Disabled(disabled);
         ImGui.SetNextItemWidth(-1);
-        using (var materialCombo = ImRaii.Combo("##material", tab.Mdl.Materials[mesh.MaterialIndex]))
+        using var materialCombo = ImRaii.Combo("##material", tab.Mdl.Materials[mesh.MaterialIndex]);
+
+        if (!materialCombo)
+            return false;
+
+        var ret = false;
+        foreach (var (material, materialIndex) in tab.Mdl.Materials.WithIndex())
         {
-            if (materialCombo)
-            {
-                foreach (var (material, materialIndex) in tab.Mdl.Materials.WithIndex())
-                {
-                    if (ImGui.Selectable(material, mesh.MaterialIndex == materialIndex))
-                    {
-                        file.Meshes[meshIndex].MaterialIndex = (ushort)materialIndex;
-                        ret = true;
-                    }
-                }
-            }
-        }
+            if (!ImGui.Selectable(material, mesh.MaterialIndex == materialIndex))
+                continue;
 
-        // Submeshes
-        for (var submeshOffset = 0; submeshOffset < mesh.SubMeshCount; submeshOffset++)
-        {
-            using var submeshId = ImRaii.PushId(submeshOffset);
-
-            var submeshIndex = mesh.SubMeshIndex + submeshOffset;
-   
-            ImGui.TableNextColumn();
-            ImGui.Text($"Attributes #{submeshOffset}");
-
-            ImGui.TableNextColumn();
-            var widget = _submeshAttributeTagWidgets[submeshIndex];
-            var attributes = tab.GetSubmeshAttributes(submeshIndex);
-
-            var tagIndex = widget.Draw("", "", attributes, out var editedAttribute, !disabled);
-            if (tagIndex >= 0)
-            {
-                tab.UpdateSubmeshAttribute(
-                    submeshIndex,
-                    tagIndex < attributes.Count() ? attributes.ElementAt(tagIndex) : null,
-                    editedAttribute != "" ? editedAttribute : null
-                );
-
-                ret = true;
-            }
+            tab.Mdl.Meshes[meshIndex].MaterialIndex = (ushort)materialIndex;
+            ret                                     = true;
         }
 
         return ret;
+    }
+
+    private bool DrawSubMeshAttributes(MdlTab tab, int meshIndex, bool disabled, int subMeshOffset)
+    {
+        using var _ = ImRaii.PushId(subMeshOffset);
+
+        var mesh         = tab.Mdl.Meshes[meshIndex];
+        var subMeshIndex = mesh.SubMeshIndex + subMeshOffset;
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted($"Attributes #{subMeshOffset + 1}");
+
+        ImGui.TableNextColumn();
+        var widget     = _subMeshAttributeTagWidgets[subMeshIndex];
+        var attributes = tab.GetSubMeshAttributes(subMeshIndex);
+
+        var tagIndex = widget.Draw(string.Empty, string.Empty, attributes,
+            out var editedAttribute, !disabled);
+        if (tagIndex < 0)
+            return false;
+
+        var oldName = tagIndex < attributes.Count ? attributes[tagIndex] : null;
+        var newName = editedAttribute.Length > 0 ? editedAttribute : null;
+        tab.UpdateSubMeshAttribute(subMeshIndex, oldName, newName);
+
+        return true;
     }
 
     private static bool DrawOtherModelDetails(MdlFile file, bool _)

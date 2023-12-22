@@ -10,24 +10,33 @@ public partial class ModEditWindow
     {
         public readonly MdlFile Mdl;
 
-        private List<string>[] _attributes;
+        private readonly List<string>[] _attributes;
 
         public MdlTab(byte[] bytes)
         {
-            Mdl = new MdlFile(bytes);
-            _attributes = PopulateAttributes();
+            Mdl         = new MdlFile(bytes);
+            _attributes = CreateAttributes(Mdl);
         }
 
+        /// <inheritdoc/>
+        public bool Valid
+            => Mdl.Valid;
+
+        /// <inheritdoc/>
+        public byte[] Write()
+            => Mdl.Write();
+
+        /// <summary> Remove the material given by the index. </summary>
+        /// <remarks> Meshes using the removed material are redirected to material 0, and those after the index are corrected. </remarks>
         public void RemoveMaterial(int materialIndex)
         {
-            // Meshes using the removed material are redirected to material 0, and those after the index are corrected.
             for (var meshIndex = 0; meshIndex < Mdl.Meshes.Length; meshIndex++)
             {
                 var newIndex = Mdl.Meshes[meshIndex].MaterialIndex;
                 if (newIndex == materialIndex)
                     newIndex = 0;
                 else if (newIndex > materialIndex)
-                    newIndex -= 1;
+                    --newIndex;
 
                 Mdl.Meshes[meshIndex].MaterialIndex = newIndex;
             }
@@ -35,36 +44,41 @@ public partial class ModEditWindow
             Mdl.Materials = Mdl.Materials.RemoveItems(materialIndex);
         }
 
-        private List<string>[] PopulateAttributes()
-        {
-            return Mdl.SubMeshes.Select(submesh => 
-                Enumerable.Range(0,32)
-                    .Where(index => ((submesh.AttributeIndexMask >> index) & 1) == 1)
-                    .Select(index => Mdl.Attributes[index])
-                    .ToList()
+        /// <summary> Create a list of attributes per sub mesh. </summary>
+        private static List<string>[] CreateAttributes(MdlFile mdl)
+            => mdl.SubMeshes.Select(s => Enumerable.Range(0, 32)
+                .Where(idx => ((s.AttributeIndexMask >> idx) & 1) == 1)
+                .Select(idx => mdl.Attributes[idx])
+                .ToList()
             ).ToArray();
-        }
 
-        public IReadOnlyCollection<string> GetSubmeshAttributes(int submeshIndex) => _attributes[submeshIndex]; 
+        /// <summary> Obtain the attributes associated with a sub mesh by its index. </summary>
+        public IReadOnlyList<string> GetSubMeshAttributes(int subMeshIndex)
+            => _attributes[subMeshIndex];
 
-        public void UpdateSubmeshAttribute(int submeshIndex, string? old, string? new_)
+        /// <summary> Remove or add attributes from a sub mesh by its index. </summary>
+        /// <param name="subMeshIndex"> The index of the sub mesh to update. </param>
+        /// <param name="old"> If non-null, remove this attribute. </param>
+        /// <param name="new"> If non-null, add this attribute. </param>
+        public void UpdateSubMeshAttribute(int subMeshIndex, string? old, string? @new)
         {
-            var attributes = _attributes[submeshIndex];
+            var attributes = _attributes[subMeshIndex];
 
             if (old != null)
                 attributes.Remove(old);
 
-            if (new_ != null)
-                attributes.Add(new_);
+            if (@new != null)
+                attributes.Add(@new);
 
             PersistAttributes();
         }
 
+        /// <summary> Apply changes to attributes to the file in memory. </summary>
         private void PersistAttributes()
         {
             var allAttributes = new List<string>();
 
-            foreach (var (attributes, submeshIndex) in _attributes.WithIndex())
+            foreach (var (attributes, subMeshIndex) in _attributes.WithIndex())
             {
                 var mask = 0u;
 
@@ -74,20 +88,16 @@ public partial class ModEditWindow
                     if (attributeIndex == -1)
                     {
                         allAttributes.Add(attribute);
-                        attributeIndex = allAttributes.Count() - 1;
+                        attributeIndex = allAttributes.Count - 1;
                     }
 
                     mask |= 1u << attributeIndex;
                 }
 
-                Mdl.SubMeshes[submeshIndex].AttributeIndexMask = mask;
+                Mdl.SubMeshes[subMeshIndex].AttributeIndexMask = mask;
             }
 
-            Mdl.Attributes = allAttributes.ToArray();
+            Mdl.Attributes = [.. allAttributes];
         }
-
-        public bool Valid => Mdl.Valid;
-
-        public byte[] Write() => Mdl.Write();
     }
 }
