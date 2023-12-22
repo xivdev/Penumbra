@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
@@ -14,6 +15,7 @@ public partial class ModEditWindow
 
     private readonly FileEditor<MdlTab> _modelTab;
 
+    private static string _modelNewMaterial = string.Empty;
     private static List<TagButtons> _submeshAttributeTagWidgets = new();
 
     private static bool DrawModelPanel(MdlTab tab, bool disabled)
@@ -47,11 +49,12 @@ public partial class ModEditWindow
         if (!ImGui.CollapsingHeader("Materials"))
             return false;
 
-        var materials = tab.Mdl.Materials;
-
         using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
         if (!table)
             return false;
+
+        var ret = false;
+        var materials = tab.Mdl.Materials;
 
         ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed, 80 * UiHelpers.Scale);
         ImGui.TableSetupColumn("path", ImGuiTableColumnFlags.WidthStretch, 1);
@@ -63,6 +66,8 @@ public partial class ModEditWindow
 
         for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
         {
+            using var id = ImRaii.PushId(materialIndex);
+
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             ImGui.Text($"Material #{materialIndex + 1}");
@@ -70,44 +75,52 @@ public partial class ModEditWindow
             var temp = materials[materialIndex];
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputText($"##material{materialIndex}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags);
-            
+            if (
+                ImGui.InputText($"##material{materialIndex}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags)
+                && temp.Length > 0
+                && temp != materials[materialIndex]
+            ) {
+                materials[materialIndex] = temp;
+                ret = true;
+            }
+
             ImGui.TableNextColumn();
-            var todoDelete = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, "description", disabled || !ImGui.GetIO().KeyCtrl, true);
+
+            // Need to have at least one material.
+            if (materials.Length <= 1)
+                continue;
+
+            if (ImGuiUtil.DrawDisabledButton(
+                FontAwesomeIcon.Trash.ToIconString(),
+                UiHelpers.IconButtonSize,
+                "Delete this material.\nAny meshes targeting this material will be updated to use material #1.\nHold Control while clicking to delete.",
+                disabled || !ImGui.GetIO().KeyCtrl,
+                true
+            )) {
+                tab.RemoveMaterial(materialIndex);
+                ret = true;
+            }
         }
 
         if (materials.Length < MdlMaterialMaximum)
         {
             ImGui.TableNextColumn();
 
-            // todo: persist
-            var temp = "";
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint($"##newMaterial", "Add new material...", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags);
+            ImGui.InputTextWithHint($"##newMaterial", "Add new material...", ref _modelNewMaterial, Utf8GamePath.MaxGamePathLength, inputFlags);
             
-            // todo: flesh out this validation
-            var validName = temp != "";
+            var validName = _modelNewMaterial != "";
             ImGui.TableNextColumn();
-            var todoAdd = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, "description", disabled || !validName, true);
+            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, "description", disabled || !validName, true))
+            {
+                tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
+                _modelNewMaterial = string.Empty;
+                ret = true;
+            }
         }
     
-        // for (var index = 0; index < MdlMaterialMaximum; index++)
-        // {
-        //     var temp = "";
-        //     ImGui.InputText($"Material {index}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags);
-        // }
-        
-        //         var temp = tab.GetMeshMaterial(meshIndex);
-        // if (
-        //     ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
-        //     && temp.Length > 0
-        //     && temp != tab.GetMeshMaterial(meshIndex)
-        // ) {
-        //     tab.SetMeshMaterial(meshIndex, temp);
-        //     ret = true;
-        // }
-        return false;
+        return ret;
     }
 
     private static bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
@@ -160,7 +173,7 @@ public partial class ModEditWindow
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
-        using (var materialCombo = ImRaii.Combo("##material", tab.GetMeshMaterial(meshIndex)))
+        using (var materialCombo = ImRaii.Combo("##material", "TODO material"))
         {
             // todo
         }

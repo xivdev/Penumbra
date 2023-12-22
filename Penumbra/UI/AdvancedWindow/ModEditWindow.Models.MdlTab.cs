@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using OtterGui;
+using Penumbra.GameData;
 using Penumbra.GameData.Files;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -10,53 +11,37 @@ public partial class ModEditWindow
     {
         public readonly MdlFile Mdl;
 
-        private List<string> _materials;
         private List<string>[] _attributes;
 
         public MdlTab(byte[] bytes)
         {
             Mdl = new MdlFile(bytes);
-
-            _materials = Mdl.Meshes.Select(mesh => Mdl.Materials[mesh.MaterialIndex]).ToList();
-            _attributes = HydrateAttributes(Mdl);
+            _attributes = PopulateAttributes();
         }
 
-        private List<string>[] HydrateAttributes(MdlFile mdl)
+        public void RemoveMaterial(int materialIndex)
         {
-            return mdl.SubMeshes.Select(submesh => 
-                Enumerable.Range(0,32)
-                    .Where(index => ((submesh.AttributeIndexMask >> index) & 1) == 1)
-                    .Select(index => mdl.Attributes[index])
-                    .ToList()
-            ).ToArray();
-        }
-
-        public string GetMeshMaterial(int meshIndex) => _materials[meshIndex];
-
-        public void SetMeshMaterial(int meshIndex, string materialPath)
-        {
-            _materials[meshIndex] = materialPath;
-
-            PersistMaterials();
-        }
-
-        private void PersistMaterials()
-        {
-            var allMaterials = new List<string>();
-
-            foreach (var (material, meshIndex) in _materials.WithIndex())
+            // Meshes using the removed material are redirected to material 0, and those after the index are corrected.
+            for (var meshIndex = 0; meshIndex < Mdl.Meshes.Length; meshIndex++)
             {
-                var materialIndex = allMaterials.IndexOf(material);
-                if (materialIndex == -1)
-                {
-                    allMaterials.Add(material);
-                    materialIndex = allMaterials.Count() - 1;
-                }
-
-                Mdl.Meshes[meshIndex].MaterialIndex = (ushort)materialIndex;
+                var mesh = Mdl.Meshes[meshIndex];
+                if (mesh.MaterialIndex == materialIndex)
+                    mesh.MaterialIndex = 0;
+                else if (mesh.MaterialIndex > materialIndex)
+                    mesh.MaterialIndex -= 1;
             }
 
-            Mdl.Materials = allMaterials.ToArray();
+            Mdl.Materials = Mdl.Materials.RemoveItems(materialIndex);
+        }
+
+        private List<string>[] PopulateAttributes()
+        {
+            return Mdl.SubMeshes.Select(submesh => 
+                Enumerable.Range(0,32)
+                    .Where(index => ((submesh.AttributeIndexMask >> index) & 1) == 1)
+                    .Select(index => Mdl.Attributes[index])
+                    .ToList()
+            ).ToArray();
         }
 
         public IReadOnlyCollection<string> GetSubmeshAttributes(int submeshIndex) => _attributes[submeshIndex]; 
