@@ -1,3 +1,4 @@
+using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -9,6 +10,8 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
+    private const int MdlMaterialMaximum = 4;
+
     private readonly FileEditor<MdlTab> _modelTab;
 
     private static List<TagButtons> _submeshAttributeTagWidgets = new();
@@ -28,18 +31,88 @@ public partial class ModEditWindow
 
         var ret = false;
 
+        ret |= DrawModelMaterialDetails(tab, disabled);
+
         if (ImGui.CollapsingHeader($"Meshes ({file.Meshes.Length})###meshes"))
             for (var i = 0; i < file.LodCount; ++i)
-                ret |= DrawLodDetails(tab, i, disabled);
+                ret |= DrawModelLodDetails(tab, i, disabled);
 
         ret |= DrawOtherModelDetails(file, disabled);
 
         return !disabled && ret;
     }
 
-    private static bool DrawLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    private static bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
     {
-        using var lodNode = ImRaii.TreeNode($"LOD {lodIndex}", ImGuiTreeNodeFlags.DefaultOpen);
+        if (!ImGui.CollapsingHeader("Materials"))
+            return false;
+
+        var materials = tab.Mdl.Materials;
+
+        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        if (!table)
+            return false;
+
+        ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed, 80 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("path", ImGuiTableColumnFlags.WidthStretch, 1);
+        ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+
+        var inputFlags = ImGuiInputTextFlags.None;
+        if (disabled)
+            inputFlags |= ImGuiInputTextFlags.ReadOnly;
+
+        for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+        {
+            ImGui.TableNextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text($"Material #{materialIndex + 1}");
+
+            var temp = materials[materialIndex];
+            ImGui.TableNextColumn();
+            ImGui.SetNextItemWidth(-1);
+            ImGui.InputText($"##material{materialIndex}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags);
+            
+            ImGui.TableNextColumn();
+            var todoDelete = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, "description", disabled || !ImGui.GetIO().KeyCtrl, true);
+        }
+
+        if (materials.Length < MdlMaterialMaximum)
+        {
+            ImGui.TableNextColumn();
+
+            // todo: persist
+            var temp = "";
+            ImGui.TableNextColumn();
+            ImGui.SetNextItemWidth(-1);
+            ImGui.InputTextWithHint($"##newMaterial", "Add new material...", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags);
+            
+            // todo: flesh out this validation
+            var validName = temp != "";
+            ImGui.TableNextColumn();
+            var todoAdd = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, "description", disabled || !validName, true);
+        }
+    
+        // for (var index = 0; index < MdlMaterialMaximum; index++)
+        // {
+        //     var temp = "";
+        //     ImGui.InputText($"Material {index}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags);
+        // }
+        
+        //         var temp = tab.GetMeshMaterial(meshIndex);
+        // if (
+        //     ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
+        //     && temp.Length > 0
+        //     && temp != tab.GetMeshMaterial(meshIndex)
+        // ) {
+        //     tab.SetMeshMaterial(meshIndex, temp);
+        //     ret = true;
+        // }
+        return false;
+    }
+
+    private static bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    {
+        using var lodNode = ImRaii.TreeNode($"Level of Detail #{lodIndex}", ImGuiTreeNodeFlags.DefaultOpen);
         if (!lodNode)
             return false;
 
@@ -48,18 +121,24 @@ public partial class ModEditWindow
         var ret = false;
 
         for (var meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
-            ret |= DrawMeshDetails(tab, lod.MeshIndex + meshOffset, disabled);
+            ret |= DrawModelMeshDetails(tab, lod.MeshIndex + meshOffset, disabled);
 
         return ret;
     }
 
-    private static bool DrawMeshDetails(MdlTab tab, int meshIndex, bool disabled)
+    private static bool DrawModelMeshDetails(MdlTab tab, int meshIndex, bool disabled)
     {
-        using var meshNode = ImRaii.TreeNode($"Mesh {meshIndex}", ImGuiTreeNodeFlags.DefaultOpen);
+        using var meshNode = ImRaii.TreeNode($"Mesh #{meshIndex}", ImGuiTreeNodeFlags.DefaultOpen);
         if (!meshNode)
             return false;
 
         using var id = ImRaii.PushId(meshIndex); 
+        using var table = ImRaii.Table(string.Empty, 2, ImGuiTableFlags.SizingFixedFit);
+        if (!table)
+            return false;
+
+        ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthFixed, 100 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("field", ImGuiTableColumnFlags.WidthStretch, 1);
 
         var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
@@ -67,14 +146,23 @@ public partial class ModEditWindow
         var ret = false;
 
         // Mesh material.
-        var temp = tab.GetMeshMaterial(meshIndex);
-        if (
-            ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
-            && temp.Length > 0
-            && temp != tab.GetMeshMaterial(meshIndex)
-        ) {
-            tab.SetMeshMaterial(meshIndex, temp);
-            ret = true;
+        // var temp = tab.GetMeshMaterial(meshIndex);
+        // if (
+        //     ImGui.InputText("Material", ref temp, Utf8GamePath.MaxGamePathLength, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
+        //     && temp.Length > 0
+        //     && temp != tab.GetMeshMaterial(meshIndex)
+        // ) {
+        //     tab.SetMeshMaterial(meshIndex, temp);
+        //     ret = true;
+        // }
+        ImGui.TableNextColumn();
+        ImGui.Text("Material");
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth(-1);
+        using (var materialCombo = ImRaii.Combo("##material", tab.GetMeshMaterial(meshIndex)))
+        {
+            // todo
         }
 
         // Submeshes.
@@ -83,11 +171,15 @@ public partial class ModEditWindow
             using var submeshId = ImRaii.PushId(submeshOffset);
 
             var submeshIndex = mesh.SubMeshIndex + submeshOffset;
+   
+            ImGui.TableNextColumn();
+            ImGui.Text($"Attributes #{submeshOffset}");
+
+            ImGui.TableNextColumn();
             var widget = _submeshAttributeTagWidgets[submeshIndex];
             var attributes = tab.GetSubmeshAttributes(submeshIndex);
 
-            UiHelpers.DefaultLineSpace();
-            var tagIndex = widget.Draw($"Submesh {submeshOffset} Attributes", "", attributes, out var editedAttribute, !disabled);
+            var tagIndex = widget.Draw("", "", attributes, out var editedAttribute, !disabled);
             if (tagIndex >= 0)
             {
                 tab.UpdateSubmeshAttribute(
