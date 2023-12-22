@@ -12,6 +12,8 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
@@ -190,7 +192,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             var itemPos        = ImGui.GetItemRectMax().X;
             var maxWidth       = ImGui.GetWindowPos().X + ImGui.GetWindowContentRegionMax().X;
             var priorityString = $"[{state.Priority}]";
-            var Size   = ImGui.CalcTextSize(priorityString).X;
+            var Size           = ImGui.CalcTextSize(priorityString).X;
             var remainingSpace = maxWidth - itemPos;
             var offset         = remainingSpace - Size;
             if (ImGui.GetScrollMaxY() == 0)
@@ -507,10 +509,11 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         public int     Priority;
     }
 
-    private const StringComparison IgnoreCase   = StringComparison.OrdinalIgnoreCase;
-    private       LowerString      _modFilter   = LowerString.Empty;
-    private       int              _filterType  = -1;
-    private       ModFilter        _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+    private const StringComparison                  IgnoreCase   = StringComparison.OrdinalIgnoreCase;
+    private       LowerString                       _modFilter   = LowerString.Empty;
+    private       int                               _filterType  = -1;
+    private       ModFilter                         _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+    private       ChangedItemDrawer.ChangedItemIcon _slotFilter  = 0;
 
     private void SetFilterTooltip()
     {
@@ -518,7 +521,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
           + "Enter c:[string] to filter for mods changing specific items.\n"
           + "Enter t:[string] to filter for mods set to specific tags.\n"
           + "Enter n:[string] to filter only for mod names and no paths.\n"
-          + "Enter a:[string] to filter for mods by specific authors.\n\n"
+          + "Enter a:[string] to filter for mods by specific authors.\n"
+          + $"Enter s:[string] to filter for mods by the categories of the items they change (1-{ChangedItemDrawer.NumCategories+1} or partial category name).\n"
           + "Use None as a placeholder value that only matches empty lists or names.";
     }
 
@@ -539,6 +543,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                     'C' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 3),
                     't' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 4),
                     'T' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 4),
+                    's' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 5),
+                    'S' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 5),
                     _   => (new LowerString(filterValue), 0),
                 },
             _ => (new LowerString(filterValue), 0),
@@ -549,10 +555,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private const int EmptyOffset = 128;
 
-    private static (LowerString, int) ParseFilter(string value, int id)
+    private (LowerString, int) ParseFilter(string value, int id)
     {
         value = value[2..];
         var lower = new LowerString(value);
+        if (id == 5 && !ChangedItemDrawer.TryParsePartial(lower.Lower, out _slotFilter))
+            _slotFilter = 0;
+
         return (lower, lower.Lower is "none" ? id + EmptyOffset : id);
     }
 
@@ -602,9 +611,11 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             2               => !mod.Author.Contains(_modFilter),
             3               => !mod.LowerChangedItemsString.Contains(_modFilter.Lower),
             4               => !mod.AllTagsLower.Contains(_modFilter.Lower),
+            5               => mod.ChangedItems.All(p => (ChangedItemDrawer.GetCategoryIcon(p.Key, p.Value) & _slotFilter) == 0),
             2 + EmptyOffset => !mod.Author.IsEmpty,
             3 + EmptyOffset => mod.LowerChangedItemsString.Length > 0,
             4 + EmptyOffset => mod.AllTagsLower.Length > 0,
+            5 + EmptyOffset => mod.ChangedItems.Count == 0,
             _               => false, // Should never happen
         };
     }

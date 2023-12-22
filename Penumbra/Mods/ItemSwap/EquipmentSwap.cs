@@ -242,7 +242,7 @@ public static class EquipmentSwap
         if (!slot.IsEquipmentPiece())
             throw new ItemSwap.InvalidItemTypeException();
 
-        modelId = i.ModelId;
+        modelId = i.PrimaryId;
         variant = i.Variant;
     }
 

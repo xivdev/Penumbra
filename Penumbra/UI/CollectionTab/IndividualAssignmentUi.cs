@@ -126,7 +126,7 @@ public class IndividualAssignmentUi : IDisposable
     /// <summary> Create combos when ready. </summary>
     private void SetupCombos()
     {
-        _worldCombo     = new WorldCombo(_actors.Data.Worlds, Penumbra.Log, WorldId.AnyWorld);
+        _worldCombo     = new WorldCombo(_actors.Data.Worlds, Penumbra.Log);
         _mountCombo     = new NpcCombo("##mountCombo",     _actors.Data.Mounts,     Penumbra.Log);
         _companionCombo = new NpcCombo("##companionCombo", _actors.Data.Companions, Penumbra.Log);
         _ornamentCombo  = new NpcCombo("##ornamentCombo",  _actors.Data.Ornaments,  Penumbra.Log);
