@@ -1,4 +1,3 @@
-using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
@@ -239,8 +238,8 @@ internal partial record ResolveContext
                 return (characterRaceCode, "base", 1);
             case 1:
                 var faceId    = human->FaceId;
-                var tribe     = human->Customize[(int)CustomizeIndex.Tribe];
-                var modelType = human->Customize[(int)CustomizeIndex.ModelType];
+                var tribe     = human->Customize[(int)Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex.Tribe];
+                var modelType = human->Customize[(int)Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex.ModelType];
                 if (faceId < 201)
                 {
                     faceId -= tribe switch

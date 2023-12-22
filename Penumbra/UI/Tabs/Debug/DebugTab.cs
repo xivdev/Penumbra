@@ -88,7 +88,7 @@ public class DebugTab : Window, ITab
     private readonly TextureManager            _textureManager;
     private readonly SkinFixer                 _skinFixer;
     private readonly RedrawService             _redraws;
-    private readonly DictEmotes                _emotes;
+    private readonly DictEmote                _emotes;
     private readonly Diagnostics               _diagnostics;
     private readonly IObjectTable              _objects;
     private readonly IClientState              _clientState;
@@ -99,7 +99,7 @@ public class DebugTab : Window, ITab
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, SkinFixer skinFixer, RedrawService redraws, DictEmotes emotes, Diagnostics diagnostics, IpcTester ipcTester)
+        TextureManager textureManager, SkinFixer skinFixer, RedrawService redraws, DictEmote emotes, Diagnostics diagnostics, IpcTester ipcTester)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
