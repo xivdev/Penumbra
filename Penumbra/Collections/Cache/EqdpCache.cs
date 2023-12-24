@@ -31,12 +31,22 @@ public readonly struct EqdpCache : IDisposable
             manager.SetFile(_eqdpFiles[i], index);
     }
 
-    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, GenderRace genderRace, bool accessory)
+    public MetaList.MetaReverter? TemporarilySetFiles(MetaFileManager manager, GenderRace genderRace, bool accessory)
     {
         var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
-        Debug.Assert(idx >= 0, $"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
+        if (idx < 0)
+        {
+            Penumbra.Log.Warning($"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
+            return null;
+        }
+
         var i = CharacterUtilityData.EqdpIndices.IndexOf(idx);
-        Debug.Assert(i >= 0, $"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
+        if (i < 0)
+        {
+            Penumbra.Log.Warning($"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
+            return null;
+        }
+
         return manager.TemporarilySetFile(_eqdpFiles[i], idx);
     }
 

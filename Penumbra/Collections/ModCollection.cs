@@ -7,7 +7,7 @@ using Penumbra.Services;
 namespace Penumbra.Collections;
 
 /// <summary>
-/// A ModCollection is a named set of ModSettings to all of the users' installed mods.
+/// A ModCollection is a named set of ModSettings to all the users' installed mods.
 /// Settings to mods that are not installed anymore are kept as long as no call to CleanUnavailableSettings is made.
 /// Invariants:
 ///    - Index is the collections index in the ModCollection.Manager
@@ -113,7 +113,7 @@ public partial class ModCollection
     {
         Debug.Assert(index > 0, "Collection duplicated with non-positive index.");
         return new ModCollection(name, index, 0, CurrentVersion, Settings.Select(s => s?.DeepCopy()).ToList(),
-            DirectlyInheritsFrom.ToList(), UnusedSettings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DeepCopy()));
+            [.. DirectlyInheritsFrom], UnusedSettings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DeepCopy()));
     }
 
     /// <summary> Constructor for reading from files. </summary>

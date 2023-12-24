@@ -170,7 +170,7 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public MetaList.MetaReverter TemporarilySetEqpFile()
         => _eqpCache.TemporarilySetFiles(_manager);
 
-    public MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
+    public MetaList.MetaReverter? TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => _eqdpCache.TemporarilySetFiles(_manager, genderRace, accessory);
 
     public MetaList.MetaReverter TemporarilySetGmpFile()

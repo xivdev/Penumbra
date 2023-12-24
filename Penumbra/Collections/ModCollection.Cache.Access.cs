@@ -89,9 +89,14 @@ public partial class ModCollection
     }
 
     // Used for short periods of changed files.
-    public MetaList.MetaReverter TemporarilySetEqdpFile(CharacterUtility utility, GenderRace genderRace, bool accessory)
-        => _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory)
-         ?? utility.TemporarilyResetResource(CharacterUtilityData.EqdpIdx(genderRace, accessory));
+    public MetaList.MetaReverter? TemporarilySetEqdpFile(CharacterUtility utility, GenderRace genderRace, bool accessory)
+    {
+        if (_cache != null)
+            return _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory);
+
+        var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
+        return idx >= 0 ? utility.TemporarilyResetResource(idx) : null;
+    }
 
     public MetaList.MetaReverter TemporarilySetEqpFile(CharacterUtility utility)
         => _cache?.Meta.TemporarilySetEqpFile()
