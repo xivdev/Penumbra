@@ -3,7 +3,10 @@ using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Communication;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
@@ -13,8 +16,14 @@ public class ModPanelHeader : IDisposable
     /// <summary> We use a big, nice game font for the title. </summary>
     private readonly GameFontHandle _nameFont;
 
-    public ModPanelHeader(DalamudPluginInterface pi)
-        => _nameFont = pi.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
+    private readonly CommunicatorService _communicator;
+
+    public ModPanelHeader(DalamudPluginInterface pi, CommunicatorService communicator)
+    {
+        _communicator = communicator;
+        _nameFont     = pi.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
+        _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModPanelHeader);
+    }
 
     /// <summary>
     /// Draw the header for the current mod,
@@ -76,6 +85,7 @@ public class ModPanelHeader : IDisposable
     public void Dispose()
     {
         _nameFont.Dispose();
+        _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
     }
 
     // Header data.
@@ -217,5 +227,14 @@ public class ModPanelHeader : IDisposable
             style.Pop();
             ImGui.TextUnformatted(_modWebsite);
         }
+    }
+
+    /// <summary> Just update the data when any relevant field changes. </summary>
+    private void OnModDataChange(ModDataChangeType changeType, Mod mod, string? _2)
+    {
+        const ModDataChangeType relevantChanges =
+            ModDataChangeType.Author | ModDataChangeType.Name | ModDataChangeType.Website | ModDataChangeType.Version;
+        if ((changeType & relevantChanges) != 0)
+            UpdateModData(mod);
     }
 }

@@ -21,7 +21,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
         Reload();
         Changed += OnChange;
         _communicator.ModDiscoveryFinished.Subscribe(Reload, ModDiscoveryFinished.Priority.ModFileSystem);
-        _communicator.ModDataChanged.Subscribe(OnDataChange, ModDataChanged.Priority.ModFileSystem);
+        _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystem);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModFileSystem);
     }
 
@@ -29,7 +29,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
         _communicator.ModDiscoveryFinished.Unsubscribe(Reload);
-        _communicator.ModDataChanged.Unsubscribe(OnDataChange);
+        _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
     }
 
     public struct ImportDate : ISortMode<Mod>
@@ -75,7 +75,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     }
 
     // Update sort order when defaulted mod names change.
-    private void OnDataChange(ModDataChangeType type, Mod mod, string? oldName)
+    private void OnModDataChange(ModDataChangeType type, Mod mod, string? oldName)
     {
         if (!type.HasFlag(ModDataChangeType.Name) || oldName == null || !FindLeaf(mod, out var leaf))
             return;

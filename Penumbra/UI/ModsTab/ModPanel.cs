@@ -1,5 +1,6 @@
 using Dalamud.Plugin;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
@@ -13,13 +14,13 @@ public class ModPanel : IDisposable
     private readonly ModPanelTabBar        _tabs;
 
     public ModPanel(DalamudPluginInterface pi, ModFileSystemSelector selector, ModEditWindow editWindow, ModPanelTabBar tabs,
-        MultiModPanel multiModPanel)
+        MultiModPanel multiModPanel, CommunicatorService communicator)
     {
         _selector                  =  selector;
         _editWindow                =  editWindow;
         _tabs                      =  tabs;
         _multiModPanel             =  multiModPanel;
-        _header                    =  new ModPanelHeader(pi);
+        _header                    =  new ModPanelHeader(pi, communicator);
         _selector.SelectionChanged += OnSelectionChange;
     }
 

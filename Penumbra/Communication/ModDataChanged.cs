@@ -21,8 +21,11 @@ public sealed class ModDataChanged : EventWrapper<Action<ModDataChangeType, Mod,
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModDataChange"/>
         ModCacheManager = 0,
 
-        /// <seealso cref="Mods.Manager.ModFileSystem.OnDataChange"/>
+        /// <seealso cref="Mods.Manager.ModFileSystem.OnModDataChange"/>
         ModFileSystem = 0,
+
+        /// <seealso cref="UI.ModsTab.ModPanelHeader.OnModDataChange"/>
+        ModPanelHeader = 0,
     }
 
     public ModDataChanged()

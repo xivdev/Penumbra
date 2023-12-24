@@ -155,7 +155,6 @@ public partial class ModEditWindow
         var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
 
-
         // Mesh material
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
@@ -171,7 +170,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawMaterialCombo(MdlTab tab, int meshIndex, bool disabled)
+    private static bool DrawMaterialCombo(MdlTab tab, int meshIndex, bool disabled)
     {
         var       mesh = tab.Mdl.Meshes[meshIndex];
         using var _    = ImRaii.Disabled(disabled);
