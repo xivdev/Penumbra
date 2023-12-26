@@ -26,6 +26,21 @@
         "resolved": "0.33.0",
         "contentHash": "FlHfpTAADzaSlVCBF33iKJk9UhOr3Xj+r5LXbW2GzqYr0SrhiOf6shLX2LC2fqs7g7d+YlwKbBXqWFtb+e7icw=="
       },
+      "SharpGLTF.Core": {
+        "type": "Direct",
+        "requested": "[1.0.0-alpha0030, )",
+        "resolved": "1.0.0-alpha0030",
+        "contentHash": "HVL6PcrM0H/uEk96nRZfhtPeYvSFGHnni3g1aIckot2IWVp0jLMH5KWgaWfsatEz4Yds3XcdSLUWmJZivDBUPA=="
+      },
+      "SharpGLTF.Toolkit": {
+        "type": "Direct",
+        "requested": "[1.0.0-alpha0030, )",
+        "resolved": "1.0.0-alpha0030",
+        "contentHash": "nsoJWAFhXgEky9bVCY0zLeZVDx+S88u7VjvuebvMb6dJiNyFOGF6FrrMHiJe+x5pcVBxxlc3VoXliBF7r/EqYA==",
+        "dependencies": {
+          "SharpGLTF.Runtime": "1.0.0-alpha0030"
+        }
+      },
       "SixLabors.ImageSharp": {
         "type": "Direct",
         "requested": "[2.1.2, )",
@@ -45,6 +60,14 @@
         "type": "Transitive",
         "resolved": "5.0.0",
         "contentHash": "VyPlqzH2wavqquTcYpkIIAQ6WdenuKoFN0BdYBbCWsclXacSOHNQn66Gt4z5NBqEYW0FAPm5rlvki9ZiCij5xQ=="
+      },
+      "SharpGLTF.Runtime": {
+        "type": "Transitive",
+        "resolved": "1.0.0-alpha0030",
+        "contentHash": "Ysn+fyj9EVXj6mfG0BmzSTBGNi/QvcnTrMd54dBMOlI/TsMRvnOY3JjTn0MpeH2CgHXX4qogzlDt4m+rb3n4Og==",
+        "dependencies": {
+          "SharpGLTF.Core": "1.0.0-alpha0030"
+        }
       },
       "System.Runtime.CompilerServices.Unsafe": {
         "type": "Transitive",

@@ -12,6 +12,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
@@ -563,7 +564,7 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, GameEventManager gameEvents,
+        CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager, GameEventManager gameEvents,
         ChangedItemDrawer changedItemDrawer)
         : base(WindowBaseLabel)
     {
@@ -579,6 +580,7 @@ public partial class ModEditWindow : Window, IDisposable
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
         _textures          = textures;
+        _models            = models;
         _fileDialog        = fileDialog;
         _gameEvents        = gameEvents;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",

@@ -5,6 +5,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -12,6 +13,8 @@ namespace Penumbra.UI.AdvancedWindow;
 public partial class ModEditWindow
 {
     private const int MdlMaterialMaximum = 4;
+
+    private readonly ModelManager _models;
 
     private readonly FileEditor<MdlTab> _modelTab;
 
@@ -29,6 +32,11 @@ public partial class ModEditWindow
             _subMeshAttributeTagWidgets.AddRange(
                 Enumerable.Range(0, subMeshTotal).Select(_ => new TagButtons())
             );
+        }
+
+        if (ImGui.Button("bingo bango"))
+        {
+            _models.ExportToGltf("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
         }
 
         var ret = false;
