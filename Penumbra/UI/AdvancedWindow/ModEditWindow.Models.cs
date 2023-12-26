@@ -14,9 +14,10 @@ public partial class ModEditWindow
 {
     private const int MdlMaterialMaximum = 4;
 
-    private readonly ModelManager _models;
-
     private readonly FileEditor<MdlTab> _modelTab;
+
+    private readonly ModelManager _models;
+    private bool _pendingIo = false;
 
     private          string           _modelNewMaterial           = string.Empty;
     private readonly List<TagButtons> _subMeshAttributeTagWidgets = [];
@@ -34,9 +35,11 @@ public partial class ModEditWindow
             );
         }
 
-        if (ImGui.Button("bingo bango"))
+        if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", _pendingIo))
         {
-            _models.ExportToGltf("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
+            _pendingIo = true;
+            var task = _models.ExportToGltf("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
+            task.ContinueWith(_ => _pendingIo = false);
         }
 
         var ret = false;
