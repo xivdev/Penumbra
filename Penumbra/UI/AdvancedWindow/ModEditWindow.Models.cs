@@ -38,7 +38,7 @@ public partial class ModEditWindow
         if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", _pendingIo))
         {
             _pendingIo = true;
-            var task = _models.ExportToGltf("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
+            var task = _models.ExportToGltf(file, "C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
             task.ContinueWith(_ => _pendingIo = false);
         }
 
