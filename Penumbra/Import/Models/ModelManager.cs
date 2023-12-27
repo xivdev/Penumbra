@@ -77,7 +77,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             var submesh = _mdl.SubMeshes[mesh.SubMeshIndex]; // just first for now
 
             var positionVertexElement = _mdl.VertexDeclarations[meshIndex].VertexElements
-                .Where(decl => decl.Usage == 0 /* POSITION */)
+                .Where(decl => (MdlFile.VertexUsage)decl.Usage == MdlFile.VertexUsage.Position)
                 .First();
 
             // reading in the entire indices list
