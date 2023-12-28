@@ -41,6 +41,10 @@ public partial class ModEditWindow
             var task = _models.ExportToGltf(file, "C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
             task.ContinueWith(_ => _pendingIo = false);
         }
+        if (ImGui.Button("zoingo boingo"))
+        {
+            _models.SkeletonTest();
+        }
 
         var ret = false;
 
