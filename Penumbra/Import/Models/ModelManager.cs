@@ -1,11 +1,12 @@
 using System.Xml;
 using Dalamud.Plugin.Services;
-using Lumina.Data;
 using Lumina.Extensions;
 using OtterGui;
 using OtterGui.Tasks;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Modules;
+using Penumbra.String.Classes;
 using SharpGLTF.Scenes;
 using SharpGLTF.Transforms;
 
@@ -14,13 +15,15 @@ namespace Penumbra.Import.Models;
 public sealed class ModelManager : SingleTaskQueue, IDisposable
 {
     private readonly IDataManager _gameData;
+    private readonly ActiveCollectionData _activeCollectionData;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
     private bool _disposed = false;
 
-    public ModelManager(IDataManager gameData)
+    public ModelManager(IDataManager gameData, ActiveCollectionData activeCollectionData)
     {
         _gameData = gameData;
+        _activeCollectionData = activeCollectionData;
     }
 
     public void Dispose()
@@ -58,7 +61,18 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
     {
         var sklbPath = "chara/human/c0201/skeleton/base/b0001/skl_c0201b0001.sklb";
 
-        var something = _gameData.GetFile<Garbage>(sklbPath);
+        var succeeded = Utf8GamePath.FromString(sklbPath, out var utf8Path, true);
+        var testResolve = _activeCollectionData.Current.ResolvePath(utf8Path);
+        Penumbra.Log.Information($"resolved: {(testResolve == null ? "NULL" : testResolve.ToString())}");
+
+        // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
+        var bytes = testResolve switch
+        {
+            null => _gameData.GetFile(sklbPath).Data,
+            FullPath path => File.ReadAllBytes(path.ToPath())
+        };
+        
+        var something = new Garbage(bytes);
 
         var fuck = new HavokConverter();
         var killme = fuck.HkxToXml(something.Skeleton);
@@ -121,18 +135,21 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
     
     // this is garbage that should be in gamedata
 
-    private sealed class Garbage : FileResource
+    private sealed class Garbage
     {
         public byte[] Skeleton;
 
-        public override void LoadFile()
+        public Garbage(byte[] data)
         {
-            var magic = Reader.ReadUInt32();
+            using var stream = new MemoryStream(data);
+            using var reader = new BinaryReader(stream);
+
+            var magic = reader.ReadUInt32();
             if (magic != 0x736B6C62)
                 throw new InvalidDataException("Invalid sklb magic");
 
             // todo do this all properly jfc
-            var version = Reader.ReadUInt32();
+            var version = reader.ReadUInt32();
             
             var oldHeader = version switch {
                 0x31313030 or 0x31313130 or 0x31323030 => true,
@@ -144,17 +161,17 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             uint skeletonOffset;
             if (oldHeader)
             {
-                Reader.ReadInt16();
-                skeletonOffset = Reader.ReadUInt16();
+                reader.ReadInt16();
+                skeletonOffset = reader.ReadUInt16();
             }
             else
             {
-                Reader.ReadUInt32();
-                skeletonOffset = Reader.ReadUInt32();
+                reader.ReadUInt32();
+                skeletonOffset = reader.ReadUInt32();
             }
 
-            Reader.Seek(skeletonOffset);
-            Skeleton = Reader.ReadBytes((int)(Reader.BaseStream.Length - skeletonOffset));
+            reader.Seek(skeletonOffset);
+            Skeleton = reader.ReadBytes((int)(reader.BaseStream.Length - skeletonOffset));
         }
     }
 
