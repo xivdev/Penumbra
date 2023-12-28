@@ -61,6 +61,8 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
     {
         var sklbPath = "chara/human/c0201/skeleton/base/b0001/skl_c0201b0001.sklb";
 
+        // NOTE: to resolve game path from _mod_, will need to wire the mod class via the modeditwindow to the model editor, through to here.
+        // NOTE: to get the game path for a model we'll probably need to use a reverse resolve - there's no guarantee for a modded model that they're named per game path, nor that there's only one name.
         var succeeded = Utf8GamePath.FromString(sklbPath, out var utf8Path, true);
         var testResolve = _activeCollectionData.Current.ResolvePath(utf8Path);
         Penumbra.Log.Information($"resolved: {(testResolve == null ? "NULL" : testResolve.ToString())}");
@@ -72,56 +74,40 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             FullPath path => File.ReadAllBytes(path.ToPath())
         };
         
-        var something = new Garbage(bytes);
+        var sklb = new SklbFile(bytes);
 
-        var fuck = new HavokConverter();
-        var killme = fuck.HkxToXml(something.Skeleton);
+        // TODO: Consider making these static methods.
+        var havokConverter = new HavokConverter();
+        var xml = havokConverter.HkxToXml(sklb.Skeleton);
 
-        var doc = new XmlDocument();
-        doc.LoadXml(killme);
+        var skeletonConverter = new SkeletonConverter();
+        var skeleton = skeletonConverter.FromXml(xml);
 
-        var skels = doc.SelectNodes("/hktagfile/object[@type='hkaSkeleton']")
-            .Cast<XmlElement>()
-            .Select(element => new Skel(element))
-            .ToArray();
-
-        // todo: look into how this is selecting the skel - only first?
-        var animSkel = doc.SelectSingleNode("/hktagfile/object[@type='hkaAnimationContainer']")
-            .SelectNodes("array[@name='skeletons']")
-            .Cast<XmlElement>()
-            .First();
-        var mainSkelId = animSkel.ChildNodes[0].InnerText;
-
-        var mainSkel = skels.First(skel => skel.Id == mainSkelId);
-
-        // this is atrocious
+        // this is (less) atrocious
         NodeBuilder? root = null;
         var boneMap = new Dictionary<string, NodeBuilder>();
-        for (var boneIndex = 0; boneIndex < mainSkel.BoneNames.Length; boneIndex++)
+        for (var boneIndex = 0; boneIndex < skeleton.Bones.Length; boneIndex++)
         {
-            var name = mainSkel.BoneNames[boneIndex];
-            if (boneMap.ContainsKey(name)) continue;
+            var bone = skeleton.Bones[boneIndex];
 
-            var node = new NodeBuilder(name);
+            if (boneMap.ContainsKey(bone.Name)) continue;
 
-            var rp = mainSkel.ReferencePose[boneIndex];
-            var transform = new AffineTransform(
-                new Vector3(rp[8], rp[9], rp[10]),
-                new Quaternion(rp[4], rp[5], rp[6], rp[7]),
-                new Vector3([rp[0], rp[1], rp[2]])
-            );
-            node.SetLocalTransform(transform, false);
+            var node = new NodeBuilder(bone.Name);
+            boneMap[bone.Name] = node;
 
-            boneMap[name] = node;
+            node.SetLocalTransform(new AffineTransform(
+                bone.Transform.Scale,
+                bone.Transform.Rotation,
+                bone.Transform.Translation
+            ), false);
 
-            var parentId = mainSkel.ParentIndices[boneIndex];
-            if (parentId == -1)
+            if (bone.ParentIndex == -1)
             {
                 root = node;
                 continue;
             }
 
-            var parent = boneMap[mainSkel.BoneNames[parentId]];
+            var parent = boneMap[skeleton.Bones[bone.ParentIndex].Name];
             parent.AddNode(node);
         }
 
@@ -130,120 +116,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         var model = scene.ToGltf2();
         model.SaveGLTF(@"C:\Users\ackwell\blender\gltf-tests\zoingo.gltf");
 
-        Penumbra.Log.Information($"zoingo {string.Join(',', mainSkel.ParentIndices)}");
-    }
-    
-    // this is garbage that should be in gamedata
-
-    private sealed class Garbage
-    {
-        public byte[] Skeleton;
-
-        public Garbage(byte[] data)
-        {
-            using var stream = new MemoryStream(data);
-            using var reader = new BinaryReader(stream);
-
-            var magic = reader.ReadUInt32();
-            if (magic != 0x736B6C62)
-                throw new InvalidDataException("Invalid sklb magic");
-
-            // todo do this all properly jfc
-            var version = reader.ReadUInt32();
-            
-            var oldHeader = version switch {
-                0x31313030 or 0x31313130 or 0x31323030 => true,
-                0x31333030 => false,
-                _ => throw new InvalidDataException($"Unknown version {version}")
-            };
-
-            // Skeleton offset directly follows the layer offset.
-            uint skeletonOffset;
-            if (oldHeader)
-            {
-                reader.ReadInt16();
-                skeletonOffset = reader.ReadUInt16();
-            }
-            else
-            {
-                reader.ReadUInt32();
-                skeletonOffset = reader.ReadUInt32();
-            }
-
-            reader.Seek(skeletonOffset);
-            Skeleton = reader.ReadBytes((int)(reader.BaseStream.Length - skeletonOffset));
-        }
-    }
-
-    private class Skel
-    {
-        public readonly string Id;
-
-        public readonly float[][] ReferencePose;
-        public readonly int[] ParentIndices;
-        public readonly string[] BoneNames;
-
-        // TODO: this shouldn't have any reference to the skel xml - i should just make it a bare class that can be repr'd in gamedata or whatever
-        public Skel(XmlElement el)
-        {
-            Id = el.GetAttribute("id");
-
-            ReferencePose = ReadReferencePose(el);
-            ParentIndices = ReadParentIndices(el);
-            BoneNames = ReadBoneNames(el);
-        }
-
-        private float[][] ReadReferencePose(XmlElement el)
-        {
-            return ReadArray(
-                (XmlElement)el.SelectSingleNode("array[@name='referencePose']"),
-                ReadVec12
-            );
-        }
-
-        private float[] ReadVec12(XmlElement el)
-        {
-            return el.ChildNodes
-                .Cast<XmlNode>()
-                .Where(node => node.NodeType != XmlNodeType.Comment)
-                .Select(node => {
-                    var t = node.InnerText.Trim()[1..];
-                    // todo: surely there's a less shit way to do this i mean seriously
-                    return BitConverter.ToSingle(BitConverter.GetBytes(int.Parse(t, NumberStyles.HexNumber)));
-                })
-                .ToArray();
-        }
-
-        private int[] ReadParentIndices(XmlElement el)
-        {
-            // todo: would be neat to genericise array between bare and children
-            return el.SelectSingleNode("array[@name='parentIndices']")
-                .InnerText
-                .Split(new char[] {' ', '\n'}, StringSplitOptions.RemoveEmptyEntries)
-                .Select(int.Parse)
-                .ToArray();
-        }
-
-        private string[] ReadBoneNames(XmlElement el)
-        {
-            return ReadArray(
-                (XmlElement)el.SelectSingleNode("array[@name='bones']"),
-                el => el.SelectSingleNode("string[@name='name']").InnerText
-            );
-        }
-
-        private T[] ReadArray<T>(XmlElement el, Func<XmlElement, T> convert)
-        {
-            var size = int.Parse(el.GetAttribute("size"));
-
-            var array = new T[size];
-            foreach (var (node, index) in el.ChildNodes.Cast<XmlElement>().WithIndex())
-            {
-                array[index] = convert(node);
-            }
-
-            return array;
-        }
+        Penumbra.Log.Information($"zoingo!");
     }
 
     private class ExportToGltfAction : IAction
