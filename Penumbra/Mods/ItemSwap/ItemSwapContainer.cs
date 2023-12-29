@@ -1,5 +1,5 @@
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -7,17 +7,16 @@ using Penumbra.String.Classes;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.ItemSwap;
 
 public class ItemSwapContainer
 {
-    private readonly MetaFileManager   _manager;
-    private readonly IdentifierService _identifier;
+    private readonly MetaFileManager      _manager;
+    private readonly ObjectIdentification _identifier;
 
-    private Dictionary<Utf8GamePath, FullPath> _modRedirections  = new();
-    private HashSet<MetaManipulation>          _modManipulations = new();
+    private Dictionary<Utf8GamePath, FullPath> _modRedirections  = [];
+    private HashSet<MetaManipulation>          _modManipulations = [];
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> ModRedirections
         => _modRedirections;
@@ -25,7 +24,7 @@ public class ItemSwapContainer
     public IReadOnlySet<MetaManipulation> ModManipulations
         => _modManipulations;
 
-    public readonly List<Swap> Swaps = new();
+    public readonly List<Swap> Swaps = [];
 
     public bool Loaded { get; private set; }
 
@@ -107,7 +106,7 @@ public class ItemSwapContainer
         }
     }
 
-    public ItemSwapContainer(MetaFileManager manager, IdentifierService identifier)
+    public ItemSwapContainer(MetaFileManager manager, ObjectIdentification identifier)
     {
         _manager    = manager;
         _identifier = identifier;
@@ -130,7 +129,7 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateItemSwap(_manager, _identifier.AwaitedService, Swaps, PathResolver(collection), MetaResolver(collection),
+        var ret = EquipmentSwap.CreateItemSwap(_manager, _identifier, Swaps, PathResolver(collection), MetaResolver(collection),
             from, to, useRightRing, useLeftRing);
         Loaded = true;
         return ret;
@@ -140,13 +139,13 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateTypeSwap(_manager, _identifier.AwaitedService, Swaps, PathResolver(collection), MetaResolver(collection),
+        var ret = EquipmentSwap.CreateTypeSwap(_manager, _identifier, Swaps, PathResolver(collection), MetaResolver(collection),
             slotFrom, from, slotTo, to);
         Loaded = true;
         return ret;
     }
 
-    public bool LoadCustomization(MetaFileManager manager, BodySlot slot, GenderRace race, SetId from, SetId to,
+    public bool LoadCustomization(MetaFileManager manager, BodySlot slot, GenderRace race, PrimaryId from, PrimaryId to,
         ModCollection? collection = null)
     {
         var pathResolver = PathResolver(collection);

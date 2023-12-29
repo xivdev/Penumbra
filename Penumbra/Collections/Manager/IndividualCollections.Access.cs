@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;
@@ -36,7 +37,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                     return true;
 
                 if (identifier.Retainer is not ActorIdentifier.RetainerType.Mannequin && _config.UseOwnerNameForCharacterCollection)
-                    return CheckWorlds(_actorService.AwaitedService.GetCurrentPlayer(), out collection);
+                    return CheckWorlds(_actors.GetCurrentPlayer(), out collection);
 
                 break;
             }
@@ -46,7 +47,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                     return true;
 
                 // Handle generic NPC
-                var npcIdentifier = _actorService.AwaitedService.CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty,
+                var npcIdentifier = _actors.CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty,
                     ushort.MaxValue,
                     identifier.Kind, identifier.DataId);
                 if (npcIdentifier.IsValid && _individuals.TryGetValue(npcIdentifier, out collection))
@@ -56,7 +57,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                 if (!_config.UseOwnerNameForCharacterCollection)
                     return false;
 
-                identifier = _actorService.AwaitedService.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
+                identifier = _actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
                     identifier.HomeWorld.Id,
                     ObjectKind.None, uint.MaxValue);
                 return CheckWorlds(identifier, out collection);
@@ -89,37 +90,37 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
         if (identifier.Type != IdentifierType.Special)
             return (identifier, SpecialResult.Invalid);
 
-        if (_actorService.AwaitedService.ResolvePartyBannerPlayer(identifier.Special, out var id))
+        if (_actors.ResolvePartyBannerPlayer(identifier.Special, out var id))
             return _config.UseCharacterCollectionsInCards ? (id, SpecialResult.PartyBanner) : (identifier, SpecialResult.Invalid);
 
-        if (_actorService.AwaitedService.ResolvePvPBannerPlayer(identifier.Special, out id))
+        if (_actors.ResolvePvPBannerPlayer(identifier.Special, out id))
             return _config.UseCharacterCollectionsInCards ? (id, SpecialResult.PvPBanner) : (identifier, SpecialResult.Invalid);
 
-        if (_actorService.AwaitedService.ResolveMahjongPlayer(identifier.Special, out id))
+        if (_actors.ResolveMahjongPlayer(identifier.Special, out id))
             return _config.UseCharacterCollectionsInCards ? (id, SpecialResult.Mahjong) : (identifier, SpecialResult.Invalid);
 
         switch (identifier.Special)
         {
             case ScreenActor.CharacterScreen when _config.UseCharacterCollectionInMainWindow:
-                return (_actorService.AwaitedService.GetCurrentPlayer(), SpecialResult.CharacterScreen);
+                return (_actors.GetCurrentPlayer(), SpecialResult.CharacterScreen);
             case ScreenActor.FittingRoom when _config.UseCharacterCollectionInTryOn:
-                return (_actorService.AwaitedService.GetCurrentPlayer(), SpecialResult.FittingRoom);
+                return (_actors.GetCurrentPlayer(), SpecialResult.FittingRoom);
             case ScreenActor.DyePreview when _config.UseCharacterCollectionInTryOn:
-                return (_actorService.AwaitedService.GetCurrentPlayer(), SpecialResult.DyePreview);
+                return (_actors.GetCurrentPlayer(), SpecialResult.DyePreview);
             case ScreenActor.Portrait when _config.UseCharacterCollectionsInCards:
-                return (_actorService.AwaitedService.GetCurrentPlayer(), SpecialResult.Portrait);
+                return (_actors.GetCurrentPlayer(), SpecialResult.Portrait);
             case ScreenActor.ExamineScreen:
             {
-                identifier = _actorService.AwaitedService.GetInspectPlayer();
+                identifier = _actors.GetInspectPlayer();
                 if (identifier.IsValid)
                     return (_config.UseCharacterCollectionInInspect ? identifier : ActorIdentifier.Invalid, SpecialResult.Inspect);
 
-                identifier = _actorService.AwaitedService.GetCardPlayer();
+                identifier = _actors.GetCardPlayer();
                 if (identifier.IsValid)
                     return (_config.UseCharacterCollectionInInspect ? identifier : ActorIdentifier.Invalid, SpecialResult.Card);
 
                 return _config.UseCharacterCollectionInTryOn
-                    ? (_actorService.AwaitedService.GetGlamourPlayer(), SpecialResult.Glamour)
+                    ? (_actors.GetGlamourPlayer(), SpecialResult.Glamour)
                     : (identifier, SpecialResult.Invalid);
             }
             default: return (identifier, SpecialResult.Invalid);
@@ -127,10 +128,10 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
     }
 
     public bool TryGetCollection(GameObject? gameObject, out ModCollection? collection)
-        => TryGetCollection(_actorService.AwaitedService.FromObject(gameObject, true, false, false), out collection);
+        => TryGetCollection(_actors.FromObject(gameObject, true, false, false), out collection);
 
     public unsafe bool TryGetCollection(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection)
-        => TryGetCollection(_actorService.AwaitedService.FromObject(gameObject, out _, true, false, false), out collection);
+        => TryGetCollection(_actors.FromObject(gameObject, out _, true, false, false), out collection);
 
     private bool CheckWorlds(ActorIdentifier identifier, out ModCollection? collection)
     {
@@ -143,7 +144,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
         if (_individuals.TryGetValue(identifier, out collection))
             return true;
 
-        identifier = _actorService.AwaitedService.CreateIndividualUnchecked(identifier.Type, identifier.PlayerName, ushort.MaxValue,
+        identifier = _actors.CreateIndividualUnchecked(identifier.Type, identifier.PlayerName, ushort.MaxValue,
             identifier.Kind,
             identifier.DataId);
         if (identifier.IsValid && _individuals.TryGetValue(identifier, out collection))

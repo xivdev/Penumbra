@@ -7,15 +7,17 @@ namespace Penumbra.Mods.Editor;
 
 public class DuplicateManager
 {
+    private readonly Configuration                                    _config;
     private readonly SaveService                                      _saveService;
     private readonly ModManager                                       _modManager;
     private readonly SHA256                                           _hasher     = SHA256.Create();
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
 
-    public DuplicateManager(ModManager modManager, SaveService saveService)
+    public DuplicateManager(ModManager modManager, SaveService saveService, Configuration config)
     {
         _modManager  = modManager;
         _saveService = saveService;
+        _config      = config;
     }
 
     public IReadOnlyList<(FullPath[] Paths, long Size, byte[] Hash)> Duplicates
@@ -82,7 +84,7 @@ public class DuplicateManager
             {
                 var sub = (SubMod)subMod;
                 sub.FileData = dict;
-                _saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx));
+                _saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx, _config.ReplaceNonAsciiOnImport));
             }
         }
 

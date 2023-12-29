@@ -1,4 +1,3 @@
-using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
@@ -37,7 +36,7 @@ internal partial record ResolveContext
     private unsafe GenderRace ResolveModelRaceCode()
         => ResolveEqdpRaceCode(Slot, Equipment.Set);
 
-    private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, SetId setId)
+    private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, PrimaryId primaryId)
     {
         var slotIndex = slot.ToIndex();
         if (slotIndex >= 10 || ModelType != ModelType.Human)
@@ -55,7 +54,7 @@ internal partial record ResolveContext
         if (metaCache == null)
             return GenderRace.MidlanderMale;
 
-        var entry = metaCache.GetEqdpEntry(characterRaceCode, accessory, setId);
+        var entry = metaCache.GetEqdpEntry(characterRaceCode, accessory, primaryId);
         if (entry.ToBits(slot).Item2)
             return characterRaceCode;
 
@@ -63,7 +62,7 @@ internal partial record ResolveContext
         if (fallbackRaceCode == GenderRace.MidlanderMale)
             return GenderRace.MidlanderMale;
 
-        entry = metaCache.GetEqdpEntry(fallbackRaceCode, accessory, setId);
+        entry = metaCache.GetEqdpEntry(fallbackRaceCode, accessory, primaryId);
         if (entry.ToBits(slot).Item2)
             return fallbackRaceCode;
 
@@ -229,7 +228,7 @@ internal partial record ResolveContext
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
-    private unsafe (GenderRace RaceCode, string Slot, SetId Set) ResolveHumanSkeletonData(uint partialSkeletonIndex)
+    private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanSkeletonData(uint partialSkeletonIndex)
     {
         var human             = (Human*)CharacterBase.Value;
         var characterRaceCode = (GenderRace)human->RaceSexId;
@@ -239,8 +238,8 @@ internal partial record ResolveContext
                 return (characterRaceCode, "base", 1);
             case 1:
                 var faceId    = human->FaceId;
-                var tribe     = human->Customize[(int)CustomizeIndex.Tribe];
-                var modelType = human->Customize[(int)CustomizeIndex.ModelType];
+                var tribe     = human->Customize[(int)Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex.Tribe];
+                var modelType = human->Customize[(int)Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex.ModelType];
                 if (faceId < 201)
                 {
                     faceId -= tribe switch
@@ -262,17 +261,17 @@ internal partial record ResolveContext
         }
     }
 
-    private unsafe (GenderRace RaceCode, string Slot, SetId Set) ResolveHumanEquipmentSkeletonData(EquipSlot slot, EstManipulation.EstType type)
+    private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanEquipmentSkeletonData(EquipSlot slot, EstManipulation.EstType type)
     {
         var human     = (Human*)CharacterBase.Value;
         var equipment = ((CharacterArmor*)&human->Head)[slot.ToIndex()];
         return ResolveHumanExtraSkeletonData(ResolveEqdpRaceCode(slot, equipment.Set), type, equipment.Set);
     }
 
-    private unsafe (GenderRace RaceCode, string Slot, SetId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstManipulation.EstType type, SetId set)
+    private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstManipulation.EstType type, PrimaryId primary)
     {
         var metaCache   = Global.Collection.MetaCache;
-        var skeletonSet = metaCache == null ? default : metaCache.GetEstEntry(type, raceCode, set);
+        var skeletonSet = metaCache == null ? default : metaCache.GetEstEntry(type, raceCode, primary);
         return (raceCode, EstManipulation.ToName(type), skeletonSet);
     }
 

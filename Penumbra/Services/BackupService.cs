@@ -1,24 +1,18 @@
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using OtterGui.Log;
-using Penumbra.Util;
 
 namespace Penumbra.Services;
 
 public class BackupService
 {
-    public BackupService(Logger logger, StartTracker timer, FilenameService fileNames)
+    public BackupService(Logger logger, FilenameService fileNames)
     {
-        using var t     = timer.Measure(StartTimeType.Backup);
         var       files = PenumbraFiles(fileNames);
         Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), files);
     }
 
-    public static void CreatePermanentBackup(FilenameService fileNames)
-        => Backup.CreatePermanentBackup(Penumbra.Log, new DirectoryInfo(fileNames.ConfigDirectory), PenumbraFiles(fileNames),
-            "pre_ephemeral_config");
-
-    // Collect all relevant files for penumbra configuration.
+    /// <summary> Collect all relevant files for penumbra configuration. </summary>
     private static IReadOnlyList<FileInfo> PenumbraFiles(FilenameService fileNames)
     {
         var list = fileNames.CollectionFiles.ToList();

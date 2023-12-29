@@ -219,7 +219,7 @@ public partial class ModEditWindow
             if (tex.Path != path)
                 return;
 
-            _dalamud.Framework.RunOnFrameworkThread(() => tex.Reload(_textures));
+            _framework.RunOnFrameworkThread(() => tex.Reload(_textures));
         });
     }
 

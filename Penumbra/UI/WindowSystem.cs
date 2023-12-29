@@ -2,7 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Penumbra.UI.AdvancedWindow;
-using Penumbra.UI.Tabs;
+using Penumbra.UI.Tabs.Debug;
 
 namespace Penumbra.UI;
 

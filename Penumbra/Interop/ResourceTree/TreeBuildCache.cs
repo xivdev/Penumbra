@@ -1,36 +1,26 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
-using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal readonly struct TreeBuildCache
+internal readonly struct TreeBuildCache(IObjectTable objects, IDataManager dataManager, ActorManager actors)
 {
-    private readonly IDataManager                    _dataManager;
-    private readonly ActorService                    _actors;
-    private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = new();
-    private readonly IObjectTable                    _objects;
-
-    public TreeBuildCache(IObjectTable objects, IDataManager dataManager, ActorService actors)
-    {
-        _dataManager = dataManager;
-        _objects     = objects;
-        _actors      = actors;
-    }
+    private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = [];
 
     public unsafe bool IsLocalPlayerRelated(Character character)
     {
-        var player = _objects[0];
+        var player = objects[0];
         if (player == null)
             return false;
 
         var gameObject  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)character.Address;
-        var parent      = _actors.AwaitedService.ToCutsceneParent(gameObject->ObjectIndex);
+        var parent      = actors.ToCutsceneParent(gameObject->ObjectIndex);
         var actualIndex = parent >= 0 ? (ushort)parent : gameObject->ObjectIndex;
         return actualIndex switch
         {
@@ -41,38 +31,38 @@ internal readonly struct TreeBuildCache
     }
 
     public IEnumerable<Character> GetCharacters()
-        => _objects.OfType<Character>();
+        => objects.OfType<Character>();
 
     public IEnumerable<Character> GetLocalPlayerRelatedCharacters()
     {
-        var player = _objects[0];
+        var player = objects[0];
         if (player == null)
             yield break;
 
         yield return (Character)player;
 
-        var minion = _objects[1];
+        var minion = objects[1];
         if (minion != null)
             yield return (Character)minion;
 
         var playerId = player.ObjectId;
         for (var i = 2; i < ObjectIndex.CutsceneStart.Index; i += 2)
         {
-            if (_objects[i] is Character owned && owned.OwnerId == playerId)
+            if (objects[i] is Character owned && owned.OwnerId == playerId)
                 yield return owned;
         }
 
         for (var i = ObjectIndex.CutsceneStart.Index; i < ObjectIndex.CharacterScreen.Index; ++i)
         {
-            var character = _objects[i] as Character;
+            var character = objects[i] as Character;
             if (character == null)
                 continue;
 
-            var parent = _actors.AwaitedService.ToCutsceneParent(i);
+            var parent = actors.ToCutsceneParent(i);
             if (parent < 0)
                 continue;
 
-            if (parent is 0 or 1 || _objects[parent]?.OwnerId == playerId)
+            if (parent is 0 or 1 || objects[parent]?.OwnerId == playerId)
                 yield return character;
         }
     }
@@ -85,11 +75,11 @@ internal readonly struct TreeBuildCache
 
     private unsafe bool GetOwnedId(ByteString playerName, uint playerId, int idx, [NotNullWhen(true)] out Character? character)
     {
-        character = _objects[idx] as Character;
+        character = objects[idx] as Character;
         if (character == null)
             return false;
 
-        var actorId = _actors.AwaitedService.FromObject(character, out var owner, true, true, true);
+        var actorId = actors.FromObject(character, out var owner, true, true, true);
         if (!actorId.IsValid)
             return false;
         if (owner != null && owner->OwnerID != playerId)
@@ -102,7 +92,7 @@ internal readonly struct TreeBuildCache
 
     /// <summary> Try to read a shpk file from the given path and cache it on success. </summary>
     public ShpkFile? ReadShaderPackage(FullPath path)
-        => ReadFile(_dataManager, path, _shaderPackages, bytes => new ShpkFile(bytes));
+        => ReadFile(dataManager, path, _shaderPackages, bytes => new ShpkFile(bytes));
 
     private static T? ReadFile<T>(IDataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<byte[], T> parseFile)
         where T : class

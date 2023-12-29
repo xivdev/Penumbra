@@ -43,8 +43,71 @@ public class ChangedItemDrawer : IDisposable
         Emote         = 0x01_00_00,
     }
 
-    public const ChangedItemIcon AllFlags     = (ChangedItemIcon)0x01FFFF;
-    public const ChangedItemIcon DefaultFlags = AllFlags & ~ChangedItemIcon.Offhand;
+    private static readonly ChangedItemIcon[] Order =
+    [
+        ChangedItemIcon.Head,
+        ChangedItemIcon.Body,
+        ChangedItemIcon.Hands,
+        ChangedItemIcon.Legs,
+        ChangedItemIcon.Feet,
+        ChangedItemIcon.Ears,
+        ChangedItemIcon.Neck,
+        ChangedItemIcon.Wrists,
+        ChangedItemIcon.Finger,
+        ChangedItemIcon.Mainhand,
+        ChangedItemIcon.Offhand,
+        ChangedItemIcon.Customization,
+        ChangedItemIcon.Action,
+        ChangedItemIcon.Emote,
+        ChangedItemIcon.Monster,
+        ChangedItemIcon.Demihuman,
+        ChangedItemIcon.Unknown,
+    ];
+
+    private static readonly string[] LowerNames = Order.Select(f => ToDescription(f).ToLowerInvariant()).ToArray();
+
+    public static bool TryParseIndex(ReadOnlySpan<char> input, out ChangedItemIcon slot)
+    {
+        // Handle numeric cases before TryParse because numbers
+        // are not logical otherwise.
+        if (int.TryParse(input, out var idx))
+        {
+            // We assume users will use 1-based index, but if they enter 0, just use the first.
+            if (idx == 0)
+            {
+                slot = Order[0];
+                return true;
+            }
+
+            // Use 1-based index.
+            --idx;
+            if (idx >= 0 && idx < Order.Length)
+            {
+                slot = Order[idx];
+                return true;
+            }
+        }
+
+        slot = 0;
+        return false;
+    }
+
+    public static bool TryParsePartial(string lowerInput, out ChangedItemIcon slot)
+    {
+        if (TryParseIndex(lowerInput, out slot))
+            return true;
+
+        slot = 0;
+        foreach (var (item, flag) in LowerNames.Zip(Order))
+            if (item.Contains(lowerInput, StringComparison.Ordinal))
+                slot |= flag;
+
+        return slot != 0;
+    }
+
+    public const           ChangedItemIcon AllFlags      = (ChangedItemIcon)0x01FFFF;
+    public static readonly int             NumCategories = Order.Length;
+    public const           ChangedItemIcon DefaultFlags  = AllFlags & ~ChangedItemIcon.Offhand;
 
     private readonly Configuration                                    _config;
     private readonly ExcelSheet<Item>                                 _items;
@@ -163,26 +226,7 @@ public class ChangedItemDrawer : IDisposable
         using var _     = ImRaii.PushId("ChangedItemIconFilter");
         var       size  = TypeFilterIconSize;
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        var order = new[]
-        {
-            ChangedItemIcon.Head,
-            ChangedItemIcon.Body,
-            ChangedItemIcon.Hands,
-            ChangedItemIcon.Legs,
-            ChangedItemIcon.Feet,
-            ChangedItemIcon.Ears,
-            ChangedItemIcon.Neck,
-            ChangedItemIcon.Wrists,
-            ChangedItemIcon.Finger,
-            ChangedItemIcon.Mainhand,
-            ChangedItemIcon.Offhand,
-            ChangedItemIcon.Customization,
-            ChangedItemIcon.Action,
-            ChangedItemIcon.Emote,
-            ChangedItemIcon.Monster,
-            ChangedItemIcon.Demihuman,
-            ChangedItemIcon.Unknown,
-        };
+
 
         bool DrawIcon(ChangedItemIcon type, ref ChangedItemIcon typeFilter)
         {
@@ -217,13 +261,13 @@ public class ChangedItemDrawer : IDisposable
             return ret;
         }
 
-        foreach (var iconType in order)
+        foreach (var iconType in Order)
         {
             ret |= DrawIcon(iconType, ref typeFilter);
             ImGui.SameLine();
         }
 
-        ImGui.SetCursorPos(new(ImGui.GetContentRegionMax().X - size.X, ImGui.GetCursorPosY() + yOffset));
+        ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionMax().X - size.X, ImGui.GetCursorPosY() + yOffset));
         ImGui.Image(_icons[AllFlags].ImGuiHandle, size, Vector2.Zero, Vector2.One,
             typeFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
             typeFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));

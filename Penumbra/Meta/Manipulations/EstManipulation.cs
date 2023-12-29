@@ -36,13 +36,14 @@ public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
     [JsonConverter(typeof(StringEnumConverter))]
     public ModelRace Race { get; private init; }
 
-    public SetId SetId { get; private init; }
+    public PrimaryId SetId { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public EstType Slot { get; private init; }
 
+
     [JsonConstructor]
-    public EstManipulation(Gender gender, ModelRace race, EstType slot, SetId setId, ushort entry)
+    public EstManipulation(Gender gender, ModelRace race, EstType slot, PrimaryId setId, ushort entry)
     {
         Entry  = entry;
         Gender = gender;

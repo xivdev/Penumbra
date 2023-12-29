@@ -73,7 +73,10 @@
         }
       },
       "ottergui": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "[7.0.0, )"
+        }
       },
       "penumbra.api": {
         "type": "Project"
@@ -81,7 +84,8 @@
       "penumbra.gamedata": {
         "type": "Project",
         "dependencies": {
-          "Penumbra.Api": "[1.0.8, )",
+          "OtterGui": "[1.0.0, )",
+          "Penumbra.Api": "[1.0.13, )",
           "Penumbra.String": "[1.0.4, )"
         }
       },

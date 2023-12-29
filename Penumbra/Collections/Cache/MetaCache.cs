@@ -187,17 +187,17 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
         => _imcCache.GetImcFile(path, out file);
 
-    internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, SetId setId)
+    internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, PrimaryId primaryId)
     {
         var eqdpFile = _eqdpCache.EqdpFile(race, accessory);
         if (eqdpFile != null)
-            return setId.Id < eqdpFile.Count ? eqdpFile[setId] : default;
+            return primaryId.Id < eqdpFile.Count ? eqdpFile[primaryId] : default;
         else
-            return Meta.Files.ExpandedEqdpFile.GetDefault(_manager, race, accessory, setId);
+            return Meta.Files.ExpandedEqdpFile.GetDefault(_manager, race, accessory, primaryId);
     }
 
-    internal ushort GetEstEntry(EstManipulation.EstType type, GenderRace genderRace, SetId setId)
-        => _estCache.GetEstEntry(_manager, type, genderRace, setId);
+    internal ushort GetEstEntry(EstManipulation.EstType type, GenderRace genderRace, PrimaryId primaryId)
+        => _estCache.GetEstEntry(_manager, type, genderRace, primaryId);
 
     /// <summary> Use this when CharacterUtility becomes ready. </summary>
     private void ApplyStoredManipulations()

@@ -83,7 +83,7 @@ public static partial class ModMigration
 
         creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true);
         foreach (var (_, index) in mod.Groups.WithIndex())
-            saveService.ImmediateSave(new ModSaveGroup(mod, index));
+            saveService.ImmediateSave(new ModSaveGroup(mod, index, creator.Config.ReplaceNonAsciiOnImport));
 
         // Delete meta files.
         foreach (var file in seenMetaFiles.Where(f => f.Exists))
@@ -111,7 +111,7 @@ public static partial class ModMigration
             }
 
         fileVersion = 1;
-        saveService.ImmediateSave(new ModSaveGroup(mod, -1));
+        saveService.ImmediateSave(new ModSaveGroup(mod, -1, creator.Config.ReplaceNonAsciiOnImport));
 
         return true;
     }

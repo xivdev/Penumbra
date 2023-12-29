@@ -1,5 +1,4 @@
 using Penumbra.Communication;
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
@@ -9,11 +8,12 @@ namespace Penumbra.Mods.Manager;
 
 public class ModCacheManager : IDisposable
 {
-    private readonly CommunicatorService _communicator;
-    private readonly IdentifierService   _identifier;
-    private readonly ModStorage          _modManager;
+    private readonly CommunicatorService  _communicator;
+    private readonly ObjectIdentification _identifier;
+    private readonly ModStorage           _modManager;
+    private          bool                 _updatingItems = false;
 
-    public ModCacheManager(CommunicatorService communicator, IdentifierService identifier, ModStorage modStorage)
+    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage)
     {
         _communicator = communicator;
         _identifier   = identifier;
@@ -23,8 +23,7 @@ public class ModCacheManager : IDisposable
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
-        if (!identifier.Valid)
-            identifier.FinishedCreation += OnIdentifierCreation;
+        identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation());
         OnModDiscoveryFinished();
     }
 
@@ -37,7 +36,7 @@ public class ModCacheManager : IDisposable
     }
 
     /// <summary> Compute the items changed by a given meta manipulation and put them into the changedItems dictionary. </summary>
-    public static void ComputeChangedItems(IObjectIdentifier identifier, IDictionary<string, object?> changedItems, MetaManipulation manip)
+    public static void ComputeChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems, MetaManipulation manip)
     {
         switch (manip.ManipulationType)
         {
@@ -140,7 +139,7 @@ public class ModCacheManager : IDisposable
         {
             case ModPathChangeType.Added:
             case ModPathChangeType.Reloaded:
-                Refresh(mod);
+                RefreshWithChangedItems(mod);
                 break;
         }
     }
@@ -152,12 +151,27 @@ public class ModCacheManager : IDisposable
     }
 
     private void OnModDiscoveryFinished()
-        => Parallel.ForEach(_modManager, Refresh);
+    {
+        if (!_identifier.Awaiter.IsCompletedSuccessfully || _updatingItems)
+        {
+            Parallel.ForEach(_modManager, RefreshWithoutChangedItems);
+        }
+        else
+        {
+            _updatingItems = true;
+            Parallel.ForEach(_modManager, RefreshWithChangedItems);
+            _updatingItems = false;
+        }
+    }
 
     private void OnIdentifierCreation()
     {
+        if (_updatingItems)
+            return;
+
+        _updatingItems = true;
         Parallel.ForEach(_modManager, UpdateChangedItems);
-        _identifier.FinishedCreation -= OnIdentifierCreation;
+        _updatingItems = false;
     }
 
     private static void UpdateFileCount(Mod mod)
@@ -179,14 +193,11 @@ public class ModCacheManager : IDisposable
     {
         var changedItems = (SortedList<string, object?>)mod.ChangedItems;
         changedItems.Clear();
-        if (!_identifier.Valid)
-            return;
-
         foreach (var gamePath in mod.AllSubMods.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
-            _identifier.AwaitedService.Identify(changedItems, gamePath.ToString());
+            _identifier.Identify(changedItems, gamePath.ToString());
 
         foreach (var manip in mod.AllSubMods.SelectMany(m => m.Manipulations))
-            ComputeChangedItems(_identifier.AwaitedService, changedItems, manip);
+            ComputeChangedItems(_identifier, changedItems, manip);
 
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
     }
@@ -209,10 +220,16 @@ public class ModCacheManager : IDisposable
         }
     }
 
-    private void Refresh(Mod mod)
+    private void RefreshWithChangedItems(Mod mod)
     {
         UpdateTags(mod);
         UpdateCounts(mod);
         UpdateChangedItems(mod);
+    }
+
+    private void RefreshWithoutChangedItems(Mod mod)
+    {
+        UpdateTags(mod);
+        UpdateCounts(mod);
     }
 }

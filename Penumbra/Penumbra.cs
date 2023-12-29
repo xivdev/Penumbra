@@ -1,12 +1,11 @@
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
-using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Log;
+using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.Interop.ResourceLoading;
@@ -31,7 +30,7 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static readonly Logger      Log = new();
+    public static readonly Logger         Log = new();
     public static          MessageService Messager { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
@@ -47,45 +46,40 @@ public class Penumbra : IDalamudPlugin
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
-    private readonly ServiceProvider _services;
+    private readonly ServiceManager _services;
 
     public Penumbra(DalamudPluginInterface pluginInterface)
     {
         try
         {
-            var       startTimer = new StartTracker();
-            using var timer      = startTimer.Measure(StartTimeType.Total);
-            _services        = ServiceManager.CreateProvider(this, pluginInterface, Log, startTimer);
-            Messager             = _services.GetRequiredService<MessageService>();
-            _validityChecker = _services.GetRequiredService<ValidityChecker>();
-            var startup = _services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool s)
+            _services        = ServiceManagerA.CreateProvider(this, pluginInterface, Log);
+            Messager         = _services.GetService<MessageService>();
+            _validityChecker = _services.GetService<ValidityChecker>();
+            var startup = _services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
                 : "Unknown";
             Log.Information(
                 $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
-            _services.GetRequiredService<BackupService>(); // Initialize because not required anywhere else.
-            _config            = _services.GetRequiredService<Configuration>();
-            _characterUtility  = _services.GetRequiredService<CharacterUtility>();
-            _tempMods          = _services.GetRequiredService<TempModManager>();
-            _residentResources = _services.GetRequiredService<ResidentResourceManager>();
-            _services.GetRequiredService<ResourceManagerService>(); // Initialize because not required anywhere else.
-            _modManager          = _services.GetRequiredService<ModManager>();
-            _collectionManager   = _services.GetRequiredService<CollectionManager>();
-            _tempCollections     = _services.GetRequiredService<TempCollectionManager>();
-            _redrawService       = _services.GetRequiredService<RedrawService>();
-            _communicatorService = _services.GetRequiredService<CommunicatorService>();
-            _services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
-            _services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
-            _services.GetRequiredService<ModelResourceHandleUtility>(); // Initialize because not required anywhere else.
+            _services.GetService<BackupService>(); // Initialize because not required anywhere else.
+            _config            = _services.GetService<Configuration>();
+            _characterUtility  = _services.GetService<CharacterUtility>();
+            _tempMods          = _services.GetService<TempModManager>();
+            _residentResources = _services.GetService<ResidentResourceManager>();
+            _services.GetService<ResourceManagerService>(); // Initialize because not required anywhere else.
+            _modManager          = _services.GetService<ModManager>();
+            _collectionManager   = _services.GetService<CollectionManager>();
+            _tempCollections     = _services.GetService<TempCollectionManager>();
+            _redrawService       = _services.GetService<RedrawService>();
+            _communicatorService = _services.GetService<CommunicatorService>();
+            _services.GetService<ResourceService>();            // Initialize because not required anywhere else.
+            _services.GetService<ModCacheManager>();            // Initialize because not required anywhere else.
+            _services.GetService<ModelResourceHandleUtility>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
-            using (var t = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
-            {
-                _services.GetRequiredService<PathResolver>();
-            }
+            _services.GetService<PathResolver>();
 
-            _services.GetRequiredService<SkinFixer>();
+            _services.GetService<SkinFixer>();
 
-            _services.GetRequiredService<DalamudSubstitutionProvider>(); // Initialize before Interface.
+            _services.GetService<DalamudSubstitutionProvider>(); // Initialize before Interface.
             SetupInterface();
             SetupApi();
 
@@ -108,9 +102,8 @@ public class Penumbra : IDalamudPlugin
 
     private void SetupApi()
     {
-        using var timer = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
-        var       api   = _services.GetRequiredService<IPenumbraApi>();
-        _services.GetRequiredService<PenumbraIpcProviders>();
+        var api = _services.GetService<IPenumbraApi>();
+        _services.GetService<PenumbraIpcProviders>();
         _communicatorService.ChangedItemHover.Subscribe(it =>
         {
             if (it is (Item, FullEquipType))
@@ -128,10 +121,9 @@ public class Penumbra : IDalamudPlugin
     {
         AsyncTask.Run(() =>
             {
-                using var tInterface = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
-                var       system     = _services.GetRequiredService<PenumbraWindowSystem>();
-                system.Window.Setup(this, _services.GetRequiredService<ConfigTabBar>());
-                _services.GetRequiredService<CommandHandler>();
+                var system = _services.GetService<PenumbraWindowSystem>();
+                system.Window.Setup(this, _services.GetService<ConfigTabBar>());
+                _services.GetService<CommandHandler>();
                 if (!_disposed)
                     _windowSystem = system;
                 else
@@ -200,7 +192,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
         sb.Append(
-            $"> **`Synchronous Load (Dalamud):  `** {(_services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");
+            $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Ephemeral.EnableResourceLogging}, Watcher: {_config.Ephemeral.EnableResourceWatcher} ({_config.MaxResourceWatcherRecords})\n");
         sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");

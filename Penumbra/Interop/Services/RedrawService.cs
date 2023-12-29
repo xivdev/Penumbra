@@ -9,7 +9,7 @@ using FFXIVClientStructs.Interop;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
-using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 

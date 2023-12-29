@@ -167,21 +167,21 @@ public sealed unsafe class EstFile : MetaBaseFile
     public ushort GetDefault(GenderRace genderRace, ushort setId)
         => GetDefault(Manager, Index, genderRace, setId);
 
-    public static ushort GetDefault(MetaFileManager manager, CharacterUtility.InternalIndex index, GenderRace genderRace, SetId setId)
+    public static ushort GetDefault(MetaFileManager manager, CharacterUtility.InternalIndex index, GenderRace genderRace, PrimaryId primaryId)
     {
         var data  = (byte*)manager.CharacterUtility.DefaultResource(index).Address;
         var count = *(int*)data;
         var span  = new ReadOnlySpan<Info>(data + 4, count);
-        var (idx, found) = FindEntry(span, genderRace, setId.Id);
+        var (idx, found) = FindEntry(span, genderRace, primaryId.Id);
         if (!found)
             return 0;
 
         return *(ushort*)(data + 4 + count * EntryDescSize + idx * EntrySize);
     }
 
-    public static ushort GetDefault(MetaFileManager manager, MetaIndex metaIndex, GenderRace genderRace, SetId setId)
-        => GetDefault(manager, CharacterUtility.ReverseIndices[(int)metaIndex], genderRace, setId);
+    public static ushort GetDefault(MetaFileManager manager, MetaIndex metaIndex, GenderRace genderRace, PrimaryId primaryId)
+        => GetDefault(manager, CharacterUtility.ReverseIndices[(int)metaIndex], genderRace, primaryId);
 
-    public static ushort GetDefault(MetaFileManager manager, EstManipulation.EstType estType, GenderRace genderRace, SetId setId)
-        => GetDefault(manager, (MetaIndex)estType, genderRace, setId);
+    public static ushort GetDefault(MetaFileManager manager, EstManipulation.EstType estType, GenderRace genderRace, PrimaryId primaryId)
+        => GetDefault(manager, (MetaIndex)estType, genderRace, primaryId);
 }

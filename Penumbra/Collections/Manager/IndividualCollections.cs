@@ -1,7 +1,9 @@
 using Dalamud.Game.ClientState.Objects.Enums;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Actors;
-using Penumbra.Services;
+using Penumbra.GameData.DataContainers.Bases;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;
@@ -11,9 +13,9 @@ public sealed partial class IndividualCollections
     public record struct IndividualAssignment(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection);
 
     private readonly Configuration                              _config;
-    private readonly ActorService                               _actorService;
-    private readonly Dictionary<ActorIdentifier, ModCollection> _individuals = new();
-    private readonly List<IndividualAssignment>                 _assignments = new();
+    private readonly ActorManager                               _actors;
+    private readonly Dictionary<ActorIdentifier, ModCollection> _individuals = [];
+    private readonly List<IndividualAssignment>                 _assignments = [];
 
     public event Action Loaded;
     public bool         IsLoaded { get; private set; }
@@ -21,12 +23,12 @@ public sealed partial class IndividualCollections
     public IReadOnlyList<IndividualAssignment> Assignments
         => _assignments;
 
-    public IndividualCollections(ActorService actorService, Configuration config, bool temporary)
+    public IndividualCollections(ActorManager actors, Configuration config, bool temporary)
     {
-        _config       =  config;
-        _actorService =  actorService;
-        IsLoaded      =  temporary;
-        Loaded        += () => Penumbra.Log.Information($"{_assignments.Count} Individual Assignments loaded after delay.");
+        _config  =  config;
+        _actors  =  actors;
+        IsLoaded =  temporary;
+        Loaded   += () => Penumbra.Log.Information($"{_assignments.Count} Individual Assignments loaded after delay.");
     }
 
     public enum AddResult
@@ -69,44 +71,34 @@ public sealed partial class IndividualCollections
         return set ? AddResult.AlreadySet : AddResult.Valid;
     }
 
-    public AddResult CanAdd(IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IEnumerable<uint> dataIds,
+    public AddResult CanAdd(IdentifierType type, string name, WorldId homeWorld, ObjectKind kind, IEnumerable<NpcId> dataIds,
         out ActorIdentifier[] identifiers)
     {
-        identifiers = Array.Empty<ActorIdentifier>();
+        identifiers = [];
 
-        var manager = _actorService.AwaitedService;
         switch (type)
         {
             case IdentifierType.Player:
                 if (!ByteString.FromString(name, out var playerName))
                     return AddResult.Invalid;
 
-                identifiers = new[]
-                {
-                    manager.CreatePlayer(playerName, homeWorld),
-                };
+                identifiers = [_actors.CreatePlayer(playerName, homeWorld)];
                 break;
             case IdentifierType.Retainer:
                 if (!ByteString.FromString(name, out var retainerName))
                     return AddResult.Invalid;
 
-                identifiers = new[]
-                {
-                    manager.CreateRetainer(retainerName, ActorIdentifier.RetainerType.Both),
-                };
+                identifiers = [_actors.CreateRetainer(retainerName, ActorIdentifier.RetainerType.Both)];
                 break;
             case IdentifierType.Owned:
                 if (!ByteString.FromString(name, out var ownerName))
                     return AddResult.Invalid;
 
-                identifiers = dataIds.Select(id => manager.CreateOwned(ownerName, homeWorld, kind, id)).ToArray();
+                identifiers = dataIds.Select(id => _actors.CreateOwned(ownerName, homeWorld, kind, id)).ToArray();
                 break;
             case IdentifierType.Npc:
                 identifiers = dataIds
-                    .Select(id => manager.CreateIndividual(IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, id)).ToArray();
-                break;
-            default:
-                identifiers = Array.Empty<ActorIdentifier>();
+                    .Select(id => _actors.CreateIndividual(IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, id)).ToArray();
                 break;
         }
 
@@ -116,12 +108,22 @@ public sealed partial class IndividualCollections
     public ActorIdentifier[] GetGroup(ActorIdentifier identifier)
     {
         if (!identifier.IsValid)
-            return Array.Empty<ActorIdentifier>();
+            return [];
+
+        return identifier.Type switch
+        {
+            IdentifierType.Player   => [identifier.CreatePermanent()],
+            IdentifierType.Special  => [identifier],
+            IdentifierType.Retainer => [identifier.CreatePermanent()],
+            IdentifierType.Owned    => CreateNpcs(_actors, identifier.CreatePermanent()),
+            IdentifierType.Npc      => CreateNpcs(_actors, identifier),
+            _                       => [],
+        };
 
         static ActorIdentifier[] CreateNpcs(ActorManager manager, ActorIdentifier identifier)
         {
             var name = manager.Data.ToName(identifier.Kind, identifier.DataId);
-            var table = identifier.Kind switch
+            NameDictionary table = identifier.Kind switch
             {
                 ObjectKind.BattleNpc => manager.Data.BNpcs,
                 ObjectKind.EventNpc  => manager.Data.ENpcs,
@@ -134,25 +136,6 @@ public sealed partial class IndividualCollections
                 .Select(kvp => manager.CreateIndividualUnchecked(identifier.Type, identifier.PlayerName, identifier.HomeWorld.Id,
                     identifier.Kind, kvp.Key)).ToArray();
         }
-
-        return identifier.Type switch
-        {
-            IdentifierType.Player => new[]
-            {
-                identifier.CreatePermanent(),
-            },
-            IdentifierType.Special => new[]
-            {
-                identifier,
-            },
-            IdentifierType.Retainer => new[]
-            {
-                identifier.CreatePermanent(),
-            },
-            IdentifierType.Owned => CreateNpcs(_actorService.AwaitedService, identifier.CreatePermanent()),
-            IdentifierType.Npc   => CreateNpcs(_actorService.AwaitedService, identifier),
-            _                    => Array.Empty<ActorIdentifier>(),
-        };
     }
 
     internal bool Add(ActorIdentifier[] identifiers, ModCollection collection)
@@ -241,12 +224,12 @@ public sealed partial class IndividualCollections
     {
         return identifier.Type switch
         {
-            IdentifierType.Player => $"{identifier.PlayerName} ({_actorService.AwaitedService.Data.ToWorldName(identifier.HomeWorld)})",
+            IdentifierType.Player => $"{identifier.PlayerName} ({_actors.Data.ToWorldName(identifier.HomeWorld)})",
             IdentifierType.Retainer => $"{identifier.PlayerName} (Retainer)",
             IdentifierType.Owned =>
-                $"{identifier.PlayerName} ({_actorService.AwaitedService.Data.ToWorldName(identifier.HomeWorld)})'s {_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)}",
+                $"{identifier.PlayerName} ({_actors.Data.ToWorldName(identifier.HomeWorld)})'s {_actors.Data.ToName(identifier.Kind, identifier.DataId)}",
             IdentifierType.Npc =>
-                $"{_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)} ({identifier.Kind.ToName()})",
+                $"{_actors.Data.ToName(identifier.Kind, identifier.DataId)} ({identifier.Kind.ToName()})",
             _ => string.Empty,
         };
     }

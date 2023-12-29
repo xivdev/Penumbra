@@ -18,13 +18,13 @@ public readonly struct EqdpManipulation : IMetaManipulation<EqdpManipulation>
     [JsonConverter(typeof(StringEnumConverter))]
     public ModelRace Race { get; private init; }
 
-    public SetId SetId { get; private init; }
+    public PrimaryId SetId { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public EquipSlot Slot { get; private init; }
 
     [JsonConstructor]
-    public EqdpManipulation(EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, SetId setId)
+    public EqdpManipulation(EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, PrimaryId setId)
     {
         Gender = gender;
         Race   = race;

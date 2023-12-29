@@ -3,7 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
-using Penumbra.GameData.Data;
+using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;
 using Penumbra.Util;
@@ -21,7 +21,7 @@ public unsafe class CollectionResolver
 
     private readonly IClientState    _clientState;
     private readonly IGameGui        _gameGui;
-    private readonly ActorService    _actors;
+    private readonly ActorManager    _actors;
     private readonly CutsceneService _cutscenes;
 
     private readonly Configuration         _config;
@@ -30,7 +30,7 @@ public unsafe class CollectionResolver
     private readonly DrawObjectState       _drawObjectState;
 
     public CollectionResolver(PerformanceTracker performance, IdentifiedCollectionCache cache, IClientState clientState, IGameGui gameGui,
-        ActorService actors, CutsceneService cutscenes, Configuration config, CollectionManager collectionManager,
+        ActorManager actors, CutsceneService cutscenes, Configuration config, CollectionManager collectionManager,
         TempCollectionManager tempCollections, DrawObjectState drawObjectState, HumanModelList humanModels)
     {
         _performance       = performance;
@@ -58,7 +58,7 @@ public unsafe class CollectionResolver
             return _collectionManager.Active.ByType(CollectionType.Yourself)
              ?? _collectionManager.Active.Default;
 
-        var player = _actors.AwaitedService.GetCurrentPlayer();
+        var player = _actors.GetCurrentPlayer();
         var _      = false;
         return CollectionByIdentifier(player)
          ?? CheckYourself(player, gameObject)
@@ -147,7 +147,7 @@ public unsafe class CollectionResolver
             return false;
         }
 
-        var player      = _actors.AwaitedService.GetCurrentPlayer();
+        var player      = _actors.GetCurrentPlayer();
         var notYetReady = false;
         var collection = (player.IsValid ? CollectionByIdentifier(player) : null)
          ?? _collectionManager.Active.ByType(CollectionType.Yourself)
@@ -163,7 +163,7 @@ public unsafe class CollectionResolver
     /// </summary>
     private ResolveData DefaultState(GameObject* gameObject)
     {
-        var identifier = _actors.AwaitedService.FromObject(gameObject, out var owner, true, false, false);
+        var identifier = _actors.FromObject(gameObject, out var owner, true, false, false);
         if (identifier.Type is IdentifierType.Special)
         {
             (identifier, var type) = _collectionManager.Active.Individuals.ConvertSpecialIdentifier(identifier);
@@ -193,7 +193,7 @@ public unsafe class CollectionResolver
     {
         if (actor->ObjectIndex == 0
          || _cutscenes.GetParentIndex(actor->ObjectIndex) == 0
-         || identifier.Equals(_actors.AwaitedService.GetCurrentPlayer()))
+         || identifier.Equals(_actors.GetCurrentPlayer()))
             return _collectionManager.Active.ByType(CollectionType.Yourself);
 
         return null;
@@ -242,7 +242,7 @@ public unsafe class CollectionResolver
         if (identifier.Type != IdentifierType.Owned || !_config.UseOwnerNameForCharacterCollection || owner == null)
             return null;
 
-        var id = _actors.AwaitedService.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld.Id,
+        var id = _actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld.Id,
             ObjectKind.None,
             uint.MaxValue);
         return CheckYourself(id, owner)

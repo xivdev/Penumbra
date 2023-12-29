@@ -270,4 +270,22 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
             Type.Rsp  => $"{Rsp.Entry}",
             _         => string.Empty,
         };
+
+    public static bool operator ==(MetaManipulation left, MetaManipulation right)
+        => left.Equals(right);
+
+    public static bool operator !=(MetaManipulation left, MetaManipulation right)
+        => !(left == right);
+
+    public static bool operator <(MetaManipulation left, MetaManipulation right)
+        => left.CompareTo(right) < 0;
+
+    public static bool operator <=(MetaManipulation left, MetaManipulation right)
+        => left.CompareTo(right) <= 0;
+
+    public static bool operator >(MetaManipulation left, MetaManipulation right)
+        => left.CompareTo(right) > 0;
+
+    public static bool operator >=(MetaManipulation left, MetaManipulation right)
+        => left.CompareTo(right) >= 0;
 }

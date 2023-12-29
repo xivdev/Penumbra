@@ -15,7 +15,7 @@ public class ValidityChecker
     public readonly bool IsNotInstalledPenumbra;
     public readonly bool IsValidSourceRepo;
 
-    public readonly List<Exception> ImcExceptions = new();
+    public readonly List<Exception> ImcExceptions = [];
 
     public readonly string Version;
     public readonly string CommitHash;
@@ -26,7 +26,7 @@ public class ValidityChecker
         IsNotInstalledPenumbra = CheckIsNotInstalled(pi);
         IsValidSourceRepo      = CheckSourceRepo(pi);
 
-        var assembly = Assembly.GetExecutingAssembly();
+        var assembly = GetType().Assembly;
         Version    = assembly.GetName().Version?.ToString() ?? string.Empty;
         CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
     }

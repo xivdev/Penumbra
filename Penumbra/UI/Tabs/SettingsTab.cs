@@ -1,5 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
@@ -33,19 +35,23 @@ public class SettingsTab : ITab
     private readonly ModFileSystemSelector       _selector;
     private readonly CharacterUtility            _characterUtility;
     private readonly ResidentResourceManager     _residentResources;
-    private readonly DalamudServices             _dalamud;
     private readonly HttpApi                     _httpApi;
     private readonly DalamudSubstitutionProvider _dalamudSubstitutionProvider;
     private readonly FileCompactor               _compactor;
+    private readonly DalamudConfigService        _dalamudConfig;
+    private readonly DalamudPluginInterface      _pluginInterface;
+    private readonly IDataManager                _gameData;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
 
-    public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
-        FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager, HttpApi httpApi,
-        DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor)
+    public SettingsTab(DalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
+        Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
+        CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
+        DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
+        IDataManager gameData)
     {
+        _pluginInterface             = pluginInterface;
         _config                      = config;
         _fontReloader                = fontReloader;
         _tutorial                    = tutorial;
@@ -55,11 +61,12 @@ public class SettingsTab : ITab
         _selector                    = selector;
         _characterUtility            = characterUtility;
         _residentResources           = residentResources;
-        _dalamud                     = dalamud;
         _modExportManager            = modExportManager;
         _httpApi                     = httpApi;
         _dalamudSubstitutionProvider = dalamudSubstitutionProvider;
         _compactor                   = compactor;
+        _dalamudConfig               = dalamudConfig;
+        _gameData                    = gameData;
         if (_compactor.CanCompact)
             _compactor.Enabled = _config.UseFileSystemCompression;
     }
@@ -164,14 +171,14 @@ public class SettingsTab : ITab
         if (IsSubPathOf(programFiles, newName) || IsSubPathOf(programFilesX86, newName))
             return ("Path is not allowed to be in ProgramFiles.", false);
 
-        var dalamud = _dalamud.PluginInterface.ConfigDirectory.Parent!.Parent!;
+        var dalamud = _pluginInterface.ConfigDirectory.Parent!.Parent!;
         if (IsSubPathOf(dalamud.FullName, newName))
             return ("Path is not allowed to be inside your Dalamud directories.", false);
 
         if (Functions.GetDownloadsFolder(out var downloads) && IsSubPathOf(downloads, newName))
             return ("Path is not allowed to be inside your Downloads folder.", false);
 
-        var gameDir = _dalamud.GameData.GameData.DataPath.Parent!.Parent!.FullName;
+        var gameDir = _gameData.GameData.DataPath.Parent!.Parent!.FullName;
         if (IsSubPathOf(gameDir, newName))
             return ("Path is not allowed to be inside your game folder.", false);
 
@@ -368,21 +375,21 @@ public class SettingsTab : ITab
             v =>
             {
                 _config.HideUiWhenUiHidden           = v;
-                _dalamud.UiBuilder.DisableUserUiHide = !v;
+                _pluginInterface.UiBuilder.DisableUserUiHide = !v;
             });
         Checkbox("Hide Config Window when in Cutscenes",
             "Hide the Penumbra main window when you are currently watching a cutscene.", _config.HideUiInCutscenes,
             v =>
             {
-                _config.HideUiInCutscenes                = v;
-                _dalamud.UiBuilder.DisableCutsceneUiHide = !v;
+                _config.HideUiInCutscenes                        = v;
+                _pluginInterface.UiBuilder.DisableCutsceneUiHide = !v;
             });
         Checkbox("Hide Config Window when in GPose",
             "Hide the Penumbra main window when you are currently in GPose mode.", _config.HideUiInGPose,
             v =>
             {
-                _config.HideUiInGPose                 = v;
-                _dalamud.UiBuilder.DisableGposeUiHide = !v;
+                _config.HideUiInGPose                         = v;
+                _pluginInterface.UiBuilder.DisableGposeUiHide = !v;
             });
     }
 
@@ -847,7 +854,7 @@ public class SettingsTab : ITab
     /// <summary> Draw a checkbox that toggles the dalamud setting to wait for plugins on open. </summary>
     private void DrawWaitForPluginsReflection()
     {
-        if (!_dalamud.GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool value))
+        if (!_dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool value))
         {
             using var disabled = ImRaii.Disabled();
             Checkbox("Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)", string.Empty, false, v => { });
@@ -855,9 +862,12 @@ public class SettingsTab : ITab
         else
         {
             Checkbox("Wait for Plugins on Startup",
-                "Some mods need to change files that are loaded once when the game starts and never afterwards.\nThis can cause issues with Penumbra loading after the files are already loaded.\nThis setting causes the game to wait until certain plugins have finished loading, making those mods work (in the base collection).\n\nThis changes a setting in the Dalamud Configuration found at /xlsettings -> General.",
+                "Some mods need to change files that are loaded once when the game starts and never afterwards.\n"
+              + "This can cause issues with Penumbra loading after the files are already loaded.\n"
+              + "This setting causes the game to wait until certain plugins have finished loading, making those mods work (in the base collection).\n\n"
+              + "This changes a setting in the Dalamud Configuration found at /xlsettings -> General.",
                 value,
-                v => _dalamud.SetDalamudConfig(DalamudServices.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup"));
+                v => _dalamudConfig.SetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup"));
         }
     }
 

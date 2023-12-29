@@ -5,15 +5,15 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
-using Microsoft.Extensions.DependencyInjection;
+using OtterGui.Services;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 
 namespace Penumbra.Services;
 
-public class DalamudServices
+public class DalamudConfigService
 {
-    public DalamudServices(DalamudPluginInterface pluginInterface)
+    public DalamudConfigService(DalamudPluginInterface pluginInterface)
     {
         pluginInterface.Inject(this);
         try
@@ -51,55 +51,6 @@ public class DalamudServices
             _interfaceGetter   = null;
         }
     }
-
-    public void AddServices(IServiceCollection services)
-    {
-        services.AddSingleton(PluginInterface);
-        services.AddSingleton(Commands);
-        services.AddSingleton(GameData);
-        services.AddSingleton(ClientState);
-        services.AddSingleton(Chat);
-        services.AddSingleton(Framework);
-        services.AddSingleton(Conditions);
-        services.AddSingleton(Targets);
-        services.AddSingleton(Objects);
-        services.AddSingleton(TitleScreenMenu);
-        services.AddSingleton(GameGui);
-        services.AddSingleton(KeyState);
-        services.AddSingleton(SigScanner);
-        services.AddSingleton(this);
-        services.AddSingleton(UiBuilder);
-        services.AddSingleton(DragDropManager);
-        services.AddSingleton(TextureProvider);
-        services.AddSingleton(TextureSubstitutionProvider);
-        services.AddSingleton(Interop);
-        services.AddSingleton(Log);
-    }
-
-    // TODO remove static
-    // @formatter:off
-    [PluginService][RequiredVersion("1.0")] public DalamudPluginInterface       PluginInterface             { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ICommandManager              Commands                    { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IDataManager                 GameData                    { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IClientState                 ClientState                 { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IChatGui                     Chat                        { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IFramework                   Framework                   { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ICondition                   Conditions                  { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ITargetManager               Targets                     { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IObjectTable                 Objects                     { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ITitleScreenMenu             TitleScreenMenu             { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IGameGui                     GameGui                     { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IKeyState                    KeyState                    { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ISigScanner                  SigScanner                  { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IDragDropManager             DragDropManager             { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ITextureProvider             TextureProvider             { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public ITextureSubstitutionProvider TextureSubstitutionProvider { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IGameInteropProvider         Interop                     { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public IPluginLog                   Log                         { get; private set; } = null!;
-    // @formatter:on
-
-    public UiBuilder UiBuilder
-        => PluginInterface.UiBuilder;
 
     public const string WaitingForPluginsOption = "IsResumeGameAfterPluginLoad";
 
@@ -162,5 +113,31 @@ public class DalamudServices
             Penumbra.Log.Error($"Error while fetching Dalamud Config {fieldName}:\n{e}");
             return false;
         }
+    }
+}
+
+public static class DalamudServices
+{
+    public static void AddServices(ServiceManager services, DalamudPluginInterface pi)
+    {
+        services.AddExistingService(pi);
+        services.AddExistingService(pi.UiBuilder);
+        services.AddDalamudService<ICommandManager>(pi);
+        services.AddDalamudService<IDataManager>(pi);
+        services.AddDalamudService<IClientState>(pi);
+        services.AddDalamudService<IChatGui>(pi);
+        services.AddDalamudService<IFramework>(pi);
+        services.AddDalamudService<ICondition>(pi);
+        services.AddDalamudService<ITargetManager>(pi);
+        services.AddDalamudService<IObjectTable>(pi);
+        services.AddDalamudService<ITitleScreenMenu>(pi);
+        services.AddDalamudService<IGameGui>(pi);
+        services.AddDalamudService<IKeyState>(pi);
+        services.AddDalamudService<ISigScanner>(pi);
+        services.AddDalamudService<IDragDropManager>(pi);
+        services.AddDalamudService<ITextureProvider>(pi);
+        services.AddDalamudService<ITextureSubstitutionProvider>(pi);
+        services.AddDalamudService<IGameInteropProvider>(pi);
+        services.AddDalamudService<IPluginLog>(pi);
     }
 }
