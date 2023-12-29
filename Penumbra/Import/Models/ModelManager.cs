@@ -54,8 +54,8 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         return task;
     }
 
-    public Task ExportToGltf(MdlFile mdl, string path)
-        => Enqueue(new ExportToGltfAction(mdl, path));
+    public Task ExportToGltf(MdlFile mdl, string outputPath)
+        => Enqueue(new ExportToGltfAction(mdl, outputPath));
 
     public void SkeletonTest()
     {
@@ -122,12 +122,12 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
     private class ExportToGltfAction : IAction
     {
         private readonly MdlFile _mdl;
-        private readonly string _path;
+        private readonly string _outputPath;
 
-        public ExportToGltfAction(MdlFile mdl, string path)
+        public ExportToGltfAction(MdlFile mdl, string outputPath)
         {
             _mdl = mdl;
-            _path = path;
+            _outputPath = outputPath;
         }
 
         public void Execute(CancellationToken token)
@@ -148,7 +148,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             }
 
             var model = scene.ToGltf2();
-            model.SaveGLTF(_path);
+            model.SaveGLTF(_outputPath);
         }
 
         public bool Equals(IAction? other)

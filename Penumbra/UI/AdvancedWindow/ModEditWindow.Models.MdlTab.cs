@@ -10,13 +10,18 @@ public partial class ModEditWindow
 {
     private class MdlTab : IWritable
     {
+        private ModEditWindow _edit;
+
         public readonly MdlFile Mdl;
         public readonly List<Utf8GamePath> GamePaths;
-
         private readonly List<string>[] _attributes;
 
-        public MdlTab(byte[] bytes, string path, Mod? mod)
+        public bool PendingIo { get; private set; } = false;
+
+        public MdlTab(ModEditWindow edit, byte[] bytes, string path, Mod? mod)
         {
+            _edit       = edit;
+
             Mdl         = new MdlFile(bytes);
             GamePaths   = mod == null ? new() : FindGamePaths(path, mod);
             _attributes = CreateAttributes(Mdl);
@@ -31,6 +36,9 @@ public partial class ModEditWindow
             => Mdl.Write();
 
         // TODO: this _needs_ to be done asynchronously, kart mods hang for a good second or so
+        /// <summary> Find the list of game paths that may correspond to this model. </summary>
+        /// <param name="path"> Resolved path to a .mdl. </param>
+        /// <param name="mod"> Mod within which the .mdl is resolved. </param>
         private List<Utf8GamePath> FindGamePaths(string path, Mod mod)
         {
             // todo: might be worth ordering based on prio + selection for disambiguating between multiple matches? not sure. same for the multi group case
@@ -40,6 +48,15 @@ public partial class ModEditWindow
                 .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
                 .Select(kv => kv.Key)
                 .ToList();
+        }
+
+        /// <summary> Export model to an interchange format. </summary>
+        /// <param name="outputPath"> Disk path to save the resulting file to. </param>
+        public void Export(string outputPath)
+        {
+            PendingIo = true;
+            _edit._models.ExportToGltf(Mdl, outputPath)
+                .ContinueWith(_ => PendingIo = false);
         }
 
         /// <summary> Remove the material given by the index. </summary>

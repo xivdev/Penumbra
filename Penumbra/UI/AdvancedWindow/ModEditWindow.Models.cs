@@ -17,7 +17,6 @@ public partial class ModEditWindow
     private readonly FileEditor<MdlTab> _modelTab;
 
     private readonly ModelManager _models;
-    private bool _pendingIo = false;
 
     private          string           _modelNewMaterial           = string.Empty;
     private readonly List<TagButtons> _subMeshAttributeTagWidgets = [];
@@ -35,11 +34,9 @@ public partial class ModEditWindow
             );
         }
 
-        if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", _pendingIo))
+        if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", tab.PendingIo))
         {
-            _pendingIo = true;
-            var task = _models.ExportToGltf(file, "C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
-            task.ContinueWith(_ => _pendingIo = false);
+            tab.Export("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
         }
         if (ImGui.Button("zoingo boingo"))
         {
