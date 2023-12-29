@@ -45,6 +45,9 @@ public partial class ModEditWindow
         {
             _models.SkeletonTest();
         }
+        ImGui.TextUnformatted("blippity blap");
+        foreach (var gamePath in tab.GamePaths)
+            ImGui.TextUnformatted(gamePath.ToString());
 
         var ret = false;
 
