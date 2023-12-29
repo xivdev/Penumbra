@@ -38,10 +38,6 @@ public partial class ModEditWindow
         {
             tab.Export("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
         }
-        if (ImGui.Button("zoingo boingo"))
-        {
-            _models.SkeletonTest();
-        }
         ImGui.TextUnformatted("blippity blap");
         foreach (var gamePath in tab.GamePaths)
             ImGui.TextUnformatted(gamePath.ToString());

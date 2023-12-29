@@ -1,12 +1,8 @@
-using System.Xml;
 using Dalamud.Plugin.Services;
-using Lumina.Extensions;
-using OtterGui;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Modules;
-using Penumbra.String.Classes;
 using SharpGLTF.Scenes;
 using SharpGLTF.Transforms;
 
@@ -14,14 +10,16 @@ namespace Penumbra.Import.Models;
 
 public sealed class ModelManager : SingleTaskQueue, IDisposable
 {
+    private readonly IFramework _framework;
     private readonly IDataManager _gameData;
     private readonly ActiveCollectionData _activeCollectionData;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
     private bool _disposed = false;
 
-    public ModelManager(IDataManager gameData, ActiveCollectionData activeCollectionData)
+    public ModelManager(IFramework framework, IDataManager gameData, ActiveCollectionData activeCollectionData)
     {
+        _framework = framework;
         _gameData = gameData;
         _activeCollectionData = activeCollectionData;
     }
@@ -54,85 +52,32 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         return task;
     }
 
-    public Task ExportToGltf(MdlFile mdl, string outputPath)
-        => Enqueue(new ExportToGltfAction(mdl, outputPath));
-
-    public void SkeletonTest()
-    {
-        var sklbPath = "chara/human/c0201/skeleton/base/b0001/skl_c0201b0001.sklb";
-
-        // NOTE: to resolve game path from _mod_, will need to wire the mod class via the modeditwindow to the model editor, through to here.
-        // NOTE: to get the game path for a model we'll probably need to use a reverse resolve - there's no guarantee for a modded model that they're named per game path, nor that there's only one name.
-        var succeeded = Utf8GamePath.FromString(sklbPath, out var utf8Path, true);
-        var testResolve = _activeCollectionData.Current.ResolvePath(utf8Path);
-        Penumbra.Log.Information($"resolved: {(testResolve == null ? "NULL" : testResolve.ToString())}");
-
-        // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
-        var bytes = testResolve switch
-        {
-            null => _gameData.GetFile(sklbPath).Data,
-            FullPath path => File.ReadAllBytes(path.ToPath())
-        };
-        
-        var sklb = new SklbFile(bytes);
-
-        // TODO: Consider making these static methods.
-        var havokConverter = new HavokConverter();
-        var xml = havokConverter.HkxToXml(sklb.Skeleton);
-
-        var skeletonConverter = new SkeletonConverter();
-        var skeleton = skeletonConverter.FromXml(xml);
-
-        // this is (less) atrocious
-        NodeBuilder? root = null;
-        var boneMap = new Dictionary<string, NodeBuilder>();
-        for (var boneIndex = 0; boneIndex < skeleton.Bones.Length; boneIndex++)
-        {
-            var bone = skeleton.Bones[boneIndex];
-
-            if (boneMap.ContainsKey(bone.Name)) continue;
-
-            var node = new NodeBuilder(bone.Name);
-            boneMap[bone.Name] = node;
-
-            node.SetLocalTransform(new AffineTransform(
-                bone.Transform.Scale,
-                bone.Transform.Rotation,
-                bone.Transform.Translation
-            ), false);
-
-            if (bone.ParentIndex == -1)
-            {
-                root = node;
-                continue;
-            }
-
-            var parent = boneMap[skeleton.Bones[bone.ParentIndex].Name];
-            parent.AddNode(node);
-        }
-
-        var scene = new SceneBuilder();
-        scene.AddNode(root);
-        var model = scene.ToGltf2();
-        model.SaveGLTF(@"C:\Users\ackwell\blender\gltf-tests\zoingo.gltf");
-
-        Penumbra.Log.Information($"zoingo!");
-    }
+    public Task ExportToGltf(MdlFile mdl, SklbFile? sklb, string outputPath)
+        => Enqueue(new ExportToGltfAction(this, mdl, sklb, outputPath));
 
     private class ExportToGltfAction : IAction
     {
+        private readonly ModelManager _manager;
+
         private readonly MdlFile _mdl;
+        private readonly SklbFile? _sklb;
         private readonly string _outputPath;
 
-        public ExportToGltfAction(MdlFile mdl, string outputPath)
+        public ExportToGltfAction(ModelManager manager, MdlFile mdl, SklbFile? sklb, string outputPath)
         {
+            _manager = manager;
             _mdl = mdl;
+            _sklb = sklb;
             _outputPath = outputPath;
         }
 
-        public void Execute(CancellationToken token)
+        public void Execute(CancellationToken cancel)
         {
             var scene = new SceneBuilder();
+
+            var skeletonRoot = BuildSkeleton(cancel);
+            if (skeletonRoot != null)
+                scene.AddNode(skeletonRoot);
 
             // TODO: group by LoD in output tree
             for (byte lodIndex = 0; lodIndex < _mdl.LodCount; lodIndex++)
@@ -149,6 +94,53 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
 
             var model = scene.ToGltf2();
             model.SaveGLTF(_outputPath);
+        }
+
+        // TODO: this should be moved to a seperate model converter or something
+        private NodeBuilder? BuildSkeleton(CancellationToken cancel)
+        {
+            if (_sklb == null)
+                return null;
+
+            // TODO: Consider making these static methods.
+            // TODO: work out how i handle this havok deal. running it outside the framework causes an immediate ctd.
+            var havokConverter = new HavokConverter();
+            var xmlTask = _manager._framework.RunOnFrameworkThread(() => havokConverter.HkxToXml(_sklb.Skeleton));
+            xmlTask.Wait(cancel);
+            var xml = xmlTask.Result;
+
+            var skeletonConverter = new SkeletonConverter();
+            var skeleton = skeletonConverter.FromXml(xml);
+
+            // this is (less) atrocious
+            NodeBuilder? root = null;
+            var boneMap = new Dictionary<string, NodeBuilder>();
+            for (var boneIndex = 0; boneIndex < skeleton.Bones.Length; boneIndex++)
+            {
+                var bone = skeleton.Bones[boneIndex];
+
+                if (boneMap.ContainsKey(bone.Name)) continue;
+
+                var node = new NodeBuilder(bone.Name);
+                boneMap[bone.Name] = node;
+
+                node.SetLocalTransform(new AffineTransform(
+                    bone.Transform.Scale,
+                    bone.Transform.Rotation,
+                    bone.Transform.Translation
+                ), false);
+
+                if (bone.ParentIndex == -1)
+                {
+                    root = node;
+                    continue;
+                }
+
+                var parent = boneMap[skeleton.Bones[bone.ParentIndex].Name];
+                parent.AddNode(node);
+            }
+
+            return root;
         }
 
         public bool Equals(IAction? other)

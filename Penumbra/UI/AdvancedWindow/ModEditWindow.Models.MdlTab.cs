@@ -8,15 +8,19 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private class MdlTab : IWritable
+    private partial class MdlTab : IWritable
     {
         private ModEditWindow _edit;
 
         public readonly MdlFile Mdl;
         public readonly List<Utf8GamePath> GamePaths;
         private readonly List<string>[] _attributes;
-
+        
         public bool PendingIo { get; private set; } = false;
+
+        // TODO: this can probably be genericised across all of chara
+        [GeneratedRegex(@"chara/equipment/e(?'Set'\d{4})/model/c(?'Race'\d{4})e\k'Set'_.+\.mdl", RegexOptions.Compiled)]
+        private static partial Regex CharaEquipmentRegex();
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path, Mod? mod)
         {
@@ -54,9 +58,59 @@ public partial class ModEditWindow
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
         public void Export(string outputPath)
         {
+            // NOTES ON EST (i don't think it's worth supporting yet...)
+            // for collection wide lookup;
+            // Collections.Cache.EstCache::GetEstEntry
+            // Collections.Cache.MetaCache::GetEstEntry
+            // Collections.ModCollection.MetaCache?
+            // for default lookup, probably;
+            // EstFile.GetDefault(...)
+            
+            // TODO: allow user to pick the gamepath in the ui
+            // TODO: what if there's no gamepaths?
+            var mdlPath = GamePaths.First();
+            var sklbPath = GetSklbPath(mdlPath.ToString());
+            var sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
+
             PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, outputPath)
+            _edit._models.ExportToGltf(Mdl, sklb, outputPath)
                 .ContinueWith(_ => PendingIo = false);
+        }
+
+        /// <summary> Try to find the .sklb path for a .mdl file. </summary>
+        /// <param name="mdlPath"> .mdl file to look up the skeleton for. </param>
+        private string? GetSklbPath(string mdlPath)
+        {
+            // TODO: This needs to be drastically expanded, it's dodgy af rn
+
+            var match = CharaEquipmentRegex().Match(mdlPath);
+            if (!match.Success)
+                return null;
+
+            var race = match.Groups["Race"].Value;
+
+            return $"chara/human/c{race}/skeleton/base/b0001/skl_c{race}b0001.sklb";
+        }
+
+        /// <summary> Read a .sklb from the active collection or game. </summary>
+        /// <param name="sklbPath"> Game path to the .sklb to load. </param>
+        private SklbFile ReadSklb(string sklbPath)
+        {
+            // TODO: if cross-collection lookups are turned off, this conversion can be skipped
+            if (!Utf8GamePath.FromString(sklbPath, out var utf8SklbPath, true))
+                throw new Exception("TODO: handle - should it throw, or try to fail gracefully?");
+ 
+            var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
+            // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
+            var bytes = resolvedPath switch
+            {
+                null => _edit._dalamud.GameData.GetFile(sklbPath)?.Data,
+                FullPath path => File.ReadAllBytes(path.ToPath()),
+            };
+            if (bytes == null)
+                throw new Exception("TODO: handle - this effectively means that the resolved path doesn't exist. graceful?");
+
+            return new SklbFile(bytes);
         }
 
         /// <summary> Remove the material given by the index. </summary>
