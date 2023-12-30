@@ -87,12 +87,13 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                 // TODO: consider other types of mesh?
                 for (ushort meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
                 {
-                    var meshBuilder = MeshConverter.ToGltf(_mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset), skeleton?.Names);
+                    var meshBuilders = MeshConverter.ToGltf(_mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset), skeleton?.Names);
                     // TODO: use a value from the mesh converter for this check, rather than assuming that it has joints
-                    if (skeleton == null)
-                        scene.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
-                    else
-                        scene.AddSkinnedMesh(meshBuilder, Matrix4x4.Identity, skeleton?.Joints);
+                    foreach (var meshBuilder in meshBuilders)
+                        if (skeleton == null)
+                            scene.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
+                        else
+                            scene.AddSkinnedMesh(meshBuilder, Matrix4x4.Identity, skeleton?.Joints);
                 }
             }
 

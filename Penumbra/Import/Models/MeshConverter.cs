@@ -10,7 +10,7 @@ namespace Penumbra.Import.Modules;
 
 public sealed class MeshConverter
 {
-    public static IMeshBuilder<MaterialBuilder> ToGltf(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
+    public static IMeshBuilder<MaterialBuilder>[] ToGltf(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
     {
         var self = new MeshConverter(mdl, lod, meshIndex, boneNameMap);
         return self.BuildMesh();
@@ -65,11 +65,22 @@ public sealed class MeshConverter
         return indexMap;
     }
 
-    // TODO: consider a struct return type
-    private IMeshBuilder<MaterialBuilder> BuildMesh()
+    private IMeshBuilder<MaterialBuilder>[] BuildMesh()
     {
-        var indices = BuildIndices();
         var vertices = BuildVertices();
+
+        // TODO: handle submeshCount = 0
+
+        return _mdl.SubMeshes
+            .Skip(Mesh.SubMeshIndex)
+            .Take(Mesh.SubMeshCount)
+            .Select(submesh => BuildSubMesh(submesh, vertices))
+            .ToArray();
+    }
+
+    private IMeshBuilder<MaterialBuilder> BuildSubMesh(MdlStructs.SubmeshStruct submesh, IReadOnlyList<IVertexBuilder> vertices)
+    {
+        var indices = BuildIndices(submesh);
 
         var meshBuilderType = typeof(MeshBuilder<,,,>).MakeGenericType(
             typeof(MaterialBuilder),
@@ -89,7 +100,7 @@ public sealed class MeshConverter
 
         // All XIV meshes use triangle lists.
         // TODO: split by submeshes
-        for (var indexOffset = 0; indexOffset < Mesh.IndexCount; indexOffset += 3)
+        for (var indexOffset = 0; indexOffset < submesh.IndexCount; indexOffset += 3)
             primitiveBuilder.AddTriangle(
                 vertices[indices[indexOffset + 0]],
                 vertices[indices[indexOffset + 1]],
@@ -99,11 +110,11 @@ public sealed class MeshConverter
         return meshBuilder;
     }
 
-    private IReadOnlyList<ushort> BuildIndices()
+    private IReadOnlyList<ushort> BuildIndices(MdlStructs.SubmeshStruct submesh)
     {
         var reader = new BinaryReader(new MemoryStream(_mdl.RemainingData));
-        reader.Seek(_mdl.IndexOffset[_lod] + Mesh.StartIndex * sizeof(ushort));
-        return reader.ReadStructuresAsArray<ushort>((int)Mesh.IndexCount);
+        reader.Seek(_mdl.IndexOffset[_lod] + submesh.IndexOffset * sizeof(ushort));
+        return reader.ReadStructuresAsArray<ushort>((int)submesh.IndexCount);
     }
 
     private IReadOnlyList<IVertexBuilder> BuildVertices()
