@@ -1,10 +1,11 @@
 using OtterGui.Classes;
 using OtterGui.Log;
+using OtterGui.Services;
 using Penumbra.Communication;
 
 namespace Penumbra.Services;
 
-public class CommunicatorService : IDisposable
+public class CommunicatorService : IDisposable, IService
 {
     public CommunicatorService(Logger logger)
     {

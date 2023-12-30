@@ -5,15 +5,12 @@ using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui.Log;
+using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class MessageService : OtterGui.Classes.MessageService
+public class MessageService(Logger log, UiBuilder uiBuilder, IChatGui chat) : OtterGui.Classes.MessageService(log, uiBuilder, chat), IService
 {
-    public MessageService(Logger log, UiBuilder uiBuilder, IChatGui chat)
-        : base(log, uiBuilder, chat)
-    { }
-
     public void LinkItem(Item item)
     {
         // @formatter:off
