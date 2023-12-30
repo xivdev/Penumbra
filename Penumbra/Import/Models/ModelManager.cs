@@ -75,20 +75,24 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         {
             var scene = new SceneBuilder();
 
-            var skeletonRoot = BuildSkeleton(cancel);
-            if (skeletonRoot != null)
-                scene.AddNode(skeletonRoot);
+            var skeleton = BuildSkeleton(cancel);
+            if (skeleton != null)
+                scene.AddNode(skeleton.Value.Root);
 
             // TODO: group by LoD in output tree
             for (byte lodIndex = 0; lodIndex < _mdl.LodCount; lodIndex++)
             {
                 var lod = _mdl.Lods[lodIndex];
 
-                // TODO: consider other types?
+                // TODO: consider other types of mesh?
                 for (ushort meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
                 {
-                    var meshBuilder = MeshConverter.ToGltf(_mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset));
-                    scene.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
+                    var meshBuilder = MeshConverter.ToGltf(_mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset), skeleton?.Names);
+                    // TODO: use a value from the mesh converter for this check, rather than assuming that it has joints
+                    if (skeleton == null)
+                        scene.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
+                    else
+                        scene.AddSkinnedMesh(meshBuilder, Matrix4x4.Identity, skeleton?.Joints);
                 }
             }
 
@@ -97,7 +101,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         }
 
         // TODO: this should be moved to a seperate model converter or something
-        private NodeBuilder? BuildSkeleton(CancellationToken cancel)
+        private (NodeBuilder Root, NodeBuilder[] Joints, Dictionary<string, int> Names)? BuildSkeleton(CancellationToken cancel)
         {
             if (_sklb == null)
                 return null;
@@ -114,15 +118,17 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
 
             // this is (less) atrocious
             NodeBuilder? root = null;
-            var boneMap = new Dictionary<string, NodeBuilder>();
+            var names = new Dictionary<string, int>();
+            var joints = new List<NodeBuilder>();
             for (var boneIndex = 0; boneIndex < skeleton.Bones.Length; boneIndex++)
             {
                 var bone = skeleton.Bones[boneIndex];
 
-                if (boneMap.ContainsKey(bone.Name)) continue;
+                if (names.ContainsKey(bone.Name)) continue;
 
                 var node = new NodeBuilder(bone.Name);
-                boneMap[bone.Name] = node;
+                names[bone.Name] = joints.Count;
+                joints.Add(node);
 
                 node.SetLocalTransform(new AffineTransform(
                     bone.Transform.Scale,
@@ -136,11 +142,14 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                     continue;
                 }
 
-                var parent = boneMap[skeleton.Bones[bone.ParentIndex].Name];
+                var parent = joints[names[skeleton.Bones[bone.ParentIndex].Name]];
                 parent.AddNode(node);
             }
 
-            return root;
+            if (root == null)
+                return null;
+
+            return (root, joints.ToArray(), names);
         }
 
         public bool Equals(IAction? other)

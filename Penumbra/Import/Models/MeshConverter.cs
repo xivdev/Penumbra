@@ -10,9 +10,9 @@ namespace Penumbra.Import.Modules;
 
 public sealed class MeshConverter
 {
-    public static IMeshBuilder<MaterialBuilder> ToGltf(MdlFile mdl, byte lod, ushort meshIndex)
+    public static IMeshBuilder<MaterialBuilder> ToGltf(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
     {
-        var self = new MeshConverter(mdl, lod, meshIndex);
+        var self = new MeshConverter(mdl, lod, meshIndex, boneNameMap);
         return self.BuildMesh();
     }
 
@@ -23,21 +23,49 @@ public sealed class MeshConverter
     private readonly ushort _meshIndex;
     private MdlStructs.MeshStruct Mesh => _mdl.Meshes[_meshIndex];
 
-    private readonly Type _geometryType;
+    private readonly Dictionary<ushort, int>? _boneIndexMap;
 
-    private MeshConverter(MdlFile mdl, byte lod, ushort meshIndex)
+    private readonly Type _geometryType;
+    private readonly Type _skinningType;
+
+    private MeshConverter(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
     {
         _mdl = mdl;
         _lod = lod;
         _meshIndex = meshIndex;
+
+        if (boneNameMap != null)
+            _boneIndexMap = BuildBoneIndexMap(boneNameMap);
 
         var usages = _mdl.VertexDeclarations[_meshIndex].VertexElements
             .Select(element => (MdlFile.VertexUsage)element.Usage)
             .ToImmutableHashSet();
             
         _geometryType = GetGeometryType(usages);
+        _skinningType = GetSkinningType(usages);
     }
 
+    private Dictionary<ushort, int> BuildBoneIndexMap(Dictionary<string, int> boneNameMap)
+    {
+        // todo: BoneTableIndex of 255 means null? if so, it should probably feed into the attributes we assign...
+        var xivBoneTable = _mdl.BoneTables[Mesh.BoneTableIndex];
+
+        var indexMap = new Dictionary<ushort, int>();
+
+        foreach (var xivBoneIndex in xivBoneTable.BoneIndex.Take(xivBoneTable.BoneCount))
+        {
+            var boneName = _mdl.Bones[xivBoneIndex];
+            if (!boneNameMap.TryGetValue(boneName, out var gltfBoneIndex))
+                // TODO: handle - i think this is a hard failure, it means that a bone name in the model doesn't exist in the armature. 
+                throw new Exception($"looking for {boneName} in {string.Join(", ", boneNameMap.Keys)}");
+            
+            indexMap.Add(xivBoneIndex, gltfBoneIndex);
+        }
+
+        return indexMap;
+    }
+
+    // TODO: consider a struct return type
     private IMeshBuilder<MaterialBuilder> BuildMesh()
     {
         var indices = BuildIndices();
@@ -47,7 +75,7 @@ public sealed class MeshConverter
             typeof(MaterialBuilder),
             _geometryType,
             typeof(VertexEmpty),
-            typeof(VertexEmpty)
+            _skinningType
         );
         var meshBuilder = (IMeshBuilder<MaterialBuilder>)Activator.CreateInstance(meshBuilderType, $"mesh{_meshIndex}")!;
 
@@ -81,7 +109,7 @@ public sealed class MeshConverter
     private IReadOnlyList<IVertexBuilder> BuildVertices()
     {
         var vertexBuilderType = typeof(VertexBuilder<,,>)
-            .MakeGenericType(_geometryType, typeof(VertexEmpty), typeof(VertexEmpty));
+            .MakeGenericType(_geometryType, typeof(VertexEmpty), _skinningType);
 
         // NOTE: This assumes that buffer streams are tightly packed, which has proven safe across tested files. If this assumption is broken, seeks will need to be moved into the vertex element loop.
         var streams = new BinaryReader[MaximumMeshBufferStreams];
@@ -107,8 +135,9 @@ public sealed class MeshConverter
                 attributes[usage] = ReadVertexAttribute(streams[element.Stream], element);
 
             var vertexGeometry = BuildVertexGeometry(attributes);
+            var vertexSkinning = BuildVertexSkinning(attributes);
 
-            var vertexBuilder = (IVertexBuilder)Activator.CreateInstance(vertexBuilderType, vertexGeometry, new VertexEmpty(), new VertexEmpty())!;
+            var vertexBuilder = (IVertexBuilder)Activator.CreateInstance(vertexBuilderType, vertexGeometry, new VertexEmpty(), vertexSkinning)!;
             vertices.Add(vertexBuilder);
         }
 
@@ -167,6 +196,40 @@ public sealed class MeshConverter
         throw new Exception($"Unknown geometry type {_geometryType}.");
     }
 
+    private Type GetSkinningType(IReadOnlySet<MdlFile.VertexUsage> usages)
+    {
+        // TODO: possibly need to check only index - weight might be missing?
+        if (usages.Contains(MdlFile.VertexUsage.BlendWeights) && usages.Contains(MdlFile.VertexUsage.BlendIndices))
+            return typeof(VertexJoints4);
+
+        return typeof(VertexEmpty);
+    }
+
+    private IVertexSkinning BuildVertexSkinning(IReadOnlyDictionary<MdlFile.VertexUsage, object> attributes)
+    {
+        if (_skinningType == typeof(VertexEmpty))
+            return new VertexEmpty();
+
+        if (_skinningType == typeof(VertexJoints4))
+        {
+            // todo: this shouldn't happen... right? better approach?
+            if (_boneIndexMap == null)
+                throw new Exception("cannot build skinned vertex without index mapping");
+
+            var indices = ToByteArray(attributes[MdlFile.VertexUsage.BlendIndices]);
+            var weights = ToVector4(attributes[MdlFile.VertexUsage.BlendWeights]);
+
+            // todo: if this throws on the bone index map, the mod is broken, as it contains weights for bones that do not exist.
+            //       i've not seen any of these that even tt can understand
+            var bindings = Enumerable.Range(0, 4)
+                .Select(index => (_boneIndexMap[indices[index]], weights[index]))
+                .ToArray();
+            return new VertexJoints4(bindings);
+        }
+
+        throw new Exception($"Unknown skinning type {_skinningType}");
+    }
+
     // Some tangent W values that should be -1 are stored as 0.
     private Vector4 FixTangentVector(Vector4 tangent)
         => tangent with { W = tangent.W == 1 ? 1 : -1 };
@@ -187,5 +250,12 @@ public sealed class MeshConverter
             Vector3 v3 => new Vector4(v3.X, v3.Y, v3.Z, 1),
             Vector4 v4 => v4,
             _ => throw new ArgumentOutOfRangeException($"Invalid Vector3 input {data}")
+        };
+
+    private byte[] ToByteArray(object data)
+        => data switch
+        {
+            byte[] value => value,
+            _ => throw new ArgumentOutOfRangeException($"Invalid byte[] input {data}")
         };
 }
