@@ -20,8 +20,8 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
 
     public IdentifiedCollectionCache(IClientState clientState, CommunicatorService communicator, CharacterDestructor characterDestructor)
     {
-        _clientState              = clientState;
-        _communicator             = communicator;
+        _clientState         = clientState;
+        _communicator        = communicator;
         _characterDestructor = characterDestructor;
 
         _communicator.CollectionChange.Subscribe(CollectionChangeClear, CollectionChange.Priority.IdentifiedCollectionCache);

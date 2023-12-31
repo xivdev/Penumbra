@@ -24,12 +24,12 @@ public sealed unsafe class CollectionResolver(
     CollectionManager collectionManager,
     TempCollectionManager tempCollections,
     DrawObjectState drawObjectState,
-    HumanModelList humanModels) 
+    HumanModelList humanModels)
     : IService
 {
     /// <summary>
     /// Get the collection applying to the current player character
-    /// or the Yourself or Default collection if no player exists.
+    /// or the 'Yourself' or 'Default' collection if no player exists.
     /// </summary>
     public ModCollection PlayerCollection()
     {
