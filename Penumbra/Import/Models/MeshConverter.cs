@@ -100,14 +100,52 @@ public sealed class MeshConverter
 
         var primitiveBuilder = meshBuilder.UsePrimitive(materialBuilder);
 
+        // Store a list of the glTF indices. The list index will be equivalent to the xiv (submesh) index.
+        var gltfIndices = new List<int>();
+
         // All XIV meshes use triangle lists.
-        // TODO: split by submeshes
         for (var indexOffset = 0; indexOffset < submesh.IndexCount; indexOffset += 3)
-            primitiveBuilder.AddTriangle(
+        {
+            var (a, b, c) = primitiveBuilder.AddTriangle(
                 vertices[indices[indexOffset + startIndex + 0]],
                 vertices[indices[indexOffset + startIndex + 1]],
                 vertices[indices[indexOffset + startIndex + 2]]
             );
+            gltfIndices.AddRange([a, b, c]);
+        }
+
+        var primitiveVertices = meshBuilder.Primitives.First().Vertices;
+        var shapeNames = new List<string>();
+
+        foreach (var shape in _mdl.Shapes)
+        {
+            // Filter down to shape values for the current mesh that sit within the bounds of the current submesh.
+            var shapeValues = _mdl.ShapeMeshes
+                .Skip(shape.ShapeMeshStartIndex[_lod])
+                .Take(shape.ShapeMeshCount[_lod])
+                .Where(shapeMesh => shapeMesh.MeshIndexOffset == Mesh.StartIndex)
+                .SelectMany(shapeMesh => 
+                    _mdl.ShapeValues
+                        .Skip((int)shapeMesh.ShapeValueOffset)
+                        .Take((int)shapeMesh.ShapeValueCount)
+                )
+                .Where(shapeValue =>
+                    shapeValue.BaseIndicesIndex >= startIndex
+                    && shapeValue.BaseIndicesIndex < startIndex + submesh.IndexCount
+                )
+                .ToList();
+
+            if (shapeValues.Count == 0) continue;
+
+            var morphBuilder = meshBuilder.UseMorphTarget(shapeNames.Count);
+            shapeNames.Add(shape.ShapeName);
+
+            foreach (var shapeValue in shapeValues)
+                morphBuilder.SetVertex(
+                    primitiveVertices[gltfIndices[shapeValue.BaseIndicesIndex - startIndex]].GetGeometry(),
+                    vertices[shapeValue.ReplacingVertexIndex].GetGeometry()
+                );
+        }
 
         return meshBuilder;
     }
