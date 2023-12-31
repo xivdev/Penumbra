@@ -89,17 +89,12 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             if (_sklb == null)
                 return null;
 
-            // TODO: Consider making these static methods.
             // TODO: work out how i handle this havok deal. running it outside the framework causes an immediate ctd.
-            var havokConverter = new HavokConverter();
-            var xmlTask = _manager._framework.RunOnFrameworkThread(() => havokConverter.HkxToXml(_sklb.Skeleton));
+            var xmlTask = _manager._framework.RunOnFrameworkThread(() => HavokConverter.HkxToXml(_sklb.Skeleton));
             xmlTask.Wait(cancel);
             var xml = xmlTask.Result;
 
-            var skeletonConverter = new SkeletonConverter();
-            var skeleton = skeletonConverter.FromXml(xml);
-
-            return skeleton;
+            return SkeletonConverter.FromXml(xml);
         }
 
         public bool Equals(IAction? other)

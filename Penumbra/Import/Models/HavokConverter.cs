@@ -2,24 +2,19 @@ using FFXIVClientStructs.Havok;
 
 namespace Penumbra.Import.Models;
 
-// TODO: where should this live? interop i guess, in penum? or game data?
-public unsafe class HavokConverter
+public static unsafe class HavokConverter
 {
-    /// <summary>Creates a temporary file and returns its path.</summary>
-    /// <returns>Path to a temporary file.</returns>
-    private string CreateTempFile()
+    /// <summary> Creates a temporary file and returns its path. </summary>
+    private static string CreateTempFile()
     {
-        var s = File.Create(Path.GetTempFileName());
-        s.Close();
-        return s.Name;
+        var stream = File.Create(Path.GetTempFileName());
+        stream.Close();
+        return stream.Name;
     }
 
-    /// <summary>Converts a .hkx file to a .xml file.</summary>
-    /// <param name="hkx">A byte array representing the .hkx file.</param>
-    /// <returns>A string representing the .xml file.</returns>
-    /// <exception cref="Exceptions.HavokReadException">Thrown if parsing the .hkx file fails.</exception>
-    /// <exception cref="Exceptions.HavokWriteException">Thrown if writing the .xml file fails.</exception>
-    public string HkxToXml(byte[] hkx)
+    /// <summary> Converts a .hkx file to a .xml file. </summary>
+    /// <param name="hkx"> A byte array representing the .hkx file. </param> 
+    public static string HkxToXml(byte[] hkx)
     {
         var tempHkx = CreateTempFile();
         File.WriteAllBytes(tempHkx, hkx);
@@ -27,7 +22,7 @@ public unsafe class HavokConverter
         var resource = Read(tempHkx);
         File.Delete(tempHkx);
 
-        if (resource == null) throw new Exception("HavokReadException");
+        if (resource == null) throw new Exception("Failed to read havok file.");
 
         var options = hkSerializeUtil.SaveOptionBits.SerializeIgnoredMembers
             | hkSerializeUtil.SaveOptionBits.TextFormat
@@ -42,12 +37,9 @@ public unsafe class HavokConverter
         return bytes;
     }
 
-    /// <summary>Converts a .xml file to a .hkx file.</summary>
-    /// <param name="xml">A string representing the .xml file.</param>
-    /// <returns>A byte array representing the .hkx file.</returns>
-    /// <exception cref="Exceptions.HavokReadException">Thrown if parsing the .xml file fails.</exception>
-    /// <exception cref="Exceptions.HavokWriteException">Thrown if writing the .hkx file fails.</exception>
-    public byte[] XmlToHkx(string xml)
+    /// <summary> Converts an .xml file to a .hkx file. </summary>
+    /// <param name="xml"> A string representing the .xml file. </param>
+    public static byte[] XmlToHkx(string xml)
     {
         var tempXml = CreateTempFile();
         File.WriteAllText(tempXml, xml);
@@ -55,7 +47,7 @@ public unsafe class HavokConverter
         var resource = Read(tempXml);
         File.Delete(tempXml);
 
-        if (resource == null) throw new Exception("HavokReadException");
+        if (resource == null) throw new Exception("Failed to read havok file.");
 
         var options = hkSerializeUtil.SaveOptionBits.SerializeIgnoredMembers
             | hkSerializeUtil.SaveOptionBits.WriteAttributes;
@@ -74,9 +66,8 @@ public unsafe class HavokConverter
     /// The type is guessed automatically by Havok.
     /// This pointer might be null - you should check for that.
     /// </summary>
-    /// <param name="filePath">Path to a file on the filesystem.</param>
-    /// <returns>A (potentially null) pointer to an hkResource.</returns>
-    private hkResource* Read(string filePath)
+    /// <param name="filePath"> Path to a file on the filesystem. </param>
+    private static hkResource* Read(string filePath)
     {
         var path = Marshal.StringToHGlobalAnsi(filePath);
 
@@ -87,18 +78,15 @@ public unsafe class HavokConverter
         loadOptions->ClassNameRegistry = builtinTypeRegistry->GetClassNameRegistry();
         loadOptions->TypeInfoRegistry = builtinTypeRegistry->GetTypeInfoRegistry();
 
-        // TODO: probably can loadfrombuffer this
+        // TODO: probably can use LoadFromBuffer for this.
         var resource = hkSerializeUtil.LoadFromFile((byte*)path, null, loadOptions);
         return resource;
     }
 
-    /// <summary>Serializes an hkResource* to a temporary file.</summary>
-    /// <param name="resource">A pointer to the hkResource, opened through Read().</param>
-    /// <param name="optionBits">Flags representing how to serialize the file.</param>
-    /// <returns>An opened FileStream of a temporary file. You are expected to read the file and delete it.</returns>
-    /// <exception cref="Exceptions.HavokWriteException">Thrown if accessing the root level container fails.</exception>
-    /// <exception cref="Exceptions.HavokFailureException">Thrown if an unknown failure in writing occurs.</exception>
-    private FileStream Write(
+    /// <summary> Serializes an hkResource* to a temporary file. </summary>
+    /// <param name="resource"> A pointer to the hkResource, opened through Read(). </param>
+    /// <param name="optionBits"> Flags representing how to serialize the file. </param>
+    private static FileStream Write(
         hkResource* resource,
         hkSerializeUtil.SaveOptionBits optionBits
     )
@@ -125,16 +113,16 @@ public unsafe class HavokConverter
             var name = "hkRootLevelContainer";
 
             var resourcePtr = (hkRootLevelContainer*)resource->GetContentsPointer(name, typeInfoRegistry);
-            if (resourcePtr == null) throw new Exception("HavokWriteException");
+            if (resourcePtr == null) throw new Exception("Failed to retrieve havok root level container resource.");
 
             var hkRootLevelContainerClass = classNameRegistry->GetClassByName(name);
-            if (hkRootLevelContainerClass == null) throw new Exception("HavokWriteException");
+            if (hkRootLevelContainerClass == null) throw new Exception("Failed to retrieve havok root level container type.");
 
             hkSerializeUtil.Save(result, resourcePtr, hkRootLevelContainerClass, oStream.StreamWriter.ptr, saveOptions);
         }
         finally { oStream.Dtor(); }
 
-        if (result->Result == hkResult.hkResultEnum.Failure) throw new Exception("HavokFailureException");
+        if (result->Result == hkResult.hkResultEnum.Failure) throw new Exception("Failed to serialize havok file.");
 
         return new FileStream(tempFile, FileMode.Open);
     }
