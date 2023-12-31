@@ -13,7 +13,8 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the index of the changed option inside the group or -1 if it does not concern a specific option. </item>
 ///     <item>Parameter is the index of the group an option was moved to. </item>
 /// </list> </summary>
-public sealed class ModOptionChanged : EventWrapper<Action<ModOptionChangeType, Mod, int, int, int>, ModOptionChanged.Priority>
+public sealed class ModOptionChanged()
+    : EventWrapper<ModOptionChangeType, Mod, int, int, int, ModOptionChanged.Priority>(nameof(ModOptionChanged))
 {
     public enum Priority
     {
@@ -29,11 +30,4 @@ public sealed class ModOptionChanged : EventWrapper<Action<ModOptionChangeType, 
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModOptionChange"/>
         CollectionStorage = 100,
     }
-
-    public ModOptionChanged()
-        : base(nameof(ModOptionChanged))
-    { }
-
-    public void Invoke(ModOptionChangeType changeType, Mod mod, int groupIndex, int optionIndex, int moveToIndex)
-        => Invoke(this, changeType, mod, groupIndex, optionIndex, moveToIndex);
 }

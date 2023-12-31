@@ -9,6 +9,8 @@ using Penumbra.Collections;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
+using Penumbra.Interop.Hooks;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
@@ -52,24 +54,24 @@ public unsafe class MetaState : IDisposable
     private readonly PerformanceTracker  _performance;
     private readonly CollectionResolver  _collectionResolver;
     private readonly ResourceLoader      _resources;
-    private readonly GameEventManager    _gameEventManager;
     private readonly CharacterUtility    _characterUtility;
+    private readonly CreateCharacterBase _createCharacterBase;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private ResolveData         _customizeChangeCollection      = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceLoader resources, GameEventManager gameEventManager, CharacterUtility characterUtility, Configuration config,
+        ResourceLoader resources, CreateCharacterBase createCharacterBase, CharacterUtility characterUtility, Configuration config,
         IGameInteropProvider interop)
     {
-        _performance        = performance;
-        _communicator       = communicator;
-        _collectionResolver = collectionResolver;
-        _resources          = resources;
-        _gameEventManager   = gameEventManager;
-        _characterUtility   = characterUtility;
-        _config             = config;
+        _performance         = performance;
+        _communicator        = communicator;
+        _collectionResolver  = collectionResolver;
+        _resources           = resources;
+        _createCharacterBase = createCharacterBase;
+        _characterUtility    = characterUtility;
+        _config              = config;
         interop.InitializeFromAttributes(this);
         _calculateHeightHook =
             interop.HookFromAddress<CalculateHeightDelegate>((nint)Character.MemberFunctionPointers.CalculateHeight, CalculateHeightDetour);
@@ -81,8 +83,8 @@ public unsafe class MetaState : IDisposable
         _rspSetupCharacterHook.Enable();
         _changeCustomize.Enable();
         _calculateHeightHook.Enable();
-        _gameEventManager.CreatingCharacterBase += OnCreatingCharacterBase;
-        _gameEventManager.CharacterBaseCreated  += OnCharacterBaseCreated;
+        _createCharacterBase.Subscribe(OnCreatingCharacterBase, CreateCharacterBase.Priority.MetaState);
+        _createCharacterBase.Subscribe(OnCharacterBaseCreated, CreateCharacterBase.PostEvent.Priority.MetaState);
     }
 
     public bool HandleDecalFile(ResourceType type, Utf8GamePath gamePath, out ResolveData resolveData)
@@ -124,31 +126,31 @@ public unsafe class MetaState : IDisposable
         _rspSetupCharacterHook.Dispose();
         _changeCustomize.Dispose();
         _calculateHeightHook.Dispose();
-        _gameEventManager.CreatingCharacterBase -= OnCreatingCharacterBase;
-        _gameEventManager.CharacterBaseCreated  -= OnCharacterBaseCreated;
+        _createCharacterBase.Unsubscribe(OnCreatingCharacterBase);
+        _createCharacterBase.Unsubscribe(OnCharacterBaseCreated);
     }
 
-    private void OnCreatingCharacterBase(nint modelCharaId, nint customize, nint equipData)
+    private void OnCreatingCharacterBase(ModelCharaId* modelCharaId, CustomizeArray* customize, CharacterArmor* equipData)
     {
         _lastCreatedCollection = _collectionResolver.IdentifyLastGameObjectCollection(true);
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero)
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection.Name, modelCharaId, customize, equipData);
+                _lastCreatedCollection.ModCollection.Name, (nint) modelCharaId, (nint) customize, (nint) equipData);
 
         var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
-            UsesDecal(*(uint*)modelCharaId, customize));
+            UsesDecal(*(uint*)modelCharaId, (nint) customize));
         var cmp = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
     }
 
-    private void OnCharacterBaseCreated(uint _1, nint _2, nint _3, nint drawObject)
+    private void OnCharacterBaseCreated(ModelCharaId _1, CustomizeArray* _2, CharacterArmor* _3, CharacterBase* drawObject)
     {
         _characterBaseCreateMetaChanges.Dispose();
         _characterBaseCreateMetaChanges = DisposableContainer.Empty;
-        if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != nint.Zero)
+        if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != null)
             _communicator.CreatedCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection, drawObject);
+                _lastCreatedCollection.ModCollection, (nint)drawObject);
         _lastCreatedCollection = ResolveData.Invalid;
     }
 

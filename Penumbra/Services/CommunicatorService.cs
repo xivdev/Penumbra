@@ -9,7 +9,7 @@ public class CommunicatorService : IDisposable, IService
 {
     public CommunicatorService(Logger logger)
     {
-        EventWrapper.ChangeLogger(logger);
+        EventWrapperBase.ChangeLogger(logger);
     }
 
     /// <inheritdoc cref="Communication.CollectionChange"/>

@@ -9,7 +9,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is whether Penumbra is now Enabled (true) or Disabled (false). </item>
 /// </list>
 /// </summary>
-public sealed class EnabledChanged : EventWrapper<Action<bool>, EnabledChanged.Priority>
+public sealed class EnabledChanged() : EventWrapper<bool, EnabledChanged.Priority>(nameof(EnabledChanged))
 {
     public enum Priority
     {
@@ -19,11 +19,4 @@ public sealed class EnabledChanged : EventWrapper<Action<bool>, EnabledChanged.P
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnEnabledChange"/>
         DalamudSubstitutionProvider = 0,
     }
-
-    public EnabledChanged()
-        : base(nameof(EnabledChanged))
-    { }
-
-    public void Invoke(bool enabled)
-        => Invoke(this, enabled);
 }

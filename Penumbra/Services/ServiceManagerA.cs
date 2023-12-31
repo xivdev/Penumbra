@@ -82,8 +82,7 @@ public static class ServiceManagerA
             .AddDalamudService<IPluginLog>(pi);
 
     private static ServiceManager AddInterop(this ServiceManager services)
-        => services.AddSingleton<GameEventManager>()
-            .AddSingleton<FrameworkManager>()
+        => services.AddSingleton<FrameworkManager>()
             .AddSingleton<CutsceneService>()
             .AddSingleton(p =>
             {
@@ -135,8 +134,7 @@ public static class ServiceManagerA
             .AddSingleton<SkinFixer>();
 
     private static ServiceManager AddResolvers(this ServiceManager services)
-        => services.AddSingleton<AnimationHookService>()
-            .AddSingleton<CollectionResolver>()
+        => services.AddSingleton<CollectionResolver>()
             .AddSingleton<CutsceneService>()
             .AddSingleton<DrawObjectState>()
             .AddSingleton<MetaState>()

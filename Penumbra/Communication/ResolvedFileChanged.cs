@@ -15,8 +15,9 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the old redirection path for Replaced, or empty. </item>
 ///     <item>Parameter is the mod responsible for the new redirection if any. </item>
 /// </list> </summary>
-public sealed class ResolvedFileChanged : EventWrapper<Action<ModCollection, ResolvedFileChanged.Type, Utf8GamePath, FullPath, FullPath, IMod?>,
-    ResolvedFileChanged.Priority>
+public sealed class ResolvedFileChanged()
+    : EventWrapper<ModCollection, ResolvedFileChanged.Type, Utf8GamePath, FullPath, FullPath, IMod?, ResolvedFileChanged.Priority>(
+        nameof(ResolvedFileChanged))
 {
     public enum Type
     {
@@ -29,14 +30,7 @@ public sealed class ResolvedFileChanged : EventWrapper<Action<ModCollection, Res
 
     public enum Priority
     {
-        /// <seealso cref="Api.DalamudSubstitutionProvider.OnResolvedFileChanged"/>
+        /// <seealso cref="Api.DalamudSubstitutionProvider.OnResolvedFileChange"/>
         DalamudSubstitutionProvider = 0,
     }
-
-    public ResolvedFileChanged()
-        : base(nameof(ResolvedFileChanged))
-    { }
-
-    public void Invoke(ModCollection collection, Type type, Utf8GamePath key, FullPath value, FullPath old, IMod? mod)
-        => Invoke(this, collection, type, key, value, old, mod);
 }

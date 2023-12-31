@@ -10,7 +10,8 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is whether the change was itself inherited, i.e. if it happened in a direct parent (false) or a more removed ancestor (true). </item>
 /// </list>
 /// </summary>
-public sealed class CollectionInheritanceChanged : EventWrapper<Action<ModCollection, bool>, CollectionInheritanceChanged.Priority>
+public sealed class CollectionInheritanceChanged()
+    : EventWrapper<ModCollection, bool, CollectionInheritanceChanged.Priority>(nameof(CollectionInheritanceChanged))
 {
     public enum Priority
     {
@@ -23,11 +24,4 @@ public sealed class CollectionInheritanceChanged : EventWrapper<Action<ModCollec
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnInheritanceChange"/>
         ModFileSystemSelector = 0,
     }
-
-    public CollectionInheritanceChanged()
-        : base(nameof(CollectionInheritanceChanged))
-    { }
-
-    public void Invoke(ModCollection collection, bool inherited)
-        => Invoke(this, collection, inherited);
 }

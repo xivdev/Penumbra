@@ -11,7 +11,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the changed mod. </item>
 ///     <item>Parameter is the old name of the mod in case of a name change, and null otherwise. </item>
 /// </list> </summary>
-public sealed class ModDataChanged : EventWrapper<Action<ModDataChangeType, Mod, string?>, ModDataChanged.Priority>
+public sealed class ModDataChanged() : EventWrapper<ModDataChangeType, Mod, string?, ModDataChanged.Priority>(nameof(ModDataChanged))
 {
     public enum Priority
     {
@@ -27,11 +27,4 @@ public sealed class ModDataChanged : EventWrapper<Action<ModDataChangeType, Mod,
         /// <seealso cref="UI.ModsTab.ModPanelHeader.OnModDataChange"/>
         ModPanelHeader = 0,
     }
-
-    public ModDataChanged()
-        : base(nameof(ModDataChanged))
-    { }
-
-    public void Invoke(ModDataChangeType changeType, Mod mod, string? oldName)
-        => Invoke(this, changeType, mod, oldName);
 }

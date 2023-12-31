@@ -8,18 +8,11 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the identifier (directory name) of the currently selected mod. </item>
 /// </list>
 /// </summary>
-public sealed class PreSettingsPanelDraw : EventWrapper<Action<string>, PreSettingsPanelDraw.Priority>
+public sealed class PreSettingsPanelDraw() : EventWrapper<string, PreSettingsPanelDraw.Priority>(nameof(PreSettingsPanelDraw))
 {
     public enum Priority
     {
         /// <seealso cref="Api.PenumbraApi.PreSettingsPanelDraw"/>
         Default = 0,
     }
-
-    public PreSettingsPanelDraw()
-        : base(nameof(PreSettingsPanelDraw))
-    { }
-
-    public void Invoke(string modDirectory)
-        => Invoke(this, modDirectory);
 }

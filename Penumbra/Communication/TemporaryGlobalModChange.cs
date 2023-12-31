@@ -10,7 +10,8 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is whether the mod was newly created.</item>
 ///     <item>Parameter is whether the mod was deleted.</item>
 /// </list> </summary>
-public sealed class TemporaryGlobalModChange : EventWrapper<Action<TemporaryMod, bool, bool>, TemporaryGlobalModChange.Priority>
+public sealed class TemporaryGlobalModChange()
+    : EventWrapper<TemporaryMod, bool, bool, TemporaryGlobalModChange.Priority>(nameof(TemporaryGlobalModChange))
 {
     public enum Priority
     {
@@ -20,11 +21,4 @@ public sealed class TemporaryGlobalModChange : EventWrapper<Action<TemporaryMod,
         /// <seealso cref="Collections.Manager.TempCollectionManager.OnGlobalModChange"/>
         TempCollectionManager = 0,
     }
-
-    public TemporaryGlobalModChange()
-        : base(nameof(TemporaryGlobalModChange))
-    { }
-
-    public void Invoke(TemporaryMod temporaryMod, bool newlyCreated, bool deleted)
-        => Invoke(this, temporaryMod, newlyCreated, deleted);
 }
