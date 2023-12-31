@@ -4,6 +4,7 @@ using Lumina.Extensions;
 using Penumbra.GameData.Files;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
+using SharpGLTF.IO;
 using SharpGLTF.Materials;
 
 namespace Penumbra.Import.Modules;
@@ -124,7 +125,7 @@ public sealed class MeshConverter
                 .Skip(shape.ShapeMeshStartIndex[_lod])
                 .Take(shape.ShapeMeshCount[_lod])
                 .Where(shapeMesh => shapeMesh.MeshIndexOffset == Mesh.StartIndex)
-                .SelectMany(shapeMesh => 
+                .SelectMany(shapeMesh =>
                     _mdl.ShapeValues
                         .Skip((int)shapeMesh.ShapeValueOffset)
                         .Take((int)shapeMesh.ShapeValueCount)
@@ -146,6 +147,10 @@ public sealed class MeshConverter
                     vertices[shapeValue.ReplacingVertexIndex].GetGeometry()
                 );
         }
+
+        meshBuilder.Extras = JsonContent.CreateFrom(new Dictionary<string, object>() {
+            {"targetNames", shapeNames}
+        });
 
         return meshBuilder;
     }
