@@ -1,12 +1,13 @@
 using System.Xml;
 using OtterGui;
+using Penumbra.Import.Models.Export;
 
 namespace Penumbra.Import.Models;
 
 // TODO: tempted to say that this living here is more okay? that or next to havok converter, wherever that ends up.
 public class SkeletonConverter
 {
-    public Skeleton FromXml(string xml)
+    public XivSkeleton FromXml(string xml)
     {
         var document = new XmlDocument();
         document.LoadXml(xml);
@@ -29,7 +30,7 @@ public class SkeletonConverter
             .Select(values =>
             {
                 var (transform, parentIndex, name) = values;
-                return new Skeleton.Bone()
+                return new XivSkeleton.Bone()
                 {
                     Transform = transform,
                     ParentIndex = parentIndex,
@@ -38,7 +39,7 @@ public class SkeletonConverter
             })
             .ToArray();
         
-        return new Skeleton(bones);
+        return new XivSkeleton(bones);
     }
 
     /// <summary>Get the main skeleton ID for a given skeleton document.</summary>
@@ -57,14 +58,14 @@ public class SkeletonConverter
 
     /// <summary>Read the reference pose transforms for a skeleton.</summary>
     /// <param name="node">XML node for the skeleton.</param>
-    private Skeleton.Transform[] ReadReferencePose(XmlNode node)
+    private XivSkeleton.Transform[] ReadReferencePose(XmlNode node)
     {
         return ReadArray(
             CheckExists(node.SelectSingleNode("array[@name='referencePose']")),
             node =>
             {
                 var raw = ReadVec12(node);
-                return new Skeleton.Transform()
+                return new XivSkeleton.Transform()
                 {
                     Translation = new(raw[0], raw[1], raw[2]),
                     Rotation = new(raw[4], raw[5], raw[6], raw[7]),

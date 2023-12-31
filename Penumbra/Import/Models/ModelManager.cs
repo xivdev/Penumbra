@@ -2,7 +2,7 @@ using Dalamud.Plugin.Services;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
-using Penumbra.Import.Modules;
+using Penumbra.Import.Models.Export;
 using SharpGLTF.Scenes;
 using SharpGLTF.Transforms;
 
@@ -73,36 +73,18 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
 
         public void Execute(CancellationToken cancel)
         {
+            var xivSkeleton = BuildSkeleton(cancel);
+            var model = ModelExporter.Export(_mdl, xivSkeleton);
+
             var scene = new SceneBuilder();
+            model.AddToScene(scene);
 
-            var skeleton = BuildSkeleton(cancel);
-            if (skeleton != null)
-                scene.AddNode(skeleton.Value.Root);
-
-            // TODO: group by LoD in output tree
-            for (byte lodIndex = 0; lodIndex < _mdl.LodCount; lodIndex++)
-            {
-                var lod = _mdl.Lods[lodIndex];
-
-                // TODO: consider other types of mesh?
-                for (ushort meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
-                {
-                    var meshBuilders = MeshConverter.ToGltf(_mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset), skeleton?.Names);
-                    // TODO: use a value from the mesh converter for this check, rather than assuming that it has joints
-                    foreach (var meshBuilder in meshBuilders)
-                        if (skeleton == null)
-                            scene.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
-                        else
-                            scene.AddSkinnedMesh(meshBuilder, Matrix4x4.Identity, skeleton?.Joints);
-                }
-            }
-
-            var model = scene.ToGltf2();
-            model.SaveGLTF(_outputPath);
+            var gltfModel = scene.ToGltf2();
+            gltfModel.SaveGLTF(_outputPath);
         }
 
         // TODO: this should be moved to a seperate model converter or something
-        private (NodeBuilder Root, NodeBuilder[] Joints, Dictionary<string, int> Names)? BuildSkeleton(CancellationToken cancel)
+        private XivSkeleton? BuildSkeleton(CancellationToken cancel)
         {
             if (_sklb == null)
                 return null;
@@ -117,40 +99,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             var skeletonConverter = new SkeletonConverter();
             var skeleton = skeletonConverter.FromXml(xml);
 
-            // this is (less) atrocious
-            NodeBuilder? root = null;
-            var names = new Dictionary<string, int>();
-            var joints = new List<NodeBuilder>();
-            for (var boneIndex = 0; boneIndex < skeleton.Bones.Length; boneIndex++)
-            {
-                var bone = skeleton.Bones[boneIndex];
-
-                if (names.ContainsKey(bone.Name)) continue;
-
-                var node = new NodeBuilder(bone.Name);
-                names[bone.Name] = joints.Count;
-                joints.Add(node);
-
-                node.SetLocalTransform(new AffineTransform(
-                    bone.Transform.Scale,
-                    bone.Transform.Rotation,
-                    bone.Transform.Translation
-                ), false);
-
-                if (bone.ParentIndex == -1)
-                {
-                    root = node;
-                    continue;
-                }
-
-                var parent = joints[names[skeleton.Bones[bone.ParentIndex].Name]];
-                parent.AddNode(node);
-            }
-
-            if (root == null)
-                return null;
-
-            return (root, joints.ToArray(), names);
+            return skeleton;
         }
 
         public bool Equals(IAction? other)

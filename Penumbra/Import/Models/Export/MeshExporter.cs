@@ -6,15 +6,39 @@ using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.IO;
 using SharpGLTF.Materials;
+using SharpGLTF.Scenes;
 
-namespace Penumbra.Import.Modules;
+namespace Penumbra.Import.Models.Export;
 
-public sealed class MeshConverter
+public class MeshExporter
 {
-    public static IMeshBuilder<MaterialBuilder>[] ToGltf(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
+    public class Mesh
     {
-        var self = new MeshConverter(mdl, lod, meshIndex, boneNameMap);
-        return self.BuildMesh();
+        private IMeshBuilder<MaterialBuilder>[] _meshes;
+        private NodeBuilder[]? _joints;
+
+        public Mesh(IMeshBuilder<MaterialBuilder>[] meshes, NodeBuilder[]? joints)
+        {
+            _meshes = meshes;
+            _joints = joints;
+        }
+
+        public void AddToScene(SceneBuilder scene)
+        {
+            // TODO: throw if mesh has skinned vertices but no joints are available?
+            foreach (var mesh in _meshes)
+                if (_joints == null)
+                    scene.AddRigidMesh(mesh, Matrix4x4.Identity);
+                else
+                    scene.AddSkinnedMesh(mesh, Matrix4x4.Identity, _joints);
+        }
+    }
+
+    // TODO: replace bonenamemap with a gltfskeleton
+    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, GltfSkeleton? skeleton)
+    {
+        var self = new MeshExporter(mdl, lod, meshIndex, skeleton?.Names);
+        return new Mesh(self.BuildMeshes(), skeleton?.Joints);
     }
 
     private const byte MaximumMeshBufferStreams = 3;
@@ -22,14 +46,14 @@ public sealed class MeshConverter
     private readonly MdlFile _mdl;
     private readonly byte _lod;
     private readonly ushort _meshIndex;
-    private MdlStructs.MeshStruct Mesh => _mdl.Meshes[_meshIndex];
+    private MdlStructs.MeshStruct XivMesh => _mdl.Meshes[_meshIndex];
 
     private readonly Dictionary<ushort, int>? _boneIndexMap;
 
     private readonly Type _geometryType;
     private readonly Type _skinningType;
 
-    private MeshConverter(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
+    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
     {
         _mdl = mdl;
         _lod = lod;
@@ -49,7 +73,7 @@ public sealed class MeshConverter
     private Dictionary<ushort, int> BuildBoneIndexMap(Dictionary<string, int> boneNameMap)
     {
         // todo: BoneTableIndex of 255 means null? if so, it should probably feed into the attributes we assign...
-        var xivBoneTable = _mdl.BoneTables[Mesh.BoneTableIndex];
+        var xivBoneTable = _mdl.BoneTables[XivMesh.BoneTableIndex];
 
         var indexMap = new Dictionary<ushort, int>();
 
@@ -66,16 +90,16 @@ public sealed class MeshConverter
         return indexMap;
     }
 
-    private IMeshBuilder<MaterialBuilder>[] BuildMesh()
+    private IMeshBuilder<MaterialBuilder>[] BuildMeshes()
     {
         var indices = BuildIndices();
         var vertices = BuildVertices();
 
-        // TODO: handle submeshCount = 0
+        // TODO: handle SubMeshCount = 0
 
         return _mdl.SubMeshes
-            .Skip(Mesh.SubMeshIndex)
-            .Take(Mesh.SubMeshCount)
+            .Skip(XivMesh.SubMeshIndex)
+            .Take(XivMesh.SubMeshCount)
             .Select(submesh => BuildSubMesh(submesh, indices, vertices))
             .ToArray();
     }
@@ -83,7 +107,7 @@ public sealed class MeshConverter
     private IMeshBuilder<MaterialBuilder> BuildSubMesh(MdlStructs.SubmeshStruct submesh, IReadOnlyList<ushort> indices, IReadOnlyList<IVertexBuilder> vertices)
     {
         // Index indices are specified relative to the LOD's 0, but we're reading chunks for each mesh.
-        var startIndex = (int)(submesh.IndexOffset - Mesh.StartIndex);
+        var startIndex = (int)(submesh.IndexOffset - XivMesh.StartIndex);
 
         var meshBuilderType = typeof(MeshBuilder<,,,>).MakeGenericType(
             typeof(MaterialBuilder),
@@ -124,7 +148,7 @@ public sealed class MeshConverter
             var shapeValues = _mdl.ShapeMeshes
                 .Skip(shape.ShapeMeshStartIndex[_lod])
                 .Take(shape.ShapeMeshCount[_lod])
-                .Where(shapeMesh => shapeMesh.MeshIndexOffset == Mesh.StartIndex)
+                .Where(shapeMesh => shapeMesh.MeshIndexOffset == XivMesh.StartIndex)
                 .SelectMany(shapeMesh =>
                     _mdl.ShapeValues
                         .Skip((int)shapeMesh.ShapeValueOffset)
@@ -158,8 +182,8 @@ public sealed class MeshConverter
     private IReadOnlyList<ushort> BuildIndices()
     {
         var reader = new BinaryReader(new MemoryStream(_mdl.RemainingData));
-        reader.Seek(_mdl.IndexOffset[_lod] + Mesh.StartIndex * sizeof(ushort));
-        return reader.ReadStructuresAsArray<ushort>((int)Mesh.IndexCount);
+        reader.Seek(_mdl.IndexOffset[_lod] + XivMesh.StartIndex * sizeof(ushort));
+        return reader.ReadStructuresAsArray<ushort>((int)XivMesh.IndexCount);
     }
 
     private IReadOnlyList<IVertexBuilder> BuildVertices()
@@ -172,7 +196,7 @@ public sealed class MeshConverter
         for (var streamIndex = 0; streamIndex < MaximumMeshBufferStreams; streamIndex++)
         {
             streams[streamIndex] = new BinaryReader(new MemoryStream(_mdl.RemainingData));
-            streams[streamIndex].Seek(_mdl.VertexOffset[_lod] + Mesh.VertexBufferOffset[streamIndex]);
+            streams[streamIndex].Seek(_mdl.VertexOffset[_lod] + XivMesh.VertexBufferOffset[streamIndex]);
         }
 
         var sortedElements = _mdl.VertexDeclarations[_meshIndex].VertexElements
@@ -183,7 +207,7 @@ public sealed class MeshConverter
         var vertices = new List<IVertexBuilder>();
 
         var attributes = new Dictionary<MdlFile.VertexUsage, object>();
-        for (var vertexIndex = 0; vertexIndex < Mesh.VertexCount; vertexIndex++)
+        for (var vertexIndex = 0; vertexIndex < XivMesh.VertexCount; vertexIndex++)
         {
             attributes.Clear();
 

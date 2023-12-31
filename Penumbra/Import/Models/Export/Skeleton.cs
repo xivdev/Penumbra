@@ -1,11 +1,12 @@
-namespace Penumbra.Import.Models;
+using SharpGLTF.Scenes;
 
-// TODO: this should almost certainly live in gamedata. if not, it should at _least_ be adjacent to the model handling.
-public class Skeleton
+namespace Penumbra.Import.Models.Export;
+
+public class XivSkeleton
 {
     public Bone[] Bones;
 
-    public Skeleton(Bone[] bones)
+    public XivSkeleton(Bone[] bones)
     {
         Bones = bones;
     }
@@ -22,4 +23,11 @@ public class Skeleton
         public Quaternion Rotation;
         public Vector3 Translation;
     }
+}
+
+public struct GltfSkeleton
+{
+    public NodeBuilder Root;
+    public NodeBuilder[] Joints;
+    public Dictionary<string, int> Names;
 }
