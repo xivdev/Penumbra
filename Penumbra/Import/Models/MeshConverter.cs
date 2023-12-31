@@ -40,7 +40,7 @@ public sealed class MeshConverter
         var usages = _mdl.VertexDeclarations[_meshIndex].VertexElements
             .Select(element => (MdlFile.VertexUsage)element.Usage)
             .ToImmutableHashSet();
-            
+
         _geometryType = GetGeometryType(usages);
         _skinningType = GetSkinningType(usages);
     }
@@ -58,7 +58,7 @@ public sealed class MeshConverter
             if (!boneNameMap.TryGetValue(boneName, out var gltfBoneIndex))
                 // TODO: handle - i think this is a hard failure, it means that a bone name in the model doesn't exist in the armature. 
                 throw new Exception($"looking for {boneName} in {string.Join(", ", boneNameMap.Keys)}");
-            
+
             indexMap.Add(xivBoneIndex, gltfBoneIndex);
         }
 
@@ -67,6 +67,7 @@ public sealed class MeshConverter
 
     private IMeshBuilder<MaterialBuilder>[] BuildMesh()
     {
+        var indices = BuildIndices();
         var vertices = BuildVertices();
 
         // TODO: handle submeshCount = 0
@@ -74,13 +75,14 @@ public sealed class MeshConverter
         return _mdl.SubMeshes
             .Skip(Mesh.SubMeshIndex)
             .Take(Mesh.SubMeshCount)
-            .Select(submesh => BuildSubMesh(submesh, vertices))
+            .Select(submesh => BuildSubMesh(submesh, indices, vertices))
             .ToArray();
     }
 
-    private IMeshBuilder<MaterialBuilder> BuildSubMesh(MdlStructs.SubmeshStruct submesh, IReadOnlyList<IVertexBuilder> vertices)
+    private IMeshBuilder<MaterialBuilder> BuildSubMesh(MdlStructs.SubmeshStruct submesh, IReadOnlyList<ushort> indices, IReadOnlyList<IVertexBuilder> vertices)
     {
-        var indices = BuildIndices(submesh);
+        // Index indices are specified relative to the LOD's 0, but we're reading chunks for each mesh.
+        var startIndex = (int)(submesh.IndexOffset - Mesh.StartIndex);
 
         var meshBuilderType = typeof(MeshBuilder<,,,>).MakeGenericType(
             typeof(MaterialBuilder),
@@ -102,19 +104,19 @@ public sealed class MeshConverter
         // TODO: split by submeshes
         for (var indexOffset = 0; indexOffset < submesh.IndexCount; indexOffset += 3)
             primitiveBuilder.AddTriangle(
-                vertices[indices[indexOffset + 0]],
-                vertices[indices[indexOffset + 1]],
-                vertices[indices[indexOffset + 2]]
+                vertices[indices[indexOffset + startIndex + 0]],
+                vertices[indices[indexOffset + startIndex + 1]],
+                vertices[indices[indexOffset + startIndex + 2]]
             );
 
         return meshBuilder;
     }
 
-    private IReadOnlyList<ushort> BuildIndices(MdlStructs.SubmeshStruct submesh)
+    private IReadOnlyList<ushort> BuildIndices()
     {
         var reader = new BinaryReader(new MemoryStream(_mdl.RemainingData));
-        reader.Seek(_mdl.IndexOffset[_lod] + submesh.IndexOffset * sizeof(ushort));
-        return reader.ReadStructuresAsArray<ushort>((int)submesh.IndexCount);
+        reader.Seek(_mdl.IndexOffset[_lod] + Mesh.StartIndex * sizeof(ushort));
+        return reader.ReadStructuresAsArray<ushort>((int)Mesh.IndexCount);
     }
 
     private IReadOnlyList<IVertexBuilder> BuildVertices()
@@ -244,7 +246,7 @@ public sealed class MeshConverter
     // Some tangent W values that should be -1 are stored as 0.
     private Vector4 FixTangentVector(Vector4 tangent)
         => tangent with { W = tangent.W == 1 ? 1 : -1 };
-    
+
     private Vector3 ToVector3(object data)
         => data switch
         {
