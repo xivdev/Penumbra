@@ -51,6 +51,7 @@ public class MeshExporter
     private readonly Dictionary<ushort, int>? _boneIndexMap;
 
     private readonly Type _geometryType;
+    private readonly Type _materialType;
     private readonly Type _skinningType;
 
     private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, Dictionary<string, int>? boneNameMap)
@@ -67,6 +68,7 @@ public class MeshExporter
             .ToImmutableHashSet();
 
         _geometryType = GetGeometryType(usages);
+        _materialType = GetMaterialType(usages);
         _skinningType = GetSkinningType(usages);
     }
 
@@ -112,7 +114,7 @@ public class MeshExporter
         var meshBuilderType = typeof(MeshBuilder<,,,>).MakeGenericType(
             typeof(MaterialBuilder),
             _geometryType,
-            typeof(VertexEmpty),
+            _materialType,
             _skinningType
         );
         var meshBuilder = (IMeshBuilder<MaterialBuilder>)Activator.CreateInstance(meshBuilderType, $"mesh{_meshIndex}")!;
@@ -189,7 +191,7 @@ public class MeshExporter
     private IReadOnlyList<IVertexBuilder> BuildVertices()
     {
         var vertexBuilderType = typeof(VertexBuilder<,,>)
-            .MakeGenericType(_geometryType, typeof(VertexEmpty), _skinningType);
+            .MakeGenericType(_geometryType, _materialType, _skinningType);
 
         // NOTE: This assumes that buffer streams are tightly packed, which has proven safe across tested files. If this assumption is broken, seeks will need to be moved into the vertex element loop.
         var streams = new BinaryReader[MaximumMeshBufferStreams];
@@ -215,9 +217,10 @@ public class MeshExporter
                 attributes[usage] = ReadVertexAttribute(streams[element.Stream], element);
 
             var vertexGeometry = BuildVertexGeometry(attributes);
+            var vertexMaterial = BuildVertexMaterial(attributes);
             var vertexSkinning = BuildVertexSkinning(attributes);
 
-            var vertexBuilder = (IVertexBuilder)Activator.CreateInstance(vertexBuilderType, vertexGeometry, new VertexEmpty(), vertexSkinning)!;
+            var vertexBuilder = (IVertexBuilder)Activator.CreateInstance(vertexBuilderType, vertexGeometry, vertexMaterial, vertexSkinning)!;
             vertices.Add(vertexBuilder);
         }
 
@@ -276,6 +279,43 @@ public class MeshExporter
         throw new Exception($"Unknown geometry type {_geometryType}.");
     }
 
+    private Type GetMaterialType(IReadOnlySet<MdlFile.VertexUsage> usages)
+    {
+        // TODO: IIUC, xiv's uv2 is usually represented as the second two components of a vec4 uv attribute - add support.
+        var materialUsages = (
+            usages.Contains(MdlFile.VertexUsage.UV),
+            usages.Contains(MdlFile.VertexUsage.Color)
+        );
+
+        return materialUsages switch
+        {
+            (true, true) => typeof(VertexColor1Texture1),
+            (true, false) => typeof(VertexTexture1),
+            (false, true) => typeof(VertexColor1),
+            (false, false) => typeof(VertexEmpty),
+        };
+    }
+
+    private IVertexMaterial BuildVertexMaterial(IReadOnlyDictionary<MdlFile.VertexUsage, object> attributes)
+    {
+        if (_materialType == typeof(VertexEmpty))
+            return new VertexEmpty();
+
+        if (_materialType == typeof(VertexColor1))
+            return new VertexColor1(ToVector4(attributes[MdlFile.VertexUsage.Color]));
+
+        if (_materialType == typeof(VertexTexture1))
+            return new VertexTexture1(ToVector2(attributes[MdlFile.VertexUsage.UV]));
+
+        if (_materialType == typeof(VertexColor1Texture1))
+            return new VertexColor1Texture1(
+                ToVector4(attributes[MdlFile.VertexUsage.Color]),
+                ToVector2(attributes[MdlFile.VertexUsage.UV])
+            );
+
+        throw new Exception($"Unknown material type {_skinningType}");
+    }
+
     private Type GetSkinningType(IReadOnlySet<MdlFile.VertexUsage> usages)
     {
         // TODO: possibly need to check only index - weight might be missing?
@@ -313,6 +353,15 @@ public class MeshExporter
     // Some tangent W values that should be -1 are stored as 0.
     private Vector4 FixTangentVector(Vector4 tangent)
         => tangent with { W = tangent.W == 1 ? 1 : -1 };
+
+    private Vector2 ToVector2(object data)
+        => data switch
+        {
+            Vector2 v2 => v2,
+            Vector3 v3 => new Vector2(v3.X, v3.Y),
+            Vector4 v4 => new Vector2(v4.X, v4.Y),
+            _ => throw new ArgumentOutOfRangeException($"Invalid Vector2 input {data}")
+        };
 
     private Vector3 ToVector3(object data)
         => data switch
