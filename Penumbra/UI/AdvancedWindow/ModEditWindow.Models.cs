@@ -34,16 +34,7 @@ public partial class ModEditWindow
             );
         }
 
-        if (tab.GamePaths != null)
-            if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", tab.PendingIo))
-                tab.Export("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf", tab.GamePaths.First());
-        ImGui.TextUnformatted("blippity blap");
-        if (tab.GamePaths != null)
-            foreach (var gamePath in tab.GamePaths)
-                ImGui.TextUnformatted(gamePath.ToString());
-
-        if (tab.IoException != null)
-            ImGui.TextUnformatted(tab.IoException);
+        DrawExport(tab, disabled);
 
         var ret = false;
 
@@ -56,6 +47,68 @@ public partial class ModEditWindow
         ret |= DrawOtherModelDetails(file, disabled);
 
         return !disabled && ret;
+    }
+
+    private void DrawExport(MdlTab tab, bool disabled)
+    {
+        // IO on a disabled panel doesn't really make sense.
+        if (disabled)
+            return;
+
+        if (!ImGui.CollapsingHeader("Export"))
+            return;
+
+        if (tab.GamePaths == null)
+        {
+            if (tab.IoException == null)
+                ImGui.TextUnformatted("Resolving model game paths.");
+            else
+                ImGuiUtil.TextWrapped(tab.IoException);
+
+            return;
+        }
+
+        DrawGamePathCombo(tab);
+
+        if (ImGuiUtil.DrawDisabledButton("Export to glTF", Vector2.Zero, "Exports this mdl file to glTF, for use in 3D authoring applications.", tab.PendingIo))
+        {
+            var gamePath = tab.GamePaths[tab.GamePathIndex];
+
+            _fileDialog.OpenSavePicker(
+                "Save model as glTF.",
+                ".gltf",
+                Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
+                ".gltf",
+                (valid, path) => {
+                    if (!valid)
+                        return;
+
+                    tab.Export(path, gamePath);
+                },
+                _mod!.ModPath.FullName,
+                false
+            );
+        }
+
+        if (tab.IoException != null)
+            ImGuiUtil.TextWrapped(tab.IoException);
+
+        return;
+    }
+
+    private void DrawGamePathCombo(MdlTab tab)
+    {
+        using var combo = ImRaii.Combo("Game Path", tab.GamePaths![tab.GamePathIndex].ToString());
+        if (!combo)
+            return;
+
+        foreach (var (path, index) in tab.GamePaths.WithIndex())
+        {
+            if (!ImGui.Selectable(path.ToString(), index == tab.GamePathIndex))
+                continue;
+
+            tab.GamePathIndex = index;
+        }
     }
 
     private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)

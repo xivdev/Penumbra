@@ -13,8 +13,10 @@ public partial class ModEditWindow
         private ModEditWindow _edit;
 
         public readonly MdlFile Mdl;
-        public List<Utf8GamePath>? GamePaths { get; private set ;}
         private readonly List<string>[] _attributes;
+
+        public List<Utf8GamePath>? GamePaths { get; private set ;}
+        public int GamePathIndex;
         
         public bool PendingIo { get; private set; } = false;
         public string? IoException { get; private set; } = null;

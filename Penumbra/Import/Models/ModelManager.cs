@@ -93,7 +93,6 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             if (_sklb == null)
                 return null;
 
-            // TODO: work out how i handle this havok deal. running it outside the framework causes an immediate ctd.
             var xmlTask = _manager._framework.RunOnFrameworkThread(() => HavokConverter.HkxToXml(_sklb.Skeleton));
             xmlTask.Wait(cancel);
             var xml = xmlTask.Result;
