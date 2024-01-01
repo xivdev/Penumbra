@@ -17,6 +17,7 @@ public partial class ModEditWindow
         private readonly List<string>[] _attributes;
         
         public bool PendingIo { get; private set; } = false;
+        public string? IoException { get; private set; } = null;
 
         // TODO: this can probably be genericised across all of chara
         [GeneratedRegex(@"chara/equipment/e(?'Set'\d{4})/model/c(?'Race'\d{4})e\k'Set'_.+\.mdl", RegexOptions.Compiled)]
@@ -74,7 +75,10 @@ public partial class ModEditWindow
 
             PendingIo = true;
             _edit._models.ExportToGltf(Mdl, sklb, outputPath)
-                .ContinueWith(_ => PendingIo = false);
+                .ContinueWith(task => {
+                    IoException = task.Exception?.ToString();
+                    PendingIo = false;
+                });
         }
 
         /// <summary> Try to find the .sklb path for a .mdl file. </summary>

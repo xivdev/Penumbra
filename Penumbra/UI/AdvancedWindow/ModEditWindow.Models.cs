@@ -42,6 +42,9 @@ public partial class ModEditWindow
         foreach (var gamePath in tab.GamePaths)
             ImGui.TextUnformatted(gamePath.ToString());
 
+        if (tab.IoException != null)
+            ImGui.TextUnformatted(tab.IoException);
+
         var ret = false;
 
         ret |= DrawModelMaterialDetails(tab, disabled);
