@@ -30,6 +30,7 @@ public class ModelExporter
         }
     }
 
+    /// <summary> Export a model in preparation for usage in a glTF file. If provided, skeleton will be used to skin the resulting meshes where appropriate. </summary>
     public static Model Export(MdlFile mdl, XivSkeleton? xivSkeleton)
     {
         var gltfSkeleton = xivSkeleton != null ? ConvertSkeleton(xivSkeleton) : null;
@@ -37,6 +38,7 @@ public class ModelExporter
         return new Model(meshes, gltfSkeleton);
     }
 
+    /// <summary> Convert a .mdl to a mesh (group) per LoD. </summary>
     private static List<MeshExporter.Mesh> ConvertMeshes(MdlFile mdl, GltfSkeleton? skeleton)
     {
         var meshes = new List<MeshExporter.Mesh>();
@@ -56,6 +58,7 @@ public class ModelExporter
         return meshes;
     }
 
+    /// <summary> Convert XIV skeleton data into a glTF-compatible node tree, with mappings. </summary>
     private static GltfSkeleton? ConvertSkeleton(XivSkeleton skeleton)
     {
         NodeBuilder? root = null;

@@ -2,6 +2,7 @@ using SharpGLTF.Scenes;
 
 namespace Penumbra.Import.Models.Export;
 
+/// <summary> Representation of a skeleton within XIV. </summary>
 public class XivSkeleton
 {
     public Bone[] Bones;
@@ -25,9 +26,15 @@ public class XivSkeleton
     }
 }
 
+/// <summary> Representation of a glTF-compatible skeleton. </summary>
 public struct GltfSkeleton
 {
+    /// <summary> Root node of the skeleton. </summary>
     public NodeBuilder Root;
+
+    /// <summary> Flattened list of skeleton nodes. </summary>
     public NodeBuilder[] Joints;
+
+    /// <summary> Mapping of bone names to their index within the joints array. </summary>
     public Dictionary<string, int> Names;
 }

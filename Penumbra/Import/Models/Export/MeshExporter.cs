@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Lumina.Data.Parsing;
 using Lumina.Extensions;
+using OtterGui;
 using Penumbra.GameData.Files;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
@@ -25,7 +26,6 @@ public class MeshExporter
 
         public void AddToScene(SceneBuilder scene)
         {
-            // TODO: throw if mesh has skinned vertices but no joints are available?
             foreach (var mesh in _meshes)
                 if (_joints == null)
                     scene.AddRigidMesh(mesh, Matrix4x4.Identity);
@@ -73,8 +73,11 @@ public class MeshExporter
         // If there's skinning usages but no bone mapping, there's probably something wrong with the data.
         if (_skinningType != typeof(VertexEmpty) && _boneIndexMap == null)
             Penumbra.Log.Warning($"Mesh {meshIndex} has skinned vertex usages but no bone information was provided.");
+
+        Penumbra.Log.Debug($"Mesh {meshIndex} using vertex types geometry: {_geometryType.Name}, material: {_materialType.Name}, skinning: {_skinningType.Name}");
     }
 
+    /// <summary> Build a mapping between indices in this mesh's bone table (if any), and the glTF joint indices provdied. </summary>
     private Dictionary<ushort, int>? BuildBoneIndexMap(Dictionary<string, int> boneNameMap)
     {
         // A BoneTableIndex of 255 means that this mesh is not skinned.
@@ -97,6 +100,7 @@ public class MeshExporter
         return indexMap;
     }
 
+    /// <summary> Build glTF meshes for this XIV mesh. </summary>
     private IMeshBuilder<MaterialBuilder>[] BuildMeshes()
     {
         var indices = BuildIndices();
@@ -105,16 +109,19 @@ public class MeshExporter
         // NOTE: Index indices are specified relative to the LOD's 0, but we're reading chunks for each mesh, so we're specifying the index base relative to the mesh's base.
 
         if (XivMesh.SubMeshCount == 0)
-            return [BuildMesh(indices, vertices, 0, (int)XivMesh.IndexCount)];
+            return [BuildMesh($"mesh {_meshIndex}", indices, vertices, 0, (int)XivMesh.IndexCount)];
 
         return _mdl.SubMeshes
             .Skip(XivMesh.SubMeshIndex)
             .Take(XivMesh.SubMeshCount)
-            .Select(submesh => BuildMesh(indices, vertices, (int)(submesh.IndexOffset - XivMesh.StartIndex), (int)submesh.IndexCount))
+            .WithIndex()
+            .Select(submesh => BuildMesh($"mesh {_meshIndex}.{submesh.Index}", indices, vertices, (int)(submesh.Value.IndexOffset - XivMesh.StartIndex), (int)submesh.Value.IndexCount))
             .ToArray();
     }
 
+    /// <summary> Build a mesh from the provided indices and vertices. A subset of the full indices may be built by providing an index base and count. </summary>
     private IMeshBuilder<MaterialBuilder> BuildMesh(
+        string name,
         IReadOnlyList<ushort> indices,
         IReadOnlyList<IVertexBuilder> vertices,
         int indexBase,
@@ -127,7 +134,7 @@ public class MeshExporter
             _materialType,
             _skinningType
         );
-        var meshBuilder = (IMeshBuilder<MaterialBuilder>)Activator.CreateInstance(meshBuilderType, $"mesh{_meshIndex}")!;
+        var meshBuilder = (IMeshBuilder<MaterialBuilder>)Activator.CreateInstance(meshBuilderType, name)!;
 
         // TODO: share materials &c
         var materialBuilder = new MaterialBuilder()
@@ -191,6 +198,7 @@ public class MeshExporter
         return meshBuilder;
     }
 
+    /// <summary> Read in the indices for this mesh. </summary>
     private IReadOnlyList<ushort> BuildIndices()
     {
         var reader = new BinaryReader(new MemoryStream(_mdl.RemainingData));
@@ -198,6 +206,7 @@ public class MeshExporter
         return reader.ReadStructuresAsArray<ushort>((int)XivMesh.IndexCount);
     }
 
+    /// <summary> Build glTF-compatible vertex data for all vertices in this mesh. </summary>
     private IReadOnlyList<IVertexBuilder> BuildVertices()
     {
         var vertexBuilderType = typeof(VertexBuilder<,,>)
@@ -224,7 +233,7 @@ public class MeshExporter
             attributes.Clear();
 
             foreach (var (usage, element) in sortedElements)
-                attributes[usage] = ReadVertexAttribute(streams[element.Stream], element);
+                attributes[usage] = ReadVertexAttribute((MdlFile.VertexType)element.Type, streams[element.Stream]);
 
             var vertexGeometry = BuildVertexGeometry(attributes);
             var vertexMaterial = BuildVertexMaterial(attributes);
@@ -237,9 +246,10 @@ public class MeshExporter
         return vertices;
     }
 
-    private object ReadVertexAttribute(BinaryReader reader, MdlStructs.VertexElement element)
+    /// <summary> Read a vertex attribute of the specified type from a vertex buffer stream. </summary>
+    private object ReadVertexAttribute(MdlFile.VertexType type, BinaryReader reader)
     {
-        return (MdlFile.VertexType)element.Type switch
+        return type switch
         {
             MdlFile.VertexType.Single3 => new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.Single4 => new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
@@ -252,6 +262,7 @@ public class MeshExporter
         };
     }
 
+    /// <summary> Get the vertex geometry type for this mesh's vertex usages. </summary>
     private Type GetGeometryType(IReadOnlySet<MdlFile.VertexUsage> usages)
     {
         if (!usages.Contains(MdlFile.VertexUsage.Position))
@@ -266,6 +277,7 @@ public class MeshExporter
         return typeof(VertexPositionNormalTangent);
     }
 
+    /// <summary> Build a geometry vertex from a vertex's attributes. </summary>
     private IVertexGeometry BuildVertexGeometry(IReadOnlyDictionary<MdlFile.VertexUsage, object> attributes)
     {
         if (_geometryType == typeof(VertexPosition))
@@ -289,6 +301,7 @@ public class MeshExporter
         throw new Exception($"Unknown geometry type {_geometryType}.");
     }
 
+    /// <summary> Get the vertex material type for this mesh's vertex usages. </summary>
     private Type GetMaterialType(IReadOnlySet<MdlFile.VertexUsage> usages)
     {
         // TODO: IIUC, xiv's uv2 is usually represented as the second two components of a vec4 uv attribute - add support.
@@ -306,6 +319,7 @@ public class MeshExporter
         };
     }
 
+    /// <summary> Build a material vertex from a vertex's attributes. </summary>
     private IVertexMaterial BuildVertexMaterial(IReadOnlyDictionary<MdlFile.VertexUsage, object> attributes)
     {
         if (_materialType == typeof(VertexEmpty))
@@ -326,15 +340,16 @@ public class MeshExporter
         throw new Exception($"Unknown material type {_skinningType}");
     }
 
+    /// <summary> Get the vertex skinning type for this mesh's vertex usages. </summary>
     private Type GetSkinningType(IReadOnlySet<MdlFile.VertexUsage> usages)
     {
-        // TODO: possibly need to check only index - weight might be missing?
         if (usages.Contains(MdlFile.VertexUsage.BlendWeights) && usages.Contains(MdlFile.VertexUsage.BlendIndices))
             return typeof(VertexJoints4);
 
         return typeof(VertexEmpty);
     }
 
+    /// <summary> Build a skinning vertex from a vertex's attributes. </summary>
     private IVertexSkinning BuildVertexSkinning(IReadOnlyDictionary<MdlFile.VertexUsage, object> attributes)
     {
         if (_skinningType == typeof(VertexEmpty))
@@ -342,17 +357,21 @@ public class MeshExporter
 
         if (_skinningType == typeof(VertexJoints4))
         {
-            // todo: this shouldn't happen... right? better approach?
             if (_boneIndexMap == null)
-                throw new Exception("cannot build skinned vertex without index mapping");
+                throw new Exception("Tried to build skinned vertex but no bone mappings are available.");
 
             var indices = ToByteArray(attributes[MdlFile.VertexUsage.BlendIndices]);
             var weights = ToVector4(attributes[MdlFile.VertexUsage.BlendWeights]);
 
-            // todo: if this throws on the bone index map, the mod is broken, as it contains weights for bones that do not exist.
-            //       i've not seen any of these that even tt can understand
             var bindings = Enumerable.Range(0, 4)
-                .Select(index => (_boneIndexMap[indices[index]], weights[index]))
+                .Select(bindingIndex => {
+                    // NOTE: I've not seen any files that throw this error that aren't completely broken.
+                    var xivBoneIndex = indices[bindingIndex];
+                    if (!_boneIndexMap.TryGetValue(xivBoneIndex, out var jointIndex))
+                        throw new Exception($"Vertex contains weight for unknown bone index {xivBoneIndex}.");
+
+                    return (jointIndex, weights[bindingIndex]);
+                })
                 .ToArray();
             return new VertexJoints4(bindings);
         }
@@ -360,10 +379,12 @@ public class MeshExporter
         throw new Exception($"Unknown skinning type {_skinningType}");
     }
 
-    // Some tangent W values that should be -1 are stored as 0.
+    /// <summary> Clamps any tangent W value other than 1 to -1. </summary>
+    /// <remarks> Some XIV models seemingly store -1 as 0, this patches over that. </remarks>
     private Vector4 FixTangentVector(Vector4 tangent)
         => tangent with { W = tangent.W == 1 ? 1 : -1 };
 
+    /// <summary> Convert a vertex attribute value to a Vector2. Supported inputs are Vector2, Vector3, and Vector4. </summary>
     private Vector2 ToVector2(object data)
         => data switch
         {
@@ -373,6 +394,7 @@ public class MeshExporter
             _ => throw new ArgumentOutOfRangeException($"Invalid Vector2 input {data}")
         };
 
+    /// <summary> Convert a vertex attribute value to a Vector3. Supported inputs are Vector2, Vector3, and Vector4. </summary>
     private Vector3 ToVector3(object data)
         => data switch
         {
@@ -382,6 +404,7 @@ public class MeshExporter
             _ => throw new ArgumentOutOfRangeException($"Invalid Vector3 input {data}")
         };
 
+    /// <summary> Convert a vertex attribute value to a Vector4. Supported inputs are Vector2, Vector3, and Vector4. </summary>
     private Vector4 ToVector4(object data)
         => data switch
         {
@@ -391,6 +414,7 @@ public class MeshExporter
             _ => throw new ArgumentOutOfRangeException($"Invalid Vector3 input {data}")
         };
 
+    /// <summary> Convert a vertex attribute value to a byte array. </summary>
     private byte[] ToByteArray(object data)
         => data switch
         {

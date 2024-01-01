@@ -88,6 +88,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             gltfModel.SaveGLTF(_outputPath);
         }
 
+        /// <summary> Attempt to read out the pertinent information from a .sklb. </summary>
         private XivSkeleton? BuildSkeleton(CancellationToken cancel)
         {
             if (_sklb == null)
