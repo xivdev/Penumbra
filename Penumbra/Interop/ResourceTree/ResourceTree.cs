@@ -6,9 +6,9 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.String.Classes;
 using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
+using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
 
 namespace Penumbra.Interop.ResourceTree;
 

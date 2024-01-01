@@ -1,6 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Services;
 
 namespace Penumbra.Interop.PathResolving;
@@ -45,6 +45,9 @@ public class CutsceneService : IDisposable
 
     /// <summary> Return the currently set index of a parent or -1 if none is set or the index is invalid. </summary>
     public int GetParentIndex(int idx)
+        => GetParentIndex((ushort)idx);
+
+    public short GetParentIndex(ushort idx)
     {
         if (idx is >= CutsceneStartIdx and < CutsceneEndIdx)
             return _copiedCharacters[idx - CutsceneStartIdx];

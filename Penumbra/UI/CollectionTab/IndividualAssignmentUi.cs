@@ -5,6 +5,9 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Gui;
+using Penumbra.GameData.Structs;
 using Penumbra.Services;
 
 namespace Penumbra.UI.CollectionTab;
@@ -12,7 +15,7 @@ namespace Penumbra.UI.CollectionTab;
 public class IndividualAssignmentUi : IDisposable
 {
     private readonly CommunicatorService _communicator;
-    private readonly ActorService        _actorService;
+    private readonly ActorManager        _actors;
     private readonly CollectionManager   _collectionManager;
 
     private WorldCombo _worldCombo     = null!;
@@ -24,16 +27,13 @@ public class IndividualAssignmentUi : IDisposable
 
     private bool _ready;
 
-    public IndividualAssignmentUi(CommunicatorService communicator, ActorService actors, CollectionManager collectionManager)
+    public IndividualAssignmentUi(CommunicatorService communicator, ActorManager actors, CollectionManager collectionManager)
     {
         _communicator      = communicator;
-        _actorService      = actors;
+        _actors            = actors;
         _collectionManager = collectionManager;
         _communicator.CollectionChange.Subscribe(UpdateIdentifiers, CollectionChange.Priority.IndividualAssignmentUi);
-        if (_actorService.Valid)
-            SetupCombos();
-        else
-            _actorService.FinishedCreation += SetupCombos;
+        _actors.Awaiter.ContinueWith(_ => SetupCombos());
     }
 
     public string PlayerTooltip   { get; private set; } = NewPlayerTooltipEmpty;
@@ -91,10 +91,10 @@ public class IndividualAssignmentUi : IDisposable
     // Input Selections.
     private string            _newCharacterName    = string.Empty;
     private ObjectKind        _newKind             = ObjectKind.BattleNpc;
-    private ActorIdentifier[] _playerIdentifiers   = Array.Empty<ActorIdentifier>();
-    private ActorIdentifier[] _retainerIdentifiers = Array.Empty<ActorIdentifier>();
-    private ActorIdentifier[] _npcIdentifiers      = Array.Empty<ActorIdentifier>();
-    private ActorIdentifier[] _ownedIdentifiers    = Array.Empty<ActorIdentifier>();
+    private ActorIdentifier[] _playerIdentifiers   = [];
+    private ActorIdentifier[] _retainerIdentifiers = [];
+    private ActorIdentifier[] _npcIdentifiers      = [];
+    private ActorIdentifier[] _ownedIdentifiers    = [];
 
     private const string NewPlayerTooltipEmpty     = "Please enter a valid player name and choose an available world or 'Any World'.";
     private const string NewRetainerTooltipEmpty   = "Please enter a valid retainer name.";
@@ -126,14 +126,13 @@ public class IndividualAssignmentUi : IDisposable
     /// <summary> Create combos when ready. </summary>
     private void SetupCombos()
     {
-        _worldCombo                    =  new WorldCombo(_actorService.AwaitedService.Data.Worlds, Penumbra.Log);
-        _mountCombo                    =  new NpcCombo("##mountCombo",     _actorService.AwaitedService.Data.Mounts,     Penumbra.Log);
-        _companionCombo                =  new NpcCombo("##companionCombo", _actorService.AwaitedService.Data.Companions, Penumbra.Log);
-        _ornamentCombo                 =  new NpcCombo("##ornamentCombo",  _actorService.AwaitedService.Data.Ornaments,  Penumbra.Log);
-        _bnpcCombo                     =  new NpcCombo("##bnpcCombo",      _actorService.AwaitedService.Data.BNpcs,      Penumbra.Log);
-        _enpcCombo                     =  new NpcCombo("##enpcCombo",      _actorService.AwaitedService.Data.ENpcs,      Penumbra.Log);
-        _ready                         =  true;
-        _actorService.FinishedCreation -= SetupCombos;
+        _worldCombo     = new WorldCombo(_actors.Data.Worlds, Penumbra.Log);
+        _mountCombo     = new NpcCombo("##mountCombo",     _actors.Data.Mounts,     Penumbra.Log);
+        _companionCombo = new NpcCombo("##companionCombo", _actors.Data.Companions, Penumbra.Log);
+        _ornamentCombo  = new NpcCombo("##ornamentCombo",  _actors.Data.Ornaments,  Penumbra.Log);
+        _bnpcCombo      = new NpcCombo("##bnpcCombo",      _actors.Data.BNpcs,      Penumbra.Log);
+        _enpcCombo      = new NpcCombo("##enpcCombo",      _actors.Data.ENpcs,      Penumbra.Log);
+        _ready          = true;
     }
 
     private void UpdateIdentifiers(CollectionType type, ModCollection? _1, ModCollection? _2, string _3)
@@ -146,22 +145,22 @@ public class IndividualAssignmentUi : IDisposable
     {
         var combo = GetNpcCombo(_newKind);
         PlayerTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Player, _newCharacterName,
-                _worldCombo.CurrentSelection.Key, ObjectKind.None,
-                Array.Empty<uint>(), out _playerIdentifiers) switch
+                _worldCombo.CurrentSelection.Key, ObjectKind.None, [], out _playerIdentifiers) switch
             {
                 _ when _newCharacterName.Length == 0       => NewPlayerTooltipEmpty,
                 IndividualCollections.AddResult.Invalid    => NewPlayerTooltipInvalid,
                 IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                 _                                          => string.Empty,
             };
-        RetainerTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Retainer, _newCharacterName, 0, ObjectKind.None,
-                Array.Empty<uint>(), out _retainerIdentifiers) switch
-            {
-                _ when _newCharacterName.Length == 0       => NewRetainerTooltipEmpty,
-                IndividualCollections.AddResult.Invalid    => NewRetainerTooltipInvalid,
-                IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
-                _                                          => string.Empty,
-            };
+        RetainerTooltip =
+            _collectionManager.Active.Individuals.CanAdd(IdentifierType.Retainer, _newCharacterName, 0, ObjectKind.None, [],
+                    out _retainerIdentifiers) switch
+                {
+                    _ when _newCharacterName.Length == 0       => NewRetainerTooltipEmpty,
+                    IndividualCollections.AddResult.Invalid    => NewRetainerTooltipInvalid,
+                    IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
+                    _                                          => string.Empty,
+                };
         if (combo.CurrentSelection.Ids != null)
         {
             NpcTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Npc, string.Empty, ushort.MaxValue, _newKind,
@@ -184,8 +183,8 @@ public class IndividualAssignmentUi : IDisposable
         {
             NpcTooltip        = NewNpcTooltipEmpty;
             OwnedTooltip      = NewNpcTooltipEmpty;
-            _npcIdentifiers   = Array.Empty<ActorIdentifier>();
-            _ownedIdentifiers = Array.Empty<ActorIdentifier>();
+            _npcIdentifiers   = [];
+            _ownedIdentifiers = [];
         }
     }
 }

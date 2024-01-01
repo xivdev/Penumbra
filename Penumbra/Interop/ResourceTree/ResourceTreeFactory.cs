@@ -3,24 +3,25 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
 public class ResourceTreeFactory
 {
-    private readonly IDataManager       _gameData;
-    private readonly IObjectTable       _objects;
-    private readonly CollectionResolver _collectionResolver;
-    private readonly IdentifierService  _identifier;
-    private readonly Configuration      _config;
-    private readonly ActorService       _actors;
-    private readonly PathState          _pathState;
+    private readonly IDataManager         _gameData;
+    private readonly IObjectTable         _objects;
+    private readonly CollectionResolver   _collectionResolver;
+    private readonly ObjectIdentification _identifier;
+    private readonly Configuration        _config;
+    private readonly ActorManager         _actors;
+    private readonly PathState            _pathState;
 
-    public ResourceTreeFactory(IDataManager gameData, IObjectTable objects, CollectionResolver resolver, IdentifierService identifier,
-        Configuration config, ActorService actors, PathState pathState)
+    public ResourceTreeFactory(IDataManager gameData, IObjectTable objects, CollectionResolver resolver, ObjectIdentification identifier,
+        Configuration config, ActorManager actors, PathState pathState)
     {
         _gameData           = gameData;
         _objects            = objects;
@@ -88,12 +89,13 @@ public class ResourceTreeFactory
         var networked = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
         var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
             networked, collectionResolveData.ModCollection.Name);
-        var globalContext = new GlobalResolveContext(_identifier.AwaitedService, collectionResolveData.ModCollection,
+        var globalContext = new GlobalResolveContext(_identifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
         using (var _ = _pathState.EnterInternalResolve())
         {
             tree.LoadResources(globalContext);
         }
+
         tree.FlatNodes.UnionWith(globalContext.Nodes.Values);
         tree.ProcessPostfix((node, _) => tree.FlatNodes.Add(node));
 
@@ -161,9 +163,9 @@ public class ResourceTreeFactory
             var gamePath = node.PossibleGamePaths[0];
             node.SetUiData(node.Type switch
             {
-                ResourceType.Imc => node.ResolveContext!.GuessModelUIData(gamePath).PrependName("IMC: "),
-                ResourceType.Mdl => node.ResolveContext!.GuessModelUIData(gamePath),
-                _                => node.ResolveContext!.GuessUIDataFromPath(gamePath),
+                ResourceType.Imc => node.ResolveContext!.GuessModelUiData(gamePath).PrependName("IMC: "),
+                ResourceType.Mdl => node.ResolveContext!.GuessModelUiData(gamePath),
+                _                => node.ResolveContext!.GuessUiDataFromPath(gamePath),
             });
         }
 
@@ -215,7 +217,7 @@ public class ResourceTreeFactory
     private unsafe (string Name, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character,
         TreeBuildCache cache)
     {
-        var identifier = _actors.AwaitedService.FromObject((GameObject*)character.Address, out var owner, true, false, false);
+        var identifier = _actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
         switch (identifier.Type)
         {
             case IdentifierType.Player: return (identifier.PlayerName.ToString(), true);

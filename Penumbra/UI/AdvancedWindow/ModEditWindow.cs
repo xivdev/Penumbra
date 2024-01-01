@@ -37,7 +37,6 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly ModEditor           _editor;
     private readonly Configuration       _config;
     private readonly ItemSwapTab         _itemSwapTab;
-    private readonly DalamudServices     _dalamud;
     private readonly MetaFileManager     _metaFileManager;
     private readonly ActiveCollections   _activeCollections;
     private readonly StainService        _stainService;
@@ -45,6 +44,9 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly CommunicatorService _communicator;
     private readonly IDragDropManager    _dragDropManager;
     private readonly GameEventManager    _gameEvents;
+    private readonly IDataManager        _gameData;
+    private readonly IFramework          _framework;
+    private readonly IObjectTable        _objects;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -563,19 +565,19 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
+        StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager, GameEventManager gameEvents,
-        ChangedItemDrawer changedItemDrawer)
+        ChangedItemDrawer changedItemDrawer, IObjectTable objects, IFramework framework)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
         _itemSwapTab       = itemSwapTab;
+        _gameData          = gameData;
         _config            = config;
         _editor            = editor;
         _metaFileManager   = metaFileManager;
         _stainService      = stainService;
         _activeCollections = activeCollections;
-        _dalamud           = dalamud;
         _modMergeTab       = modMergeTab;
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
@@ -583,6 +585,8 @@ public partial class ModEditWindow : Window, IDisposable
         _models            = models;
         _fileDialog        = fileDialog;
         _gameEvents        = gameEvents;
+        _objects           = objects;
+        _framework         = framework;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
@@ -594,7 +598,7 @@ public partial class ModEditWindow : Window, IDisposable
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;
-        _quickImportViewer   =
+        _quickImportViewer =
             new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModEditWindow);
     }

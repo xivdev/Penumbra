@@ -1,8 +1,5 @@
-using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Utility;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
@@ -11,6 +8,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -27,16 +25,14 @@ public class ItemSwapTab : IDisposable, ITab
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
-    private readonly ItemService         _itemService;
     private readonly CollectionManager   _collectionManager;
     private readonly ModManager          _modManager;
     private readonly MetaFileManager     _metaFileManager;
 
-    public ItemSwapTab(CommunicatorService communicator, ItemService itemService, CollectionManager collectionManager,
-        ModManager modManager, IdentifierService identifier, MetaFileManager metaFileManager, Configuration config)
+    public ItemSwapTab(CommunicatorService communicator, ItemData itemService, CollectionManager collectionManager,
+        ModManager modManager, ObjectIdentification identifier, MetaFileManager metaFileManager, Configuration config)
     {
         _communicator      = communicator;
-        _itemService       = itemService;
         _collectionManager = collectionManager;
         _modManager        = modManager;
         _metaFileManager   = metaFileManager;
@@ -46,15 +42,15 @@ public class ItemSwapTab : IDisposable, ITab
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
         {
             // @formatter:off
-            [SwapType.Hat]      = (new ItemSelector(_itemService, FullEquipType.Head),   new ItemSelector(_itemService, FullEquipType.Head),   "Take this Hat",        "and put it on this one" ),
-            [SwapType.Top]      = (new ItemSelector(_itemService, FullEquipType.Body),   new ItemSelector(_itemService, FullEquipType.Body),   "Take this Top",        "and put it on this one" ),
-            [SwapType.Gloves]   = (new ItemSelector(_itemService, FullEquipType.Hands),  new ItemSelector(_itemService, FullEquipType.Hands),  "Take these Gloves",    "and put them on these"  ),
-            [SwapType.Pants]    = (new ItemSelector(_itemService, FullEquipType.Legs),   new ItemSelector(_itemService, FullEquipType.Legs),   "Take these Pants",     "and put them on these"  ),
-            [SwapType.Shoes]    = (new ItemSelector(_itemService, FullEquipType.Feet),   new ItemSelector(_itemService, FullEquipType.Feet),   "Take these Shoes",     "and put them on these"  ),
-            [SwapType.Earrings] = (new ItemSelector(_itemService, FullEquipType.Ears),   new ItemSelector(_itemService, FullEquipType.Ears),   "Take these Earrings",  "and put them on these"  ),
-            [SwapType.Necklace] = (new ItemSelector(_itemService, FullEquipType.Neck),   new ItemSelector(_itemService, FullEquipType.Neck),   "Take this Necklace",   "and put it on this one" ),
-            [SwapType.Bracelet] = (new ItemSelector(_itemService, FullEquipType.Wrists), new ItemSelector(_itemService, FullEquipType.Wrists), "Take these Bracelets", "and put them on these"  ),
-            [SwapType.Ring]     = (new ItemSelector(_itemService, FullEquipType.Finger), new ItemSelector(_itemService, FullEquipType.Finger), "Take this Ring",       "and put it on this one" ),
+            [SwapType.Hat]      = (new ItemSelector(itemService, FullEquipType.Head),   new ItemSelector(itemService, FullEquipType.Head),   "Take this Hat",        "and put it on this one" ),
+            [SwapType.Top]      = (new ItemSelector(itemService, FullEquipType.Body),   new ItemSelector(itemService, FullEquipType.Body),   "Take this Top",        "and put it on this one" ),
+            [SwapType.Gloves]   = (new ItemSelector(itemService, FullEquipType.Hands),  new ItemSelector(itemService, FullEquipType.Hands),  "Take these Gloves",    "and put them on these"  ),
+            [SwapType.Pants]    = (new ItemSelector(itemService, FullEquipType.Legs),   new ItemSelector(itemService, FullEquipType.Legs),   "Take these Pants",     "and put them on these"  ),
+            [SwapType.Shoes]    = (new ItemSelector(itemService, FullEquipType.Feet),   new ItemSelector(itemService, FullEquipType.Feet),   "Take these Shoes",     "and put them on these"  ),
+            [SwapType.Earrings] = (new ItemSelector(itemService, FullEquipType.Ears),   new ItemSelector(itemService, FullEquipType.Ears),   "Take these Earrings",  "and put them on these"  ),
+            [SwapType.Necklace] = (new ItemSelector(itemService, FullEquipType.Neck),   new ItemSelector(itemService, FullEquipType.Neck),   "Take this Necklace",   "and put it on this one" ),
+            [SwapType.Bracelet] = (new ItemSelector(itemService, FullEquipType.Wrists), new ItemSelector(itemService, FullEquipType.Wrists), "Take these Bracelets", "and put them on these"  ),
+            [SwapType.Ring]     = (new ItemSelector(itemService, FullEquipType.Finger), new ItemSelector(itemService, FullEquipType.Finger), "Take this Ring",       "and put it on this one" ),
             // @formatter:on
         };
 
@@ -131,8 +127,8 @@ public class ItemSwapTab : IDisposable, ITab
 
     private class ItemSelector : FilterComboCache<EquipItem>
     {
-        public ItemSelector(ItemService data, FullEquipType type)
-            : base(() => data.AwaitedService[type], Penumbra.Log)
+        public ItemSelector(ItemData data, FullEquipType type)
+            : base(() => data.ByType[type], Penumbra.Log)
         { }
 
         protected override string ToString(EquipItem obj)
@@ -214,26 +210,26 @@ public class ItemSwapTab : IDisposable, ITab
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Ear, Names.CombinedRace(_currentGender, ModelRace.Viera),
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(_metaFileManager, BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace),
-                        (SetId)_sourceId,
-                        (SetId)_targetId,
+                        (PrimaryId)_sourceId,
+                        (PrimaryId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Weapon: break;

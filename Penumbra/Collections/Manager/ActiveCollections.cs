@@ -28,9 +28,9 @@ public class ActiveCollections : ISavable, IDisposable
     private readonly CommunicatorService  _communicator;
     private readonly SaveService          _saveService;
     private readonly ActiveCollectionData _data;
-    private readonly ActorService         _actors;
+    private readonly ActorManager         _actors;
 
-    public ActiveCollections(Configuration config, CollectionStorage storage, ActorService actors, CommunicatorService communicator,
+    public ActiveCollections(Configuration config, CollectionStorage storage, ActorManager actors, CommunicatorService communicator,
         SaveService saveService, ActiveCollectionData data)
     {
         _storage      = storage;
@@ -475,7 +475,7 @@ public class ActiveCollections : ISavable, IDisposable
                 {
                     case IdentifierType.Player when id.HomeWorld != ushort.MaxValue:
                     {
-                        var global = ByType(CollectionType.Individual, _actors.AwaitedService.CreatePlayer(id.PlayerName, ushort.MaxValue));
+                        var global = ByType(CollectionType.Individual, _actors.CreatePlayer(id.PlayerName, ushort.MaxValue));
                         return global?.Index == checkAssignment.Index
                             ? "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it."
                             : string.Empty;
@@ -484,12 +484,12 @@ public class ActiveCollections : ISavable, IDisposable
                         if (id.HomeWorld != ushort.MaxValue)
                         {
                             var global = ByType(CollectionType.Individual,
-                                _actors.AwaitedService.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
+                                _actors.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
                             if (global?.Index == checkAssignment.Index)
                                 return "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it.";
                         }
 
-                        var unowned = ByType(CollectionType.Individual, _actors.AwaitedService.CreateNpc(id.Kind, id.DataId));
+                        var unowned = ByType(CollectionType.Individual, _actors.CreateNpc(id.Kind, id.DataId));
                         return unowned?.Index == checkAssignment.Index
                             ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
                             : string.Empty;

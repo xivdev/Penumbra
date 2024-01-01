@@ -6,16 +6,16 @@ using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
-using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
-public class ResourceWatcher : IDisposable, ITab
+public sealed class ResourceWatcher : IDisposable, ITab
 {
     public const int        DefaultMaxEntries = 1024;
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
@@ -24,15 +24,15 @@ public class ResourceWatcher : IDisposable, ITab
     private readonly EphemeralConfig         _ephemeral;
     private readonly ResourceService         _resources;
     private readonly ResourceLoader          _loader;
-    private readonly ActorService            _actors;
-    private readonly List<Record>            _records    = new();
-    private readonly ConcurrentQueue<Record> _newRecords = new();
+    private readonly ActorManager            _actors;
+    private readonly List<Record>            _records    = [];
+    private readonly ConcurrentQueue<Record> _newRecords = [];
     private readonly ResourceWatcherTable    _table;
     private          string                  _logFilter = string.Empty;
     private          Regex?                  _logRegex;
     private          int                     _newMaxEntries;
 
-    public unsafe ResourceWatcher(ActorService actors, Configuration config, ResourceService resources, ResourceLoader loader)
+    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader)
     {
         _actors                             =  actors;
         _config                             =  config;
@@ -266,12 +266,12 @@ public class ResourceWatcher : IDisposable, ITab
 
     public unsafe string Name(ResolveData resolve, string none = "")
     {
-        if (resolve.AssociatedGameObject == IntPtr.Zero || !_actors.Valid)
+        if (resolve.AssociatedGameObject == IntPtr.Zero || !_actors.Awaiter.IsCompletedSuccessfully)
             return none;
 
         try
         {
-            var id = _actors.AwaitedService.FromObject((GameObject*)resolve.AssociatedGameObject, out _, false, true, true);
+            var id = _actors.FromObject((GameObject*)resolve.AssociatedGameObject, out _, false, true, true);
             if (id.IsValid)
             {
                 if (id.Type is not (IdentifierType.Player or IdentifierType.Owned))

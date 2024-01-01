@@ -7,6 +7,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections.Manager;
+using Penumbra.GameData.Actors;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -14,7 +15,7 @@ using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
-public class CollectionsTab : IDisposable, ITab
+public sealed class CollectionsTab : IDisposable, ITab
 {
     private readonly EphemeralConfig    _config;
     private readonly CollectionSelector _selector;
@@ -40,7 +41,7 @@ public class CollectionsTab : IDisposable, ITab
     }
 
     public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator,
-        CollectionManager collectionManager, ModStorage modStorage, ActorService actors, ITargetManager targets, TutorialService tutorial)
+        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial)
     {
         _config   = configuration.Ephemeral;
         _tutorial = tutorial;

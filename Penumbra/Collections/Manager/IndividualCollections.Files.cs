@@ -3,6 +3,8 @@ using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.DataContainers.Bases;
+using Penumbra.GameData.Structs;
 using Penumbra.Services;
 using Penumbra.String;
 
@@ -26,23 +28,20 @@ public partial class IndividualCollections
 
     public bool ReadJObject(SaveService saver, ActiveCollections parent, JArray? obj, CollectionStorage storage)
     {
-        if (_actorService.Valid)
+        if (_actors.Awaiter.IsCompletedSuccessfully)
         {
             var ret = ReadJObjectInternal(obj, storage);
             return ret;
         }
 
-        void Func()
+        Penumbra.Log.Debug("[Collections] Delayed reading individual assignments until actor service is ready...");
+        _actors.Awaiter.ContinueWith(_ =>
         {
             if (ReadJObjectInternal(obj, storage))
                 saver.ImmediateSave(parent);
             IsLoaded = true;
             Loaded.Invoke();
-            _actorService.FinishedCreation -= Func;
-        }
-
-        Penumbra.Log.Debug("[Collections] Delayed reading individual assignments until actor service is ready...");
-        _actorService.FinishedCreation += Func;
+        });
         return false;
     }
 
@@ -60,7 +59,7 @@ public partial class IndividualCollections
         {
             try
             {
-                var identifier = _actorService.AwaitedService.FromJson(data as JObject);
+                var identifier = _actors.FromJson(data as JObject);
                 var group      = GetGroup(identifier);
                 if (group.Length == 0 || group.Any(i => !i.IsValid))
                 {
@@ -101,10 +100,10 @@ public partial class IndividualCollections
 
     internal void Migrate0To1(Dictionary<string, ModCollection> old)
     {
-        static bool FindDataId(string name, IReadOnlyDictionary<uint, string> data, out uint dataId)
+        static bool FindDataId(string name, NameDictionary data, out NpcId dataId)
         {
             var kvp = data.FirstOrDefault(kvp => kvp.Value.Equals(name, StringComparison.OrdinalIgnoreCase),
-                new KeyValuePair<uint, string>(uint.MaxValue, string.Empty));
+                new KeyValuePair<NpcId, string>(uint.MaxValue, string.Empty));
             dataId = kvp.Key;
             return kvp.Value.Length > 0;
         }
@@ -114,22 +113,22 @@ public partial class IndividualCollections
             var kind      = ObjectKind.None;
             var lowerName = name.ToLowerInvariant();
             // Prefer matching NPC names, fewer false positives than preferring players.
-            if (FindDataId(lowerName, _actorService.AwaitedService.Data.Companions, out var dataId))
+            if (FindDataId(lowerName, _actors.Data.Companions, out var dataId))
                 kind = ObjectKind.Companion;
-            else if (FindDataId(lowerName, _actorService.AwaitedService.Data.Mounts, out dataId))
+            else if (FindDataId(lowerName, _actors.Data.Mounts, out dataId))
                 kind = ObjectKind.MountType;
-            else if (FindDataId(lowerName, _actorService.AwaitedService.Data.BNpcs, out dataId))
+            else if (FindDataId(lowerName, _actors.Data.BNpcs, out dataId))
                 kind = ObjectKind.BattleNpc;
-            else if (FindDataId(lowerName, _actorService.AwaitedService.Data.ENpcs, out dataId))
+            else if (FindDataId(lowerName, _actors.Data.ENpcs, out dataId))
                 kind = ObjectKind.EventNpc;
 
-            var identifier = _actorService.AwaitedService.CreateNpc(kind, dataId);
+            var identifier = _actors.CreateNpc(kind, dataId);
             if (identifier.IsValid)
             {
                 // If the name corresponds to a valid npc, add it as a group. If this fails, notify users.
                 var group = GetGroup(identifier);
                 var ids   = string.Join(", ", group.Select(i => i.DataId.ToString()));
-                if (Add($"{_actorService.AwaitedService.Data.ToName(kind, dataId)} ({kind.ToName()})", group, collection))
+                if (Add($"{_actors.Data.ToName(kind, dataId)} ({kind.ToName()})", group, collection))
                     Penumbra.Log.Information($"Migrated {name} ({kind.ToName()}) to NPC Identifiers [{ids}].");
                 else
                     Penumbra.Messager.NotificationMessage(
@@ -137,15 +136,12 @@ public partial class IndividualCollections
                         NotificationType.Error);
             }
             // If it is not a valid NPC name, check if it can be a player name.
-            else if (ActorManager.VerifyPlayerName(name))
+            else if (ActorIdentifierFactory.VerifyPlayerName(name))
             {
-                identifier = _actorService.AwaitedService.CreatePlayer(ByteString.FromStringUnsafe(name, false), ushort.MaxValue);
+                identifier = _actors.CreatePlayer(ByteString.FromStringUnsafe(name, false), ushort.MaxValue);
                 var shortName = string.Join(" ", name.Split().Select(n => $"{n[0]}."));
                 // Try to migrate the player name without logging full names.
-                if (Add($"{name} ({_actorService.AwaitedService.Data.ToWorldName(identifier.HomeWorld)})", new[]
-                    {
-                        identifier,
-                    }, collection))
+                if (Add($"{name} ({_actors.Data.ToWorldName(identifier.HomeWorld)})", [identifier], collection))
                     Penumbra.Log.Information($"Migrated {shortName} ({collection.AnonymizedName}) to Player Identifier.");
                 else
                     Penumbra.Messager.NotificationMessage(

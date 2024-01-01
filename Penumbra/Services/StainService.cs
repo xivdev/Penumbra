@@ -3,8 +3,9 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
+using OtterGui.Log;
 using OtterGui.Widgets;
-using Penumbra.GameData.Data;
+using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.Util;
@@ -71,17 +72,16 @@ public class StainService : IDisposable
         }
     }
 
-    public readonly StainData          StainData;
+    public readonly DictStains         StainData;
     public readonly FilterComboColors  StainCombo;
     public readonly StmFile            StmFile;
     public readonly StainTemplateCombo TemplateCombo;
 
-    public StainService(StartTracker timer, DalamudPluginInterface pluginInterface, IDataManager dataManager, IPluginLog dalamudLog)
+    public StainService(DalamudPluginInterface pluginInterface, IDataManager dataManager, Logger logger)
     {
-        using var t = timer.Measure(StartTimeType.Stains);
-        StainData = new StainData(pluginInterface, dataManager, dataManager.Language, dalamudLog);
+        StainData = new DictStains(pluginInterface, logger, dataManager);
         StainCombo = new FilterComboColors(140,
-            () => StainData.Data.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(),
+            () => StainData.Value.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(),
             Penumbra.Log);
         StmFile       = new StmFile(dataManager);
         TemplateCombo = new StainTemplateCombo(StainCombo, StmFile);

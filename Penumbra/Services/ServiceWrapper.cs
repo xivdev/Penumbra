@@ -1,5 +1,4 @@
 using OtterGui.Tasks;
-using Penumbra.Util;
 
 namespace Penumbra.Services;
 
@@ -12,10 +11,9 @@ public abstract class SyncServiceWrapper<T> : IDisposable
     public bool Valid
         => !_isDisposed;
 
-    protected SyncServiceWrapper(string name, StartTracker tracker, StartTimeType type, Func<T> factory)
+    protected SyncServiceWrapper(string name, Func<T> factory)
     {
         Name = name;
-        using var timer = tracker.Measure(type);
         Service = factory();
         Penumbra.Log.Verbose($"[{Name}] Created.");
     }
@@ -53,32 +51,6 @@ public abstract class AsyncServiceWrapper<T> : IDisposable
     private Task?        _task;
 
     private bool _isDisposed;
-
-    protected AsyncServiceWrapper(string name, StartTracker tracker, StartTimeType type, Func<T> factory)
-    {
-        Name = name;
-        _task = TrackedTask.Run(() =>
-        {
-            using var timer   = tracker.Measure(type);
-            var       service = factory();
-            if (_isDisposed)
-            {
-                if (service is IDisposable d)
-                    d.Dispose();
-            }
-            else
-            {
-                Service = service;
-                Penumbra.Log.Verbose($"[{Name}] Created.");
-                _task = null;
-            }
-        });
-        _task.ContinueWith((t, x) =>
-        {
-            if (!_isDisposed)
-                FinishedCreation?.Invoke();
-        }, null);
-    }
 
     protected AsyncServiceWrapper(string name, Func<T> factory)
     {

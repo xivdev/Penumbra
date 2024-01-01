@@ -9,7 +9,7 @@
     "Tags": [ "modding" ],
     "DalamudApiLevel": 9,
     "LoadPriority": 69420,
-    "LoadRequiredState": 2,
+    "LoadState": 2,
     "LoadSync": true,
     "IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"
 }

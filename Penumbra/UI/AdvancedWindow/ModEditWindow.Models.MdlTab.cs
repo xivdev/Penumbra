@@ -117,7 +117,7 @@ public partial class ModEditWindow
             // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
             var bytes = resolvedPath switch
             {
-                null => _edit._dalamud.GameData.GetFile(sklbPath)?.Data,
+                null => _edit._gameData.GetFile(sklbPath)?.Data,
                 FullPath path => File.ReadAllBytes(path.ToPath()),
             };
             if (bytes == null)

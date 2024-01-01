@@ -12,7 +12,7 @@ public static class CustomizationSwap
 {
     /// The .mdl file for customizations is unique per racecode, slot and id, thus the .mdl redirection itself is independent of the mode.
     public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, BodySlot slot, GenderRace race,
-        SetId idFrom, SetId idTo)
+        PrimaryId idFrom, PrimaryId idTo)
     {
         if (idFrom.Id > byte.MaxValue)
             throw new Exception($"The Customization ID {idFrom} is too large for {slot}.");
@@ -43,10 +43,10 @@ public static class CustomizationSwap
     }
 
     public static FileSwap CreateMtrl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, BodySlot slot, GenderRace race,
-        SetId idFrom, SetId idTo, byte variant,
+        PrimaryId idFrom, PrimaryId idTo, byte variant,
         ref string fileName, ref bool dataWasChanged)
     {
-        variant = slot is BodySlot.Face or BodySlot.Zear ? byte.MaxValue : variant;
+        variant = slot is BodySlot.Face or BodySlot.Ear ? byte.MaxValue : variant;
         var mtrlFromPath = GamePaths.Character.Mtrl.Path(race, slot, idFrom, fileName, out var gameRaceFrom, out var gameSetIdFrom, variant);
         var mtrlToPath   = GamePaths.Character.Mtrl.Path(race, slot, idTo,   fileName, out var gameRaceTo,   out var gameSetIdTo,   variant);
 
@@ -79,7 +79,7 @@ public static class CustomizationSwap
     }
 
     public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, BodySlot slot, GenderRace race,
-        SetId idFrom, ref MtrlFile.Texture texture,
+        PrimaryId idFrom, ref MtrlFile.Texture texture,
         ref bool dataWasChanged)
     {
         var path        = texture.Path;

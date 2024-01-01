@@ -24,7 +24,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     public ulong ControlBlock
         => *(ulong*)Data;
 
-    protected ulong GetInternal(SetId idx)
+    protected ulong GetInternal(PrimaryId idx)
     {
         return idx.Id switch
         {
@@ -34,7 +34,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
         };
     }
 
-    protected void SetInternal(SetId idx, ulong value)
+    protected void SetInternal(PrimaryId idx, ulong value)
     {
         idx = idx.Id switch
         {
@@ -81,13 +81,13 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
         Reset();
     }
 
-    protected static ulong GetDefaultInternal(MetaFileManager manager, CharacterUtility.InternalIndex fileIndex, SetId setId, ulong def)
+    protected static ulong GetDefaultInternal(MetaFileManager manager, CharacterUtility.InternalIndex fileIndex, PrimaryId primaryId, ulong def)
     {
         var data = (byte*)manager.CharacterUtility.DefaultResource(fileIndex).Address;
-        if (setId == 0)
-            setId = 1;
+        if (primaryId == 0)
+            primaryId = 1;
 
-        var blockIdx = setId.Id / BlockSize;
+        var blockIdx = primaryId.Id / BlockSize;
         if (blockIdx >= NumBlocks)
             return def;
 
@@ -97,7 +97,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
             return def;
 
         var count = BitOperations.PopCount(control & (blockBit - 1));
-        var idx   = setId.Id % BlockSize;
+        var idx   = primaryId.Id % BlockSize;
         var ptr   = (ulong*)data + BlockSize * count + idx;
         return *ptr;
     }
@@ -112,15 +112,15 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
         : base(manager, false)
     { }
 
-    public EqpEntry this[SetId idx]
+    public EqpEntry this[PrimaryId idx]
     {
         get => (EqpEntry)GetInternal(idx);
         set => SetInternal(idx, (ulong)value);
     }
 
 
-    public static EqpEntry GetDefault(MetaFileManager manager, SetId setIdx)
-        => (EqpEntry)GetDefaultInternal(manager, InternalIndex, setIdx, (ulong)Eqp.DefaultEntry);
+    public static EqpEntry GetDefault(MetaFileManager manager, PrimaryId primaryIdx)
+        => (EqpEntry)GetDefaultInternal(manager, InternalIndex, primaryIdx, (ulong)Eqp.DefaultEntry);
 
     protected override unsafe void SetEmptyBlock(int idx)
     {
@@ -130,7 +130,7 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
             *ptr = (ulong)Eqp.DefaultEntry;
     }
 
-    public void Reset(IEnumerable<SetId> entries)
+    public void Reset(IEnumerable<PrimaryId> entries)
     {
         foreach (var entry in entries)
             this[entry] = GetDefault(Manager, entry);
@@ -155,16 +155,16 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
         : base(manager, true)
     { }
 
-    public GmpEntry this[SetId idx]
+    public GmpEntry this[PrimaryId idx]
     {
         get => (GmpEntry)GetInternal(idx);
         set => SetInternal(idx, (ulong)value);
     }
 
-    public static GmpEntry GetDefault(MetaFileManager manager, SetId setIdx)
-        => (GmpEntry)GetDefaultInternal(manager, InternalIndex, setIdx, (ulong)GmpEntry.Default);
+    public static GmpEntry GetDefault(MetaFileManager manager, PrimaryId primaryIdx)
+        => (GmpEntry)GetDefaultInternal(manager, InternalIndex, primaryIdx, (ulong)GmpEntry.Default);
 
-    public void Reset(IEnumerable<SetId> entries)
+    public void Reset(IEnumerable<PrimaryId> entries)
     {
         foreach (var entry in entries)
             this[entry] = GetDefault(Manager, entry);

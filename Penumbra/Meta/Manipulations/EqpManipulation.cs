@@ -15,13 +15,13 @@ public readonly struct EqpManipulation : IMetaManipulation<EqpManipulation>
     [JsonConverter(typeof(ForceNumericFlagEnumConverter))]
     public EqpEntry Entry { get; private init; }
 
-    public SetId SetId { get; private init; }
+    public PrimaryId SetId { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public EquipSlot Slot { get; private init; }
 
     [JsonConstructor]
-    public EqpManipulation(EqpEntry entry, EquipSlot slot, SetId setId)
+    public EqpManipulation(EqpEntry entry, EquipSlot slot, PrimaryId setId)
     {
         Slot  = slot;
         SetId = setId;

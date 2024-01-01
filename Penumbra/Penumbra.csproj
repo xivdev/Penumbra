@@ -93,8 +93,9 @@
     </ItemGroup>
 
     <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">
-        <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
-            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
+        <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
+            <Output TaskParameter="ExitCode" PropertyName="GitCommitHashSuccess"/>
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" Condition="$(GitCommitHashSuccess) == 0"/>
         </Exec>
 
         <PropertyGroup>

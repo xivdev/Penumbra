@@ -1,5 +1,4 @@
 using Penumbra.Api.Enums;
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
@@ -41,7 +40,7 @@ public static class EquipmentSwap
                 : Array.Empty<EquipSlot>();
     }
 
-    public static EquipItem[] CreateTypeSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
+    public static EquipItem[] CreateTypeSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips,
         EquipSlot slotFrom, EquipItem itemFrom, EquipSlot slotTo, EquipItem itemTo)
     {
@@ -99,7 +98,7 @@ public static class EquipmentSwap
         return affectedItems;
     }
 
-    public static EquipItem[] CreateItemSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
+    public static EquipItem[] CreateItemSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips, EquipItem itemFrom,
         EquipItem itemTo, bool rFinger = true, bool lFinger = true)
     {
@@ -186,13 +185,13 @@ public static class EquipmentSwap
     }
 
     public static MetaSwap? CreateEqdp(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
-        Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot, GenderRace gr, SetId idFrom,
-        SetId idTo, byte mtrlTo)
+        Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot, GenderRace gr, PrimaryId idFrom,
+        PrimaryId idTo, byte mtrlTo)
         => CreateEqdp(manager, redirections, manips, slot, slot, gr, idFrom, idTo, mtrlTo);
 
     public static MetaSwap? CreateEqdp(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
-        Func<MetaManipulation, MetaManipulation> manips, EquipSlot slotFrom, EquipSlot slotTo, GenderRace gr, SetId idFrom,
-        SetId idTo, byte mtrlTo)
+        Func<MetaManipulation, MetaManipulation> manips, EquipSlot slotFrom, EquipSlot slotTo, GenderRace gr, PrimaryId idFrom,
+        PrimaryId idTo, byte mtrlTo)
     {
         var (gender, race) = gr.Split();
         var eqdpFrom = new EqdpManipulation(ExpandedEqdpFile.GetDefault(manager, gr, slotFrom.IsAccessory(), idFrom), slotFrom, gender,
@@ -215,11 +214,11 @@ public static class EquipmentSwap
     }
 
     public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slot, GenderRace gr,
-        SetId idFrom, SetId idTo, byte mtrlTo)
+        PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
         => CreateMdl(manager, redirections, slot, slot, gr, idFrom, idTo, mtrlTo);
 
     public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slotFrom, EquipSlot slotTo,
-        GenderRace gr, SetId idFrom, SetId idTo, byte mtrlTo)
+        GenderRace gr, PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
     {
         var mdlPathFrom = slotFrom.IsAccessory()
             ? GamePaths.Accessory.Mdl.Path(idFrom, gr, slotFrom)
@@ -237,18 +236,18 @@ public static class EquipmentSwap
         return mdl;
     }
 
-    private static void LookupItem(EquipItem i, out EquipSlot slot, out SetId modelId, out Variant variant)
+    private static void LookupItem(EquipItem i, out EquipSlot slot, out PrimaryId modelId, out Variant variant)
     {
         slot = i.Type.ToSlot();
         if (!slot.IsEquipmentPiece())
             throw new ItemSwap.InvalidItemTypeException();
 
-        modelId = i.ModelId;
+        modelId = i.PrimaryId;
         variant = i.Variant;
     }
 
-    private static (ImcFile, Variant[], EquipItem[]) GetVariants(MetaFileManager manager, IObjectIdentifier identifier, EquipSlot slotFrom,
-        SetId idFrom, SetId idTo, Variant variantFrom)
+    private static (ImcFile, Variant[], EquipItem[]) GetVariants(MetaFileManager manager, ObjectIdentification identifier, EquipSlot slotFrom,
+        PrimaryId idFrom, PrimaryId idTo, Variant variantFrom)
     {
         var         entry = new ImcManipulation(slotFrom, variantFrom.Id, idFrom, default);
         var         imc   = new ImcFile(manager, entry);
@@ -256,11 +255,8 @@ public static class EquipmentSwap
         Variant[]   variants;
         if (idFrom == idTo)
         {
-            items = identifier.Identify(idFrom, variantFrom, slotFrom).ToArray();
-            variants = new[]
-            {
-                variantFrom,
-            };
+            items    = identifier.Identify(idFrom, 0, variantFrom, slotFrom).ToArray();
+            variants = [variantFrom];
         }
         else
         {
@@ -274,8 +270,8 @@ public static class EquipmentSwap
         return (imc, variants, items);
     }
 
-    public static MetaSwap? CreateGmp(MetaFileManager manager, Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot, SetId idFrom,
-        SetId idTo)
+    public static MetaSwap? CreateGmp(MetaFileManager manager, Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot, PrimaryId idFrom,
+        PrimaryId idTo)
     {
         if (slot is not EquipSlot.Head)
             return null;
@@ -287,12 +283,12 @@ public static class EquipmentSwap
 
     public static MetaSwap CreateImc(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
         Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot,
-        SetId idFrom, SetId idTo, Variant variantFrom, Variant variantTo, ImcFile imcFileFrom, ImcFile imcFileTo)
+        PrimaryId idFrom, PrimaryId idTo, Variant variantFrom, Variant variantTo, ImcFile imcFileFrom, ImcFile imcFileTo)
         => CreateImc(manager, redirections, manips, slot, slot, idFrom, idTo, variantFrom, variantTo, imcFileFrom, imcFileTo);
 
     public static MetaSwap CreateImc(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
         Func<MetaManipulation, MetaManipulation> manips,
-        EquipSlot slotFrom, EquipSlot slotTo, SetId idFrom, SetId idTo,
+        EquipSlot slotFrom, EquipSlot slotTo, PrimaryId idFrom, PrimaryId idTo,
         Variant variantFrom, Variant variantTo, ImcFile imcFileFrom, ImcFile imcFileTo)
     {
         var entryFrom        = imcFileFrom.GetEntry(ImcFile.PartIndex(slotFrom), variantFrom);
@@ -326,7 +322,7 @@ public static class EquipmentSwap
 
 
     // Example: Abyssos Helm / Body
-    public static FileSwap? CreateAvfx(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, SetId idFrom, SetId idTo, byte vfxId)
+    public static FileSwap? CreateAvfx(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, PrimaryId idFrom, PrimaryId idTo, byte vfxId)
     {
         if (vfxId == 0)
             return null;
@@ -344,8 +340,8 @@ public static class EquipmentSwap
         return avfx;
     }
 
-    public static MetaSwap? CreateEqp(MetaFileManager manager, Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot, SetId idFrom,
-        SetId idTo)
+    public static MetaSwap? CreateEqp(MetaFileManager manager, Func<MetaManipulation, MetaManipulation> manips, EquipSlot slot, PrimaryId idFrom,
+        PrimaryId idTo)
     {
         if (slot.IsAccessory())
             return null;
@@ -357,13 +353,13 @@ public static class EquipmentSwap
         return new MetaSwap(manips, eqpFrom, eqpTo);
     }
 
-    public static FileSwap? CreateMtrl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slot, SetId idFrom,
-        SetId idTo, byte variantTo, ref string fileName,
+    public static FileSwap? CreateMtrl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slot, PrimaryId idFrom,
+        PrimaryId idTo, byte variantTo, ref string fileName,
         ref bool dataWasChanged)
         => CreateMtrl(manager, redirections, slot, slot, idFrom, idTo, variantTo, ref fileName, ref dataWasChanged);
 
     public static FileSwap? CreateMtrl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slotFrom, EquipSlot slotTo,
-        SetId idFrom, SetId idTo, byte variantTo, ref string fileName,
+        PrimaryId idFrom, PrimaryId idTo, byte variantTo, ref string fileName,
         ref bool dataWasChanged)
     {
         var prefix = slotTo.IsAccessory() ? 'a' : 'e';
@@ -401,13 +397,13 @@ public static class EquipmentSwap
         return mtrl;
     }
 
-    public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, char prefix, SetId idFrom, SetId idTo,
+    public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, char prefix, PrimaryId idFrom, PrimaryId idTo,
         ref MtrlFile.Texture texture, ref bool dataWasChanged)
         => CreateTex(manager, redirections, prefix, EquipSlot.Unknown, EquipSlot.Unknown, idFrom, idTo, ref texture, ref dataWasChanged);
 
     public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, char prefix, EquipSlot slotFrom,
-        EquipSlot slotTo, SetId idFrom,
-        SetId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged)
+        EquipSlot slotTo, PrimaryId idFrom,
+        PrimaryId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged)
     {
         var path        = texture.Path;
         var addedDashes = false;

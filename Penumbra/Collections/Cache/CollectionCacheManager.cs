@@ -159,7 +159,7 @@ public class CollectionCacheManager : IDisposable
                 null);
             cache.ResolvedFiles.Clear();
             cache.Meta.Reset();
-            cache._conflicts.Clear();
+            cache.ConflictDict.Clear();
 
             // Add all forced redirects.
             foreach (var tempMod in _tempMods.ModsForAllCollections
@@ -372,7 +372,7 @@ public class CollectionCacheManager : IDisposable
         {
             collection._cache!.ResolvedFiles.Clear();
             collection._cache!.Meta.Reset();
-            collection._cache!._conflicts.Clear();
+            collection._cache!.ConflictDict.Clear();
         }
     }
 

@@ -150,7 +150,7 @@ public static class ItemSwap
     /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
     public static MetaSwap? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
         Func<MetaManipulation, MetaManipulation> manips, EstManipulation.EstType type,
-        GenderRace genderRace, SetId idFrom, SetId idTo, bool ownMdl)
+        GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
     {
         if (type == 0)
             return null;
@@ -195,7 +195,7 @@ public static class ItemSwap
         }
     }
 
-    public static string ReplaceAnyId(string path, char idType, SetId id, bool condition = true)
+    public static string ReplaceAnyId(string path, char idType, PrimaryId id, bool condition = true)
         => condition
             ? Regex.Replace(path, $"{idType}\\d{{4}}", $"{idType}{id.Id:D4}")
             : path;
@@ -203,10 +203,10 @@ public static class ItemSwap
     public static string ReplaceAnyRace(string path, GenderRace to, bool condition = true)
         => ReplaceAnyId(path, 'c', (ushort)to, condition);
 
-    public static string ReplaceAnyBody(string path, BodySlot slot, SetId to, bool condition = true)
+    public static string ReplaceAnyBody(string path, BodySlot slot, PrimaryId to, bool condition = true)
         => ReplaceAnyId(path, slot.ToAbbreviation(), to, condition);
 
-    public static string ReplaceId(string path, char type, SetId idFrom, SetId idTo, bool condition = true)
+    public static string ReplaceId(string path, char type, PrimaryId idFrom, PrimaryId idTo, bool condition = true)
         => condition
             ? path.Replace($"{type}{idFrom.Id:D4}", $"{type}{idTo.Id:D4}")
             : path;
@@ -219,7 +219,7 @@ public static class ItemSwap
     public static string ReplaceRace(string path, GenderRace from, GenderRace to, bool condition = true)
         => ReplaceId(path, 'c', (ushort)from, (ushort)to, condition);
 
-    public static string ReplaceBody(string path, BodySlot slot, SetId idFrom, SetId idTo, bool condition = true)
+    public static string ReplaceBody(string path, BodySlot slot, PrimaryId idFrom, PrimaryId idTo, bool condition = true)
         => ReplaceId(path, slot.ToAbbreviation(), idFrom, idTo, condition);
 
     public static string AddSuffix(string path, string ext, string suffix, bool condition = true)

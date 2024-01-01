@@ -53,7 +53,8 @@ public class PenumbraChangelog
     private static void Add8_3_0(Changelog log)
         => log.NextVersion("Version 0.8.3.0")
             .RegisterHighlight("Improved the UI for the On-Screen tabs with highlighting of used paths, filtering and more selections. (by Ny)")
-            .RegisterEntry("Added an option to replace non-ASCII symbols with underscores for folder paths on mod import since this causes problems on some WINE systems. This option is off by default.")
+            .RegisterEntry(
+                "Added an option to replace non-ASCII symbols with underscores for folder paths on mod import since this causes problems on some WINE systems. This option is off by default.")
             .RegisterEntry(
                 "Added support for the Changed Item Icons to load modded icons, but this depends on a not-yet-released Dalamud update.")
             .RegisterEntry(

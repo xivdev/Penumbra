@@ -86,7 +86,7 @@ public class ModPanelEditTab : ITab
             _modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
 
         UiHelpers.DefaultLineSpace();
-        AddOptionGroup.Draw(_filenames, _modManager, _mod);
+        AddOptionGroup.Draw(_filenames, _modManager, _mod, _config.ReplaceNonAsciiOnImport);
         UiHelpers.DefaultLineSpace();
 
         for (var groupIdx = 0; groupIdx < _mod.Groups.Count; ++groupIdx)
@@ -235,13 +235,13 @@ public class ModPanelEditTab : ITab
         public static void Reset()
             => _newGroupName = string.Empty;
 
-        public static void Draw(FilenameService filenames, ModManager modManager, Mod mod)
+        public static void Draw(FilenameService filenames, ModManager modManager, Mod mod, bool onlyAscii)
         {
             using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
             ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
             ImGui.InputTextWithHint("##newGroup", "Add new option group...", ref _newGroupName, 256);
             ImGui.SameLine();
-            var defaultFile = filenames.OptionGroupFile(mod, -1);
+            var defaultFile = filenames.OptionGroupFile(mod, -1, onlyAscii);
             var fileExists  = File.Exists(defaultFile);
             var tt = fileExists
                 ? "Open the default option json file in the text editor of your choice."
@@ -438,7 +438,7 @@ public class ModPanelEditTab : ITab
             _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, groupIdx));
 
         ImGui.SameLine();
-        var fileName   = _filenames.OptionGroupFile(_mod, groupIdx);
+        var fileName   = _filenames.OptionGroupFile(_mod, groupIdx, _config.ReplaceNonAsciiOnImport);
         var fileExists = File.Exists(fileName);
         tt = fileExists
             ? $"Open the {group.Name} json file in the text editor of your choice."
@@ -475,10 +475,11 @@ public class ModPanelEditTab : ITab
             if (!table)
                 return;
 
-            ImGui.TableSetupColumn("idx",     ImGuiTableColumnFlags.WidthFixed, 60 * UiHelpers.Scale);
+            var maxWidth = ImGui.CalcTextSize("Option #88.").X;
+            ImGui.TableSetupColumn("idx",     ImGuiTableColumnFlags.WidthFixed, maxWidth);
             ImGui.TableSetupColumn("default", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight());
             ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthFixed,
-                UiHelpers.InputTextWidth.X - 72 * UiHelpers.Scale - ImGui.GetFrameHeight() - UiHelpers.IconButtonSize.X);
+                UiHelpers.InputTextWidth.X - maxWidth - 12 * UiHelpers.Scale - ImGui.GetFrameHeight() - UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("description", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("delete",      ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("priority",    ImGuiTableColumnFlags.WidthFixed, 50 * UiHelpers.Scale);
@@ -644,7 +645,7 @@ public class ModPanelEditTab : ITab
                 _                => "Unknown",
             };
 
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X - 3 * (UiHelpers.IconButtonSize.X - 4 * UiHelpers.Scale));
+        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X - 2 * UiHelpers.IconButtonSize.X - 2 * ImGui.GetStyle().ItemSpacing.X);
         using var combo = ImRaii.Combo("##GroupType", GroupTypeName(group.Type));
         if (!combo)
             return;

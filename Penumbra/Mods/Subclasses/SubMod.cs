@@ -30,9 +30,9 @@ public sealed class SubMod : ISubMod
     public bool IsDefault
         => GroupIdx < 0;
 
-    public Dictionary<Utf8GamePath, FullPath> FileData         = new();
-    public Dictionary<Utf8GamePath, FullPath> FileSwapData     = new();
-    public HashSet<MetaManipulation>          ManipulationData = new();
+    public Dictionary<Utf8GamePath, FullPath> FileData         = [];
+    public Dictionary<Utf8GamePath, FullPath> FileSwapData     = [];
+    public HashSet<MetaManipulation>          ManipulationData = [];
 
     public SubMod(IMod parentMod)
         => ParentMod = parentMod;

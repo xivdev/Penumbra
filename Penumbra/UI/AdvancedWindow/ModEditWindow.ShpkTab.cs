@@ -3,6 +3,7 @@ using Lumina.Misc;
 using OtterGui;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.UI.AdvancedWindow;
 

@@ -5,6 +5,7 @@ using OtterGui.Compression;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
+using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
@@ -24,11 +25,11 @@ public unsafe class MetaFileManager
     internal readonly IDataManager            GameData;
     internal readonly ActiveCollectionData    ActiveCollections;
     internal readonly ValidityChecker         ValidityChecker;
-    internal readonly IdentifierService       Identifier;
+    internal readonly ObjectIdentification    Identifier;
     internal readonly FileCompactor           Compactor;
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
-        ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, IdentifierService identifier,
+        ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, ObjectIdentification identifier,
         FileCompactor compactor, IGameInteropProvider interop)
     {
         CharacterUtility  = characterUtility;

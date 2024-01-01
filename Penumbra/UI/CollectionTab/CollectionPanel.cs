@@ -22,7 +22,7 @@ public sealed class CollectionPanel : IDisposable
     private readonly CollectionStorage      _collections;
     private readonly ActiveCollections      _active;
     private readonly CollectionSelector     _selector;
-    private readonly ActorService           _actors;
+    private readonly ActorManager           _actors;
     private readonly ITargetManager         _targets;
     private readonly IndividualAssignmentUi _individualAssignmentUi;
     private readonly InheritanceUi          _inheritanceUi;
@@ -37,7 +37,7 @@ public sealed class CollectionPanel : IDisposable
     private int _draggedIndividualAssignment = -1;
 
     public CollectionPanel(DalamudPluginInterface pi, CommunicatorService communicator, CollectionManager manager,
-        CollectionSelector selector, ActorService actors, ITargetManager targets, ModStorage mods)
+        CollectionSelector selector, ActorManager actors, ITargetManager targets, ModStorage mods)
     {
         _collections            = manager.Storage;
         _active                 = manager.Active;
@@ -382,11 +382,11 @@ public sealed class CollectionPanel : IDisposable
     }
 
     private void DrawCurrentCharacter(Vector2 width)
-        => DrawIndividualButton("Current Character", width, string.Empty, 'c', _actors.AwaitedService.GetCurrentPlayer());
+        => DrawIndividualButton("Current Character", width, string.Empty, 'c', _actors.GetCurrentPlayer());
 
     private void DrawCurrentTarget(Vector2 width)
         => DrawIndividualButton("Current Target", width, string.Empty, 't',
-            _actors.AwaitedService.FromObject(_targets.Target, false, true, true));
+            _actors.FromObject(_targets.Target, false, true, true));
 
     private void DrawNewPlayer(Vector2 width)
         => DrawIndividualButton("New Player", width, _individualAssignmentUi.PlayerTooltip, 'p',
