@@ -4,7 +4,6 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models.Export;
 using SharpGLTF.Scenes;
-using SharpGLTF.Transforms;
 
 namespace Penumbra.Import.Models;
 

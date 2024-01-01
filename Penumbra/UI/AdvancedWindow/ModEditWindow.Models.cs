@@ -34,13 +34,13 @@ public partial class ModEditWindow
             );
         }
 
-        if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", tab.PendingIo))
-        {
-            tab.Export("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf");
-        }
+        if (tab.GamePaths != null)
+            if (ImGuiUtil.DrawDisabledButton("bingo bango", Vector2.Zero, "description", tab.PendingIo))
+                tab.Export("C:\\Users\\ackwell\\blender\\gltf-tests\\bingo.gltf", tab.GamePaths.First());
         ImGui.TextUnformatted("blippity blap");
-        foreach (var gamePath in tab.GamePaths)
-            ImGui.TextUnformatted(gamePath.ToString());
+        if (tab.GamePaths != null)
+            foreach (var gamePath in tab.GamePaths)
+                ImGui.TextUnformatted(gamePath.ToString());
 
         if (tab.IoException != null)
             ImGui.TextUnformatted(tab.IoException);

@@ -13,7 +13,7 @@ public partial class ModEditWindow
         private ModEditWindow _edit;
 
         public readonly MdlFile Mdl;
-        public readonly List<Utf8GamePath> GamePaths;
+        public List<Utf8GamePath>? GamePaths { get; private set ;}
         private readonly List<string>[] _attributes;
         
         public bool PendingIo { get; private set; } = false;
@@ -28,8 +28,10 @@ public partial class ModEditWindow
             _edit       = edit;
 
             Mdl         = new MdlFile(bytes);
-            GamePaths   = mod == null ? new() : FindGamePaths(path, mod);
             _attributes = CreateAttributes(Mdl);
+
+            if (mod != null)
+                FindGamePaths(path, mod);
         }
 
         /// <inheritdoc/>
@@ -40,36 +42,41 @@ public partial class ModEditWindow
         public byte[] Write()
             => Mdl.Write();
 
-        // TODO: this _needs_ to be done asynchronously, kart mods hang for a good second or so
         /// <summary> Find the list of game paths that may correspond to this model. </summary>
         /// <param name="path"> Resolved path to a .mdl. </param>
         /// <param name="mod"> Mod within which the .mdl is resolved. </param>
-        private List<Utf8GamePath> FindGamePaths(string path, Mod mod)
+        private void FindGamePaths(string path, Mod mod)
         {
-            // todo: might be worth ordering based on prio + selection for disambiguating between multiple matches? not sure. same for the multi group case
-            return mod.AllSubMods
-                .SelectMany(submod => submod.Files.Concat(submod.FileSwaps))
-                // todo: using ordinal ignore case because the option group paths in mods being lowerecased somewhere, but the mod editor using fs paths, which may be uppercase. i'd say this will blow up on linux, but it's already the case so can't be too much worse than present right
-                .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
-                .Select(kv => kv.Key)
-                .ToList();
+            PendingIo = true;
+            var task = Task.Run(() => {
+                // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
+                // NOTE: We're using case insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
+                return mod.AllSubMods
+                    .SelectMany(submod => submod.Files.Concat(submod.FileSwaps))
+                    .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
+                    .Select(kv => kv.Key)
+                    .ToList();
+            });
+
+            task.ContinueWith(task => {
+                IoException = task.Exception?.ToString();
+                PendingIo = false;
+                GamePaths = task.Result;
+            });
         }
 
         /// <summary> Export model to an interchange format. </summary>
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
-        public void Export(string outputPath)
+        public void Export(string outputPath, Utf8GamePath mdlPath)
         {
-            // NOTES ON EST (i don't think it's worth supporting yet...)
+            // NOTES ON EST
             // for collection wide lookup;
             // Collections.Cache.EstCache::GetEstEntry
             // Collections.Cache.MetaCache::GetEstEntry
             // Collections.ModCollection.MetaCache?
             // for default lookup, probably;
             // EstFile.GetDefault(...)
-            
-            // TODO: allow user to pick the gamepath in the ui
-            // TODO: what if there's no gamepaths?
-            var mdlPath = GamePaths.First();
+
             var sklbPath = GetSklbPath(mdlPath.ToString());
             var sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
 
