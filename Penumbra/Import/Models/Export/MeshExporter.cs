@@ -88,13 +88,13 @@ public class MeshExporter
 
         var indexMap = new Dictionary<ushort, int>();
 
-        foreach (var xivBoneIndex in xivBoneTable.BoneIndex.Take(xivBoneTable.BoneCount))
+        foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take(xivBoneTable.BoneCount).WithIndex())
         {
             var boneName = _mdl.Bones[xivBoneIndex];
             if (!boneNameMap.TryGetValue(boneName, out var gltfBoneIndex))
                 throw new Exception($"Armature does not contain bone \"{boneName}\" requested by mesh {_meshIndex}.");
 
-            indexMap.Add(xivBoneIndex, gltfBoneIndex);
+            indexMap.Add((ushort)tableIndex, gltfBoneIndex);
         }
 
         return indexMap;
