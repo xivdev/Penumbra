@@ -34,7 +34,6 @@ public class MeshExporter
         }
     }
 
-    // TODO: replace bonenamemap with a gltfskeleton
     public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, GltfSkeleton? skeleton)
     {
         var self = new MeshExporter(mdl, lod, meshIndex, skeleton?.Names);
@@ -74,7 +73,7 @@ public class MeshExporter
 
     private Dictionary<ushort, int> BuildBoneIndexMap(Dictionary<string, int> boneNameMap)
     {
-        // todo: BoneTableIndex of 255 means null? if so, it should probably feed into the attributes we assign...
+        // TODO: BoneTableIndex of 255 means null? if so, it should probably feed into the attributes we assign...
         var xivBoneTable = _mdl.BoneTables[XivMesh.BoneTableIndex];
 
         var indexMap = new Dictionary<ushort, int>();
@@ -97,20 +96,25 @@ public class MeshExporter
         var indices = BuildIndices();
         var vertices = BuildVertices();
 
-        // TODO: handle SubMeshCount = 0
+        // NOTE: Index indices are specified relative to the LOD's 0, but we're reading chunks for each mesh, so we're specifying the index base relative to the mesh's base.
+
+        if (XivMesh.SubMeshCount == 0)
+            return [BuildMesh(indices, vertices, 0, (int)XivMesh.IndexCount)];
 
         return _mdl.SubMeshes
             .Skip(XivMesh.SubMeshIndex)
             .Take(XivMesh.SubMeshCount)
-            .Select(submesh => BuildSubMesh(submesh, indices, vertices))
+            .Select(submesh => BuildMesh(indices, vertices, (int)(submesh.IndexOffset - XivMesh.StartIndex), (int)submesh.IndexCount))
             .ToArray();
     }
 
-    private IMeshBuilder<MaterialBuilder> BuildSubMesh(MdlStructs.SubmeshStruct submesh, IReadOnlyList<ushort> indices, IReadOnlyList<IVertexBuilder> vertices)
+    private IMeshBuilder<MaterialBuilder> BuildMesh(
+        IReadOnlyList<ushort> indices,
+        IReadOnlyList<IVertexBuilder> vertices,
+        int indexBase,
+        int indexCount
+    )
     {
-        // Index indices are specified relative to the LOD's 0, but we're reading chunks for each mesh.
-        var startIndex = (int)(submesh.IndexOffset - XivMesh.StartIndex);
-
         var meshBuilderType = typeof(MeshBuilder<,,,>).MakeGenericType(
             typeof(MaterialBuilder),
             _geometryType,
@@ -131,12 +135,12 @@ public class MeshExporter
         var gltfIndices = new List<int>();
 
         // All XIV meshes use triangle lists.
-        for (var indexOffset = 0; indexOffset < submesh.IndexCount; indexOffset += 3)
+        for (var indexOffset = 0; indexOffset < indexCount; indexOffset += 3)
         {
             var (a, b, c) = primitiveBuilder.AddTriangle(
-                vertices[indices[indexOffset + startIndex + 0]],
-                vertices[indices[indexOffset + startIndex + 1]],
-                vertices[indices[indexOffset + startIndex + 2]]
+                vertices[indices[indexBase + indexOffset + 0]],
+                vertices[indices[indexBase + indexOffset + 1]],
+                vertices[indices[indexBase + indexOffset + 2]]
             );
             gltfIndices.AddRange([a, b, c]);
         }
@@ -157,8 +161,8 @@ public class MeshExporter
                         .Take((int)shapeMesh.ShapeValueCount)
                 )
                 .Where(shapeValue =>
-                    shapeValue.BaseIndicesIndex >= startIndex
-                    && shapeValue.BaseIndicesIndex < startIndex + submesh.IndexCount
+                    shapeValue.BaseIndicesIndex >= indexBase
+                    && shapeValue.BaseIndicesIndex < indexBase + indexCount
                 )
                 .ToList();
 
@@ -169,7 +173,7 @@ public class MeshExporter
 
             foreach (var shapeValue in shapeValues)
                 morphBuilder.SetVertex(
-                    primitiveVertices[gltfIndices[shapeValue.BaseIndicesIndex - startIndex]].GetGeometry(),
+                    primitiveVertices[gltfIndices[shapeValue.BaseIndicesIndex - indexBase]].GetGeometry(),
                     vertices[shapeValue.ReplacingVertexIndex].GetGeometry()
                 );
         }

@@ -73,17 +73,21 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
 
         public void Execute(CancellationToken cancel)
         {
+            Penumbra.Log.Debug("Reading skeleton.");
             var xivSkeleton = BuildSkeleton(cancel);
+
+            Penumbra.Log.Debug("Converting model.");
             var model = ModelExporter.Export(_mdl, xivSkeleton);
 
+            Penumbra.Log.Debug("Building scene.");
             var scene = new SceneBuilder();
             model.AddToScene(scene);
 
+            Penumbra.Log.Debug("Saving.");
             var gltfModel = scene.ToGltf2();
             gltfModel.SaveGLTF(_outputPath);
         }
 
-        // TODO: this should be moved to a seperate model converter or something
         private XivSkeleton? BuildSkeleton(CancellationToken cancel)
         {
             if (_sklb == null)
