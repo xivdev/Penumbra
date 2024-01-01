@@ -69,11 +69,18 @@ public class MeshExporter
         _geometryType = GetGeometryType(usages);
         _materialType = GetMaterialType(usages);
         _skinningType = GetSkinningType(usages);
+
+        // If there's skinning usages but no bone mapping, there's probably something wrong with the data.
+        if (_skinningType != typeof(VertexEmpty) && _boneIndexMap == null)
+            Penumbra.Log.Warning($"Mesh {meshIndex} has skinned vertex usages but no bone information was provided.");
     }
 
-    private Dictionary<ushort, int> BuildBoneIndexMap(Dictionary<string, int> boneNameMap)
+    private Dictionary<ushort, int>? BuildBoneIndexMap(Dictionary<string, int> boneNameMap)
     {
-        // TODO: BoneTableIndex of 255 means null? if so, it should probably feed into the attributes we assign...
+        // A BoneTableIndex of 255 means that this mesh is not skinned.
+        if (XivMesh.BoneTableIndex == 255)
+            return null;
+
         var xivBoneTable = _mdl.BoneTables[XivMesh.BoneTableIndex];
 
         var indexMap = new Dictionary<ushort, int>();
@@ -82,8 +89,7 @@ public class MeshExporter
         {
             var boneName = _mdl.Bones[xivBoneIndex];
             if (!boneNameMap.TryGetValue(boneName, out var gltfBoneIndex))
-                // TODO: handle - i think this is a hard failure, it means that a bone name in the model doesn't exist in the armature. 
-                throw new Exception($"looking for {boneName} in {string.Join(", ", boneNameMap.Keys)}");
+                throw new Exception($"Armature does not contain bone \"{boneName}\" requested by mesh {_meshIndex}.");
 
             indexMap.Add(xivBoneIndex, gltfBoneIndex);
         }
