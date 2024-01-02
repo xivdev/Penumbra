@@ -21,9 +21,14 @@ public partial class ModEditWindow
         public bool PendingIo { get; private set; } = false;
         public string? IoException { get; private set; } = null;
 
-        // TODO: this can probably be genericised across all of chara
-        [GeneratedRegex(@"chara/equipment/e(?'Set'\d{4})/model/c(?'Race'\d{4})e\k'Set'_.+\.mdl", RegexOptions.Compiled)]
+        [GeneratedRegex(@"chara/(?:equipment|accessory)/(?'Set'[a-z]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl", RegexOptions.Compiled)]
         private static partial Regex CharaEquipmentRegex();
+
+        [GeneratedRegex(@"chara/human/(?'Race'c\d{4})/obj/(?'Type'[^/]+)/(?'Set'[^/]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl", RegexOptions.Compiled)]
+        private static partial Regex CharaHumanRegex();
+
+        [GeneratedRegex(@"chara/(?'SubCategory'demihuman|monster|weapon)/(?'Set'w\d{4})/obj/body/(?'Body'b\d{4})/model/\k'Set'\k'Body'.mdl", RegexOptions.Compiled)]
+        private static partial Regex CharaBodyRegex();
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path, Mod? mod)
         {
@@ -71,16 +76,14 @@ public partial class ModEditWindow
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
-            // NOTES ON EST
-            // for collection wide lookup;
-            // Collections.Cache.EstCache::GetEstEntry
-            // Collections.Cache.MetaCache::GetEstEntry
-            // Collections.ModCollection.MetaCache?
-            // for default lookup, probably;
-            // EstFile.GetDefault(...)
-
-            var sklbPath = GetSklbPath(mdlPath.ToString());
-            var sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
+            SklbFile? sklb = null;
+            try {
+                var sklbPath = GetSklbPath(mdlPath.ToString());
+                sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
+            } catch (Exception exception) {
+                IoException = exception?.ToString();
+                return;
+            }
 
             PendingIo = true;
             _edit._models.ExportToGltf(Mdl, sklb, outputPath)
@@ -94,15 +97,37 @@ public partial class ModEditWindow
         /// <param name="mdlPath"> .mdl file to look up the skeleton for. </param>
         private string? GetSklbPath(string mdlPath)
         {
-            // TODO: This needs to be drastically expanded, it's dodgy af rn
-
+            // Equipment is skinned to the base body skeleton of the race they target.
             var match = CharaEquipmentRegex().Match(mdlPath);
-            if (!match.Success)
-                return null;
+            if (match.Success)
+            {
+                var race = match.Groups["Race"].Value;
+                return $"chara/human/{race}/skeleton/base/b0001/skl_{race}b0001.sklb";
+            }
 
-            var race = match.Groups["Race"].Value;
+            // Some parts of human have their own skeletons.
+            match = CharaHumanRegex().Match(mdlPath);
+            if (match.Success)
+            {
+                var type = match.Groups["Type"].Value;
+                var race = match.Groups["Race"].Value;
+                return type switch
+                {
+                    "body" or "tail" => $"chara/human/{race}/skeleton/base/b0001/skl_{race}b0001.sklb",
+                    _ => throw new Exception($"Currently unsupported human model type \"{type}\"."),
+                };
+            }
 
-            return $"chara/human/c{race}/skeleton/base/b0001/skl_c{race}b0001.sklb";
+            // A few subcategories - such as weapons, demihumans, and monsters - have dedicated per-"body" skeletons.
+            match = CharaBodyRegex().Match(mdlPath);
+            if (match.Success)
+            {
+                var subCategory = match.Groups["SubCategory"].Value;
+                var set = match.Groups["Set"].Value;
+                return $"chara/{subCategory}/{set}/skeleton/base/b0001/skl_{set}b0001.sklb";
+            }
+
+            return null;
         }
 
         /// <summary> Read a .sklb from the active collection or game. </summary>
@@ -111,7 +136,7 @@ public partial class ModEditWindow
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
             if (!Utf8GamePath.FromString(sklbPath, out var utf8SklbPath, true))
-                throw new Exception("TODO: handle - should it throw, or try to fail gracefully?");
+                throw new Exception($"Resolved skeleton path {sklbPath} could not be converted to a game path.");
  
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
             // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
@@ -121,7 +146,7 @@ public partial class ModEditWindow
                 FullPath path => File.ReadAllBytes(path.ToPath()),
             };
             if (bytes == null)
-                throw new Exception("TODO: handle - this effectively means that the resolved path doesn't exist. graceful?");
+                throw new Exception($"Resolved skeleton path {sklbPath} could not be found. If modded, is it enabled in the current collection?");
 
             return new SklbFile(bytes);
         }
