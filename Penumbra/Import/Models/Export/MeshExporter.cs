@@ -312,6 +312,7 @@ public class MeshExporter
             {
                 MdlFile.VertexType.Half2 => 1,
                 MdlFile.VertexType.Half4 => 2,
+                MdlFile.VertexType.Single4 => 2,
                 _ => throw new Exception($"Unexpected UV vertex type {type}.")
             };
 
