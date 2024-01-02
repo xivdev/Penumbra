@@ -63,8 +63,10 @@ public class MeshExporter
             _boneIndexMap = BuildBoneIndexMap(boneNameMap);
 
         var usages = _mdl.VertexDeclarations[_meshIndex].VertexElements
-            .Select(element => (MdlFile.VertexUsage)element.Usage)
-            .ToImmutableHashSet();
+            .ToImmutableDictionary(
+                element => (MdlFile.VertexUsage)element.Usage,
+                element => (MdlFile.VertexType)element.Type
+            );
 
         _geometryType = GetGeometryType(usages);
         _materialType = GetMaterialType(usages);
@@ -263,15 +265,15 @@ public class MeshExporter
     }
 
     /// <summary> Get the vertex geometry type for this mesh's vertex usages. </summary>
-    private Type GetGeometryType(IReadOnlySet<MdlFile.VertexUsage> usages)
+    private Type GetGeometryType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
     {
-        if (!usages.Contains(MdlFile.VertexUsage.Position))
+        if (!usages.ContainsKey(MdlFile.VertexUsage.Position))
             throw new Exception("Mesh does not contain position vertex elements.");
 
-        if (!usages.Contains(MdlFile.VertexUsage.Normal))
+        if (!usages.ContainsKey(MdlFile.VertexUsage.Normal))
             return typeof(VertexPosition);
 
-        if (!usages.Contains(MdlFile.VertexUsage.Tangent1))
+        if (!usages.ContainsKey(MdlFile.VertexUsage.Tangent1))
             return typeof(VertexPositionNormal);
 
         return typeof(VertexPositionNormalTangent);
@@ -302,20 +304,32 @@ public class MeshExporter
     }
 
     /// <summary> Get the vertex material type for this mesh's vertex usages. </summary>
-    private Type GetMaterialType(IReadOnlySet<MdlFile.VertexUsage> usages)
+    private Type GetMaterialType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
     {
-        // TODO: IIUC, xiv's uv2 is usually represented as the second two components of a vec4 uv attribute - add support.
+        var uvCount = 0;
+        if (usages.TryGetValue(MdlFile.VertexUsage.UV, out var type))
+            uvCount = type switch
+            {
+                MdlFile.VertexType.Half2 => 1,
+                MdlFile.VertexType.Half4 => 2,
+                _ => throw new Exception($"Unexpected UV vertex type {type}.")
+            };
+
         var materialUsages = (
-            usages.Contains(MdlFile.VertexUsage.UV),
-            usages.Contains(MdlFile.VertexUsage.Color)
+            uvCount,
+            usages.ContainsKey(MdlFile.VertexUsage.Color)
         );
 
         return materialUsages switch
         {
-            (true, true) => typeof(VertexColor1Texture1),
-            (true, false) => typeof(VertexTexture1),
-            (false, true) => typeof(VertexColor1),
-            (false, false) => typeof(VertexEmpty),
+            (2, true) => typeof(VertexColor1Texture2),
+            (2, false) => typeof(VertexTexture2),
+            (1, true) => typeof(VertexColor1Texture1),
+            (1, false) => typeof(VertexTexture1),
+            (0, true) => typeof(VertexColor1),
+            (0, false) => typeof(VertexEmpty),
+
+            _ => throw new Exception("Unreachable."),
         };
     }
 
@@ -337,13 +351,34 @@ public class MeshExporter
                 ToVector2(attributes[MdlFile.VertexUsage.UV])
             );
 
+        // XIV packs two UVs into a single vec4 attribute.
+
+        if (_materialType == typeof(VertexTexture2))
+        {
+            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV]);
+            return new VertexTexture2(
+                new Vector2(uv.X, uv.Y),
+                new Vector2(uv.Z, uv.W)
+            );
+        }
+
+        if (_materialType == typeof(VertexColor1Texture2))
+        {
+            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV]);
+            return new VertexColor1Texture2(
+                ToVector4(attributes[MdlFile.VertexUsage.Color]),
+                new Vector2(uv.X, uv.Y),
+                new Vector2(uv.Z, uv.W)
+            );
+        }
+
         throw new Exception($"Unknown material type {_skinningType}");
     }
 
     /// <summary> Get the vertex skinning type for this mesh's vertex usages. </summary>
-    private Type GetSkinningType(IReadOnlySet<MdlFile.VertexUsage> usages)
+    private Type GetSkinningType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
     {
-        if (usages.Contains(MdlFile.VertexUsage.BlendWeights) && usages.Contains(MdlFile.VertexUsage.BlendIndices))
+        if (usages.ContainsKey(MdlFile.VertexUsage.BlendWeights) && usages.ContainsKey(MdlFile.VertexUsage.BlendIndices))
             return typeof(VertexJoints4);
 
         return typeof(VertexEmpty);
