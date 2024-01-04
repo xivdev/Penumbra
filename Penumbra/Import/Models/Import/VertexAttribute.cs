@@ -72,7 +72,9 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            (index, bytes) => WriteByteFloat4(values[index], bytes)
+            // TODO: TEMP TESTING PINNED TO BONE 0 UNTIL I SET UP BONE MAPPINGS
+            // (index, bytes) => WriteByteFloat4(values[index], bytes)
+            (index, bytes) => WriteByteFloat4(Vector4.UnitX, bytes)
         );
     }
 
@@ -96,7 +98,9 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            (index, bytes) => WriteUInt(values[index], bytes)
+            // TODO: TEMP TESTING PINNED TO BONE 0 UNTIL I SET UP BONE MAPPINGS
+            // (index, bytes) => WriteUInt(values[index], bytes)
+            (index, bytes) => WriteUInt(Vector4.Zero, bytes)
         );
     }
 
