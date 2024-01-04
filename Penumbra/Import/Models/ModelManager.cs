@@ -4,6 +4,7 @@ using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models.Export;
+using Penumbra.Import.Models.Import;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.Materials;
@@ -127,7 +128,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
 
         public ImportGltfAction()
         {
-            // 
+            //
         }
 
         private ModelRoot Build()
@@ -168,212 +169,6 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             return model;
         }
 
-        private (MdlStructs.VertexElement, Action<int, List<byte>>) GetPositionWriter(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("POSITION", out var accessor))
-                throw new Exception("todo: some error about position being hard required");
-
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 0,
-                Type = (byte)MdlFile.VertexType.Single3,
-                Usage = (byte)MdlFile.VertexUsage.Position,
-            };
-
-            IList<Vector3> values = accessor.AsVector3Array();
-
-            return (
-                element,
-                (index, bytes) => WriteSingle3(values[index], bytes)
-            );
-        }
-
-        // TODO: probably should sanity check that if there's weights or indexes, both are available? game is always symmetric
-        private (MdlStructs.VertexElement, Action<int, List<byte>>)? GetBlendWeightWriter(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("WEIGHTS_0", out var accessor))
-                return null;
-
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 0,
-                Type = (byte)MdlFile.VertexType.ByteFloat4,
-                Usage = (byte)MdlFile.VertexUsage.BlendWeights,
-            };
-
-            var values = accessor.AsVector4Array();
-
-            return (
-                element,
-                (index, bytes) => WriteByteFloat4(values[index], bytes)
-            );
-        }
-
-        // TODO: this will need to take in a skeleton mapping of some kind so i can persist the bones used and wire up the joints correctly. hopefully by the "write vertex buffer" stage of building, we already know something about the skeleton.
-        private (MdlStructs.VertexElement, Action<int, List<byte>>)? GetBlendIndexWriter(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("JOINTS_0", out var accessor))
-                return null;
-
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 0,
-                Type = (byte)MdlFile.VertexType.UInt,
-                Usage = (byte)MdlFile.VertexUsage.BlendIndices,
-            };
-
-            var values = accessor.AsVector4Array();
-
-            return (
-                element,
-                (index, bytes) => WriteUInt(values[index], bytes)
-            );
-        }
-
-        private (MdlStructs.VertexElement, Action<int, List<byte>>)? GetNormalWriter(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("NORMAL", out var accessor))
-                return null;
-
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 1,
-                Type = (byte)MdlFile.VertexType.Half4,
-                Usage = (byte)MdlFile.VertexUsage.Normal,
-            };
-
-            var values = accessor.AsVector3Array();
-
-            return (
-                element,
-                (index, bytes) => WriteHalf4(new Vector4(values[index], 0), bytes)
-            );
-        }
-
-        private (MdlStructs.VertexElement, Action<int, List<byte>>)? GetUvWriter(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("TEXCOORD_0", out var accessor1))
-                return null;
-
-            // We're omitting type here, and filling it in on return, as there's two different types we might use.
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 1,
-                Usage = (byte)MdlFile.VertexUsage.UV,
-            };
-
-            var values1 = accessor1.AsVector2Array();
-
-            if (!accessors.TryGetValue("TEXCOORD_1", out var accessor2))
-                return (
-                    element with {Type = (byte)MdlFile.VertexType.Half2},
-                    (index, bytes) => WriteHalf2(values1[index], bytes)
-                );
-
-            var values2 = accessor2.AsVector2Array();
-
-            return (
-                element with {Type = (byte)MdlFile.VertexType.Half4},
-                (index, bytes) => {
-                    var value1 = values1[index];
-                    var value2 = values2[index];
-                    WriteHalf4(new Vector4(value1.X, value1.Y, value2.X, value2.Y), bytes);
-                }
-            );
-        }
-
-        private (MdlStructs.VertexElement, Action<int, List<byte>>)? GetTangent1Writer(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("TANGENT", out var accessor))
-                return null;
-
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 1,
-                Type = (byte)MdlFile.VertexType.ByteFloat4,
-                Usage = (byte)MdlFile.VertexUsage.Tangent1,
-            };
-
-            var values = accessor.AsVector4Array();
-
-            return (
-                element,
-                (index, bytes) => WriteByteFloat4(values[index], bytes)
-            );
-        }
-
-        private (MdlStructs.VertexElement, Action<int, List<byte>>)? GetColorWriter(IReadOnlyDictionary<string, Accessor> accessors)
-        {
-            if (!accessors.TryGetValue("COLOR_0", out var accessor))
-                return null;
-
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 1,
-                Type = (byte)MdlFile.VertexType.ByteFloat4,
-                Usage = (byte)MdlFile.VertexUsage.Color,
-            };
-
-            var values = accessor.AsVector4Array();
-
-            return (
-                element,
-                (index, bytes) => WriteByteFloat4(values[index], bytes)
-            );
-        }
-
-        private void WriteSingle3(Vector3 input, List<byte> bytes)
-        {
-            bytes.AddRange(BitConverter.GetBytes(input.X));
-            bytes.AddRange(BitConverter.GetBytes(input.Y));
-            bytes.AddRange(BitConverter.GetBytes(input.Z));
-        }
-
-        private void WriteUInt(Vector4 input, List<byte> bytes)
-        {
-            bytes.Add((byte)input.X);
-            bytes.Add((byte)input.Y);
-            bytes.Add((byte)input.Z);
-            bytes.Add((byte)input.W);
-        }
-
-        private void WriteByteFloat4(Vector4 input, List<byte> bytes)
-        {
-            bytes.Add((byte)Math.Round(input.X * 255f));
-            bytes.Add((byte)Math.Round(input.Y * 255f));
-            bytes.Add((byte)Math.Round(input.Z * 255f));
-            bytes.Add((byte)Math.Round(input.W * 255f));
-        }
-
-        private void WriteHalf2(Vector2 input, List<byte> bytes)
-        {
-            bytes.AddRange(BitConverter.GetBytes((Half)input.X));
-            bytes.AddRange(BitConverter.GetBytes((Half)input.Y));
-        }
-
-        private void WriteHalf4(Vector4 input, List<byte> bytes)
-        {
-            bytes.AddRange(BitConverter.GetBytes((Half)input.X));
-            bytes.AddRange(BitConverter.GetBytes((Half)input.Y));
-            bytes.AddRange(BitConverter.GetBytes((Half)input.Z));
-            bytes.AddRange(BitConverter.GetBytes((Half)input.W));
-        }
-        
-        private byte TypeSize(MdlFile.VertexType type)
-        {
-            return type switch
-            {
-                MdlFile.VertexType.Single3 => 12,
-                MdlFile.VertexType.Single4 => 16,
-                MdlFile.VertexType.UInt => 4,
-                MdlFile.VertexType.ByteFloat4 => 4,
-                MdlFile.VertexType.Half2 => 4,
-                MdlFile.VertexType.Half4 => 8,
-
-                _ => throw new Exception($"Unhandled vertex type {type}"),
-            };
-        }
-
         public void Execute(CancellationToken cancel)
         {
             var model = Build();
@@ -391,27 +186,27 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
 
             var accessors = prim.VertexAccessors;
 
-            var rawWriters = new[] {
-                GetPositionWriter(accessors),
-                GetBlendWeightWriter(accessors),
-                GetBlendIndexWriter(accessors),
-                GetNormalWriter(accessors),
-                GetTangent1Writer(accessors),
-                GetColorWriter(accessors),
-                GetUvWriter(accessors),
+            var rawAttributes = new[] {
+                VertexAttribute.Position(accessors),
+                VertexAttribute.BlendWeight(accessors),
+                VertexAttribute.BlendIndex(accessors),
+                VertexAttribute.Normal(accessors),
+                VertexAttribute.Tangent1(accessors),
+                VertexAttribute.Color(accessors),
+                VertexAttribute.Uv(accessors),
             };
 
-            var writers = new List<(MdlStructs.VertexElement, Action<int, List<byte>>)>();
+            var attributes = new List<VertexAttribute>();
             var offsets = new byte[] {0, 0, 0};
-            foreach (var writer in rawWriters)
+            foreach (var attribute in rawAttributes)
             {
-                if (writer == null) continue;
-                var element = writer.Value.Item1;
-                writers.Add((
+                if (attribute == null) continue;
+                var element = attribute.Element;
+                attributes.Add(new VertexAttribute(
                     element with {Offset = offsets[element.Stream]},
-                    writer.Value.Item2
+                    attribute.Write
                 ));
-                offsets[element.Stream] += TypeSize((MdlFile.VertexType)element.Type);
+                offsets[element.Stream] += attribute.Size;
             }
             var strides = offsets;
             
@@ -423,9 +218,9 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             var vertexCount = prim.VertexAccessors["POSITION"].Count;
             for (var vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
             {
-                foreach (var (element, writer) in writers)
+                foreach (var attribute in attributes)
                 {
-                    writer(vertexIndex, streams[element.Stream]);
+                    attribute.Write(vertexIndex, streams[attribute.Element.Stream]);
                 }
             }
 
@@ -455,7 +250,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                 },
                 VertexDeclarations = [new MdlStructs.VertexDeclarationStruct()
                 {
-                    VertexElements = writers.Select(x => x.Item1).ToArray(),
+                    VertexElements = attributes.Select(attribute => attribute.Element).ToArray(),
                 }],
                 Meshes = [new MdlStructs.MeshStruct()
                 {
@@ -530,7 +325,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                     "j_kosi",
                 ],
                 Materials = [
-                    "/mt_c0201e6180_top_b.mtrl",
+                    "/mt_c0201e6180_top_a.mtrl",
                 ],
                 RemainingData = dataBuffer.ToArray(),
             };
