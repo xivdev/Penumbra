@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
+using OtterGui;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
@@ -13,7 +14,7 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models;
 
-public sealed class ModelManager : SingleTaskQueue, IDisposable
+public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 {
     private readonly IFramework _framework;
     private readonly IDataManager _gameData;
@@ -122,8 +123,12 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         }
     }
 
-    private class ImportGltfAction : IAction
+    private partial class ImportGltfAction : IAction
     {
+        // TODO: clean this up a bit, i don't actually need all of it.
+        [GeneratedRegex(@".*[_ ^](?'Mesh'[0-9]+)[\\.\\-]?([0-9]+)?$", RegexOptions.Compiled)]
+        private static partial Regex MeshNameGroupingRegex();
+
         public MdlFile? Out;
 
         public ImportGltfAction()
@@ -174,10 +179,25 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             var model = ModelRoot.Load("C:\\Users\\ackwell\\blender\\gltf-tests\\c0201e6180_top.gltf");
 
             // TODO: for grouping, should probably use `node.name ?? mesh.name`, as which are set seems to depend on the exporter.
+            // var nodes = model.LogicalNodes
+            //     .Where(node => node.Mesh != null)
+            //     // TODO: I'm just grabbing the first 3, as that will contain 0.0, 0.1, and 1.0. testing, and all that.
+            //     .Take(3);
+
+            // tt uses this
+            // ".*[_ ^]([0-9]+)[\\.\\-]?([0-9]+)?$"
             var nodes = model.LogicalNodes
                 .Where(node => node.Mesh != null)
-                // TODO: I'm just grabbing the first 3, as that will contain 0.0, 0.1, and 1.0. testing, and all that.
-                .Take(3);
+                .Take(6) // this model has all 3 lods in it - the first 6 are the real lod0
+                .SelectWhere(node => {
+                    var name = node.Name ?? node.Mesh.Name;
+                    var match = MeshNameGroupingRegex().Match(name);
+                    return match.Success
+                        ? (true, (node, int.Parse(match.Groups["Mesh"].Value)))
+                        : (false, (node, -1));
+                })
+                .GroupBy(pair => pair.Item2, pair => pair.node)
+                .OrderBy(group => group.Key);
 
             // this is a representation of a single LoD
             var vertexDeclarations = new List<MdlStructs.VertexDeclarationStruct>();
@@ -187,7 +207,7 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             var vertexBuffer = new List<byte>();
             var indices = new List<byte>();
                 
-            foreach (var node in nodes)
+            foreach (var submeshnodes in nodes)
             {
                 var boneTableOffset = boneTables.Count;
                 var meshOffset = meshes.Count;
@@ -199,10 +219,10 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                     vertexDeclaration,
                     boneTable,
                     xivMesh,
-                    xivSubmesh,
+                    xivSubmeshes,
                     meshVertexBuffer,
                     meshIndices
-                ) = MeshThing(node);
+                ) = MeshThing(submeshnodes);
 
                 vertexDeclarations.Add(vertexDeclaration);
                 boneTables.Add(boneTable);
@@ -215,12 +235,14 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                         .Select(offset => (uint)(offset + vertOffset))
                         .ToArray(),
                 });
-                submeshes.Add(xivSubmesh with {
-                    // TODO: this will need to keep ticking up for each submesh in the same mesh
-                    IndexOffset = (uint)(xivSubmesh.IndexOffset + idxOffset / sizeof(ushort))
-                });
+                // TODO: could probably do this with linq cleaner
+                foreach (var xivSubmesh in xivSubmeshes)
+                    submeshes.Add(xivSubmesh with {
+                        // TODO: this will need to keep ticking up for each submesh in the same mesh
+                        IndexOffset = (uint)(xivSubmesh.IndexOffset + idxOffset / sizeof(ushort))
+                    });
                 vertexBuffer.AddRange(meshVertexBuffer);
-                indices.AddRange(meshIndices);
+                indices.AddRange(meshIndices.SelectMany(index => BitConverter.GetBytes((ushort)index)));
             }
 
             var mdl = new MdlFile()
@@ -295,14 +317,99 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
         }
 
         // this return type is an absolute meme, class that shit up.
-        public (
+        private (
             MdlStructs.VertexDeclarationStruct,
             MdlStructs.BoneTableStruct,
             MdlStructs.MeshStruct,
-            MdlStructs.SubmeshStruct,
+            IEnumerable<MdlStructs.SubmeshStruct>,
             IEnumerable<byte>,
-            IEnumerable<byte>
-        ) MeshThing(Node node)
+            IEnumerable<ushort>
+        ) MeshThing(IEnumerable<Node> nodes)
+        {
+            var vertexDeclaration = new MdlStructs.VertexDeclarationStruct() { VertexElements = Array.Empty<MdlStructs.VertexElement>()};
+            var vertexCount = (ushort)0;
+            // there's gotta be a better way to do this with streams or enumerables or something, surely
+            var streams = new List<byte>[3];
+            for (var i = 0; i < 3; i++)
+                streams[i] = new List<byte>();
+            var indexCount = (uint)0;
+            var indices = new List<ushort>();
+            var strides = new byte[] {0, 0, 0};
+            var submeshes = new List<MdlStructs.SubmeshStruct>();
+
+            // TODO: check that attrs/elems/strides match - we should be generating per-mesh stuff for sanity's sake, but we need to make sure they match if there's >1 node mesh in a mesh.
+            foreach (var node in nodes)
+            {
+                var vertOff = vertexCount;
+                var idxOff = indexCount;
+
+                var (vertDecl, newStrides, submesh, vertCount, vertStreams, idxCount, idxs) = NodeMeshThing(node);
+                vertexDeclaration = vertDecl; // TODO: CHECK EQUAL AFTER FIRST
+                strides = newStrides; // ALSO CHECK EQUAL
+                vertexCount += vertCount;
+                for (var i = 0; i < 3; i++)
+                    streams[i].AddRange(vertStreams[i]);
+                indexCount += idxCount;
+                // we need to offset the indexes to point into the new stuff
+                indices.AddRange(idxs.Select(idx => (ushort)(idx + vertOff)));
+                submeshes.Add(submesh with {
+                    IndexOffset = submesh.IndexOffset + idxOff
+                    // TODO: bone stuff probably
+                });
+            }
+
+            // one of these per skinned mesh.
+            // TODO: check if mesh has skinning at all. (err if mixed?)
+            var boneTable = new MdlStructs.BoneTableStruct()
+            {
+                BoneCount = 1,
+                // this needs to be the full 64. this should be fine _here_ with 0s because i only have one bone, but will need to be fully populated properly. in real files.
+                BoneIndex = new ushort[64],
+            };
+
+            // mesh
+            var xivMesh = new MdlStructs.MeshStruct()
+            {
+                // TODO: sum across submeshes.
+                // TODO: would be cool to share verts on submesh boundaries but that's way out of scope for now.
+                VertexCount = vertexCount,
+                IndexCount = indexCount,
+                // TODO: will have to think about how to represent this - materials can be named, so maybe adjust in parent?
+                MaterialIndex = 0,
+                // TODO: this will need adjusting by parent
+                SubMeshIndex = 0,
+                SubMeshCount = (ushort)submeshes.Count,
+                // TODO: update in parent
+                BoneTableIndex = 0,
+                // TODO: this is relative to the lod's index buffer, and is an index, not byte offset
+                StartIndex = 0,
+                // TODO: these are relative to the lod vertex buffer. these values are accurate for a 0 offset, but lod will need to adjust
+                VertexBufferOffset = [0, (uint)streams[0].Count, (uint)(streams[0].Count + streams[1].Count)],
+                VertexBufferStride = strides,
+                // VertexStreamCount = /* 2 */ (byte)(attributes.Select(attribute => attribute.Element.Stream).Max() + 1),
+                VertexStreamCount = (byte)(vertexDeclaration.VertexElements.Select(element => element.Stream).Max() + 1)
+            };
+
+            return (
+                vertexDeclaration,
+                boneTable,
+                xivMesh,
+                submeshes,
+                streams[0].Concat(streams[1]).Concat(streams[2]),
+                indices
+            );
+        }
+
+        private (
+            MdlStructs.VertexDeclarationStruct,
+            byte[],
+            // MdlStructs.MeshStruct,
+            MdlStructs.SubmeshStruct,
+            ushort,
+            IEnumerable<byte>[],
+            uint,
+            IEnumerable<ushort>
+        ) NodeMeshThing(Node node)
         {
             // BoneTable (mesh.btidx = 255 means unskinned)
             // vertexdecl
@@ -358,10 +465,11 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
             }
 
             // indices
-            var indexCount = primitive.GetIndexAccessor().Count;
-            var indices = primitive.GetIndices()
-                .SelectMany(index => BitConverter.GetBytes((ushort)index))
-                .ToArray();
+            // var indexCount = primitive.GetIndexAccessor().Count;
+            // var indices = primitive.GetIndices()
+            //     .SelectMany(index => BitConverter.GetBytes((ushort)index))
+            //     .ToArray();
+            var indices = primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
 
             // one of these per mesh
             var vertexDeclaration = new MdlStructs.VertexDeclarationStruct()
@@ -369,57 +477,50 @@ public sealed class ModelManager : SingleTaskQueue, IDisposable
                 VertexElements = attributes.Select(attribute => attribute.Element).ToArray(),
             };
 
-            // one of these per skinned mesh.
-            // TODO: check if mesh has skinning at all.
-            var boneTable = new MdlStructs.BoneTableStruct()
-            {
-                BoneCount = 1,
-                // this needs to be the full 64. this should be fine _here_ with 0s because i only have one bone, but will need to be fully populated properly. in real files.
-                BoneIndex = new ushort[64],
-            };
-
             // mesh
-            var xivMesh = new MdlStructs.MeshStruct()
-            {
-                // TODO: sum across submeshes.
-                // TODO: would be cool to share verts on submesh boundaries but that's way out of scope for now.
-                VertexCount = (ushort)vertexCount,
-                IndexCount = (uint)indexCount,
-                // TODO: will have to think about how to represent this - materials can be named, so maybe adjust in parent?
-                MaterialIndex = 0,
-                // TODO: this will need adjusting by parent
-                SubMeshIndex = 0,
-                SubMeshCount = 1,
-                // TODO: update in parent
-                BoneTableIndex = 0,
-                // TODO: this is relative to the lod's index buffer, and is an index, not byte offset
-                StartIndex = 0,
-                // TODO: these are relative to the lod vertex buffer. these values are accurate for a 0 offset, but lod will need to adjust
-                VertexBufferOffset = [0, (uint)streams[0].Count, (uint)(streams[0].Count + streams[1].Count)],
-                VertexBufferStride = strides,
-                VertexStreamCount = /* 2 */ (byte)(attributes.Select(attribute => attribute.Element.Stream).Max() + 1),
-            };
+            // var xivMesh = new MdlStructs.MeshStruct()
+            // {
+            //     // TODO: sum across submeshes.
+            //     // TODO: would be cool to share verts on submesh boundaries but that's way out of scope for now.
+            //     VertexCount = (ushort)vertexCount,
+            //     IndexCount = (uint)indexCount,
+            //     // TODO: will have to think about how to represent this - materials can be named, so maybe adjust in parent?
+            //     MaterialIndex = 0,
+            //     // TODO: this will need adjusting by parent
+            //     SubMeshIndex = 0,
+            //     SubMeshCount = 1,
+            //     // TODO: update in parent
+            //     BoneTableIndex = 0,
+            //     // TODO: this is relative to the lod's index buffer, and is an index, not byte offset
+            //     StartIndex = 0,
+            //     // TODO: these are relative to the lod vertex buffer. these values are accurate for a 0 offset, but lod will need to adjust
+            //     VertexBufferOffset = [0, (uint)streams[0].Count, (uint)(streams[0].Count + streams[1].Count)],
+            //     VertexBufferStride = strides,
+            //     VertexStreamCount = /* 2 */ (byte)(attributes.Select(attribute => attribute.Element.Stream).Max() + 1),
+            // };
 
             // submesh
             // TODO: once we have multiple submeshes, the _first_ should probably set an index offset of 0, and then further ones delta from there - and then they can be blindly adjusted by the parent that's laying out the meshes.
             var xivSubmesh = new MdlStructs.SubmeshStruct()
             {
                 IndexOffset = 0,
-                IndexCount = (uint)indexCount,
+                IndexCount = (uint)indices.Length,
                 AttributeIndexMask = 0,
                 // TODO: not sure how i want to handle these ones
                 BoneStartIndex = 0,
                 BoneCount = 1,
             };
 
-            var vertexBuffer = streams[0].Concat(streams[1]).Concat(streams[2]);
+            // var vertexBuffer = streams[0].Concat(streams[1]).Concat(streams[2]);
 
             return (
                 vertexDeclaration,
-                boneTable,
-                xivMesh,
+                strides,
+                // xivMesh,
                 xivSubmesh,
-                vertexBuffer,
+                (ushort)vertexCount,
+                streams,
+                (uint)indices.Length,
                 indices
             );
         }
