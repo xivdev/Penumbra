@@ -12,10 +12,10 @@ public partial class ModEditWindow
     {
         private ModEditWindow _edit;
 
-        public readonly MdlFile Mdl;
-        private readonly List<string>[] _attributes;
+        public MdlFile Mdl { get; private set; }
+        private List<string>[] _attributes;
 
-        public List<Utf8GamePath>? GamePaths { get; private set ;}
+        public List<Utf8GamePath>? GamePaths { get; private set; }
         public int GamePathIndex;
         
         public bool PendingIo { get; private set; } = false;
@@ -34,11 +34,17 @@ public partial class ModEditWindow
         {
             _edit       = edit;
 
-            Mdl         = new MdlFile(bytes);
-            _attributes = CreateAttributes(Mdl);
+            Initialize(new MdlFile(bytes));
 
             if (mod != null)
                 FindGamePaths(path, mod);
+        }
+
+        [MemberNotNull(nameof(Mdl), nameof(_attributes))]
+        private void Initialize(MdlFile mdl)
+        {
+            Mdl = mdl;
+            _attributes = CreateAttributes(Mdl);
         }
 
         /// <inheritdoc/>
@@ -70,6 +76,12 @@ public partial class ModEditWindow
                 PendingIo = false;
                 GamePaths = task.Result;
             });
+        }
+
+        public void Import()
+        {
+            // TODO: this needs to be fleshed out a bunch.
+            _edit._models.ImportGltf().ContinueWith(v => Initialize(v.Result));
         }
 
         /// <summary> Export model to an interchange format. </summary>

@@ -37,6 +37,12 @@ public partial class ModEditWindow
         DrawExport(tab, disabled);
 
         var ret = false;
+        
+        if (ImGui.Button("import test"))
+        {
+            tab.Import();
+            ret |= true;
+        }
 
         ret |= DrawModelMaterialDetails(tab, disabled);
 
