@@ -206,6 +206,9 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var submeshes = new List<MdlStructs.SubmeshStruct>();
             var vertexBuffer = new List<byte>();
             var indices = new List<byte>();
+
+            var shapeData = new Dictionary<string, List<MdlStructs.ShapeMeshStruct>>();
+            var shapeValues = new List<MdlStructs.ShapeValueStruct>();
                 
             foreach (var submeshnodes in nodes)
             {
@@ -214,6 +217,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 var subOffset = submeshes.Count;
                 var vertOffset = vertexBuffer.Count;
                 var idxOffset = indices.Count;
+                var shapeValueOffset = shapeValues.Count;
 
                 var (
                     vertexDeclaration,
@@ -221,16 +225,18 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                     xivMesh,
                     xivSubmeshes,
                     meshVertexBuffer,
-                    meshIndices
+                    meshIndices,
+                    meshShapeData // fasdfasd
                 ) = MeshThing(submeshnodes);
 
                 vertexDeclarations.Add(vertexDeclaration);
                 boneTables.Add(boneTable);
+                var meshStartIndex = (uint)(xivMesh.StartIndex + idxOffset / sizeof(ushort));
                 meshes.Add(xivMesh with {
                     SubMeshIndex = (ushort)(xivMesh.SubMeshIndex + subOffset),
                     // TODO: should probably define a type for index type hey.
                     BoneTableIndex = (ushort)(xivMesh.BoneTableIndex + boneTableOffset),
-                    StartIndex = (uint)(xivMesh.StartIndex + idxOffset / sizeof(ushort)),
+                    StartIndex = meshStartIndex,
                     VertexBufferOffset = xivMesh.VertexBufferOffset
                         .Select(offset => (uint)(offset + vertOffset))
                         .ToArray(),
@@ -243,6 +249,39 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                     });
                 vertexBuffer.AddRange(meshVertexBuffer);
                 indices.AddRange(meshIndices.SelectMany(index => BitConverter.GetBytes((ushort)index)));
+                foreach (var (key, (shapeMesh, meshShapeValues)) in meshShapeData)
+                {
+                    List<MdlStructs.ShapeMeshStruct> keyshapedata;
+                    if (!shapeData.TryGetValue(key, out keyshapedata))
+                    {
+                        keyshapedata = new();
+                        shapeData.Add(key, keyshapedata);
+                    }
+
+                    keyshapedata.Add(shapeMesh with {
+                        MeshIndexOffset = meshStartIndex,
+                        ShapeValueOffset = (uint)shapeValueOffset,
+                    });
+
+                    shapeValues.AddRange(meshShapeValues);
+                }
+            }
+
+            var shapes = new List<MdlFile.Shape>();
+            var shapeMeshes = new List<MdlStructs.ShapeMeshStruct>();
+
+            foreach (var (name, sms) in shapeData)
+            {
+                var smOff = shapeMeshes.Count;
+
+                shapeMeshes.AddRange(sms);
+                shapes.Add(new MdlFile.Shape()
+                {
+                    ShapeName = name,
+                    // TODO: THESE IS PER LOD
+                    ShapeMeshStartIndex = [(ushort)smOff, 0, 0],
+                    ShapeMeshCount = [(ushort)sms.Count, 0, 0],
+                });
             }
 
             var mdl = new MdlFile()
@@ -292,6 +331,10 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 // game clearly doesn't rely on this, but the "correct" values are a listing of the bones used by each submesh
                 SubMeshBoneMap = [0],
 
+                Shapes = shapes.ToArray(),
+                ShapeMeshes = shapeMeshes.ToArray(),
+                ShapeValues = shapeValues.ToArray(),
+
                 Lods = [new MdlStructs.LodStruct()
                 {
                     MeshIndex = 0,
@@ -323,7 +366,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             MdlStructs.MeshStruct,
             IEnumerable<MdlStructs.SubmeshStruct>,
             IEnumerable<byte>,
-            IEnumerable<ushort>
+            IEnumerable<ushort>,
+            IDictionary<string, (MdlStructs.ShapeMeshStruct, List<MdlStructs.ShapeValueStruct>)>
         ) MeshThing(IEnumerable<Node> nodes)
         {
             var vertexDeclaration = new MdlStructs.VertexDeclarationStruct() { VertexElements = Array.Empty<MdlStructs.VertexElement>()};
@@ -336,6 +380,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var indices = new List<ushort>();
             var strides = new byte[] {0, 0, 0};
             var submeshes = new List<MdlStructs.SubmeshStruct>();
+            var morphData = new Dictionary<string, List<MdlStructs.ShapeValueStruct>>();
 
             // TODO: check that attrs/elems/strides match - we should be generating per-mesh stuff for sanity's sake, but we need to make sure they match if there's >1 node mesh in a mesh.
             foreach (var node in nodes)
@@ -343,7 +388,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 var vertOff = vertexCount;
                 var idxOff = indexCount;
 
-                var (vertDecl, newStrides, submesh, vertCount, vertStreams, idxCount, idxs) = NodeMeshThing(node);
+                var (vertDecl, newStrides, submesh, vertCount, vertStreams, idxCount, idxs, subMorphData) = NodeMeshThing(node);
                 vertexDeclaration = vertDecl; // TODO: CHECK EQUAL AFTER FIRST
                 strides = newStrides; // ALSO CHECK EQUAL
                 vertexCount += vertCount;
@@ -356,6 +401,25 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                     IndexOffset = submesh.IndexOffset + idxOff
                     // TODO: bone stuff probably
                 });
+                // TODO: HANDLE MORPHS, NEED TO ADJUST EVERY VALUE'S INDEX OFFSETS
+                foreach (var (key, shapeValues) in subMorphData)
+                {
+                    List<MdlStructs.ShapeValueStruct> valueList;
+                    if (!morphData.TryGetValue(key, out valueList))
+                    {
+                        valueList = new();
+                        morphData.Add(key, valueList);
+                    }
+                    valueList.AddRange(
+                        shapeValues
+                            .Select(value => value with {
+                                // but this is actually an index index
+                                BaseIndicesIndex = (ushort)(value.BaseIndicesIndex + idxOff),
+                                // this is a vert idx
+                                ReplacingVertexIndex = (ushort)(value.ReplacingVertexIndex + vertOff),
+                            })
+                    );
+                }
             }
 
             // one of these per skinned mesh.
@@ -390,13 +454,30 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 VertexStreamCount = (byte)(vertexDeclaration.VertexElements.Select(element => element.Stream).Max() + 1)
             };
 
+            // TODO: can probably get away with flattening the values and blindly setting offsets in parent - mesh matters above, but the values are already Dealt With at this point
+            var shapeData = morphData.ToDictionary(
+                (pair) => pair.Key,
+                pair => (
+                    new MdlStructs.ShapeMeshStruct()
+                    {
+                        // TODO: this needs to be adjusted by the parent
+                        MeshIndexOffset = 0,
+                        ShapeValueCount = (uint)pair.Value.Count,
+                        // TODO: Also update by parent
+                        ShapeValueOffset = 0,
+                    },
+                    pair.Value
+                )
+            );
+
             return (
                 vertexDeclaration,
                 boneTable,
                 xivMesh,
                 submeshes,
                 streams[0].Concat(streams[1]).Concat(streams[2]),
-                indices
+                indices,
+                shapeData
             );
         }
 
@@ -408,7 +489,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             ushort,
             IEnumerable<byte>[],
             uint,
-            IEnumerable<ushort>
+            IEnumerable<ushort>,
+            IDictionary<string, List<MdlStructs.ShapeValueStruct>>
         ) NodeMeshThing(Node node)
         {
             // BoneTable (mesh.btidx = 255 means unskinned)
@@ -423,9 +505,22 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var primitive = mesh.Primitives[0];
 
             var accessors = primitive.VertexAccessors;
+            
+            // var foo = primitive.GetMorphTargetAccessors(0);
+            // var bar = foo["POSITION"];
+            // var baz = bar.AsVector3Array();
+
+            var morphAccessors = Enumerable.Range(0, primitive.MorphTargetsCount)
+                // todo: map by name, probably? or do that later (probably later)
+                .Select(index => primitive.GetMorphTargetAccessors(index));
+
+            // TODO: name
+            var morphChangedVerts = Enumerable.Range(0, primitive.MorphTargetsCount)
+                .Select(_ => new List<int>())
+                .ToArray();
 
             var rawAttributes = new[] {
-                VertexAttribute.Position(accessors),
+                VertexAttribute.Position(accessors, morphAccessors),
                 VertexAttribute.BlendWeight(accessors),
                 VertexAttribute.BlendIndex(accessors),
                 VertexAttribute.Normal(accessors),
@@ -440,9 +535,12 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             {
                 if (attribute == null) continue;
                 var element = attribute.Element;
+                // recreating this here really sucks - add a "withstream" or something.
                 attributes.Add(new VertexAttribute(
                     element with {Offset = offsets[element.Stream]},
-                    attribute.Write
+                    attribute.Build,
+                    attribute.HasMorph,
+                    attribute.BuildMorph
                 ));
                 offsets[element.Stream] += attribute.Size;
             }
@@ -460,7 +558,18 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             {
                 foreach (var attribute in attributes)
                 {
-                    attribute.Write(vertexIndex, streams[attribute.Element.Stream]);
+                    streams[attribute.Element.Stream].AddRange(attribute.Build(vertexIndex));
+                }
+
+                // this is a meme but idk maybe it's the best approach? it's not like the attr array is ever long
+                foreach (var (list, morphIndex) in morphChangedVerts.WithIndex())
+                {
+                    var hasMorph = attributes.Aggregate(false, (cur, attr) => cur || attr.HasMorph(morphIndex, vertexIndex));
+                    // Penumbra.Log.Information($"eh? {vertexIndex} {morphIndex}: {hasMorph}");
+                    if (hasMorph)
+                    {
+                        list.Add(vertexIndex);
+                    }
                 }
             }
 
@@ -470,6 +579,52 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             //     .SelectMany(index => BitConverter.GetBytes((ushort)index))
             //     .ToArray();
             var indices = primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
+
+            // BLAH
+            // foreach (var (list, morphIndex) in morphChangedVerts.WithIndex())
+            // {
+            //     Penumbra.Log.Information($"morph {morphIndex}: {string.Join(",", list)}");
+            // }
+            // TODO BUILD THE MORPH VERTS
+            // (source, target)
+            var morphmappingstuff = new List<MdlStructs.ShapeValueStruct>[morphChangedVerts.Length];
+            foreach (var (list, morphIndex) in morphChangedVerts.WithIndex())
+            {
+                var morphmaplist = morphmappingstuff[morphIndex] = new();
+                foreach (var vertIdx in list)
+                {
+                    foreach (var attribute in attributes)
+                    {
+                        streams[attribute.Element.Stream].AddRange(attribute.BuildMorph(morphIndex, vertIdx));
+                    }
+
+                    var fuck = indices.WithIndex()
+                        .Where(pair => pair.Value == vertIdx)
+                        .Select(pair => pair.Index);
+
+                    foreach (var something in fuck)
+                    {
+                        morphmaplist.Add(new MdlStructs.ShapeValueStruct(){
+                            BaseIndicesIndex = (ushort)something,
+                            ReplacingVertexIndex = (ushort)vertexCount,
+                        });
+                    }
+                    vertexCount++;
+                }
+            }
+
+            // TODO: HANDLE THIS BEING MISSING - probably warn or something, it's not the end of the world
+            var morphData = new Dictionary<string, List<MdlStructs.ShapeValueStruct>>();
+            if (morphmappingstuff.Length > 0)
+            {
+                var morphnames = mesh.Extras.GetNode("targetNames").Deserialize<List<string>>();
+                morphData = morphmappingstuff
+                    .Zip(morphnames)
+                    .ToDictionary(
+                        (pair) => pair.Second,
+                        (pair) => pair.First
+                    );
+            }
 
             // one of these per mesh
             var vertexDeclaration = new MdlStructs.VertexDeclarationStruct()
@@ -521,7 +676,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 (ushort)vertexCount,
                 streams,
                 (uint)indices.Length,
-                indices
+                indices,
+                morphData
             );
         }
 

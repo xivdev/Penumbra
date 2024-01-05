@@ -4,7 +4,9 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
-using Writer = Action<int, List<byte>>;
+using BuildFn = Func<int, byte[]>;
+using HasMorphFn = Func<int, int, bool>;
+using BuildMorphFn = Func<int, int, byte[]>;
 using Accessors = IReadOnlyDictionary<string, Accessor>;
 
 public class VertexAttribute
@@ -12,7 +14,11 @@ public class VertexAttribute
     /// <summary> XIV vertex element metadata structure. </summary>
     public readonly MdlStructs.VertexElement Element;
     /// <summary> Write this vertex attribute's value at the specified index to the provided byte array. </summary>
-    public readonly Writer Write;
+    public readonly BuildFn Build;
+
+    public readonly HasMorphFn HasMorph;
+
+    public readonly BuildMorphFn BuildMorph;
 
     /// <summary> Size in bytes of a single vertex's attribute value. </summary>
     public byte Size => (MdlFile.VertexType)Element.Type switch
@@ -27,13 +33,32 @@ public class VertexAttribute
         _ => throw new Exception($"Unhandled vertex type {(MdlFile.VertexType)Element.Type}"),
     };
 
-    public VertexAttribute(MdlStructs.VertexElement element, Writer write)
+    public VertexAttribute(
+        MdlStructs.VertexElement element,
+        BuildFn write,
+        HasMorphFn? hasMorph = null,
+        BuildMorphFn? buildMorph = null
+    )
     {
         Element = element;
-        Write = write;
+        Build = write;
+        HasMorph = hasMorph ?? DefaultHasMorph;
+        BuildMorph = buildMorph ?? DefaultBuildMorph;
     }
 
-    public static VertexAttribute Position(Accessors accessors)
+    // todo: this is per-shape at the moment - consider if it should do them all at once (i mean we always want to check all of them, it's mostly a semantics question on who owns the loop)
+    private static bool DefaultHasMorph(int morphIndex, int vertexIndex)
+    {
+        return false;
+    }
+
+    // xiv stores shapes as full vertex replacements, so the default value for a morph attribute is simply it's built state (rather than a delta or w/e)
+    private byte[] DefaultBuildMorph(int morphIndex, int vertexIndex)
+    {
+        return Build(vertexIndex);
+    }
+
+    public static VertexAttribute Position(Accessors accessors, IEnumerable<Accessors> morphAccessors)
     {
         if (!accessors.TryGetValue("POSITION", out var accessor))
             throw new Exception("Meshes must contain a POSITION attribute.");
@@ -47,9 +72,32 @@ public class VertexAttribute
 
         var values = accessor.AsVector3Array();
 
+        var foo = morphAccessors
+            .Select(ma => ma.GetValueOrDefault("POSITION")?.AsVector3Array())
+            .ToArray();
+
         return new VertexAttribute(
             element,
-            (index, bytes) => WriteSingle3(values[index], bytes)
+            index => BuildSingle3(values[index]),
+            // TODO: at the moment this is only defined for position - is it worth setting one up for normal, too?
+            (morphIndex, vertexIndex) =>
+            {
+                var deltas = foo[morphIndex];
+                if (deltas == null) return false;
+                var delta = deltas[vertexIndex];
+                return delta != Vector3.Zero;
+            },
+            // TODO: this will _need_ to be defined for any values that appear in morphs, i.e. geom and maybe mats
+            (morphIndex, vertexIndex) =>
+            {
+                var value = values[vertexIndex];
+
+                var delta = foo[morphIndex]?[vertexIndex];
+                if (delta != null)
+                    value += delta.Value;
+
+                return BuildSingle3(value);
+            }
         );
     }
 
@@ -73,8 +121,7 @@ public class VertexAttribute
         return new VertexAttribute(
             element,
             // TODO: TEMP TESTING PINNED TO BONE 0 UNTIL I SET UP BONE MAPPINGS
-            // (index, bytes) => WriteByteFloat4(values[index], bytes)
-            (index, bytes) => WriteByteFloat4(Vector4.UnitX, bytes)
+            index => BuildByteFloat4(Vector4.UnitX)
         );
     }
 
@@ -99,8 +146,7 @@ public class VertexAttribute
         return new VertexAttribute(
             element,
             // TODO: TEMP TESTING PINNED TO BONE 0 UNTIL I SET UP BONE MAPPINGS
-            // (index, bytes) => WriteUInt(values[index], bytes)
-            (index, bytes) => WriteUInt(Vector4.Zero, bytes)
+            index => BuildUInt(Vector4.Zero)
         );
     }
 
@@ -120,7 +166,7 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            (index, bytes) => WriteHalf4(new Vector4(values[index], 0), bytes)
+            index => BuildHalf4(new Vector4(values[index], 0))
         );
     }
 
@@ -141,18 +187,18 @@ public class VertexAttribute
         if (!accessors.TryGetValue("TEXCOORD_1", out var accessor2))
             return new VertexAttribute(
                 element with { Type = (byte)MdlFile.VertexType.Half2 },
-                (index, bytes) => WriteHalf2(values1[index], bytes)
+                index => BuildHalf2(values1[index])
             );
 
         var values2 = accessor2.AsVector2Array();
 
         return new VertexAttribute(
             element with { Type = (byte)MdlFile.VertexType.Half4 },
-            (index, bytes) =>
+            index =>
             {
                 var value1 = values1[index];
                 var value2 = values2[index];
-                WriteHalf4(new Vector4(value1.X, value1.Y, value2.X, value2.Y), bytes);
+                return BuildHalf4(new Vector4(value1.X, value1.Y, value2.X, value2.Y));
             }
         );
     }
@@ -173,7 +219,7 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            (index, bytes) => WriteByteFloat4(values[index], bytes)
+            index => BuildByteFloat4(values[index])
         );
     }
 
@@ -193,44 +239,54 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            (index, bytes) => WriteByteFloat4(values[index], bytes)
+            index => BuildByteFloat4(values[index])
         );
     }
 
-    private static void WriteSingle3(Vector3 input, List<byte> bytes)
+    private static byte[] BuildSingle3(Vector3 input)
     {
-        bytes.AddRange(BitConverter.GetBytes(input.X));
-        bytes.AddRange(BitConverter.GetBytes(input.Y));
-        bytes.AddRange(BitConverter.GetBytes(input.Z));
+        return [
+            ..BitConverter.GetBytes(input.X),
+            ..BitConverter.GetBytes(input.Y),
+            ..BitConverter.GetBytes(input.Z),
+        ];
     }
 
-    private static void WriteUInt(Vector4 input, List<byte> bytes)
+    private static byte[] BuildUInt(Vector4 input)
     {
-        bytes.Add((byte)input.X);
-        bytes.Add((byte)input.Y);
-        bytes.Add((byte)input.Z);
-        bytes.Add((byte)input.W);
+        return [
+            (byte)input.X,
+            (byte)input.Y,
+            (byte)input.Z,
+            (byte)input.W,
+        ];
     }
 
-    private static void WriteByteFloat4(Vector4 input, List<byte> bytes)
+    private static byte[] BuildByteFloat4(Vector4 input)
     {
-        bytes.Add((byte)Math.Round(input.X * 255f));
-        bytes.Add((byte)Math.Round(input.Y * 255f));
-        bytes.Add((byte)Math.Round(input.Z * 255f));
-        bytes.Add((byte)Math.Round(input.W * 255f));
+        return [
+            (byte)Math.Round(input.X * 255f),
+            (byte)Math.Round(input.Y * 255f),
+            (byte)Math.Round(input.Z * 255f),
+            (byte)Math.Round(input.W * 255f),
+        ];
     }
 
-    private static void WriteHalf2(Vector2 input, List<byte> bytes)
+    private static byte[] BuildHalf2(Vector2 input)
     {
-        bytes.AddRange(BitConverter.GetBytes((Half)input.X));
-        bytes.AddRange(BitConverter.GetBytes((Half)input.Y));
+        return [
+            ..BitConverter.GetBytes((Half)input.X),
+            ..BitConverter.GetBytes((Half)input.Y),
+        ];
     }
 
-    private static void WriteHalf4(Vector4 input, List<byte> bytes)
+    private static byte[] BuildHalf4(Vector4 input)
     {
-        bytes.AddRange(BitConverter.GetBytes((Half)input.X));
-        bytes.AddRange(BitConverter.GetBytes((Half)input.Y));
-        bytes.AddRange(BitConverter.GetBytes((Half)input.Z));
-        bytes.AddRange(BitConverter.GetBytes((Half)input.W));
+        return [
+            ..BitConverter.GetBytes((Half)input.X),
+            ..BitConverter.GetBytes((Half)input.Y),
+            ..BitConverter.GetBytes((Half)input.Z),
+            ..BitConverter.GetBytes((Half)input.W),
+        ];
     }
 }
