@@ -10,7 +10,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is whether the new directory is valid. </item>
 /// </list>
 /// </summary>
-public sealed class ModDirectoryChanged : EventWrapper<Action<string, bool>, ModDirectoryChanged.Priority>
+public sealed class ModDirectoryChanged() : EventWrapper<string, bool, ModDirectoryChanged.Priority>(nameof(ModDirectoryChanged))
 {
     public enum Priority
     {
@@ -20,11 +20,4 @@ public sealed class ModDirectoryChanged : EventWrapper<Action<string, bool>, Mod
         /// <seealso cref="UI.FileDialogService.OnModDirectoryChange"/>
         FileDialogService = 0,
     }
-
-    public ModDirectoryChanged()
-        : base(nameof(ModDirectoryChanged))
-    { }
-
-    public void Invoke(string newModDirectory, bool newDirectoryValid)
-        => Invoke(this, newModDirectory, newDirectoryValid);
 }

@@ -1,35 +1,39 @@
-using Dalamud.Hooking;
-using Dalamud.Utility.Signatures;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using Penumbra.GameData;
-using Penumbra.Interop.Services;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using OtterGui.Services;
+using Penumbra.Interop.Hooks;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
+using Penumbra.GameData.Structs;
 
 namespace Penumbra.Interop.PathResolving;
 
-public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>
+public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>, IService
 {
-    private readonly IObjectTable     _objects;
-    private readonly GameEventManager _gameEvents;
+    private readonly IObjectTable            _objects;
+    private readonly CreateCharacterBase     _createCharacterBase;
+    private readonly WeaponReload            _weaponReload;
+    private readonly CharacterBaseDestructor _characterBaseDestructor;
+    private readonly GameState               _gameState;
 
-    private readonly Dictionary<nint, (nint GameObject, bool IsChild)> _drawObjectToGameObject = new();
-
-    private readonly ThreadLocal<Queue<nint>> _lastGameObject = new(() => new Queue<nint>());
+    private readonly Dictionary<nint, (nint GameObject, bool IsChild)> _drawObjectToGameObject = [];
 
     public nint LastGameObject
-        => _lastGameObject.IsValueCreated && _lastGameObject.Value!.Count > 0 ? _lastGameObject.Value.Peek() : nint.Zero;
+        => _gameState.LastGameObject;
 
-    public DrawObjectState(IObjectTable objects, GameEventManager gameEvents, IGameInteropProvider interop)
+    public unsafe DrawObjectState(IObjectTable objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
+        CharacterBaseDestructor characterBaseDestructor, GameState gameState)
     {
-        interop.InitializeFromAttributes(this);
-        _enableDrawHook.Enable();
-        _objects                            =  objects;
-        _gameEvents                         =  gameEvents;
-        _gameEvents.WeaponReloading         += OnWeaponReloading;
-        _gameEvents.WeaponReloaded          += OnWeaponReloaded;
-        _gameEvents.CharacterBaseCreated    += OnCharacterBaseCreated;
-        _gameEvents.CharacterBaseDestructor += OnCharacterBaseDestructor;
+        _objects                 = objects;
+        _createCharacterBase     = createCharacterBase;
+        _weaponReload            = weaponReload;
+        _characterBaseDestructor = characterBaseDestructor;
+        _gameState               = gameState;
+        _weaponReload.Subscribe(OnWeaponReloading, WeaponReload.Priority.DrawObjectState);
+        _weaponReload.Subscribe(OnWeaponReloaded,  WeaponReload.PostEvent.Priority.DrawObjectState);
+        _createCharacterBase.Subscribe(OnCharacterBaseCreated, CreateCharacterBase.PostEvent.Priority.DrawObjectState);
+        _characterBaseDestructor.Subscribe(OnCharacterBaseDestructor, CharacterBaseDestructor.Priority.DrawObjectState);
         InitializeDrawObjects();
     }
 
@@ -57,32 +61,32 @@ public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, boo
     public IEnumerable<(nint, bool)> Values
         => _drawObjectToGameObject.Values;
 
-    public void Dispose()
+    public unsafe void Dispose()
     {
-        _gameEvents.WeaponReloading         -= OnWeaponReloading;
-        _gameEvents.WeaponReloaded          -= OnWeaponReloaded;
-        _gameEvents.CharacterBaseCreated    -= OnCharacterBaseCreated;
-        _gameEvents.CharacterBaseDestructor -= OnCharacterBaseDestructor;
-        _enableDrawHook.Dispose();
+        _weaponReload.Unsubscribe(OnWeaponReloading);
+        _weaponReload.Unsubscribe(OnWeaponReloaded);
+        _createCharacterBase.Unsubscribe(OnCharacterBaseCreated);
+        _characterBaseDestructor.Unsubscribe(OnCharacterBaseDestructor);
     }
 
-    private void OnWeaponReloading(nint _, nint gameObject)
-        => _lastGameObject.Value!.Enqueue(gameObject);
+    private unsafe void OnWeaponReloading(DrawDataContainer* _, Character* character, CharacterWeapon* _2)
+        => _gameState.QueueGameObject((nint)character);
 
-    private unsafe void OnWeaponReloaded(nint _, nint gameObject)
+    private unsafe void OnWeaponReloaded(DrawDataContainer* _, Character* character)
     {
-        _lastGameObject.Value!.Dequeue();
-        IterateDrawObjectTree((Object*)((GameObject*)gameObject)->DrawObject, gameObject, false, false);
+        _gameState.DequeueGameObject();
+        IterateDrawObjectTree((Object*)character->GameObject.DrawObject, (nint)character, false, false);
     }
 
-    private void OnCharacterBaseDestructor(nint characterBase)
-        => _drawObjectToGameObject.Remove(characterBase);
+    private unsafe void OnCharacterBaseDestructor(CharacterBase* characterBase)
+        => _drawObjectToGameObject.Remove((nint)characterBase);
 
-    private void OnCharacterBaseCreated(uint modelCharaId, nint customize, nint equipment, nint drawObject)
+    private unsafe void OnCharacterBaseCreated(ModelCharaId modelCharaId, CustomizeArray* customize, CharacterArmor* equipment,
+        CharacterBase* drawObject)
     {
         var gameObject = LastGameObject;
         if (gameObject != nint.Zero)
-            _drawObjectToGameObject[drawObject] = (gameObject, false);
+            _drawObjectToGameObject[(nint)drawObject] = (gameObject, false);
     }
 
     /// <summary>
@@ -122,21 +126,5 @@ public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, boo
             IterateDrawObjectTree(prevSibling, gameObject, true, false);
             prevSibling = prevSibling->PreviousSiblingObject;
         }
-    }
-
-    /// <summary>
-    /// EnableDraw is what creates DrawObjects for gameObjects,
-    /// so we always keep track of the current GameObject to be able to link it to the DrawObject.
-    /// </summary>
-    private delegate void EnableDrawDelegate(nint gameObject);
-
-    [Signature(Sigs.EnableDraw, DetourName = nameof(EnableDrawDetour))]
-    private readonly Hook<EnableDrawDelegate> _enableDrawHook = null!;
-
-    private void EnableDrawDetour(nint gameObject)
-    {
-        _lastGameObject.Value!.Enqueue(gameObject);
-        _enableDrawHook.Original.Invoke(gameObject);
-        _lastGameObject.Value!.TryDequeue(out _);
     }
 }

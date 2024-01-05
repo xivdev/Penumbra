@@ -4,6 +4,7 @@ using Dalamud.Utility.Signatures;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData;
+using Penumbra.Interop.Hooks;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
@@ -21,30 +22,30 @@ namespace Penumbra.Interop.PathResolving;
 /// </summary>
 public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>
 {
-    private readonly PerformanceTracker  _performance;
-    private readonly ResourceLoader      _loader;
-    private readonly GameEventManager    _events;
-    private readonly CommunicatorService _communicator;
+    private readonly PerformanceTracker       _performance;
+    private readonly ResourceLoader           _loader;
+    private readonly ResourceHandleDestructor _resourceHandleDestructor;
+    private readonly CommunicatorService      _communicator;
 
     private readonly ThreadLocal<ResolveData> _mtrlData = new(() => ResolveData.Invalid);
     private readonly ThreadLocal<ResolveData> _avfxData = new(() => ResolveData.Invalid);
 
     private readonly ConcurrentDictionary<nint, ResolveData> _subFileCollection = new();
 
-    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, GameEventManager events, CommunicatorService communicator, IGameInteropProvider interop)
+    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, CommunicatorService communicator, IGameInteropProvider interop, ResourceHandleDestructor resourceHandleDestructor)
     {
         interop.InitializeFromAttributes(this);
 
-        _performance  = performance;
-        _loader       = loader;
-        _events       = events;
-        _communicator = communicator;
+        _performance                   = performance;
+        _loader                        = loader;
+        _communicator                  = communicator;
+        _resourceHandleDestructor = resourceHandleDestructor;
 
         _loadMtrlShpkHook.Enable();
         _loadMtrlTexHook.Enable();
         _apricotResourceLoadHook.Enable();
         _loader.ResourceLoaded           += SubfileContainerRequested;
-        _events.ResourceHandleDestructor += ResourceDestroyed;
+        _resourceHandleDestructor.Subscribe(ResourceDestroyed, ResourceHandleDestructor.Priority.SubfileHelper);
     }
 
 
@@ -105,7 +106,7 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
     public void Dispose()
     {
         _loader.ResourceLoaded           -= SubfileContainerRequested;
-        _events.ResourceHandleDestructor -= ResourceDestroyed;
+        _resourceHandleDestructor.Unsubscribe(ResourceDestroyed);
         _loadMtrlShpkHook.Dispose();
         _loadMtrlTexHook.Dispose();
         _apricotResourceLoadHook.Dispose();

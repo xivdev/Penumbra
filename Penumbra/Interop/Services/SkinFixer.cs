@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData;
+using Penumbra.Interop.Hooks;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.Services;
@@ -32,9 +33,9 @@ public sealed unsafe class SkinFixer : IDisposable
 
     private readonly Hook<OnRenderMaterialDelegate> _onRenderMaterialHook;
 
-    private readonly GameEventManager    _gameEvents;
-    private readonly CommunicatorService _communicator;
-    private readonly CharacterUtility    _utility;
+    private readonly ResourceHandleDestructor _resourceHandleDestructor;
+    private readonly CommunicatorService      _communicator;
+    private readonly CharacterUtility         _utility;
 
     // MaterialResourceHandle set
     private readonly ConcurrentSet<nint> _moddedSkinShpkMaterials = new();
@@ -50,15 +51,16 @@ public sealed unsafe class SkinFixer : IDisposable
     public int ModdedSkinShpkCount
         => _moddedSkinShpkCount;
 
-    public SkinFixer(GameEventManager gameEvents, CharacterUtility utility, CommunicatorService communicator, IGameInteropProvider interop)
+    public SkinFixer(ResourceHandleDestructor resourceHandleDestructor, CharacterUtility utility, CommunicatorService communicator,
+        IGameInteropProvider interop)
     {
         interop.InitializeFromAttributes(this);
-        _gameEvents           = gameEvents;
-        _utility              = utility;
-        _communicator         = communicator;
-        _onRenderMaterialHook = interop.HookFromAddress<OnRenderMaterialDelegate>(_humanVTable[62], OnRenderHumanMaterial);
+        _resourceHandleDestructor = resourceHandleDestructor;
+        _utility                  = utility;
+        _communicator             = communicator;
+        _onRenderMaterialHook     = interop.HookFromAddress<OnRenderMaterialDelegate>(_humanVTable[62], OnRenderHumanMaterial);
         _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.SkinFixer);
-        _gameEvents.ResourceHandleDestructor += OnResourceHandleDestructor;
+        _resourceHandleDestructor.Subscribe(OnResourceHandleDestructor, ResourceHandleDestructor.Priority.SkinFixer);
         _onRenderMaterialHook.Enable();
     }
 
@@ -66,7 +68,7 @@ public sealed unsafe class SkinFixer : IDisposable
     {
         _onRenderMaterialHook.Dispose();
         _communicator.MtrlShpkLoaded.Unsubscribe(OnMtrlShpkLoaded);
-        _gameEvents.ResourceHandleDestructor -= OnResourceHandleDestructor;
+        _resourceHandleDestructor.Unsubscribe(OnResourceHandleDestructor);
         _moddedSkinShpkMaterials.Clear();
         _moddedSkinShpkCount = 0;
     }

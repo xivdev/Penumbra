@@ -1,21 +1,12 @@
-using Dalamud.Game;
-using Dalamud.Game.ClientState.Objects;
-using Dalamud.Interface;
-using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Interface.DragDrop;
-using Dalamud.Plugin.Services;
 using OtterGui.Services;
-
-// ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 
 namespace Penumbra.Services;
 
-public class DalamudConfigService
+public class DalamudConfigService : IService
 {
-    public DalamudConfigService(DalamudPluginInterface pluginInterface)
+    public DalamudConfigService()
     {
-        pluginInterface.Inject(this);
         try
         {
             var serviceType =
@@ -113,31 +104,5 @@ public class DalamudConfigService
             Penumbra.Log.Error($"Error while fetching Dalamud Config {fieldName}:\n{e}");
             return false;
         }
-    }
-}
-
-public static class DalamudServices
-{
-    public static void AddServices(ServiceManager services, DalamudPluginInterface pi)
-    {
-        services.AddExistingService(pi);
-        services.AddExistingService(pi.UiBuilder);
-        services.AddDalamudService<ICommandManager>(pi);
-        services.AddDalamudService<IDataManager>(pi);
-        services.AddDalamudService<IClientState>(pi);
-        services.AddDalamudService<IChatGui>(pi);
-        services.AddDalamudService<IFramework>(pi);
-        services.AddDalamudService<ICondition>(pi);
-        services.AddDalamudService<ITargetManager>(pi);
-        services.AddDalamudService<IObjectTable>(pi);
-        services.AddDalamudService<ITitleScreenMenu>(pi);
-        services.AddDalamudService<IGameGui>(pi);
-        services.AddDalamudService<IKeyState>(pi);
-        services.AddDalamudService<ISigScanner>(pi);
-        services.AddDalamudService<IDragDropManager>(pi);
-        services.AddDalamudService<ITextureProvider>(pi);
-        services.AddDalamudService<ITextureSubstitutionProvider>(pi);
-        services.AddDalamudService<IGameInteropProvider>(pi);
-        services.AddDalamudService<IPluginLog>(pi);
     }
 }

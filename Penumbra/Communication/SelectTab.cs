@@ -11,18 +11,11 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the selected mod, if any. </item>
 /// </list>
 /// </summary>
-public sealed class SelectTab : EventWrapper<Action<TabType, Mod?>, SelectTab.Priority>
+public sealed class SelectTab() : EventWrapper<TabType, Mod?, SelectTab.Priority>(nameof(SelectTab))
 {
     public enum Priority
     {
         /// <seealso cref="UI.Tabs.ConfigTabBar.OnSelectTab"/>
         ConfigTabBar = 0,
     }
-
-    public SelectTab()
-        : base(nameof(SelectTab))
-    { }
-
-    public void Invoke(TabType tab = TabType.None, Mod? mod = null)
-        => Invoke(this, tab, mod);
 }

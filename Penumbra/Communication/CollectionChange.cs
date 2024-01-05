@@ -12,7 +12,8 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the new collection, or null on deletions.</item>
 ///     <item>Parameter is the display name for Individual collections or an empty string otherwise.</item>
 /// </list> </summary>
-public sealed class CollectionChange : EventWrapper<Action<CollectionType, ModCollection?, ModCollection?, string>, CollectionChange.Priority>
+public sealed class CollectionChange()
+    : EventWrapper<CollectionType, ModCollection?, ModCollection?, string, CollectionChange.Priority>(nameof(CollectionChange))
 {
     public enum Priority
     {
@@ -46,11 +47,4 @@ public sealed class CollectionChange : EventWrapper<Action<CollectionType, ModCo
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnCollectionChange"/>
         ModFileSystemSelector = 0,
     }
-
-    public CollectionChange()
-        : base(nameof(CollectionChange))
-    { }
-
-    public void Invoke(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string displayName)
-        => Invoke(this, collectionType, oldCollection, newCollection, displayName);
 }

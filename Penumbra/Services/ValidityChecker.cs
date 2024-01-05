@@ -1,10 +1,11 @@
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
 using OtterGui.Classes;
+using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class ValidityChecker
+public class ValidityChecker : IService
 {
     public const string Repository      = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
     public const string SeaOfStars      = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";

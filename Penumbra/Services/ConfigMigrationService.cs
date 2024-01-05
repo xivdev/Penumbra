@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -22,10 +22,8 @@ namespace Penumbra.Services;
 /// Contains everything to migrate from older versions of the config to the current,
 /// including deprecated fields.
 /// </summary>
-public class ConfigMigrationService
+public class ConfigMigrationService(SaveService saveService) : IService
 {
-    private readonly SaveService _saveService;
-
     private Configuration _config = null!;
     private JObject       _data   = null!;
 
@@ -33,13 +31,10 @@ public class ConfigMigrationService
     public string                     DefaultCollection    = ModCollection.DefaultCollectionName;
     public string                     ForcedCollection     = string.Empty;
     public Dictionary<string, string> CharacterCollections = [];
-    public Dictionary<string, string> ModSortOrder         = new();
+    public Dictionary<string, string> ModSortOrder         = [];
     public bool                       InvertModListOrder;
     public bool                       SortFoldersFirst;
     public SortModeV3                 SortMode = SortModeV3.FoldersFirst;
-
-    public ConfigMigrationService(SaveService saveService)
-        => _saveService = saveService;
 
     /// <summary> Add missing colors to the dictionary if necessary. </summary>
     private static void AddColors(Configuration config, bool forceSave)
@@ -61,13 +56,13 @@ public class ConfigMigrationService
         // because it stayed alive for a bunch of people for some reason.
         DeleteMetaTmp();
 
-        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(_saveService.FileNames.ConfigFile))
+        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(saveService.FileNames.ConfigFile))
         {
             AddColors(config, false);
             return;
         }
 
-        _data = JObject.Parse(File.ReadAllText(_saveService.FileNames.ConfigFile));
+        _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigFile));
         CreateBackup();
 
         Version0To1();
@@ -118,7 +113,7 @@ public class ConfigMigrationService
         if (_config.Version != 6)
             return;
 
-        ActiveCollectionMigration.MigrateUngenderedCollections(_saveService.FileNames);
+        ActiveCollectionMigration.MigrateUngenderedCollections(saveService.FileNames);
         _config.Version = 7;
     }
 
@@ -223,7 +218,7 @@ public class ConfigMigrationService
             return;
 
         // Add the previous forced collection to all current collections except itself as an inheritance.
-        foreach (var collection in _saveService.FileNames.CollectionFiles)
+        foreach (var collection in saveService.FileNames.CollectionFiles)
         {
             try
             {
@@ -246,7 +241,7 @@ public class ConfigMigrationService
     private void ResettleSortOrder()
     {
         ModSortOrder = _data[nameof(ModSortOrder)]?.ToObject<Dictionary<string, string>>() ?? ModSortOrder;
-        var       file   = _saveService.FileNames.FilesystemFile;
+        var       file   = saveService.FileNames.FilesystemFile;
         using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
         using var writer = new StreamWriter(stream);
         using var j      = new JsonTextWriter(writer);
@@ -281,7 +276,7 @@ public class ConfigMigrationService
     private void SaveActiveCollectionsV0(string def, string ui, string current, IEnumerable<(string, string)> characters,
         IEnumerable<(CollectionType, string)> special)
     {
-        var file = _saveService.FileNames.ActiveCollectionsFile;
+        var file = saveService.FileNames.ActiveCollectionsFile;
         try
         {
             using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
@@ -337,7 +332,7 @@ public class ConfigMigrationService
         if (!collectionJson.Exists)
             return;
 
-        var defaultCollectionFile = new FileInfo(_saveService.FileNames.CollectionFile(ModCollection.DefaultCollectionName));
+        var defaultCollectionFile = new FileInfo(saveService.FileNames.CollectionFile(ModCollection.DefaultCollectionName));
         if (defaultCollectionFile.Exists)
             return;
 
@@ -370,9 +365,9 @@ public class ConfigMigrationService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict,
+            var collection = ModCollection.CreateFromData(saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict,
                 Array.Empty<string>());
-            _saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
+            saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)
         {
@@ -384,7 +379,7 @@ public class ConfigMigrationService
     // Create a backup of the configuration file specifically.
     private void CreateBackup()
     {
-        var name    = _saveService.FileNames.ConfigFile;
+        var name    = saveService.FileNames.ConfigFile;
         var bakName = name + ".bak";
         try
         {
