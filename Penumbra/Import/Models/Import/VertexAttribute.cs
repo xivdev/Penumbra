@@ -150,7 +150,7 @@ public class VertexAttribute
         );
     }
 
-    public static VertexAttribute? Normal(Accessors accessors)
+    public static VertexAttribute? Normal(Accessors accessors, IEnumerable<Accessors> morphAccessors)
     {
         if (!accessors.TryGetValue("NORMAL", out var accessor))
             return null;
@@ -164,9 +164,24 @@ public class VertexAttribute
 
         var values = accessor.AsVector3Array();
 
+        var foo = morphAccessors
+            .Select(ma => ma.GetValueOrDefault("NORMAL")?.AsVector3Array())
+            .ToArray();
+
         return new VertexAttribute(
             element,
-            index => BuildHalf4(new Vector4(values[index], 0))
+            index => BuildHalf4(new Vector4(values[index], 0)),
+            null,
+            (morphIndex, vertexIndex) =>
+            {
+                var value = values[vertexIndex];
+
+                var delta = foo[morphIndex]?[vertexIndex];
+                if (delta != null)
+                    value += delta.Value;
+
+                return BuildHalf4(new Vector4(value, 0));
+            }
         );
     }
 
@@ -203,7 +218,7 @@ public class VertexAttribute
         );
     }
 
-    public static VertexAttribute? Tangent1(Accessors accessors)
+    public static VertexAttribute? Tangent1(Accessors accessors, IEnumerable<Accessors> morphAccessors)
     {
         if (!accessors.TryGetValue("TANGENT", out var accessor))
             return null;
@@ -217,9 +232,24 @@ public class VertexAttribute
 
         var values = accessor.AsVector4Array();
 
+        var foo = morphAccessors
+            .Select(ma => ma.GetValueOrDefault("TANGENT")?.AsVector3Array())
+            .ToArray();
+
         return new VertexAttribute(
             element,
-            index => BuildByteFloat4(values[index])
+            index => BuildByteFloat4(values[index]),
+            null,
+            (morphIndex, vertexIndex) =>
+            {
+                var value = values[vertexIndex];
+
+                var delta = foo[morphIndex]?[vertexIndex];
+                if (delta != null)
+                    value += new Vector4(delta.Value, 0);
+
+                return BuildByteFloat4(value);
+            }
         );
     }
 

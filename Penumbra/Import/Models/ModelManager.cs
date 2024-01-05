@@ -523,8 +523,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 VertexAttribute.Position(accessors, morphAccessors),
                 VertexAttribute.BlendWeight(accessors),
                 VertexAttribute.BlendIndex(accessors),
-                VertexAttribute.Normal(accessors),
-                VertexAttribute.Tangent1(accessors),
+                VertexAttribute.Normal(accessors, morphAccessors),
+                VertexAttribute.Tangent1(accessors, morphAccessors),
                 VertexAttribute.Color(accessors),
                 VertexAttribute.Uv(accessors),
             };
