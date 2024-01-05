@@ -9,18 +9,12 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the applied collection. </item>
 ///     <item>Parameter is the created draw object. </item>
 /// </list> </summary>
-public sealed class CreatedCharacterBase : EventWrapper<Action<nint, ModCollection, nint>, CreatedCharacterBase.Priority>
+public sealed class CreatedCharacterBase()
+    : EventWrapper<nint, ModCollection, nint, CreatedCharacterBase.Priority>(nameof(CreatedCharacterBase))
 {
     public enum Priority
     {
         /// <seealso cref="PenumbraApi.CreatedCharacterBase"/>
         Api = int.MinValue,
     }
-
-    public CreatedCharacterBase()
-        : base(nameof(CreatedCharacterBase))
-    { }
-
-    public void Invoke(nint gameObject, ModCollection appliedCollection, nint drawObject)
-        => Invoke(this, gameObject, appliedCollection, drawObject);
 }

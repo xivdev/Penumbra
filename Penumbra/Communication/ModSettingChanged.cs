@@ -17,7 +17,8 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is whether the change was inherited from another collection. </item>
 /// </list>
 /// </summary>
-public sealed class ModSettingChanged : EventWrapper<Action<ModCollection, ModSettingChange, Mod?, int, int, bool>, ModSettingChanged.Priority>
+public sealed class ModSettingChanged()
+    : EventWrapper<ModCollection, ModSettingChange, Mod?, int, int, bool, ModSettingChanged.Priority>(nameof(ModSettingChanged))
 {
     public enum Priority
     {
@@ -33,11 +34,4 @@ public sealed class ModSettingChanged : EventWrapper<Action<ModCollection, ModSe
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnSettingChange"/>
         ModFileSystemSelector = 0,
     }
-
-    public ModSettingChanged()
-        : base(nameof(ModSettingChanged))
-    { }
-
-    public void Invoke(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
-        => Invoke(this, collection, type, mod, oldValue, groupIdx, inherited);
 }

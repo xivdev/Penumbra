@@ -1,5 +1,10 @@
+using Dalamud.Game;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using Microsoft.Extensions.DependencyInjection;
+using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Compression;
 using OtterGui.Log;
@@ -8,7 +13,6 @@ using Penumbra.Api;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
-using Penumbra.GameData.Data;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Textures;
@@ -37,10 +41,9 @@ public static class ServiceManagerA
     public static ServiceManager CreateProvider(Penumbra penumbra, DalamudPluginInterface pi, Logger log)
     {
         var services = new ServiceManager(log)
+            .AddDalamudServices(pi)
             .AddExistingService(log)
             .AddExistingService(penumbra)
-            .AddMeta()
-            .AddGameData()
             .AddInterop()
             .AddConfiguration()
             .AddCollections()
@@ -52,31 +55,34 @@ public static class ServiceManagerA
             .AddApi();
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
-        DalamudServices.AddServices(services, pi);
+        services.AddIServices(typeof(ImGuiUtil).Assembly);
         services.CreateProvider();
         return services;
     }
 
-    private static ServiceManager AddMeta(this ServiceManager services)
-        => services.AddSingleton<ValidityChecker>()
-            .AddSingleton<PerformanceTracker>()
-            .AddSingleton<FilenameService>()
-            .AddSingleton<BackupService>()
-            .AddSingleton<CommunicatorService>()
-            .AddSingleton<MessageService>()
-            .AddSingleton<SaveService>()
-            .AddSingleton<FileCompactor>()
-            .AddSingleton<DalamudConfigService>();
-
-
-    private static ServiceManager AddGameData(this ServiceManager services)
-        => services.AddSingleton<GamePathParser>()
-            .AddSingleton<StainService>()
-            .AddSingleton<HumanModelList>();
+    private static ServiceManager AddDalamudServices(this ServiceManager services, DalamudPluginInterface pi)
+        => services.AddExistingService(pi)
+            .AddExistingService(pi.UiBuilder)
+            .AddDalamudService<ICommandManager>(pi)
+            .AddDalamudService<IDataManager>(pi)
+            .AddDalamudService<IClientState>(pi)
+            .AddDalamudService<IChatGui>(pi)
+            .AddDalamudService<IFramework>(pi)
+            .AddDalamudService<ICondition>(pi)
+            .AddDalamudService<ITargetManager>(pi)
+            .AddDalamudService<IObjectTable>(pi)
+            .AddDalamudService<ITitleScreenMenu>(pi)
+            .AddDalamudService<IGameGui>(pi)
+            .AddDalamudService<IKeyState>(pi)
+            .AddDalamudService<ISigScanner>(pi)
+            .AddDalamudService<IDragDropManager>(pi)
+            .AddDalamudService<ITextureProvider>(pi)
+            .AddDalamudService<ITextureSubstitutionProvider>(pi)
+            .AddDalamudService<IGameInteropProvider>(pi)
+            .AddDalamudService<IPluginLog>(pi);
 
     private static ServiceManager AddInterop(this ServiceManager services)
-        => services.AddSingleton<GameEventManager>()
-            .AddSingleton<FrameworkManager>()
+        => services.AddSingleton<FrameworkManager>()
             .AddSingleton<CutsceneService>()
             .AddSingleton(p =>
             {
@@ -95,8 +101,7 @@ public static class ServiceManagerA
             .AddSingleton<ModelResourceHandleUtility>();
 
     private static ServiceManager AddConfiguration(this ServiceManager services)
-        => services.AddSingleton<ConfigMigrationService>()
-            .AddSingleton<Configuration>()
+        => services.AddSingleton<Configuration>()
             .AddSingleton<EphemeralConfig>();
 
     private static ServiceManager AddCollections(this ServiceManager services)
@@ -129,8 +134,7 @@ public static class ServiceManagerA
             .AddSingleton<SkinFixer>();
 
     private static ServiceManager AddResolvers(this ServiceManager services)
-        => services.AddSingleton<AnimationHookService>()
-            .AddSingleton<CollectionResolver>()
+        => services.AddSingleton<CollectionResolver>()
             .AddSingleton<CutsceneService>()
             .AddSingleton<DrawObjectState>()
             .AddSingleton<MetaState>()

@@ -12,18 +12,12 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is a pointer to the customize array. </item>
 ///     <item>Parameter is a pointer to the equip data array. </item>
 /// </list> </summary>
-public sealed class CreatingCharacterBase : EventWrapper<Action<nint, string, nint, nint, nint>, CreatingCharacterBase.Priority>
+public sealed class CreatingCharacterBase()
+    : EventWrapper<nint, string, nint, nint, nint, CreatingCharacterBase.Priority>(nameof(CreatingCharacterBase))
 {
     public enum Priority
     {
         /// <seealso cref="PenumbraApi.CreatingCharacterBase"/>
         Api = 0,
     }
-
-    public CreatingCharacterBase()
-        : base(nameof(CreatingCharacterBase))
-    { }
-
-    public void Invoke(nint gameObject, string appliedCollectionName, nint modelIdAddress, nint customizeArrayAddress, nint equipDataAddress)
-        => Invoke(this, gameObject, appliedCollectionName, modelIdAddress, customizeArrayAddress, equipDataAddress);
 }

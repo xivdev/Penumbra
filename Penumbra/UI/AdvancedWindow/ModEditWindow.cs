@@ -13,8 +13,8 @@ using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
+using Penumbra.Interop.Hooks;
 using Penumbra.Interop.ResourceTree;
-using Penumbra.Interop.Services;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -32,20 +32,20 @@ public partial class ModEditWindow : Window, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly PerformanceTracker  _performance;
-    private readonly ModEditor           _editor;
-    private readonly Configuration       _config;
-    private readonly ItemSwapTab         _itemSwapTab;
-    private readonly MetaFileManager     _metaFileManager;
-    private readonly ActiveCollections   _activeCollections;
-    private readonly StainService        _stainService;
-    private readonly ModMergeTab         _modMergeTab;
-    private readonly CommunicatorService _communicator;
-    private readonly IDragDropManager    _dragDropManager;
-    private readonly GameEventManager    _gameEvents;
-    private readonly IDataManager        _gameData;
-    private readonly IFramework          _framework;
-    private readonly IObjectTable        _objects;
+    private readonly PerformanceTracker      _performance;
+    private readonly ModEditor               _editor;
+    private readonly Configuration           _config;
+    private readonly ItemSwapTab             _itemSwapTab;
+    private readonly MetaFileManager         _metaFileManager;
+    private readonly ActiveCollections       _activeCollections;
+    private readonly StainService            _stainService;
+    private readonly ModMergeTab             _modMergeTab;
+    private readonly CommunicatorService     _communicator;
+    private readonly IDragDropManager        _dragDropManager;
+    private readonly IDataManager            _gameData;
+    private readonly IFramework              _framework;
+    private readonly IObjectTable            _objects;
+    private readonly CharacterBaseDestructor _characterBaseDestructor;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -565,26 +565,26 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, GameEventManager gameEvents,
-        ChangedItemDrawer changedItemDrawer, IObjectTable objects, IFramework framework)
+        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, 
+        ChangedItemDrawer changedItemDrawer, IObjectTable objects, IFramework framework, CharacterBaseDestructor characterBaseDestructor)
         : base(WindowBaseLabel)
     {
-        _performance       = performance;
-        _itemSwapTab       = itemSwapTab;
-        _gameData          = gameData;
-        _config            = config;
-        _editor            = editor;
-        _metaFileManager   = metaFileManager;
-        _stainService      = stainService;
-        _activeCollections = activeCollections;
-        _modMergeTab       = modMergeTab;
-        _communicator      = communicator;
-        _dragDropManager   = dragDropManager;
-        _textures          = textures;
-        _fileDialog        = fileDialog;
-        _gameEvents        = gameEvents;
-        _objects           = objects;
-        _framework         = framework;
+        _performance                  = performance;
+        _itemSwapTab                  = itemSwapTab;
+        _gameData                     = gameData;
+        _config                       = config;
+        _editor                       = editor;
+        _metaFileManager              = metaFileManager;
+        _stainService                 = stainService;
+        _activeCollections            = activeCollections;
+        _modMergeTab                  = modMergeTab;
+        _communicator                 = communicator;
+        _dragDropManager              = dragDropManager;
+        _textures                     = textures;
+        _fileDialog                   = fileDialog;
+        _objects                      = objects;
+        _framework                    = framework;
+        _characterBaseDestructor = characterBaseDestructor;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
@@ -598,12 +598,12 @@ public partial class ModEditWindow : Window, IDisposable
         _resourceTreeFactory = resourceTreeFactory;
         _quickImportViewer =
             new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
-        _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModEditWindow);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
     }
 
     public void Dispose()
     {
-        _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
         _editor?.Dispose();
         _materialTab.Dispose();
         _modelTab.Dispose();
@@ -613,7 +613,7 @@ public partial class ModEditWindow : Window, IDisposable
         _center.Dispose();
     }
 
-    private void OnModPathChanged(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
+    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
     {
         if (type is ModPathChangeType.Reloaded or ModPathChangeType.Moved)
             ChangeMod(mod);

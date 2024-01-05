@@ -11,7 +11,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the clicked object data if any. </item>
 /// </list>
 /// </summary>
-public sealed class ChangedItemClick : EventWrapper<Action<MouseButton, object?>, ChangedItemClick.Priority>
+public sealed class ChangedItemClick() : EventWrapper<MouseButton, object?, ChangedItemClick.Priority>(nameof(ChangedItemClick))
 {
     public enum Priority
     {
@@ -21,11 +21,4 @@ public sealed class ChangedItemClick : EventWrapper<Action<MouseButton, object?>
         /// <seealso cref="Penumbra.SetupApi"/>
         Link = 1,
     }
-
-    public ChangedItemClick()
-        : base(nameof(ChangedItemClick))
-    { }
-
-    public void Invoke(MouseButton button, object? data)
-        => Invoke(this, button, data);
 }

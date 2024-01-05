@@ -1,31 +1,34 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using OtterGui.Services;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Services;
+using Penumbra.Interop.Hooks;
 
 namespace Penumbra.Interop.PathResolving;
 
-public class CutsceneService : IDisposable
+public sealed class CutsceneService : IService, IDisposable
 {
     public const int CutsceneStartIdx = (int)ScreenActor.CutsceneStart;
     public const int CutsceneEndIdx   = (int)ScreenActor.CutsceneEnd;
     public const int CutsceneSlots    = CutsceneEndIdx - CutsceneStartIdx;
 
-    private readonly GameEventManager _events;
-    private readonly IObjectTable     _objects;
-    private readonly short[]          _copiedCharacters = Enumerable.Repeat((short)-1, CutsceneSlots).ToArray();
+    private readonly IObjectTable        _objects;
+    private readonly CopyCharacter       _copyCharacter;
+    private readonly CharacterDestructor _characterDestructor;
+    private readonly short[]             _copiedCharacters = Enumerable.Repeat((short)-1, CutsceneSlots).ToArray();
 
     public IEnumerable<KeyValuePair<int, Dalamud.Game.ClientState.Objects.Types.GameObject>> Actors
         => Enumerable.Range(CutsceneStartIdx, CutsceneSlots)
             .Where(i => _objects[i] != null)
             .Select(i => KeyValuePair.Create(i, this[i] ?? _objects[i]!));
 
-    public unsafe CutsceneService(IObjectTable objects, GameEventManager events)
+    public unsafe CutsceneService(IObjectTable objects, CopyCharacter copyCharacter, CharacterDestructor characterDestructor)
     {
-        _objects                    =  objects;
-        _events                     =  events;
-        _events.CopyCharacter       += OnCharacterCopy;
-        _events.CharacterDestructor += OnCharacterDestructor;
+        _objects             = objects;
+        _copyCharacter       = copyCharacter;
+        _characterDestructor = characterDestructor;
+        _copyCharacter.Subscribe(OnCharacterCopy, CopyCharacter.Priority.CutsceneService);
+        _characterDestructor.Subscribe(OnCharacterDestructor, CharacterDestructor.Priority.CutsceneService);
     }
 
     /// <summary>
@@ -57,8 +60,8 @@ public class CutsceneService : IDisposable
 
     public unsafe void Dispose()
     {
-        _events.CopyCharacter       -= OnCharacterCopy;
-        _events.CharacterDestructor -= OnCharacterDestructor;
+        _copyCharacter.Unsubscribe(OnCharacterCopy);
+        _characterDestructor.Unsubscribe(OnCharacterDestructor);
     }
 
     private unsafe void OnCharacterDestructor(Character* character)

@@ -69,6 +69,7 @@
 
     <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.3" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
         <PackageReference Include="SixLabors.ImageSharp" Version="2.1.2" />
         <PackageReference Include="SharpCompress" Version="0.33.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
@@ -92,8 +93,8 @@
 
     <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">
         <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
-            <Output TaskParameter="ExitCode" PropertyName="GitCommitHashSuccess"/>
-            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" Condition="$(GitCommitHashSuccess) == 0"/>
+            <Output TaskParameter="ExitCode" PropertyName="GitCommitHashSuccess" />
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" Condition="$(GitCommitHashSuccess) == 0" />
         </Exec>
 
         <PropertyGroup>

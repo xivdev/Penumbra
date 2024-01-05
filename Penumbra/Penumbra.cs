@@ -80,6 +80,10 @@ public class Penumbra : IDalamudPlugin
             _services.GetService<SkinFixer>();
 
             _services.GetService<DalamudSubstitutionProvider>(); // Initialize before Interface.
+
+            foreach (var service in _services.GetServicesImplementing<IAwaitedService>())
+                service.Awaiter.Wait();
+
             SetupInterface();
             SetupApi();
 
