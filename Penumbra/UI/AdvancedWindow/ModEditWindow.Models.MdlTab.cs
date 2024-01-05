@@ -81,7 +81,7 @@ public partial class ModEditWindow
         public void Import()
         {
             // TODO: this needs to be fleshed out a bunch.
-            _edit._models.ImportGltf().ContinueWith(v => Initialize(v.Result));
+            _edit._models.ImportGltf().ContinueWith(v => Initialize(v.Result ?? Mdl));
         }
 
         /// <summary> Export model to an interchange format. </summary>

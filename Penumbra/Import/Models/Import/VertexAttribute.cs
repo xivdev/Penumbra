@@ -120,19 +120,21 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            // TODO: TEMP TESTING PINNED TO BONE 0 UNTIL I SET UP BONE MAPPINGS
-            index => BuildByteFloat4(Vector4.UnitX)
+            index => BuildByteFloat4(values[index])
         );
     }
 
     // TODO: this will need to take in a skeleton mapping of some kind so i can persist the bones used and wire up the joints correctly. hopefully by the "write vertex buffer" stage of building, we already know something about the skeleton.
-    public static VertexAttribute? BlendIndex(Accessors accessors)
+    public static VertexAttribute? BlendIndex(Accessors accessors, IDictionary<ushort, ushort>? boneMap)
     {
         if (!accessors.TryGetValue("JOINTS_0", out var accessor))
             return null;
 
         if (!accessors.ContainsKey("WEIGHTS_0"))
             throw new Exception("Mesh contained JOINTS_0 attribute but no corresponding WEIGHTS_0 attribute.");
+
+        if (boneMap == null)
+            throw new Exception("Mesh contained JOINTS_0 attribute but no bone mapping was created.");
 
         var element = new MdlStructs.VertexElement()
         {
@@ -145,8 +147,15 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            // TODO: TEMP TESTING PINNED TO BONE 0 UNTIL I SET UP BONE MAPPINGS
-            index => BuildUInt(Vector4.Zero)
+            index => {
+                var foo = values[index];
+                return BuildUInt(new Vector4(
+                    boneMap[(ushort)foo.X],
+                    boneMap[(ushort)foo.Y],
+                    boneMap[(ushort)foo.Z],
+                    boneMap[(ushort)foo.W]
+                ));
+            }
         );
     }
 

@@ -189,7 +189,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var nodes = model.LogicalNodes
                 .Where(node => node.Mesh != null)
                 .Take(6) // this model has all 3 lods in it - the first 6 are the real lod0
-                .SelectWhere(node => {
+                .SelectWhere(node =>
+                {
                     var name = node.Name ?? node.Mesh.Name;
                     var match = MeshNameGroupingRegex().Match(name);
                     return match.Success
@@ -201,6 +202,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 
             // this is a representation of a single LoD
             var vertexDeclarations = new List<MdlStructs.VertexDeclarationStruct>();
+            var bones = new List<string>();
             var boneTables = new List<MdlStructs.BoneTableStruct>();
             var meshes = new List<MdlStructs.MeshStruct>();
             var submeshes = new List<MdlStructs.SubmeshStruct>();
@@ -209,7 +211,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 
             var shapeData = new Dictionary<string, List<MdlStructs.ShapeMeshStruct>>();
             var shapeValues = new List<MdlStructs.ShapeValueStruct>();
-                
+
             foreach (var submeshnodes in nodes)
             {
                 var boneTableOffset = boneTables.Count;
@@ -221,21 +223,52 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 
                 var (
                     vertexDeclaration,
-                    boneTable,
+                    // boneTable,
                     xivMesh,
                     xivSubmeshes,
                     meshVertexBuffer,
                     meshIndices,
-                    meshShapeData // fasdfasd
+                    meshShapeData,
+                    meshBoneList
                 ) = MeshThing(submeshnodes);
 
+                var boneTableIndex = 255;
+                // TODO: a better check than this would be real good
+                if (meshBoneList.Count() > 0)
+                {
+                    var boneIndices = new List<ushort>();
+                    foreach (var mb in meshBoneList)
+                    {
+                        var boneIndex = bones.IndexOf(mb);
+                        if (boneIndex == -1)
+                        {
+                            boneIndex = bones.Count;
+                            bones.Add(mb);
+                        }
+                        boneIndices.Add((ushort)boneIndex);
+                    }
+
+                    if (boneIndices.Count > 64)
+                        throw new Exception("One mesh cannot be weighted to more than 64 bones.");
+
+                    var boneIndicesArray = new ushort[64];
+                    Array.Copy(boneIndices.ToArray(), boneIndicesArray, boneIndices.Count);
+
+                    boneTableIndex = boneTableOffset;
+                    boneTables.Add(new MdlStructs.BoneTableStruct()
+                    {
+                        BoneCount = (byte)boneIndices.Count,
+                        BoneIndex = boneIndicesArray,
+                    });
+                }
+
                 vertexDeclarations.Add(vertexDeclaration);
-                boneTables.Add(boneTable);
                 var meshStartIndex = (uint)(xivMesh.StartIndex + idxOffset / sizeof(ushort));
-                meshes.Add(xivMesh with {
+                meshes.Add(xivMesh with
+                {
                     SubMeshIndex = (ushort)(xivMesh.SubMeshIndex + subOffset),
                     // TODO: should probably define a type for index type hey.
-                    BoneTableIndex = (ushort)(xivMesh.BoneTableIndex + boneTableOffset),
+                    BoneTableIndex = (ushort)boneTableIndex,
                     StartIndex = meshStartIndex,
                     VertexBufferOffset = xivMesh.VertexBufferOffset
                         .Select(offset => (uint)(offset + vertOffset))
@@ -243,7 +276,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 });
                 // TODO: could probably do this with linq cleaner
                 foreach (var xivSubmesh in xivSubmeshes)
-                    submeshes.Add(xivSubmesh with {
+                    submeshes.Add(xivSubmesh with
+                    {
                         // TODO: this will need to keep ticking up for each submesh in the same mesh
                         IndexOffset = (uint)(xivSubmesh.IndexOffset + idxOffset / sizeof(ushort))
                     });
@@ -258,7 +292,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                         shapeData.Add(key, keyshapedata);
                     }
 
-                    keyshapedata.Add(shapeMesh with {
+                    keyshapedata.Add(shapeMesh with
+                    {
                         MeshIndexOffset = meshStartIndex,
                         ShapeValueOffset = (uint)shapeValueOffset,
                     });
@@ -347,9 +382,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                     IndexDataOffset = (uint)vertexBuffer.Count,
                 },
                 ],
-                Bones = [
-                    "j_kosi",
-                ],
+                Bones = bones.ToArray(),
                 Materials = [
                     "/mt_c0201e6180_top_a.mtrl",
                 ],
@@ -362,15 +395,16 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
         // this return type is an absolute meme, class that shit up.
         private (
             MdlStructs.VertexDeclarationStruct,
-            MdlStructs.BoneTableStruct,
+            // MdlStructs.BoneTableStruct,
             MdlStructs.MeshStruct,
             IEnumerable<MdlStructs.SubmeshStruct>,
             IEnumerable<byte>,
             IEnumerable<ushort>,
-            IDictionary<string, (MdlStructs.ShapeMeshStruct, List<MdlStructs.ShapeValueStruct>)>
+            IDictionary<string, (MdlStructs.ShapeMeshStruct, List<MdlStructs.ShapeValueStruct>)>,
+            IEnumerable<string>
         ) MeshThing(IEnumerable<Node> nodes)
         {
-            var vertexDeclaration = new MdlStructs.VertexDeclarationStruct() { VertexElements = Array.Empty<MdlStructs.VertexElement>()};
+            var vertexDeclaration = new MdlStructs.VertexDeclarationStruct() { VertexElements = Array.Empty<MdlStructs.VertexElement>() };
             var vertexCount = (ushort)0;
             // there's gotta be a better way to do this with streams or enumerables or something, surely
             var streams = new List<byte>[3];
@@ -378,9 +412,25 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 streams[i] = new List<byte>();
             var indexCount = (uint)0;
             var indices = new List<ushort>();
-            var strides = new byte[] {0, 0, 0};
+            var strides = new byte[] { 0, 0, 0 };
             var submeshes = new List<MdlStructs.SubmeshStruct>();
             var morphData = new Dictionary<string, List<MdlStructs.ShapeValueStruct>>();
+
+            /*
+            THOUGHTS
+            per submesh node, before calling down to build the mesh, build a bone mapping of joint index -> bone name (not node index) - the joint indexes are what will be used in the vertices.
+            per submesh node, eagerly collect all blend indexes (joints) used before building anything - just as a set or something
+            the above means i can create a limited set and a mapping, i.e. if skeleton contains {0->a 1->b 2->c}, and mesh contains 0, 2, then i can output [a, c] + {0->0, 2->1}
+            (throw if >64 entries in that name array)
+
+            then for the second prim,
+            again get the joint-name mapping, and again get the joint set
+            then can extend the values. using the samme example, if skeleton2 contains {0->c 1->d, 2->e} and mesh contains [0,2] again, then bone array can be extended to [a, c, e] and the mesh-specific mapping would be {0->1, 2->2}
+            
+            repeat, etc
+            */
+
+            var usedBones = new List<string>();
 
             // TODO: check that attrs/elems/strides match - we should be generating per-mesh stuff for sanity's sake, but we need to make sure they match if there's >1 node mesh in a mesh.
             foreach (var node in nodes)
@@ -388,7 +438,31 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 var vertOff = vertexCount;
                 var idxOff = indexCount;
 
-                var (vertDecl, newStrides, submesh, vertCount, vertStreams, idxCount, idxs, subMorphData) = NodeMeshThing(node);
+                Dictionary<ushort, ushort>? nodeBoneMap = null;
+                var bonething = WalkBoneThing(node);
+                if (bonething.HasValue)
+                {
+                    var (boneNames, usedJoints) = bonething.Value;
+                    nodeBoneMap = new();
+
+                    // todo: probably linq this shit
+                    foreach (var usedJoint in usedJoints)
+                    {
+                        // this is the 0,2
+                        var boneName = boneNames[usedJoint];
+                        var boneIdx = usedBones.IndexOf(boneName);
+                        if (boneIdx == -1)
+                        {
+                            boneIdx = usedBones.Count;
+                            usedBones.Add(boneName);
+                        }
+                        nodeBoneMap.Add(usedJoint, (ushort)boneIdx);
+                    }
+
+                    Penumbra.Log.Information($"nbm {string.Join(",", nodeBoneMap.Select(kv => $"{kv.Key}:{kv.Value}"))}");
+                }
+
+                var (vertDecl, newStrides, submesh, vertCount, vertStreams, idxCount, idxs, subMorphData) = NodeMeshThing(node, nodeBoneMap);
                 vertexDeclaration = vertDecl; // TODO: CHECK EQUAL AFTER FIRST
                 strides = newStrides; // ALSO CHECK EQUAL
                 vertexCount += vertCount;
@@ -397,7 +471,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                 indexCount += idxCount;
                 // we need to offset the indexes to point into the new stuff
                 indices.AddRange(idxs.Select(idx => (ushort)(idx + vertOff)));
-                submeshes.Add(submesh with {
+                submeshes.Add(submesh with
+                {
                     IndexOffset = submesh.IndexOffset + idxOff
                     // TODO: bone stuff probably
                 });
@@ -412,7 +487,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                     }
                     valueList.AddRange(
                         shapeValues
-                            .Select(value => value with {
+                            .Select(value => value with
+                            {
                                 // but this is actually an index index
                                 BaseIndicesIndex = (ushort)(value.BaseIndicesIndex + idxOff),
                                 // this is a vert idx
@@ -424,12 +500,12 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 
             // one of these per skinned mesh.
             // TODO: check if mesh has skinning at all. (err if mixed?)
-            var boneTable = new MdlStructs.BoneTableStruct()
-            {
-                BoneCount = 1,
-                // this needs to be the full 64. this should be fine _here_ with 0s because i only have one bone, but will need to be fully populated properly. in real files.
-                BoneIndex = new ushort[64],
-            };
+            // var boneTable = new MdlStructs.BoneTableStruct()
+            // {
+            //     BoneCount = 1,
+            //     // this needs to be the full 64. this should be fine _here_ with 0s because i only have one bone, but will need to be fully populated properly. in real files.
+            //     BoneIndex = new ushort[64],
+            // };
 
             // mesh
             var xivMesh = new MdlStructs.MeshStruct()
@@ -472,13 +548,57 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 
             return (
                 vertexDeclaration,
-                boneTable,
+                // boneTable,
                 xivMesh,
                 submeshes,
                 streams[0].Concat(streams[1]).Concat(streams[2]),
                 indices,
-                shapeData
+                shapeData,
+                usedBones
             );
+        }
+
+        private (string[], ISet<ushort>)? WalkBoneThing(Node node)
+        {
+            //
+            if (node.Skin == null)
+                return null;
+
+            var jointNames = Enumerable.Range(0, node.Skin.JointsCount)
+                .Select(index => node.Skin.GetJoint(index).Joint.Name ?? $"UNNAMED")
+                .ToArray();
+
+            // it might make sense to do this in the submesh handling - i do need to maintain the mesh-wide bone list, but that can be passed in/out, perhaps?
+            var mesh = node.Mesh;
+            if (mesh.Primitives.Count != 1)
+                throw new Exception($"Mesh has {mesh.Primitives.Count} primitives, expected 1.");
+            var primitive = mesh.Primitives[0];
+
+            var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0");
+            if (jointsAccessor == null)
+                throw new Exception($"Skinned meshes must contain a JOINTS_0 attribute.");
+
+            // var weightsAccssor = primitive.GetVertexAccessor("WEIGHTS_0");
+            // if (weightsAccssor == null)
+            //     throw new Exception($"Skinned meshes must contain a WEIGHTS_0 attribute.");
+
+            var usedJoints = new HashSet<ushort>();
+
+            // TODO: would be neat to omit any joints that are only used in 0-weight positions, but doing so would require being a _little_ smarter in vertex attrs on how to fall back when mappings aren't found - or otherwise try to ensure that mappings for unused stuff always exists
+            // foreach (var (joints, weights) in jointsAccessor.AsVector4Array().Zip(weightsAccssor.AsVector4Array()))
+            // {
+            //     for (var index = 0; index < 4; index++)
+            //         if (weights[index] > 0)
+            //             usedJoints.Add((ushort)joints[index]);
+            // }
+
+            foreach (var joints in jointsAccessor.AsVector4Array())
+            {
+                for (var index = 0; index < 4; index++)
+                    usedJoints.Add((ushort)joints[index]);
+            }
+
+            return (jointNames, usedJoints);
         }
 
         private (
@@ -491,7 +611,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             uint,
             IEnumerable<ushort>,
             IDictionary<string, List<MdlStructs.ShapeValueStruct>>
-        ) NodeMeshThing(Node node)
+        ) NodeMeshThing(Node node, IDictionary<ushort, ushort>? nodeBoneMap)
         {
             // BoneTable (mesh.btidx = 255 means unskinned)
             // vertexdecl
@@ -505,7 +625,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var primitive = mesh.Primitives[0];
 
             var accessors = primitive.VertexAccessors;
-            
+
             // var foo = primitive.GetMorphTargetAccessors(0);
             // var bar = foo["POSITION"];
             // var baz = bar.AsVector3Array();
@@ -522,7 +642,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var rawAttributes = new[] {
                 VertexAttribute.Position(accessors, morphAccessors),
                 VertexAttribute.BlendWeight(accessors),
-                VertexAttribute.BlendIndex(accessors),
+                VertexAttribute.BlendIndex(accessors, nodeBoneMap),
                 VertexAttribute.Normal(accessors, morphAccessors),
                 VertexAttribute.Tangent1(accessors, morphAccessors),
                 VertexAttribute.Color(accessors),
@@ -530,14 +650,14 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             };
 
             var attributes = new List<VertexAttribute>();
-            var offsets = new byte[] {0, 0, 0};
+            var offsets = new byte[] { 0, 0, 0 };
             foreach (var attribute in rawAttributes)
             {
                 if (attribute == null) continue;
                 var element = attribute.Element;
                 // recreating this here really sucks - add a "withstream" or something.
                 attributes.Add(new VertexAttribute(
-                    element with {Offset = offsets[element.Stream]},
+                    element with { Offset = offsets[element.Stream] },
                     attribute.Build,
                     attribute.HasMorph,
                     attribute.BuildMorph
@@ -547,7 +667,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             var strides = offsets;
 
             // TODO: when merging submeshes, i'll need to check that vert els are the same for all of them, as xiv only stores verts at the mesh level and shares them.
-            
+
             var streams = new List<byte>[3];
             for (var i = 0; i < 3; i++)
                 streams[i] = new List<byte>();
@@ -604,7 +724,8 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
 
                     foreach (var something in fuck)
                     {
-                        morphmaplist.Add(new MdlStructs.ShapeValueStruct(){
+                        morphmaplist.Add(new MdlStructs.ShapeValueStruct()
+                        {
                             BaseIndicesIndex = (ushort)something,
                             ReplacingVertexIndex = (ushort)vertexCount,
                         });
