@@ -12,27 +12,29 @@ public partial class ModEditWindow
     {
         private ModEditWindow _edit;
 
-        public readonly MdlFile Mdl;
+        public readonly  MdlFile        Mdl;
         private readonly List<string>[] _attributes;
 
-        public List<Utf8GamePath>? GamePaths { get; private set ;}
-        public int GamePathIndex;
-        
-        public bool PendingIo { get; private set; } = false;
+        public List<Utf8GamePath>? GamePaths { get; private set; }
+        public int                 GamePathIndex;
+
+        public bool    PendingIo   { get; private set; } = false;
         public string? IoException { get; private set; } = null;
 
         [GeneratedRegex(@"chara/(?:equipment|accessory)/(?'Set'[a-z]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl", RegexOptions.Compiled)]
         private static partial Regex CharaEquipmentRegex();
 
-        [GeneratedRegex(@"chara/human/(?'Race'c\d{4})/obj/(?'Type'[^/]+)/(?'Set'[^/]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl", RegexOptions.Compiled)]
+        [GeneratedRegex(@"chara/human/(?'Race'c\d{4})/obj/(?'Type'[^/]+)/(?'Set'[^/]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl",
+            RegexOptions.Compiled)]
         private static partial Regex CharaHumanRegex();
 
-        [GeneratedRegex(@"chara/(?'SubCategory'demihuman|monster|weapon)/(?'Set'w\d{4})/obj/body/(?'Body'b\d{4})/model/\k'Set'\k'Body'.mdl", RegexOptions.Compiled)]
+        [GeneratedRegex(@"chara/(?'SubCategory'demihuman|monster|weapon)/(?'Set'w\d{4})/obj/body/(?'Body'b\d{4})/model/\k'Set'\k'Body'.mdl",
+            RegexOptions.Compiled)]
         private static partial Regex CharaBodyRegex();
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path, Mod? mod)
         {
-            _edit       = edit;
+            _edit = edit;
 
             Mdl         = new MdlFile(bytes);
             _attributes = CreateAttributes(Mdl);
@@ -54,21 +56,29 @@ public partial class ModEditWindow
         /// <param name="mod"> Mod within which the .mdl is resolved. </param>
         private void FindGamePaths(string path, Mod mod)
         {
+            if (!Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var p))
+            {
+                GamePaths = [p];
+                return;
+            }
+
             PendingIo = true;
-            var task = Task.Run(() => {
+            var task = Task.Run(() =>
+            {
                 // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
-                // NOTE: We're using case insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
+                // NOTE: We're using case-insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
                 return mod.AllSubMods
-                    .SelectMany(submod => submod.Files.Concat(submod.FileSwaps))
+                    .SelectMany(m => m.Files.Concat(m.FileSwaps))
                     .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
                     .Select(kv => kv.Key)
                     .ToList();
             });
 
-            task.ContinueWith(task => {
-                IoException = task.Exception?.ToString();
-                PendingIo = false;
-                GamePaths = task.Result;
+            task.ContinueWith(t =>
+            {
+                IoException = t.Exception?.ToString();
+                PendingIo   = false;
+                GamePaths   = t.Result;
             });
         }
 
@@ -77,19 +87,23 @@ public partial class ModEditWindow
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
             SklbFile? sklb = null;
-            try {
+            try
+            {
                 var sklbPath = GetSklbPath(mdlPath.ToString());
                 sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
-            } catch (Exception exception) {
+            }
+            catch (Exception exception)
+            {
                 IoException = exception?.ToString();
                 return;
             }
 
             PendingIo = true;
             _edit._models.ExportToGltf(Mdl, sklb, outputPath)
-                .ContinueWith(task => {
+                .ContinueWith(task =>
+                {
                     IoException = task.Exception?.ToString();
-                    PendingIo = false;
+                    PendingIo   = false;
                 });
         }
 
@@ -114,7 +128,7 @@ public partial class ModEditWindow
                 return type switch
                 {
                     "body" or "tail" => $"chara/human/{race}/skeleton/base/b0001/skl_{race}b0001.sklb",
-                    _ => throw new Exception($"Currently unsupported human model type \"{type}\"."),
+                    _                => throw new Exception($"Currently unsupported human model type \"{type}\"."),
                 };
             }
 
@@ -123,7 +137,7 @@ public partial class ModEditWindow
             if (match.Success)
             {
                 var subCategory = match.Groups["SubCategory"].Value;
-                var set = match.Groups["Set"].Value;
+                var set         = match.Groups["Set"].Value;
                 return $"chara/{subCategory}/{set}/skeleton/base/b0001/skl_{set}b0001.sklb";
             }
 
@@ -137,16 +151,17 @@ public partial class ModEditWindow
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
             if (!Utf8GamePath.FromString(sklbPath, out var utf8SklbPath, true))
                 throw new Exception($"Resolved skeleton path {sklbPath} could not be converted to a game path.");
- 
+
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
             // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
             var bytes = resolvedPath switch
             {
-                null => _edit._gameData.GetFile(sklbPath)?.Data,
+                null          => _edit._gameData.GetFile(sklbPath)?.Data,
                 FullPath path => File.ReadAllBytes(path.ToPath()),
             };
             if (bytes == null)
-                throw new Exception($"Resolved skeleton path {sklbPath} could not be found. If modded, is it enabled in the current collection?");
+                throw new Exception(
+                    $"Resolved skeleton path {sklbPath} could not be found. If modded, is it enabled in the current collection?");
 
             return new SklbFile(bytes);
         }
