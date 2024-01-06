@@ -6,26 +6,17 @@ namespace Penumbra.Import.Models.Export;
 
 public class ModelExporter
 {
-    public class Model
+    public class Model(List<MeshExporter.Mesh> meshes, GltfSkeleton? skeleton)
     {
-        private List<MeshExporter.Mesh> _meshes;
-        private GltfSkeleton? _skeleton;
-
-        public Model(List<MeshExporter.Mesh> meshes, GltfSkeleton? skeleton)
-        {
-            _meshes = meshes;
-            _skeleton = skeleton;
-        }
-
         public void AddToScene(SceneBuilder scene)
         {
             // If there's a skeleton, the root node should be added before we add any potentially skinned meshes.
-            var skeletonRoot = _skeleton?.Root;
+            var skeletonRoot = skeleton?.Root;
             if (skeletonRoot != null)
                 scene.AddNode(skeletonRoot);
             
             // Add all the meshes to the scene.
-            foreach (var mesh in _meshes)
+            foreach (var mesh in meshes)
                 mesh.AddToScene(scene);
         }
     }
@@ -64,10 +55,8 @@ public class ModelExporter
         NodeBuilder? root = null;
         var names = new Dictionary<string, int>();
         var joints = new List<NodeBuilder>();
-        for (var boneIndex = 0; boneIndex < skeleton.Bones.Length; boneIndex++)
+        foreach (var bone in skeleton.Bones)
         {
-            var bone = skeleton.Bones[boneIndex];
-
             if (names.ContainsKey(bone.Name)) continue;
 
             var node = new NodeBuilder(bone.Name);
@@ -93,10 +82,10 @@ public class ModelExporter
         if (root == null)
             return null;
 
-        return new()
+        return new GltfSkeleton
         {
             Root = root,
-            Joints = joints.ToArray(),
+            Joints = [.. joints],
             Names = names,
         };
     }

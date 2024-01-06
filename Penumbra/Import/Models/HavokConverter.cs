@@ -16,17 +16,18 @@ public static unsafe class HavokConverter
     /// <param name="hkx"> A byte array representing the .hkx file. </param> 
     public static string HkxToXml(byte[] hkx)
     {
+        const hkSerializeUtil.SaveOptionBits options = hkSerializeUtil.SaveOptionBits.SerializeIgnoredMembers
+          | hkSerializeUtil.SaveOptionBits.TextFormat
+          | hkSerializeUtil.SaveOptionBits.WriteAttributes;
+
         var tempHkx = CreateTempFile();
         File.WriteAllBytes(tempHkx, hkx);
 
         var resource = Read(tempHkx);
         File.Delete(tempHkx);
 
-        if (resource == null) throw new Exception("Failed to read havok file.");
-
-        var options = hkSerializeUtil.SaveOptionBits.SerializeIgnoredMembers
-            | hkSerializeUtil.SaveOptionBits.TextFormat
-            | hkSerializeUtil.SaveOptionBits.WriteAttributes;
+        if (resource == null)
+            throw new Exception("Failed to read havok file.");
 
         var file = Write(resource, options);
         file.Close();
@@ -41,17 +42,19 @@ public static unsafe class HavokConverter
     /// <param name="xml"> A string representing the .xml file. </param>
     public static byte[] XmlToHkx(string xml)
     {
+        const hkSerializeUtil.SaveOptionBits options = hkSerializeUtil.SaveOptionBits.SerializeIgnoredMembers
+          | hkSerializeUtil.SaveOptionBits.WriteAttributes;
+
         var tempXml = CreateTempFile();
         File.WriteAllText(tempXml, xml);
 
         var resource = Read(tempXml);
         File.Delete(tempXml);
 
-        if (resource == null) throw new Exception("Failed to read havok file.");
+        if (resource == null)
+            throw new Exception("Failed to read havok file.");
 
-        var options = hkSerializeUtil.SaveOptionBits.SerializeIgnoredMembers
-            | hkSerializeUtil.SaveOptionBits.WriteAttributes;
-
+        g
         var file = Write(resource, options);
         file.Close();
 
@@ -74,7 +77,7 @@ public static unsafe class HavokConverter
         var builtinTypeRegistry = hkBuiltinTypeRegistry.Instance();
 
         var loadOptions = stackalloc hkSerializeUtil.LoadOptions[1];
-        loadOptions->Flags = new() { Storage = (int)hkSerializeUtil.LoadOptionBits.Default };
+        loadOptions->Flags = new hkFlags<hkSerializeUtil.LoadOptionBits, int> { Storage = (int)hkSerializeUtil.LoadOptionBits.Default };
         loadOptions->ClassNameRegistry = builtinTypeRegistry->GetClassNameRegistry();
         loadOptions->TypeInfoRegistry = builtinTypeRegistry->GetTypeInfoRegistry();
 
@@ -92,37 +95,42 @@ public static unsafe class HavokConverter
     )
     {
         var tempFile = CreateTempFile();
-        var path = Marshal.StringToHGlobalAnsi(tempFile);
-        var oStream = new hkOstream();
+        var path     = Marshal.StringToHGlobalAnsi(tempFile);
+        var oStream  = new hkOstream();
         oStream.Ctor((byte*)path);
 
         var result = stackalloc hkResult[1];
 
         var saveOptions = new hkSerializeUtil.SaveOptions()
         {
-            Flags = new() { Storage = (int)optionBits }
+            Flags = new hkFlags<hkSerializeUtil.SaveOptionBits, int> { Storage = (int)optionBits },
         };
 
-
         var builtinTypeRegistry = hkBuiltinTypeRegistry.Instance();
-        var classNameRegistry = builtinTypeRegistry->GetClassNameRegistry();
-        var typeInfoRegistry = builtinTypeRegistry->GetTypeInfoRegistry();
+        var classNameRegistry   = builtinTypeRegistry->GetClassNameRegistry();
+        var typeInfoRegistry    = builtinTypeRegistry->GetTypeInfoRegistry();
 
         try
         {
-            var name = "hkRootLevelContainer";
+            const string name = "hkRootLevelContainer";
 
             var resourcePtr = (hkRootLevelContainer*)resource->GetContentsPointer(name, typeInfoRegistry);
-            if (resourcePtr == null) throw new Exception("Failed to retrieve havok root level container resource.");
+            if (resourcePtr == null)
+                throw new Exception("Failed to retrieve havok root level container resource.");
 
             var hkRootLevelContainerClass = classNameRegistry->GetClassByName(name);
-            if (hkRootLevelContainerClass == null) throw new Exception("Failed to retrieve havok root level container type.");
+            if (hkRootLevelContainerClass == null)
+                throw new Exception("Failed to retrieve havok root level container type.");
 
             hkSerializeUtil.Save(result, resourcePtr, hkRootLevelContainerClass, oStream.StreamWriter.ptr, saveOptions);
         }
-        finally { oStream.Dtor(); }
+        finally
+        {
+            oStream.Dtor();
+        }
 
-        if (result->Result == hkResult.hkResultEnum.Failure) throw new Exception("Failed to serialize havok file.");
+        if (result->Result == hkResult.hkResultEnum.Failure)
+            throw new Exception("Failed to serialize havok file.");
 
         return new FileStream(tempFile, FileMode.Open);
     }

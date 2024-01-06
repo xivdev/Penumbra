@@ -15,16 +15,15 @@ public static class SkeletonConverter
 
         var mainSkeletonId = GetMainSkeletonId(document);
 
-        var skeletonNode = document.SelectSingleNode($"/hktagfile/object[@type='hkaSkeleton'][@id='{mainSkeletonId}']");
-        if (skeletonNode == null)
-            throw new InvalidDataException($"Failed to find skeleton with id {mainSkeletonId}.");
-
+        var skeletonNode = document.SelectSingleNode($"/hktagfile/object[@type='hkaSkeleton'][@id='{mainSkeletonId}']")
+         ?? throw new InvalidDataException($"Failed to find skeleton with id {mainSkeletonId}.");
         var referencePose = ReadReferencePose(skeletonNode);
         var parentIndices = ReadParentIndices(skeletonNode);
-        var boneNames = ReadBoneNames(skeletonNode);
+        var boneNames     = ReadBoneNames(skeletonNode);
 
         if (boneNames.Length != parentIndices.Length || boneNames.Length != referencePose.Length)
-            throw new InvalidDataException($"Mismatch in bone value array lengths: names({boneNames.Length}) parents({parentIndices.Length}) pose({referencePose.Length})");
+            throw new InvalidDataException(
+                $"Mismatch in bone value array lengths: names({boneNames.Length}) parents({parentIndices.Length}) pose({referencePose.Length})");
 
         var bones = referencePose
             .Zip(parentIndices, boneNames)
@@ -33,9 +32,9 @@ public static class SkeletonConverter
                 var (transform, parentIndex, name) = values;
                 return new XivSkeleton.Bone()
                 {
-                    Transform = transform,
+                    Transform   = transform,
                     ParentIndex = parentIndex,
-                    Name = name,
+                    Name        = name,
                 };
             })
             .ToArray();
@@ -63,14 +62,14 @@ public static class SkeletonConverter
     {
         return ReadArray(
             CheckExists(node.SelectSingleNode("array[@name='referencePose']")),
-            node =>
+            n =>
             {
-                var raw = ReadVec12(node);
+                var raw = ReadVec12(n);
                 return new XivSkeleton.Transform()
                 {
-                    Translation = new(raw[0], raw[1], raw[2]),
-                    Rotation = new(raw[4], raw[5], raw[6], raw[7]),
-                    Scale = new(raw[8], raw[9], raw[10]),
+                    Translation = new Vector3(raw[0], raw[1], raw[2]),
+                    Rotation    = new Quaternion(raw[4], raw[5], raw[6], raw[7]),
+                    Scale       = new Vector3(raw[8], raw[9], raw[10]),
                 };
             }
         );
@@ -82,11 +81,11 @@ public static class SkeletonConverter
     {
         var array = node.ChildNodes
             .Cast<XmlNode>()
-            .Where(node => node.NodeType != XmlNodeType.Comment)
-            .Select(node =>
+            .Where(n => n.NodeType != XmlNodeType.Comment)
+            .Select(n =>
             {
-                var text = node.InnerText.Trim()[1..];
-                // TODO: surely there's a less shit way to do this i mean seriously
+                var text = n.InnerText.Trim()[1..];
+                // TODO: surely there's a less shit way to do this I mean seriously
                 return BitConverter.ToSingle(BitConverter.GetBytes(int.Parse(text, NumberStyles.HexNumber)));
             })
             .ToArray();
@@ -100,24 +99,20 @@ public static class SkeletonConverter
     /// <summary> Read the bone parent relations for a skeleton. </summary>
     /// <param name="node"> XML node for the skeleton. </param>
     private static int[] ReadParentIndices(XmlNode node)
-    {
         // todo: would be neat to genericise array between bare and children
-        return CheckExists(node.SelectSingleNode("array[@name='parentIndices']"))
+        => CheckExists(node.SelectSingleNode("array[@name='parentIndices']"))
             .InnerText
-            .Split(new char[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Split((char[]) [' ', '\n'], StringSplitOptions.RemoveEmptyEntries)
             .Select(int.Parse)
             .ToArray();
-    }
 
     /// <summary> Read the names of bones in a skeleton. </summary>
     /// <param name="node"> XML node for the skeleton. </param>
     private static string[] ReadBoneNames(XmlNode node)
-    {
-        return ReadArray(
+        => ReadArray(
             CheckExists(node.SelectSingleNode("array[@name='bones']")),
-            node => CheckExists(node.SelectSingleNode("string[@name='name']")).InnerText
+            n => CheckExists(n.SelectSingleNode("string[@name='name']")).InnerText
         );
-    }
 
     /// <summary> Read an XML tagfile array, converting it via the provided conversion function. </summary>
     /// <param name="node"> Tagfile XML array node. </param>
@@ -125,10 +120,9 @@ public static class SkeletonConverter
     private static T[] ReadArray<T>(XmlNode node, Func<XmlNode, T> convert)
     {
         var element = (XmlElement)node;
+        var size    = int.Parse(element.GetAttribute("size"));
+        var array   = new T[size];
 
-        var size = int.Parse(element.GetAttribute("size"));
-
-        var array = new T[size];
         foreach (var (childNode, index) in element.ChildNodes.Cast<XmlElement>().WithIndex())
             array[index] = convert(childNode);
 

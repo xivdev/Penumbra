@@ -3,14 +3,9 @@ using SharpGLTF.Scenes;
 namespace Penumbra.Import.Models.Export;
 
 /// <summary> Representation of a skeleton within XIV. </summary>
-public class XivSkeleton
+public class XivSkeleton(XivSkeleton.Bone[] bones)
 {
-    public Bone[] Bones;
-
-    public XivSkeleton(Bone[] bones)
-    {
-        Bones = bones;
-    }
+    public Bone[] Bones = bones;
 
     public struct Bone
     {
