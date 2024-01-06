@@ -20,6 +20,8 @@ public class VertexAttribute
     /// <summary> Build a byte array containing this vertex attribute's data, as modified by the specified morph target, for the specified vertex index. </summary>
     public readonly BuildMorphFn BuildMorph;
 
+    public byte Stream => Element.Stream;
+
     /// <summary> Size in bytes of a single vertex's attribute value. </summary>
     public byte Size => (MdlFile.VertexType)Element.Type switch
     {

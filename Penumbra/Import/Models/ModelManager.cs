@@ -462,22 +462,22 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
                     Penumbra.Log.Information($"nbm {string.Join(",", nodeBoneMap.Select(kv => $"{kv.Key}:{kv.Value}"))}");
                 }
 
-                var (vertDecl, newStrides, submesh, vertCount, vertStreams, idxCount, idxs, subMorphData) = NodeMeshThing(node, nodeBoneMap);
-                vertexDeclaration = vertDecl; // TODO: CHECK EQUAL AFTER FIRST
-                strides = newStrides; // ALSO CHECK EQUAL
-                vertexCount += vertCount;
+                var subMeshThingy = SubMeshImporter.Import(node, nodeBoneMap);
+                vertexDeclaration = subMeshThingy.VertexDeclaration; // TODO: CHECK EQUAL AFTER FIRST
+                strides = subMeshThingy.Strides; // ALSO CHECK EQUAL
+                vertexCount += subMeshThingy.VertexCount;
                 for (var i = 0; i < 3; i++)
-                    streams[i].AddRange(vertStreams[i]);
-                indexCount += idxCount;
+                    streams[i].AddRange(subMeshThingy.Streams[i]);
+                indexCount += (uint)subMeshThingy.Indices.Length;
                 // we need to offset the indexes to point into the new stuff
-                indices.AddRange(idxs.Select(idx => (ushort)(idx + vertOff)));
-                submeshes.Add(submesh with
+                indices.AddRange(subMeshThingy.Indices.Select(idx => (ushort)(idx + vertOff)));
+                submeshes.Add(subMeshThingy.Struct with
                 {
-                    IndexOffset = submesh.IndexOffset + idxOff
+                    IndexOffset = subMeshThingy.Struct.IndexOffset + idxOff
                     // TODO: bone stuff probably
                 });
                 // TODO: HANDLE MORPHS, NEED TO ADJUST EVERY VALUE'S INDEX OFFSETS
-                foreach (var (key, shapeValues) in subMorphData)
+                foreach (var (key, shapeValues) in subMeshThingy.ShapeValues)
                 {
                     List<MdlStructs.ShapeValueStruct> valueList;
                     if (!morphData.TryGetValue(key, out valueList))
@@ -599,201 +599,6 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             }
 
             return (jointNames, usedJoints);
-        }
-
-        private (
-            MdlStructs.VertexDeclarationStruct,
-            byte[],
-            // MdlStructs.MeshStruct,
-            MdlStructs.SubmeshStruct,
-            ushort,
-            IEnumerable<byte>[],
-            uint,
-            IEnumerable<ushort>,
-            IDictionary<string, List<MdlStructs.ShapeValueStruct>>
-        ) NodeMeshThing(Node node, IDictionary<ushort, ushort>? nodeBoneMap)
-        {
-            // BoneTable (mesh.btidx = 255 means unskinned)
-            // vertexdecl
-
-            var mesh = node.Mesh;
-
-            // TODO: should probably say _what_ mesh
-            // TODO: would be cool to support >1 primitive (esp. given they're effectively what submeshes are modeled as), but blender doesn't really use them, so not going to prio that at all.
-            if (mesh.Primitives.Count != 1)
-                throw new Exception($"Mesh has {mesh.Primitives.Count} primitives, expected 1.");
-            var primitive = mesh.Primitives[0];
-
-            var accessors = primitive.VertexAccessors;
-
-            // var foo = primitive.GetMorphTargetAccessors(0);
-            // var bar = foo["POSITION"];
-            // var baz = bar.AsVector3Array();
-
-            var morphAccessors = Enumerable.Range(0, primitive.MorphTargetsCount)
-                // todo: map by name, probably? or do that later (probably later)
-                .Select(index => primitive.GetMorphTargetAccessors(index));
-
-            // TODO: name
-            var morphChangedVerts = Enumerable.Range(0, primitive.MorphTargetsCount)
-                .Select(_ => new List<int>())
-                .ToArray();
-
-            var rawAttributes = new[] {
-                VertexAttribute.Position(accessors, morphAccessors),
-                VertexAttribute.BlendWeight(accessors),
-                VertexAttribute.BlendIndex(accessors, nodeBoneMap),
-                VertexAttribute.Normal(accessors, morphAccessors),
-                VertexAttribute.Tangent1(accessors, morphAccessors),
-                VertexAttribute.Color(accessors),
-                VertexAttribute.Uv(accessors),
-            };
-
-            var attributes = new List<VertexAttribute>();
-            var offsets = new byte[] { 0, 0, 0 };
-            foreach (var attribute in rawAttributes)
-            {
-                if (attribute == null) continue;
-                var element = attribute.Element;
-                attributes.Add(attribute.WithOffset(offsets[element.Stream]));
-                offsets[element.Stream] += attribute.Size;
-            }
-            var strides = offsets;
-
-            // TODO: when merging submeshes, i'll need to check that vert els are the same for all of them, as xiv only stores verts at the mesh level and shares them.
-
-            var streams = new List<byte>[3];
-            for (var i = 0; i < 3; i++)
-                streams[i] = new List<byte>();
-
-            // todo: this is a bit lmao but also... probably the most sane option? getting the count that is
-            var vertexCount = primitive.VertexAccessors["POSITION"].Count;
-            for (var vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
-            {
-                foreach (var attribute in attributes)
-                {
-                    streams[attribute.Element.Stream].AddRange(attribute.Build(vertexIndex));
-                }
-
-                // this is a meme but idk maybe it's the best approach? it's not like the attr array is ever long
-                foreach (var (list, morphIndex) in morphChangedVerts.WithIndex())
-                {
-                    var hasMorph = attributes.Aggregate(false, (cur, attr) => cur || attr.HasMorph(morphIndex, vertexIndex));
-                    // Penumbra.Log.Information($"eh? {vertexIndex} {morphIndex}: {hasMorph}");
-                    if (hasMorph)
-                    {
-                        list.Add(vertexIndex);
-                    }
-                }
-            }
-
-            // indices
-            // var indexCount = primitive.GetIndexAccessor().Count;
-            // var indices = primitive.GetIndices()
-            //     .SelectMany(index => BitConverter.GetBytes((ushort)index))
-            //     .ToArray();
-            var indices = primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
-
-            // BLAH
-            // foreach (var (list, morphIndex) in morphChangedVerts.WithIndex())
-            // {
-            //     Penumbra.Log.Information($"morph {morphIndex}: {string.Join(",", list)}");
-            // }
-            // TODO BUILD THE MORPH VERTS
-            // (source, target)
-            var morphmappingstuff = new List<MdlStructs.ShapeValueStruct>[morphChangedVerts.Length];
-            foreach (var (list, morphIndex) in morphChangedVerts.WithIndex())
-            {
-                var morphmaplist = morphmappingstuff[morphIndex] = new();
-                foreach (var vertIdx in list)
-                {
-                    foreach (var attribute in attributes)
-                    {
-                        streams[attribute.Element.Stream].AddRange(attribute.BuildMorph(morphIndex, vertIdx));
-                    }
-
-                    var fuck = indices.WithIndex()
-                        .Where(pair => pair.Value == vertIdx)
-                        .Select(pair => pair.Index);
-
-                    foreach (var something in fuck)
-                    {
-                        morphmaplist.Add(new MdlStructs.ShapeValueStruct()
-                        {
-                            BaseIndicesIndex = (ushort)something,
-                            ReplacingVertexIndex = (ushort)vertexCount,
-                        });
-                    }
-                    vertexCount++;
-                }
-            }
-
-            // TODO: HANDLE THIS BEING MISSING - probably warn or something, it's not the end of the world
-            var morphData = new Dictionary<string, List<MdlStructs.ShapeValueStruct>>();
-            if (morphmappingstuff.Length > 0)
-            {
-                var morphnames = mesh.Extras.GetNode("targetNames").Deserialize<List<string>>();
-                morphData = morphmappingstuff
-                    .Zip(morphnames)
-                    .ToDictionary(
-                        (pair) => pair.Second,
-                        (pair) => pair.First
-                    );
-            }
-
-            // one of these per mesh
-            var vertexDeclaration = new MdlStructs.VertexDeclarationStruct()
-            {
-                VertexElements = attributes.Select(attribute => attribute.Element).ToArray(),
-            };
-
-            // mesh
-            // var xivMesh = new MdlStructs.MeshStruct()
-            // {
-            //     // TODO: sum across submeshes.
-            //     // TODO: would be cool to share verts on submesh boundaries but that's way out of scope for now.
-            //     VertexCount = (ushort)vertexCount,
-            //     IndexCount = (uint)indexCount,
-            //     // TODO: will have to think about how to represent this - materials can be named, so maybe adjust in parent?
-            //     MaterialIndex = 0,
-            //     // TODO: this will need adjusting by parent
-            //     SubMeshIndex = 0,
-            //     SubMeshCount = 1,
-            //     // TODO: update in parent
-            //     BoneTableIndex = 0,
-            //     // TODO: this is relative to the lod's index buffer, and is an index, not byte offset
-            //     StartIndex = 0,
-            //     // TODO: these are relative to the lod vertex buffer. these values are accurate for a 0 offset, but lod will need to adjust
-            //     VertexBufferOffset = [0, (uint)streams[0].Count, (uint)(streams[0].Count + streams[1].Count)],
-            //     VertexBufferStride = strides,
-            //     VertexStreamCount = /* 2 */ (byte)(attributes.Select(attribute => attribute.Element.Stream).Max() + 1),
-            // };
-
-            // submesh
-            // TODO: once we have multiple submeshes, the _first_ should probably set an index offset of 0, and then further ones delta from there - and then they can be blindly adjusted by the parent that's laying out the meshes.
-            var xivSubmesh = new MdlStructs.SubmeshStruct()
-            {
-                IndexOffset = 0,
-                IndexCount = (uint)indices.Length,
-                AttributeIndexMask = 0,
-                // TODO: not sure how i want to handle these ones
-                BoneStartIndex = 0,
-                BoneCount = 1,
-            };
-
-            // var vertexBuffer = streams[0].Concat(streams[1]).Concat(streams[2]);
-
-            return (
-                vertexDeclaration,
-                strides,
-                // xivMesh,
-                xivSubmesh,
-                (ushort)vertexCount,
-                streams,
-                (uint)indices.Length,
-                indices,
-                morphData
-            );
         }
 
         public bool Equals(IAction? other)
