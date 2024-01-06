@@ -8,7 +8,7 @@ public class SubMeshImporter
 {
     public struct SubMesh
     {
-        public MdlStructs.SubmeshStruct Struct;
+        public MdlStructs.SubmeshStruct SubMeshStruct;
 
         public MdlStructs.VertexDeclarationStruct VertexDeclaration;
 
@@ -66,8 +66,8 @@ public class SubMeshImporter
 
         // All meshes may use up to 3 byte streams.
         _streams = new List<byte>[3];
-        for (var i = 0; i < 3; i++)
-            _streams[i] = new List<byte>();
+        for (var streamIndex = 0; streamIndex < 3; streamIndex++)
+            _streams[streamIndex] = new List<byte>();
     }
 
     private SubMesh Create()
@@ -83,7 +83,7 @@ public class SubMeshImporter
 
         return new SubMesh()
         {
-            Struct = new MdlStructs.SubmeshStruct()
+            SubMeshStruct = new MdlStructs.SubmeshStruct()
             {
                 IndexOffset = 0,
                 IndexCount = (uint)_indices.Length,
