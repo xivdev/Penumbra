@@ -55,7 +55,10 @@ public class Penumbra : IDalamudPlugin
             _services        = ServiceManagerA.CreateProvider(this, pluginInterface, Log);
             Messager         = _services.GetService<MessageService>();
             _validityChecker = _services.GetService<ValidityChecker>();
-            var startup = _services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)
+            _services.EnsureRequiredServices();
+
+            var startup = _services.GetService<DalamudConfigService>()
+                .GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
                 : "Unknown";
             Log.Information(
