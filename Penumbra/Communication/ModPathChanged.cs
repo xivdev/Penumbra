@@ -14,10 +14,14 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the new directory on addition, move or reload and null on deletion. </item>
 /// </list>
 /// </summary>
-public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod, DirectoryInfo?, DirectoryInfo?>, ModPathChanged.Priority>
+public sealed class ModPathChanged()
+    : EventWrapper<ModPathChangeType, Mod, DirectoryInfo?, DirectoryInfo?, ModPathChanged.Priority>(nameof(ModPathChanged))
 {
     public enum Priority
     {
+        /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
+        EphemeralConfig = -500,
+
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeAddition"/>
         CollectionCacheManagerAddition = -100,
 
@@ -48,11 +52,4 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeRemoval"/>
         CollectionCacheManagerRemoval = 100,
     }
-
-    public ModPathChanged()
-        : base(nameof(ModPathChanged))
-    { }
-
-    public void Invoke(ModPathChangeType changeType, Mod mod, DirectoryInfo? oldModDirectory, DirectoryInfo? newModDirectory)
-        => Invoke(this, changeType, mod, oldModDirectory, newModDirectory);
 }

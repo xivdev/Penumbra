@@ -3,7 +3,7 @@ using OtterGui.Classes;
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever mods are prepared to be rediscovered. </summary>
-public sealed class ModDiscoveryStarted : EventWrapper<Action, ModDiscoveryStarted.Priority>
+public sealed class ModDiscoveryStarted() : EventWrapper<ModDiscoveryStarted.Priority>(nameof(ModDiscoveryStarted))
 {
     public enum Priority
     {
@@ -16,11 +16,4 @@ public sealed class ModDiscoveryStarted : EventWrapper<Action, ModDiscoveryStart
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.StoreCurrentSelection"/>
         ModFileSystemSelector = 200,
     }
-
-    public ModDiscoveryStarted()
-        : base(nameof(ModDiscoveryStarted))
-    { }
-
-    public void Invoke()
-        => Invoke(this);
 }

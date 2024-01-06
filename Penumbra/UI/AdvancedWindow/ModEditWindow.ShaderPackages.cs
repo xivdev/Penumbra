@@ -6,7 +6,6 @@ using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Classes;
 using Penumbra.GameData;
-using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Interop;
 using Penumbra.String;
@@ -42,8 +41,6 @@ public partial class ModEditWindow
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
         DrawOtherShaderPackageDetails(file);
-
-        file.FileDialog.Draw();
 
         ret |= file.Shpk.IsChanged();
 

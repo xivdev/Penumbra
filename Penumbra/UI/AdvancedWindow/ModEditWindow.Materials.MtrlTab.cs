@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
 using OtterGui;
@@ -8,6 +9,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Hooks;
 using Penumbra.Interop.MaterialPreview;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -503,12 +505,12 @@ public partial class ModEditWindow
             ColorTablePreviewers.Clear();
         }
 
-        private unsafe void UnbindFromDrawObjectMaterialInstances(nint characterBase)
+        private unsafe void UnbindFromDrawObjectMaterialInstances(CharacterBase* characterBase)
         {
             for (var i = MaterialPreviewers.Count; i-- > 0;)
             {
                 var previewer = MaterialPreviewers[i];
-                if ((nint)previewer.DrawObject != characterBase)
+                if (previewer.DrawObject != characterBase)
                     continue;
 
                 previewer.Dispose();
@@ -518,7 +520,7 @@ public partial class ModEditWindow
             for (var i = ColorTablePreviewers.Count; i-- > 0;)
             {
                 var previewer = ColorTablePreviewers[i];
-                if ((nint)previewer.DrawObject != characterBase)
+                if (previewer.DrawObject != characterBase)
                     continue;
 
                 previewer.Dispose();
@@ -663,7 +665,7 @@ public partial class ModEditWindow
             UpdateConstants();
         }
 
-        public MtrlTab(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
+        public unsafe MtrlTab(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
         {
             _edit                = edit;
             Mtrl                 = file;
@@ -673,16 +675,16 @@ public partial class ModEditWindow
             LoadShpk(FindAssociatedShpk(out _, out _));
             if (writable)
             {
-                _edit._gameEvents.CharacterBaseDestructor += UnbindFromDrawObjectMaterialInstances;
+                _edit._characterBaseDestructor.Subscribe(UnbindFromDrawObjectMaterialInstances, CharacterBaseDestructor.Priority.MtrlTab);
                 BindToMaterialInstances();
             }
         }
 
-        public void Dispose()
+        public unsafe void Dispose()
         {
             UnbindFromMaterialInstances();
             if (Writable)
-                _edit._gameEvents.CharacterBaseDestructor -= UnbindFromDrawObjectMaterialInstances;
+                _edit._characterBaseDestructor.Unsubscribe(UnbindFromDrawObjectMaterialInstances);
         }
 
         public bool Valid

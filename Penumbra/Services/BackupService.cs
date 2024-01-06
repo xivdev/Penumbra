@@ -1,15 +1,24 @@
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using OtterGui.Log;
+using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class BackupService
+public class BackupService : IAsyncService
 {
+    /// <inheritdoc/>
+    public Task Awaiter { get; }
+
+    /// <inheritdoc/>
+    public bool Finished
+        => Awaiter.IsCompletedSuccessfully;
+
+    /// <summary> Start a backup process on the collected files. </summary>
     public BackupService(Logger logger, FilenameService fileNames)
     {
-        var       files = PenumbraFiles(fileNames);
-        Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), files);
+        var files = PenumbraFiles(fileNames);
+        Awaiter = Task.Run(() => Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), files));
     }
 
     /// <summary> Collect all relevant files for penumbra configuration. </summary>

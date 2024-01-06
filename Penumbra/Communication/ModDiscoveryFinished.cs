@@ -1,10 +1,9 @@
 using OtterGui.Classes;
-using Penumbra.Mods.Manager;
 
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever a new mod discovery has finished. </summary>
-public sealed class ModDiscoveryFinished : EventWrapper<Action, ModDiscoveryFinished.Priority>
+public sealed class ModDiscoveryFinished() : EventWrapper<ModDiscoveryFinished.Priority>(nameof(ModDiscoveryFinished))
 {
     public enum Priority
     {
@@ -23,11 +22,4 @@ public sealed class ModDiscoveryFinished : EventWrapper<Action, ModDiscoveryFini
         /// <seealso cref="Mods.Manager.ModFileSystem.Reload"/>
         ModFileSystem = 0,
     }
-
-    public ModDiscoveryFinished()
-        : base(nameof(ModDiscoveryFinished))
-    { }
-
-    public void Invoke()
-        => Invoke(this);
 }

@@ -8,7 +8,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the hovered object data if any. </item>
 /// </list>
 /// </summary>
-public sealed class ChangedItemHover : EventWrapper<Action<object?>, ChangedItemHover.Priority>
+public sealed class ChangedItemHover() : EventWrapper<object?, ChangedItemHover.Priority>(nameof(ChangedItemHover))
 {
     public enum Priority
     {
@@ -18,13 +18,6 @@ public sealed class ChangedItemHover : EventWrapper<Action<object?>, ChangedItem
         /// <seealso cref="Penumbra.SetupApi"/>
         Link = 1,
     }
-
-    public ChangedItemHover()
-        : base(nameof(ChangedItemHover))
-    { }
-
-    public void Invoke(object? data)
-        => Invoke(this, data);
 
     public bool HasTooltip
         => HasSubscribers;

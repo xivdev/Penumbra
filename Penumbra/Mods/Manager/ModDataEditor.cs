@@ -2,7 +2,6 @@ using Dalamud.Utility;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using Penumbra.Services;
-using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 

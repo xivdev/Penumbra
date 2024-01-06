@@ -259,7 +259,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
         else if (tab != TabType.None)
         {
-            _communicator.SelectTab.Invoke(tab);
+            _communicator.SelectTab.Invoke(tab, null);
         }
 
         return PenumbraApiEc.Success;

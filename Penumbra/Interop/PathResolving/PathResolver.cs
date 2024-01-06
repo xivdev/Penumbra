@@ -18,26 +18,28 @@ public class PathResolver : IDisposable
     private readonly TempCollectionManager _tempCollections;
     private readonly ResourceLoader        _loader;
 
-    private readonly AnimationHookService _animationHookService;
-    private readonly SubfileHelper        _subfileHelper;
-    private readonly PathState            _pathState;
-    private readonly MetaState            _metaState;
+    private readonly SubfileHelper      _subfileHelper;
+    private readonly PathState          _pathState;
+    private readonly MetaState          _metaState;
+    private readonly GameState          _gameState;
+    private readonly CollectionResolver _collectionResolver;
 
     public unsafe PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
-        TempCollectionManager tempCollections, ResourceLoader loader, AnimationHookService animationHookService, SubfileHelper subfileHelper,
-        PathState pathState, MetaState metaState)
+        TempCollectionManager tempCollections, ResourceLoader loader, SubfileHelper subfileHelper,
+        PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState)
     {
-        _performance          =  performance;
-        _config               =  config;
-        _collectionManager    =  collectionManager;
-        _tempCollections      =  tempCollections;
-        _animationHookService =  animationHookService;
-        _subfileHelper        =  subfileHelper;
-        _pathState            =  pathState;
-        _metaState            =  metaState;
-        _loader               =  loader;
-        _loader.ResolvePath   =  ResolvePath;
-        _loader.FileLoaded    += ImcLoadResource;
+        _performance        =  performance;
+        _config             =  config;
+        _collectionManager  =  collectionManager;
+        _tempCollections    =  tempCollections;
+        _subfileHelper      =  subfileHelper;
+        _pathState          =  pathState;
+        _metaState          =  metaState;
+        _gameState          =  gameState;
+        _collectionResolver =  collectionResolver;
+        _loader             =  loader;
+        _loader.ResolvePath =  ResolvePath;
+        _loader.FileLoaded  += ImcLoadResource;
     }
 
     /// <summary> Obtain a temporary or permanent collection by name. </summary>
@@ -98,7 +100,7 @@ public class PathResolver : IDisposable
         // A potential next request will add the path anew.
         var nonDefault = _subfileHelper.HandleSubFiles(type, out var resolveData)
          || _pathState.Consume(gamePath.Path, out resolveData)
-         || _animationHookService.HandleFiles(type, gamePath, out resolveData)
+         || _gameState.HandleFiles(_collectionResolver, type, gamePath, out resolveData)
          || _metaState.HandleDecalFile(type, gamePath, out resolveData);
         if (!nonDefault || !resolveData.Valid)
             resolveData = _collectionManager.Active.Default.ToResolveData();
