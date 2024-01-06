@@ -13,11 +13,11 @@ public class VertexAttribute
 {
     /// <summary> XIV vertex element metadata structure. </summary>
     public readonly MdlStructs.VertexElement Element;
-    /// <summary> Write this vertex attribute's value at the specified index to the provided byte array. </summary>
+    /// <summary> Build a byte array containing this vertex attribute's data for the specified vertex index. </summary>
     public readonly BuildFn Build;
-
+    /// <summary> Check if the specified morph target index contains a morph for the specified vertex index. </summary>
     public readonly HasMorphFn HasMorph;
-
+    /// <summary> Build a byte array containing this vertex attribute's data, as modified by the specified morph target, for the specified vertex index. </summary>
     public readonly BuildMorphFn BuildMorph;
 
     /// <summary> Size in bytes of a single vertex's attribute value. </summary>
@@ -33,7 +33,7 @@ public class VertexAttribute
         _ => throw new Exception($"Unhandled vertex type {(MdlFile.VertexType)Element.Type}"),
     };
 
-    public VertexAttribute(
+    private VertexAttribute(
         MdlStructs.VertexElement element,
         BuildFn write,
         HasMorphFn? hasMorph = null,
@@ -46,17 +46,19 @@ public class VertexAttribute
         BuildMorph = buildMorph ?? DefaultBuildMorph;
     }
 
-    // todo: this is per-shape at the moment - consider if it should do them all at once (i mean we always want to check all of them, it's mostly a semantics question on who owns the loop)
-    private static bool DefaultHasMorph(int morphIndex, int vertexIndex)
-    {
-        return false;
-    }
+    public VertexAttribute WithOffset(byte offset) => new VertexAttribute(
+        Element with { Offset = offset },
+        Build,
+        HasMorph,
+        BuildMorph
+    );
 
-    // xiv stores shapes as full vertex replacements, so the default value for a morph attribute is simply it's built state (rather than a delta or w/e)
-    private byte[] DefaultBuildMorph(int morphIndex, int vertexIndex)
-    {
-        return Build(vertexIndex);
-    }
+    // We assume that attributes don't have morph data unless explicitly configured.
+    private static bool DefaultHasMorph(int morphIndex, int vertexIndex) => false;
+
+    // XIV stores shapes as full vertex replacements, so all attributes need to output something for a morph.
+    // As a fallback, we're just building the normal vertex data for the index.
+    private byte[] DefaultBuildMorph(int morphIndex, int vertexIndex) => Build(vertexIndex);
 
     public static VertexAttribute Position(Accessors accessors, IEnumerable<Accessors> morphAccessors)
     {
@@ -72,27 +74,27 @@ public class VertexAttribute
 
         var values = accessor.AsVector3Array();
 
-        var foo = morphAccessors
-            .Select(ma => ma.GetValueOrDefault("POSITION")?.AsVector3Array())
+        var morphValues = morphAccessors
+            .Select(accessors => accessors.GetValueOrDefault("POSITION")?.AsVector3Array())
             .ToArray();
 
         return new VertexAttribute(
             element,
             index => BuildSingle3(values[index]),
-            // TODO: at the moment this is only defined for position - is it worth setting one up for normal, too?
-            (morphIndex, vertexIndex) =>
+
+            hasMorph: (morphIndex, vertexIndex) =>
             {
-                var deltas = foo[morphIndex];
+                var deltas = morphValues[morphIndex];
                 if (deltas == null) return false;
                 var delta = deltas[vertexIndex];
                 return delta != Vector3.Zero;
             },
-            // TODO: this will _need_ to be defined for any values that appear in morphs, i.e. geom and maybe mats
-            (morphIndex, vertexIndex) =>
+
+            buildMorph: (morphIndex, vertexIndex) =>
             {
                 var value = values[vertexIndex];
 
-                var delta = foo[morphIndex]?[vertexIndex];
+                var delta = morphValues[morphIndex]?[vertexIndex];
                 if (delta != null)
                     value += delta.Value;
 
@@ -124,7 +126,6 @@ public class VertexAttribute
         );
     }
 
-    // TODO: this will need to take in a skeleton mapping of some kind so i can persist the bones used and wire up the joints correctly. hopefully by the "write vertex buffer" stage of building, we already know something about the skeleton.
     public static VertexAttribute? BlendIndex(Accessors accessors, IDictionary<ushort, ushort>? boneMap)
     {
         if (!accessors.TryGetValue("JOINTS_0", out var accessor))
@@ -147,13 +148,14 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => {
-                var foo = values[index];
+            index =>
+            {
+                var gltfIndices = values[index];
                 return BuildUInt(new Vector4(
-                    boneMap[(ushort)foo.X],
-                    boneMap[(ushort)foo.Y],
-                    boneMap[(ushort)foo.Z],
-                    boneMap[(ushort)foo.W]
+                    boneMap[(ushort)gltfIndices.X],
+                    boneMap[(ushort)gltfIndices.Y],
+                    boneMap[(ushort)gltfIndices.Z],
+                    boneMap[(ushort)gltfIndices.W]
                 ));
             }
         );
@@ -173,19 +175,19 @@ public class VertexAttribute
 
         var values = accessor.AsVector3Array();
 
-        var foo = morphAccessors
-            .Select(ma => ma.GetValueOrDefault("NORMAL")?.AsVector3Array())
+        var morphValues = morphAccessors
+            .Select(accessors => accessors.GetValueOrDefault("NORMAL")?.AsVector3Array())
             .ToArray();
 
         return new VertexAttribute(
             element,
             index => BuildHalf4(new Vector4(values[index], 0)),
-            null,
-            (morphIndex, vertexIndex) =>
+
+            buildMorph: (morphIndex, vertexIndex) =>
             {
                 var value = values[vertexIndex];
 
-                var delta = foo[morphIndex]?[vertexIndex];
+                var delta = morphValues[morphIndex]?[vertexIndex];
                 if (delta != null)
                     value += delta.Value;
 
@@ -208,6 +210,7 @@ public class VertexAttribute
 
         var values1 = accessor1.AsVector2Array();
 
+        // There's only one TEXCOORD, output UV coordinates as vec2s.
         if (!accessors.TryGetValue("TEXCOORD_1", out var accessor2))
             return new VertexAttribute(
                 element with { Type = (byte)MdlFile.VertexType.Half2 },
@@ -216,6 +219,7 @@ public class VertexAttribute
 
         var values2 = accessor2.AsVector2Array();
 
+        // Two TEXCOORDs are available, repack them into xiv's vec4 [0X, 0Y, 1X, 1Y] format.
         return new VertexAttribute(
             element with { Type = (byte)MdlFile.VertexType.Half4 },
             index =>
@@ -241,19 +245,20 @@ public class VertexAttribute
 
         var values = accessor.AsVector4Array();
 
-        var foo = morphAccessors
-            .Select(ma => ma.GetValueOrDefault("TANGENT")?.AsVector3Array())
+        // Per glTF specification, TANGENT morph values are stored as vec3, with the W component always considered to be 0.
+        var morphValues = morphAccessors
+            .Select(accessors => accessors.GetValueOrDefault("TANGENT")?.AsVector3Array())
             .ToArray();
 
         return new VertexAttribute(
             element,
             index => BuildByteFloat4(values[index]),
-            null,
-            (morphIndex, vertexIndex) =>
+            
+            buildMorph: (morphIndex, vertexIndex) =>
             {
                 var value = values[vertexIndex];
 
-                var delta = foo[morphIndex]?[vertexIndex];
+                var delta = morphValues[morphIndex]?[vertexIndex];
                 if (delta != null)
                     value += new Vector4(delta.Value, 0);
 
@@ -282,50 +287,40 @@ public class VertexAttribute
         );
     }
 
-    private static byte[] BuildSingle3(Vector3 input)
-    {
-        return [
+    private static byte[] BuildSingle3(Vector3 input) =>
+        [
             ..BitConverter.GetBytes(input.X),
             ..BitConverter.GetBytes(input.Y),
             ..BitConverter.GetBytes(input.Z),
         ];
-    }
 
-    private static byte[] BuildUInt(Vector4 input)
-    {
-        return [
+    private static byte[] BuildUInt(Vector4 input) =>
+        [
             (byte)input.X,
             (byte)input.Y,
             (byte)input.Z,
             (byte)input.W,
         ];
-    }
 
-    private static byte[] BuildByteFloat4(Vector4 input)
-    {
-        return [
+    private static byte[] BuildByteFloat4(Vector4 input) =>
+        [
             (byte)Math.Round(input.X * 255f),
             (byte)Math.Round(input.Y * 255f),
             (byte)Math.Round(input.Z * 255f),
             (byte)Math.Round(input.W * 255f),
         ];
-    }
 
-    private static byte[] BuildHalf2(Vector2 input)
-    {
-        return [
+    private static byte[] BuildHalf2(Vector2 input) =>
+        [
             ..BitConverter.GetBytes((Half)input.X),
             ..BitConverter.GetBytes((Half)input.Y),
         ];
-    }
 
-    private static byte[] BuildHalf4(Vector4 input)
-    {
-        return [
+    private static byte[] BuildHalf4(Vector4 input) =>
+        [
             ..BitConverter.GetBytes((Half)input.X),
             ..BitConverter.GetBytes((Half)input.Y),
             ..BitConverter.GetBytes((Half)input.Z),
             ..BitConverter.GetBytes((Half)input.W),
         ];
-    }
 }

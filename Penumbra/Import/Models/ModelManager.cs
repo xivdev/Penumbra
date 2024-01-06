@@ -655,13 +655,7 @@ public sealed partial class ModelManager : SingleTaskQueue, IDisposable
             {
                 if (attribute == null) continue;
                 var element = attribute.Element;
-                // recreating this here really sucks - add a "withstream" or something.
-                attributes.Add(new VertexAttribute(
-                    element with { Offset = offsets[element.Stream] },
-                    attribute.Build,
-                    attribute.HasMorph,
-                    attribute.BuildMorph
-                ));
+                attributes.Add(attribute.WithOffset(offsets[element.Stream]));
                 offsets[element.Stream] += attribute.Size;
             }
             var strides = offsets;
