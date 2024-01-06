@@ -8,9 +8,9 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private partial class MdlTab : IWritable
+    private class MdlTab : IWritable
     {
-        private ModEditWindow _edit;
+        private readonly ModEditWindow _edit;
 
         public readonly  MdlFile        Mdl;
         private readonly List<string>[] _attributes;
@@ -18,21 +18,10 @@ public partial class ModEditWindow
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
 
-        public bool    PendingIo   { get; private set; } = false;
-        public string? IoException { get; private set; } = null;
+        public bool    PendingIo   { get; private set; }
+        public string? IoException { get; private set; }
 
-        [GeneratedRegex(@"chara/(?:equipment|accessory)/(?'Set'[a-z]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl", RegexOptions.Compiled)]
-        private static partial Regex CharaEquipmentRegex();
-
-        [GeneratedRegex(@"chara/human/(?'Race'c\d{4})/obj/(?'Type'[^/]+)/(?'Set'[^/]\d{4})/model/(?'Race'c\d{4})\k'Set'_[^/]+\.mdl",
-            RegexOptions.Compiled)]
-        private static partial Regex CharaHumanRegex();
-
-        [GeneratedRegex(@"chara/(?'SubCategory'demihuman|monster|weapon)/(?'Set'w\d{4})/obj/body/(?'Body'b\d{4})/model/\k'Set'\k'Body'.mdl",
-            RegexOptions.Compiled)]
-        private static partial Regex CharaBodyRegex();
-
-        public MdlTab(ModEditWindow edit, byte[] bytes, string path, Mod? mod)
+        public MdlTab(ModEditWindow edit, byte[] bytes, string path, IMod? mod)
         {
             _edit = edit;
 
@@ -54,7 +43,7 @@ public partial class ModEditWindow
         /// <summary> Find the list of game paths that may correspond to this model. </summary>
         /// <param name="path"> Resolved path to a .mdl. </param>
         /// <param name="mod"> Mod within which the .mdl is resolved. </param>
-        private void FindGamePaths(string path, Mod mod)
+        private void FindGamePaths(string path, IMod mod)
         {
             if (!Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var p))
             {
@@ -77,8 +66,8 @@ public partial class ModEditWindow
             task.ContinueWith(t =>
             {
                 IoException = t.Exception?.ToString();
-                PendingIo   = false;
                 GamePaths   = t.Result;
+                PendingIo   = false;
             });
         }
 
@@ -89,7 +78,7 @@ public partial class ModEditWindow
             SklbFile? sklb = null;
             try
             {
-                var sklbPath = GetSklbPath(mdlPath.ToString());
+                var sklbPath = _edit._models.ResolveSklbForMdl(mdlPath.ToString());
                 sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
             }
             catch (Exception exception)
@@ -107,43 +96,6 @@ public partial class ModEditWindow
                 });
         }
 
-        /// <summary> Try to find the .sklb path for a .mdl file. </summary>
-        /// <param name="mdlPath"> .mdl file to look up the skeleton for. </param>
-        private string? GetSklbPath(string mdlPath)
-        {
-            // Equipment is skinned to the base body skeleton of the race they target.
-            var match = CharaEquipmentRegex().Match(mdlPath);
-            if (match.Success)
-            {
-                var race = match.Groups["Race"].Value;
-                return $"chara/human/{race}/skeleton/base/b0001/skl_{race}b0001.sklb";
-            }
-
-            // Some parts of human have their own skeletons.
-            match = CharaHumanRegex().Match(mdlPath);
-            if (match.Success)
-            {
-                var type = match.Groups["Type"].Value;
-                var race = match.Groups["Race"].Value;
-                return type switch
-                {
-                    "body" or "tail" => $"chara/human/{race}/skeleton/base/b0001/skl_{race}b0001.sklb",
-                    _                => throw new Exception($"Currently unsupported human model type \"{type}\"."),
-                };
-            }
-
-            // A few subcategories - such as weapons, demihumans, and monsters - have dedicated per-"body" skeletons.
-            match = CharaBodyRegex().Match(mdlPath);
-            if (match.Success)
-            {
-                var subCategory = match.Groups["SubCategory"].Value;
-                var set         = match.Groups["Set"].Value;
-                return $"chara/{subCategory}/{set}/skeleton/base/b0001/skl_{set}b0001.sklb";
-            }
-
-            return null;
-        }
-
         /// <summary> Read a .sklb from the active collection or game. </summary>
         /// <param name="sklbPath"> Game path to the .sklb to load. </param>
         private SklbFile ReadSklb(string sklbPath)
@@ -153,17 +105,12 @@ public partial class ModEditWindow
                 throw new Exception($"Resolved skeleton path {sklbPath} could not be converted to a game path.");
 
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
-            // TODO: is it worth trying to use streams for these instead? i'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
-            var bytes = resolvedPath switch
-            {
-                null          => _edit._gameData.GetFile(sklbPath)?.Data,
-                FullPath path => File.ReadAllBytes(path.ToPath()),
-            };
-            if (bytes == null)
-                throw new Exception(
+            // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
+            var bytes = resolvedPath == null ? _edit._gameData.GetFile(sklbPath)?.Data : File.ReadAllBytes(resolvedPath.Value.ToPath());
+            return bytes != null
+                ? new SklbFile(bytes)
+                : throw new Exception(
                     $"Resolved skeleton path {sklbPath} could not be found. If modded, is it enabled in the current collection?");
-
-            return new SklbFile(bytes);
         }
 
         /// <summary> Remove the material given by the index. </summary>

@@ -15,7 +15,6 @@ public partial class ModEditWindow
     private const int MdlMaterialMaximum = 4;
 
     private readonly FileEditor<MdlTab> _modelTab;
-
     private readonly ModelManager _models;
 
     private          string           _modelNewMaterial           = string.Empty;
@@ -91,19 +90,21 @@ public partial class ModEditWindow
 
     private void DrawGamePathCombo(MdlTab tab)
     {
-        if (tab.GamePaths!.Count == 0)
+        if (tab.GamePaths!.Count != 0)
         {
-            ImGui.TextUnformatted("No associated game path detected. Valid game paths are currently necessary for exporting.");
-            if (ImGui.InputTextWithHint("##customInput", "Enter custom game path...", ref _customPath, 256))
-                if (!Utf8GamePath.FromString(_customPath, out _customGamePath, false))
-                    _customGamePath = Utf8GamePath.Empty;
-
+            DrawComboButton(tab);
             return;
         }
 
-        DrawComboButton(tab);
+        ImGui.TextUnformatted("No associated game path detected. Valid game paths are currently necessary for exporting.");
+        if (!ImGui.InputTextWithHint("##customInput", "Enter custom game path...", ref _customPath, 256))
+            return;
+
+        if (!Utf8GamePath.FromString(_customPath, out _customGamePath, false))
+            _customGamePath = Utf8GamePath.Empty;
     }
 
+    /// <summary> I disliked the combo with only one selection so turn it into a button in that case. </summary>
     private static void DrawComboButton(MdlTab tab)
     {
         const string label       = "Game Path";
