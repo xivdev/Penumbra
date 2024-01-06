@@ -19,6 +19,9 @@ public sealed class ModPathChanged()
 {
     public enum Priority
     {
+        /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
+        EphemeralConfig = -500,
+
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeAddition"/>
         CollectionCacheManagerAddition = -100,
 

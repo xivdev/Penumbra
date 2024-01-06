@@ -39,8 +39,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     public ModFileSystemSelector(IKeyState keyState, CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog,
-        MessageService messager,
-        ModImportManager modImportManager, IDragDropManager dragDrop)
+        MessageService messager, ModImportManager modImportManager, IDragDropManager dragDrop)
         : base(fileSystem, keyState, Penumbra.Log, HandleException, allowMultipleSelection: true)
     {
         _communicator      = communicator;
@@ -78,6 +77,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SetFilterTooltip();
 
         SelectionChanged += OnSelectionChange;
+        if (_config.Ephemeral.LastModPath.Length > 0)
+        {
+            var mod = _modManager.FirstOrDefault(m
+                => string.Equals(m.Identifier, _config.Ephemeral.LastModPath, StringComparison.OrdinalIgnoreCase));
+            if (mod != null)
+                SelectByValue(mod);
+        }
+
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModFileSystemSelector);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModFileSystemSelector);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModFileSystemSelector);
@@ -87,15 +94,15 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
     }
 
-    private static readonly string[] ValidModExtensions = new[]
-    {
+    private static readonly string[] ValidModExtensions =
+    [
         ".ttmp",
         ".ttmp2",
         ".pmp",
         ".zip",
         ".rar",
         ".7z",
-    };
+    ];
 
     public new void Draw(float width)
     {
@@ -476,6 +483,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             (var settings, SelectedSettingCollection) = _collectionManager.Active.Current[newSelection.Index];
             SelectedSettings                          = settings ?? ModSettings.Empty;
         }
+
+        var name = newSelection?.Identifier ?? string.Empty;
+        if (name != _config.Ephemeral.LastModPath)
+        {
+            _config.Ephemeral.LastModPath = name;
+            _config.Ephemeral.Save();
+        }
     }
 
     // Keep selections across rediscoveries if possible.
@@ -522,7 +536,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
           + "Enter t:[string] to filter for mods set to specific tags.\n"
           + "Enter n:[string] to filter only for mod names and no paths.\n"
           + "Enter a:[string] to filter for mods by specific authors.\n"
-          + $"Enter s:[string] to filter for mods by the categories of the items they change (1-{ChangedItemDrawer.NumCategories+1} or partial category name).\n"
+          + $"Enter s:[string] to filter for mods by the categories of the items they change (1-{ChangedItemDrawer.NumCategories + 1} or partial category name).\n"
           + "Use None as a placeholder value that only matches empty lists or names.";
     }
 

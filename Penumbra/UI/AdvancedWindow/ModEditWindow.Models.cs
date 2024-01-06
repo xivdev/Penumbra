@@ -5,6 +5,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -14,9 +15,12 @@ public partial class ModEditWindow
     private const int MdlMaterialMaximum = 4;
 
     private readonly FileEditor<MdlTab> _modelTab;
+    private readonly ModelManager _models;
 
     private          string           _modelNewMaterial           = string.Empty;
     private readonly List<TagButtons> _subMeshAttributeTagWidgets = [];
+    private          string           _customPath                 = string.Empty;
+    private          Utf8GamePath     _customGamePath             = Utf8GamePath.Empty;
 
     private bool DrawModelPanel(MdlTab tab, bool disabled)
     {
@@ -31,6 +35,8 @@ public partial class ModEditWindow
             );
         }
 
+        DrawExport(tab, disabled);
+
         var ret = false;
 
         ret |= DrawModelMaterialDetails(tab, disabled);
@@ -42,6 +48,97 @@ public partial class ModEditWindow
         ret |= DrawOtherModelDetails(file, disabled);
 
         return !disabled && ret;
+    }
+
+    private void DrawExport(MdlTab tab, bool disabled)
+    {
+        if (!ImGui.CollapsingHeader("Export"))
+            return;
+
+        if (tab.GamePaths == null)
+        {
+            if (tab.IoException == null)
+                ImGui.TextUnformatted("Resolving model game paths.");
+            else
+                ImGuiUtil.TextWrapped(tab.IoException);
+
+            return;
+        }
+
+        DrawGamePathCombo(tab);
+
+        var gamePath = tab.GamePathIndex >= 0 && tab.GamePathIndex < tab.GamePaths.Count
+            ? tab.GamePaths[tab.GamePathIndex]
+            : _customGamePath;
+        if (ImGuiUtil.DrawDisabledButton("Export to glTF", Vector2.Zero, "Exports this mdl file to glTF, for use in 3D authoring applications.",
+                tab.PendingIo || gamePath.IsEmpty))
+            _fileDialog.OpenSavePicker("Save model as glTF.", ".gltf", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
+                ".gltf", (valid, path) =>
+                {
+                    if (!valid)
+                        return;
+
+                    tab.Export(path, gamePath);
+                },
+                _mod!.ModPath.FullName,
+                false
+            );
+
+        if (tab.IoException != null)
+            ImGuiUtil.TextWrapped(tab.IoException);
+    }
+
+    private void DrawGamePathCombo(MdlTab tab)
+    {
+        if (tab.GamePaths!.Count != 0)
+        {
+            DrawComboButton(tab);
+            return;
+        }
+
+        ImGui.TextUnformatted("No associated game path detected. Valid game paths are currently necessary for exporting.");
+        if (!ImGui.InputTextWithHint("##customInput", "Enter custom game path...", ref _customPath, 256))
+            return;
+
+        if (!Utf8GamePath.FromString(_customPath, out _customGamePath, false))
+            _customGamePath = Utf8GamePath.Empty;
+    }
+
+    /// <summary> I disliked the combo with only one selection so turn it into a button in that case. </summary>
+    private static void DrawComboButton(MdlTab tab)
+    {
+        const string label       = "Game Path";
+        var          preview     = tab.GamePaths![tab.GamePathIndex].ToString();
+        var          labelWidth  = ImGui.CalcTextSize(label).X + ImGui.GetStyle().ItemInnerSpacing.X;
+        var          buttonWidth = ImGui.GetContentRegionAvail().X - labelWidth;
+        if (tab.GamePaths!.Count == 1)
+        {
+            using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
+            using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.FrameBg))
+                .Push(ImGuiCol.ButtonHovered, ImGui.GetColorU32(ImGuiCol.FrameBgHovered))
+                .Push(ImGuiCol.ButtonActive,  ImGui.GetColorU32(ImGuiCol.FrameBgActive));
+            using var group = ImRaii.Group();
+            ImGui.Button(preview, new Vector2(buttonWidth, 0));
+            ImGui.SameLine(0, ImGui.GetStyle().ItemInnerSpacing.X);
+            ImGui.TextUnformatted("Game Path");
+        }
+        else
+        {
+            ImGui.SetNextItemWidth(buttonWidth);
+            using var combo = ImRaii.Combo("Game Path", preview);
+            if (combo.Success)
+                foreach (var (path, index) in tab.GamePaths.WithIndex())
+                {
+                    if (!ImGui.Selectable(path.ToString(), index == tab.GamePathIndex))
+                        continue;
+
+                    tab.GamePathIndex = index;
+                }
+        }
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            ImGui.SetClipboardText(preview);
+        ImGuiUtil.HoverTooltip("Right-Click to copy to clipboard.", ImGuiHoveredFlags.AllowWhenDisabled);
     }
 
     private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)

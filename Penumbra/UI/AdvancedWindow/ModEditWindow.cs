@@ -12,6 +12,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.ResourceTree;
@@ -144,11 +145,19 @@ public partial class ModEditWindow : Window, IDisposable
         _materialTab.Reset();
         _modelTab.Reset();
         _shaderPackageTab.Reset();
+        _config.Ephemeral.AdvancedEditingOpen = false;
+        _config.Ephemeral.Save();
     }
 
     public override void Draw()
     {
         using var performance = _performance.Measure(PerformanceType.UiAdvancedWindow);
+
+        if (!_config.Ephemeral.AdvancedEditingOpen)
+        {
+            _config.Ephemeral.AdvancedEditingOpen = true;
+            _config.Ephemeral.Save();
+        }
 
         using var tabBar = ImRaii.TabBar("##tabs");
         if (!tabBar)
@@ -565,33 +574,36 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, 
+        CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ChangedItemDrawer changedItemDrawer, IObjectTable objects, IFramework framework, CharacterBaseDestructor characterBaseDestructor)
         : base(WindowBaseLabel)
     {
-        _performance                  = performance;
-        _itemSwapTab                  = itemSwapTab;
-        _gameData                     = gameData;
-        _config                       = config;
-        _editor                       = editor;
-        _metaFileManager              = metaFileManager;
-        _stainService                 = stainService;
-        _activeCollections            = activeCollections;
-        _modMergeTab                  = modMergeTab;
-        _communicator                 = communicator;
-        _dragDropManager              = dragDropManager;
-        _textures                     = textures;
-        _fileDialog                   = fileDialog;
-        _objects                      = objects;
-        _framework                    = framework;
+        _performance             = performance;
+        _itemSwapTab             = itemSwapTab;
+        _gameData                = gameData;
+        _config                  = config;
+        _editor                  = editor;
+        _metaFileManager         = metaFileManager;
+        _stainService            = stainService;
+        _activeCollections       = activeCollections;
+        _modMergeTab             = modMergeTab;
+        _communicator            = communicator;
+        _dragDropManager         = dragDropManager;
+        _textures                = textures;
+        _models                  = models;
+        _fileDialog              = fileDialog;
+        _objects                 = objects;
+        _framework               = framework;
         _characterBaseDestructor = characterBaseDestructor;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
-            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, (bytes, _, _) => new MdlTab(bytes));
+            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty,
+            (bytes, path, _) => new MdlTab(this, bytes, path, _mod));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
-            () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
+            () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
+            () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
@@ -599,6 +611,7 @@ public partial class ModEditWindow : Window, IDisposable
         _quickImportViewer =
             new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
+        IsOpen = _config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true };
     }
 
     public void Dispose()

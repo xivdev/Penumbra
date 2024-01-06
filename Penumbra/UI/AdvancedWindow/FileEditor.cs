@@ -158,8 +158,6 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
             _quickImport = null;
         }
-
-        _fileDialog.Draw();
     }
 
     public void Reset()

@@ -1,6 +1,8 @@
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Mods;
+using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -8,14 +10,26 @@ public partial class ModEditWindow
 {
     private class MdlTab : IWritable
     {
-        public readonly MdlFile Mdl;
+        private readonly ModEditWindow _edit;
 
+        public readonly  MdlFile        Mdl;
         private readonly List<string>[] _attributes;
 
-        public MdlTab(byte[] bytes)
+        public List<Utf8GamePath>? GamePaths { get; private set; }
+        public int                 GamePathIndex;
+
+        public bool    PendingIo   { get; private set; }
+        public string? IoException { get; private set; }
+
+        public MdlTab(ModEditWindow edit, byte[] bytes, string path, IMod? mod)
         {
+            _edit = edit;
+
             Mdl         = new MdlFile(bytes);
             _attributes = CreateAttributes(Mdl);
+
+            if (mod != null)
+                FindGamePaths(path, mod);
         }
 
         /// <inheritdoc/>
@@ -25,6 +39,79 @@ public partial class ModEditWindow
         /// <inheritdoc/>
         public byte[] Write()
             => Mdl.Write();
+
+        /// <summary> Find the list of game paths that may correspond to this model. </summary>
+        /// <param name="path"> Resolved path to a .mdl. </param>
+        /// <param name="mod"> Mod within which the .mdl is resolved. </param>
+        private void FindGamePaths(string path, IMod mod)
+        {
+            if (!Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var p))
+            {
+                GamePaths = [p];
+                return;
+            }
+
+            PendingIo = true;
+            var task = Task.Run(() =>
+            {
+                // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
+                // NOTE: We're using case-insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
+                return mod.AllSubMods
+                    .SelectMany(m => m.Files.Concat(m.FileSwaps))
+                    .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
+                    .Select(kv => kv.Key)
+                    .ToList();
+            });
+
+            task.ContinueWith(t =>
+            {
+                IoException = t.Exception?.ToString();
+                GamePaths   = t.Result;
+                PendingIo   = false;
+            });
+        }
+
+        /// <summary> Export model to an interchange format. </summary>
+        /// <param name="outputPath"> Disk path to save the resulting file to. </param>
+        public void Export(string outputPath, Utf8GamePath mdlPath)
+        {
+            SklbFile? sklb = null;
+            try
+            {
+                var sklbPath = _edit._models.ResolveSklbForMdl(mdlPath.ToString());
+                sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
+            }
+            catch (Exception exception)
+            {
+                IoException = exception?.ToString();
+                return;
+            }
+
+            PendingIo = true;
+            _edit._models.ExportToGltf(Mdl, sklb, outputPath)
+                .ContinueWith(task =>
+                {
+                    IoException = task.Exception?.ToString();
+                    PendingIo   = false;
+                });
+        }
+
+        /// <summary> Read a .sklb from the active collection or game. </summary>
+        /// <param name="sklbPath"> Game path to the .sklb to load. </param>
+        private SklbFile ReadSklb(string sklbPath)
+        {
+            // TODO: if cross-collection lookups are turned off, this conversion can be skipped
+            if (!Utf8GamePath.FromString(sklbPath, out var utf8SklbPath, true))
+                throw new Exception($"Resolved skeleton path {sklbPath} could not be converted to a game path.");
+
+            var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
+            // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
+            var bytes = resolvedPath == null ? _edit._gameData.GetFile(sklbPath)?.Data : File.ReadAllBytes(resolvedPath.Value.ToPath());
+            return bytes != null
+                ? new SklbFile(bytes)
+                : throw new Exception(
+                    $"Resolved skeleton path {sklbPath} could not be found. If modded, is it enabled in the current collection?");
+        }
 
         /// <summary> Remove the material given by the index. </summary>
         /// <remarks> Meshes using the removed material are redirected to material 0, and those after the index are corrected. </remarks>

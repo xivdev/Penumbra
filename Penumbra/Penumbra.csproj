@@ -73,6 +73,8 @@
         <PackageReference Include="SixLabors.ImageSharp" Version="2.1.2" />
         <PackageReference Include="SharpCompress" Version="0.33.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+        <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0030" />
+        <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0030" />
     </ItemGroup>
 
     <ItemGroup>
