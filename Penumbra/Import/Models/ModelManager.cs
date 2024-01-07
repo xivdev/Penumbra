@@ -1,14 +1,19 @@
 using Dalamud.Plugin.Services;
+using OtterGui;
 using OtterGui.Tasks;
+using Penumbra.Collections.Manager;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
+using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
 
 namespace Penumbra.Import.Models;
 
-public sealed class ModelManager(IFramework framework, GamePathParser _parser) : SingleTaskQueue, IDisposable
+public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
 {
     private readonly IFramework _framework = framework;
 
@@ -24,29 +29,53 @@ public sealed class ModelManager(IFramework framework, GamePathParser _parser) :
         _tasks.Clear();
     }
 
-    public Task ExportToGltf(MdlFile mdl, SklbFile? sklb, string outputPath)
-        => Enqueue(new ExportToGltfAction(this, mdl, sklb, outputPath));
+    public Task ExportToGltf(MdlFile mdl, IEnumerable<SklbFile>? sklbs, string outputPath)
+        => Enqueue(new ExportToGltfAction(this, mdl, sklbs, outputPath));
 
-    /// <summary> Try to find the .sklb path for a .mdl file. </summary>
-    /// <param name="mdlPath"> .mdl file to look up the skeleton for. </param>
-    public string? ResolveSklbForMdl(string mdlPath)
+    /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
+    /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
+    public string[]? ResolveSklbsForMdl(string mdlPath, EstManipulation[] estManipulations)
     {
-        var info = _parser.GetFileInfo(mdlPath);
+        var info = parser.GetFileInfo(mdlPath);
         if (info.FileType is not FileType.Model)
             return null;
 
+        var baseSkeleton = GamePaths.Skeleton.Sklb.Path(info.GenderRace, "base", 1);
+
         return info.ObjectType switch
         {
-            ObjectType.Equipment => GamePaths.Skeleton.Sklb.Path(info.GenderRace, "base", 1),
-            ObjectType.Accessory => GamePaths.Skeleton.Sklb.Path(info.GenderRace, "base", 1),
-            ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => GamePaths.Skeleton.Sklb.Path(info.GenderRace, "base",
-                1),
+            ObjectType.Equipment => [baseSkeleton],
+            ObjectType.Accessory => [baseSkeleton],
+            ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
+            ObjectType.Character when info.BodySlot is BodySlot.Hair
+                => [baseSkeleton, ResolveHairSkeleton(info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
-            ObjectType.DemiHuman => GamePaths.DemiHuman.Sklb.Path(info.PrimaryId),
-            ObjectType.Monster   => GamePaths.Monster.Sklb.Path(info.PrimaryId),
-            ObjectType.Weapon    => GamePaths.Weapon.Sklb.Path(info.PrimaryId),
+            ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
+            ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
+            ObjectType.Weapon    => [GamePaths.Weapon.Sklb.Path(info.PrimaryId)],
             _                    => null,
         };
+    }
+
+    private string ResolveHairSkeleton(GameObjectInfo info, EstManipulation[] estManipulations)
+    {
+        // TODO: might be able to genericse this over esttype based on incoming info
+        var (gender, race) = info.GenderRace.Split();
+        var modEst = estManipulations
+            .FirstOrNull(est => 
+                est.Gender == gender
+                && est.Race == race
+                && est.Slot == EstManipulation.EstType.Hair
+                && est.SetId == info.PrimaryId
+            );
+        
+        // Try to use an entry from the current mod, falling back to the current collection, and finally an unmodified value.
+        var targetId = modEst?.Entry
+            ?? collections.Current.MetaCache?.GetEstEntry(EstManipulation.EstType.Hair, info.GenderRace, info.PrimaryId)
+            ?? info.PrimaryId;
+
+        // TODO: i'm not conviced ToSuffix is correct - check!
+        return GamePaths.Skeleton.Sklb.Path(info.GenderRace, info.BodySlot.ToSuffix(), targetId);
     }
 
     private Task Enqueue(IAction action)
@@ -75,16 +104,16 @@ public sealed class ModelManager(IFramework framework, GamePathParser _parser) :
         return task;
     }
 
-    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, SklbFile? sklb, string outputPath)
+    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<SklbFile>? sklbs, string outputPath)
         : IAction
     {
         public void Execute(CancellationToken cancel)
         {
-            Penumbra.Log.Debug("Reading skeleton.");
-            var xivSkeleton = BuildSkeleton(cancel);
+            Penumbra.Log.Debug("Reading skeletons.");
+            var xivSkeletons = BuildSkeletons(cancel);
 
             Penumbra.Log.Debug("Converting model.");
-            var model = ModelExporter.Export(mdl, xivSkeleton);
+            var model = ModelExporter.Export(mdl, xivSkeletons);
 
             Penumbra.Log.Debug("Building scene.");
             var scene = new SceneBuilder();
@@ -96,16 +125,28 @@ public sealed class ModelManager(IFramework framework, GamePathParser _parser) :
         }
 
         /// <summary> Attempt to read out the pertinent information from a .sklb. </summary>
-        private XivSkeleton? BuildSkeleton(CancellationToken cancel)
+        private IEnumerable<XivSkeleton>? BuildSkeletons(CancellationToken cancel)
         {
-            if (sklb == null)
+            if (sklbs == null)
                 return null;
 
-            var xmlTask = manager._framework.RunOnFrameworkThread(() => HavokConverter.HkxToXml(sklb.Skeleton));
-            xmlTask.Wait(cancel);
-            var xml = xmlTask.Result;
+            // The havok methods we're relying on for this conversion are a bit
+            // finicky at the best of times, and can outright cause a CTD if they
+            // get upset. Running each conversion on its own tick seems to make
+            // this consistently non-crashy across my testing.
+            Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair) =>
+                manager._framework.RunOnTick(
+                    () => HavokConverter.HkxToXml(pair.Sklb.Skeleton),
+                    delayTicks: pair.Index
+                );
 
-            return SkeletonConverter.FromXml(xml);
+            var havokTasks = sklbs
+                .WithIndex()
+                .Select(CreateHavokTask)
+                .ToArray();
+            Task.WaitAll(havokTasks, cancel);
+
+            return havokTasks.Select(task => SkeletonConverter.FromXml(task.Result));
         }
 
         public bool Equals(IAction? other)

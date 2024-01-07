@@ -1,7 +1,7 @@
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
-using Penumbra.Mods;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -21,15 +21,14 @@ public partial class ModEditWindow
         public bool    PendingIo   { get; private set; }
         public string? IoException { get; private set; }
 
-        public MdlTab(ModEditWindow edit, byte[] bytes, string path, IMod? mod)
+        public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
             _edit = edit;
 
             Mdl         = new MdlFile(bytes);
             _attributes = CreateAttributes(Mdl);
 
-            if (mod != null)
-                FindGamePaths(path, mod);
+            FindGamePaths(path);
         }
 
         /// <inheritdoc/>
@@ -42,9 +41,13 @@ public partial class ModEditWindow
 
         /// <summary> Find the list of game paths that may correspond to this model. </summary>
         /// <param name="path"> Resolved path to a .mdl. </param>
-        /// <param name="mod"> Mod within which the .mdl is resolved. </param>
-        private void FindGamePaths(string path, IMod mod)
+        private void FindGamePaths(string path)
         {
+            // If there's no current mod (somehow), there's nothing to resolve the model within.
+            var mod = _edit._editor.Mod;
+            if (mod == null)
+                return;
+
             if (!Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var p))
             {
                 GamePaths = [p];
@@ -71,15 +74,34 @@ public partial class ModEditWindow
             });
         }
 
+        private EstManipulation[] GetCurrentEstManipulations()
+        {
+            var mod = _edit._editor.Mod;
+            var option = _edit._editor.Option;
+            if (mod == null || option == null)
+                return [];
+
+            // Filter then prepend the current option to ensure it's chosen first.
+            return mod.AllSubMods
+                .Where(subMod => subMod != option)
+                .Prepend(option)
+                .SelectMany(subMod => subMod.Manipulations)
+                .Where(manipulation => manipulation.ManipulationType == MetaManipulation.Type.Est)
+                .Select(manipulation => manipulation.Est)
+                .ToArray();
+        }
+
         /// <summary> Export model to an interchange format. </summary>
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
-            SklbFile? sklb = null;
+            IEnumerable<SklbFile>? sklbs = null;
             try
             {
-                var sklbPath = _edit._models.ResolveSklbForMdl(mdlPath.ToString());
-                sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
+                var sklbPaths = _edit._models.ResolveSklbsForMdl(mdlPath.ToString(), GetCurrentEstManipulations());
+                sklbs = sklbPaths != null
+                    ? sklbPaths.Select(ReadSklb).ToArray()
+                    : null;
             }
             catch (Exception exception)
             {
@@ -88,7 +110,7 @@ public partial class ModEditWindow
             }
 
             PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, sklb, outputPath)
+            _edit._models.ExportToGltf(Mdl, sklbs, outputPath)
                 .ContinueWith(task =>
                 {
                     IoException = task.Exception?.ToString();
