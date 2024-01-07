@@ -12,8 +12,8 @@ public class SubMeshImporter
 
         public MdlStructs.VertexDeclarationStruct VertexDeclaration;
 
-        public ushort VertexCount;
-        public byte[] Strides;
+        public ushort       VertexCount;
+        public byte[]       Strides;
         public List<byte>[] Streams;
 
         public ushort[] Indices;
@@ -27,19 +27,19 @@ public class SubMeshImporter
         return importer.Create();
     }
 
-    private readonly MeshPrimitive _primitive;
+    private readonly MeshPrimitive                _primitive;
     private readonly IDictionary<ushort, ushort>? _nodeBoneMap;
 
     private List<VertexAttribute>? _attributes;
 
-    private ushort _vertexCount = 0;
-    private byte[] _strides = [0, 0, 0];
+    private          ushort       _vertexCount;
+    private          byte[]       _strides = [0, 0, 0];
     private readonly List<byte>[] _streams;
 
     private ushort[]? _indices;
 
-    private readonly List<string>? _morphNames;
-    private Dictionary<string, List<MdlStructs.ShapeValueStruct>>? _shapeValues;
+    private readonly List<string>?                                          _morphNames;
+    private          Dictionary<string, List<MdlStructs.ShapeValueStruct>>? _shapeValues;
 
     private SubMeshImporter(Node node, IDictionary<ushort, ushort>? nodeBoneMap)
     {
@@ -52,7 +52,7 @@ public class SubMeshImporter
             throw new Exception($"Mesh \"{name}\" has {primitiveCount} primitives, expected 1.");
         }
 
-        _primitive = mesh.Primitives[0];
+        _primitive   = mesh.Primitives[0];
         _nodeBoneMap = nodeBoneMap;
 
         try
@@ -67,7 +67,7 @@ public class SubMeshImporter
         // All meshes may use up to 3 byte streams.
         _streams = new List<byte>[3];
         for (var streamIndex = 0; streamIndex < 3; streamIndex++)
-            _streams[streamIndex] = new List<byte>();
+            _streams[streamIndex] = [];
     }
 
     private SubMesh Create()
@@ -85,26 +85,22 @@ public class SubMeshImporter
         {
             SubMeshStruct = new MdlStructs.SubmeshStruct()
             {
-                IndexOffset = 0,
-                IndexCount = (uint)_indices.Length,
+                IndexOffset        = 0,
+                IndexCount         = (uint)_indices.Length,
                 AttributeIndexMask = 0,
 
                 // TODO: Flesh these out. Game doesn't seem to rely on them existing, though.
                 BoneStartIndex = 0,
-                BoneCount = 0,
+                BoneCount      = 0,
             },
-
             VertexDeclaration = new MdlStructs.VertexDeclarationStruct()
             {
                 VertexElements = _attributes.Select(attribute => attribute.Element).ToArray(),
             },
-
             VertexCount = _vertexCount,
-            Strides = _strides,
-            Streams = _streams,
-
-            Indices = _indices,
-
+            Strides     = _strides,
+            Streams     = _streams,
+            Indices     = _indices,
             ShapeValues = _shapeValues,
         };
     }
@@ -119,11 +115,12 @@ public class SubMeshImporter
         var accessors = _primitive.VertexAccessors;
 
         var morphAccessors = Enumerable.Range(0, _primitive.MorphTargetsCount)
-            .Select(index => _primitive.GetMorphTargetAccessors(index));
+            .Select(index => _primitive.GetMorphTargetAccessors(index)).ToList();
 
         // Try to build all the attributes the mesh might use.
         // The order here is chosen to match a typical model's element order.
-        var rawAttributes = new[] {
+        var rawAttributes = new[]
+        {
             VertexAttribute.Position(accessors, morphAccessors),
             VertexAttribute.BlendWeight(accessors),
             VertexAttribute.BlendIndex(accessors, _nodeBoneMap),
@@ -134,10 +131,17 @@ public class SubMeshImporter
         };
 
         var attributes = new List<VertexAttribute>();
-        var offsets = new byte[] { 0, 0, 0 };
+        var offsets = new byte[]
+        {
+            0,
+            0,
+            0,
+        };
         foreach (var attribute in rawAttributes)
         {
-            if (attribute == null) continue;
+            if (attribute == null)
+                continue;
+
             attributes.Add(attribute.WithOffset(offsets[attribute.Stream]));
             offsets[attribute.Stream] += attribute.Size;
         }
@@ -177,7 +181,7 @@ public class SubMeshImporter
         BuildShapeValues(morphModifiedVertices);
     }
 
-    private void BuildShapeValues(List<int>[] morphModifiedVertices)
+    private void BuildShapeValues(IEnumerable<List<int>> morphModifiedVertices)
     {
         ArgumentNullException.ThrowIfNull(_indices);
         ArgumentNullException.ThrowIfNull(_attributes);
@@ -198,12 +202,11 @@ public class SubMeshImporter
                 // Find any indices that target this vertex index and create a mapping.
                 var targetingIndices = _indices.WithIndex()
                     .SelectWhere(pair => (pair.Value == vertexIndex, pair.Index));
-                foreach (var targetingIndex in targetingIndices)
-                    shapeValues.Add(new MdlStructs.ShapeValueStruct()
-                    {
-                        BaseIndicesIndex = (ushort)targetingIndex,
-                        ReplacingVertexIndex = _vertexCount,
-                    });
+                shapeValues.AddRange(targetingIndices.Select(targetingIndex => new MdlStructs.ShapeValueStruct
+                {
+                    BaseIndicesIndex     = (ushort)targetingIndex,
+                    ReplacingVertexIndex = _vertexCount,
+                }));
 
                 _vertexCount++;
             }

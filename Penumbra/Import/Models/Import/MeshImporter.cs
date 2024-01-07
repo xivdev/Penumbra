@@ -3,17 +3,17 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
-public class MeshImporter
+public class MeshImporter(IEnumerable<Node> nodes)
 {
     public struct Mesh
     {
-        public MdlStructs.MeshStruct MeshStruct;
+        public MdlStructs.MeshStruct          MeshStruct;
         public List<MdlStructs.SubmeshStruct> SubMeshStructs;
 
         public MdlStructs.VertexDeclarationStruct VertexDeclaration;
-        public IEnumerable<byte> VertexBuffer;
+        public IEnumerable<byte>                  VertexBuffer;
 
-        public List<ushort> Indicies;
+        public List<ushort> Indices;
 
         public List<string>? Bones;
 
@@ -22,8 +22,8 @@ public class MeshImporter
 
     public struct MeshShapeKey
     {
-        public string Name;
-        public MdlStructs.ShapeMeshStruct ShapeMesh;
+        public string                            Name;
+        public MdlStructs.ShapeMeshStruct        ShapeMesh;
         public List<MdlStructs.ShapeValueStruct> ShapeValues;
     }
 
@@ -33,79 +33,60 @@ public class MeshImporter
         return importer.Create();
     }
 
-    private IEnumerable<Node> _nodes;
+    private readonly List<MdlStructs.SubmeshStruct> _subMeshes = [];
 
-    private List<MdlStructs.SubmeshStruct> _subMeshes = new();
+    private          MdlStructs.VertexDeclarationStruct? _vertexDeclaration;
+    private          byte[]?                             _strides;
+    private          ushort                              _vertexCount;
+    private readonly List<byte>[]                        _streams = [[], [], []];
 
-    private MdlStructs.VertexDeclarationStruct? _vertexDeclaration;
-    private byte[]? _strides;
-    private ushort _vertexCount = 0;
-    private List<byte>[] _streams;
-
-    private List<ushort> _indices = new();
+    private readonly List<ushort> _indices = [];
 
     private List<string>? _bones;
 
-    private readonly Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = new();
-
-    private MeshImporter(IEnumerable<Node> nodes)
-    {
-        _nodes = nodes;
-
-        // All meshes may use up to 3 byte streams.
-        _streams = new List<byte>[3];
-        for (var streamIndex = 0; streamIndex < 3; streamIndex++)
-            _streams[streamIndex] = new List<byte>();
-    }
+    private readonly Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = [];
 
     private Mesh Create()
     {
-        foreach (var node in _nodes)
+        foreach (var node in nodes)
             BuildSubMeshForNode(node);
 
         ArgumentNullException.ThrowIfNull(_strides);
         ArgumentNullException.ThrowIfNull(_vertexDeclaration);
 
-        return new Mesh()
+        return new Mesh
         {
-            MeshStruct = new MdlStructs.MeshStruct()
+            MeshStruct = new MdlStructs.MeshStruct
             {
                 VertexBufferOffset = [0, (uint)_streams[0].Count, (uint)(_streams[0].Count + _streams[1].Count)],
                 VertexBufferStride = _strides,
-                VertexCount = _vertexCount,
+                VertexCount        = _vertexCount,
                 VertexStreamCount = (byte)_vertexDeclaration.Value.VertexElements
                     .Select(element => element.Stream + 1)
                     .Max(),
-
                 StartIndex = 0,
                 IndexCount = (uint)_indices.Count,
 
                 // TODO: import material names
-                MaterialIndex = 0,
-
-                SubMeshIndex = 0,
-                SubMeshCount = (ushort)_subMeshes.Count,
-
+                MaterialIndex  = 0,
+                SubMeshIndex   = 0,
+                SubMeshCount   = (ushort)_subMeshes.Count,
                 BoneTableIndex = 0,
             },
-            SubMeshStructs = _subMeshes,
-
+            SubMeshStructs    = _subMeshes,
             VertexDeclaration = _vertexDeclaration.Value,
-            VertexBuffer = _streams[0].Concat(_streams[1]).Concat(_streams[2]),
-
-            Indicies = _indices,
-
-            Bones = _bones,
-
+            VertexBuffer      = _streams[0].Concat(_streams[1]).Concat(_streams[2]),
+            Indices           = _indices,
+            Bones             = _bones,
             ShapeKeys = _shapeValues
                 .Select(pair => new MeshShapeKey()
                 {
                     Name = pair.Key,
                     ShapeMesh = new MdlStructs.ShapeMeshStruct()
                     {
-                        MeshIndexOffset = 0,
+                        MeshIndexOffset  = 0,
                         ShapeValueOffset = 0,
-                        ShapeValueCount = (uint)pair.Value.Count,
+                        ShapeValueCount  = (uint)pair.Value.Count,
                     },
                     ShapeValues = pair.Value,
                 })
@@ -117,10 +98,10 @@ public class MeshImporter
     {
         // Record some offsets we'll be using later, before they get mutated with sub-mesh values.
         var vertexOffset = _vertexCount;
-        var indexOffset = _indices.Count;
+        var indexOffset  = _indices.Count;
 
         var nodeBoneMap = CreateNodeBoneMap(node);
-        var subMesh = SubMeshImporter.Import(node, nodeBoneMap);
+        var subMesh     = SubMeshImporter.Import(node, nodeBoneMap);
 
         var subMeshName = node.Name ?? node.Mesh.Name;
 
@@ -128,18 +109,18 @@ public class MeshImporter
         if (_vertexDeclaration == null)
             _vertexDeclaration = subMesh.VertexDeclaration;
         else if (VertexDeclarationMismatch(subMesh.VertexDeclaration, _vertexDeclaration.Value))
-            throw new Exception($"Sub-mesh \"{subMeshName}\" vertex declaration mismatch. All sub-meshes of a mesh must have equivalent vertex declarations.");
+            throw new Exception(
+                $"Sub-mesh \"{subMeshName}\" vertex declaration mismatch. All sub-meshes of a mesh must have equivalent vertex declarations.");
 
         // Given that strides are derived from declarations, a lack of mismatch in declarations means the strides are fine.
-        // TODO: I mean, given that strides are derivable, might be worth dropping strides from the submesh return structure and computing when needed.
-        if (_strides == null)
-            _strides = subMesh.Strides;
+        // TODO: I mean, given that strides are derivable, might be worth dropping strides from the sub mesh return structure and computing when needed.
+        _strides ??= subMesh.Strides;
 
         // Merge the sub-mesh streams into the main mesh stream bodies.
         _vertexCount += subMesh.VertexCount;
 
-        for (var streamIndex = 0; streamIndex < 3; streamIndex++)
-            _streams[streamIndex].AddRange(subMesh.Streams[streamIndex]);
+        foreach (var (stream, subStream) in _streams.Zip(subMesh.Streams))
+            stream.AddRange(subStream);
 
         // As we're appending vertex data to the buffers, we need to update indices to point into that later block.
         _indices.AddRange(subMesh.Indices.Select(index => (ushort)(index + vertexOffset)));
@@ -149,7 +130,7 @@ public class MeshImporter
         {
             if (!_shapeValues.TryGetValue(name, out var meshShapeValues))
             {
-                meshShapeValues = new();
+                meshShapeValues = [];
                 _shapeValues.Add(name, meshShapeValues);
             }
 
@@ -167,19 +148,20 @@ public class MeshImporter
         });
     }
 
-    private bool VertexDeclarationMismatch(MdlStructs.VertexDeclarationStruct a, MdlStructs.VertexDeclarationStruct b)
+    private static bool VertexDeclarationMismatch(MdlStructs.VertexDeclarationStruct a, MdlStructs.VertexDeclarationStruct b)
     {
         var elA = a.VertexElements;
         var elB = b.VertexElements;
 
-        if (elA.Length != elB.Length) return true;
+        if (elA.Length != elB.Length)
+            return true;
 
         // NOTE: This assumes that elements will always be in the same order. Under the current implementation, that's guaranteed.
         return elA.Zip(elB).Any(pair =>
             pair.First.Usage != pair.Second.Usage
-            || pair.First.Type != pair.Second.Type
-            || pair.First.Offset != pair.Second.Offset
-            || pair.First.Stream != pair.Second.Stream
+         || pair.First.Type != pair.Second.Type
+         || pair.First.Offset != pair.Second.Offset
+         || pair.First.Stream != pair.Second.Stream
         );
     }
 
@@ -195,31 +177,30 @@ public class MeshImporter
             .Select(index => node.Skin.GetJoint(index).Joint.Name ?? "unnamed_joint")
             .ToArray();
 
-        // TODO: This is duplicated with the submesh importer - would be good to avoid (not that it's a huge issue).
-        var mesh = node.Mesh;
-        var meshName = node.Name ?? mesh.Name ?? "(no name)";
+        // TODO: This is duplicated with the sub mesh importer - would be good to avoid (not that it's a huge issue).
+        var mesh           = node.Mesh;
+        var meshName       = node.Name ?? mesh.Name ?? "(no name)";
         var primitiveCount = mesh.Primitives.Count;
         if (primitiveCount != 1)
-        {
             throw new Exception($"Mesh \"{meshName}\" has {primitiveCount} primitives, expected 1.");
-        }
+
         var primitive = mesh.Primitives[0];
 
         // Per glTF specification, an asset with a skin MUST contain skinning attributes on its mesh.
-        var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0");
-        if (jointsAccessor == null)
-            throw new Exception($"Skinned mesh \"{meshName}\" is skinned but does not contain skinning vertex attributes.");
+        var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0")
+         ?? throw new Exception($"Skinned mesh \"{meshName}\" is skinned but does not contain skinning vertex attributes.");
 
         // Build a set of joints that are referenced by this mesh.
         // TODO: Would be neat to omit 0-weighted joints here, but doing so will require some further work on bone mapping behavior to ensure the unweighted joints can still be resolved to valid bone indices during vertex data construction.
         var usedJoints = new HashSet<ushort>();
         foreach (var joints in jointsAccessor.AsVector4Array())
+        {
             for (var index = 0; index < 4; index++)
                 usedJoints.Add((ushort)joints[index]);
-    
+        }
+
         // Only initialise the bones list if we're actually going to put something in it.
-        if (_bones == null)
-            _bones = new();
+        _bones ??= [];
 
         // Build a dictionary of node-specific joint indices mesh-wide bone indices.
         var nodeBoneMap = new Dictionary<ushort, ushort>();
@@ -232,6 +213,7 @@ public class MeshImporter
                 boneIndex = _bones.Count;
                 _bones.Add(jointName);
             }
+
             nodeBoneMap.Add(usedJoint, (ushort)boneIndex);
         }
 
