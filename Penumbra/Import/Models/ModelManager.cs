@@ -8,8 +8,10 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
+using Penumbra.Import.Models.Import;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
+using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models;
 
@@ -32,6 +34,11 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     public Task ExportToGltf(MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
         => Enqueue(new ExportToGltfAction(this, mdl, sklbs, outputPath));
 
+    public Task<MdlFile?> ImportGltf(string inputPath)
+    {
+        var action = new ImportGltfAction(inputPath);
+        return Enqueue(action).ContinueWith(_ => action.Out);
+    }
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
     /// <param name="estManipulations"> Modified extra skeleton template parameters. </param>
@@ -163,6 +170,26 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 return false;
 
             // TODO: compare configuration and such
+            return true;
+        }
+    }
+
+    private partial class ImportGltfAction(string inputPath) : IAction
+    {
+        public MdlFile? Out;
+
+        public void Execute(CancellationToken cancel)
+        {
+            var model = ModelRoot.Load(inputPath);
+
+            Out = ModelImporter.Import(model);
+        }
+
+        public bool Equals(IAction? other)
+        {
+            if (other is not ImportGltfAction rhs)
+                return false;
+
             return true;
         }
     }

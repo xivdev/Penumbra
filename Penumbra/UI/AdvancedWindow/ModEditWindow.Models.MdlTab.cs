@@ -12,23 +12,30 @@ public partial class ModEditWindow
     {
         private readonly ModEditWindow _edit;
 
-        public readonly  MdlFile        Mdl;
-        private readonly List<string>[] _attributes;
+        public  MdlFile        Mdl         { get; private set; }
+        private List<string>[] _attributes;
 
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
 
-        public bool    PendingIo   { get; private set; }
-        public string? IoException { get; private set; }
+        private bool    _dirty;
+        public  bool    PendingIo   { get; private set; }
+        public  string? IoException { get; private set; }
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
             _edit = edit;
 
-            Mdl         = new MdlFile(bytes);
-            _attributes = CreateAttributes(Mdl);
+            Initialize(new MdlFile(bytes));
 
             FindGamePaths(path);
+        }
+
+        [MemberNotNull(nameof(Mdl), nameof(_attributes))]
+        private void Initialize(MdlFile mdl)
+        {
+            Mdl = mdl;
+            _attributes = CreateAttributes(Mdl);
         }
 
         /// <inheritdoc/>
@@ -38,6 +45,16 @@ public partial class ModEditWindow
         /// <inheritdoc/>
         public byte[] Write()
             => Mdl.Write();
+
+        public bool Dirty
+        {
+            get
+            {
+                var dirty = _dirty;
+                _dirty = false;
+                return dirty;
+            }
+        }
 
         /// <summary> Find the list of game paths that may correspond to this model. </summary>
         /// <param name="path"> Resolved path to a .mdl. </param>
@@ -93,7 +110,6 @@ public partial class ModEditWindow
 
         /// <summary> Export model to an interchange format. </summary>
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
-        /// <param name="mdlPath"> The game path of the model. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
             IEnumerable<SklbFile> skeletons;
@@ -114,6 +130,24 @@ public partial class ModEditWindow
                 {
                     IoException = task.Exception?.ToString();
                     PendingIo   = false;
+                });
+        }
+		
+		/// <summary> Import a model from an interchange format. </summary>
+        /// <param name="inputPath"> Disk path to load model data from. </param>
+        public void Import(string inputPath)
+        {
+            PendingIo = true;
+            _edit._models.ImportGltf(inputPath)
+                .ContinueWith(task =>
+                {
+                    IoException = task.Exception?.ToString();
+                    if (task is { IsCompletedSuccessfully: true, Result: not null })
+                    {
+                        Initialize(task.Result);
+                        _dirty = true;
+                    }
+                    PendingIo = false;
                 });
         }
 
