@@ -86,31 +86,30 @@ public partial class ModEditWindow
                 .Where(subMod => subMod != option)
                 .Prepend(option)
                 .SelectMany(subMod => subMod.Manipulations)
-                .Where(manipulation => manipulation.ManipulationType == MetaManipulation.Type.Est)
+                .Where(manipulation => manipulation.ManipulationType is MetaManipulation.Type.Est)
                 .Select(manipulation => manipulation.Est)
                 .ToArray();
         }
 
         /// <summary> Export model to an interchange format. </summary>
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
+        /// <param name="mdlPath"> The game path of the model. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
-            IEnumerable<SklbFile>? sklbs = null;
+            IEnumerable<SklbFile> skeletons;
             try
             {
                 var sklbPaths = _edit._models.ResolveSklbsForMdl(mdlPath.ToString(), GetCurrentEstManipulations());
-                sklbs = sklbPaths != null
-                    ? sklbPaths.Select(ReadSklb).ToArray()
-                    : null;
+                skeletons = sklbPaths.Select(ReadSklb).ToArray();
             }
             catch (Exception exception)
             {
-                IoException = exception?.ToString();
+                IoException = exception.ToString();
                 return;
             }
 
             PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, sklbs, outputPath)
+            _edit._models.ExportToGltf(Mdl, skeletons, outputPath)
                 .ContinueWith(task =>
                 {
                     IoException = task.Exception?.ToString();

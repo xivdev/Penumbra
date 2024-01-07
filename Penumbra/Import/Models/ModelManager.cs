@@ -29,16 +29,17 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task ExportToGltf(MdlFile mdl, IEnumerable<SklbFile>? sklbs, string outputPath)
+    public Task ExportToGltf(MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
         => Enqueue(new ExportToGltfAction(this, mdl, sklbs, outputPath));
 
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
-    public string[]? ResolveSklbsForMdl(string mdlPath, EstManipulation[] estManipulations)
+    /// <param name="estManipulations"> Modified extra skeleton template parameters. </param>
+    public string[] ResolveSklbsForMdl(string mdlPath, EstManipulation[] estManipulations)
     {
         var info = parser.GetFileInfo(mdlPath);
         if (info.FileType is not FileType.Model)
-            return null;
+            return [];
 
         var baseSkeleton = GamePaths.Skeleton.Sklb.Path(info.GenderRace, "base", 1);
 
@@ -59,7 +60,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
             ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
             ObjectType.Weapon    => [GamePaths.Weapon.Sklb.Path(info.PrimaryId)],
-            _                    => null,
+            _                    => [],
         };
     }
 
@@ -113,31 +114,38 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return task;
     }
 
-    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<SklbFile>? sklbs, string outputPath)
+    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
         : IAction
     {
         public void Execute(CancellationToken cancel)
         {
-            Penumbra.Log.Debug("Reading skeletons.");
+            Penumbra.Log.Debug($"[GLTF Export] Exporting model to {outputPath}...");
+            Penumbra.Log.Debug("[GLTF Export] Reading skeletons...");
             var xivSkeletons = BuildSkeletons(cancel);
 
-            Penumbra.Log.Debug("Converting model.");
+            Penumbra.Log.Debug("[GLTF Export] Converting model...");
             var model = ModelExporter.Export(mdl, xivSkeletons);
 
-            Penumbra.Log.Debug("Building scene.");
+            Penumbra.Log.Debug("[GLTF Export] Building scene...");
             var scene = new SceneBuilder();
             model.AddToScene(scene);
 
-            Penumbra.Log.Debug("Saving.");
+            Penumbra.Log.Debug("[GLTF Export] Saving...");
             var gltfModel = scene.ToGltf2();
             gltfModel.SaveGLTF(outputPath);
+            Penumbra.Log.Debug("[GLTF Export] Done.");
         }
 
         /// <summary> Attempt to read out the pertinent information from a .sklb. </summary>
-        private IEnumerable<XivSkeleton>? BuildSkeletons(CancellationToken cancel)
+        private IEnumerable<XivSkeleton> BuildSkeletons(CancellationToken cancel)
         {
-            if (sklbs == null)
-                return null;
+            var havokTasks = sklbs
+                .WithIndex()
+                .Select(CreateHavokTask)
+                .ToArray();
+
+            // Result waits automatically.
+            return havokTasks.Select(task => SkeletonConverter.FromXml(task.Result));
 
             // The havok methods we're relying on for this conversion are a bit
             // finicky at the best of times, and can outright cause a CTD if they
@@ -146,16 +154,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair) =>
                 manager._framework.RunOnTick(
                     () => HavokConverter.HkxToXml(pair.Sklb.Skeleton),
-                    delayTicks: pair.Index
-                );
-
-            var havokTasks = sklbs
-                .WithIndex()
-                .Select(CreateHavokTask)
-                .ToArray();
-            Task.WaitAll(havokTasks, cancel);
-
-            return havokTasks.Select(task => SkeletonConverter.FromXml(task.Result));
+                    delayTicks: pair.Index, cancellationToken: cancel);
         }
 
         public bool Equals(IAction? other)

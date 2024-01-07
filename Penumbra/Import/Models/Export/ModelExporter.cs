@@ -56,11 +56,12 @@ public class ModelExporter
         var names = new Dictionary<string, int>();
         var joints = new List<NodeBuilder>();
 
-        // Flatten out the bones across all the recieved skeletons, but retain a reference to the parent skeleton for lookups.
+        // Flatten out the bones across all the received skeletons, but retain a reference to the parent skeleton for lookups.
         var iterator = skeletons.SelectMany(skeleton => skeleton.Bones.Select(bone => (skeleton, bone)));
         foreach (var (skeleton, bone) in iterator)
         {
-            if (names.ContainsKey(bone.Name)) continue;
+            if (names.ContainsKey(bone.Name)) 
+                continue;
 
             var node = new NodeBuilder(bone.Name);
             names[bone.Name] = joints.Count;
