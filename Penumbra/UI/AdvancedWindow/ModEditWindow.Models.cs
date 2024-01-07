@@ -15,7 +15,7 @@ public partial class ModEditWindow
     private const int MdlMaterialMaximum = 4;
 
     private readonly FileEditor<MdlTab> _modelTab;
-    private readonly ModelManager _models;
+    private readonly ModelManager       _models;
 
     private          string           _modelNewMaterial           = string.Empty;
     private readonly List<TagButtons> _subMeshAttributeTagWidgets = [];
@@ -55,9 +55,7 @@ public partial class ModEditWindow
         if (!ImGui.CollapsingHeader("Import / Export"))
             return;
 
-        var windowWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X;
-        var childWidth = (windowWidth - ImGui.GetStyle().ItemSpacing.X * 3) / 2;
-        var childSize = new Vector2(childWidth, 0);
+        var childSize = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
 
         DrawImport(tab, childSize, disabled);
         ImGui.SameLine();
@@ -67,21 +65,35 @@ public partial class ModEditWindow
             ImGuiUtil.TextWrapped(tab.IoException);
     }
 
-    private void DrawImport(MdlTab tab, Vector2 size, bool disabled)
+    private void DrawImport(MdlTab tab, Vector2 size, bool _1)
     {
-        using var frame = ImRaii.FramedGroup("Import", size);
-
-        if (ImGuiUtil.DrawDisabledButton("Import from glTF", Vector2.Zero, "Imports a glTF file, overriding the content of this mdl.", tab.PendingIo))
-        {
-            _fileDialog.OpenFilePicker("Load model from glTF.", "glTF{.gltf,.glb}", (success, paths) =>
+        _dragDropManager.CreateImGuiSource("ModelDragDrop",
+            m => m.Extensions.Any(e => ValidModelExtensions.Contains(e.ToLowerInvariant())), m =>
             {
-                if (success && paths.Count > 0)
-                    tab.Import(paths[0]);
-            }, 1, _mod!.ModPath.FullName, false);
+                if (!GetFirstModel(m.Files, out var file))
+                    return false;
+
+                ImGui.TextUnformatted($"Dragging model for editing: {Path.GetFileName(file)}");
+                return true;
+            });
+
+        using (var frame = ImRaii.FramedGroup("Import", size))
+        {
+            if (ImGuiUtil.DrawDisabledButton("Import from glTF", Vector2.Zero, "Imports a glTF file, overriding the content of this mdl.",
+                    tab.PendingIo))
+                _fileDialog.OpenFilePicker("Load model from glTF.", "glTF{.gltf,.glb}", (success, paths) =>
+                {
+                    if (success && paths.Count > 0)
+                        tab.Import(paths[0]);
+                }, 1, _mod!.ModPath.FullName, false);
+            ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
         }
+
+        if (_dragDropManager.CreateImGuiTarget("ModelDragDrop", out var files, out _) && GetFirstModel(files, out var file))
+            tab.Import(file);
     }
 
-    private void DrawExport(MdlTab tab, Vector2 size, bool disabled)
+    private void DrawExport(MdlTab tab, Vector2 size, bool _)
     {
         using var frame = ImRaii.FramedGroup("Export", size);
 
@@ -431,4 +443,15 @@ public partial class ModEditWindow
 
         return false;
     }
+
+    private static bool GetFirstModel(IEnumerable<string> files, [NotNullWhen(true)] out string? file)
+    {
+        file = files.FirstOrDefault(f => ValidModelExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+        return file != null;
+    }
+
+    private static readonly string[] ValidModelExtensions =
+    [
+        ".gltf",
+    ];
 }

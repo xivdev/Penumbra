@@ -142,13 +142,12 @@ public partial class ModEditWindow
                 .ContinueWith(task =>
                 {
                     IoException = task.Exception?.ToString();
-                    PendingIo   = false;
-
-                    if (task.IsCompletedSuccessfully && task.Result != null)
+                    if (task is { IsCompletedSuccessfully: true, Result: not null })
                     {
                         Initialize(task.Result);
                         _dirty = true;
                     }
+                    PendingIo = false;
                 });
         }
 
