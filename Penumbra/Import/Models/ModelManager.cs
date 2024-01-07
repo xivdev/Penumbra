@@ -44,13 +44,17 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
         return info.ObjectType switch
         {
+            ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Body
+                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Body, info, estManipulations)],
+            ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Head
+                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Head, info, estManipulations)],
             ObjectType.Equipment => [baseSkeleton],
             ObjectType.Accessory => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
-                => [baseSkeleton, ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
             ObjectType.Character when info.BodySlot is BodySlot.Face or BodySlot.Ear
-                => [baseSkeleton, ResolveEstSkeleton(EstManipulation.EstType.Face, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Face, info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
             ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
             ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
@@ -59,8 +63,9 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         };
     }
 
-    private string ResolveEstSkeleton(EstManipulation.EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
+    private string[] ResolveEstSkeleton(EstManipulation.EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
     {
+        // Try to find an EST entry from the manipulations provided.
         var (gender, race) = info.GenderRace.Split();
         var modEst = estManipulations
             .FirstOrNull(est => 
@@ -70,12 +75,16 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 && est.SetId == info.PrimaryId
             );
         
-        // Try to use an entry from the current mod, falling back to the current collection, and finally an unmodified value.
+        // Try to use an entry from provided manipulations, falling back to the current collection.
         var targetId = modEst?.Entry
             ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
-            ?? info.PrimaryId;
+            ?? 0;
 
-        return GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId);
+        // If there's no entries, we can assume that there's no additional skeleton.
+        if (targetId == 0)
+            return [];
+
+        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId)];
     }
 
     private Task Enqueue(IAction action)
