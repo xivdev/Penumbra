@@ -35,15 +35,9 @@ public partial class ModEditWindow
             );
         }
 
-        DrawExport(tab, disabled);
+        DrawImportExport(tab, disabled);
 
-        var ret = false;
-        
-        if (ImGui.Button("import test"))
-        {
-            tab.Import();
-            ret |= true;
-        }
+        var ret = tab.Dirty;
 
         ret |= DrawModelMaterialDetails(tab, disabled);
 
@@ -56,10 +50,40 @@ public partial class ModEditWindow
         return !disabled && ret;
     }
 
-    private void DrawExport(MdlTab tab, bool disabled)
+    private void DrawImportExport(MdlTab tab, bool disabled)
     {
-        if (!ImGui.CollapsingHeader("Export"))
+        if (!ImGui.CollapsingHeader("Import / Export"))
             return;
+
+        var windowWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X;
+        var childWidth = (windowWidth - ImGui.GetStyle().ItemSpacing.X * 3) / 2;
+        var childSize = new Vector2(childWidth, 0);
+
+        DrawImport(tab, childSize, disabled);
+        ImGui.SameLine();
+        DrawExport(tab, childSize, disabled);
+
+        if (tab.IoException != null)
+            ImGuiUtil.TextWrapped(tab.IoException);
+    }
+
+    private void DrawImport(MdlTab tab, Vector2 size, bool disabled)
+    {
+        using var frame = ImRaii.FramedGroup("Import", size);
+
+        if (ImGuiUtil.DrawDisabledButton("Import from glTF", Vector2.Zero, "Imports a glTF file, overriding the content of this mdl.", tab.PendingIo))
+        {
+            _fileDialog.OpenFilePicker("Load model from glTF.", "glTF{.gltf,.glb}", (success, paths) =>
+            {
+                if (success && paths.Count > 0)
+                    tab.Import(paths[0]);
+            }, 1, _mod!.ModPath.FullName, false);
+        }
+    }
+
+    private void DrawExport(MdlTab tab, Vector2 size, bool disabled)
+    {
+        using var frame = ImRaii.FramedGroup("Export", size);
 
         if (tab.GamePaths == null)
         {
@@ -89,9 +113,6 @@ public partial class ModEditWindow
                 _mod!.ModPath.FullName,
                 false
             );
-
-        if (tab.IoException != null)
-            ImGuiUtil.TextWrapped(tab.IoException);
     }
 
     private void DrawGamePathCombo(MdlTab tab)
@@ -116,7 +137,7 @@ public partial class ModEditWindow
         const string label       = "Game Path";
         var          preview     = tab.GamePaths![tab.GamePathIndex].ToString();
         var          labelWidth  = ImGui.CalcTextSize(label).X + ImGui.GetStyle().ItemInnerSpacing.X;
-        var          buttonWidth = ImGui.GetContentRegionAvail().X - labelWidth;
+        var          buttonWidth = ImGui.GetContentRegionAvail().X - labelWidth - ImGui.GetStyle().ItemSpacing.X;
         if (tab.GamePaths!.Count == 1)
         {
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));

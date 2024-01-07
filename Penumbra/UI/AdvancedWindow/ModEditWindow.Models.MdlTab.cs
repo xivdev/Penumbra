@@ -18,8 +18,9 @@ public partial class ModEditWindow
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
 
-        public bool    PendingIo   { get; private set; }
-        public string? IoException { get; private set; }
+        private bool    _dirty;
+        public  bool    PendingIo   { get; private set; }
+        public  string? IoException { get; private set; }
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path, IMod? mod)
         {
@@ -45,6 +46,16 @@ public partial class ModEditWindow
         /// <inheritdoc/>
         public byte[] Write()
             => Mdl.Write();
+
+        public bool Dirty
+        {
+            get
+            {
+                var dirty = _dirty;
+                _dirty = false;
+                return dirty;
+            }
+        }
 
         /// <summary> Find the list of game paths that may correspond to this model. </summary>
         /// <param name="path"> Resolved path to a .mdl. </param>
@@ -77,14 +88,28 @@ public partial class ModEditWindow
             });
         }
 
-        public void Import()
+        /// <summary> Import a model from an interchange format. </summary>
+        /// <param name="inputPath"> Disk path to load model data from. </param>
+        public void Import(string inputPath)
         {
-            // TODO: this needs to be fleshed out a bunch.
-            _edit._models.ImportGltf().ContinueWith(v => Initialize(v.Result ?? Mdl));
+            PendingIo = true;
+            _edit._models.ImportGltf(inputPath)
+                .ContinueWith(task =>
+                {
+                    IoException = task.Exception?.ToString();
+                    PendingIo   = false;
+
+                    if (task.IsCompletedSuccessfully && task.Result != null)
+                    {
+                        Initialize(task.Result);
+                        _dirty = true;
+                    }
+                });
         }
 
         /// <summary> Export model to an interchange format. </summary>
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
+        /// <param name="mdlPath"> Game path to consider as the canonical .mdl path during export, used for resolution of other files. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
             SklbFile? sklb = null;

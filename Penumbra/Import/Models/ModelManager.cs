@@ -10,7 +10,7 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models;
 
-public sealed class ModelManager(IFramework framework, GamePathParser _parser) : SingleTaskQueue, IDisposable
+public sealed class ModelManager(IFramework framework, GamePathParser parser) : SingleTaskQueue, IDisposable
 {
     private readonly IFramework _framework = framework;
 
@@ -29,17 +29,17 @@ public sealed class ModelManager(IFramework framework, GamePathParser _parser) :
     public Task ExportToGltf(MdlFile mdl, SklbFile? sklb, string outputPath)
         => Enqueue(new ExportToGltfAction(this, mdl, sklb, outputPath));
 
-    public Task<MdlFile> ImportGltf()
+    public Task<MdlFile?> ImportGltf(string inputPath)
     {
-        var action = new ImportGltfAction();
-        return Enqueue(action).ContinueWith(_ => action.Out!);
+        var action = new ImportGltfAction(inputPath);
+        return Enqueue(action).ContinueWith(_ => action.Out);
     }
 
     /// <summary> Try to find the .sklb path for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeleton for. </param>
     public string? ResolveSklbForMdl(string mdlPath)
     {
-        var info = _parser.GetFileInfo(mdlPath);
+        var info = parser.GetFileInfo(mdlPath);
         if (info.FileType is not FileType.Model)
             return null;
 
@@ -126,18 +126,13 @@ public sealed class ModelManager(IFramework framework, GamePathParser _parser) :
         }
     }
 
-    private partial class ImportGltfAction : IAction
+    private partial class ImportGltfAction(string inputPath) : IAction
     {
         public MdlFile? Out;
 
-        public ImportGltfAction()
-        {
-            //
-        }
-
         public void Execute(CancellationToken cancel)
         {
-            var model = ModelRoot.Load("C:\\Users\\ackwell\\blender\\gltf-tests\\c0201e6180_top.gltf");
+            var model = ModelRoot.Load(inputPath);
 
             Out = ModelImporter.Import(model);
         }
