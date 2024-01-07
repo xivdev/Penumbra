@@ -48,7 +48,9 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             ObjectType.Accessory => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
-                => [baseSkeleton, ResolveHairSkeleton(info, estManipulations)],
+                => [baseSkeleton, ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
+            ObjectType.Character when info.BodySlot is BodySlot.Face
+                => [baseSkeleton, ResolveEstSkeleton(EstManipulation.EstType.Face, info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
             ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
             ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
@@ -57,24 +59,22 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         };
     }
 
-    private string ResolveHairSkeleton(GameObjectInfo info, EstManipulation[] estManipulations)
+    private string ResolveEstSkeleton(EstManipulation.EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
     {
-        // TODO: might be able to genericse this over esttype based on incoming info
         var (gender, race) = info.GenderRace.Split();
         var modEst = estManipulations
             .FirstOrNull(est => 
                 est.Gender == gender
                 && est.Race == race
-                && est.Slot == EstManipulation.EstType.Hair
+                && est.Slot == type
                 && est.SetId == info.PrimaryId
             );
         
         // Try to use an entry from the current mod, falling back to the current collection, and finally an unmodified value.
         var targetId = modEst?.Entry
-            ?? collections.Current.MetaCache?.GetEstEntry(EstManipulation.EstType.Hair, info.GenderRace, info.PrimaryId)
+            ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
             ?? info.PrimaryId;
 
-        // TODO: i'm not conviced ToSuffix is correct - check!
         return GamePaths.Skeleton.Sklb.Path(info.GenderRace, info.BodySlot.ToSuffix(), targetId);
     }
 
