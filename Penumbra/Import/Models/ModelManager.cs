@@ -49,7 +49,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
                 => [baseSkeleton, ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
-            ObjectType.Character when info.BodySlot is BodySlot.Face
+            ObjectType.Character when info.BodySlot is BodySlot.Face or BodySlot.Ear
                 => [baseSkeleton, ResolveEstSkeleton(EstManipulation.EstType.Face, info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
             ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
@@ -75,7 +75,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
             ?? info.PrimaryId;
 
-        return GamePaths.Skeleton.Sklb.Path(info.GenderRace, info.BodySlot.ToSuffix(), targetId);
+        return GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId);
     }
 
     private Task Enqueue(IAction action)
