@@ -1,6 +1,5 @@
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 
 namespace Penumbra.Communication;
 

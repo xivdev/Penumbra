@@ -1,7 +1,7 @@
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
-using Penumbra.Mods;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -22,14 +22,13 @@ public partial class ModEditWindow
         public  bool    PendingIo   { get; private set; }
         public  string? IoException { get; private set; }
 
-        public MdlTab(ModEditWindow edit, byte[] bytes, string path, IMod? mod)
+        public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
             _edit = edit;
 
             Initialize(new MdlFile(bytes));
 
-            if (mod != null)
-                FindGamePaths(path, mod);
+            FindGamePaths(path);
         }
 
         [MemberNotNull(nameof(Mdl), nameof(_attributes))]
@@ -59,9 +58,13 @@ public partial class ModEditWindow
 
         /// <summary> Find the list of game paths that may correspond to this model. </summary>
         /// <param name="path"> Resolved path to a .mdl. </param>
-        /// <param name="mod"> Mod within which the .mdl is resolved. </param>
-        private void FindGamePaths(string path, IMod mod)
+        private void FindGamePaths(string path)
         {
+            // If there's no current mod (somehow), there's nothing to resolve the model within.
+            var mod = _edit._editor.Mod;
+            if (mod == null)
+                return;
+
             if (!Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var p))
             {
                 GamePaths = [p];
@@ -88,7 +91,49 @@ public partial class ModEditWindow
             });
         }
 
-        /// <summary> Import a model from an interchange format. </summary>
+        private EstManipulation[] GetCurrentEstManipulations()
+        {
+            var mod = _edit._editor.Mod;
+            var option = _edit._editor.Option;
+            if (mod == null || option == null)
+                return [];
+
+            // Filter then prepend the current option to ensure it's chosen first.
+            return mod.AllSubMods
+                .Where(subMod => subMod != option)
+                .Prepend(option)
+                .SelectMany(subMod => subMod.Manipulations)
+                .Where(manipulation => manipulation.ManipulationType is MetaManipulation.Type.Est)
+                .Select(manipulation => manipulation.Est)
+                .ToArray();
+        }
+
+        /// <summary> Export model to an interchange format. </summary>
+        /// <param name="outputPath"> Disk path to save the resulting file to. </param>
+        public void Export(string outputPath, Utf8GamePath mdlPath)
+        {
+            IEnumerable<SklbFile> skeletons;
+            try
+            {
+                var sklbPaths = _edit._models.ResolveSklbsForMdl(mdlPath.ToString(), GetCurrentEstManipulations());
+                skeletons = sklbPaths.Select(ReadSklb).ToArray();
+            }
+            catch (Exception exception)
+            {
+                IoException = exception.ToString();
+                return;
+            }
+
+            PendingIo = true;
+            _edit._models.ExportToGltf(Mdl, skeletons, outputPath)
+                .ContinueWith(task =>
+                {
+                    IoException = task.Exception?.ToString();
+                    PendingIo   = false;
+                });
+        }
+		
+		/// <summary> Import a model from an interchange format. </summary>
         /// <param name="inputPath"> Disk path to load model data from. </param>
         public void Import(string inputPath)
         {
@@ -104,32 +149,6 @@ public partial class ModEditWindow
                         Initialize(task.Result);
                         _dirty = true;
                     }
-                });
-        }
-
-        /// <summary> Export model to an interchange format. </summary>
-        /// <param name="outputPath"> Disk path to save the resulting file to. </param>
-        /// <param name="mdlPath"> Game path to consider as the canonical .mdl path during export, used for resolution of other files. </param>
-        public void Export(string outputPath, Utf8GamePath mdlPath)
-        {
-            SklbFile? sklb = null;
-            try
-            {
-                var sklbPath = _edit._models.ResolveSklbForMdl(mdlPath.ToString());
-                sklb = sklbPath != null ? ReadSklb(sklbPath) : null;
-            }
-            catch (Exception exception)
-            {
-                IoException = exception?.ToString();
-                return;
-            }
-
-            PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, sklb, outputPath)
-                .ContinueWith(task =>
-                {
-                    IoException = task.Exception?.ToString();
-                    PendingIo   = false;
                 });
         }
 

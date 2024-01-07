@@ -600,7 +600,7 @@ public partial class ModEditWindow : Window, IDisposable
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
             () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, _) => new MdlTab(this, bytes, path, _mod));
+            (bytes, path, _) => new MdlTab(this, bytes, path));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
             () => _mod?.ModPath.FullName ?? string.Empty,

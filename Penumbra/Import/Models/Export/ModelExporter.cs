@@ -22,7 +22,7 @@ public class ModelExporter
     }
 
     /// <summary> Export a model in preparation for usage in a glTF file. If provided, skeleton will be used to skin the resulting meshes where appropriate. </summary>
-    public static Model Export(MdlFile mdl, XivSkeleton? xivSkeleton)
+    public static Model Export(MdlFile mdl, IEnumerable<XivSkeleton>? xivSkeleton)
     {
         var gltfSkeleton = xivSkeleton != null ? ConvertSkeleton(xivSkeleton) : null;
         var meshes = ConvertMeshes(mdl, gltfSkeleton);
@@ -50,14 +50,18 @@ public class ModelExporter
     }
 
     /// <summary> Convert XIV skeleton data into a glTF-compatible node tree, with mappings. </summary>
-    private static GltfSkeleton? ConvertSkeleton(XivSkeleton skeleton)
+    private static GltfSkeleton? ConvertSkeleton(IEnumerable<XivSkeleton> skeletons)
     {
         NodeBuilder? root = null;
         var names = new Dictionary<string, int>();
         var joints = new List<NodeBuilder>();
-        foreach (var bone in skeleton.Bones)
+
+        // Flatten out the bones across all the received skeletons, but retain a reference to the parent skeleton for lookups.
+        var iterator = skeletons.SelectMany(skeleton => skeleton.Bones.Select(bone => (skeleton, bone)));
+        foreach (var (skeleton, bone) in iterator)
         {
-            if (names.ContainsKey(bone.Name)) continue;
+            if (names.ContainsKey(bone.Name)) 
+                continue;
 
             var node = new NodeBuilder(bone.Name);
             names[bone.Name] = joints.Count;

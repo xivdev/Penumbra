@@ -17,10 +17,10 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     private readonly ModStorage          _modStorage;
 
     /// <remarks> The empty collection is always available at Index 0. </remarks>
-    private readonly List<ModCollection> _collections = new()
-    {
+    private readonly List<ModCollection> _collections =
+    [
         ModCollection.Empty,
-    };
+    ];
 
     public readonly ModCollection DefaultNamed;
 
