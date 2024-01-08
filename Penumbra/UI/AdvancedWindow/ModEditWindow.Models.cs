@@ -77,7 +77,7 @@ public partial class ModEditWindow
                 return true;
             });
 
-        using (var frame = ImRaii.FramedGroup("Import", size))
+        using (var frame = ImRaii.FramedGroup("Import", size, headerPreIcon: FontAwesomeIcon.FileImport))
         {
             if (ImGuiUtil.DrawDisabledButton("Import from glTF", Vector2.Zero, "Imports a glTF file, overriding the content of this mdl.",
                     tab.PendingIo))
@@ -89,13 +89,13 @@ public partial class ModEditWindow
             ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
         }
 
-        if (_dragDropManager.CreateImGuiTarget("ModelDragDrop", out var files, out _) && GetFirstModel(files, out var file))
-            tab.Import(file);
+        if (_dragDropManager.CreateImGuiTarget("ModelDragDrop", out var files, out _) && GetFirstModel(files, out var importFile))
+            tab.Import(importFile);
     }
 
     private void DrawExport(MdlTab tab, Vector2 size, bool _)
     {
-        using var frame = ImRaii.FramedGroup("Export", size);
+        using var frame = ImRaii.FramedGroup("Export", size, headerPreIcon: FontAwesomeIcon.FileExport);
 
         if (tab.GamePaths == null)
         {
