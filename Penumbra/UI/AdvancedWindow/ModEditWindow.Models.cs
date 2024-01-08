@@ -7,6 +7,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -61,8 +62,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         DrawExport(tab, childSize, disabled);
 
-        if (tab.IoException != null)
-            ImGuiUtil.TextWrapped(tab.IoException);
+        DrawIoExceptions(tab);
     }
 
     private void DrawImport(MdlTab tab, Vector2 size, bool _1)
@@ -99,10 +99,10 @@ public partial class ModEditWindow
 
         if (tab.GamePaths == null)
         {
-            if (tab.IoException == null)
+            if (tab.IoExceptions.Count == 0)
                 ImGui.TextUnformatted("Resolving model game paths.");
             else
-                ImGuiUtil.TextWrapped(tab.IoException);
+                ImGui.TextUnformatted("Failed to resolve model game paths.");
 
             return;
         }
@@ -125,6 +125,30 @@ public partial class ModEditWindow
                 _mod!.ModPath.FullName,
                 false
             );
+    }
+    
+    private void DrawIoExceptions(MdlTab tab)
+    {
+        if (tab.IoExceptions.Count == 0)
+            return;
+
+        var size = new Vector2(ImGui.GetContentRegionAvail().X, 0);
+        using var frame = ImRaii.FramedGroup("Exceptions", size, headerPreIcon: FontAwesomeIcon.TimesCircle, borderColor: Colors.RegexWarningBorder);
+
+        var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
+        foreach (var exception in tab.IoExceptions)
+        {
+            var message = $"{exception.GetType().Name}: {exception.Message} {exception.Message}";
+            var textSize = ImGui.CalcTextSize(message).X;
+            if (textSize > spaceAvail)
+                message = message.Substring(0, (int)Math.Floor(message.Length * (spaceAvail / textSize))) + "...";
+
+            using (var exceptionNode = ImRaii.TreeNode(message))
+            {
+                if (exceptionNode)
+                    ImGuiUtil.TextWrapped(exception.ToString());
+            }
+        }
     }
 
     private void DrawGamePathCombo(MdlTab tab)
