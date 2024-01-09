@@ -138,7 +138,7 @@ public partial class ModEditWindow
         var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
         foreach (var exception in tab.IoExceptions)
         {
-            var message = $"{exception.GetType().Name}: {exception.Message} {exception.Message}";
+            var message = $"{exception.GetType().Name}: {exception.Message}";
             var textSize = ImGui.CalcTextSize(message).X;
             if (textSize > spaceAvail)
                 message = message.Substring(0, (int)Math.Floor(message.Length * (spaceAvail / textSize))) + "...";
