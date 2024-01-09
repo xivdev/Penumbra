@@ -27,9 +27,9 @@ public class MeshExporter
         }
     }
 
-    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, GltfSkeleton? skeleton)
+    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton)
     {
-        var self = new MeshExporter(mdl, lod, meshIndex, skeleton?.Names);
+        var self = new MeshExporter(mdl, lod, meshIndex, materials, skeleton?.Names);
         return new Mesh(self.BuildMeshes(), skeleton?.Joints);
     }
 
@@ -42,17 +42,21 @@ public class MeshExporter
     private MdlStructs.MeshStruct XivMesh
         => _mdl.Meshes[_meshIndex];
 
+    private readonly MaterialBuilder _material;
+
     private readonly Dictionary<ushort, int>? _boneIndexMap;
 
     private readonly Type _geometryType;
     private readonly Type _materialType;
     private readonly Type _skinningType;
 
-    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, IReadOnlyDictionary<string, int>? boneNameMap)
+    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, IReadOnlyDictionary<string, int>? boneNameMap)
     {
         _mdl       = mdl;
         _lod       = lod;
         _meshIndex = meshIndex;
+
+        _material = materials[XivMesh.MaterialIndex];
 
         if (boneNameMap != null)
             _boneIndexMap = BuildBoneIndexMap(boneNameMap);
@@ -134,13 +138,7 @@ public class MeshExporter
         );
         var meshBuilder = (IMeshBuilder<MaterialBuilder>)Activator.CreateInstance(meshBuilderType, name)!;
 
-        // TODO: share materials &c
-        var materialBuilder = new MaterialBuilder()
-            .WithDoubleSide(true)
-            .WithMetallicRoughnessShader()
-            .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, new Vector4(1, 1, 1, 1));
-
-        var primitiveBuilder = meshBuilder.UsePrimitive(materialBuilder);
+        var primitiveBuilder = meshBuilder.UsePrimitive(_material);
 
         // Store a list of the glTF indices. The list index will be equivalent to the xiv (submesh) index.
         var gltfIndices = new List<int>();
