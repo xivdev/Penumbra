@@ -4,7 +4,7 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
-public partial class ModelImporter(ModelRoot _model)
+public partial class ModelImporter(ModelRoot model)
 {
     public static MdlFile Import(ModelRoot model)
     {
@@ -99,7 +99,7 @@ public partial class ModelImporter(ModelRoot _model)
 
     /// <summary> Returns an iterator over sorted, grouped mesh nodes. </summary>
     private IEnumerable<IEnumerable<Node>> GroupedMeshNodes()
-        => _model.LogicalNodes
+        => model.LogicalNodes
             .Where(node => node.Mesh != null)
             .Select(node =>
             {
@@ -171,6 +171,14 @@ public partial class ModelImporter(ModelRoot _model)
 
             _shapeValues.AddRange(meshShapeKey.ShapeValues);
         }
+
+        // The number of shape values in a model is bounded by the count
+        // value, which is stored as a u16.
+        // While technically there are similar bounds on other shape struct
+        // arrays, values is practically guaranteed to be the highest of the
+        // group, so a failure on any of them will be a failure on it.
+        if (_shapeValues.Count > ushort.MaxValue)
+            throw new Exception($"Importing this file would require more than the maximum of {ushort.MaxValue} shape values.\nTry removing or applying shape keys that do not need to be changed at runtime in-game.");
     }
 
     private ushort BuildBoneTable(List<string> boneNames)

@@ -37,7 +37,12 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     public Task<MdlFile?> ImportGltf(string inputPath)
     {
         var action = new ImportGltfAction(inputPath);
-        return Enqueue(action).ContinueWith(_ => action.Out);
+        return Enqueue(action).ContinueWith(task => 
+        {
+            if (task.IsFaulted && task.Exception != null)
+                throw task.Exception;
+            return action.Out;
+        });
     }
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
