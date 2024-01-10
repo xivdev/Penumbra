@@ -10,6 +10,8 @@ public class SubMeshImporter
     {
         public MdlStructs.SubmeshStruct SubMeshStruct;
 
+        public string? Material;
+
         public MdlStructs.VertexDeclarationStruct VertexDeclaration;
 
         public ushort       VertexCount;
@@ -81,6 +83,10 @@ public class SubMeshImporter
         ArgumentNullException.ThrowIfNull(_attributes);
         ArgumentNullException.ThrowIfNull(_shapeValues);
 
+        var material = _primitive.Material.Name;
+        if (material == "")
+            material = null;
+
         return new SubMesh()
         {
             SubMeshStruct = new MdlStructs.SubmeshStruct()
@@ -93,6 +99,7 @@ public class SubMeshImporter
                 BoneStartIndex = 0,
                 BoneCount      = 0,
             },
+            Material = material,
             VertexDeclaration = new MdlStructs.VertexDeclarationStruct()
             {
                 VertexElements = _attributes.Select(attribute => attribute.Element).ToArray(),

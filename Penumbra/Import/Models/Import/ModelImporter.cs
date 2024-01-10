@@ -19,6 +19,8 @@ public partial class ModelImporter(ModelRoot _model)
     private readonly List<MdlStructs.MeshStruct>    _meshes    = [];
     private readonly List<MdlStructs.SubmeshStruct> _subMeshes = [];
 
+    private readonly List<string> _materials = [];
+
     private readonly List<MdlStructs.VertexDeclarationStruct> _vertexDeclarations = [];
     private readonly List<byte>                               _vertexBuffer       = [];
 
@@ -37,6 +39,8 @@ public partial class ModelImporter(ModelRoot _model)
             BuildMeshForGroup(subMeshNodes);
 
         // Now that all the meshes have been built, we can build some of the model-wide metadata.
+        var materials = _materials.Count > 0 ? _materials : ["/NO_MATERIAL"];
+
         var shapes      = new List<MdlFile.Shape>();
         var shapeMeshes = new List<MdlStructs.ShapeMeshStruct>();
         foreach (var (keyName, keyMeshes) in _shapeMeshes)
@@ -86,8 +90,7 @@ public partial class ModelImporter(ModelRoot _model)
                 },
             ],
 
-            // TODO: Would be good to populate from gltf material names.
-            Materials = ["/NO_MATERIAL"],
+            Materials = [.. materials],
 
             // TODO: Would be good to calculate all of this up the tree.
             Radius            = 1,
@@ -130,15 +133,20 @@ public partial class ModelImporter(ModelRoot _model)
         var mesh           = MeshImporter.Import(subMeshNodes);
         var meshStartIndex = (uint)(mesh.MeshStruct.StartIndex + indexOffset);
 
+        ushort materialIndex = 0;
+        if (mesh.Material != null)
+            materialIndex = GetMaterialIndex(mesh.Material);
+
         // If no bone table is used for a mesh, the index is set to 255.
-        var boneTableIndex = 255;
+        ushort boneTableIndex = 255;
         if (mesh.Bones != null)
             boneTableIndex = BuildBoneTable(mesh.Bones);
 
         _meshes.Add(mesh.MeshStruct with
         {
+            MaterialIndex = materialIndex,
             SubMeshIndex = (ushort)(mesh.MeshStruct.SubMeshIndex + subMeshOffset),
-            BoneTableIndex = (ushort)boneTableIndex,
+            BoneTableIndex = boneTableIndex,
             StartIndex = meshStartIndex,
             VertexBufferOffset = mesh.MeshStruct.VertexBufferOffset
                 .Select(offset => (uint)(offset + vertexOffset))
@@ -171,6 +179,23 @@ public partial class ModelImporter(ModelRoot _model)
 
             _shapeValues.AddRange(meshShapeKey.ShapeValues);
         }
+    }
+
+    private ushort GetMaterialIndex(string materialName)
+    {
+        // If we already have this material, grab the current one
+        var index = _materials.IndexOf(materialName);
+        if (index >= 0)
+            return (ushort)index;
+
+        // If there's already 4 materials, we can't add any more.
+        // TODO: permit, with a warning to reduce, and validation in MdlTab.
+        var count = _materials.Count;
+        if (count >= 4)
+            return 0;
+
+        _materials.Add(materialName);
+        return (ushort)count;
     }
 
     private ushort BuildBoneTable(List<string> boneNames)

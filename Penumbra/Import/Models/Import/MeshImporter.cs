@@ -10,6 +10,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
         public MdlStructs.MeshStruct          MeshStruct;
         public List<MdlStructs.SubmeshStruct> SubMeshStructs;
 
+        public string? Material;
+
         public MdlStructs.VertexDeclarationStruct VertexDeclaration;
         public IEnumerable<byte>                  VertexBuffer;
 
@@ -34,6 +36,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
     }
 
     private readonly List<MdlStructs.SubmeshStruct> _subMeshes = [];
+
+    private string? _material;
 
     private          MdlStructs.VertexDeclarationStruct? _vertexDeclaration;
     private          byte[]?                             _strides;
@@ -74,6 +78,7 @@ public class MeshImporter(IEnumerable<Node> nodes)
                 BoneTableIndex = 0,
             },
             SubMeshStructs    = _subMeshes,
+            Material          = _material,
             VertexDeclaration = _vertexDeclaration.Value,
             VertexBuffer      = _streams[0].Concat(_streams[1]).Concat(_streams[2]),
             Indices           = _indices,
@@ -104,6 +109,9 @@ public class MeshImporter(IEnumerable<Node> nodes)
         var subMesh     = SubMeshImporter.Import(node, nodeBoneMap);
 
         var subMeshName = node.Name ?? node.Mesh.Name;
+
+        // TODO: Record a warning if there's a mismatch between current and incoming, as we can't support multiple materials per mesh.
+        _material ??= subMesh.Material;
 
         // Check that vertex declarations match - we need to combine the buffers, so a mismatch would take a whole load of resolution.
         if (_vertexDeclaration == null)
