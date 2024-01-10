@@ -79,6 +79,8 @@ public partial class ModEditWindow
 
         using (var frame = ImRaii.FramedGroup("Import", size, headerPreIcon: FontAwesomeIcon.FileImport))
         {
+            ImGui.Checkbox("Keep current materials", ref tab.ImportKeepMaterials);
+
             if (ImGuiUtil.DrawDisabledButton("Import from glTF", Vector2.Zero, "Imports a glTF file, overriding the content of this mdl.",
                     tab.PendingIo))
                 _fileDialog.OpenFilePicker("Load model from glTF.", "glTF{.gltf,.glb}", (success, paths) =>
@@ -86,7 +88,6 @@ public partial class ModEditWindow
                     if (success && paths.Count > 0)
                         tab.Import(paths[0]);
                 }, 1, _mod!.ModPath.FullName, false);
-            ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
         }
 
         if (_dragDropManager.CreateImGuiTarget("ModelDragDrop", out var files, out _) && GetFirstModel(files, out var importFile))
