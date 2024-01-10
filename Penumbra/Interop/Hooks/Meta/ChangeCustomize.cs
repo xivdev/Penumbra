@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
@@ -29,6 +30,7 @@ public sealed unsafe class ChangeCustomize : FastHook<ChangeCustomize.Delegate>
         using var decal2 = _metaState.ResolveDecal(_metaState.CustomizeChangeCollection, false);
         var       ret    = Task.Result.Original.Invoke(human, data, skipEquipment);
         Penumbra.Log.Excessive($"[Change Customize] Invoked on {(nint)human:X} with {(nint)data:X}, {skipEquipment} -> {ret}.");
+        _metaState.CustomizeChangeCollection = ResolveData.Invalid;
         return ret;
     }
 }
