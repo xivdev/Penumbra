@@ -209,7 +209,7 @@ public class ModPanelSettingsTab : ITab
     {
         using var id             = ImRaii.PushId(groupIdx);
         var       selectedOption = _empty ? (int)group.DefaultSettings : (int)_settings.Settings[groupIdx];
-        var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
+        var       minWidth       = Widget.BeginFramedGroup(group.Name, description:group.Description);
 
         void DrawOptions()
         {
@@ -288,7 +288,7 @@ public class ModPanelSettingsTab : ITab
     {
         using var id       = ImRaii.PushId(groupIdx);
         var       flags    = _empty ? group.DefaultSettings : _settings.Settings[groupIdx];
-        var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+        var       minWidth = Widget.BeginFramedGroup(group.Name, description: group.Description);
 
         void DrawOptions()
         {

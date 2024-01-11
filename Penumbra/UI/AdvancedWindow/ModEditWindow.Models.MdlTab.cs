@@ -20,9 +20,9 @@ public partial class ModEditWindow
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
 
-        private bool    _dirty;
-        public  bool    PendingIo   { get; private set; }
-        public  string? IoException { get; private set; }
+        private bool            _dirty;
+        public  bool            PendingIo    { get; private set; }
+        public  List<Exception> IoExceptions { get; private set; } = [];
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
@@ -87,7 +87,7 @@ public partial class ModEditWindow
 
             task.ContinueWith(t =>
             {
-                IoException = t.Exception?.ToString();
+                RecordIoExceptions(t.Exception);
                 GamePaths   = t.Result;
                 PendingIo   = false;
             });
@@ -123,7 +123,7 @@ public partial class ModEditWindow
             }
             catch (Exception exception)
             {
-                IoException = exception.ToString();
+                RecordIoExceptions(exception);
                 return;
             }
 
@@ -131,7 +131,7 @@ public partial class ModEditWindow
             _edit._models.ExportToGltf(Mdl, skeletons, outputPath)
                 .ContinueWith(task =>
                 {
-                    IoException = task.Exception?.ToString();
+                    RecordIoExceptions(task.Exception);
                     PendingIo   = false;
                 });
         }
@@ -144,7 +144,7 @@ public partial class ModEditWindow
             _edit._models.ImportGltf(inputPath)
                 .ContinueWith(task =>
                 {
-                    IoException = task.Exception?.ToString();
+                    RecordIoExceptions(task.Exception);
                     if (task is { IsCompletedSuccessfully: true, Result: not null })
                         FinalizeImport(task.Result);
                     PendingIo = false;
@@ -175,6 +175,15 @@ public partial class ModEditWindow
                     ? source.Meshes[meshIndex].MaterialIndex
                     : (ushort)0;
             }
+        }
+
+        private void RecordIoExceptions(Exception? exception)
+        {
+            IoExceptions = exception switch {
+                null                  => [],
+                AggregateException ae => ae.Flatten().InnerExceptions.ToList(),
+                Exception other       => [other],
+            };
         }
 
         /// <summary> Read a .sklb from the active collection or game. </summary>

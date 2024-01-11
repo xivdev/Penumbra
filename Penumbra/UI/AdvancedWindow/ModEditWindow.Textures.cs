@@ -108,11 +108,14 @@ public partial class ModEditWindow
             MipMapInput();
 
             var canSaveInPlace = Path.IsPathRooted(_left.Path) && _left.Type is TextureType.Tex or TextureType.Dds or TextureType.Png;
+            var isActive       = _config.DeleteModModifier.IsActive();
+            var tt = isActive
+                ? "This saves the texture in place. This is not revertible."
+                : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.";
 
             var buttonSize2 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
             if (ImGuiUtil.DrawDisabledButton("Save in place", buttonSize2,
-                    "This saves the texture in place. This is not revertible.",
-                    !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
+                    tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
                 _center.SaveAs(_left.Type, _textures, _left.Path, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
                 AddReloadTask(_left.Path, false);
