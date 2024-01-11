@@ -136,14 +136,14 @@ public partial class ModelImporter(ModelRoot model)
         var mesh           = MeshImporter.Import(subMeshNodes);
         var meshStartIndex = (uint)(mesh.MeshStruct.StartIndex + indexOffset);
 
-        ushort materialIndex = 0;
-        if (mesh.Material != null)
-            materialIndex = GetMaterialIndex(mesh.Material);
+        var materialIndex = mesh.Material != null
+            ? GetMaterialIndex(mesh.Material)
+            : (ushort)0;
 
         // If no bone table is used for a mesh, the index is set to 255.
-        ushort boneTableIndex = 255;
-        if (mesh.Bones != null)
-            boneTableIndex = BuildBoneTable(mesh.Bones);
+        var boneTableIndex = mesh.Bones != null
+            ? BuildBoneTable(mesh.Bones)
+            : (ushort)255;
 
         _meshes.Add(mesh.MeshStruct with
         {
@@ -196,7 +196,7 @@ public partial class ModelImporter(ModelRoot model)
 
     private ushort GetMaterialIndex(string materialName)
     {
-        // If we already have this material, grab the current one
+        // If we already have this material, grab the current index.
         var index = _materials.IndexOf(materialName);
         if (index >= 0)
             return (ushort)index;

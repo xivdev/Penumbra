@@ -69,7 +69,7 @@ public class SubMeshImporter
         }
         catch
         {
-            _nodeExtras = null;    
+            _nodeExtras = null;
         }
 
         try
