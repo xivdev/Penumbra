@@ -16,6 +16,7 @@ public partial class ModEditWindow
         private List<string>[] _attributes;
 
         public bool ImportKeepMaterials;
+        public bool ImportKeepAttributes;
 
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
@@ -158,6 +159,9 @@ public partial class ModEditWindow
             if (ImportKeepMaterials)
                 MergeMaterials(newMdl, Mdl);
 
+            if (ImportKeepAttributes)
+                MergeAttributes(newMdl, Mdl);
+
             Initialize(newMdl);
             _dirty = true;
         }
@@ -174,6 +178,36 @@ public partial class ModEditWindow
                 target.Meshes[meshIndex].MaterialIndex = meshIndex < source.Meshes.Length
                     ? source.Meshes[meshIndex].MaterialIndex
                     : (ushort)0;
+            }
+        }
+
+        /// <summary> Merge attribute configuration from the source onto the target. </summary>
+        /// <param name="target" Model that will be update. ></param>
+        /// <param name="source"> Model to copy attribute configuration from. </param>
+        public void MergeAttributes(MdlFile target, MdlFile source)
+        {
+            target.Attributes = source.Attributes;
+
+            var indexEnumerator = Enumerable.Range(0, target.Meshes.Length)
+                .SelectMany(mi => Enumerable.Range(0, target.Meshes[mi].SubMeshCount).Select(so => (mi, so)));
+            foreach (var (meshIndex, subMeshOffset) in indexEnumerator)
+            {
+                var subMeshIndex = target.Meshes[meshIndex].SubMeshIndex + subMeshOffset;
+
+                // Preemptively reset the mask in case we need to shortcut out.
+                target.SubMeshes[subMeshIndex].AttributeIndexMask = 0u;
+
+                // Rather than comparing sub-meshes directly, we're grouping by parent mesh in an attempt
+                // to maintain semantic connection betwen mesh index and submesh attributes.
+                if (meshIndex >= source.Meshes.Length)
+                    continue;
+                var sourceMesh = source.Meshes[meshIndex];
+
+                if (subMeshOffset >= sourceMesh.SubMeshCount)
+                    continue;
+                var sourceSubMesh = source.SubMeshes[sourceMesh.SubMeshIndex + subMeshOffset];
+
+                target.SubMeshes[subMeshIndex].AttributeIndexMask = sourceSubMesh.AttributeIndexMask;
             }
         }
 

@@ -80,6 +80,7 @@ public partial class ModEditWindow
         using (var frame = ImRaii.FramedGroup("Import", size, headerPreIcon: FontAwesomeIcon.FileImport))
         {
             ImGui.Checkbox("Keep current materials", ref tab.ImportKeepMaterials);
+            ImGui.Checkbox("Keep current attributes", ref tab.ImportKeepAttributes);
 
             if (ImGuiUtil.DrawDisabledButton("Import from glTF", Vector2.Zero, "Imports a glTF file, overriding the content of this mdl.",
                     tab.PendingIo))
