@@ -1,4 +1,5 @@
 using Penumbra.GameData.Files;
+using SharpGLTF.Materials;
 using SharpGLTF.Scenes;
 using SharpGLTF.Transforms;
 
@@ -14,7 +15,7 @@ public class ModelExporter
             var skeletonRoot = skeleton?.Root;
             if (skeletonRoot != null)
                 scene.AddNode(skeletonRoot);
-            
+
             // Add all the meshes to the scene.
             foreach (var mesh in meshes)
                 mesh.AddToScene(scene);
@@ -25,12 +26,13 @@ public class ModelExporter
     public static Model Export(MdlFile mdl, IEnumerable<XivSkeleton>? xivSkeleton)
     {
         var gltfSkeleton = xivSkeleton != null ? ConvertSkeleton(xivSkeleton) : null;
-        var meshes = ConvertMeshes(mdl, gltfSkeleton);
+        var materials = ConvertMaterials(mdl);
+        var meshes = ConvertMeshes(mdl, materials, gltfSkeleton);
         return new Model(meshes, gltfSkeleton);
     }
 
     /// <summary> Convert a .mdl to a mesh (group) per LoD. </summary>
-    private static List<MeshExporter.Mesh> ConvertMeshes(MdlFile mdl, GltfSkeleton? skeleton)
+    private static List<MeshExporter.Mesh> ConvertMeshes(MdlFile mdl, MaterialBuilder[] materials, GltfSkeleton? skeleton)
     {
         var meshes = new List<MeshExporter.Mesh>();
 
@@ -41,13 +43,25 @@ public class ModelExporter
             // TODO: consider other types of mesh?
             for (ushort meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
             {
-                var mesh = MeshExporter.Export(mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset), skeleton);
+                var mesh = MeshExporter.Export(mdl, lodIndex, (ushort)(lod.MeshIndex + meshOffset), materials, skeleton);
                 meshes.Add(mesh);
             }
         }
 
         return meshes;
     }
+
+    // TODO: Compose textures for use with these materials
+    /// <summary> Build placeholder materials for each of the material slots in the .mdl. </summary>
+    private static MaterialBuilder[] ConvertMaterials(MdlFile mdl)
+        => mdl.Materials
+            .Select(name =>
+                new MaterialBuilder(name)
+                    .WithMetallicRoughnessShader()
+                    .WithDoubleSide(true)
+                    .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, Vector4.One)
+            )
+            .ToArray();
 
     /// <summary> Convert XIV skeleton data into a glTF-compatible node tree, with mappings. </summary>
     private static GltfSkeleton? ConvertSkeleton(IEnumerable<XivSkeleton> skeletons)
@@ -60,7 +74,7 @@ public class ModelExporter
         var iterator = skeletons.SelectMany(skeleton => skeleton.Bones.Select(bone => (skeleton, bone)));
         foreach (var (skeleton, bone) in iterator)
         {
-            if (names.ContainsKey(bone.Name)) 
+            if (names.ContainsKey(bone.Name))
                 continue;
 
             var node = new NodeBuilder(bone.Name);

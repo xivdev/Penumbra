@@ -13,23 +13,34 @@ namespace Penumbra.Import.Models.Export;
 
 public class MeshExporter
 {
-    public class Mesh(IEnumerable<IMeshBuilder<MaterialBuilder>> meshes, NodeBuilder[]? joints)
+    public class Mesh(IEnumerable<MeshData> meshes, NodeBuilder[]? joints)
     {
         public void AddToScene(SceneBuilder scene)
         {
-            foreach (var mesh in meshes)
+            foreach (var data in meshes)
             {
-                if (joints == null)
-                    scene.AddRigidMesh(mesh, Matrix4x4.Identity);
-                else
-                    scene.AddSkinnedMesh(mesh, Matrix4x4.Identity, joints);
+                var instance = joints != null
+                    ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, joints)
+                    : scene.AddRigidMesh(data.Mesh, Matrix4x4.Identity);
+
+                var extras = new Dictionary<string, object>();
+                foreach (var attribute in data.Attributes)
+                    extras.Add(attribute, true);
+
+                instance.WithExtras(JsonContent.CreateFrom(extras));
             }
         }
     }
 
-    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, GltfSkeleton? skeleton)
+    public struct MeshData
     {
-        var self = new MeshExporter(mdl, lod, meshIndex, skeleton?.Names);
+        public IMeshBuilder<MaterialBuilder> Mesh;
+        public string[]                      Attributes;
+    }
+
+    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton)
+    {
+        var self = new MeshExporter(mdl, lod, meshIndex, materials, skeleton?.Names);
         return new Mesh(self.BuildMeshes(), skeleton?.Joints);
     }
 
@@ -42,17 +53,21 @@ public class MeshExporter
     private MdlStructs.MeshStruct XivMesh
         => _mdl.Meshes[_meshIndex];
 
+    private readonly MaterialBuilder _material;
+
     private readonly Dictionary<ushort, int>? _boneIndexMap;
 
     private readonly Type _geometryType;
     private readonly Type _materialType;
     private readonly Type _skinningType;
 
-    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, IReadOnlyDictionary<string, int>? boneNameMap)
+    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, IReadOnlyDictionary<string, int>? boneNameMap)
     {
         _mdl       = mdl;
         _lod       = lod;
         _meshIndex = meshIndex;
+
+        _material = materials[XivMesh.MaterialIndex];
 
         if (boneNameMap != null)
             _boneIndexMap = BuildBoneIndexMap(boneNameMap);
@@ -99,31 +114,33 @@ public class MeshExporter
     }
 
     /// <summary> Build glTF meshes for this XIV mesh. </summary>
-    private IMeshBuilder<MaterialBuilder>[] BuildMeshes()
+    private MeshData[] BuildMeshes()
     {
         var indices  = BuildIndices();
         var vertices = BuildVertices();
 
         // NOTE: Index indices are specified relative to the LOD's 0, but we're reading chunks for each mesh, so we're specifying the index base relative to the mesh's base.
         if (XivMesh.SubMeshCount == 0)
-            return [BuildMesh($"mesh {_meshIndex}", indices, vertices, 0, (int)XivMesh.IndexCount)];
+            return [BuildMesh($"mesh {_meshIndex}", indices, vertices, 0, (int)XivMesh.IndexCount, 0)];
 
         return _mdl.SubMeshes
             .Skip(XivMesh.SubMeshIndex)
             .Take(XivMesh.SubMeshCount)
             .WithIndex()
             .Select(subMesh => BuildMesh($"mesh {_meshIndex}.{subMesh.Index}", indices, vertices,
-                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex),         (int)subMesh.Value.IndexCount))
+                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex), (int)subMesh.Value.IndexCount,
+                subMesh.Value.AttributeIndexMask))
             .ToArray();
     }
 
     /// <summary> Build a mesh from the provided indices and vertices. A subset of the full indices may be built by providing an index base and count. </summary>
-    private IMeshBuilder<MaterialBuilder> BuildMesh(
+    private MeshData BuildMesh(
         string name,
         IReadOnlyList<ushort> indices,
         IReadOnlyList<IVertexBuilder> vertices,
         int indexBase,
-        int indexCount
+        int indexCount,
+        uint attributeMask
     )
     {
         var meshBuilderType = typeof(MeshBuilder<,,,>).MakeGenericType(
@@ -134,13 +151,7 @@ public class MeshExporter
         );
         var meshBuilder = (IMeshBuilder<MaterialBuilder>)Activator.CreateInstance(meshBuilderType, name)!;
 
-        // TODO: share materials &c
-        var materialBuilder = new MaterialBuilder()
-            .WithDoubleSide(true)
-            .WithMetallicRoughnessShader()
-            .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, new Vector4(1, 1, 1, 1));
-
-        var primitiveBuilder = meshBuilder.UsePrimitive(materialBuilder);
+        var primitiveBuilder = meshBuilder.UsePrimitive(_material);
 
         // Store a list of the glTF indices. The list index will be equivalent to the xiv (submesh) index.
         var gltfIndices = new List<int>();
@@ -192,12 +203,23 @@ public class MeshExporter
             }
         }
 
+        // Named morph targets aren't part of the specification, however `MESH.extras.targetNames`
+        // is a commonly-accepted means of providing the data.
         meshBuilder.Extras = JsonContent.CreateFrom(new Dictionary<string, object>()
         {
             { "targetNames", shapeNames },
         });
 
-        return meshBuilder;
+        var attributes = Enumerable.Range(0, 32)
+            .Where(index => ((attributeMask >> index) & 1) == 1)
+            .Select(index => _mdl.Attributes[index])
+            .ToArray();
+
+        return new MeshData
+        {
+            Mesh = meshBuilder,
+            Attributes = attributes,
+        };
     }
 
     /// <summary> Read in the indices for this mesh. </summary>

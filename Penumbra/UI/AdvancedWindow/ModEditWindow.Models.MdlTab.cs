@@ -15,6 +15,9 @@ public partial class ModEditWindow
         public  MdlFile        Mdl         { get; private set; }
         private List<string>[] _attributes;
 
+        public bool ImportKeepMaterials;
+        public bool ImportKeepAttributes;
+
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
 
@@ -110,6 +113,7 @@ public partial class ModEditWindow
 
         /// <summary> Export model to an interchange format. </summary>
         /// <param name="outputPath"> Disk path to save the resulting file to. </param>
+        /// <param name="mdlPath"> .mdl game path to resolve satellite files such as skeletons relative to. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
             IEnumerable<SklbFile> skeletons;
@@ -143,12 +147,68 @@ public partial class ModEditWindow
                 {
                     RecordIoExceptions(task.Exception);
                     if (task is { IsCompletedSuccessfully: true, Result: not null })
-                    {
-                        Initialize(task.Result);
-                        _dirty = true;
-                    }
+                        FinalizeImport(task.Result);
                     PendingIo = false;
                 });
+        }
+
+        /// <summary> Finalise the import of a .mdl, applying any post-import transformations and state updates. </summary>
+        /// <param name="newMdl"> Model data to finalize. </param>
+        private void FinalizeImport(MdlFile newMdl)
+        {
+            if (ImportKeepMaterials)
+                MergeMaterials(newMdl, Mdl);
+
+            if (ImportKeepAttributes)
+                MergeAttributes(newMdl, Mdl);
+
+            Initialize(newMdl);
+            _dirty = true;
+        }
+        
+        /// <summary> Merge material configuration from the source onto the target. </summary>
+        /// <param name="target"> Model that will be updated. </param>
+        /// <param name="source"> Model to copy material configuration from. </param>
+        public void MergeMaterials(MdlFile target, MdlFile source)
+        {
+            target.Materials = source.Materials;
+
+            for (var meshIndex = 0; meshIndex < target.Meshes.Length; meshIndex++)
+            {
+                target.Meshes[meshIndex].MaterialIndex = meshIndex < source.Meshes.Length
+                    ? source.Meshes[meshIndex].MaterialIndex
+                    : (ushort)0;
+            }
+        }
+
+        /// <summary> Merge attribute configuration from the source onto the target. </summary>
+        /// <param name="target" Model that will be update. ></param>
+        /// <param name="source"> Model to copy attribute configuration from. </param>
+        public void MergeAttributes(MdlFile target, MdlFile source)
+        {
+            target.Attributes = source.Attributes;
+
+            var indexEnumerator = Enumerable.Range(0, target.Meshes.Length)
+                .SelectMany(mi => Enumerable.Range(0, target.Meshes[mi].SubMeshCount).Select(so => (mi, so)));
+            foreach (var (meshIndex, subMeshOffset) in indexEnumerator)
+            {
+                var subMeshIndex = target.Meshes[meshIndex].SubMeshIndex + subMeshOffset;
+
+                // Preemptively reset the mask in case we need to shortcut out.
+                target.SubMeshes[subMeshIndex].AttributeIndexMask = 0u;
+
+                // Rather than comparing sub-meshes directly, we're grouping by parent mesh in an attempt
+                // to maintain semantic connection betwen mesh index and submesh attributes.
+                if (meshIndex >= source.Meshes.Length)
+                    continue;
+                var sourceMesh = source.Meshes[meshIndex];
+
+                if (subMeshOffset >= sourceMesh.SubMeshCount)
+                    continue;
+                var sourceSubMesh = source.SubMeshes[sourceMesh.SubMeshIndex + subMeshOffset];
+
+                target.SubMeshes[subMeshIndex].AttributeIndexMask = sourceSubMesh.AttributeIndexMask;
+            }
         }
 
         private void RecordIoExceptions(Exception? exception)

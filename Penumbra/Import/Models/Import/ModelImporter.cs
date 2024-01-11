@@ -19,6 +19,8 @@ public partial class ModelImporter(ModelRoot model)
     private readonly List<MdlStructs.MeshStruct>    _meshes    = [];
     private readonly List<MdlStructs.SubmeshStruct> _subMeshes = [];
 
+    private readonly List<string> _materials = [];
+
     private readonly List<MdlStructs.VertexDeclarationStruct> _vertexDeclarations = [];
     private readonly List<byte>                               _vertexBuffer       = [];
 
@@ -26,6 +28,8 @@ public partial class ModelImporter(ModelRoot model)
 
     private readonly List<string>                     _bones      = [];
     private readonly List<MdlStructs.BoneTableStruct> _boneTables = [];
+
+    private readonly List<string> _metaAttributes = [];
 
     private readonly Dictionary<string, List<MdlStructs.ShapeMeshStruct>> _shapeMeshes = [];
     private readonly List<MdlStructs.ShapeValueStruct>                    _shapeValues = [];
@@ -37,6 +41,8 @@ public partial class ModelImporter(ModelRoot model)
             BuildMeshForGroup(subMeshNodes);
 
         // Now that all the meshes have been built, we can build some of the model-wide metadata.
+        var materials = _materials.Count > 0 ? _materials : ["/NO_MATERIAL"];
+
         var shapes      = new List<MdlFile.Shape>();
         var shapeMeshes = new List<MdlStructs.ShapeMeshStruct>();
         foreach (var (keyName, keyMeshes) in _shapeMeshes)
@@ -67,6 +73,7 @@ public partial class ModelImporter(ModelRoot model)
             Bones              = [.. _bones],
             // TODO: Game doesn't seem to rely on this, but would be good to populate.
             SubMeshBoneMap = [],
+            Attributes     = [.. _metaAttributes],
             Shapes         = [.. shapes],
             ShapeMeshes    = [.. shapeMeshes],
             ShapeValues    = [.. _shapeValues],
@@ -86,8 +93,7 @@ public partial class ModelImporter(ModelRoot model)
                 },
             ],
 
-            // TODO: Would be good to populate from gltf material names.
-            Materials = ["/NO_MATERIAL"],
+            Materials = [.. materials],
 
             // TODO: Would be good to calculate all of this up the tree.
             Radius            = 1,
@@ -130,15 +136,20 @@ public partial class ModelImporter(ModelRoot model)
         var mesh           = MeshImporter.Import(subMeshNodes);
         var meshStartIndex = (uint)(mesh.MeshStruct.StartIndex + indexOffset);
 
+        var materialIndex = mesh.Material != null
+            ? GetMaterialIndex(mesh.Material)
+            : (ushort)0;
+
         // If no bone table is used for a mesh, the index is set to 255.
-        var boneTableIndex = 255;
-        if (mesh.Bones != null)
-            boneTableIndex = BuildBoneTable(mesh.Bones);
+        var boneTableIndex = mesh.Bones != null
+            ? BuildBoneTable(mesh.Bones)
+            : (ushort)255;
 
         _meshes.Add(mesh.MeshStruct with
         {
+            MaterialIndex = materialIndex,
             SubMeshIndex = (ushort)(mesh.MeshStruct.SubMeshIndex + subMeshOffset),
-            BoneTableIndex = (ushort)boneTableIndex,
+            BoneTableIndex = boneTableIndex,
             StartIndex = meshStartIndex,
             VertexBufferOffset = mesh.MeshStruct.VertexBufferOffset
                 .Select(offset => (uint)(offset + vertexOffset))
@@ -147,6 +158,8 @@ public partial class ModelImporter(ModelRoot model)
 
         _subMeshes.AddRange(mesh.SubMeshStructs.Select(m => m with
         {
+            AttributeIndexMask = Utility.GetMergedAttributeMask(
+                m.AttributeIndexMask, mesh.MetaAttributes, _metaAttributes),
             IndexOffset = (uint)(m.IndexOffset + indexOffset),
         }));
 
@@ -179,6 +192,23 @@ public partial class ModelImporter(ModelRoot model)
         // group, so a failure on any of them will be a failure on it.
         if (_shapeValues.Count > ushort.MaxValue)
             throw new Exception($"Importing this file would require more than the maximum of {ushort.MaxValue} shape values.\nTry removing or applying shape keys that do not need to be changed at runtime in-game.");
+    }
+
+    private ushort GetMaterialIndex(string materialName)
+    {
+        // If we already have this material, grab the current index.
+        var index = _materials.IndexOf(materialName);
+        if (index >= 0)
+            return (ushort)index;
+
+        // If there's already 4 materials, we can't add any more.
+        // TODO: permit, with a warning to reduce, and validation in MdlTab.
+        var count = _materials.Count;
+        if (count >= 4)
+            return 0;
+
+        _materials.Add(materialName);
+        return (ushort)count;
     }
 
     private ushort BuildBoneTable(List<string> boneNames)

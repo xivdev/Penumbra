@@ -10,12 +10,16 @@ public class MeshImporter(IEnumerable<Node> nodes)
         public MdlStructs.MeshStruct          MeshStruct;
         public List<MdlStructs.SubmeshStruct> SubMeshStructs;
 
+        public string? Material;
+
         public MdlStructs.VertexDeclarationStruct VertexDeclaration;
         public IEnumerable<byte>                  VertexBuffer;
 
         public List<ushort> Indices;
 
         public List<string>? Bones;
+
+        public List<string> MetaAttributes;
 
         public List<MeshShapeKey> ShapeKeys;
     }
@@ -35,6 +39,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
 
     private readonly List<MdlStructs.SubmeshStruct> _subMeshes = [];
 
+    private string? _material;
+
     private          MdlStructs.VertexDeclarationStruct? _vertexDeclaration;
     private          byte[]?                             _strides;
     private          ushort                              _vertexCount;
@@ -43,6 +49,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
     private readonly List<ushort> _indices = [];
 
     private List<string>? _bones;
+
+    private readonly List<string> _metaAttributes = [];
 
     private readonly Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = [];
 
@@ -74,10 +82,12 @@ public class MeshImporter(IEnumerable<Node> nodes)
                 BoneTableIndex = 0,
             },
             SubMeshStructs    = _subMeshes,
+            Material          = _material,
             VertexDeclaration = _vertexDeclaration.Value,
             VertexBuffer      = _streams[0].Concat(_streams[1]).Concat(_streams[2]),
             Indices           = _indices,
             Bones             = _bones,
+            MetaAttributes    = _metaAttributes,
             ShapeKeys = _shapeValues
                 .Select(pair => new MeshShapeKey()
                 {
@@ -104,6 +114,9 @@ public class MeshImporter(IEnumerable<Node> nodes)
         var subMesh     = SubMeshImporter.Import(node, nodeBoneMap);
 
         var subMeshName = node.Name ?? node.Mesh.Name;
+
+        // TODO: Record a warning if there's a mismatch between current and incoming, as we can't support multiple materials per mesh.
+        _material ??= subMesh.Material;
 
         // Check that vertex declarations match - we need to combine the buffers, so a mismatch would take a whole load of resolution.
         if (_vertexDeclaration == null)
@@ -145,6 +158,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
         _subMeshes.Add(subMesh.SubMeshStruct with
         {
             IndexOffset = (ushort)(subMesh.SubMeshStruct.IndexOffset + indexOffset),
+            AttributeIndexMask = Utility.GetMergedAttributeMask(
+                subMesh.SubMeshStruct.AttributeIndexMask, subMesh.MetaAttributes, _metaAttributes),
         });
     }
 
