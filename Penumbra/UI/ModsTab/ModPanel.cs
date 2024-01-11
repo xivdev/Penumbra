@@ -1,4 +1,6 @@
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
+using ImGuiNET;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
@@ -12,6 +14,7 @@ public class ModPanel : IDisposable
     private readonly ModEditWindow         _editWindow;
     private readonly ModPanelHeader        _header;
     private readonly ModPanelTabBar        _tabs;
+    private          bool                  _resetCursor;
 
     public ModPanel(DalamudPluginInterface pi, ModFileSystemSelector selector, ModEditWindow editWindow, ModPanelTabBar tabs,
         MultiModPanel multiModPanel, CommunicatorService communicator)
@@ -32,8 +35,18 @@ public class ModPanel : IDisposable
             return;
         }
 
+        if (_resetCursor)
+        {
+            _resetCursor = false;
+            ImGui.SetScrollX(0);
+        }
+
         _header.Draw();
-        _tabs.Draw(_mod);
+        ImGui.SetCursorPosX(ImGui.GetScrollX() + ImGui.GetCursorPosX());
+        using var child = ImRaii.Child("Tabs",
+            new Vector2(ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X, ImGui.GetContentRegionAvail().Y));
+        if (child)
+            _tabs.Draw(_mod);
     }
 
     public void Dispose()
@@ -47,6 +60,7 @@ public class ModPanel : IDisposable
 
     private void OnSelectionChange(Mod? old, Mod? mod, in ModFileSystemSelector.ModState _)
     {
+        _resetCursor = true;
         if (mod == null || _selector.Selected == null)
         {
             _editWindow.IsOpen = false;
