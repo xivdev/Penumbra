@@ -479,5 +479,6 @@ public partial class ModEditWindow
     private static readonly string[] ValidModelExtensions =
     [
         ".gltf",
+        ".glb",
     ];
 }
