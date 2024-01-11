@@ -2,10 +2,9 @@ using Dalamud.Hooking;
 using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.GameData;
-using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 
-namespace Penumbra.Interop.Hooks;
+namespace Penumbra.Interop.Hooks.Resources;
 
 public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHandle, ResourceHandleDestructor.Priority>, IHookService
 {

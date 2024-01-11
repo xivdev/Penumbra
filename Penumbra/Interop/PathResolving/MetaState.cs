@@ -4,13 +4,13 @@ using Penumbra.Collections;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Hooks;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
+using Penumbra.Interop.Hooks.Objects;
 
 namespace Penumbra.Interop.PathResolving;
 

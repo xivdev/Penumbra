@@ -2,7 +2,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Services;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.Objects;
 
 namespace Penumbra.Interop.PathResolving;
 

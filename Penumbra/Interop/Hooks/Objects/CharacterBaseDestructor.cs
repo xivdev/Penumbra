@@ -4,7 +4,7 @@ using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.UI.AdvancedWindow;
 
-namespace Penumbra.Interop.Hooks;
+namespace Penumbra.Interop.Hooks.Objects;
 
 public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBase, CharacterBaseDestructor.Priority>, IHookService
 {

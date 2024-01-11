@@ -61,9 +61,6 @@ public abstract unsafe class LiveMaterialPreviewerBase : IDisposable
         if ((nint)DrawObject != MaterialInfo.GetDrawObject(gameObject))
             return false;
 
-        if (Material != MaterialInfo.GetDrawObjectMaterial(DrawObject))
-            return false;
-
-        return true;
+        return Material == MaterialInfo.GetDrawObjectMaterial(DrawObject);
     }
 }

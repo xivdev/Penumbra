@@ -24,22 +24,6 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
     public nint GetDrawObject(nint address)
         => GetDrawObject(Type, address);
 
-    public static unsafe nint GetDrawObject(DrawObjectType type, nint address)
-    {
-        var gameObject = (Character*)address;
-        if (gameObject == null)
-            return nint.Zero;
-
-        return type switch
-        {
-            DrawObjectType.Character => (nint)gameObject->GameObject.GetDrawObject(),
-            DrawObjectType.Mainhand  => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
-            DrawObjectType.Offhand   => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
-            DrawObjectType.Vfx       => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject,
-            _                        => nint.Zero,
-        };
-    }
-
     public unsafe Material* GetDrawObjectMaterial(IObjectTable objects)
         => GetDrawObjectMaterial((CharacterBase*)GetDrawObject(GetCharacter(objects)));
 
@@ -102,5 +86,21 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
         }
 
         return result;
+    }
+
+    private static unsafe nint GetDrawObject(DrawObjectType type, nint address)
+    {
+        var gameObject = (Character*)address;
+        if (gameObject == null)
+            return nint.Zero;
+
+        return type switch
+        {
+            DrawObjectType.Character => (nint)gameObject->GameObject.GetDrawObject(),
+            DrawObjectType.Mainhand  => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
+            DrawObjectType.Offhand   => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
+            DrawObjectType.Vfx       => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject,
+            _                        => nint.Zero,
+        };
     }
 }

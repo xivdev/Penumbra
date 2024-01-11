@@ -6,7 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData;
-using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.Services;

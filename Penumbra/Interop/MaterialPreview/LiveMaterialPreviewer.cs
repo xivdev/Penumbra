@@ -26,34 +26,29 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         if (_shaderPackage == null)
             throw new InvalidOperationException("Material doesn't have a shader package");
 
-        var material = Material;
+        _originalShPkFlags = Material->ShaderFlags;
 
-        _originalShPkFlags = material->ShaderFlags;
+        _originalMaterialParameter = Material->MaterialParameterCBuffer->TryGetBuffer().ToArray();
 
-        _originalMaterialParameter = material->MaterialParameterCBuffer->TryGetBuffer().ToArray();
-
-        _originalSamplerFlags = new uint[material->TextureCount];
+        _originalSamplerFlags = new uint[Material->TextureCount];
         for (var i = 0; i < _originalSamplerFlags.Length; ++i)
-            _originalSamplerFlags[i] = material->Textures[i].SamplerFlags;
+            _originalSamplerFlags[i] = Material->Textures[i].SamplerFlags;
     }
 
     protected override void Clear(bool disposing, bool reset)
     {
         base.Clear(disposing, reset);
 
-        if (reset)
-        {
-            var material = Material;
+        if (!reset)
+            return;
 
-            material->ShaderFlags = _originalShPkFlags;
+        Material->ShaderFlags = _originalShPkFlags;
+        var materialParameter = Material->MaterialParameterCBuffer->TryGetBuffer();
+        if (!materialParameter.IsEmpty)
+            _originalMaterialParameter.AsSpan().CopyTo(materialParameter);
 
-            var materialParameter = material->MaterialParameterCBuffer->TryGetBuffer();
-            if (!materialParameter.IsEmpty)
-                _originalMaterialParameter.AsSpan().CopyTo(materialParameter);
-
-            for (var i = 0; i < _originalSamplerFlags.Length; ++i)
-                material->Textures[i].SamplerFlags = _originalSamplerFlags[i];
-        }
+        for (var i = 0; i < _originalSamplerFlags.Length; ++i)
+            Material->Textures[i].SamplerFlags = _originalSamplerFlags[i];
     }
 
     public void SetShaderPackageFlags(uint shPkFlags)
@@ -80,16 +75,16 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         for (var i = 0; i < _shaderPackage->MaterialElementCount; ++i)
         {
             ref var parameter = ref _shaderPackage->MaterialElementsSpan[i];
-            if (parameter.CRC == parameterCrc)
-            {
-                if ((parameter.Offset & 0x3) != 0
-                 || (parameter.Size & 0x3) != 0
-                 || (parameter.Offset + parameter.Size) >> 2 > buffer.Length)
-                    return;
+            if (parameter.CRC != parameterCrc)
+                continue;
 
-                value.TryCopyTo(buffer.Slice(parameter.Offset >> 2, parameter.Size >> 2)[offset..]);
+            if ((parameter.Offset & 0x3) != 0
+             || (parameter.Size & 0x3) != 0
+             || (parameter.Offset + parameter.Size) >> 2 > buffer.Length)
                 return;
-            }
+
+            value.TryCopyTo(buffer.Slice(parameter.Offset >> 2, parameter.Size >> 2)[offset..]);
+            return;
         }
     }
 
@@ -104,25 +99,24 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         var samplers = _shaderPackage->Samplers;
         for (var i = 0; i < _shaderPackage->SamplerCount; ++i)
         {
-            if (samplers[i].CRC == samplerCrc)
-            {
-                id    = samplers[i].Id;
-                found = true;
-                break;
-            }
+            if (samplers[i].CRC != samplerCrc)
+                continue;
+
+            id    = samplers[i].Id;
+            found = true;
+            break;
         }
 
         if (!found)
             return;
 
-        var material = Material;
-        for (var i = 0; i < material->TextureCount; ++i)
+        for (var i = 0; i < Material->TextureCount; ++i)
         {
-            if (material->Textures[i].Id == id)
-            {
-                material->Textures[i].SamplerFlags = (samplerFlags & 0xFFFFFDFF) | 0x000001C0;
-                break;
-            }
+            if (Material->Textures[i].Id != id)
+                continue;
+
+            Material->Textures[i].SamplerFlags = (samplerFlags & 0xFFFFFDFF) | 0x000001C0;
+            break;
         }
     }
 
@@ -139,9 +133,6 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         if (shpkHandle == null)
             return false;
 
-        if (_shaderPackage != shpkHandle->ShaderPackage)
-            return false;
-
-        return true;
+        return _shaderPackage == shpkHandle->ShaderPackage;
     }
 }

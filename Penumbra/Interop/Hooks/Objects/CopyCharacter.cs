@@ -3,7 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Classes;
 using OtterGui.Services;
 
-namespace Penumbra.Interop.Hooks;
+namespace Penumbra.Interop.Hooks.Objects;
 
 public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character, CopyCharacter.Priority>, IHookService
 {

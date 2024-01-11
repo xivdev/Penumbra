@@ -72,6 +72,23 @@ public class GameState : IService
 
     #endregion
 
+    #region Subfiles
+
+    public readonly ThreadLocal<ResolveData> MtrlData = new(() => ResolveData.Invalid);
+    public readonly ThreadLocal<ResolveData> AvfxData = new(() => ResolveData.Invalid);
+
+    public readonly ConcurrentDictionary<nint, ResolveData> SubFileCollection = new();
+
+    public ResolveData LoadSubFileHelper(nint resourceHandle)
+    {
+        if (resourceHandle == nint.Zero)
+            return ResolveData.Invalid;
+
+        return SubFileCollection.TryGetValue(resourceHandle, out var c) ? c : ResolveData.Invalid;
+    }
+
+    #endregion
+
     /// <summary> Return the correct resolve data from the stored data. </summary>
     public unsafe bool HandleFiles(CollectionResolver resolver, ResourceType type, Utf8GamePath _, out ResolveData resolveData)
     {

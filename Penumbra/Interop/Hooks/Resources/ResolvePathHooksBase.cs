@@ -1,13 +1,14 @@
 using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.Interop.PathResolving;
+namespace Penumbra.Interop.Hooks.Resources;
 
-public unsafe class ResolvePathHooks : IDisposable
+public sealed unsafe class ResolvePathHooksBase : IDisposable
 {
     public enum Type
     {
@@ -19,7 +20,9 @@ public unsafe class ResolvePathHooks : IDisposable
     private delegate nint NamedResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint name);
     private delegate nint PerSlotResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex);
     private delegate nint SingleResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize);
+
     private delegate nint TmbResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, nint timelineName);
+
     // Kept separate from NamedResolveDelegate because the 5th parameter has out semantics here, instead of in.
     private delegate nint VfxResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam);
 
@@ -38,21 +41,24 @@ public unsafe class ResolvePathHooks : IDisposable
 
     private readonly PathState _parent;
 
-    public ResolvePathHooks(IGameInteropProvider interop, PathState parent, nint* vTable, Type type)
+    public ResolvePathHooksBase(string name, HookManager hooks, PathState parent, nint* vTable, Type type)
     {
-        _parent               = parent;
-        _resolveDecalPathHook = Create<PerSlotResolveDelegate>(interop, vTable[83],       ResolveDecal);
-        _resolveEidPathHook   = Create<SingleResolveDelegate>(interop,  vTable[85],       ResolveEid);
-        _resolveImcPathHook   = Create<PerSlotResolveDelegate>(interop, vTable[81],       ResolveImc);
-        _resolveMPapPathHook  = Create<MPapResolveDelegate>(interop,    vTable[79],       ResolveMPap);
-        _resolveMdlPathHook   = Create<PerSlotResolveDelegate>(interop, vTable[73], type, ResolveMdl,  ResolveMdlHuman);
-        _resolveMtrlPathHook  = Create<NamedResolveDelegate>(interop,   vTable[82],       ResolveMtrl);
-        _resolvePapPathHook   = Create<NamedResolveDelegate>(interop,   vTable[76], type, ResolvePap,  ResolvePapHuman);
-        _resolvePhybPathHook  = Create<PerSlotResolveDelegate>(interop, vTable[75], type, ResolvePhyb, ResolvePhybHuman);
-        _resolveSklbPathHook  = Create<PerSlotResolveDelegate>(interop, vTable[72], type, ResolveSklb, ResolveSklbHuman);
-        _resolveSkpPathHook   = Create<PerSlotResolveDelegate>(interop, vTable[74], type, ResolveSkp,  ResolveSkpHuman);
-        _resolveTmbPathHook   = Create<TmbResolveDelegate>(interop,     vTable[77],       ResolveTmb);
-        _resolveVfxPathHook   = Create<VfxResolveDelegate>(interop,     vTable[84],       ResolveVfx);
+        _parent = parent;
+        // @formatter:off
+        _resolveDecalPathHook = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveDecal)}", hooks, vTable[83], ResolveDecal);
+        _resolveEidPathHook   = Create<SingleResolveDelegate>( $"{name}.{nameof(ResolveEid)}",   hooks, vTable[85], ResolveEid);
+        _resolveImcPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveImc)}",   hooks, vTable[81], ResolveImc);
+        _resolveMPapPathHook  = Create<MPapResolveDelegate>(   $"{name}.{nameof(ResolveMPap)}",  hooks, vTable[79], ResolveMPap);
+        _resolveMdlPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveMdl)}",   hooks, vTable[73], type, ResolveMdl, ResolveMdlHuman);
+        _resolveMtrlPathHook  = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolveMtrl)}",  hooks, vTable[82], ResolveMtrl);
+        _resolvePapPathHook   = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolvePap)}",   hooks, vTable[76], type, ResolvePap, ResolvePapHuman);
+        _resolvePhybPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolvePhyb)}",  hooks, vTable[75], type, ResolvePhyb, ResolvePhybHuman);
+        _resolveSklbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSklb)}",  hooks, vTable[72], type, ResolveSklb, ResolveSklbHuman);
+        _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[74], type, ResolveSkp, ResolveSkpHuman);
+        _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[77], ResolveTmb);
+        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], ResolveVfx);
+        // @formatter:on
+        Enable();
     }
 
     public void Enable()
@@ -177,9 +183,8 @@ public unsafe class ResolvePathHooks : IDisposable
     {
         data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         if (_parent.InInternalResolve)
-        {
             return DisposableContainer.Empty;
-        }
+
         return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstManipulation.EstType.Face),
             data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Body),
             data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Hair),
@@ -188,19 +193,19 @@ public unsafe class ResolvePathHooks : IDisposable
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(IGameInteropProvider interop, nint address, Type type, T other, T human) where T : Delegate
+    private static Hook<T> Create<T>(string name, HookManager hooks, nint address, Type type, T other, T human) where T : Delegate
     {
         var del = type switch
         {
-            Type.Human  => human,
-            _           => other,
+            Type.Human => human,
+            _          => other,
         };
-        return interop.HookFromAddress(address, del);
+        return hooks.CreateHook(name, address, del).Result;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(IGameInteropProvider interop, nint address, T del) where T : Delegate
-        => interop.HookFromAddress(address, del);
+    private static Hook<T> Create<T>(string name, HookManager hooks, nint address, T del) where T : Delegate
+        => hooks.CreateHook(name, address, del).Result;
 
 
     // Implementation

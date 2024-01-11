@@ -16,11 +16,9 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
     private readonly Texture**         _colorTableTexture;
     private readonly SafeTextureHandle _originalColorTableTexture;
 
-    private Half[] _colorTable;
-    private bool   _updatePending;
+    private          bool   _updatePending;
 
-    public Half[] ColorTable
-        => _colorTable;
+    public Half[] ColorTable { get; }
 
     public LiveColorTablePreviewer(IObjectTable objects, IFramework framework, MaterialInfo materialInfo)
         : base(objects, materialInfo)
@@ -41,7 +39,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         if (_originalColorTableTexture == null)
             throw new InvalidOperationException("Material doesn't have a color table");
 
-        _colorTable    = new Half[TextureLength];
+        ColorTable    = new Half[TextureLength];
         _updatePending = true;
 
         framework.Update += OnFrameworkUpdate;
@@ -84,9 +82,9 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
             return;
 
         bool success;
-        lock (_colorTable)
+        lock (ColorTable)
         {
-            fixed (Half* colorTable = _colorTable)
+            fixed (Half* colorTable = ColorTable)
             {
                 success = texture.Texture->InitializeContents(colorTable);
             }
@@ -105,9 +103,6 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         if (colorSetTextures == null)
             return false;
 
-        if (_colorTableTexture != colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot))
-            return false;
-
-        return true;
+        return _colorTableTexture == colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot);
     }
 }

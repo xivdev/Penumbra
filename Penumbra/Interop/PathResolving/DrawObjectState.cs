@@ -6,6 +6,7 @@ using OtterGui.Services;
 using Penumbra.Interop.Hooks;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Hooks.Objects;
 
 namespace Penumbra.Interop.PathResolving;
 
