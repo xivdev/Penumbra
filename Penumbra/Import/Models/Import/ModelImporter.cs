@@ -29,6 +29,8 @@ public partial class ModelImporter(ModelRoot _model)
     private readonly List<string>                     _bones      = [];
     private readonly List<MdlStructs.BoneTableStruct> _boneTables = [];
 
+    private readonly List<string> _metaAttributes = [];
+
     private readonly Dictionary<string, List<MdlStructs.ShapeMeshStruct>> _shapeMeshes = [];
     private readonly List<MdlStructs.ShapeValueStruct>                    _shapeValues = [];
 
@@ -71,6 +73,7 @@ public partial class ModelImporter(ModelRoot _model)
             Bones              = [.. _bones],
             // TODO: Game doesn't seem to rely on this, but would be good to populate.
             SubMeshBoneMap = [],
+            Attributes     = [.. _metaAttributes],
             Shapes         = [.. shapes],
             ShapeMeshes    = [.. shapeMeshes],
             ShapeValues    = [.. _shapeValues],
@@ -155,6 +158,8 @@ public partial class ModelImporter(ModelRoot _model)
 
         _subMeshes.AddRange(mesh.SubMeshStructs.Select(m => m with
         {
+            AttributeIndexMask = Utility.GetMergedAttributeMask(
+                m.AttributeIndexMask, mesh.MetaAttributes, _metaAttributes),
             IndexOffset = (uint)(m.IndexOffset + indexOffset),
         }));
 

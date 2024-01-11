@@ -19,6 +19,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
 
         public List<string>? Bones;
 
+        public List<string> MetaAttributes;
+
         public List<MeshShapeKey> ShapeKeys;
     }
 
@@ -47,6 +49,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
     private readonly List<ushort> _indices = [];
 
     private List<string>? _bones;
+
+    private readonly List<string> _metaAttributes = [];
 
     private readonly Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = [];
 
@@ -83,6 +87,7 @@ public class MeshImporter(IEnumerable<Node> nodes)
             VertexBuffer      = _streams[0].Concat(_streams[1]).Concat(_streams[2]),
             Indices           = _indices,
             Bones             = _bones,
+            MetaAttributes    = _metaAttributes,
             ShapeKeys = _shapeValues
                 .Select(pair => new MeshShapeKey()
                 {
@@ -153,6 +158,8 @@ public class MeshImporter(IEnumerable<Node> nodes)
         _subMeshes.Add(subMesh.SubMeshStruct with
         {
             IndexOffset = (ushort)(subMesh.SubMeshStruct.IndexOffset + indexOffset),
+            AttributeIndexMask = Utility.GetMergedAttributeMask(
+                subMesh.SubMeshStruct.AttributeIndexMask, subMesh.MetaAttributes, _metaAttributes),
         });
     }
 
