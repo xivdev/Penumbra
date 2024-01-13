@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace Penumbra.Import.Models.Export;
 
@@ -32,15 +33,27 @@ public class MaterialExporter
 
     private static MaterialBuilder BuildCharacter(Material material, string name)
     {
-        // TODO: handle models with an underlying diffuse
         var table = material.Mtrl.Table;
 
         // TODO: there's a few normal usages i should check, i think.
-        // TODO: tryget
         var normal = material.Textures[TextureUsage.SamplerNormal];
 
         var operation = new ProcessCharacterNormalOperation(normal, table);
         ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
+
+        var baseColor = operation.BaseColor;
+        if (material.Textures.TryGetValue(TextureUsage.SamplerDiffuse, out var diffuse))
+        {
+            MultiplyOperation.Execute(diffuse, baseColor);
+            baseColor = diffuse;
+        }
+
+        // TODO: what about the two specularmaps?
+        var specular = operation.Specular;
+        if (material.Textures.TryGetValue(TextureUsage.SamplerSpecular, out var newSpecular))
+        {
+            MultiplyOperation.Execute(newSpecular, specular);
+        }
 
         // TODO: clean up this name generation a bunch. probably a method.
         var imageName = name.Replace("/", "").Replace(".mtrl", "");
@@ -48,9 +61,9 @@ public class MaterialExporter
         return BuildSharedBase(material, name)
             // NOTE: this isn't particularly precise to game behavior, but good enough for now.
             .WithAlpha(AlphaMode.MASK, 0.5f)
-            .WithBaseColor(BuildImage(operation.BaseColor, $"{imageName}_basecolor"))
+            .WithBaseColor(BuildImage(baseColor, $"{imageName}_basecolor"))
             .WithNormal(BuildImage(operation.Normal, $"{imageName}_normal"))
-            .WithSpecularColor(BuildImage(operation.Specular, $"{imageName}_specular"))
+            .WithSpecularColor(BuildImage(specular, $"{imageName}_specular"))
             .WithEmissive(BuildImage(operation.Emissive, $"{imageName}_emissive"), Vector3.One, 1);
     }
 
@@ -101,6 +114,40 @@ public class MaterialExporter
                 // TODO: we don't actually need alpha at all for normal, but _not_ using the existing rgba texture means I'll need a new one, with a new accessor. Think about it.
                 normalPixel.B = byte.MaxValue;
                 normalPixel.A = byte.MaxValue;
+            }
+        }
+    }
+
+    private readonly struct MultiplyOperation
+    {
+        public static void Execute<TPixel1, TPixel2>(Image<TPixel1> target, Image<TPixel2> multiplier)
+            where TPixel1 : unmanaged, IPixel<TPixel1>
+            where TPixel2 : unmanaged, IPixel<TPixel2>
+        {
+            // Ensure the images are the same size
+            var (small, large) = target.Width < multiplier.Width && target.Height < multiplier.Height
+                ? ((Image)target, (Image)multiplier)
+                : (multiplier, target);
+            small.Mutate(context => context.Resize(large.Width, large.Height));
+
+            var operation = new MultiplyOperation<TPixel1, TPixel2>(target, multiplier);
+            ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, target.Bounds(), in operation);
+        }
+    }
+
+    private readonly struct MultiplyOperation<TPixel1, TPixel2>(Image<TPixel1> target, Image<TPixel2> multiplier) : IRowOperation
+        where TPixel1 : unmanaged, IPixel<TPixel1>
+        where TPixel2 : unmanaged, IPixel<TPixel2>
+    {
+
+        public void Invoke(int y)
+        {
+            var targetSpan = target.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(y);
+            var multiplierSpan = multiplier.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(y);
+
+            for (int x = 0; x < targetSpan.Length; x++)
+            {
+                targetSpan[x].FromVector4(targetSpan[x].ToVector4() * multiplierSpan[x].ToVector4());
             }
         }
     }
