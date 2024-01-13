@@ -34,17 +34,49 @@ public class MaterialExporter
 
     private static MaterialBuilder BuildCharacter(Material material, string name)
     {
-        // TODO: pixelbashing time
-        var sampler = material.Samplers
+        var table = material.Mtrl.Table;
+        var normal = material.Samplers
             .Where(s => s.Usage == TextureUsage.SamplerNormal)
-            .First();
+            .First()
+            .Texture;
+
+        var baseColorTarget = new Image<Rgba32>(normal.Width, normal.Height);
+        normal.ProcessPixelRows(baseColorTarget, (sourceAccessor, targetAccessor) =>
+        {
+            for (int y = 0; y < sourceAccessor.Height; y++)
+            {
+                var sourceRow = sourceAccessor.GetRowSpan(y);
+                var targetRow = targetAccessor.GetRowSpan(y);
+
+                for (int x = 0; x < sourceRow.Length; x++)
+                {
+                    var (smoothed, stepped) = GetTableRowIndices(sourceRow[x].A / 255f);
+                    var prevRow = table[(int)MathF.Floor(smoothed)];
+                    var nextRow = table[(int)MathF.Ceiling(smoothed)];
+                    var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, smoothed % 1);
+                    targetRow[x].FromVector4(new Vector4(lerpedDiffuse, 1));
+                }
+            }
+        });
 
         // TODO: clean up this name generation a bunch. probably a method.
         var imageName = name.Replace("/", "");
-        var baseColor = BuildImage(sampler.Texture, $"{imageName}_basecolor");
+        var baseColor = BuildImage(baseColorTarget, $"{imageName}_basecolor");
 
         return BuildSharedBase(material, name)
             .WithBaseColor(baseColor);
+    }
+
+    private static (float Smooth, float Stepped) GetTableRowIndices(float input)
+    {
+        // These calculations are ported from character.shpk.
+        var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2) 
+            * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
+            + input * 15;
+
+        var stepped = MathF.Floor(smoothed + 0.5f);
+
+        return (smoothed, stepped);
     }
 
     private static MaterialBuilder BuildFallback(Material material, string name)
