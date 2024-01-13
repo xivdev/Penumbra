@@ -46,65 +46,63 @@ public class MaterialExporter
             .First()
             .Texture;
 
-        var operation = new CharacterOperation()
-        {
-            Table = table,
-            Normal = normal,
-            BaseColor = new Image<Rgba32>(normal.Width, normal.Height),
-            Emissive = new Image<Rgb24>(normal.Width, normal.Height),
-        };
+        var operation = new ProcessCharacterNormalOperation(normal, table);
         ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
 
         // TODO: clean up this name generation a bunch. probably a method.
-        var imageName = name.Replace("/", "");
+        var imageName = name.Replace("/", "").Replace(".mtrl", "");
 
         return BuildSharedBase(material, name)
-            // .WithSpecularGlossinessShader()
-            // .WithDiffuse()
             // NOTE: this isn't particularly precise to game behavior, but good enough for now.
             .WithAlpha(AlphaMode.MASK, 0.5f)
             .WithBaseColor(BuildImage(operation.BaseColor, $"{imageName}_basecolor"))
             .WithNormal(BuildImage(operation.Normal, $"{imageName}_normal"))
+            .WithSpecularColor(BuildImage(operation.Specular, $"{imageName}_specular"))
             .WithEmissive(BuildImage(operation.Emissive, $"{imageName}_emissive"), Vector3.One, 1);
     }
 
-    private readonly struct CharacterOperation : IRowOperation
+    // TODO: It feels a little silly to request the entire normal here when extrating the normal only needs some of the components.
+    //       As a future refactor, it would be neat to accept a single-channel field here, and then do composition of other stuff later.
+    private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal, MtrlFile.ColorTable table) : IRowOperation
     {
-        public required MtrlFile.ColorTable Table { get; init; }
-
-        public required Image<Rgba32> Normal { get; init; }
-        public required Image<Rgba32> BaseColor { get; init; }
-        public required Image<Rgb24> Emissive { get; init; }
+        public Image<Rgba32> Normal { get; private init; } = normal.Clone();
+        public Image<Rgba32> BaseColor { get; private init; } = new Image<Rgba32>(normal.Width, normal.Height);
+        public Image<Rgb24> Specular { get; private init; } = new Image<Rgb24>(normal.Width, normal.Height);
+        public Image<Rgb24> Emissive { get; private init; } = new Image<Rgb24>(normal.Width, normal.Height);
 
         private Buffer2D<Rgba32> NormalBuffer => Normal.Frames.RootFrame.PixelBuffer;
         private Buffer2D<Rgba32> BaseColorBuffer => BaseColor.Frames.RootFrame.PixelBuffer;
+        private Buffer2D<Rgb24> SpecularBuffer => Specular.Frames.RootFrame.PixelBuffer;
         private Buffer2D<Rgb24> EmissiveBuffer => Emissive.Frames.RootFrame.PixelBuffer;
 
         public void Invoke(int y)
         {
             var normalSpan = NormalBuffer.DangerousGetRowSpan(y);
             var baseColorSpan = BaseColorBuffer.DangerousGetRowSpan(y);
+            var specularSpan = SpecularBuffer.DangerousGetRowSpan(y);
             var emissiveSpan = EmissiveBuffer.DangerousGetRowSpan(y);
 
             for (int x = 0; x < normalSpan.Length; x++)
             {
                 ref var normalPixel = ref normalSpan[x];
-                ref var baseColorPixel = ref baseColorSpan[x];
-                ref var emissivePixel = ref emissiveSpan[x];
 
                 // Table row data (.a)
                 var tableRow = GetTableRowIndices(normalPixel.A / 255f);
-                var prevRow = Table[tableRow.Previous];
-                var nextRow = Table[tableRow.Next];
+                var prevRow = table[tableRow.Previous];
+                var nextRow = table[tableRow.Next];
 
                 // Base colour (table, .b)
                 var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, tableRow.Weight);
-                baseColorPixel.FromVector4(new Vector4(lerpedDiffuse, 1));
-                baseColorPixel.A = normalPixel.B;
+                baseColorSpan[x].FromVector4(new Vector4(lerpedDiffuse, 1));
+                baseColorSpan[x].A = normalPixel.B;
+
+                // Specular (table)
+                var lerpedSpecularColor = Vector3.Lerp(prevRow.Specular, nextRow.Specular, tableRow.Weight);
+                specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, 1));
 
                 // Emissive (table)
                 var lerpedEmissive = Vector3.Lerp(prevRow.Emissive, nextRow.Emissive, tableRow.Weight);
-                emissivePixel.FromVector4(new Vector4(lerpedEmissive, 1));
+                emissiveSpan[x].FromVector4(new Vector4(lerpedEmissive, 1));
 
                 // Normal (.rg)
                 // TODO: we don't actually need alpha at all for normal, but _not_ using the existing rgba texture means I'll need a new one, with a new accessor. Think about it.
