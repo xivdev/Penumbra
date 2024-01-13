@@ -93,18 +93,17 @@ public class MaterialExporter
                 ref var emissivePixel = ref emissiveSpan[x];
 
                 // Table row data (.a)
-                var (smoothed, stepped) = GetTableRowIndices(normalPixel.A / 255f);
-                var weight = smoothed % 1;
-                var prevRow = Table[(int)MathF.Floor(smoothed)];
-                var nextRow = Table[(int)MathF.Ceiling(smoothed)];
+                var tableRow = GetTableRowIndices(normalPixel.A / 255f);
+                var prevRow = Table[tableRow.Previous];
+                var nextRow = Table[tableRow.Next];
 
                 // Base colour (table, .b)
-                var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, weight);
+                var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, tableRow.Weight);
                 baseColorPixel.FromVector4(new Vector4(lerpedDiffuse, 1));
                 baseColorPixel.A = normalPixel.B;
 
                 // Emissive (table)
-                var lerpedEmissive = Vector3.Lerp(prevRow.Emissive, nextRow.Emissive, weight);
+                var lerpedEmissive = Vector3.Lerp(prevRow.Emissive, nextRow.Emissive, tableRow.Weight);
                 emissivePixel.FromVector4(new Vector4(lerpedEmissive, 1));
 
                 // Normal (.rg)
@@ -115,7 +114,7 @@ public class MaterialExporter
         }
     }
 
-    private static (float Smooth, float Stepped) GetTableRowIndices(float input)
+    private static TableRow GetTableRowIndices(float input)
     {
         // These calculations are ported from character.shpk.
         var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2) 
@@ -124,7 +123,21 @@ public class MaterialExporter
 
         var stepped = MathF.Floor(smoothed + 0.5f);
 
-        return (smoothed, stepped);
+        return new TableRow
+        {
+            Stepped  = (int)stepped,
+            Previous = (int)MathF.Floor(smoothed),
+            Next     = (int)MathF.Ceiling(smoothed),
+            Weight   = smoothed % 1,
+        };
+    }
+
+    private ref struct TableRow
+    {
+        public int Stepped;
+        public int Previous;
+        public int Next;
+        public float Weight;
     }
 
     private static MaterialBuilder BuildFallback(Material material, string name)
