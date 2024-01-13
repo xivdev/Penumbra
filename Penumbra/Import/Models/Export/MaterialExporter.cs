@@ -43,28 +43,50 @@ public class MaterialExporter
         var operation = new ProcessCharacterNormalOperation(normal, table);
         ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
 
-        var baseColor = operation.BaseColor;
+        Image baseColor = operation.BaseColor;
         if (material.Textures.TryGetValue(TextureUsage.SamplerDiffuse, out var diffuse))
         {
-            MultiplyOperation.Execute(diffuse, baseColor);
+            MultiplyOperation.Execute(diffuse, operation.BaseColor);
             baseColor = diffuse;
         }
 
         // TODO: what about the two specularmaps?
-        var specular = operation.Specular;
-        if (material.Textures.TryGetValue(TextureUsage.SamplerSpecular, out var newSpecular))
+        Image specular = operation.Specular;
+        if (material.Textures.TryGetValue(TextureUsage.SamplerSpecular, out var specularTexture))
         {
-            MultiplyOperation.Execute(newSpecular, specular);
+            MultiplyOperation.Execute(specularTexture, operation.Specular);
+            specular = specularTexture;
+        }
+
+        Image? occlusion = null;
+        if (material.Textures.TryGetValue(TextureUsage.SamplerMask, out var maskTexture))
+        {
+            // Extract the red channel for ambient occlusion.
+            maskTexture.Mutate(context => context.Filter(new ColorMatrix(
+                1f, 1f, 1f, 0f,
+                0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 0f,
+                0f, 0f, 0f, 1f,
+                0f, 0f, 0f, 0f
+            )));
+            occlusion = maskTexture;
+            
+            // TODO: handle other textures stored in the mask?
         }
 
         // TODO: clean up this name generation a bunch. probably a method.
         var imageName = name.Replace("/", "").Replace(".mtrl", "");
 
-        return BuildSharedBase(material, name)
+        var materialBuilder = BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(baseColor, $"{imageName}_basecolor"))
             .WithNormal(BuildImage(operation.Normal, $"{imageName}_normal"))
             .WithSpecularColor(BuildImage(specular, $"{imageName}_specular"))
             .WithEmissive(BuildImage(operation.Emissive, $"{imageName}_emissive"), Vector3.One, 1);
+
+        if (occlusion != null)
+            materialBuilder.WithOcclusion(BuildImage(occlusion, $"{imageName}_occlusion"));
+
+        return materialBuilder;
     }
 
     // TODO: It feels a little silly to request the entire normal here when extrating the normal only needs some of the components.
