@@ -50,11 +50,22 @@ public class MaterialExporter
 
                 for (int x = 0; x < sourceRow.Length; x++)
                 {
+                    ref var sourcePixel = ref sourceRow[x];
+                    ref var targetPixel = ref targetRow[x];
+
                     var (smoothed, stepped) = GetTableRowIndices(sourceRow[x].A / 255f);
                     var prevRow = table[(int)MathF.Floor(smoothed)];
                     var nextRow = table[(int)MathF.Ceiling(smoothed)];
+
+                    // Base colour (table[.a], .b)
                     var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, smoothed % 1);
-                    targetRow[x].FromVector4(new Vector4(lerpedDiffuse, 1));
+                    targetPixel.FromVector4(new Vector4(lerpedDiffuse, 1));
+                    targetPixel.A = sourcePixel.B;
+
+                    // Normal (.rg)
+                    // TODO: we don't actually need alpha at all for normal, but _not_ using the existing rgba texture means I'll need a new one, with a new accessor. Think about it.
+                    sourcePixel.B = byte.MaxValue;
+                    sourcePixel.A = byte.MaxValue;
                 }
             }
         });
@@ -62,9 +73,13 @@ public class MaterialExporter
         // TODO: clean up this name generation a bunch. probably a method.
         var imageName = name.Replace("/", "");
         var baseColor = BuildImage(baseColorTarget, $"{imageName}_basecolor");
+        var normalThing = BuildImage(normal, $"{imageName}_normal");
 
         return BuildSharedBase(material, name)
-            .WithBaseColor(baseColor);
+            // NOTE: this isn't particularly precise to game behavior, but good enough for now.
+            .WithAlpha(AlphaMode.MASK, 0.5f)
+            .WithBaseColor(baseColor)
+            .WithNormal(normalThing);
     }
 
     private static (float Smooth, float Stepped) GetTableRowIndices(float input)
