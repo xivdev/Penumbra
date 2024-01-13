@@ -26,8 +26,10 @@ public class MaterialExporter
         Penumbra.Log.Debug($"Exporting material \"{name}\".");
         return material.Mtrl.ShaderPackage.Name switch
         {
-            "character.shpk" => BuildCharacter(material, name),
-            _                => BuildFallback(material, name),
+            // NOTE: this isn't particularly precise to game behavior (it has some fade around high opacity), but good enough for now.
+            "character.shpk"      => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
+            "characterglass.shpk" => BuildCharacter(material, name).WithAlpha(AlphaMode.BLEND),
+            _                     => BuildFallback(material, name),
         };
     }
 
@@ -59,8 +61,6 @@ public class MaterialExporter
         var imageName = name.Replace("/", "").Replace(".mtrl", "");
 
         return BuildSharedBase(material, name)
-            // NOTE: this isn't particularly precise to game behavior, but good enough for now.
-            .WithAlpha(AlphaMode.MASK, 0.5f)
             .WithBaseColor(BuildImage(baseColor, $"{imageName}_basecolor"))
             .WithNormal(BuildImage(operation.Normal, $"{imageName}_normal"))
             .WithSpecularColor(BuildImage(specular, $"{imageName}_specular"))
