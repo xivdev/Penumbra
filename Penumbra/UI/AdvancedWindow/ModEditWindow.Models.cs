@@ -138,14 +138,14 @@ public partial class ModEditWindow
         using var frame = ImRaii.FramedGroup("Exceptions", size, headerPreIcon: FontAwesomeIcon.TimesCircle, borderColor: Colors.RegexWarningBorder);
 
         var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
-        foreach (var exception in tab.IoExceptions)
+        foreach (var (exception, index) in tab.IoExceptions.WithIndex())
         {
             var message = $"{exception.GetType().Name}: {exception.Message}";
             var textSize = ImGui.CalcTextSize(message).X;
             if (textSize > spaceAvail)
                 message = message.Substring(0, (int)Math.Floor(message.Length * (spaceAvail / textSize))) + "...";
 
-            using (var exceptionNode = ImRaii.TreeNode(message))
+            using (var exceptionNode = ImRaii.TreeNode($"{message}###exception{index}"))
             {
                 if (exceptionNode)
                     ImGuiUtil.TextWrapped(exception.ToString());
