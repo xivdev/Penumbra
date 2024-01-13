@@ -1,11 +1,11 @@
 using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
 public class FileRegistry : IEquatable<FileRegistry>
 {
-    public readonly List<(ISubMod, Utf8GamePath)> SubModUsage = new();
+    public readonly List<(ISubMod, Utf8GamePath)> SubModUsage = [];
     public          FullPath                      File     { get; private init; }
     public          Utf8RelPath                   RelPath  { get; private init; }
     public          long                          FileSize { get; private init; }

@@ -29,12 +29,12 @@ public class ModMerger : IDisposable
     public string OptionGroupName = "Merges";
     public string OptionName      = string.Empty;
 
-    private readonly Dictionary<string, string> _fileToFile         = new();
-    private readonly HashSet<string>            _createdDirectories = new();
-    private readonly HashSet<int>               _createdGroups      = new();
-    private readonly HashSet<SubMod>            _createdOptions     = new();
+    private readonly Dictionary<string, string> _fileToFile         = [];
+    private readonly HashSet<string>            _createdDirectories = [];
+    private readonly HashSet<int>               _createdGroups      = [];
+    private readonly HashSet<SubMod>            _createdOptions     = [];
 
-    public readonly HashSet<SubMod> SelectedOptions = new();
+    public readonly HashSet<SubMod> SelectedOptions = [];
 
     public readonly IReadOnlyList<string> Warnings = new List<string>();
     public          Exception?            Error { get; private set; }
