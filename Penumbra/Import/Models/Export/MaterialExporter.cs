@@ -13,22 +13,16 @@ using ImageSharpConfiguration = SixLabors.ImageSharp.Configuration;
 
 public class MaterialExporter
 {
-    // input stuff
     public struct Material
     {
         public MtrlFile Mtrl;
-        public Sampler[] Samplers;
+        public Dictionary<TextureUsage, Image<Rgba32>> Textures;
         // variant?
-    }
-
-    public struct Sampler
-    {
-        public TextureUsage Usage;
-        public Image<Rgba32> Texture;
     }
 
     public static MaterialBuilder Export(Material material, string name)
     {
+        Penumbra.Log.Debug($"Exporting material \"{name}\".");
         return material.Mtrl.ShaderPackage.Name switch
         {
             "character.shpk" => BuildCharacter(material, name),
@@ -40,11 +34,10 @@ public class MaterialExporter
     {
         // TODO: handle models with an underlying diffuse
         var table = material.Mtrl.Table;
-        // TODO: this should probably be a dict
-        var normal = material.Samplers
-            .Where(s => s.Usage == TextureUsage.SamplerNormal)
-            .First()
-            .Texture;
+
+        // TODO: there's a few normal usages i should check, i think.
+        // TODO: tryget
+        var normal = material.Textures[TextureUsage.SamplerNormal];
 
         var operation = new ProcessCharacterNormalOperation(normal, table);
         ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);

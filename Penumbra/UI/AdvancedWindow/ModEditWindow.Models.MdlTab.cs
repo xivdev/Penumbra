@@ -116,11 +116,10 @@ public partial class ModEditWindow
         /// <param name="mdlPath"> .mdl game path to resolve satellite files such as skeletons relative to. </param>
         public void Export(string outputPath, Utf8GamePath mdlPath)
         {
-            IEnumerable<SklbFile> skeletons;
+            IEnumerable<string> sklbPaths;
             try
             {
-                var sklbPaths = _edit._models.ResolveSklbsForMdl(mdlPath.ToString(), GetCurrentEstManipulations());
-                skeletons = sklbPaths.Select(ReadSklb).ToArray();
+                sklbPaths = _edit._models.ResolveSklbsForMdl(mdlPath.ToString(), GetCurrentEstManipulations());
             }
             catch (Exception exception)
             {
@@ -129,7 +128,7 @@ public partial class ModEditWindow
             }
 
             PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, skeletons, outputPath)
+            _edit._models.ExportToGltf(Mdl, sklbPaths, ReadFile, outputPath)
                 .ContinueWith(task =>
                 {
                     RecordIoExceptions(task.Exception);
@@ -219,22 +218,24 @@ public partial class ModEditWindow
                 Exception other       => [other],
             };
         }
-
-        /// <summary> Read a .sklb from the active collection or game. </summary>
-        /// <param name="sklbPath"> Game path to the .sklb to load. </param>
-        private SklbFile ReadSklb(string sklbPath)
+        
+        /// <summary> Read a file from the active collection or game. </summary>
+        /// <param name="path"> Game path to the file to load. </param>
+        // TODO: Also look up files within the current mod regardless of mod state?
+        private byte[] ReadFile(string path)
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
-            if (!Utf8GamePath.FromString(sklbPath, out var utf8SklbPath, true))
-                throw new Exception($"Resolved skeleton path {sklbPath} could not be converted to a game path.");
+            if (!Utf8GamePath.FromString(path, out var utf8SklbPath, true))
+                throw new Exception($"Resolved path {path} could not be converted to a game path.");
 
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
             // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
-            var bytes = resolvedPath == null ? _edit._gameData.GetFile(sklbPath)?.Data : File.ReadAllBytes(resolvedPath.Value.ToPath());
-            return bytes != null
-                ? new SklbFile(bytes)
-                : throw new Exception(
-                    $"Resolved skeleton path {sklbPath} could not be found. If modded, is it enabled in the current collection?");
+            var bytes = resolvedPath == null 
+                ? _edit._gameData.GetFile(path)?.Data
+                : File.ReadAllBytes(resolvedPath.Value.ToPath());
+
+            return bytes ?? throw new Exception(
+                $"Resolved path {path} could not be found. If modded, is it enabled in the current collection?");
         }
 
         /// <summary> Remove the material given by the index. </summary>

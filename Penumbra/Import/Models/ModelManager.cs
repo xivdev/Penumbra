@@ -39,8 +39,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task ExportToGltf(MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
-        => Enqueue(new ExportToGltfAction(this, mdl, sklbs, outputPath));
+    public Task ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
+        => Enqueue(new ExportToGltfAction(this, mdl, sklbPaths, read, outputPath));
 
     public Task<MdlFile?> ImportGltf(string inputPath)
     {
@@ -134,7 +134,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return task;
     }
 
-    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
+    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
         : IAction
     {
         public void Execute(CancellationToken cancel)
@@ -166,7 +166,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         /// <summary> Attempt to read out the pertinent information from a .sklb. </summary>
         private IEnumerable<XivSkeleton> BuildSkeletons(CancellationToken cancel)
         {
-            var havokTasks = sklbs
+            var havokTasks = sklbPaths
+                .Select(path => new SklbFile(read(path)))
                 .WithIndex()
                 .Select(CreateHavokTask)
                 .ToArray();
@@ -197,29 +198,22 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             if (absolutePath == null)
                 throw new Exception("Failed to resolve material path.");
 
-            // TODO: collection lookup and such. this is currently in mdltab (readsklb), and should be wholesale moved in here.
-            var data = manager._gameData.GetFile(absolutePath);
-            if (data == null)
-                throw new Exception("Failed to fetch material game data.");
-
-            var mtrl = new MtrlFile(data.Data);
+            var mtrl = new MtrlFile(read(absolutePath));
             
             return new MaterialExporter.Material
             {
                 Mtrl = mtrl,
-                Samplers = mtrl.ShaderPackage.Samplers
-                    .Select(sampler => new MaterialExporter.Sampler
-                    {
-                        Usage = (TextureUsage)sampler.SamplerId,
-                        Texture = ConvertImage(mtrl.Textures[sampler.TextureIndex], cancel),
-                    })
-                    .ToArray(),
+                Textures = mtrl.ShaderPackage.Samplers.ToDictionary(
+                    sampler => (TextureUsage)sampler.SamplerId,
+                    sampler => ConvertImage(mtrl.Textures[sampler.TextureIndex], cancel)
+                ),
             };
         }
 
         private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
         {
-            var (image, _) = manager._textureManager.Load(texture.Path);
+            using var textureData = new MemoryStream(read(texture.Path));
+            var image = TexFileParser.Parse(textureData);
             var pngImage = TextureManager.ConvertToPng(image, cancel).AsPng;
             if (pngImage == null)
                 throw new Exception("Failed to convert texture to png.");
