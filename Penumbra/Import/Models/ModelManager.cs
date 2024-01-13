@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Lumina.Data.Parsing;
 using OtterGui;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
@@ -9,15 +10,22 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
 using Penumbra.Import.Models.Import;
+using Penumbra.Import.Textures;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
-using SharpGLTF.Schema2;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.Import.Models;
 
-public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
+using Schema2 = SharpGLTF.Schema2;
+using LuminaMaterial = Lumina.Models.Materials.Material;
+
+public sealed class ModelManager(IFramework framework, ActiveCollections collections, IDataManager gameData, GamePathParser parser, TextureManager textureManager) : SingleTaskQueue, IDisposable
 {
     private readonly IFramework _framework = framework;
+    private readonly IDataManager _gameData = gameData;
+    private readonly TextureManager _textureManager = textureManager;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
 
@@ -132,11 +140,18 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         public void Execute(CancellationToken cancel)
         {
             Penumbra.Log.Debug($"[GLTF Export] Exporting model to {outputPath}...");
+
             Penumbra.Log.Debug("[GLTF Export] Reading skeletons...");
             var xivSkeletons = BuildSkeletons(cancel);
 
+            Penumbra.Log.Debug("[GLTF Export] Reading materials...");
+            var materials = mdl.Materials.ToDictionary(
+                path => path,
+                path => BuildMaterial(path, cancel)
+            );
+
             Penumbra.Log.Debug("[GLTF Export] Converting model...");
-            var model = ModelExporter.Export(mdl, xivSkeletons);
+            var model = ModelExporter.Export(mdl, xivSkeletons, materials);
 
             Penumbra.Log.Debug("[GLTF Export] Building scene...");
             var scene = new SceneBuilder();
@@ -169,6 +184,48 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                     delayTicks: pair.Index, cancellationToken: cancel);
         }
 
+        private MaterialExporter.Material BuildMaterial(string relativePath, CancellationToken cancel)
+        {
+            // TODO: this should probably be chosen in the export settings
+            var variantId = 1;
+
+            var absolutePath = relativePath.StartsWith("/")
+                ? LuminaMaterial.ResolveRelativeMaterialPath(relativePath, variantId)
+                : relativePath;
+
+            // TODO: this should be a recoverable warning - as should the one below it i think
+            if (absolutePath == null)
+                throw new Exception("Failed to resolve material path.");
+
+            // TODO: collection lookup and such. this is currently in mdltab (readsklb), and should be wholesale moved in here.
+            var data = manager._gameData.GetFile(absolutePath);
+            if (data == null)
+                throw new Exception("Failed to fetch material game data.");
+
+            var mtrl = new MtrlFile(data.Data);
+            
+            return new MaterialExporter.Material
+            {
+                Mtrl = mtrl,
+                Samplers = mtrl.ShaderPackage.Samplers
+                    .Select(sampler => new MaterialExporter.Sampler
+                    {
+                        Usage = (TextureUsage)sampler.SamplerId,
+                        Texture = ConvertImage(mtrl.Textures[sampler.TextureIndex], cancel),
+                    })
+                    .ToArray(),
+            };
+        }
+
+        private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
+        {
+            var (image, _) = manager._textureManager.Load(texture.Path);
+            var pngImage = TextureManager.ConvertToPng(image, cancel).AsPng;
+            if (pngImage == null)
+                throw new Exception("Failed to convert texture to png.");
+            return pngImage;
+        }
+
         public bool Equals(IAction? other)
         {
             if (other is not ExportToGltfAction rhs)
@@ -185,7 +242,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
         public void Execute(CancellationToken cancel)
         {
-            var model = ModelRoot.Load(inputPath);
+            var model = Schema2.ModelRoot.Load(inputPath);
 
             Out = ModelImporter.Import(model);
         }
