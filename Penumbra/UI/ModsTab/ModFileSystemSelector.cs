@@ -277,10 +277,19 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private void AddImportModButton(Vector2 size)
     {
         var button = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), size,
-            "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.", !_modManager.Valid, true);
+            "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.\nHold control while clicking to skip importing preview images from selected mods.", !_modManager.Valid, true);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModImport);
         if (!button)
             return;
+
+        if (ImGui.GetIO().KeyCtrl)
+        {
+            _config.ImportPreviewImages = false;
+        } 
+        else
+        {
+            _config.ImportPreviewImages = true;
+        }
 
         var modPath = _config.DefaultModImportPath.Length > 0
             ? _config.DefaultModImportPath
@@ -293,7 +302,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             {
                 if (!s)
                     return;
-
                 _modImportManager.AddUnpack(f);
             }, 0, modPath, _config.AlwaysOpenDefaultImport);
     }

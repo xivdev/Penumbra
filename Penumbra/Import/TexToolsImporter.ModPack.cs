@@ -138,6 +138,11 @@ public partial class TexToolsImporter
         if (_currentNumOptions == 0)
             return _currentModDirectory;
 
+        // Import preview images from the modpack
+        if (_config.ImportPreviewImages) {
+            CopyImagesFromModPack(extractedModPack, _currentModDirectory, modRaw);
+        }
+
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream(extractedModPack, "TTMPD.mpd");
 
@@ -267,5 +272,65 @@ public partial class TexToolsImporter
         var stringsLength       = BitConverter.ToUInt32(mdl, (int)stringsLengthOffset);
         var modelHeaderStart    = stringsLengthOffset + stringsLength + 4;
         mdl[modelHeaderStart + modelHeaderLodOffset] = 1;
+    }
+    private void CopyImagesFromModPack(ZipArchive extractedModPack, DirectoryInfo modDirectory, string modRaw)
+    {
+        var modList = JsonConvert.DeserializeObject<ExtendedModPack>(modRaw, JsonSettings);
+        var imagePaths = modList?.ModPackPages
+            .SelectMany(page => page.ModGroups)
+            .SelectMany(group => group.OptionList)
+            .Select(option => new { option.Name, option.ImagePath })
+            .Where(data => !string.IsNullOrEmpty(data.ImagePath))
+            .ToList();
+
+        if (imagePaths is null || imagePaths.Count == 0)
+        {
+            // No ImagePaths found or the list is null, no action needed
+            return;
+        }
+
+        var imagesDirectoryPath = Path.Combine(modDirectory.FullName, "images");
+        Directory.CreateDirectory(imagesDirectoryPath);
+
+        foreach (var imageData in imagePaths)
+        {
+            var entry = extractedModPack.Entries
+                .FirstOrDefault(e => string.Equals(e.Key, imageData.ImagePath, StringComparison.OrdinalIgnoreCase));
+            if (entry is null)
+                continue;
+
+            var entryExtension = Path.GetExtension(entry.Key);
+
+            if (entryExtension != null &&
+                (entryExtension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                 entryExtension.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+                 entryExtension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                 entryExtension.Equals(".tmp", StringComparison.OrdinalIgnoreCase)))
+            {
+                var fileName = GetSafeFileName(imageData.Name);
+                if (entryExtension.Equals(".tmp", StringComparison.OrdinalIgnoreCase))
+                {
+                    fileName += ".png";
+                }
+                else
+                {
+                    fileName += entryExtension;
+                }
+
+                var targetPath = Path.Combine(imagesDirectoryPath, fileName);
+                using (var outputStream = File.OpenWrite(targetPath))
+                using (var inputStream = entry.OpenEntryStream())
+                {
+                    inputStream.CopyTo(outputStream);
+                }
+            }
+        }
+    }
+
+    private string GetSafeFileName(string fileName)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var safeFileName = string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        return safeFileName;
     }
 }

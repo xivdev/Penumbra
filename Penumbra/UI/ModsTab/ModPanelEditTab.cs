@@ -1,5 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
@@ -19,6 +27,7 @@ namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab : ITab
 {
+    private readonly FileDialogService     _fileDialog;
     private readonly Services.MessageService _messager;
     private readonly FilenameService         _filenames;
     private readonly ModManager              _modManager;
@@ -37,7 +46,8 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, Services.MessageService messager,
-        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config)
+        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config, FileDialogService fileDialog)
+
     {
         _modManager       = modManager;
         _selector         = selector;
@@ -48,6 +58,7 @@ public class ModPanelEditTab : ITab
         _filenames        = filenames;
         _modExportManager = modExportManager;
         _config           = config;
+        _fileDialog       = fileDialog;
     }
 
     public ReadOnlySpan<byte> Label
@@ -94,6 +105,97 @@ public class ModPanelEditTab : ITab
 
         EndActions();
         DescriptionEdit.DrawPopup(_modManager);
+
+        UiHelpers.DefaultLineSpace();
+
+        // Preview image upload
+        if (ImGui.Button("Upload Custom Preview Images"))
+        {
+            string imagesFolderPath = Path.Combine(_selector.Selected!.ModPath.FullName, "images");
+
+            // Create the "images" folder if it doesn't exist
+            if (!Directory.Exists(imagesFolderPath))
+                Directory.CreateDirectory(imagesFolderPath);
+
+            // Show the file dialog picker to select custom image files
+            _fileDialog.OpenFilePicker(
+                "Select Custom Preview Images",
+                "Image Files{.png,.jpg,.jpeg}",
+                (success, filePaths) =>
+                {
+                    if (success)
+                    {
+                        foreach (string selectedImagePath in filePaths)
+                        {
+                            string destinationPath = Path.Combine(imagesFolderPath, Path.GetFileName(selectedImagePath));
+
+                            try
+                            {
+                                // Copy the selected image file to the destination path
+                                File.Copy(selectedImagePath, destinationPath, true);
+                                _mod.PreviewImagePaths.Add(destinationPath);
+                            }
+                            catch (Exception e)
+                            {
+                                _messager.NotificationMessage(e.Message, NotificationType.Error);
+                            }
+                        }
+                    }
+                },
+                selectionCountMax: 0, // Set the maximum selection count to unlimited
+                startPath: null, // Start the file dialog in the default folder
+                forceStartPath: false // Don't force the start path
+            );
+        }
+
+        if (_mod.PreviewImagePaths.Count > 0)
+        {
+            ImGui.Text("Preview Images:");
+
+            for (int i = 0; i < _mod.PreviewImagePaths.Count; i++)
+            {
+                string imagePath = _mod.PreviewImagePaths[i];
+
+                // Create a unique ID for ImGui widgets
+                string imageId = $"##Image{i}";
+
+                ImGui.BeginGroup();
+
+                // Create a text box for editing the image name
+                string imageName = Path.GetFileNameWithoutExtension(imagePath);
+                if (ImGui.InputText(imageId, ref imageName, 100))
+                {
+                    // Handle the image name change
+                    if (string.IsNullOrWhiteSpace(imageName) || _mod.PreviewImagePaths.Any(p => p != imagePath && Path.GetFileNameWithoutExtension(p) == imageName))
+                    {
+                        // If the user tries to set the image name to blank or the name of another image, reset it to the original value.
+                        imageName = Path.GetFileNameWithoutExtension(imagePath);
+                    }
+                    else
+                    {
+                        string newImagePath = Path.Combine(Path.GetDirectoryName(imagePath) ?? string.Empty, $"{imageName}.png");
+                        // Rename the image file on disk
+                        File.Move(imagePath, newImagePath);
+                        // Update the imagePath with the new name
+                        imagePath = newImagePath;
+                        _mod.PreviewImagePaths[i] = newImagePath;
+                    }
+                }
+
+                ImGui.SameLine();
+
+                // Add a delete button
+                if (ImGui.Button($"Delete{imageId}"))
+                {
+                    // Handle the delete button click
+                    File.Delete(imagePath);
+                    _mod.PreviewImagePaths.RemoveAt(i);
+                    i--;
+                }
+
+                ImGui.EndGroup();
+            }
+        }
     }
 
     public void Reset()

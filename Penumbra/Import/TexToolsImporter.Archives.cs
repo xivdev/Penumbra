@@ -65,6 +65,12 @@ public partial class TexToolsImporter
                 continue;
             }
 
+            if (!string.IsNullOrEmpty(reader.Entry.Key) && reader.Entry.Key.StartsWith("images") && !_config.ImportPreviewImages)
+            {
+                // Skip extracting the "images" folder if ImportPreviewImages is false
+                continue;
+            }
+
             Penumbra.Log.Information($"        -> Extracting {reader.Entry.Key}");
             // Check that the mod has a valid name in the meta.json file.
             if (Path.GetFileName(reader.Entry.Key) == "meta.json")

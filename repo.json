@@ -1,12 +1,12 @@
 [
   {
-    "Author": "Ottermandias, Adam, Wintermute",
-    "Name": "Penumbra",
+    "Author": "Ottermandias, Adam, Wintermute (modifications by aniachan)",
+    "Name": "Penumbra (aniachan ver.)",
     "Description": "Runtime mod loader and manager.",
     "InternalName": "Penumbra",
     "AssemblyVersion": "0.8.3.1",
     "TestingAssemblyVersion": "0.8.3.5",
-    "RepoUrl": "https://github.com/xivdev/Penumbra",
+    "RepoUrl": "https://github.com/aniachan/Penumbra",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 9,
     "IsHide": "False",
@@ -16,9 +16,9 @@
     "LoadPriority": 69420,
     "LoadRequiredState": 2,
     "LoadSync": true,
-    "DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/0.8.3.1/Penumbra.zip",
-    "DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/testing_0.8.3.5/Penumbra.zip",
-    "DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/0.8.3.1/Penumbra.zip",
-    "IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"
+    "DownloadLinkInstall": "https://github.com/aniachan/penumbra/releases/download/0.8.3.1-ania/Penumbra.zip",
+    "DownloadLinkTesting": "https://github.com/aniachan/penumbra/releases/download/0.8.3.1-ania/Penumbra.zip",
+    "DownloadLinkUpdate": "https://github.com/aniachan/Penumbra/releases/download/0.8.3.1-ania/Penumbra.zip",
+    "IconUrl": "https://raw.githubusercontent.com/aniachan/Penumbra/master/images/icon.png"
   }
 ]

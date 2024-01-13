@@ -22,6 +22,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
+using Penumbra.Mods;
 
 namespace Penumbra;
 

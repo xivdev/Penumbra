@@ -85,6 +85,9 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool   KeepDefaultMetaChanges  { get; set; } = false;
     public string DefaultModAuthor        { get; set; } = DefaultTexToolsData.Author;
 
+    public bool   ShowPreviewImages         { get; set; } = true;
+    public bool   ImportPreviewImages       { get; set; } = true;
+
     public Dictionary<ColorId, uint> Colors { get; set; }
         = Enum.GetValues<ColorId>().ToDictionary(c => c, c => c.Data().DefaultColor);
 
