@@ -2,10 +2,14 @@ using Lumina.Data.Parsing;
 using Penumbra.GameData.Files;
 using SharpGLTF.Materials;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.Import.Models.Export;
+
+using ImageSharpConfiguration = SixLabors.ImageSharp.Configuration;
 
 public class MaterialExporter
 {
@@ -34,52 +38,81 @@ public class MaterialExporter
 
     private static MaterialBuilder BuildCharacter(Material material, string name)
     {
+        // TODO: handle models with an underlying diffuse
         var table = material.Mtrl.Table;
+        // TODO: this should probably be a dict
         var normal = material.Samplers
             .Where(s => s.Usage == TextureUsage.SamplerNormal)
             .First()
             .Texture;
 
-        var baseColorTarget = new Image<Rgba32>(normal.Width, normal.Height);
-        normal.ProcessPixelRows(baseColorTarget, (sourceAccessor, targetAccessor) =>
+        var operation = new CharacterOperation()
         {
-            for (int y = 0; y < sourceAccessor.Height; y++)
-            {
-                var sourceRow = sourceAccessor.GetRowSpan(y);
-                var targetRow = targetAccessor.GetRowSpan(y);
-
-                for (int x = 0; x < sourceRow.Length; x++)
-                {
-                    ref var sourcePixel = ref sourceRow[x];
-                    ref var targetPixel = ref targetRow[x];
-
-                    var (smoothed, stepped) = GetTableRowIndices(sourceRow[x].A / 255f);
-                    var prevRow = table[(int)MathF.Floor(smoothed)];
-                    var nextRow = table[(int)MathF.Ceiling(smoothed)];
-
-                    // Base colour (table[.a], .b)
-                    var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, smoothed % 1);
-                    targetPixel.FromVector4(new Vector4(lerpedDiffuse, 1));
-                    targetPixel.A = sourcePixel.B;
-
-                    // Normal (.rg)
-                    // TODO: we don't actually need alpha at all for normal, but _not_ using the existing rgba texture means I'll need a new one, with a new accessor. Think about it.
-                    sourcePixel.B = byte.MaxValue;
-                    sourcePixel.A = byte.MaxValue;
-                }
-            }
-        });
+            Table = table,
+            Normal = normal,
+            BaseColor = new Image<Rgba32>(normal.Width, normal.Height),
+            Emissive = new Image<Rgb24>(normal.Width, normal.Height),
+        };
+        ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
 
         // TODO: clean up this name generation a bunch. probably a method.
         var imageName = name.Replace("/", "");
-        var baseColor = BuildImage(baseColorTarget, $"{imageName}_basecolor");
-        var normalThing = BuildImage(normal, $"{imageName}_normal");
 
         return BuildSharedBase(material, name)
+            // .WithSpecularGlossinessShader()
+            // .WithDiffuse()
             // NOTE: this isn't particularly precise to game behavior, but good enough for now.
             .WithAlpha(AlphaMode.MASK, 0.5f)
-            .WithBaseColor(baseColor)
-            .WithNormal(normalThing);
+            .WithBaseColor(BuildImage(operation.BaseColor, $"{imageName}_basecolor"))
+            .WithNormal(BuildImage(operation.Normal, $"{imageName}_normal"))
+            .WithEmissive(BuildImage(operation.Emissive, $"{imageName}_emissive"), Vector3.One, 1);
+    }
+
+    private readonly struct CharacterOperation : IRowOperation
+    {
+        public required MtrlFile.ColorTable Table { get; init; }
+
+        public required Image<Rgba32> Normal { get; init; }
+        public required Image<Rgba32> BaseColor { get; init; }
+        public required Image<Rgb24> Emissive { get; init; }
+
+        private Buffer2D<Rgba32> NormalBuffer => Normal.Frames.RootFrame.PixelBuffer;
+        private Buffer2D<Rgba32> BaseColorBuffer => BaseColor.Frames.RootFrame.PixelBuffer;
+        private Buffer2D<Rgb24> EmissiveBuffer => Emissive.Frames.RootFrame.PixelBuffer;
+
+        public void Invoke(int y)
+        {
+            var normalSpan = NormalBuffer.DangerousGetRowSpan(y);
+            var baseColorSpan = BaseColorBuffer.DangerousGetRowSpan(y);
+            var emissiveSpan = EmissiveBuffer.DangerousGetRowSpan(y);
+
+            for (int x = 0; x < normalSpan.Length; x++)
+            {
+                ref var normalPixel = ref normalSpan[x];
+                ref var baseColorPixel = ref baseColorSpan[x];
+                ref var emissivePixel = ref emissiveSpan[x];
+
+                // Table row data (.a)
+                var (smoothed, stepped) = GetTableRowIndices(normalPixel.A / 255f);
+                var weight = smoothed % 1;
+                var prevRow = Table[(int)MathF.Floor(smoothed)];
+                var nextRow = Table[(int)MathF.Ceiling(smoothed)];
+
+                // Base colour (table, .b)
+                var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, weight);
+                baseColorPixel.FromVector4(new Vector4(lerpedDiffuse, 1));
+                baseColorPixel.A = normalPixel.B;
+
+                // Emissive (table)
+                var lerpedEmissive = Vector3.Lerp(prevRow.Emissive, nextRow.Emissive, weight);
+                emissivePixel.FromVector4(new Vector4(lerpedEmissive, 1));
+
+                // Normal (.rg)
+                // TODO: we don't actually need alpha at all for normal, but _not_ using the existing rgba texture means I'll need a new one, with a new accessor. Think about it.
+                normalPixel.B = byte.MaxValue;
+                normalPixel.A = byte.MaxValue;
+            }
+        }
     }
 
     private static (float Smooth, float Stepped) GetTableRowIndices(float input)
@@ -112,7 +145,7 @@ public class MaterialExporter
             .WithDoubleSide(showBackfaces);
     }
 
-    private static ImageBuilder BuildImage(Image<Rgba32> image, string name)
+    private static ImageBuilder BuildImage(Image image, string name)
     {
         byte[] textureBytes;
         using (var memoryStream = new MemoryStream())
