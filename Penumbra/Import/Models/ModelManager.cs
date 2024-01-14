@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Lumina.Data.Parsing;
 using OtterGui;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
@@ -9,11 +10,16 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
 using Penumbra.Import.Models.Import;
+using Penumbra.Import.Textures;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
-using SharpGLTF.Schema2;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.Import.Models;
+
+using Schema2 = SharpGLTF.Schema2;
+using LuminaMaterial = Lumina.Models.Materials.Material;
 
 public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
 {
@@ -31,19 +37,21 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task ExportToGltf(MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
-        => Enqueue(new ExportToGltfAction(this, mdl, sklbs, outputPath));
+    public Task ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
+        => Enqueue(new ExportToGltfAction(this, mdl, sklbPaths, read, outputPath));
 
     public Task<MdlFile?> ImportGltf(string inputPath)
     {
         var action = new ImportGltfAction(inputPath);
-        return Enqueue(action).ContinueWith(task => 
+        return Enqueue(action).ContinueWith(task =>
         {
-            if (task.IsFaulted && task.Exception != null)
+            if (task is { IsFaulted: true, Exception: not null })
                 throw task.Exception;
+
             return action.Out;
         });
     }
+
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
     /// <param name="estManipulations"> Modified extra skeleton template parameters. </param>
@@ -61,8 +69,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Body, info, estManipulations)],
             ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Head
                 => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Head, info, estManipulations)],
-            ObjectType.Equipment => [baseSkeleton],
-            ObjectType.Accessory => [baseSkeleton],
+            ObjectType.Equipment                                                      => [baseSkeleton],
+            ObjectType.Accessory                                                      => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
                 => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
@@ -81,23 +89,57 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         // Try to find an EST entry from the manipulations provided.
         var (gender, race) = info.GenderRace.Split();
         var modEst = estManipulations
-            .FirstOrNull(est => 
+            .FirstOrNull(est =>
                 est.Gender == gender
-                && est.Race == race
-                && est.Slot == type
-                && est.SetId == info.PrimaryId
+             && est.Race == race
+             && est.Slot == type
+             && est.SetId == info.PrimaryId
             );
-        
+
         // Try to use an entry from provided manipulations, falling back to the current collection.
         var targetId = modEst?.Entry
-            ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
-            ?? 0;
+         ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
+         ?? 0;
 
         // If there's no entries, we can assume that there's no additional skeleton.
         if (targetId == 0)
             return [];
 
         return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId)];
+    }
+
+    /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
+    private string ResolveMtrlPath(string rawPath)
+    {
+        // TODO: this should probably be chosen in the export settings
+        var variantId = 1;
+
+        // Get standardised paths
+        var absolutePath = rawPath.StartsWith('/')
+            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
+            : rawPath;
+        var relativePath = rawPath.StartsWith('/')
+            ? rawPath
+            : '/' + Path.GetFileName(rawPath);
+
+        // TODO: this should be a recoverable warning
+        if (absolutePath == null)
+            throw new Exception("Failed to resolve material path.");
+
+        var info = parser.GetFileInfo(absolutePath);
+        if (info.FileType is not FileType.Material)
+            throw new Exception($"Material path {rawPath} does not conform to material conventions.");
+
+        var resolvedPath = info.ObjectType switch
+        {
+            ObjectType.Character => GamePaths.Character.Mtrl.Path(
+                info.GenderRace, info.BodySlot, info.PrimaryId, relativePath, out _, out _, info.Variant),
+            _ => absolutePath,
+        };
+
+        Penumbra.Log.Debug($"Resolved material {rawPath} to {resolvedPath}");
+
+        return resolvedPath;
     }
 
     private Task Enqueue(IAction action)
@@ -126,17 +168,29 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return task;
     }
 
-    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<SklbFile> sklbs, string outputPath)
+    private class ExportToGltfAction(
+        ModelManager manager,
+        MdlFile mdl,
+        IEnumerable<string> sklbPaths,
+        Func<string, byte[]> read,
+        string outputPath)
         : IAction
     {
         public void Execute(CancellationToken cancel)
         {
             Penumbra.Log.Debug($"[GLTF Export] Exporting model to {outputPath}...");
+
             Penumbra.Log.Debug("[GLTF Export] Reading skeletons...");
             var xivSkeletons = BuildSkeletons(cancel);
 
+            Penumbra.Log.Debug("[GLTF Export] Reading materials...");
+            var materials = mdl.Materials.ToDictionary(
+                path => path,
+                path => BuildMaterial(path, cancel)
+            );
+
             Penumbra.Log.Debug("[GLTF Export] Converting model...");
-            var model = ModelExporter.Export(mdl, xivSkeletons);
+            var model = ModelExporter.Export(mdl, xivSkeletons, materials);
 
             Penumbra.Log.Debug("[GLTF Export] Building scene...");
             var scene = new SceneBuilder();
@@ -148,10 +202,11 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             Penumbra.Log.Debug("[GLTF Export] Done.");
         }
 
-        /// <summary> Attempt to read out the pertinent information from a .sklb. </summary>
+        /// <summary> Attempt to read out the pertinent information from the sklb file paths provided. </summary>
         private IEnumerable<XivSkeleton> BuildSkeletons(CancellationToken cancel)
         {
-            var havokTasks = sklbs
+            var havokTasks = sklbPaths
+                .Select(path => new SklbFile(read(path)))
                 .WithIndex()
                 .Select(CreateHavokTask)
                 .ToArray();
@@ -163,10 +218,44 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             // finicky at the best of times, and can outright cause a CTD if they
             // get upset. Running each conversion on its own tick seems to make
             // this consistently non-crashy across my testing.
-            Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair) =>
-                manager._framework.RunOnTick(
+            Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair)
+                => manager._framework.RunOnTick(
                     () => HavokConverter.HkxToXml(pair.Sklb.Skeleton),
                     delayTicks: pair.Index, cancellationToken: cancel);
+        }
+
+        /// <summary> Read a .mtrl and populate its textures. </summary>
+        private MaterialExporter.Material BuildMaterial(string relativePath, CancellationToken cancel)
+        {
+            var path = manager.ResolveMtrlPath(relativePath);
+            var mtrl = new MtrlFile(read(path));
+
+            return new MaterialExporter.Material
+            {
+                Mtrl = mtrl,
+                Textures = mtrl.ShaderPackage.Samplers.ToDictionary(
+                    sampler => (TextureUsage)sampler.SamplerId,
+                    sampler => ConvertImage(mtrl.Textures[sampler.TextureIndex], cancel)
+                ),
+            };
+        }
+
+        /// <summary> Read a texture referenced by a .mtrl and convert it into an ImageSharp image. </summary>
+        private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
+        {
+            // Work out the texture's path - the DX11 material flag controls a file name prefix.
+            var texturePath = texture.Path;
+            if (texture.DX11)
+            {
+                var fileName  = Path.GetFileName(texturePath);
+                if (!fileName.StartsWith("--"))
+                    texturePath = $"{Path.GetDirectoryName(texturePath)}/--{fileName}";
+            }
+
+            using var textureData = new MemoryStream(read(texturePath));
+            var       image       = TexFileParser.Parse(textureData);
+            var       pngImage    = TextureManager.ConvertToPng(image, cancel).AsPng;
+            return pngImage ?? throw new Exception("Failed to convert texture to png.");
         }
 
         public bool Equals(IAction? other)
@@ -185,7 +274,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
         public void Execute(CancellationToken cancel)
         {
-            var model = ModelRoot.Load(inputPath);
+            var model = Schema2.ModelRoot.Load(inputPath);
 
             Out = ModelImporter.Import(model);
         }

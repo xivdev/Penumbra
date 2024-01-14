@@ -23,10 +23,10 @@ public class ModelExporter
     }
 
     /// <summary> Export a model in preparation for usage in a glTF file. If provided, skeleton will be used to skin the resulting meshes where appropriate. </summary>
-    public static Model Export(MdlFile mdl, IEnumerable<XivSkeleton>? xivSkeleton)
+    public static Model Export(MdlFile mdl, IEnumerable<XivSkeleton>? xivSkeleton, Dictionary<string, MaterialExporter.Material> rawMaterials)
     {
         var gltfSkeleton = xivSkeleton != null ? ConvertSkeleton(xivSkeleton) : null;
-        var materials = ConvertMaterials(mdl);
+        var materials = ConvertMaterials(mdl, rawMaterials);
         var meshes = ConvertMeshes(mdl, materials, gltfSkeleton);
         return new Model(meshes, gltfSkeleton);
     }
@@ -51,16 +51,12 @@ public class ModelExporter
         return meshes;
     }
 
-    // TODO: Compose textures for use with these materials
-    /// <summary> Build placeholder materials for each of the material slots in the .mdl. </summary>
-    private static MaterialBuilder[] ConvertMaterials(MdlFile mdl)
+    /// <summary> Build materials for each of the material slots in the .mdl. </summary>
+    private static MaterialBuilder[] ConvertMaterials(MdlFile mdl, Dictionary<string, MaterialExporter.Material> rawMaterials)
         => mdl.Materials
-            .Select(name =>
-                new MaterialBuilder(name)
-                    .WithMetallicRoughnessShader()
-                    .WithDoubleSide(true)
-                    .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, Vector4.One)
-            )
+            // TODO: material generation should be fallible, which means this lookup should be a tryget, with a fallback.
+            //       fallback can likely be a static on the material exporter.
+            .Select(name => MaterialExporter.Export(rawMaterials[name], name))
             .ToArray();
 
     /// <summary> Convert XIV skeleton data into a glTF-compatible node tree, with mappings. </summary>
