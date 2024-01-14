@@ -158,6 +158,14 @@ public class MaterialExporter
         };
     }
 
+    private ref struct TableRow
+    {
+        public int Stepped;
+        public int Previous;
+        public int Next;
+        public float Weight;
+    }
+
     private readonly struct MultiplyOperation
     {
         public static void Execute<TPixel1, TPixel2>(Image<TPixel1> target, Image<TPixel2> multiplier)
@@ -320,20 +328,21 @@ public class MaterialExporter
             .WithAlpha(isFace? AlphaMode.MASK : AlphaMode.OPAQUE, 0.5f);
     }
 
-    private ref struct TableRow
-    {
-        public int Stepped;
-        public int Previous;
-        public int Next;
-        public float Weight;
-    }
-
     private static MaterialBuilder BuildFallback(Material material, string name)
     {
         Penumbra.Log.Warning($"Unhandled shader package: {material.Mtrl.ShaderPackage.Name}");
-        return BuildSharedBase(material, name)
+
+        var materialBuilder =  BuildSharedBase(material, name)
             .WithMetallicRoughnessShader()
-            .WithChannelParam(KnownChannel.BaseColor, KnownProperty.RGBA, Vector4.One);
+            .WithBaseColor(Vector4.One);
+
+        if (material.Textures.TryGetValue(TextureUsage.SamplerDiffuse, out var diffuse))
+            materialBuilder.WithBaseColor(BuildImage(diffuse, name, "basecolor"));
+
+        if (material.Textures.TryGetValue(TextureUsage.SamplerNormal, out var normal))
+            materialBuilder.WithNormal(BuildImage(normal, name, "normal"));
+
+        return materialBuilder;
     }
 
     private static MaterialBuilder BuildSharedBase(Material material, string name)
