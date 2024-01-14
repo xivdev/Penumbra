@@ -29,6 +29,8 @@ public class MaterialExporter
             // NOTE: this isn't particularly precise to game behavior (it has some fade around high opacity), but good enough for now.
             "character.shpk"      => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
             "characterglass.shpk" => BuildCharacter(material, name).WithAlpha(AlphaMode.BLEND),
+            "hair.shpk"           => BuildHair(material, name),
+            "iris.shpk"           => BuildIris(material, name),
             "skin.shpk"           => BuildSkin(material, name),
             _                     => BuildFallback(material, name),
         };
@@ -188,6 +190,84 @@ public class MaterialExporter
                 targetSpan[x].FromVector4(targetSpan[x].ToVector4() * multiplierSpan[x].ToVector4());
             }
         }
+    }
+
+    // TODO: These are hardcoded colours - I'm not keen on supporting highly customiseable exports, but there's possibly some more sensible values to use here.
+    private static Vector4 _defaultHairColor = new Vector4(130, 64, 13, 255) / new Vector4(255);
+    private static Vector4 _defaultHighlightColor = new Vector4(77, 126, 240, 255) / new Vector4(255);
+
+    private static MaterialBuilder BuildHair(Material material, string name)
+    {
+        // Trust me bro.
+        const uint categoryHairType = 0x24826489;
+        const uint valueFace = 0x6E5B8F10;
+
+        var isFace = material.Mtrl.ShaderPackage.ShaderKeys
+            .Any(key => key.Category == categoryHairType && key.Value == valueFace);
+
+        var normal = material.Textures[TextureUsage.SamplerNormal];
+        var mask = material.Textures[TextureUsage.SamplerMask];
+
+        mask.Mutate(context => context.Resize(normal.Width, normal.Height));
+
+        var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
+        normal.ProcessPixelRows(mask, baseColor, (normalAccessor, maskAccessor, baseColorAccessor) =>
+        {
+            for (int y = 0; y < normalAccessor.Height; y++)
+            {
+                var normalSpan = normalAccessor.GetRowSpan(y);
+                var maskSpan = maskAccessor.GetRowSpan(y);
+                var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+
+                for (int x = 0; x < normalSpan.Length; x++)
+                {
+                    var color = Vector4.Lerp(_defaultHairColor, _defaultHighlightColor, maskSpan[x].A / 255f);
+                    baseColorSpan[x].FromVector4(color * new Vector4(maskSpan[x].R / 255f));
+                    baseColorSpan[x].A = normalSpan[x].A;
+
+                    normalSpan[x].A = byte.MaxValue;
+                }
+            }
+        });
+
+        return BuildSharedBase(material, name)
+            .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
+            .WithNormal(BuildImage(normal, name, "normal"))
+            .WithAlpha(isFace? AlphaMode.BLEND : AlphaMode.MASK, 0.5f);
+    }
+
+    private static Vector4 _defaultEyeColor = new Vector4(21, 176, 172, 255) / new Vector4(255);
+
+    // NOTE: This is largely the same as the hair material, but is also missing a few features that would cause it to diverge. Keeping seperate for now.
+    private static MaterialBuilder BuildIris(Material material, string name)
+    {
+        var normal = material.Textures[TextureUsage.SamplerNormal];
+        var mask = material.Textures[TextureUsage.SamplerMask];
+
+        mask.Mutate(context => context.Resize(normal.Width, normal.Height));
+
+        var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
+        normal.ProcessPixelRows(mask, baseColor, (normalAccessor, maskAccessor, baseColorAccessor) =>
+        {
+            for (int y = 0; y < normalAccessor.Height; y++)
+            {
+                var normalSpan = normalAccessor.GetRowSpan(y);
+                var maskSpan = maskAccessor.GetRowSpan(y);
+                var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+
+                for (int x = 0; x < normalSpan.Length; x++)
+                {
+                    baseColorSpan[x].FromVector4(_defaultEyeColor * new Vector4(maskSpan[x].R / 255f));
+                    baseColorSpan[x].A = normalSpan[x].A;
+
+                    normalSpan[x].A = byte.MaxValue;
+                }
+            }
+        });
+
+        return BuildSharedBase(material, name)
+            .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
+            .WithNormal(BuildImage(normal, name, "normal"));
     }
 
     private static MaterialBuilder BuildSkin(Material material, string name)
