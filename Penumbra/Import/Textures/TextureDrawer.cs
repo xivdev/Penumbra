@@ -27,7 +27,17 @@ public static class TextureDrawer
         }
         else if (texture.LoadError != null)
         {
+            const string link = "https://aka.ms/vcredist";
             ImGui.TextUnformatted("Could not load file:");
+
+            if (texture.LoadError is DllNotFoundException)
+            {
+                ImGuiUtil.TextColored(Colors.RegexWarningBorder, "A texture handling dependency could not be found. Try installing a current Microsoft VC Redistributable.");
+                if (ImGui.Button("Microsoft VC Redistributables"))
+                    Dalamud.Utility.Util.OpenLink(link);
+                ImGuiUtil.HoverTooltip($"Open {link} in your browser.");
+            }
+
             ImGuiUtil.TextColored(Colors.RegexWarningBorder, texture.LoadError.ToString());
         }
     }
