@@ -21,6 +21,7 @@ public class MaterialExporter
         // variant?
     }
 
+    /// <summary> Build a glTF material from a hydrated XIV model, with the provided name. </summary>
     public static MaterialBuilder Export(Material material, string name)
     {
         Penumbra.Log.Debug($"Exporting material \"{name}\".");
@@ -36,16 +37,18 @@ public class MaterialExporter
         };
     }
 
+    /// <summary> Build a material following the semantics of character.shpk. </summary>
     private static MaterialBuilder BuildCharacter(Material material, string name)
     {
+        // Build the textures from the color table.
         var table = material.Mtrl.Table;
 
-        // TODO: there's a few normal usages i should check, i think.
         var normal = material.Textures[TextureUsage.SamplerNormal];
 
         var operation = new ProcessCharacterNormalOperation(normal, table);
         ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
 
+        // Check if full textures are provided, and merge in if available.
         Image baseColor = operation.BaseColor;
         if (material.Textures.TryGetValue(TextureUsage.SamplerDiffuse, out var diffuse))
         {
@@ -53,7 +56,6 @@ public class MaterialExporter
             baseColor = diffuse;
         }
 
-        // TODO: what about the two specularmaps?
         Image specular = operation.Specular;
         if (material.Textures.TryGetValue(TextureUsage.SamplerSpecular, out var specularTexture))
         {
@@ -61,6 +63,7 @@ public class MaterialExporter
             specular = specularTexture;
         }
 
+        // Pull further information from the mask.
         Image? occlusion = null;
         if (material.Textures.TryGetValue(TextureUsage.SamplerMask, out var maskTexture))
         {
@@ -73,7 +76,7 @@ public class MaterialExporter
                 0f, 0f, 0f, 0f
             )));
             occlusion = maskTexture;
-            
+
             // TODO: handle other textures stored in the mask?
         }
 
@@ -89,7 +92,7 @@ public class MaterialExporter
         return materialBuilder;
     }
 
-    // TODO: It feels a little silly to request the entire normal here when extrating the normal only needs some of the components.
+    // TODO: It feels a little silly to request the entire normal here when extracting the normal only needs some of the components.
     //       As a future refactor, it would be neat to accept a single-channel field here, and then do composition of other stuff later.
     private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal, MtrlFile.ColorTable table) : IRowOperation
     {
@@ -143,7 +146,7 @@ public class MaterialExporter
     private static TableRow GetTableRowIndices(float input)
     {
         // These calculations are ported from character.shpk.
-        var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2) 
+        var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2)
             * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
             + input * 15;
 
@@ -204,6 +207,7 @@ public class MaterialExporter
     private static Vector4 _defaultHairColor = new Vector4(130, 64, 13, 255) / new Vector4(255);
     private static Vector4 _defaultHighlightColor = new Vector4(77, 126, 240, 255) / new Vector4(255);
 
+    /// <summary> Build a material following the semantics of hair.shpk. </summary>
     private static MaterialBuilder BuildHair(Material material, string name)
     {
         // Trust me bro.
@@ -241,11 +245,12 @@ public class MaterialExporter
         return BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
             .WithNormal(BuildImage(normal, name, "normal"))
-            .WithAlpha(isFace? AlphaMode.BLEND : AlphaMode.MASK, 0.5f);
+            .WithAlpha(isFace ? AlphaMode.BLEND : AlphaMode.MASK, 0.5f);
     }
 
     private static Vector4 _defaultEyeColor = new Vector4(21, 176, 172, 255) / new Vector4(255);
 
+    /// <summary> Build a material following the semantics of iris.shpk. </summary>
     // NOTE: This is largely the same as the hair material, but is also missing a few features that would cause it to diverge. Keeping seperate for now.
     private static MaterialBuilder BuildIris(Material material, string name)
     {
@@ -278,6 +283,7 @@ public class MaterialExporter
             .WithNormal(BuildImage(normal, name, "normal"));
     }
 
+    /// <summary> Build a material following the semantics of skin.shpk. </summary>
     private static MaterialBuilder BuildSkin(Material material, string name)
     {
         // Trust me bro.
@@ -310,7 +316,8 @@ public class MaterialExporter
         });
 
         // Clear the blue channel out of the normal now that we're done with it.
-        normal.ProcessPixelRows(normalAccessor => {
+        normal.ProcessPixelRows(normalAccessor =>
+        {
             for (int y = 0; y < normalAccessor.Height; y++)
             {
                 var normalSpan = normalAccessor.GetRowSpan(y);
@@ -325,14 +332,16 @@ public class MaterialExporter
         return BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(diffuse, name, "basecolor"))
             .WithNormal(BuildImage(normal, name, "normal"))
-            .WithAlpha(isFace? AlphaMode.MASK : AlphaMode.OPAQUE, 0.5f);
+            .WithAlpha(isFace ? AlphaMode.MASK : AlphaMode.OPAQUE, 0.5f);
     }
 
+    /// <summary> Build a material from a source with unknown semantics. </summary>
+    /// <remarks> Will make a loose effort to fetch common / simple textures. </remarks>
     private static MaterialBuilder BuildFallback(Material material, string name)
     {
         Penumbra.Log.Warning($"Unhandled shader package: {material.Mtrl.ShaderPackage.Name}");
 
-        var materialBuilder =  BuildSharedBase(material, name)
+        var materialBuilder = BuildSharedBase(material, name)
             .WithMetallicRoughnessShader()
             .WithBaseColor(Vector4.One);
 
@@ -345,6 +354,7 @@ public class MaterialExporter
         return materialBuilder;
     }
 
+    /// <summary> Build a material pre-configured with settings common to all XIV materials/shaders. </summary>
     private static MaterialBuilder BuildSharedBase(Material material, string name)
     {
         // TODO: Move this and potentially the other known stuff into MtrlFile?
@@ -355,6 +365,7 @@ public class MaterialExporter
             .WithDoubleSide(showBackfaces);
     }
 
+    /// <summary> Convert an ImageSharp Image into an ImageBuilder for use with SharpGLTF. </summary>
     private static ImageBuilder BuildImage(Image image, string materialName, string suffix)
     {
         var name = materialName.Replace("/", "").Replace(".mtrl", "") + $"_{suffix}";

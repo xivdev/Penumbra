@@ -225,15 +225,16 @@ public partial class ModEditWindow
         private byte[] ReadFile(string path)
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
-            if (!Utf8GamePath.FromString(path, out var utf8SklbPath, true))
+            if (!Utf8GamePath.FromString(path, out var utf8Path, true))
                 throw new Exception($"Resolved path {path} could not be converted to a game path.");
 
-            var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8SklbPath);
+            var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path);
             // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
             var bytes = resolvedPath == null 
                 ? _edit._gameData.GetFile(path)?.Data
                 : File.ReadAllBytes(resolvedPath.Value.ToPath());
 
+            // TODO: some callers may not care about failures - handle exceptions seperately?
             return bytes ?? throw new Exception(
                 $"Resolved path {path} could not be found. If modded, is it enabled in the current collection?");
         }

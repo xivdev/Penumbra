@@ -23,8 +23,8 @@ using LuminaMaterial = Lumina.Models.Materials.Material;
 
 public sealed class ModelManager(IFramework framework, ActiveCollections collections, IDataManager gameData, GamePathParser parser, TextureManager textureManager) : SingleTaskQueue, IDisposable
 {
-    private readonly IFramework _framework = framework;
-    private readonly IDataManager _gameData = gameData;
+    private readonly IFramework _framework          = framework;
+    private readonly IDataManager _gameData         = gameData;
     private readonly TextureManager _textureManager = textureManager;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
@@ -163,7 +163,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             Penumbra.Log.Debug("[GLTF Export] Done.");
         }
 
-        /// <summary> Attempt to read out the pertinent information from a .sklb. </summary>
+        /// <summary> Attempt to read out the pertinent information from the sklb file paths provided. </summary>
         private IEnumerable<XivSkeleton> BuildSkeletons(CancellationToken cancel)
         {
             var havokTasks = sklbPaths
@@ -185,6 +185,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                     delayTicks: pair.Index, cancellationToken: cancel);
         }
 
+        /// <summary> Read a .mtrl and hydrate its textures. </summary>
         private MaterialExporter.Material BuildMaterial(string relativePath, CancellationToken cancel)
         {
             // TODO: this should probably be chosen in the export settings
@@ -194,7 +195,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 ? LuminaMaterial.ResolveRelativeMaterialPath(relativePath, variantId)
                 : relativePath;
 
-            // TODO: this should be a recoverable warning - as should the one below it i think
+            // TODO: this should be a recoverable warning
             if (absolutePath == null)
                 throw new Exception("Failed to resolve material path.");
 
@@ -202,7 +203,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             
             return new MaterialExporter.Material
             {
-                Mtrl = mtrl,
+                Mtrl     = mtrl,
                 Textures = mtrl.ShaderPackage.Samplers.ToDictionary(
                     sampler => (TextureUsage)sampler.SamplerId,
                     sampler => ConvertImage(mtrl.Textures[sampler.TextureIndex], cancel)
@@ -210,6 +211,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             };
         }
 
+        /// <summary> Read a texture referenced by a .mtrl and convert it into an ImageSharp image. </summary>
         private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
         {
             using var textureData = new MemoryStream(read(texture.Path));
