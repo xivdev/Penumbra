@@ -129,7 +129,7 @@ public partial class ModEditWindow
             );
     }
     
-    private void DrawIoExceptions(MdlTab tab)
+    private static void DrawIoExceptions(MdlTab tab)
     {
         if (tab.IoExceptions.Count == 0)
             return;
@@ -140,16 +140,15 @@ public partial class ModEditWindow
         var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
         foreach (var (exception, index) in tab.IoExceptions.WithIndex())
         {
-            var message = $"{exception.GetType().Name}: {exception.Message}";
-            var textSize = ImGui.CalcTextSize(message).X;
+            using var id       = ImRaii.PushId(index);
+            var       message  = $"{exception.GetType().Name}: {exception.Message}";
+            var       textSize = ImGui.CalcTextSize(message).X;
             if (textSize > spaceAvail)
-                message = message.Substring(0, (int)Math.Floor(message.Length * (spaceAvail / textSize))) + "...";
+                message = message[..(int)Math.Floor(message.Length * (spaceAvail / textSize))] + "...";
 
-            using (var exceptionNode = ImRaii.TreeNode($"{message}###exception{index}"))
-            {
-                if (exceptionNode)
-                    ImGuiUtil.TextWrapped(exception.ToString());
-            }
+            using var exceptionNode = ImRaii.TreeNode(message);
+            if (exceptionNode)
+                ImGuiUtil.TextWrapped(exception.ToString());
         }
     }
 

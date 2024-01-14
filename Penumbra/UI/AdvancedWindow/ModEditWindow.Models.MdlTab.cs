@@ -181,9 +181,9 @@ public partial class ModEditWindow
         }
 
         /// <summary> Merge attribute configuration from the source onto the target. </summary>
-        /// <param name="target" Model that will be update. ></param>
+        /// <param name="target"> Model that will be updated. ></param>
         /// <param name="source"> Model to copy attribute configuration from. </param>
-        public void MergeAttributes(MdlFile target, MdlFile source)
+        public static void MergeAttributes(MdlFile target, MdlFile source)
         {
             target.Attributes = source.Attributes;
 
@@ -197,7 +197,7 @@ public partial class ModEditWindow
                 target.SubMeshes[subMeshIndex].AttributeIndexMask = 0u;
 
                 // Rather than comparing sub-meshes directly, we're grouping by parent mesh in an attempt
-                // to maintain semantic connection betwen mesh index and submesh attributes.
+                // to maintain semantic connection between mesh index and sub mesh attributes.
                 if (meshIndex >= source.Meshes.Length)
                     continue;
                 var sourceMesh = source.Meshes[meshIndex];
@@ -214,8 +214,8 @@ public partial class ModEditWindow
         {
             IoExceptions = exception switch {
                 null                  => [],
-                AggregateException ae => ae.Flatten().InnerExceptions.ToList(),
-                Exception other       => [other],
+                AggregateException ae => [.. ae.Flatten().InnerExceptions],
+                _                     => [exception],
             };
         }
         
@@ -234,7 +234,7 @@ public partial class ModEditWindow
                 ? _edit._gameData.GetFile(path)?.Data
                 : File.ReadAllBytes(resolvedPath.Value.ToPath());
 
-            // TODO: some callers may not care about failures - handle exceptions seperately?
+            // TODO: some callers may not care about failures - handle exceptions separately?
             return bytes ?? throw new Exception(
                 $"Resolved path {path} could not be found. If modded, is it enabled in the current collection?");
         }

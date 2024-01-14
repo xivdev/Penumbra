@@ -21,11 +21,9 @@ namespace Penumbra.Import.Models;
 using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
-public sealed class ModelManager(IFramework framework, ActiveCollections collections, IDataManager gameData, GamePathParser parser, TextureManager textureManager) : SingleTaskQueue, IDisposable
+public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
 {
-    private readonly IFramework _framework          = framework;
-    private readonly IDataManager _gameData         = gameData;
-    private readonly TextureManager _textureManager = textureManager;
+    private readonly IFramework _framework = framework;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
 
@@ -45,13 +43,15 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     public Task<MdlFile?> ImportGltf(string inputPath)
     {
         var action = new ImportGltfAction(inputPath);
-        return Enqueue(action).ContinueWith(task => 
+        return Enqueue(action).ContinueWith(task =>
         {
-            if (task.IsFaulted && task.Exception != null)
+            if (task is { IsFaulted: true, Exception: not null })
                 throw task.Exception;
+
             return action.Out;
         });
     }
+
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
     /// <param name="estManipulations"> Modified extra skeleton template parameters. </param>
@@ -69,8 +69,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Body, info, estManipulations)],
             ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Head
                 => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Head, info, estManipulations)],
-            ObjectType.Equipment => [baseSkeleton],
-            ObjectType.Accessory => [baseSkeleton],
+            ObjectType.Equipment                                                      => [baseSkeleton],
+            ObjectType.Accessory                                                      => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
                 => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
@@ -89,17 +89,17 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         // Try to find an EST entry from the manipulations provided.
         var (gender, race) = info.GenderRace.Split();
         var modEst = estManipulations
-            .FirstOrNull(est => 
+            .FirstOrNull(est =>
                 est.Gender == gender
-                && est.Race == race
-                && est.Slot == type
-                && est.SetId == info.PrimaryId
+             && est.Race == race
+             && est.Slot == type
+             && est.SetId == info.PrimaryId
             );
-        
+
         // Try to use an entry from provided manipulations, falling back to the current collection.
         var targetId = modEst?.Entry
-            ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
-            ?? 0;
+         ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
+         ?? 0;
 
         // If there's no entries, we can assume that there's no additional skeleton.
         if (targetId == 0)
@@ -121,11 +121,11 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         var relativePath = rawPath.StartsWith('/')
             ? rawPath
             : '/' + Path.GetFileName(rawPath);
-                    
+
         // TODO: this should be a recoverable warning
         if (absolutePath == null)
             throw new Exception("Failed to resolve material path.");
-        
+
         var info = parser.GetFileInfo(absolutePath);
         if (info.FileType is not FileType.Material)
             throw new Exception($"Material path {rawPath} does not conform to material conventions.");
@@ -168,7 +168,12 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return task;
     }
 
-    private class ExportToGltfAction(ModelManager manager, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
+    private class ExportToGltfAction(
+        ModelManager manager,
+        MdlFile mdl,
+        IEnumerable<string> sklbPaths,
+        Func<string, byte[]> read,
+        string outputPath)
         : IAction
     {
         public void Execute(CancellationToken cancel)
@@ -213,21 +218,21 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             // finicky at the best of times, and can outright cause a CTD if they
             // get upset. Running each conversion on its own tick seems to make
             // this consistently non-crashy across my testing.
-            Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair) =>
-                manager._framework.RunOnTick(
+            Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair)
+                => manager._framework.RunOnTick(
                     () => HavokConverter.HkxToXml(pair.Sklb.Skeleton),
                     delayTicks: pair.Index, cancellationToken: cancel);
         }
 
-        /// <summary> Read a .mtrl and hydrate its textures. </summary>
+        /// <summary> Read a .mtrl and populate its textures. </summary>
         private MaterialExporter.Material BuildMaterial(string relativePath, CancellationToken cancel)
         {
             var path = manager.ResolveMtrlPath(relativePath);
             var mtrl = new MtrlFile(read(path));
-            
+
             return new MaterialExporter.Material
             {
-                Mtrl     = mtrl,
+                Mtrl = mtrl,
                 Textures = mtrl.ShaderPackage.Samplers.ToDictionary(
                     sampler => (TextureUsage)sampler.SamplerId,
                     sampler => ConvertImage(mtrl.Textures[sampler.TextureIndex], cancel)
@@ -242,21 +247,15 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             var texturePath = texture.Path;
             if (texture.DX11)
             {
-                var lastSlashIndex = texturePath.LastIndexOf('/');
-                var directory = lastSlashIndex == -1 ? texturePath : texturePath.Substring(0, lastSlashIndex);
-                var fileName = Path.GetFileName(texturePath);
+                var fileName  = Path.GetFileName(texturePath);
                 if (!fileName.StartsWith("--"))
-                {
-                    texturePath = $"{directory}/--{fileName}";
-                }
+                    texturePath = $"{Path.GetDirectoryName(texturePath)}/--{fileName}";
             }
 
             using var textureData = new MemoryStream(read(texturePath));
-            var image = TexFileParser.Parse(textureData);
-            var pngImage = TextureManager.ConvertToPng(image, cancel).AsPng;
-            if (pngImage == null)
-                throw new Exception("Failed to convert texture to png.");
-            return pngImage;
+            var       image       = TexFileParser.Parse(textureData);
+            var       pngImage    = TextureManager.ConvertToPng(image, cancel).AsPng;
+            return pngImage ?? throw new Exception("Failed to convert texture to png.");
         }
 
         public bool Equals(IAction? other)

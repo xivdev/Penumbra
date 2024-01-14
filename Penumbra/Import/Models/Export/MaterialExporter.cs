@@ -17,6 +17,7 @@ public class MaterialExporter
     public struct Material
     {
         public MtrlFile Mtrl;
+
         public Dictionary<TextureUsage, Image<Rgba32>> Textures;
         // variant?
     }
@@ -49,7 +50,7 @@ public class MaterialExporter
         ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
 
         // Check if full textures are provided, and merge in if available.
-        Image<Rgba32> baseColor = operation.BaseColor;
+        var baseColor = operation.BaseColor;
         if (material.Textures.TryGetValue(TextureUsage.SamplerDiffuse, out var diffuse))
         {
             MultiplyOperation.Execute(diffuse, operation.BaseColor);
@@ -70,24 +71,22 @@ public class MaterialExporter
             maskTexture.Mutate(context => context.Resize(baseColor.Width, baseColor.Height));
             maskTexture.ProcessPixelRows(baseColor, (maskAccessor, baseColorAccessor) =>
             {
-                for (int y = 0; y < maskAccessor.Height; y++)
+                for (var y = 0; y < maskAccessor.Height; y++)
                 {
-                    var maskSpan = maskAccessor.GetRowSpan(y);
+                    var maskSpan      = maskAccessor.GetRowSpan(y);
                     var baseColorSpan = baseColorAccessor.GetRowSpan(y);
 
-                    for (int x = 0; x < maskSpan.Length; x++)
+                    for (var x = 0; x < maskSpan.Length; x++)
                         baseColorSpan[x].FromVector4(baseColorSpan[x].ToVector4() * new Vector4(maskSpan[x].R / 255f));
                 }
             });
-
-
             // TODO: handle other textures stored in the mask?
         }
 
         return BuildSharedBase(material, name)
-            .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
-            .WithNormal(BuildImage(operation.Normal, name, "normal"))
-            .WithSpecularColor(BuildImage(specular, name, "specular"))
+            .WithBaseColor(BuildImage(baseColor,         name, "basecolor"))
+            .WithNormal(BuildImage(operation.Normal,     name, "normal"))
+            .WithSpecularColor(BuildImage(specular,      name, "specular"))
             .WithEmissive(BuildImage(operation.Emissive, name, "emissive"), Vector3.One, 1);
     }
 
@@ -95,31 +94,38 @@ public class MaterialExporter
     //       As a future refactor, it would be neat to accept a single-channel field here, and then do composition of other stuff later.
     private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal, MtrlFile.ColorTable table) : IRowOperation
     {
-        public Image<Rgba32> Normal { get; private init; } = normal.Clone();
-        public Image<Rgba32> BaseColor { get; private init; } = new Image<Rgba32>(normal.Width, normal.Height);
-        public Image<Rgb24> Specular { get; private init; } = new Image<Rgb24>(normal.Width, normal.Height);
-        public Image<Rgb24> Emissive { get; private init; } = new Image<Rgb24>(normal.Width, normal.Height);
+        public Image<Rgba32> Normal    { get; } = normal.Clone();
+        public Image<Rgba32> BaseColor { get; } = new(normal.Width, normal.Height);
+        public Image<Rgb24>  Specular  { get; } = new(normal.Width, normal.Height);
+        public Image<Rgb24>  Emissive  { get; } = new(normal.Width, normal.Height);
 
-        private Buffer2D<Rgba32> NormalBuffer => Normal.Frames.RootFrame.PixelBuffer;
-        private Buffer2D<Rgba32> BaseColorBuffer => BaseColor.Frames.RootFrame.PixelBuffer;
-        private Buffer2D<Rgb24> SpecularBuffer => Specular.Frames.RootFrame.PixelBuffer;
-        private Buffer2D<Rgb24> EmissiveBuffer => Emissive.Frames.RootFrame.PixelBuffer;
+        private Buffer2D<Rgba32> NormalBuffer
+            => Normal.Frames.RootFrame.PixelBuffer;
+
+        private Buffer2D<Rgba32> BaseColorBuffer
+            => BaseColor.Frames.RootFrame.PixelBuffer;
+
+        private Buffer2D<Rgb24> SpecularBuffer
+            => Specular.Frames.RootFrame.PixelBuffer;
+
+        private Buffer2D<Rgb24> EmissiveBuffer
+            => Emissive.Frames.RootFrame.PixelBuffer;
 
         public void Invoke(int y)
         {
-            var normalSpan = NormalBuffer.DangerousGetRowSpan(y);
+            var normalSpan    = NormalBuffer.DangerousGetRowSpan(y);
             var baseColorSpan = BaseColorBuffer.DangerousGetRowSpan(y);
-            var specularSpan = SpecularBuffer.DangerousGetRowSpan(y);
-            var emissiveSpan = EmissiveBuffer.DangerousGetRowSpan(y);
+            var specularSpan  = SpecularBuffer.DangerousGetRowSpan(y);
+            var emissiveSpan  = EmissiveBuffer.DangerousGetRowSpan(y);
 
-            for (int x = 0; x < normalSpan.Length; x++)
+            for (var x = 0; x < normalSpan.Length; x++)
             {
                 ref var normalPixel = ref normalSpan[x];
 
                 // Table row data (.a)
                 var tableRow = GetTableRowIndices(normalPixel.A / 255f);
-                var prevRow = table[tableRow.Previous];
-                var nextRow = table[tableRow.Next];
+                var prevRow  = table[tableRow.Previous];
+                var nextRow  = table[tableRow.Next];
 
                 // Base colour (table, .b)
                 var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, tableRow.Weight);
@@ -145,9 +151,9 @@ public class MaterialExporter
     private static TableRow GetTableRowIndices(float input)
     {
         // These calculations are ported from character.shpk.
-        var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2)
-            * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
-            + input * 15;
+        var smoothed = MathF.Floor(input * 7.5f % 1.0f * 2)
+          * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
+          + input * 15;
 
         var stepped = MathF.Floor(smoothed + 0.5f);
 
@@ -162,9 +168,9 @@ public class MaterialExporter
 
     private ref struct TableRow
     {
-        public int Stepped;
-        public int Previous;
-        public int Next;
+        public int   Stepped;
+        public int   Previous;
+        public int   Next;
         public float Weight;
     }
 
@@ -189,50 +195,47 @@ public class MaterialExporter
         where TPixel1 : unmanaged, IPixel<TPixel1>
         where TPixel2 : unmanaged, IPixel<TPixel2>
     {
-
         public void Invoke(int y)
         {
-            var targetSpan = target.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(y);
+            var targetSpan     = target.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(y);
             var multiplierSpan = multiplier.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(y);
 
-            for (int x = 0; x < targetSpan.Length; x++)
-            {
+            for (var x = 0; x < targetSpan.Length; x++)
                 targetSpan[x].FromVector4(targetSpan[x].ToVector4() * multiplierSpan[x].ToVector4());
-            }
         }
     }
 
-    // TODO: These are hardcoded colours - I'm not keen on supporting highly customiseable exports, but there's possibly some more sensible values to use here.
-    private static Vector4 _defaultHairColor = new Vector4(130, 64, 13, 255) / new Vector4(255);
-    private static Vector4 _defaultHighlightColor = new Vector4(77, 126, 240, 255) / new Vector4(255);
+    // TODO: These are hardcoded colours - I'm not keen on supporting highly customizable exports, but there's possibly some more sensible values to use here.
+    private static readonly Vector4 DefaultHairColor      = new Vector4(130, 64,  13,  255) / new Vector4(255);
+    private static readonly Vector4 DefaultHighlightColor = new Vector4(77,  126, 240, 255) / new Vector4(255);
 
     /// <summary> Build a material following the semantics of hair.shpk. </summary>
     private static MaterialBuilder BuildHair(Material material, string name)
     {
         // Trust me bro.
         const uint categoryHairType = 0x24826489;
-        const uint valueFace = 0x6E5B8F10;
+        const uint valueFace        = 0x6E5B8F10;
 
         var isFace = material.Mtrl.ShaderPackage.ShaderKeys
-            .Any(key => key.Category == categoryHairType && key.Value == valueFace);
+            .Any(key => key is { Category: categoryHairType, Value: valueFace });
 
         var normal = material.Textures[TextureUsage.SamplerNormal];
-        var mask = material.Textures[TextureUsage.SamplerMask];
+        var mask   = material.Textures[TextureUsage.SamplerMask];
 
         mask.Mutate(context => context.Resize(normal.Width, normal.Height));
 
         var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
         normal.ProcessPixelRows(mask, baseColor, (normalAccessor, maskAccessor, baseColorAccessor) =>
         {
-            for (int y = 0; y < normalAccessor.Height; y++)
+            for (var y = 0; y < normalAccessor.Height; y++)
             {
-                var normalSpan = normalAccessor.GetRowSpan(y);
-                var maskSpan = maskAccessor.GetRowSpan(y);
+                var normalSpan    = normalAccessor.GetRowSpan(y);
+                var maskSpan      = maskAccessor.GetRowSpan(y);
                 var baseColorSpan = baseColorAccessor.GetRowSpan(y);
 
-                for (int x = 0; x < normalSpan.Length; x++)
+                for (var x = 0; x < normalSpan.Length; x++)
                 {
-                    var color = Vector4.Lerp(_defaultHairColor, _defaultHighlightColor, maskSpan[x].A / 255f);
+                    var color = Vector4.Lerp(DefaultHairColor, DefaultHighlightColor, maskSpan[x].A / 255f);
                     baseColorSpan[x].FromVector4(color * new Vector4(maskSpan[x].R / 255f));
                     baseColorSpan[x].A = normalSpan[x].A;
 
@@ -243,33 +246,33 @@ public class MaterialExporter
 
         return BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
-            .WithNormal(BuildImage(normal, name, "normal"))
+            .WithNormal(BuildImage(normal,       name, "normal"))
             .WithAlpha(isFace ? AlphaMode.BLEND : AlphaMode.MASK, 0.5f);
     }
 
-    private static Vector4 _defaultEyeColor = new Vector4(21, 176, 172, 255) / new Vector4(255);
+    private static readonly Vector4 DefaultEyeColor = new Vector4(21, 176, 172, 255) / new Vector4(255);
 
     /// <summary> Build a material following the semantics of iris.shpk. </summary>
-    // NOTE: This is largely the same as the hair material, but is also missing a few features that would cause it to diverge. Keeping seperate for now.
+    // NOTE: This is largely the same as the hair material, but is also missing a few features that would cause it to diverge. Keeping separate for now.
     private static MaterialBuilder BuildIris(Material material, string name)
     {
         var normal = material.Textures[TextureUsage.SamplerNormal];
-        var mask = material.Textures[TextureUsage.SamplerMask];
+        var mask   = material.Textures[TextureUsage.SamplerMask];
 
         mask.Mutate(context => context.Resize(normal.Width, normal.Height));
 
         var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
         normal.ProcessPixelRows(mask, baseColor, (normalAccessor, maskAccessor, baseColorAccessor) =>
         {
-            for (int y = 0; y < normalAccessor.Height; y++)
+            for (var y = 0; y < normalAccessor.Height; y++)
             {
-                var normalSpan = normalAccessor.GetRowSpan(y);
-                var maskSpan = maskAccessor.GetRowSpan(y);
+                var normalSpan    = normalAccessor.GetRowSpan(y);
+                var maskSpan      = maskAccessor.GetRowSpan(y);
                 var baseColorSpan = baseColorAccessor.GetRowSpan(y);
 
-                for (int x = 0; x < normalSpan.Length; x++)
+                for (var x = 0; x < normalSpan.Length; x++)
                 {
-                    baseColorSpan[x].FromVector4(_defaultEyeColor * new Vector4(maskSpan[x].R / 255f));
+                    baseColorSpan[x].FromVector4(DefaultEyeColor * new Vector4(maskSpan[x].R / 255f));
                     baseColorSpan[x].A = normalSpan[x].A;
 
                     normalSpan[x].A = byte.MaxValue;
@@ -279,7 +282,7 @@ public class MaterialExporter
 
         return BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
-            .WithNormal(BuildImage(normal, name, "normal"));
+            .WithNormal(BuildImage(normal,       name, "normal"));
     }
 
     /// <summary> Build a material following the semantics of skin.shpk. </summary>
@@ -287,7 +290,7 @@ public class MaterialExporter
     {
         // Trust me bro.
         const uint categorySkinType = 0x380CAED0;
-        const uint valueFace = 0xF5673524;
+        const uint valueFace        = 0xF5673524;
 
         // Face is the default for the skin shader, so a lack of skin type category is also correct.
         var isFace = !material.Mtrl.ShaderPackage.ShaderKeys
@@ -296,41 +299,37 @@ public class MaterialExporter
         // TODO: There's more nuance to skin than this, but this should be enough for a baseline reference.
         // TODO: Specular?
         var diffuse = material.Textures[TextureUsage.SamplerDiffuse];
-        var normal = material.Textures[TextureUsage.SamplerNormal];
+        var normal  = material.Textures[TextureUsage.SamplerNormal];
 
         // Create a copy of the normal that's the same size as the diffuse for purposes of copying the opacity across.
         var resizedNormal = normal.Clone(context => context.Resize(diffuse.Width, diffuse.Height));
         diffuse.ProcessPixelRows(resizedNormal, (diffuseAccessor, normalAccessor) =>
         {
-            for (int y = 0; y < diffuseAccessor.Height; y++)
+            for (var y = 0; y < diffuseAccessor.Height; y++)
             {
                 var diffuseSpan = diffuseAccessor.GetRowSpan(y);
-                var normalSpan = normalAccessor.GetRowSpan(y);
+                var normalSpan  = normalAccessor.GetRowSpan(y);
 
-                for (int x = 0; x < diffuseSpan.Length; x++)
-                {
+                for (var x = 0; x < diffuseSpan.Length; x++)
                     diffuseSpan[x].A = normalSpan[x].B;
-                }
             }
         });
 
         // Clear the blue channel out of the normal now that we're done with it.
         normal.ProcessPixelRows(normalAccessor =>
         {
-            for (int y = 0; y < normalAccessor.Height; y++)
+            for (var y = 0; y < normalAccessor.Height; y++)
             {
                 var normalSpan = normalAccessor.GetRowSpan(y);
 
-                for (int x = 0; x < normalSpan.Length; x++)
-                {
+                for (var x = 0; x < normalSpan.Length; x++)
                     normalSpan[x].B = byte.MaxValue;
-                }
             }
         });
 
         return BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(diffuse, name, "basecolor"))
-            .WithNormal(BuildImage(normal, name, "normal"))
+            .WithNormal(BuildImage(normal,     name, "normal"))
             .WithAlpha(isFace ? AlphaMode.MASK : AlphaMode.OPAQUE, 0.5f);
     }
 
@@ -357,8 +356,8 @@ public class MaterialExporter
     private static MaterialBuilder BuildSharedBase(Material material, string name)
     {
         // TODO: Move this and potentially the other known stuff into MtrlFile?
-        const uint backfaceMask = 0x1;
-        var showBackfaces = (material.Mtrl.ShaderPackage.Flags & backfaceMask) == 0;
+        const uint backfaceMask  = 0x1;
+        var        showBackfaces = (material.Mtrl.ShaderPackage.Flags & backfaceMask) == 0;
 
         return new MaterialBuilder(name)
             .WithDoubleSide(showBackfaces);
