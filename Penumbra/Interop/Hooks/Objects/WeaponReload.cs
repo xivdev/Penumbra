@@ -4,7 +4,7 @@ using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.GameData.Structs;
 
-namespace Penumbra.Interop.Hooks;
+namespace Penumbra.Interop.Hooks.Objects;
 
 public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Character, CharacterWeapon, WeaponReload.Priority>, IHookService
 {

@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
@@ -5,25 +6,15 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class DuplicateManager
+public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config)
 {
-    private readonly Configuration                                    _config;
-    private readonly SaveService                                      _saveService;
-    private readonly ModManager                                       _modManager;
-    private readonly SHA256                                           _hasher     = SHA256.Create();
-    private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
-
-    public DuplicateManager(ModManager modManager, SaveService saveService, Configuration config)
-    {
-        _modManager  = modManager;
-        _saveService = saveService;
-        _config      = config;
-    }
+    private readonly SHA256                                           _hasher      = SHA256.Create();
+    private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates  = [];
 
     public IReadOnlyList<(FullPath[] Paths, long Size, byte[] Hash)> Duplicates
         => _duplicates;
 
-    public long SavedSpace { get; private set; } = 0;
+    public long SavedSpace { get; private set; }
     public Task Worker     { get; private set; } = Task.CompletedTask;
 
     private CancellationTokenSource _cancellationTokenSource = new();
@@ -68,6 +59,19 @@ public class DuplicateManager
 
     private void HandleDuplicate(Mod mod, FullPath duplicate, FullPath remaining, bool useModManager)
     {
+        ModEditor.ApplyToAllOptions(mod, HandleSubMod);
+
+        try
+        {
+            File.Delete(duplicate.FullName);
+        }
+        catch (Exception e)
+        {
+            Penumbra.Log.Error($"[DeleteDuplicates] Could not delete duplicate {duplicate.FullName} of {remaining.FullName}:\n{e}");
+        }
+
+        return;
+
         void HandleSubMod(ISubMod subMod, int groupIdx, int optionIdx)
         {
             var changes = false;
@@ -78,25 +82,14 @@ public class DuplicateManager
 
             if (useModManager)
             {
-                _modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict);
+                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict);
             }
             else
             {
                 var sub = (SubMod)subMod;
                 sub.FileData = dict;
-                _saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx, _config.ReplaceNonAsciiOnImport));
+                saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
             }
-        }
-
-        ModEditor.ApplyToAllOptions(mod, HandleSubMod);
-
-        try
-        {
-            File.Delete(duplicate.FullName);
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"[DeleteDuplicates] Could not delete duplicate {duplicate.FullName} of {remaining.FullName}:\n{e}");
         }
     }
 
@@ -199,15 +192,6 @@ public class DuplicateManager
         }
     }
 
-    public static bool CompareHashes(byte[] f1, byte[] f2)
-        => StructuralComparisons.StructuralEqualityComparer.Equals(f1, f2);
-
-    public byte[] ComputeHash(FullPath f)
-    {
-        using var stream = File.OpenRead(f.FullName);
-        return _hasher.ComputeHash(stream);
-    }
-
     /// <summary>
     /// Recursively delete all empty directories starting from the given directory.
     /// Deletes inner directories first, so that a tree of empty directories is actually deleted.
@@ -232,14 +216,13 @@ public class DuplicateManager
         }
     }
 
-
     /// <summary> Deduplicate a mod simply by its directory without any confirmation or waiting time. </summary>
     internal void DeduplicateMod(DirectoryInfo modDirectory)
     {
         try
         {
             var mod = new Mod(modDirectory);
-            _modManager.Creator.ReloadMod(mod, true, out _);
+            modManager.Creator.ReloadMod(mod, true, out _);
 
             Clear();
             var files = new ModFileCollection();
@@ -251,5 +234,14 @@ public class DuplicateManager
         {
             Penumbra.Log.Warning($"Could not deduplicate mod {modDirectory.Name}:\n{e}");
         }
+    }
+
+    private static bool CompareHashes(byte[] f1, byte[] f2)
+        => StructuralComparisons.StructuralEqualityComparer.Equals(f1, f2);
+
+    private byte[] ComputeHash(FullPath f)
+    {
+        using var stream = File.OpenRead(f.FullName);
+        return _hasher.ComputeHash(stream);
     }
 }

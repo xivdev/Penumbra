@@ -4,7 +4,7 @@ using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.GameData.Structs;
 
-namespace Penumbra.Interop.Hooks;
+namespace Penumbra.Interop.Hooks.Objects;
 
 public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, CustomizeArray, CharacterArmor, CreateCharacterBase.Priority>, IHookService
 {
@@ -39,7 +39,7 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
 
     private CharacterBase* Detour(ModelCharaId model, CustomizeArray* customize, CharacterArmor* equipment, byte unk)
     {
-        Penumbra.Log.Verbose($"[{Name}] Triggered with model: {model.Id}, customize: 0x{(nint) customize:X}, equipment: 0x{(nint)equipment:X}, unk: {unk}.");
+        Penumbra.Log.Verbose($"[{Name}] Triggered with model: {model.Id}, customize: 0x{(nint)customize:X}, equipment: 0x{(nint)equipment:X}, unk: {unk}.");
         Invoke(&model, customize, equipment);
         var ret = _task.Result.Original(model, customize, equipment, unk);
         _postEvent.Invoke(model, customize, equipment, ret);

@@ -1,34 +1,15 @@
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
-using Penumbra.GameData;
 using Penumbra.Interop.Services;
 using Penumbra.String;
 
 namespace Penumbra.Interop.PathResolving;
 
-public unsafe class PathState : IDisposable
+public sealed class PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility)
+    : IDisposable
 {
-    [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
-    private readonly nint* _humanVTable = null!;
-
-    [Signature(Sigs.WeaponVTable, ScanType = ScanType.StaticAddress)]
-    private readonly nint* _weaponVTable = null!;
-
-    [Signature(Sigs.DemiHumanVTable, ScanType = ScanType.StaticAddress)]
-    private readonly nint* _demiHumanVTable = null!;
-
-    [Signature(Sigs.MonsterVTable, ScanType = ScanType.StaticAddress)]
-    private readonly nint* _monsterVTable = null!;
-
-    public readonly CollectionResolver CollectionResolver;
-    public readonly MetaState          MetaState;
-    public readonly CharacterUtility   CharacterUtility;
-
-    private readonly ResolvePathHooks _human;
-    private readonly ResolvePathHooks _weapon;
-    private readonly ResolvePathHooks _demiHuman;
-    private readonly ResolvePathHooks _monster;
+    public readonly CollectionResolver CollectionResolver = collectionResolver;
+    public readonly MetaState          MetaState          = metaState;
+    public readonly CharacterUtility   CharacterUtility   = characterUtility;
 
     private readonly ThreadLocal<ResolveData> _resolveData     = new(() => ResolveData.Invalid, true);
     private readonly ThreadLocal<uint>        _internalResolve = new(() => 0, false);
@@ -39,31 +20,11 @@ public unsafe class PathState : IDisposable
     public bool InInternalResolve
         => _internalResolve.Value != 0u;
 
-    public PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility, IGameInteropProvider interop)
-    {
-        interop.InitializeFromAttributes(this);
-        CollectionResolver = collectionResolver;
-        MetaState          = metaState;
-        CharacterUtility   = characterUtility;
-        _human             = new ResolvePathHooks(interop, this, _humanVTable,     ResolvePathHooks.Type.Human);
-        _weapon            = new ResolvePathHooks(interop, this, _weaponVTable,    ResolvePathHooks.Type.Other);
-        _demiHuman         = new ResolvePathHooks(interop, this, _demiHumanVTable, ResolvePathHooks.Type.Other);
-        _monster           = new ResolvePathHooks(interop, this, _monsterVTable,   ResolvePathHooks.Type.Other);
-        _human.Enable();
-        _weapon.Enable();
-        _demiHuman.Enable();
-        _monster.Enable();
-    }
-
 
     public void Dispose()
     {
         _resolveData.Dispose();
         _internalResolve.Dispose();
-        _human.Dispose();
-        _weapon.Dispose();
-        _demiHuman.Dispose();
-        _monster.Dispose();
     }
 
     public bool Consume(ByteString _, out ResolveData collection)
@@ -86,9 +47,7 @@ public unsafe class PathState : IDisposable
             return path;
 
         if (!InInternalResolve)
-        {
             _resolveData.Value = collection.ToResolveData(gameObject);
-        }
         return path;
     }
 
@@ -99,9 +58,7 @@ public unsafe class PathState : IDisposable
             return path;
 
         if (!InInternalResolve)
-        {
             _resolveData.Value = data;
-        }
         return path;
     }
 
@@ -126,7 +83,7 @@ public unsafe class PathState : IDisposable
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public readonly void Dispose()
+        public void Dispose()
         {
             --_internalResolve.Value;
         }

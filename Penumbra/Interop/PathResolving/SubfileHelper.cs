@@ -1,17 +1,10 @@
-using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.GameData;
-using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.ResourceLoading;
-using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
-using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 
 namespace Penumbra.Interop.PathResolving;
 
@@ -20,49 +13,37 @@ namespace Penumbra.Interop.PathResolving;
 /// Those are loaded synchronously.
 /// Thus, we need to ensure the correct files are loaded when a material is loaded.
 /// </summary>
-public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>
+public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>
 {
-    private readonly PerformanceTracker       _performance;
+    private readonly GameState                _gameState;
     private readonly ResourceLoader           _loader;
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
-    private readonly CommunicatorService      _communicator;
 
-    private readonly ThreadLocal<ResolveData> _mtrlData = new(() => ResolveData.Invalid);
-    private readonly ThreadLocal<ResolveData> _avfxData = new(() => ResolveData.Invalid);
-
-    private readonly ConcurrentDictionary<nint, ResolveData> _subFileCollection = new();
-
-    public SubfileHelper(PerformanceTracker performance, ResourceLoader loader, CommunicatorService communicator, IGameInteropProvider interop, ResourceHandleDestructor resourceHandleDestructor)
+    public SubfileHelper(GameState gameState, ResourceLoader loader, ResourceHandleDestructor resourceHandleDestructor)
     {
-        interop.InitializeFromAttributes(this);
-
-        _performance                   = performance;
-        _loader                        = loader;
-        _communicator                  = communicator;
+        _gameState                = gameState;
+        _loader                   = loader;
         _resourceHandleDestructor = resourceHandleDestructor;
 
-        _loadMtrlShpkHook.Enable();
-        _loadMtrlTexHook.Enable();
-        _apricotResourceLoadHook.Enable();
-        _loader.ResourceLoaded           += SubfileContainerRequested;
+        _loader.ResourceLoaded += SubfileContainerRequested;
         _resourceHandleDestructor.Subscribe(ResourceDestroyed, ResourceHandleDestructor.Priority.SubfileHelper);
     }
 
 
     public IEnumerator<KeyValuePair<nint, ResolveData>> GetEnumerator()
-        => _subFileCollection.GetEnumerator();
+        => _gameState.SubFileCollection.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
     public int Count
-        => _subFileCollection.Count;
+        => _gameState.SubFileCollection.Count;
 
     public ResolveData MtrlData
-        => _mtrlData.IsValueCreated ? _mtrlData.Value : ResolveData.Invalid;
+        => _gameState.MtrlData.IsValueCreated ? _gameState.MtrlData.Value : ResolveData.Invalid;
 
     public ResolveData AvfxData
-        => _avfxData.IsValueCreated ? _avfxData.Value : ResolveData.Invalid;
+        => _gameState.AvfxData.IsValueCreated ? _gameState.AvfxData.Value : ResolveData.Invalid;
 
     /// <summary>
     /// Check specifically for shpk and tex files whether we are currently in a material load,
@@ -71,13 +52,13 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
     {
         switch (type)
         {
-            case ResourceType.Tex when _mtrlData.Value.Valid:
-            case ResourceType.Shpk when _mtrlData.Value.Valid:
-                collection = _mtrlData.Value;
+            case ResourceType.Tex when _gameState.MtrlData.Value.Valid:
+            case ResourceType.Shpk when _gameState.MtrlData.Value.Valid:
+                collection = _gameState.MtrlData.Value;
                 return true;
-            case ResourceType.Scd when _avfxData.Value.Valid:
-            case ResourceType.Atex when _avfxData.Value.Valid:
-                collection = _avfxData.Value;
+            case ResourceType.Scd when _gameState.AvfxData.Value.Valid:
+            case ResourceType.Atex when _gameState.AvfxData.Value.Valid:
+                collection = _gameState.AvfxData.Value;
                 return true;
         }
 
@@ -105,11 +86,8 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
 
     public void Dispose()
     {
-        _loader.ResourceLoaded           -= SubfileContainerRequested;
+        _loader.ResourceLoaded -= SubfileContainerRequested;
         _resourceHandleDestructor.Unsubscribe(ResourceDestroyed);
-        _loadMtrlShpkHook.Dispose();
-        _loadMtrlTexHook.Dispose();
-        _apricotResourceLoadHook.Dispose();
     }
 
     private void SubfileContainerRequested(ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
@@ -120,66 +98,12 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
             case ResourceType.Mtrl:
             case ResourceType.Avfx:
                 if (handle->FileSize == 0)
-                    _subFileCollection[(nint)handle] = resolveData;
+                    _gameState.SubFileCollection[(nint)handle] = resolveData;
 
                 break;
         }
     }
 
     private void ResourceDestroyed(ResourceHandle* handle)
-        => _subFileCollection.TryRemove((nint)handle, out _);
-
-    private delegate byte LoadMtrlFilesDelegate(nint mtrlResourceHandle);
-
-    [Signature(Sigs.LoadMtrlTex, DetourName = nameof(LoadMtrlTexDetour))]
-    private readonly Hook<LoadMtrlFilesDelegate> _loadMtrlTexHook = null!;
-
-    private byte LoadMtrlTexDetour(nint mtrlResourceHandle)
-    {
-        using var performance = _performance.Measure(PerformanceType.LoadTextures);
-        var       last        = _mtrlData.Value;
-        _mtrlData.Value = LoadFileHelper(mtrlResourceHandle);
-        var ret = _loadMtrlTexHook.Original(mtrlResourceHandle);
-        _mtrlData.Value = last;
-        return ret;
-    }
-
-    [Signature(Sigs.LoadMtrlShpk, DetourName = nameof(LoadMtrlShpkDetour))]
-    private readonly Hook<LoadMtrlFilesDelegate> _loadMtrlShpkHook = null!;
-
-    private byte LoadMtrlShpkDetour(nint mtrlResourceHandle)
-    {
-        using var performance = _performance.Measure(PerformanceType.LoadShaders);
-        var       last        = _mtrlData.Value;
-        var       mtrlData    = LoadFileHelper(mtrlResourceHandle);
-        _mtrlData.Value = mtrlData;
-        var ret = _loadMtrlShpkHook.Original(mtrlResourceHandle);
-        _mtrlData.Value = last;
-        _communicator.MtrlShpkLoaded.Invoke(mtrlResourceHandle, mtrlData.AssociatedGameObject);
-        return ret;
-    }
-
-    private ResolveData LoadFileHelper(nint resourceHandle)
-    {
-        if (resourceHandle == nint.Zero)
-            return ResolveData.Invalid;
-
-        return _subFileCollection.TryGetValue(resourceHandle, out var c) ? c : ResolveData.Invalid;
-    }
-
-
-    private delegate byte ApricotResourceLoadDelegate(nint handle, nint unk1, byte unk2);
-
-    [Signature(Sigs.ApricotResourceLoad, DetourName = nameof(ApricotResourceLoadDetour))]
-    private readonly Hook<ApricotResourceLoadDelegate> _apricotResourceLoadHook = null!;
-
-    private byte ApricotResourceLoadDetour(nint handle, nint unk1, byte unk2)
-    {
-        using var performance = _performance.Measure(PerformanceType.LoadApricotResources);
-        var       last        = _avfxData.Value;
-        _avfxData.Value = LoadFileHelper(handle);
-        var ret = _apricotResourceLoadHook.Original(handle, unk1, unk2);
-        _avfxData.Value = last;
-        return ret;
-    }
+        => _gameState.SubFileCollection.TryRemove((nint)handle, out _);
 }

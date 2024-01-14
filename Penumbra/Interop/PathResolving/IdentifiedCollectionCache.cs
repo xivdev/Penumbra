@@ -5,7 +5,7 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
-using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.PathResolving;

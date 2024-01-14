@@ -9,7 +9,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.MaterialPreview;
 using Penumbra.String;
 using Penumbra.String.Classes;

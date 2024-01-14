@@ -14,7 +14,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
-using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;

@@ -3,7 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.GameData;
 
-namespace Penumbra.Interop.Hooks;
+namespace Penumbra.Interop.Hooks.Objects;
 
 /// <summary>
 /// EnableDraw is what creates DrawObjects for gameObjects,
@@ -12,12 +12,12 @@ namespace Penumbra.Interop.Hooks;
 public sealed unsafe class EnableDraw : IHookService
 {
     private readonly Task<Hook<Delegate>> _task;
-    private readonly GameState            _state;
+    private readonly GameState _state;
 
     public EnableDraw(HookManager hooks, GameState state)
     {
         _state = state;
-        _task  = hooks.CreateHook<Delegate>("Enable Draw", Sigs.EnableDraw, Detour, true);
+        _task = hooks.CreateHook<Delegate>("Enable Draw", Sigs.EnableDraw, Detour, true);
     }
 
     private delegate void Delegate(GameObject* gameObject);
@@ -26,7 +26,7 @@ public sealed unsafe class EnableDraw : IHookService
     private void Detour(GameObject* gameObject)
     {
         _state.QueueGameObject(gameObject);
-        Penumbra.Log.Excessive($"[Enable Draw] Invoked on 0x{(nint) gameObject:X}.");
+        Penumbra.Log.Excessive($"[Enable Draw] Invoked on 0x{(nint)gameObject:X}.");
         _task.Result.Original.Invoke(gameObject);
         _state.DequeueGameObject();
     }
