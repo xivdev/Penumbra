@@ -402,22 +402,10 @@ public static class EquipmentSwap
         => CreateTex(manager, redirections, prefix, EquipSlot.Unknown, EquipSlot.Unknown, idFrom, idTo, ref texture, ref dataWasChanged);
 
     public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, char prefix, EquipSlot slotFrom,
-        EquipSlot slotTo, PrimaryId idFrom,
-        PrimaryId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged)
+        EquipSlot slotTo, PrimaryId idFrom, PrimaryId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged)
     {
-        var path        = texture.Path;
-        var addedDashes = false;
-        if (texture.DX11)
-        {
-            var fileName = Path.GetFileName(path);
-            if (!fileName.StartsWith("--"))
-            {
-                path        = path.Replace(fileName, $"--{fileName}");
-                addedDashes = true;
-            }
-        }
-
-        var newPath = ItemSwap.ReplaceAnyId(path, prefix, idFrom);
+        var addedDashes = GamePaths.Tex.HandleDx11Path(texture, out var path);
+        var newPath     = ItemSwap.ReplaceAnyId(path, prefix, idFrom);
         newPath = ItemSwap.ReplaceSlot(newPath, slotTo, slotFrom, slotTo != slotFrom);
         newPath = ItemSwap.AddSuffix(newPath, ".tex", $"_{Path.GetFileName(texture.Path).GetStableHashCode():x8}");
         if (newPath != path)

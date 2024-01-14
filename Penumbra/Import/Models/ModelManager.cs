@@ -244,14 +244,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
         {
             // Work out the texture's path - the DX11 material flag controls a file name prefix.
-            var texturePath = texture.Path;
-            if (texture.DX11)
-            {
-                var fileName  = Path.GetFileName(texturePath);
-                if (!fileName.StartsWith("--"))
-                    texturePath = $"{Path.GetDirectoryName(texturePath)}/--{fileName}";
-            }
-
+            GamePaths.Tex.HandleDx11Path(texture, out var texturePath);
             using var textureData = new MemoryStream(read(texturePath));
             var       image       = TexFileParser.Parse(textureData);
             var       pngImage    = TextureManager.ConvertToPng(image, cancel).AsPng;

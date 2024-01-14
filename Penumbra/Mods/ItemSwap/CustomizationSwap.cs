@@ -79,21 +79,9 @@ public static class CustomizationSwap
     }
 
     public static FileSwap CreateTex(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, BodySlot slot, GenderRace race,
-        PrimaryId idFrom, ref MtrlFile.Texture texture,
-        ref bool dataWasChanged)
+        PrimaryId idFrom, ref MtrlFile.Texture texture, ref bool dataWasChanged)
     {
-        var path        = texture.Path;
-        var addedDashes = false;
-        if (texture.DX11)
-        {
-            var fileName = Path.GetFileName(path);
-            if (!fileName.StartsWith("--"))
-            {
-                path        = path.Replace(fileName, $"--{fileName}");
-                addedDashes = true;
-            }
-        }
-
+        var addedDashes = GamePaths.Tex.HandleDx11Path(texture, out var path);
         var newPath = ItemSwap.ReplaceAnyRace(path, race);
         newPath = ItemSwap.ReplaceAnyBody(newPath, slot, idFrom);
         newPath = ItemSwap.AddSuffix(newPath, ".tex", $"_{Path.GetFileName(texture.Path).GetStableHashCode():x8}", true);
