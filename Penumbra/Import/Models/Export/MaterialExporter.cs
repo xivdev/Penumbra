@@ -29,6 +29,7 @@ public class MaterialExporter
             // NOTE: this isn't particularly precise to game behavior (it has some fade around high opacity), but good enough for now.
             "character.shpk"      => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
             "characterglass.shpk" => BuildCharacter(material, name).WithAlpha(AlphaMode.BLEND),
+            "skin.shpk"           => BuildSkin(material, name),
             _                     => BuildFallback(material, name),
         };
     }
@@ -74,17 +75,14 @@ public class MaterialExporter
             // TODO: handle other textures stored in the mask?
         }
 
-        // TODO: clean up this name generation a bunch. probably a method.
-        var imageName = name.Replace("/", "").Replace(".mtrl", "");
-
         var materialBuilder = BuildSharedBase(material, name)
-            .WithBaseColor(BuildImage(baseColor, $"{imageName}_basecolor"))
-            .WithNormal(BuildImage(operation.Normal, $"{imageName}_normal"))
-            .WithSpecularColor(BuildImage(specular, $"{imageName}_specular"))
-            .WithEmissive(BuildImage(operation.Emissive, $"{imageName}_emissive"), Vector3.One, 1);
+            .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
+            .WithNormal(BuildImage(operation.Normal, name, "normal"))
+            .WithSpecularColor(BuildImage(specular, name, "specular"))
+            .WithEmissive(BuildImage(operation.Emissive, name, "emissive"), Vector3.One, 1);
 
         if (occlusion != null)
-            materialBuilder.WithOcclusion(BuildImage(occlusion, $"{imageName}_occlusion"));
+            materialBuilder.WithOcclusion(BuildImage(occlusion, name, "occlusion"));
 
         return materialBuilder;
     }
@@ -140,6 +138,24 @@ public class MaterialExporter
         }
     }
 
+    private static TableRow GetTableRowIndices(float input)
+    {
+        // These calculations are ported from character.shpk.
+        var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2) 
+            * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
+            + input * 15;
+
+        var stepped = MathF.Floor(smoothed + 0.5f);
+
+        return new TableRow
+        {
+            Stepped  = (int)stepped,
+            Previous = (int)MathF.Floor(smoothed),
+            Next     = (int)MathF.Ceiling(smoothed),
+            Weight   = smoothed % 1,
+        };
+    }
+
     private readonly struct MultiplyOperation
     {
         public static void Execute<TPixel1, TPixel2>(Image<TPixel1> target, Image<TPixel2> multiplier)
@@ -174,22 +190,54 @@ public class MaterialExporter
         }
     }
 
-    private static TableRow GetTableRowIndices(float input)
+    private static MaterialBuilder BuildSkin(Material material, string name)
     {
-        // These calculations are ported from character.shpk.
-        var smoothed = MathF.Floor(((input * 7.5f) % 1.0f) * 2) 
-            * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
-            + input * 15;
+        // Trust me bro.
+        const uint categorySkinType = 0x380CAED0;
+        const uint valueFace = 0xF5673524;
 
-        var stepped = MathF.Floor(smoothed + 0.5f);
+        // Face is the default for the skin shader, so a lack of skin type category is also correct.
+        var isFace = !material.Mtrl.ShaderPackage.ShaderKeys
+            .Any(key => key.Category == categorySkinType && key.Value != valueFace);
 
-        return new TableRow
+        // TODO: There's more nuance to skin than this, but this should be enough for a baseline reference.
+        // TODO: Specular?
+        var diffuse = material.Textures[TextureUsage.SamplerDiffuse];
+        var normal = material.Textures[TextureUsage.SamplerNormal];
+
+        // Create a copy of the normal that's the same size as the diffuse for purposes of copying the opacity across.
+        var resizedNormal = normal.Clone(context => context.Resize(diffuse.Width, diffuse.Height));
+        diffuse.ProcessPixelRows(resizedNormal, (diffuseAccessor, normalAccessor) =>
         {
-            Stepped  = (int)stepped,
-            Previous = (int)MathF.Floor(smoothed),
-            Next     = (int)MathF.Ceiling(smoothed),
-            Weight   = smoothed % 1,
-        };
+            for (int y = 0; y < diffuseAccessor.Height; y++)
+            {
+                var diffuseSpan = diffuseAccessor.GetRowSpan(y);
+                var normalSpan = normalAccessor.GetRowSpan(y);
+
+                for (int x = 0; x < diffuseSpan.Length; x++)
+                {
+                    diffuseSpan[x].A = normalSpan[x].B;
+                }
+            }
+        });
+
+        // Clear the blue channel out of the normal now that we're done with it.
+        normal.ProcessPixelRows(normalAccessor => {
+            for (int y = 0; y < normalAccessor.Height; y++)
+            {
+                var normalSpan = normalAccessor.GetRowSpan(y);
+
+                for (int x = 0; x < normalSpan.Length; x++)
+                {
+                    normalSpan[x].B = byte.MaxValue;
+                }
+            }
+        });
+
+        return BuildSharedBase(material, name)
+            .WithBaseColor(BuildImage(diffuse, name, "basecolor"))
+            .WithNormal(BuildImage(normal, name, "normal"))
+            .WithAlpha(isFace? AlphaMode.MASK : AlphaMode.OPAQUE, 0.5f);
     }
 
     private ref struct TableRow
@@ -218,8 +266,10 @@ public class MaterialExporter
             .WithDoubleSide(showBackfaces);
     }
 
-    private static ImageBuilder BuildImage(Image image, string name)
+    private static ImageBuilder BuildImage(Image image, string materialName, string suffix)
     {
+        var name = materialName.Replace("/", "").Replace(".mtrl", "") + $"_{suffix}";
+
         byte[] textureBytes;
         using (var memoryStream = new MemoryStream())
         {
