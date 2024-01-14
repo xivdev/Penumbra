@@ -108,6 +108,40 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId)];
     }
 
+    /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
+    private string ResolveMtrlPath(string rawPath)
+    {
+        // TODO: this should probably be chosen in the export settings
+        var variantId = 1;
+
+        // Get standardised paths
+        var absolutePath = rawPath.StartsWith('/')
+            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
+            : rawPath;
+        var relativePath = rawPath.StartsWith('/')
+            ? rawPath
+            : '/' + Path.GetFileName(rawPath);
+                    
+        // TODO: this should be a recoverable warning
+        if (absolutePath == null)
+            throw new Exception("Failed to resolve material path.");
+        
+        var info = parser.GetFileInfo(absolutePath);
+        if (info.FileType is not FileType.Material)
+            throw new Exception($"Material path {rawPath} does not conform to material conventions.");
+
+        var resolvedPath = info.ObjectType switch
+        {
+            ObjectType.Character => GamePaths.Character.Mtrl.Path(
+                info.GenderRace, info.BodySlot, info.PrimaryId, relativePath, out _, out _, info.Variant),
+            _ => absolutePath,
+        };
+
+        Penumbra.Log.Debug($"Resolved material {rawPath} to {resolvedPath}");
+
+        return resolvedPath;
+    }
+
     private Task Enqueue(IAction action)
     {
         if (_disposed)
@@ -188,18 +222,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         /// <summary> Read a .mtrl and hydrate its textures. </summary>
         private MaterialExporter.Material BuildMaterial(string relativePath, CancellationToken cancel)
         {
-            // TODO: this should probably be chosen in the export settings
-            var variantId = 1;
-
-            var absolutePath = relativePath.StartsWith("/")
-                ? LuminaMaterial.ResolveRelativeMaterialPath(relativePath, variantId)
-                : relativePath;
-
-            // TODO: this should be a recoverable warning
-            if (absolutePath == null)
-                throw new Exception("Failed to resolve material path.");
-
-            var mtrl = new MtrlFile(read(absolutePath));
+            var path = manager.ResolveMtrlPath(relativePath);
+            var mtrl = new MtrlFile(read(path));
             
             return new MaterialExporter.Material
             {
@@ -214,7 +238,20 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         /// <summary> Read a texture referenced by a .mtrl and convert it into an ImageSharp image. </summary>
         private Image<Rgba32> ConvertImage(MtrlFile.Texture texture, CancellationToken cancel)
         {
-            using var textureData = new MemoryStream(read(texture.Path));
+            // Work out the texture's path - the DX11 material flag controls a file name prefix.
+            var texturePath = texture.Path;
+            if (texture.DX11)
+            {
+                var lastSlashIndex = texturePath.LastIndexOf('/');
+                var directory = lastSlashIndex == -1 ? texturePath : texturePath.Substring(0, lastSlashIndex);
+                var fileName = Path.GetFileName(texturePath);
+                if (!fileName.StartsWith("--"))
+                {
+                    texturePath = $"{directory}/--{fileName}";
+                }
+            }
+
+            using var textureData = new MemoryStream(read(texturePath));
             var image = TexFileParser.Parse(textureData);
             var pngImage = TextureManager.ConvertToPng(image, cancel).AsPng;
             if (pngImage == null)
