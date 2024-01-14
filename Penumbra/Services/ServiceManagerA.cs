@@ -33,6 +33,7 @@ using Penumbra.UI.ModsTab;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
 using Penumbra.UI.Tabs.Debug;
+using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.Services;

@@ -7,6 +7,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Cache;
 using Penumbra.Interop.Services;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections;
 

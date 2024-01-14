@@ -4,16 +4,12 @@ using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-public class ModSwapEditor
+public class ModSwapEditor(ModManager modManager)
 {
-    private readonly ModManager                         _modManager;
-    private readonly Dictionary<Utf8GamePath, FullPath> _swaps = new();
+    private readonly Dictionary<Utf8GamePath, FullPath> _swaps = [];
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> Swaps
         => _swaps;
-
-    public ModSwapEditor(ModManager modManager)
-        => _modManager = modManager;
 
     public void Revert(ISubMod option)
     {
@@ -26,7 +22,7 @@ public class ModSwapEditor
         if (!Changes)
             return;
 
-        _modManager.OptionEditor.OptionSetFileSwaps(mod, groupIdx, optionIdx, _swaps);
+        modManager.OptionEditor.OptionSetFileSwaps(mod, groupIdx, optionIdx, _swaps);
         Changes = false;
     }
 

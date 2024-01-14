@@ -1,5 +1,4 @@
 using Dalamud.Hooking;
-using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Services;
 
 namespace Penumbra.Interop.Hooks;
@@ -32,12 +31,12 @@ public sealed unsafe class DebugHook : IHookService
     public bool Finished
         => _task?.IsCompletedSuccessfully ?? true;
 
-    private delegate nint Delegate(ResourceHandle* resourceHandle);
+    private delegate void Delegate(nint a, int b, nint c, float* d);
 
-    private nint Detour(ResourceHandle* resourceHandle)
+    private void Detour(nint a, int b, nint c, float* d)
     {
-        Penumbra.Log.Information($"[Debug Hook] Triggered with 0x{(nint)resourceHandle:X}.");
-        return _task!.Result.Original(resourceHandle);
+        _task!.Result.Original(a,        b, c, d);
+        Penumbra.Log.Information($"[Debug Hook] Results with 0x{a:X} {b} {c:X} {d[0]} {d[1]} {d[2]} {d[3]}.");
     }
 }
 #endif

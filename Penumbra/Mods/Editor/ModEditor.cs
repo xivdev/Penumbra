@@ -4,16 +4,25 @@ using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModEditor : IDisposable
+public class ModEditor(
+    ModNormalizer modNormalizer,
+    ModMetaEditor metaEditor,
+    ModFileCollection files,
+    ModFileEditor fileEditor,
+    DuplicateManager duplicates,
+    ModSwapEditor swapEditor,
+    MdlMaterialEditor mdlMaterialEditor,
+    FileCompactor compactor)
+    : IDisposable
 {
-    public readonly ModNormalizer     ModNormalizer;
-    public readonly ModMetaEditor     MetaEditor;
-    public readonly ModFileEditor     FileEditor;
-    public readonly DuplicateManager  Duplicates;
-    public readonly ModFileCollection Files;
-    public readonly ModSwapEditor     SwapEditor;
-    public readonly MdlMaterialEditor MdlMaterialEditor;
-    public readonly FileCompactor     Compactor;
+    public readonly ModNormalizer     ModNormalizer     = modNormalizer;
+    public readonly ModMetaEditor     MetaEditor        = metaEditor;
+    public readonly ModFileEditor     FileEditor        = fileEditor;
+    public readonly DuplicateManager  Duplicates        = duplicates;
+    public readonly ModFileCollection Files             = files;
+    public readonly ModSwapEditor     SwapEditor        = swapEditor;
+    public readonly MdlMaterialEditor MdlMaterialEditor = mdlMaterialEditor;
+    public readonly FileCompactor     Compactor         = compactor;
 
     public Mod? Mod       { get; private set; }
     public int  GroupIdx  { get; private set; }
@@ -21,20 +30,6 @@ public class ModEditor : IDisposable
 
     public IModGroup? Group  { get; private set; }
     public ISubMod?   Option { get; private set; }
-
-    public ModEditor(ModNormalizer modNormalizer, ModMetaEditor metaEditor, ModFileCollection files,
-        ModFileEditor fileEditor, DuplicateManager duplicates, ModSwapEditor swapEditor, MdlMaterialEditor mdlMaterialEditor,
-        FileCompactor compactor)
-    {
-        ModNormalizer     = modNormalizer;
-        MetaEditor        = metaEditor;
-        Files             = files;
-        FileEditor        = fileEditor;
-        Duplicates        = duplicates;
-        SwapEditor        = swapEditor;
-        MdlMaterialEditor = mdlMaterialEditor;
-        Compactor         = compactor;
-    }
 
     public void LoadMod(Mod mod)
         => LoadMod(mod, -1, 0);

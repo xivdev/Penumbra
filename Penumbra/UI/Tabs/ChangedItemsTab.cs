@@ -6,6 +6,7 @@ using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 

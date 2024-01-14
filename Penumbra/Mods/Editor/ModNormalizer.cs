@@ -10,7 +10,7 @@ namespace Penumbra.Mods.Editor;
 
 public class ModNormalizer(ModManager _modManager, Configuration _config)
 {
-    private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = new();
+    private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = [];
 
     public  Mod    Mod { get; private set; } = null!;
     private string _normalizationDirName = null!;
@@ -141,7 +141,7 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
         {
             var directory = Directory.CreateDirectory(_normalizationDirName);
             for (var i = _redirections.Count; i < Mod.Groups.Count + 1; ++i)
-                _redirections.Add(new List<Dictionary<Utf8GamePath, FullPath>>());
+                _redirections.Add([]);
 
             if (_redirections[0].Count == 0)
                 _redirections[0].Add(new Dictionary<Utf8GamePath, FullPath>(Mod.Default.Files.Count));
@@ -169,7 +169,7 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
             {
                 _redirections[groupIdx + 1].EnsureCapacity(group.Count);
                 for (var i = _redirections[groupIdx + 1].Count; i < group.Count; ++i)
-                    _redirections[groupIdx + 1].Add(new Dictionary<Utf8GamePath, FullPath>());
+                    _redirections[groupIdx + 1].Add([]);
 
                 var groupDir = ModCreator.CreateModFolder(directory, group.Name, _config.ReplaceNonAsciiOnImport, true);
                 foreach (var option in group.OfType<SubMod>())

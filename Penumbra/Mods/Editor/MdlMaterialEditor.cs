@@ -2,24 +2,18 @@ using OtterGui;
 using OtterGui.Compression;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
-using Penumbra.Mods.Editor;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
-public partial class MdlMaterialEditor
+public partial class MdlMaterialEditor(ModFileCollection files)
 {
     [GeneratedRegex(@"/mt_c(?'RaceCode'\d{4})b0001_(?'Suffix'.*?)\.mtrl", RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking)]
     private static partial Regex MaterialRegex();
 
-    private readonly ModFileCollection _files;
-
-    private readonly List<ModelMaterialInfo> _modelFiles = new();
+    private readonly List<ModelMaterialInfo> _modelFiles = [];
 
     public IReadOnlyList<ModelMaterialInfo> ModelFiles
         => _modelFiles;
-
-    public MdlMaterialEditor(ModFileCollection files)
-        => _files = files;
 
     public void SaveAllModels(FileCompactor compactor)
     {
@@ -73,7 +67,7 @@ public partial class MdlMaterialEditor
     public void ScanModels(Mod mod)
     {
         _modelFiles.Clear();
-        foreach (var file in _files.Mdl)
+        foreach (var file in files.Mdl)
         {
             try
             {

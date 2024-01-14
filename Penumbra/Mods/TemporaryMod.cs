@@ -1,6 +1,7 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;

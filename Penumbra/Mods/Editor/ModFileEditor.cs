@@ -1,22 +1,12 @@
-using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
-public class ModFileEditor
+public class ModFileEditor(ModFileCollection files, ModManager modManager)
 {
-    private readonly ModFileCollection _files;
-    private readonly ModManager        _modManager;
-
     public bool Changes { get; private set; }
-
-    public ModFileEditor(ModFileCollection files, ModManager modManager)
-    {
-        _files      = files;
-        _modManager = modManager;
-    }
 
     public void Clear()
     {
@@ -27,21 +17,21 @@ public class ModFileEditor
     {
         var dict = new Dictionary<Utf8GamePath, FullPath>();
         var num  = 0;
-        foreach (var file in _files.Available)
+        foreach (var file in files.Available)
         {
             foreach (var path in file.SubModUsage.Where(p => p.Item1 == option))
                 num += dict.TryAdd(path.Item2, file.File) ? 0 : 1;
         }
 
-        _modManager.OptionEditor.OptionSetFiles(mod, option.GroupIdx, option.OptionIdx, dict);
-        _files.UpdatePaths(mod, option);
+        modManager.OptionEditor.OptionSetFiles(mod, option.GroupIdx, option.OptionIdx, dict);
+        files.UpdatePaths(mod, option);
         Changes = false;
         return num;
     }
 
     public void Revert(Mod mod, ISubMod option)
     {
-        _files.UpdateAll(mod, option);
+        files.UpdateAll(mod, option);
         Changes = false;
     }
 
@@ -53,16 +43,16 @@ public class ModFileEditor
             var newDict = subMod.Files.Where(kvp => CheckAgainstMissing(mod, subMod, kvp.Value, kvp.Key, subMod == option))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             if (newDict.Count != subMod.Files.Count)
-                _modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, newDict);
+                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, newDict);
         }
 
         ModEditor.ApplyToAllOptions(mod, HandleSubMod);
-        _files.ClearMissingFiles();
+        files.ClearMissingFiles();
     }
 
     /// <summary> Return whether the given path is already used in the current option. </summary>
     public bool CanAddGamePath(Utf8GamePath path)
-        => !_files.UsedPaths.Contains(path);
+        => !files.UsedPaths.Contains(path);
 
     /// <summary>
     /// Try to set a given path for a given file.
@@ -72,17 +62,17 @@ public class ModFileEditor
     /// </summary>
     public bool SetGamePath(ISubMod option, int fileIdx, int pathIdx, Utf8GamePath path)
     {
-        if (!CanAddGamePath(path) || fileIdx < 0 || fileIdx > _files.Available.Count)
+        if (!CanAddGamePath(path) || fileIdx < 0 || fileIdx > files.Available.Count)
             return false;
 
-        var registry = _files.Available[fileIdx];
+        var registry = files.Available[fileIdx];
         if (pathIdx > registry.SubModUsage.Count)
             return false;
 
         if ((pathIdx == -1 || pathIdx == registry.SubModUsage.Count) && !path.IsEmpty)
-            _files.AddUsedPath(option, registry, path);
+            files.AddUsedPath(option, registry, path);
         else
-            _files.ChangeUsedPath(registry, pathIdx, path);
+            files.ChangeUsedPath(registry, pathIdx, path);
 
         Changes = true;
 
@@ -93,10 +83,10 @@ public class ModFileEditor
     /// Transform a set of files to the appropriate game paths with the given number of folders skipped,
     /// and add them to the given option.
     /// </summary>
-    public int AddPathsToSelected(ISubMod option, IEnumerable<FileRegistry> files, int skipFolders = 0)
+    public int AddPathsToSelected(ISubMod option, IEnumerable<FileRegistry> files1, int skipFolders = 0)
     {
         var failed = 0;
-        foreach (var file in files)
+        foreach (var file in files1)
         {
             var gamePath = file.RelPath.ToGamePath(skipFolders);
             if (gamePath.IsEmpty)
@@ -107,7 +97,7 @@ public class ModFileEditor
 
             if (CanAddGamePath(gamePath))
             {
-                _files.AddUsedPath(option, file, gamePath);
+                files.AddUsedPath(option, file, gamePath);
                 Changes = true;
             }
             else
@@ -120,9 +110,9 @@ public class ModFileEditor
     }
 
     /// <summary> Remove all paths in the current option from the given files. </summary>
-    public void RemovePathsFromSelected(ISubMod option, IEnumerable<FileRegistry> files)
+    public void RemovePathsFromSelected(ISubMod option, IEnumerable<FileRegistry> files1)
     {
-        foreach (var file in files)
+        foreach (var file in files1)
         {
             for (var i = 0; i < file.SubModUsage.Count; ++i)
             {
@@ -130,7 +120,7 @@ public class ModFileEditor
                 if (option != opt)
                     continue;
 
-                _files.RemoveUsedPath(option, file, path);
+                files.RemoveUsedPath(option, file, path);
                 Changes = true;
                 --i;
             }
@@ -138,10 +128,10 @@ public class ModFileEditor
     }
 
     /// <summary> Delete all given files from your filesystem </summary>
-    public void DeleteFiles(Mod mod, ISubMod option, IEnumerable<FileRegistry> files)
+    public void DeleteFiles(Mod mod, ISubMod option, IEnumerable<FileRegistry> files1)
     {
         var deletions = 0;
-        foreach (var file in files)
+        foreach (var file in files1)
         {
             try
             {
@@ -158,18 +148,18 @@ public class ModFileEditor
         if (deletions <= 0)
             return;
 
-        _modManager.Creator.ReloadMod(mod, false, out _);
-        _files.UpdateAll(mod, option);
+        modManager.Creator.ReloadMod(mod, false, out _);
+        files.UpdateAll(mod, option);
     }
 
 
     private bool CheckAgainstMissing(Mod mod, ISubMod option, FullPath file, Utf8GamePath key, bool removeUsed)
     {
-        if (!_files.Missing.Contains(file))
+        if (!files.Missing.Contains(file))
             return true;
 
         if (removeUsed)
-            _files.RemoveUsedPath(option, file, key);
+            files.RemoveUsedPath(option, file, key);
 
         Penumbra.Log.Debug($"[RemoveMissingPaths] Removing {key} -> {file} from {mod.Name}.");
         return false;

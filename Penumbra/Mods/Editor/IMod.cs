@@ -1,7 +1,7 @@
 using OtterGui.Classes;
 using Penumbra.Mods.Subclasses;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
 public interface IMod
 {

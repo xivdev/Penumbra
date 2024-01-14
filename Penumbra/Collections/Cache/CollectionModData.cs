@@ -1,5 +1,6 @@
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;

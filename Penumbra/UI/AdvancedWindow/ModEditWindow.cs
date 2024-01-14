@@ -26,6 +26,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
+using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 

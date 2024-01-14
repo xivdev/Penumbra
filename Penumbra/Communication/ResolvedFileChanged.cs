@@ -1,6 +1,7 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Communication;

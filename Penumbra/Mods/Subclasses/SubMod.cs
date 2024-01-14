@@ -1,5 +1,6 @@
 using Newtonsoft.Json.Linq;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;

@@ -4,16 +4,14 @@ using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Mods;
 
-public class ModMetaEditor
+public class ModMetaEditor(ModManager modManager)
 {
-    private readonly ModManager _modManager;
-
-    private readonly HashSet<ImcManipulation>  _imc  = new();
-    private readonly HashSet<EqpManipulation>  _eqp  = new();
-    private readonly HashSet<EqdpManipulation> _eqdp = new();
-    private readonly HashSet<GmpManipulation>  _gmp  = new();
-    private readonly HashSet<EstManipulation>  _est  = new();
-    private readonly HashSet<RspManipulation>  _rsp  = new();
+    private readonly HashSet<ImcManipulation>  _imc  = [];
+    private readonly HashSet<EqpManipulation>  _eqp  = [];
+    private readonly HashSet<EqdpManipulation> _eqdp = [];
+    private readonly HashSet<GmpManipulation>  _gmp  = [];
+    private readonly HashSet<EstManipulation>  _est  = [];
+    private readonly HashSet<RspManipulation>  _rsp  = [];
 
     public int OtherImcCount  { get; private set; }
     public int OtherEqpCount  { get; private set; }
@@ -22,11 +20,7 @@ public class ModMetaEditor
     public int OtherEstCount  { get; private set; }
     public int OtherRspCount  { get; private set; }
 
-
-    public ModMetaEditor(ModManager modManager)
-        => _modManager = modManager;
-
-    public bool Changes { get; private set; } = false;
+    public bool Changes { get; private set; }
 
     public IReadOnlySet<ImcManipulation> Imc
         => _imc;
@@ -156,7 +150,7 @@ public class ModMetaEditor
         if (!Changes)
             return;
 
-        _modManager.OptionEditor.OptionSetManipulations(mod, groupIdx, optionIdx, Recombine().ToHashSet());
+        modManager.OptionEditor.OptionSetManipulations(mod, groupIdx, optionIdx, Recombine().ToHashSet());
         Changes = false;
     }
 

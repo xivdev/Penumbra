@@ -3,6 +3,7 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 

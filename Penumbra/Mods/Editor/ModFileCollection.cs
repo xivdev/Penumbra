@@ -6,20 +6,20 @@ namespace Penumbra.Mods.Editor;
 
 public class ModFileCollection : IDisposable
 {
-    private readonly List<FileRegistry> _available = new();
-    private readonly List<FileRegistry> _mtrl      = new();
-    private readonly List<FileRegistry> _mdl       = new();
-    private readonly List<FileRegistry> _tex       = new();
-    private readonly List<FileRegistry> _shpk      = new();
+    private readonly List<FileRegistry> _available = [];
+    private readonly List<FileRegistry> _mtrl      = [];
+    private readonly List<FileRegistry> _mdl       = [];
+    private readonly List<FileRegistry> _tex       = [];
+    private readonly List<FileRegistry> _shpk      = [];
 
-    private readonly SortedSet<FullPath>   _missing   = new();
-    private readonly HashSet<Utf8GamePath> _usedPaths = new();
+    private readonly SortedSet<FullPath>   _missing   = [];
+    private readonly HashSet<Utf8GamePath> _usedPaths = [];
 
     public IReadOnlySet<FullPath> Missing
-        => Ready ? _missing : new HashSet<FullPath>();
+        => Ready ? _missing : [];
 
     public IReadOnlySet<Utf8GamePath> UsedPaths
-        => Ready ? _usedPaths : new HashSet<Utf8GamePath>();
+        => Ready ? _usedPaths : [];
 
     public IReadOnlyList<FileRegistry> Available
         => Ready ? _available : Array.Empty<FileRegistry>();
@@ -37,9 +37,6 @@ public class ModFileCollection : IDisposable
         => Ready ? _shpk : Array.Empty<FileRegistry>();
 
     public bool Ready { get; private set; } = true;
-
-    public ModFileCollection()
-    { }
 
     public void UpdateAll(Mod mod, ISubMod option)
     {

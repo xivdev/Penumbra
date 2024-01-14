@@ -4,6 +4,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
