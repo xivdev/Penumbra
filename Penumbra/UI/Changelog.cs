@@ -46,9 +46,28 @@ public class PenumbraChangelog
         Add8_1_2(Changelog);
         Add8_2_0(Changelog);
         Add8_3_0(Changelog);
+        Add1_0_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_0_0_0(Changelog log)
+        => log.NextVersion("Version 1.0.0.0")
+            .RegisterHighlight("Mods in the mod selector can now be filtered by changed item categories.")
+            .RegisterHighlight("Model Editing options in the Advanced Editing Window have been greatly extended (by Ackwell):")
+            .RegisterEntry("Attributes and referenced materials can now be set per mesh.", 1)
+            .RegisterEntry("Model files (.mdl) can now be exported to the well-established glTF format, which can be imported e.g. by Blender.", 1)
+            .RegisterEntry("glTF files can also be imported back to a .mdl file.", 1)
+            .RegisterHighlight("Model Export and Import are a work in progress and may encounter issues, not support all cases or produce wrong results, please let us know!", 1)
+            .RegisterEntry("The last selected mod and the open/close state of the Advanced Editing Window are now stored across launches.")
+            .RegisterEntry("Footsteps of certain mounts will now be associated to collections correctly.")
+            .RegisterEntry("Save-in-Place in the texture tab now requires the configurable modifier.")
+            .RegisterEntry("Updated OtterTex to a newer version of DirectXTex.")
+            .RegisterEntry("Fixed an issue with horizontal scrolling if a mod title was very long.")
+            .RegisterEntry("Fixed an issue with the mod panels header not updating its data when the selected mod updates.")
+            .RegisterEntry("Fixed some issues with EQDP files for invalid characters.")
+            .RegisterEntry("Fixed an issue with the FileDialog being drawn twice in certain situations.")
+            .RegisterEntry("A lot of backend changes that should not have an effect on users, but may cause issues if something got messed up.");
 
     private static void Add8_3_0(Changelog log)
         => log.NextVersion("Version 0.8.3.0")
