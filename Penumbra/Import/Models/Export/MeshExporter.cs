@@ -23,7 +23,7 @@ public class MeshExporter
                     ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, joints)
                     : scene.AddRigidMesh(data.Mesh, Matrix4x4.Identity);
 
-                var extras = new Dictionary<string, object>();
+                var extras = new Dictionary<string, object>(data.Attributes.Length);
                 foreach (var attribute in data.Attributes)
                     extras.Add(attribute, true);
 

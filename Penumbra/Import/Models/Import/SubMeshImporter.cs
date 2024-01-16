@@ -140,7 +140,7 @@ public class SubMeshImporter
 
     private void BuildIndices()
     {
-        // TODO: glTF supports a bunch of primitive types, ref. Schema2.PrimitiveType. All this code is currently assuming that it's using plain triangles (4). It should probably be generalised to other formats - I _suspect_ we should be able to get away with evaulating the indices to triangles with GetTriangleIndices, but will need investigation.
+        // TODO: glTF supports a bunch of primitive types, ref. Schema2.PrimitiveType. All this code is currently assuming that it's using plain triangles (4). It should probably be generalised to other formats - I _suspect_ we should be able to get away with evaluating the indices to triangles with GetTriangleIndices, but will need investigation.
         _indices = _primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
     }
 

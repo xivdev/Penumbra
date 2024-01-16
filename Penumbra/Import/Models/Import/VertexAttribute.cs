@@ -244,7 +244,7 @@ public class VertexAttribute
 
     public static VertexAttribute? Tangent1(Accessors accessors, IEnumerable<Accessors> morphAccessors, ushort[] indices)
     {
-        if  (!accessors.TryGetValue("NORMAL", out var normalAccessor))
+        if (!accessors.TryGetValue("NORMAL", out var normalAccessor))
         {
             Penumbra.Log.Warning("Normals are required to facilitate import or calculation of tangents.");
             return null;
@@ -261,7 +261,7 @@ public class VertexAttribute
             return null;
         }
 
-        var element = new MdlStructs.VertexElement()
+        var element = new MdlStructs.VertexElement
         {
             Stream = 1,
             Type   = (byte)MdlFile.VertexType.ByteFloat4,
@@ -269,26 +269,23 @@ public class VertexAttribute
         };
 
         // Per glTF specification, TANGENT morph values are stored as vec3, with the W component always considered to be 0.
-        var tangentMorphValues = morphAccessors
-            .Select(a => a.GetValueOrDefault("TANGENT")?.AsVector3Array())
-            .ToArray();
-
-        var normalMorphValues = morphAccessors
-            .Select(a => a.GetValueOrDefault("TANGENT")?.AsVector3Array())
-            .ToArray();
+        var morphValues = morphAccessors
+            .Select(a => (Tangent: a.GetValueOrDefault("TANGENT")?.AsVector3Array(),
+                Normal: a.GetValueOrDefault("NORMAL")?.AsVector3Array()))
+            .ToList();
 
         return new VertexAttribute(
             element,
             index => BuildBitangent(tangents[index], normals[index]),
             buildMorph: (morphIndex, vertexIndex) =>
             {
-                var tangent = tangents[vertexIndex];
-                var tangentDelta = tangentMorphValues[morphIndex]?[vertexIndex];
+                var tangent      = tangents[vertexIndex];
+                var tangentDelta = morphValues[morphIndex].Tangent?[vertexIndex];
                 if (tangentDelta != null)
                     tangent += new Vector4(tangentDelta.Value, 0);
 
-                var normal = normals[vertexIndex];
-                var normalDelta = normalMorphValues[morphIndex]?[vertexIndex];
+                var normal      = normals[vertexIndex];
+                var normalDelta = morphValues[morphIndex].Normal?[vertexIndex];
                 if (normalDelta != null)
                     normal += normalDelta.Value;
 
@@ -297,13 +294,13 @@ public class VertexAttribute
         );
     }
 
-    /// <summary> Build a byte array representing bitagent data computed from the provided tangent and normal. </summary>
+    /// <summary> Build a byte array representing bitangent data computed from the provided tangent and normal. </summary>
     /// <remarks> XIV primarily stores bitangents, rather than tangents as with most other software, so we calculate on import. </remarks>
     private static byte[] BuildBitangent(Vector4 tangent, Vector3 normal)
     {
         var handedness = tangent.W;
-        var tangent3 = new Vector3(tangent.X, tangent.Y, tangent.Z);
-        var bitangent = Vector3.Normalize(Vector3.Cross(normal, tangent3));
+        var tangent3   = new Vector3(tangent.X, tangent.Y, tangent.Z);
+        var bitangent  = Vector3.Normalize(Vector3.Cross(normal, tangent3));
         bitangent *= handedness;
 
         // Byte floats encode 0..1, and bitangents are stored as -1..1. Convert.
@@ -319,19 +316,20 @@ public class VertexAttribute
             return null;
 
         var positions = accessors["POSITION"].AsVector3Array();
-        var uvs = uvAccessor.AsVector2Array();
+        var uvs       = uvAccessor.AsVector2Array();
 
         // TODO: Surface this in the UI.
-        Penumbra.Log.Warning("Calculating tangents, this may result in degraded light interaction. For best results, ensure tangents are caculated or retained during export from 3D modelling tools.");
+        Penumbra.Log.Warning(
+            "Calculating tangents, this may result in degraded light interaction. For best results, ensure tangents are caculated or retained during export from 3D modelling tools.");
 
         var vertexCount = positions.Count;
 
         // https://github.com/TexTools/xivModdingFramework/blob/master/xivModdingFramework/Models/Helpers/ModelModifiers.cs#L1569
         // https://gamedev.stackexchange.com/a/68617
         // https://marti.works/posts/post-calculating-tangents-for-your-mesh/post/
-        var tangents = new Vector3[vertexCount];
+        var tangents   = new Vector3[vertexCount];
         var bitangents = new Vector3[vertexCount];
- 
+
         // Iterate over triangles, calculating tangents relative to the UVs.
         for (var index = 0; index < indices.Length; index += 3)
         {
@@ -344,16 +342,16 @@ public class VertexAttribute
             var position2 = positions[vertexIndex2];
             var position3 = positions[vertexIndex3];
 
-            var texcoord1 = uvs[vertexIndex1];
-            var texcoord2 = uvs[vertexIndex2];
-            var texcoord3 = uvs[vertexIndex3];
-            
+            var texCoord1 = uvs[vertexIndex1];
+            var texCoord2 = uvs[vertexIndex2];
+            var texCoord3 = uvs[vertexIndex3];
+
             // Calculate deltas for the position XYZ, and texcoord UV.
             var edge1 = position2 - position1;
             var edge2 = position3 - position1;
-            
-            var uv1 = texcoord2 - texcoord1;
-            var uv2 = texcoord3 - texcoord1;
+
+            var uv1 = texCoord2 - texCoord1;
+            var uv2 = texCoord3 - texCoord1;
 
             // Solve.
             var r = 1.0f / (uv1.X * uv2.Y - uv1.Y * uv2.X);
@@ -378,7 +376,7 @@ public class VertexAttribute
             bitangents[vertexIndex3] += bitangent;
         }
 
-        // All the triangles have been calcualted, normalise the results for each vertex.
+        // All the triangles have been calculated, normalise the results for each vertex.
         var result = new Vector4[vertexCount];
         for (var vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
         {
@@ -387,7 +385,7 @@ public class VertexAttribute
             var b = bitangents[vertexIndex];
 
             // Gram-Schmidt orthogonalize and calculate handedness.
-            var tangent = Vector3.Normalize(t - n * Vector3.Dot(n, t));
+            var tangent    = Vector3.Normalize(t - n * Vector3.Dot(n, t));
             var handedness = Vector3.Dot(Vector3.Cross(t, b), n) > 0 ? 1 : -1;
 
             result[vertexIndex] = new Vector4(tangent, handedness);
