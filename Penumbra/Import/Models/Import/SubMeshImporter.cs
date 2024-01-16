@@ -140,11 +140,15 @@ public class SubMeshImporter
 
     private void BuildIndices()
     {
+        // TODO: glTF supports a bunch of primitive types, ref. Schema2.PrimitiveType. All this code is currently assuming that it's using plain triangles (4). It should probably be generalised to other formats - I _suspect_ we should be able to get away with evaulating the indices to triangles with GetTriangleIndices, but will need investigation.
         _indices = _primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
     }
 
     private void BuildVertexAttributes()
     {
+        // Tangent calculation requires indices if missing.
+        ArgumentNullException.ThrowIfNull(_indices);
+
         var accessors = _primitive.VertexAccessors;
 
         var morphAccessors = Enumerable.Range(0, _primitive.MorphTargetsCount)
@@ -158,7 +162,7 @@ public class SubMeshImporter
             VertexAttribute.BlendWeight(accessors),
             VertexAttribute.BlendIndex(accessors, _nodeBoneMap),
             VertexAttribute.Normal(accessors, morphAccessors),
-            VertexAttribute.Tangent1(accessors, morphAccessors),
+            VertexAttribute.Tangent1(accessors, morphAccessors, _indices),
             VertexAttribute.Color(accessors),
             VertexAttribute.Uv(accessors),
         };
