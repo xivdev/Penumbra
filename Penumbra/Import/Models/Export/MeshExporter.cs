@@ -318,11 +318,17 @@ public class MeshExporter
             );
 
         if (_geometryType == typeof(VertexPositionNormalTangent))
+        {
+            // (Bi)tangents are universally stored as ByteFloat4, which uses 0..1 to represent the full -1..1 range.
+            // TODO: While this assumption is safe, it would be sensible to actually check.
+            var bitangent = ToVector4(attributes[MdlFile.VertexUsage.Tangent1]) * 2 - Vector4.One;
+
             return new VertexPositionNormalTangent(
                 ToVector3(attributes[MdlFile.VertexUsage.Position]),
                 ToVector3(attributes[MdlFile.VertexUsage.Normal]),
-                FixTangentVector(ToVector4(attributes[MdlFile.VertexUsage.Tangent1]))
+                bitangent
             );
+        }
 
         throw new Exception($"Unknown geometry type {_geometryType}.");
     }
@@ -439,11 +445,6 @@ public class MeshExporter
 
         throw new Exception($"Unknown skinning type {_skinningType}");
     }
-
-    /// <summary> Clamps any tangent W value other than 1 to -1. </summary>
-    /// <remarks> Some XIV models seemingly store -1 as 0, this patches over that. </remarks>
-    private static Vector4 FixTangentVector(Vector4 tangent)
-        => tangent with { W = tangent.W == 1 ? 1 : -1 };
 
     /// <summary> Convert a vertex attribute value to a Vector2. Supported inputs are Vector2, Vector3, and Vector4. </summary>
     private static Vector2 ToVector2(object data)
