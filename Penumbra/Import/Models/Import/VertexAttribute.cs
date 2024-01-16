@@ -251,11 +251,11 @@ public class VertexAttribute
         }
 
         var normals = normalAccessor.AsVector3Array();
-        var values = accessors.TryGetValue("TANGENT", out var accessor)
+        var tangents = accessors.TryGetValue("TANGENT", out var accessor)
             ? accessor.AsVector4Array()
             : CalculateTangents(accessors, indices, normals);
 
-        if (values == null)
+        if (tangents == null)
         {
             Penumbra.Log.Warning("No tangents available for sub-mesh. This could lead to incorrect lighting, or mismatched vertex attributes.");
             return null;
@@ -269,22 +269,30 @@ public class VertexAttribute
         };
 
         // Per glTF specification, TANGENT morph values are stored as vec3, with the W component always considered to be 0.
-        var morphValues = morphAccessors
+        var tangentMorphValues = morphAccessors
+            .Select(a => a.GetValueOrDefault("TANGENT")?.AsVector3Array())
+            .ToArray();
+
+        var normalMorphValues = morphAccessors
             .Select(a => a.GetValueOrDefault("TANGENT")?.AsVector3Array())
             .ToArray();
 
         return new VertexAttribute(
             element,
-            index => BuildBitangent(values[index], normals[index]),
+            index => BuildBitangent(tangents[index], normals[index]),
             buildMorph: (morphIndex, vertexIndex) =>
             {
-                var value = values[vertexIndex];
+                var tangent = tangents[vertexIndex];
+                var tangentDelta = tangentMorphValues[morphIndex]?[vertexIndex];
+                if (tangentDelta != null)
+                    tangent += new Vector4(tangentDelta.Value, 0);
 
-                var delta = morphValues[morphIndex]?[vertexIndex];
-                if (delta != null)
-                    value += new Vector4(delta.Value, 0);
+                var normal = normals[vertexIndex];
+                var normalDelta = normalMorphValues[morphIndex]?[vertexIndex];
+                if (normalDelta != null)
+                    normal += normalDelta.Value;
 
-                return BuildBitangent(value, normals[vertexIndex]);
+                return BuildBitangent(tangent, normal);
             }
         );
     }
