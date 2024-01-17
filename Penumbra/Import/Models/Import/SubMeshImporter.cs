@@ -21,6 +21,8 @@ public class SubMeshImporter
 
         public ushort[] Indices;
 
+        public BoundingBox BoundingBox;
+
         public string[] MetaAttributes;
 
         public Dictionary<string, List<MdlStructs.ShapeValueStruct>> ShapeValues;
@@ -43,6 +45,8 @@ public class SubMeshImporter
     private readonly List<byte>[] _streams;
 
     private ushort[]? _indices;
+
+    private BoundingBox _boundingBox = new BoundingBox();
 
     private string[]? _metaAttributes;
 
@@ -90,9 +94,11 @@ public class SubMeshImporter
     private SubMesh Create()
     {
         // Build all the data we'll need.
+        // TODO: This structure is verging on a little silly. Reconsider.
         BuildIndices();
         BuildVertexAttributes();
         BuildVertices();
+        BuildBoundingBox();
         BuildMetaAttributes();
 
         ArgumentNullException.ThrowIfNull(_indices);
@@ -133,6 +139,7 @@ public class SubMeshImporter
             Strides     = _strides,
             Streams     = _streams,
             Indices     = _indices,
+            BoundingBox = _boundingBox,
             MetaAttributes  = _metaAttributes, 
             ShapeValues = _shapeValues,
         };
@@ -253,6 +260,13 @@ public class SubMeshImporter
         }
 
         _shapeValues = morphShapeValues;
+    }
+
+    private void BuildBoundingBox()
+    {
+        var positions = _primitive.VertexAccessors["POSITION"].AsVector3Array();
+        foreach (var position in positions)
+            _boundingBox.Merge(position);
     }
 
     private void BuildMetaAttributes()

@@ -29,6 +29,8 @@ public partial class ModelImporter(ModelRoot model)
     private readonly List<string>                     _bones      = [];
     private readonly List<MdlStructs.BoneTableStruct> _boneTables = [];
 
+    private readonly BoundingBox _boundingBox = new BoundingBox();
+
     private readonly List<string> _metaAttributes = [];
 
     private readonly Dictionary<string, List<MdlStructs.ShapeMeshStruct>> _shapeMeshes = [];
@@ -95,9 +97,10 @@ public partial class ModelImporter(ModelRoot model)
 
             Materials = [.. materials],
 
+            BoundingBoxes = _boundingBox.ToStruct(),
+
             // TODO: Would be good to calculate all of this up the tree.
             Radius            = 1,
-            BoundingBoxes     = MdlFile.EmptyBoundingBox,
             BoneBoundingBoxes = Enumerable.Repeat(MdlFile.EmptyBoundingBox, _bones.Count).ToArray(),
             RemainingData     = [.._vertexBuffer, ..indexBuffer],
         };
@@ -155,6 +158,8 @@ public partial class ModelImporter(ModelRoot model)
                 .Select(offset => (uint)(offset + vertexOffset))
                 .ToArray(),
         });
+
+        _boundingBox.Merge(mesh.BoundingBox);
 
         _subMeshes.AddRange(mesh.SubMeshStructs.Select(m => m with
         {
