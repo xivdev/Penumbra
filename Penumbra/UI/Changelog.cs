@@ -54,7 +54,7 @@ public class PenumbraChangelog
     private static void Add1_0_0_0(Changelog log)
         => log.NextVersion("Version 1.0.0.0")
             .RegisterHighlight("Mods in the mod selector can now be filtered by changed item categories.")
-            .RegisterHighlight("Model Editing options in the Advanced Editing Window have been greatly extended (by Ackwell):")
+            .RegisterHighlight("Model Editing options in the Advanced Editing Window have been greatly extended (by ackwell):")
             .RegisterEntry("Attributes and referenced materials can now be set per mesh.", 1)
             .RegisterEntry("Model files (.mdl) can now be exported to the well-established glTF format, which can be imported e.g. by Blender.", 1)
             .RegisterEntry("glTF files can also be imported back to a .mdl file.", 1)
