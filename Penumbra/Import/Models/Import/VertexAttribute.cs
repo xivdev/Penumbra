@@ -394,10 +394,9 @@ public class VertexAttribute
         return result;
     }
 
-    public static VertexAttribute? Color(Accessors accessors)
+    public static VertexAttribute Color(Accessors accessors)
     {
-        if (!accessors.TryGetValue("COLOR_0", out var accessor))
-            return null;
+        accessors.TryGetValue("COLOR_0", out var accessor);
 
         var element = new MdlStructs.VertexElement()
         {
@@ -406,11 +405,12 @@ public class VertexAttribute
             Usage  = (byte)MdlFile.VertexUsage.Color,
         };
 
-        var values = accessor.AsVector4Array();
+        // Some shaders rely on the presence of vertex colors to render - fall back to a pure white value if it's missing.
+        var values = accessor?.AsVector4Array();
 
         return new VertexAttribute(
             element,
-            index => BuildByteFloat4(values[index])
+            index => BuildByteFloat4(values?[index] ?? Vector4.One)
         );
     }
 
