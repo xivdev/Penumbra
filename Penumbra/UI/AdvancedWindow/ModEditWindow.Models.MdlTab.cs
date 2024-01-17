@@ -1,3 +1,4 @@
+using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
@@ -161,6 +162,13 @@ public partial class ModEditWindow
             if (ImportKeepAttributes)
                 MergeAttributes(newMdl, Mdl);
 
+            // Until someone works out how to actually author these, unconditionally merge element ids.
+            MergeElementIds(newMdl, Mdl);
+
+            // TODO: Add flag editing.
+            newMdl.Flags1 = Mdl.Flags1;
+            newMdl.Flags2 = Mdl.Flags2;
+            
             Initialize(newMdl);
             _dirty = true;
         }
@@ -208,6 +216,29 @@ public partial class ModEditWindow
 
                 target.SubMeshes[subMeshIndex].AttributeIndexMask = sourceSubMesh.AttributeIndexMask;
             }
+        }
+
+        /// <summary> Merge element ids from the source onto the target. </summary>
+        /// <param name="target"> Model that will be updated. ></param>
+        /// <param name="source"> Model to copy element ids from. </param>
+        private static void MergeElementIds(MdlFile target, MdlFile source)
+        {
+            var elementIds = new List<MdlStructs.ElementIdStruct>();
+
+            foreach (var sourceElement in source.ElementIds)
+            {
+                var sourceBone = source.Bones[sourceElement.ParentBoneName];
+                var targetIndex = target.Bones.IndexOf(sourceBone);
+                // Given that there's no means of authoring these at the moment, this should probably remain a hard error.
+                if (targetIndex == -1)
+                    throw new Exception($"Failed to merge element IDs. Original model contains element IDs targeting bone {sourceBone}, which is not present on the imported model.");
+                elementIds.Add(sourceElement with
+                {
+                    ParentBoneName = (uint)targetIndex,
+                });
+            }
+
+            target.ElementIds = [.. elementIds];
         }
 
         private void RecordIoExceptions(Exception? exception)
