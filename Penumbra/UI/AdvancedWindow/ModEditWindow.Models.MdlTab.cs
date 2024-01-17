@@ -259,11 +259,12 @@ public partial class ModEditWindow
             if (!Utf8GamePath.FromString(path, out var utf8Path, true))
                 throw new Exception($"Resolved path {path} could not be converted to a game path.");
 
-            var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path);
+            var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path) ?? new FullPath(utf8Path);
+
             // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
-            var bytes = resolvedPath == null 
-                ? _edit._gameData.GetFile(path)?.Data
-                : File.ReadAllBytes(resolvedPath.Value.ToPath());
+            var bytes = resolvedPath.IsRooted
+                ? File.ReadAllBytes(resolvedPath.FullName)
+                : _edit._gameData.GetFile(resolvedPath.InternalName.ToString())?.Data;
 
             // TODO: some callers may not care about failures - handle exceptions separately?
             return bytes ?? throw new Exception(
