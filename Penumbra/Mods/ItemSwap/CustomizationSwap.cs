@@ -46,7 +46,7 @@ public static class CustomizationSwap
         PrimaryId idFrom, PrimaryId idTo, byte variant,
         ref string fileName, ref bool dataWasChanged)
     {
-        variant = slot is BodySlot.Face or BodySlot.Ear ? byte.MaxValue : variant;
+        variant = slot is BodySlot.Face or BodySlot.Ear ? Variant.None.Id : variant;
         var mtrlFromPath = GamePaths.Character.Mtrl.Path(race, slot, idFrom, fileName, out var gameRaceFrom, out var gameSetIdFrom, variant);
         var mtrlToPath   = GamePaths.Character.Mtrl.Path(race, slot, idTo,   fileName, out var gameRaceTo,   out var gameSetIdTo,   variant);
 
