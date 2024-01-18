@@ -25,6 +25,7 @@ public partial class ModEditWindow
         private bool            _dirty;
         public  bool            PendingIo    { get; private set; }
         public  List<Exception> IoExceptions { get; private set; } = [];
+        public  List<string>    IoWarnings   { get; private set; } = [];
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {

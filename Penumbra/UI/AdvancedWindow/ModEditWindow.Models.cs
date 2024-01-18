@@ -63,6 +63,7 @@ public partial class ModEditWindow
         DrawExport(tab, childSize, disabled);
 
         DrawIoExceptions(tab);
+        DrawIoWarnings(tab);
     }
 
     private void DrawImport(MdlTab tab, Vector2 size, bool _1)
@@ -148,7 +149,43 @@ public partial class ModEditWindow
 
             using var exceptionNode = ImRaii.TreeNode(message);
             if (exceptionNode)
+            {
+                ImGui.Dummy(new Vector2(ImGui.GetStyle().IndentSpacing, 0));
+                ImGui.SameLine();
                 ImGuiUtil.TextWrapped(exception.ToString());
+            }
+        }
+    }
+
+    private static void DrawIoWarnings(MdlTab tab)
+    {
+        if (tab.IoWarnings.Count == 0)
+            return;
+
+        var size = new Vector2(ImGui.GetContentRegionAvail().X, 0);
+        using var frame = ImRaii.FramedGroup("Warnings", size, headerPreIcon: FontAwesomeIcon.ExclamationCircle, borderColor: 0xFF40FFFF);
+
+        var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
+        foreach (var (warning, index) in tab.IoWarnings.WithIndex())
+        {
+            using var id       = ImRaii.PushId(index);
+            var       textSize = ImGui.CalcTextSize(warning).X;
+
+            if (textSize <= spaceAvail)
+            {
+                ImRaii.TreeNode(warning, ImGuiTreeNodeFlags.Leaf).Dispose();
+                continue;
+            }
+
+            var firstLine = warning[..(int)Math.Floor(warning.Length * (spaceAvail / textSize))] + "...";
+
+            using var warningNode = ImRaii.TreeNode(firstLine);
+            if (warningNode)
+            {
+                ImGui.Dummy(new Vector2(ImGui.GetStyle().IndentSpacing, 0));
+                ImGui.SameLine();
+                ImGuiUtil.TextWrapped(warning.ToString());
+            }
         }
     }
 
