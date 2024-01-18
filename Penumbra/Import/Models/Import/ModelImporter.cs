@@ -1,14 +1,15 @@
 using Lumina.Data.Parsing;
+using OtterGui;
 using Penumbra.GameData.Files;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
-public partial class ModelImporter(ModelRoot model)
+public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
 {
-    public static MdlFile Import(ModelRoot model)
+    public static MdlFile Import(ModelRoot model, IoNotifier notifier)
     {
-        var importer = new ModelImporter(model);
+        var importer = new ModelImporter(model, notifier);
         return importer.Create();
     }
 
@@ -39,8 +40,8 @@ public partial class ModelImporter(ModelRoot model)
     private MdlFile Create()
     {
         // Group and build out meshes in this model.
-        foreach (var subMeshNodes in GroupedMeshNodes())
-            BuildMeshForGroup(subMeshNodes);
+        foreach (var (subMeshNodes, index) in GroupedMeshNodes().WithIndex())
+            BuildMeshForGroup(subMeshNodes, index);
 
         // Now that all the meshes have been built, we can build some of the model-wide metadata.
         var materials = _materials.Count > 0 ? _materials : ["/NO_MATERIAL"];
@@ -128,7 +129,7 @@ public partial class ModelImporter(ModelRoot model)
             )
             .OrderBy(group => group.Key);
 
-    private void BuildMeshForGroup(IEnumerable<Node> subMeshNodes)
+    private void BuildMeshForGroup(IEnumerable<Node> subMeshNodes, int index)
     {
         // Record some offsets we'll be using later, before they get mutated with mesh values.
         var subMeshOffset    = _subMeshes.Count;
@@ -136,7 +137,7 @@ public partial class ModelImporter(ModelRoot model)
         var indexOffset      = _indices.Count;
         var shapeValueOffset = _shapeValues.Count;
 
-        var mesh           = MeshImporter.Import(subMeshNodes);
+        var mesh           = MeshImporter.Import(subMeshNodes, notifier.WithContext($"Mesh {index}"));
         var meshStartIndex = (uint)(mesh.MeshStruct.StartIndex + indexOffset);
 
         var materialIndex = mesh.Material != null
@@ -196,7 +197,7 @@ public partial class ModelImporter(ModelRoot model)
         // arrays, values is practically guaranteed to be the highest of the
         // group, so a failure on any of them will be a failure on it.
         if (_shapeValues.Count > ushort.MaxValue)
-            throw new Exception($"Importing this file would require more than the maximum of {ushort.MaxValue} shape values.\nTry removing or applying shape keys that do not need to be changed at runtime in-game.");
+            throw notifier.Exception($"Importing this file would require more than the maximum of {ushort.MaxValue} shape values.\nTry removing or applying shape keys that do not need to be changed at runtime in-game.");
     }
 
     private ushort GetMaterialIndex(string materialName)
@@ -232,7 +233,7 @@ public partial class ModelImporter(ModelRoot model)
         }
 
         if (boneIndices.Count > 64)
-            throw new Exception("XIV does not support meshes weighted to more than 64 bones.");
+            throw notifier.Exception("XIV does not support meshes weighted to a total of more than 64 bones.");
 
         var boneIndicesArray = new ushort[64];
         Array.Copy(boneIndices.ToArray(), boneIndicesArray, boneIndices.Count);

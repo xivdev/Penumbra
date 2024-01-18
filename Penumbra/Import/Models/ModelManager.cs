@@ -43,10 +43,10 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             action => action.Notifier
         );
 
-    public Task<MdlFile?> ImportGltf(string inputPath)
+    public Task<(MdlFile?, IoNotifier)> ImportGltf(string inputPath)
         => EnqueueWithResult(
             new ImportGltfAction(inputPath),
-            action => action.Out
+            action => (action.Out, action.Notifier)
         );
 
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
@@ -273,12 +273,13 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     private partial class ImportGltfAction(string inputPath) : IAction
     {
         public MdlFile? Out;
+        public IoNotifier Notifier = new IoNotifier();
 
         public void Execute(CancellationToken cancel)
         {
             var model = Schema2.ModelRoot.Load(inputPath);
 
-            Out = ModelImporter.Import(model);
+            Out = ModelImporter.Import(model, Notifier);
         }
 
         public bool Equals(IAction? other)

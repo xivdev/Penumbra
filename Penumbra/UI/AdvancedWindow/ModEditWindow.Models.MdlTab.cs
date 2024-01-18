@@ -2,6 +2,7 @@ using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
@@ -146,11 +147,14 @@ public partial class ModEditWindow
         {
             PendingIo = true;
             _edit._models.ImportGltf(inputPath)
-                .ContinueWith(task =>
+                .ContinueWith((Task<(MdlFile?, IoNotifier)> task) =>
                 {
                     RecordIoExceptions(task.Exception);
-                    if (task is { IsCompletedSuccessfully: true, Result: not null })
-                        FinalizeImport(task.Result);
+                    if (task is { IsCompletedSuccessfully: true, Result: (not null, _) })
+                    {
+                        IoWarnings = task.Result.Item2.GetWarnings().ToList();
+                        FinalizeImport(task.Result.Item1);
+                    }
                     PendingIo = false;
                 });
         }
