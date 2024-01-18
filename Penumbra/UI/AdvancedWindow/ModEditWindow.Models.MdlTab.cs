@@ -134,6 +134,8 @@ public partial class ModEditWindow
                 .ContinueWith(task =>
                 {
                     RecordIoExceptions(task.Exception);
+                    if (task is { IsCompletedSuccessfully: true, Result: not null })
+                        IoWarnings = task.Result.GetWarnings().ToList();
                     PendingIo   = false;
                 });
         }

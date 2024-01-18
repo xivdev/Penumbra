@@ -37,20 +37,17 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
-        => Enqueue(new ExportToGltfAction(this, mdl, sklbPaths, read, outputPath));
+    public Task<IoNotifier> ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
+        => EnqueueWithResult(
+            new ExportToGltfAction(this, mdl, sklbPaths, read, outputPath),
+            action => action.Notifier
+        );
 
     public Task<MdlFile?> ImportGltf(string inputPath)
-    {
-        var action = new ImportGltfAction(inputPath);
-        return Enqueue(action).ContinueWith(task =>
-        {
-            if (task is { IsFaulted: true, Exception: not null })
-                throw task.Exception;
-
-            return action.Out;
-        });
-    }
+        => EnqueueWithResult(
+            new ImportGltfAction(inputPath),
+            action => action.Out
+        );
 
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
@@ -168,6 +165,16 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return task;
     }
 
+    private Task<TOut> EnqueueWithResult<TAction, TOut>(TAction action, Func<TAction, TOut> process)
+        where TAction : IAction
+        => Enqueue(action).ContinueWith(task =>
+        {
+            if (task is { IsFaulted: true, Exception: not null })
+                throw task.Exception;
+
+            return process(action);
+        });
+
     private class ExportToGltfAction(
         ModelManager manager,
         MdlFile mdl,
@@ -176,6 +183,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         string outputPath)
         : IAction
     {
+        public IoNotifier Notifier = new IoNotifier();
+
         public void Execute(CancellationToken cancel)
         {
             Penumbra.Log.Debug($"[GLTF Export] Exporting model to {outputPath}...");
@@ -190,7 +199,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             );
 
             Penumbra.Log.Debug("[GLTF Export] Converting model...");
-            var model = ModelExporter.Export(mdl, xivSkeletons, materials);
+            var model = ModelExporter.Export(mdl, xivSkeletons, materials, Notifier);
 
             Penumbra.Log.Debug("[GLTF Export] Building scene...");
             var scene = new SceneBuilder();
