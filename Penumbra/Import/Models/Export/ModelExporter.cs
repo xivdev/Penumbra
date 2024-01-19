@@ -23,16 +23,16 @@ public class ModelExporter
     }
 
     /// <summary> Export a model in preparation for usage in a glTF file. If provided, skeleton will be used to skin the resulting meshes where appropriate. </summary>
-    public static Model Export(MdlFile mdl, IEnumerable<XivSkeleton>? xivSkeleton, Dictionary<string, MaterialExporter.Material> rawMaterials, IoNotifier notifier)
+    public static Model Export(ExportConfig config, MdlFile mdl, IEnumerable<XivSkeleton> xivSkeletons, Dictionary<string, MaterialExporter.Material> rawMaterials, IoNotifier notifier)
     {
-        var gltfSkeleton = xivSkeleton != null ? ConvertSkeleton(xivSkeleton) : null;
+        var gltfSkeleton = ConvertSkeleton(xivSkeletons);
         var materials = ConvertMaterials(mdl, rawMaterials, notifier);
-        var meshes = ConvertMeshes(mdl, materials, gltfSkeleton, notifier);
+        var meshes = ConvertMeshes(config, mdl, materials, gltfSkeleton, notifier);
         return new Model(meshes, gltfSkeleton);
     }
 
     /// <summary> Convert a .mdl to a mesh (group) per LoD. </summary>
-    private static List<MeshExporter.Mesh> ConvertMeshes(MdlFile mdl, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
+    private static List<MeshExporter.Mesh> ConvertMeshes(ExportConfig config, MdlFile mdl, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
     {
         var meshes = new List<MeshExporter.Mesh>();
 
@@ -44,7 +44,7 @@ public class ModelExporter
             for (ushort meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
             {
                 var meshIndex = (ushort)(lod.MeshIndex + meshOffset);
-                var mesh = MeshExporter.Export(mdl, lodIndex, meshIndex, materials, skeleton, notifier.WithContext($"Mesh {meshIndex}"));
+                var mesh = MeshExporter.Export(config, mdl, lodIndex, meshIndex, materials, skeleton, notifier.WithContext($"Mesh {meshIndex}"));
                 meshes.Add(mesh);
             }
         }
@@ -105,7 +105,7 @@ public class ModelExporter
         return new GltfSkeleton
         {
             Root = root,
-            Joints = [.. joints],
+            Joints = joints,
             Names = names,
         };
     }

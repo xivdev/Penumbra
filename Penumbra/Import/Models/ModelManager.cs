@@ -37,9 +37,9 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task<IoNotifier> ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
+    public Task<IoNotifier> ExportToGltf(ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
         => EnqueueWithResult(
-            new ExportToGltfAction(this, mdl, sklbPaths, read, outputPath),
+            new ExportToGltfAction(this, config, mdl, sklbPaths, read, outputPath),
             action => action.Notifier
         );
 
@@ -182,6 +182,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
     private class ExportToGltfAction(
         ModelManager manager,
+        ExportConfig config,
         MdlFile mdl,
         IEnumerable<string> sklbPaths,
         Func<string, byte[]?> read,
@@ -204,7 +205,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 .ToDictionary(pair => pair.path, pair => pair.material!.Value);
 
             Penumbra.Log.Debug("[GLTF Export] Converting model...");
-            var model = ModelExporter.Export(mdl, xivSkeletons, materials, Notifier);
+            var model = ModelExporter.Export(config, mdl, xivSkeletons, materials, Notifier);
 
             Penumbra.Log.Debug("[GLTF Export] Building scene...");
             var scene = new SceneBuilder();
@@ -219,10 +220,13 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         /// <summary> Attempt to read out the pertinent information from the sklb file paths provided. </summary>
         private IEnumerable<XivSkeleton> BuildSkeletons(CancellationToken cancel)
         {
+            // We're intentionally filtering failed reads here - the failure will
+            // be picked up, if relevant, when the model tries to create mappings
+            // for a bone in the failed sklb.
             var havokTasks = sklbPaths
-                .Select(path => read(path) ?? throw new Exception(
-                    $"Resolved skeleton \"{path}\" could not be read. Ensure EST metadata is configured, and/or relevant mods are enabled in the current collection."))
-                .Select(bytes => new SklbFile(bytes))
+                .Select(path => read(path))
+                .Where(bytes => bytes != null)
+                .Select(bytes => new SklbFile(bytes!))
                 .WithIndex()
                 .Select(CreateHavokTask)
                 .ToArray();

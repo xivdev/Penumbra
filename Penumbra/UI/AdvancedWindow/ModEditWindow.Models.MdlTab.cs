@@ -3,6 +3,7 @@ using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
+using Penumbra.Import.Models.Export;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
@@ -19,6 +20,8 @@ public partial class ModEditWindow
 
         public bool ImportKeepMaterials;
         public bool ImportKeepAttributes;
+
+        public ExportConfig ExportConfig;
 
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
@@ -131,7 +134,7 @@ public partial class ModEditWindow
             }
 
             PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, sklbPaths, ReadFile, outputPath)
+            _edit._models.ExportToGltf(ExportConfig, Mdl, sklbPaths, ReadFile, outputPath)
                 .ContinueWith(task =>
                 {
                     RecordIoExceptions(task.Exception);

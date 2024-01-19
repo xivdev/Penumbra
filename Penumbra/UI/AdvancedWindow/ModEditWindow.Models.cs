@@ -112,6 +112,14 @@ public partial class ModEditWindow
 
         DrawGamePathCombo(tab);
 
+        // ImGui.Checkbox("##exportGeneratedMissingBones", ref tab.ExportGenerateMissingBones);
+        ImGui.Checkbox("##exportGeneratedMissingBones", ref tab.ExportConfig.GenerateMissingBones);
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("Generate missing bones",
+            "WARNING: Enabling this option can result in unusable exported meshes.\n"
+          + "It is primarily intended to allow exporting models weighted to bones that do not exist.\n"
+          + "Before enabling, ensure dependencies are enabled in the current collection, and EST metadata is correctly configured.");
+
         var gamePath = tab.GamePathIndex >= 0 && tab.GamePathIndex < tab.GamePaths.Count
             ? tab.GamePaths[tab.GamePathIndex]
             : _customGamePath;

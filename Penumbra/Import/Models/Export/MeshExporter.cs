@@ -13,14 +13,14 @@ namespace Penumbra.Import.Models.Export;
 
 public class MeshExporter
 {
-    public class Mesh(IEnumerable<MeshData> meshes, NodeBuilder[]? joints)
+    public class Mesh(IEnumerable<MeshData> meshes, GltfSkeleton? skeleton)
     {
         public void AddToScene(SceneBuilder scene)
         {
             foreach (var data in meshes)
             {
-                var instance = joints != null
-                    ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, joints)
+                var instance = skeleton != null
+                    ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, [.. skeleton.Value.Joints])
                     : scene.AddRigidMesh(data.Mesh, Matrix4x4.Identity);
 
                 var extras = new Dictionary<string, object>(data.Attributes.Length);
@@ -38,15 +38,16 @@ public class MeshExporter
         public string[]                      Attributes;
     }
 
-    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
+    public static Mesh Export(ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
     {
-        var self = new MeshExporter(mdl, lod, meshIndex, materials, skeleton?.Names, notifier);
-        return new Mesh(self.BuildMeshes(), skeleton?.Joints);
+        var self = new MeshExporter(config, mdl, lod, meshIndex, materials, skeleton, notifier);
+        return new Mesh(self.BuildMeshes(), skeleton);
     }
 
     private const byte MaximumMeshBufferStreams = 3;
 
-    private readonly IoNotifier _notifier;
+    private readonly ExportConfig _config;
+    private readonly IoNotifier   _notifier;
 
     private readonly MdlFile _mdl;
     private readonly byte    _lod;
@@ -63,8 +64,10 @@ public class MeshExporter
     private readonly Type _materialType;
     private readonly Type _skinningType;
 
-    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, IReadOnlyDictionary<string, int>? boneNameMap, IoNotifier notifier)
+    // TODO: This signature is getting out of control.
+    private MeshExporter(ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
     {
+        _config    = config;
         _notifier  = notifier;
         _mdl       = mdl;
         _lod       = lod;
@@ -72,8 +75,8 @@ public class MeshExporter
 
         _material = materials[XivMesh.MaterialIndex];
 
-        if (boneNameMap != null)
-            _boneIndexMap = BuildBoneIndexMap(boneNameMap);
+        if (skeleton != null)
+            _boneIndexMap = BuildBoneIndexMap(skeleton.Value);
 
         var usages = _mdl.VertexDeclarations[_meshIndex].VertexElements
             .ToImmutableDictionary(
@@ -94,7 +97,7 @@ public class MeshExporter
     }
 
     /// <summary> Build a mapping between indices in this mesh's bone table (if any), and the glTF joint indices provided. </summary>
-    private Dictionary<ushort, int>? BuildBoneIndexMap(IReadOnlyDictionary<string, int> boneNameMap)
+    private Dictionary<ushort, int>? BuildBoneIndexMap(GltfSkeleton skeleton)
     {
         // A BoneTableIndex of 255 means that this mesh is not skinned.
         if (XivMesh.BoneTableIndex == 255)
@@ -107,8 +110,18 @@ public class MeshExporter
         foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take(xivBoneTable.BoneCount).WithIndex())
         {
             var boneName = _mdl.Bones[xivBoneIndex];
-            if (!boneNameMap.TryGetValue(boneName, out var gltfBoneIndex))
-                throw _notifier.Exception($"Armature does not contain bone \"{boneName}\". Ensure all dependencies are enabled in the current collection, and EST entries (if required) are configured.");
+            if (!skeleton.Names.TryGetValue(boneName, out var gltfBoneIndex))
+            {
+                if (!_config.GenerateMissingBones)
+                    throw _notifier.Exception(
+                        $@"Armature does not contain bone ""{boneName}"".
+                        Ensure all dependencies are enabled in the current collection, and EST entries (if required) are configured.
+                        If this is a known issue with this model and you would like to export anyway, enable the ""Generate missing bones"" option."
+                    );
+                
+                (_, gltfBoneIndex) = skeleton.GenerateBone(boneName);
+                _notifier.Warning($"Generated missing bone \"{boneName}\". Vertices weighted to this bone will not move with the rest of the armature.");
+            }
 
             indexMap.Add((ushort)tableIndex, gltfBoneIndex);
         }
