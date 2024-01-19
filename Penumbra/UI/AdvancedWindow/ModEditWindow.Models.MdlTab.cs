@@ -260,7 +260,7 @@ public partial class ModEditWindow
         /// <summary> Read a file from the active collection or game. </summary>
         /// <param name="path"> Game path to the file to load. </param>
         // TODO: Also look up files within the current mod regardless of mod state?
-        private byte[] ReadFile(string path)
+        private byte[]? ReadFile(string path)
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
             if (!Utf8GamePath.FromString(path, out var utf8Path, true))
@@ -269,13 +269,9 @@ public partial class ModEditWindow
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path) ?? new FullPath(utf8Path);
 
             // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
-            var bytes = resolvedPath.IsRooted
+            return resolvedPath.IsRooted
                 ? File.ReadAllBytes(resolvedPath.FullName)
                 : _edit._gameData.GetFile(resolvedPath.InternalName.ToString())?.Data;
-
-            // TODO: some callers may not care about failures - handle exceptions separately?
-            return bytes ?? throw new Exception(
-                $"Resolved path {path} could not be found. If modded, is it enabled in the current collection?");
         }
 
         /// <summary> Remove the material given by the index. </summary>

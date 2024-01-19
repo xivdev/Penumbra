@@ -37,7 +37,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task<IoNotifier> ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]> read, string outputPath)
+    public Task<IoNotifier> ExportToGltf(MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
         => EnqueueWithResult(
             new ExportToGltfAction(this, mdl, sklbPaths, read, outputPath),
             action => action.Notifier
@@ -106,7 +106,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     }
 
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
-    private string ResolveMtrlPath(string rawPath)
+    private string? ResolveMtrlPath(string rawPath, IoNotifier notifier)
     {
         // TODO: this should probably be chosen in the export settings
         var variantId = 1;
@@ -119,13 +119,18 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             ? rawPath
             : '/' + Path.GetFileName(rawPath);
 
-        // TODO: this should be a recoverable warning
         if (absolutePath == null)
-            throw new Exception("Failed to resolve material path.");
+        {
+            notifier.Warning($"Material path \"{rawPath}\" could not be resolved.");
+            return null;
+        }
 
         var info = parser.GetFileInfo(absolutePath);
         if (info.FileType is not FileType.Material)
-            throw new Exception($"Material path {rawPath} does not conform to material conventions.");
+        {
+            notifier.Warning($"Material path {rawPath} does not conform to material conventions.");
+            return null;
+        }
 
         var resolvedPath = info.ObjectType switch
         {
@@ -179,7 +184,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         ModelManager manager,
         MdlFile mdl,
         IEnumerable<string> sklbPaths,
-        Func<string, byte[]> read,
+        Func<string, byte[]?> read,
         string outputPath)
         : IAction
     {
@@ -193,10 +198,10 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             var xivSkeletons = BuildSkeletons(cancel);
 
             Penumbra.Log.Debug("[GLTF Export] Reading materials...");
-            var materials = mdl.Materials.ToDictionary(
-                path => path,
-                path => BuildMaterial(path, cancel)
-            );
+            var materials = mdl.Materials
+                .Select(path => (path, material: BuildMaterial(path, Notifier, cancel)))
+                .Where(pair => pair.material != null)
+                .ToDictionary(pair => pair.path, pair => pair.material!.Value);
 
             Penumbra.Log.Debug("[GLTF Export] Converting model...");
             var model = ModelExporter.Export(mdl, xivSkeletons, materials, Notifier);
@@ -215,7 +220,9 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         private IEnumerable<XivSkeleton> BuildSkeletons(CancellationToken cancel)
         {
             var havokTasks = sklbPaths
-                .Select(path => new SklbFile(read(path)))
+                .Select(path => read(path) ?? throw new Exception(
+                    $"Resolved skeleton \"{path}\" could not be read. Ensure EST metadata is configured, and/or relevant mods are enabled in the current collection."))
+                .Select(bytes => new SklbFile(bytes))
                 .WithIndex()
                 .Select(CreateHavokTask)
                 .ToArray();
@@ -234,10 +241,15 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         }
 
         /// <summary> Read a .mtrl and populate its textures. </summary>
-        private MaterialExporter.Material BuildMaterial(string relativePath, CancellationToken cancel)
+        private MaterialExporter.Material? BuildMaterial(string relativePath, IoNotifier notifier, CancellationToken cancel)
         {
-            var path = manager.ResolveMtrlPath(relativePath);
-            var mtrl = new MtrlFile(read(path));
+            var path = manager.ResolveMtrlPath(relativePath, notifier);
+            if (path == null)
+                return null;
+            var bytes = read(path);
+            if (bytes == null)
+                return null;
+            var mtrl = new MtrlFile(bytes);
 
             return new MaterialExporter.Material
             {
@@ -254,10 +266,21 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         {
             // Work out the texture's path - the DX11 material flag controls a file name prefix.
             GamePaths.Tex.HandleDx11Path(texture, out var texturePath);
-            using var textureData = new MemoryStream(read(texturePath));
+            var bytes = read(texturePath);
+            if (bytes == null)
+                return CreateDummyImage();
+
+            using var textureData = new MemoryStream(bytes);
             var       image       = TexFileParser.Parse(textureData);
             var       pngImage    = TextureManager.ConvertToPng(image, cancel).AsPng;
             return pngImage ?? throw new Exception("Failed to convert texture to png.");
+        }
+
+        private Image<Rgba32> CreateDummyImage()
+        {
+            var image = new Image<Rgba32>(1, 1);
+            image[0, 0] = Color.White;
+            return image;
         }
 
         public bool Equals(IAction? other)

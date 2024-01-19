@@ -55,9 +55,14 @@ public class ModelExporter
     /// <summary> Build materials for each of the material slots in the .mdl. </summary>
     private static MaterialBuilder[] ConvertMaterials(MdlFile mdl, Dictionary<string, MaterialExporter.Material> rawMaterials, IoNotifier notifier)
         => mdl.Materials
-            // TODO: material generation should be fallible, which means this lookup should be a tryget, with a fallback.
-            //       fallback can likely be a static on the material exporter.
-            .Select(name => MaterialExporter.Export(rawMaterials[name], name, notifier.WithContext($"Material {name}")))
+            .Select(name => 
+            {
+                if (rawMaterials.TryGetValue(name, out var rawMaterial))
+                    return MaterialExporter.Export(rawMaterial, name, notifier.WithContext($"Material {name}"));
+                
+                notifier.Warning($"Material \"{name}\" missing, using blank fallback.");
+                return MaterialExporter.Unknown;
+            })
             .ToArray();
 
     /// <summary> Convert XIV skeleton data into a glTF-compatible node tree, with mappings. </summary>

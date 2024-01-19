@@ -22,6 +22,12 @@ public class MaterialExporter
         // variant?
     }
 
+    /// <summary> Dependency-less material configuration, for use when no material data can be resolved. </summary>
+    public static readonly MaterialBuilder Unknown = new MaterialBuilder("UNKNOWN")
+        .WithMetallicRoughnessShader()
+        .WithDoubleSide(true)
+        .WithBaseColor(Vector4.One);
+
     /// <summary> Build a glTF material from a hydrated XIV model, with the provided name. </summary>
     public static MaterialBuilder Export(Material material, string name, IoNotifier notifier)
     {
