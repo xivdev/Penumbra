@@ -112,7 +112,6 @@ public partial class ModEditWindow
 
         DrawGamePathCombo(tab);
 
-        // ImGui.Checkbox("##exportGeneratedMissingBones", ref tab.ExportGenerateMissingBones);
         ImGui.Checkbox("##exportGeneratedMissingBones", ref tab.ExportConfig.GenerateMissingBones);
         ImGui.SameLine();
         ImGuiUtil.LabeledHelpMarker("Generate missing bones",

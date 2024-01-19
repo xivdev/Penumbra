@@ -59,7 +59,7 @@ public class ModelExporter
             {
                 if (rawMaterials.TryGetValue(name, out var rawMaterial))
                     return MaterialExporter.Export(rawMaterial, name, notifier.WithContext($"Material {name}"));
-                
+
                 notifier.Warning($"Material \"{name}\" missing, using blank fallback.");
                 return MaterialExporter.Unknown;
             })

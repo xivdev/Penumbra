@@ -216,7 +216,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 
         // Per glTF specification, an asset with a skin MUST contain skinning attributes on its mesh.
         var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0")
-         ?? throw notifier.Exception($"Skinned mesh \"{meshName}\" is skinned but does not contain skinning vertex attributes.");
+         ?? throw notifier.Exception($"Mesh \"{meshName}\" is skinned but does not contain skinning vertex attributes.");
 
         // Build a set of joints that are referenced by this mesh.
         // TODO: Would be neat to omit 0-weighted joints here, but doing so will require some further work on bone mapping behavior to ensure the unweighted joints can still be resolved to valid bone indices during vertex data construction.
