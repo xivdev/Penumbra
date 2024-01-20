@@ -3,7 +3,7 @@ using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
 
-public class MeshImporter(IEnumerable<Node> nodes)
+public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 {
     public struct Mesh
     {
@@ -33,9 +33,9 @@ public class MeshImporter(IEnumerable<Node> nodes)
         public List<MdlStructs.ShapeValueStruct> ShapeValues;
     }
 
-    public static Mesh Import(IEnumerable<Node> nodes)
+    public static Mesh Import(IEnumerable<Node> nodes, IoNotifier notifier)
     {
-        var importer = new MeshImporter(nodes);
+        var importer = new MeshImporter(nodes, notifier);
         return importer.Create();
     }
 
@@ -115,10 +115,10 @@ public class MeshImporter(IEnumerable<Node> nodes)
         var vertexOffset = _vertexCount;
         var indexOffset  = _indices.Count;
 
-        var nodeBoneMap = CreateNodeBoneMap(node);
-        var subMesh     = SubMeshImporter.Import(node, nodeBoneMap);
-
         var subMeshName = node.Name ?? node.Mesh.Name;
+
+        var nodeBoneMap = CreateNodeBoneMap(node);
+        var subMesh     = SubMeshImporter.Import(node, nodeBoneMap, notifier.WithContext($"Sub-mesh {subMeshName}"));
 
         // TODO: Record a warning if there's a mismatch between current and incoming, as we can't support multiple materials per mesh.
         _material ??= subMesh.Material;
@@ -127,8 +127,11 @@ public class MeshImporter(IEnumerable<Node> nodes)
         if (_vertexDeclaration == null)
             _vertexDeclaration = subMesh.VertexDeclaration;
         else if (VertexDeclarationMismatch(subMesh.VertexDeclaration, _vertexDeclaration.Value))
-            throw new Exception(
-                $"Sub-mesh \"{subMeshName}\" vertex declaration mismatch. All sub-meshes of a mesh must have equivalent vertex declarations.");
+            throw notifier.Exception(
+                $@"All sub-meshes of a mesh must have equivalent vertex declarations.
+                Current: {FormatVertexDeclaration(_vertexDeclaration.Value)}
+                Sub-mesh ""{subMeshName}"": {FormatVertexDeclaration(subMesh.VertexDeclaration)}"
+            );
 
         // Given that strides are derived from declarations, a lack of mismatch in declarations means the strides are fine.
         // TODO: I mean, given that strides are derivable, might be worth dropping strides from the sub mesh return structure and computing when needed.
@@ -170,6 +173,9 @@ public class MeshImporter(IEnumerable<Node> nodes)
         });
     }
 
+    private static string FormatVertexDeclaration(MdlStructs.VertexDeclarationStruct vertexDeclaration)
+        => string.Join(", ", vertexDeclaration.VertexElements.Select(element => $"{element.Usage} ({element.Type}@{element.Stream}:{element.Offset})"));
+
     private static bool VertexDeclarationMismatch(MdlStructs.VertexDeclarationStruct a, MdlStructs.VertexDeclarationStruct b)
     {
         var elA = a.VertexElements;
@@ -204,13 +210,13 @@ public class MeshImporter(IEnumerable<Node> nodes)
         var meshName       = node.Name ?? mesh.Name ?? "(no name)";
         var primitiveCount = mesh.Primitives.Count;
         if (primitiveCount != 1)
-            throw new Exception($"Mesh \"{meshName}\" has {primitiveCount} primitives, expected 1.");
+            throw notifier.Exception($"Mesh \"{meshName}\" has {primitiveCount} primitives, expected 1.");
 
         var primitive = mesh.Primitives[0];
 
         // Per glTF specification, an asset with a skin MUST contain skinning attributes on its mesh.
         var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0")
-         ?? throw new Exception($"Skinned mesh \"{meshName}\" is skinned but does not contain skinning vertex attributes.");
+         ?? throw notifier.Exception($"Mesh \"{meshName}\" is skinned but does not contain skinning vertex attributes.");
 
         // Build a set of joints that are referenced by this mesh.
         // TODO: Would be neat to omit 0-weighted joints here, but doing so will require some further work on bone mapping behavior to ensure the unweighted joints can still be resolved to valid bone indices during vertex data construction.

@@ -13,14 +13,14 @@ namespace Penumbra.Import.Models.Export;
 
 public class MeshExporter
 {
-    public class Mesh(IEnumerable<MeshData> meshes, NodeBuilder[]? joints)
+    public class Mesh(IEnumerable<MeshData> meshes, GltfSkeleton? skeleton)
     {
         public void AddToScene(SceneBuilder scene)
         {
             foreach (var data in meshes)
             {
-                var instance = joints != null
-                    ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, joints)
+                var instance = skeleton != null
+                    ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, [.. skeleton.Value.Joints])
                     : scene.AddRigidMesh(data.Mesh, Matrix4x4.Identity);
 
                 var extras = new Dictionary<string, object>(data.Attributes.Length);
@@ -38,13 +38,18 @@ public class MeshExporter
         public string[]                      Attributes;
     }
 
-    public static Mesh Export(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton)
+    public static Mesh Export(in ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials,
+        GltfSkeleton? skeleton,
+        IoNotifier notifier)
     {
-        var self = new MeshExporter(mdl, lod, meshIndex, materials, skeleton?.Names);
-        return new Mesh(self.BuildMeshes(), skeleton?.Joints);
+        var self = new MeshExporter(config, mdl, lod, meshIndex, materials, skeleton, notifier);
+        return new Mesh(self.BuildMeshes(), skeleton);
     }
 
     private const byte MaximumMeshBufferStreams = 3;
+
+    private readonly ExportConfig _config;
+    private readonly IoNotifier   _notifier;
 
     private readonly MdlFile _mdl;
     private readonly byte    _lod;
@@ -61,16 +66,20 @@ public class MeshExporter
     private readonly Type _materialType;
     private readonly Type _skinningType;
 
-    private MeshExporter(MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, IReadOnlyDictionary<string, int>? boneNameMap)
+    // TODO: This signature is getting out of control.
+    private MeshExporter(in ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials,
+        GltfSkeleton? skeleton, IoNotifier notifier)
     {
+        _config    = config;
+        _notifier  = notifier;
         _mdl       = mdl;
         _lod       = lod;
         _meshIndex = meshIndex;
 
         _material = materials[XivMesh.MaterialIndex];
 
-        if (boneNameMap != null)
-            _boneIndexMap = BuildBoneIndexMap(boneNameMap);
+        if (skeleton != null)
+            _boneIndexMap = BuildBoneIndexMap(skeleton.Value);
 
         var usages = _mdl.VertexDeclarations[_meshIndex].VertexElements
             .ToImmutableDictionary(
@@ -84,14 +93,14 @@ public class MeshExporter
 
         // If there's skinning usages but no bone mapping, there's probably something wrong with the data.
         if (_skinningType != typeof(VertexEmpty) && _boneIndexMap == null)
-            Penumbra.Log.Warning($"Mesh {meshIndex} has skinned vertex usages but no bone information was provided.");
+            _notifier.Warning($"Skinned vertex usages but no bone information was provided.");
 
         Penumbra.Log.Debug(
             $"Mesh {meshIndex} using vertex types geometry: {_geometryType.Name}, material: {_materialType.Name}, skinning: {_skinningType.Name}");
     }
 
     /// <summary> Build a mapping between indices in this mesh's bone table (if any), and the glTF joint indices provided. </summary>
-    private Dictionary<ushort, int>? BuildBoneIndexMap(IReadOnlyDictionary<string, int> boneNameMap)
+    private Dictionary<ushort, int>? BuildBoneIndexMap(GltfSkeleton skeleton)
     {
         // A BoneTableIndex of 255 means that this mesh is not skinned.
         if (XivMesh.BoneTableIndex == 255)
@@ -104,8 +113,19 @@ public class MeshExporter
         foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take(xivBoneTable.BoneCount).WithIndex())
         {
             var boneName = _mdl.Bones[xivBoneIndex];
-            if (!boneNameMap.TryGetValue(boneName, out var gltfBoneIndex))
-                throw new Exception($"Armature does not contain bone \"{boneName}\" requested by mesh {_meshIndex}.");
+            if (!skeleton.Names.TryGetValue(boneName, out var gltfBoneIndex))
+            {
+                if (!_config.GenerateMissingBones)
+                    throw _notifier.Exception(
+                        $@"Armature does not contain bone ""{boneName}"".
+                        Ensure all dependencies are enabled in the current collection, and EST entries (if required) are configured.
+                        If this is a known issue with this model and you would like to export anyway, enable the ""Generate missing bones"" option."
+                    );
+
+                (_, gltfBoneIndex) = skeleton.GenerateBone(boneName);
+                _notifier.Warning(
+                    $"Generated missing bone \"{boneName}\". Vertices weighted to this bone will not move with the rest of the armature.");
+            }
 
             indexMap.Add((ushort)tableIndex, gltfBoneIndex);
         }
@@ -128,7 +148,7 @@ public class MeshExporter
             .Take(XivMesh.SubMeshCount)
             .WithIndex()
             .Select(subMesh => BuildMesh($"mesh {_meshIndex}.{subMesh.Index}", indices, vertices,
-                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex), (int)subMesh.Value.IndexCount,
+                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex),         (int)subMesh.Value.IndexCount,
                 subMesh.Value.AttributeIndexMask))
             .ToArray();
     }
@@ -217,7 +237,7 @@ public class MeshExporter
 
         return new MeshData
         {
-            Mesh = meshBuilder,
+            Mesh       = meshBuilder,
             Attributes = attributes,
         };
     }
@@ -271,7 +291,7 @@ public class MeshExporter
     }
 
     /// <summary> Read a vertex attribute of the specified type from a vertex buffer stream. </summary>
-    private static object ReadVertexAttribute(MdlFile.VertexType type, BinaryReader reader)
+    private object ReadVertexAttribute(MdlFile.VertexType type, BinaryReader reader)
     {
         return type switch
         {
@@ -284,15 +304,15 @@ public class MeshExporter
             MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(),
                 (float)reader.ReadHalf()),
 
-            _ => throw new ArgumentOutOfRangeException(),
+            var other => throw _notifier.Exception<ArgumentOutOfRangeException>($"Unhandled vertex type {other}"),
         };
     }
 
     /// <summary> Get the vertex geometry type for this mesh's vertex usages. </summary>
-    private static Type GetGeometryType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
+    private Type GetGeometryType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
     {
         if (!usages.ContainsKey(MdlFile.VertexUsage.Position))
-            throw new Exception("Mesh does not contain position vertex elements.");
+            throw _notifier.Exception("Mesh does not contain position vertex elements.");
 
         if (!usages.ContainsKey(MdlFile.VertexUsage.Normal))
             return typeof(VertexPosition);
@@ -330,11 +350,11 @@ public class MeshExporter
             );
         }
 
-        throw new Exception($"Unknown geometry type {_geometryType}.");
+        throw _notifier.Exception($"Unknown geometry type {_geometryType}.");
     }
 
     /// <summary> Get the vertex material type for this mesh's vertex usages. </summary>
-    private static Type GetMaterialType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
+    private Type GetMaterialType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
     {
         var uvCount = 0;
         if (usages.TryGetValue(MdlFile.VertexUsage.UV, out var type))
@@ -343,7 +363,7 @@ public class MeshExporter
                 MdlFile.VertexType.Half2   => 1,
                 MdlFile.VertexType.Half4   => 2,
                 MdlFile.VertexType.Single4 => 2,
-                _                          => throw new Exception($"Unexpected UV vertex type {type}."),
+                _                          => throw _notifier.Exception($"Unexpected UV vertex type {type}."),
             };
 
         var materialUsages = (
@@ -403,7 +423,7 @@ public class MeshExporter
             );
         }
 
-        throw new Exception($"Unknown material type {_skinningType}");
+        throw _notifier.Exception($"Unknown material type {_skinningType}");
     }
 
     /// <summary> Get the vertex skinning type for this mesh's vertex usages. </summary>
@@ -424,7 +444,7 @@ public class MeshExporter
         if (_skinningType == typeof(VertexJoints4))
         {
             if (_boneIndexMap == null)
-                throw new Exception("Tried to build skinned vertex but no bone mappings are available.");
+                throw _notifier.Exception("Tried to build skinned vertex but no bone mappings are available.");
 
             var indices = ToByteArray(attributes[MdlFile.VertexUsage.BlendIndices]);
             var weights = ToVector4(attributes[MdlFile.VertexUsage.BlendWeights]);
@@ -435,7 +455,7 @@ public class MeshExporter
                     // NOTE: I've not seen any files that throw this error that aren't completely broken.
                     var xivBoneIndex = indices[bindingIndex];
                     if (!_boneIndexMap.TryGetValue(xivBoneIndex, out var jointIndex))
-                        throw new Exception($"Vertex contains weight for unknown bone index {xivBoneIndex}.");
+                        throw _notifier.Exception($"Vertex contains weight for unknown bone index {xivBoneIndex}.");
 
                     return (jointIndex, weights[bindingIndex]);
                 })
@@ -443,7 +463,7 @@ public class MeshExporter
             return new VertexJoints4(bindings);
         }
 
-        throw new Exception($"Unknown skinning type {_skinningType}");
+        throw _notifier.Exception($"Unknown skinning type {_skinningType}");
     }
 
     /// <summary> Convert a vertex attribute value to a Vector2. Supported inputs are Vector2, Vector3, and Vector4. </summary>

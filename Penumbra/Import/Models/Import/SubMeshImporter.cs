@@ -28,11 +28,13 @@ public class SubMeshImporter
         public Dictionary<string, List<MdlStructs.ShapeValueStruct>> ShapeValues;
     }
 
-    public static SubMesh Import(Node node, IDictionary<ushort, ushort>? nodeBoneMap)
+    public static SubMesh Import(Node node, IDictionary<ushort, ushort>? nodeBoneMap, IoNotifier notifier)
     {
-        var importer = new SubMeshImporter(node, nodeBoneMap);
+        var importer = new SubMeshImporter(node, nodeBoneMap, notifier);
         return importer.Create();
     }
+
+    private readonly IoNotifier _notifier;
 
     private readonly MeshPrimitive                     _primitive;
     private readonly IDictionary<ushort, ushort>?      _nodeBoneMap;
@@ -53,16 +55,15 @@ public class SubMeshImporter
     private readonly List<string>?                                          _morphNames;
     private          Dictionary<string, List<MdlStructs.ShapeValueStruct>>? _shapeValues;
 
-    private SubMeshImporter(Node node, IDictionary<ushort, ushort>? nodeBoneMap)
+    private SubMeshImporter(Node node, IDictionary<ushort, ushort>? nodeBoneMap, IoNotifier notifier)
     {
+        _notifier = notifier;
+
         var mesh = node.Mesh;
 
         var primitiveCount = mesh.Primitives.Count;
         if (primitiveCount != 1)
-        {
-            var name = node.Name ?? mesh.Name ?? "(no name)";
-            throw new Exception($"Mesh \"{name}\" has {primitiveCount} primitives, expected 1.");
-        }
+            throw _notifier.Exception($"Mesh has {primitiveCount} primitives, expected 1.");
 
         _primitive   = mesh.Primitives[0];
         _nodeBoneMap = nodeBoneMap;
@@ -115,7 +116,7 @@ public class SubMeshImporter
         {
             < 32 => (1u << _metaAttributes.Length) - 1,
               32 => uint.MaxValue,
-            > 32 => throw new Exception("Models may utilise a maximum of 32 attributes."),
+            > 32 => throw _notifier.Exception("Models may utilise a maximum of 32 attributes."),
         };
 
         return new SubMesh()
@@ -165,11 +166,11 @@ public class SubMeshImporter
         // The order here is chosen to match a typical model's element order.
         var rawAttributes = new[]
         {
-            VertexAttribute.Position(accessors, morphAccessors),
-            VertexAttribute.BlendWeight(accessors),
-            VertexAttribute.BlendIndex(accessors, _nodeBoneMap),
+            VertexAttribute.Position(accessors, morphAccessors, _notifier),
+            VertexAttribute.BlendWeight(accessors, _notifier),
+            VertexAttribute.BlendIndex(accessors, _nodeBoneMap, _notifier),
             VertexAttribute.Normal(accessors, morphAccessors),
-            VertexAttribute.Tangent1(accessors, morphAccessors, _indices),
+            VertexAttribute.Tangent1(accessors, morphAccessors, _indices, _notifier),
             VertexAttribute.Color(accessors),
             VertexAttribute.Uv(accessors),
         };

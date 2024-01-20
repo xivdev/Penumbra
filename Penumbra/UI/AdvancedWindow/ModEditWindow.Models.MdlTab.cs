@@ -2,6 +2,8 @@ using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
+using Penumbra.Import.Models.Export;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
@@ -13,11 +15,13 @@ public partial class ModEditWindow
     {
         private readonly ModEditWindow _edit;
 
-        public  MdlFile        Mdl         { get; private set; }
+        public  MdlFile         Mdl { get; private set; }
         private List<string>?[] _attributes;
 
         public bool ImportKeepMaterials;
         public bool ImportKeepAttributes;
+
+        public ExportConfig ExportConfig;
 
         public List<Utf8GamePath>? GamePaths { get; private set; }
         public int                 GamePathIndex;
@@ -25,6 +29,7 @@ public partial class ModEditWindow
         private bool            _dirty;
         public  bool            PendingIo    { get; private set; }
         public  List<Exception> IoExceptions { get; private set; } = [];
+        public  List<string>    IoWarnings   { get; private set; } = [];
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
@@ -38,7 +43,7 @@ public partial class ModEditWindow
         [MemberNotNull(nameof(Mdl), nameof(_attributes))]
         private void Initialize(MdlFile mdl)
         {
-            Mdl = mdl;
+            Mdl         = mdl;
             _attributes = CreateAttributes(Mdl);
         }
 
@@ -90,14 +95,14 @@ public partial class ModEditWindow
             task.ContinueWith(t =>
             {
                 RecordIoExceptions(t.Exception);
-                GamePaths   = t.Result;
-                PendingIo   = false;
+                GamePaths = t.Result;
+                PendingIo = false;
             });
         }
 
         private EstManipulation[] GetCurrentEstManipulations()
         {
-            var mod = _edit._editor.Mod;
+            var mod    = _edit._editor.Mod;
             var option = _edit._editor.Option;
             if (mod == null || option == null)
                 return [];
@@ -129,15 +134,17 @@ public partial class ModEditWindow
             }
 
             PendingIo = true;
-            _edit._models.ExportToGltf(Mdl, sklbPaths, ReadFile, outputPath)
+            _edit._models.ExportToGltf(ExportConfig, Mdl, sklbPaths, ReadFile, outputPath)
                 .ContinueWith(task =>
                 {
                     RecordIoExceptions(task.Exception);
-                    PendingIo   = false;
+                    if (task is { IsCompletedSuccessfully: true, Result: not null })
+                        IoWarnings = task.Result.GetWarnings().ToList();
+                    PendingIo = false;
                 });
         }
-		
-		/// <summary> Import a model from an interchange format. </summary>
+
+        /// <summary> Import a model from an interchange format. </summary>
         /// <param name="inputPath"> Disk path to load model data from. </param>
         public void Import(string inputPath)
         {
@@ -146,8 +153,12 @@ public partial class ModEditWindow
                 .ContinueWith(task =>
                 {
                     RecordIoExceptions(task.Exception);
-                    if (task is { IsCompletedSuccessfully: true, Result: not null })
-                        FinalizeImport(task.Result);
+                    if (task is { IsCompletedSuccessfully: true, Result: (not null, _) })
+                    {
+                        IoWarnings = task.Result.Item2.GetWarnings().ToList();
+                        FinalizeImport(task.Result.Item1);
+                    }
+
                     PendingIo = false;
                 });
         }
@@ -168,11 +179,11 @@ public partial class ModEditWindow
             // TODO: Add flag editing.
             newMdl.Flags1 = Mdl.Flags1;
             newMdl.Flags2 = Mdl.Flags2;
-            
+
             Initialize(newMdl);
             _dirty = true;
         }
-        
+
         /// <summary> Merge material configuration from the source onto the target. </summary>
         /// <param name="target"> Model that will be updated. </param>
         /// <param name="source"> Model to copy material configuration from. </param>
@@ -208,10 +219,12 @@ public partial class ModEditWindow
                 // to maintain semantic connection between mesh index and sub mesh attributes.
                 if (meshIndex >= source.Meshes.Length)
                     continue;
+
                 var sourceMesh = source.Meshes[meshIndex];
 
                 if (subMeshOffset >= sourceMesh.SubMeshCount)
                     continue;
+
                 var sourceSubMesh = source.SubMeshes[sourceMesh.SubMeshIndex + subMeshOffset];
 
                 target.SubMeshes[subMeshIndex].AttributeIndexMask = sourceSubMesh.AttributeIndexMask;
@@ -227,11 +240,13 @@ public partial class ModEditWindow
 
             foreach (var sourceElement in source.ElementIds)
             {
-                var sourceBone = source.Bones[sourceElement.ParentBoneName];
+                var sourceBone  = source.Bones[sourceElement.ParentBoneName];
                 var targetIndex = target.Bones.IndexOf(sourceBone);
                 // Given that there's no means of authoring these at the moment, this should probably remain a hard error.
                 if (targetIndex == -1)
-                    throw new Exception($"Failed to merge element IDs. Original model contains element IDs targeting bone {sourceBone}, which is not present on the imported model.");
+                    throw new Exception(
+                        $"Failed to merge element IDs. Original model contains element IDs targeting bone {sourceBone}, which is not present on the imported model.");
+
                 elementIds.Add(sourceElement with
                 {
                     ParentBoneName = (uint)targetIndex,
@@ -243,17 +258,18 @@ public partial class ModEditWindow
 
         private void RecordIoExceptions(Exception? exception)
         {
-            IoExceptions = exception switch {
+            IoExceptions = exception switch
+            {
                 null                  => [],
                 AggregateException ae => [.. ae.Flatten().InnerExceptions],
                 _                     => [exception],
             };
         }
-        
+
         /// <summary> Read a file from the active collection or game. </summary>
         /// <param name="path"> Game path to the file to load. </param>
         // TODO: Also look up files within the current mod regardless of mod state?
-        private byte[] ReadFile(string path)
+        private byte[]? ReadFile(string path)
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
             if (!Utf8GamePath.FromString(path, out var utf8Path, true))
@@ -262,13 +278,9 @@ public partial class ModEditWindow
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path) ?? new FullPath(utf8Path);
 
             // TODO: is it worth trying to use streams for these instead? I'll need to do this for mtrl/tex too, so might be a good idea. that said, the mtrl reader doesn't accept streams, so...
-            var bytes = resolvedPath.IsRooted
+            return resolvedPath.IsRooted
                 ? File.ReadAllBytes(resolvedPath.FullName)
                 : _edit._gameData.GetFile(resolvedPath.InternalName.ToString())?.Data;
-
-            // TODO: some callers may not care about failures - handle exceptions separately?
-            return bytes ?? throw new Exception(
-                $"Resolved path {path} could not be found. If modded, is it enabled in the current collection?");
         }
 
         /// <summary> Remove the material given by the index. </summary>
@@ -291,7 +303,7 @@ public partial class ModEditWindow
 
         /// <summary> Create a list of attributes per sub mesh. </summary>
         private static List<string>?[] CreateAttributes(MdlFile mdl)
-            => mdl.SubMeshes.Select(s => 
+            => mdl.SubMeshes.Select(s =>
             {
                 var maxAttribute = 31 - BitOperations.LeadingZeroCount(s.AttributeIndexMask);
                 // TODO: Research what results in this - it seems to primarily be reproducible on bgparts, is it garbage data, or an alternative usage of the value?

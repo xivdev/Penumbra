@@ -72,10 +72,10 @@ public class VertexAttribute
     private byte[] DefaultBuildMorph(int morphIndex, int vertexIndex)
         => Build(vertexIndex);
 
-    public static VertexAttribute Position(Accessors accessors, IEnumerable<Accessors> morphAccessors)
+    public static VertexAttribute Position(Accessors accessors, IEnumerable<Accessors> morphAccessors, IoNotifier notifier)
     {
         if (!accessors.TryGetValue("POSITION", out var accessor))
-            throw new Exception("Meshes must contain a POSITION attribute.");
+            throw notifier.Exception("Meshes must contain a POSITION attribute.");
 
         var element = new MdlStructs.VertexElement()
         {
@@ -115,13 +115,13 @@ public class VertexAttribute
         );
     }
 
-    public static VertexAttribute? BlendWeight(Accessors accessors)
+    public static VertexAttribute? BlendWeight(Accessors accessors, IoNotifier notifier)
     {
         if (!accessors.TryGetValue("WEIGHTS_0", out var accessor))
             return null;
 
         if (!accessors.ContainsKey("JOINTS_0"))
-            throw new Exception("Mesh contained WEIGHTS_0 attribute but no corresponding JOINTS_0 attribute.");
+            throw notifier.Exception("Mesh contained WEIGHTS_0 attribute but no corresponding JOINTS_0 attribute.");
 
         var element = new MdlStructs.VertexElement()
         {
@@ -138,16 +138,16 @@ public class VertexAttribute
         );
     }
 
-    public static VertexAttribute? BlendIndex(Accessors accessors, IDictionary<ushort, ushort>? boneMap)
+    public static VertexAttribute? BlendIndex(Accessors accessors, IDictionary<ushort, ushort>? boneMap, IoNotifier notifier)
     {
         if (!accessors.TryGetValue("JOINTS_0", out var accessor))
             return null;
 
         if (!accessors.ContainsKey("WEIGHTS_0"))
-            throw new Exception("Mesh contained JOINTS_0 attribute but no corresponding WEIGHTS_0 attribute.");
+            throw notifier.Exception("Mesh contained JOINTS_0 attribute but no corresponding WEIGHTS_0 attribute.");
 
         if (boneMap == null)
-            throw new Exception("Mesh contained JOINTS_0 attribute but no bone mapping was created.");
+            throw notifier.Exception("Mesh contained JOINTS_0 attribute but no bone mapping was created.");
 
         var element = new MdlStructs.VertexElement()
         {
@@ -242,22 +242,22 @@ public class VertexAttribute
         );
     }
 
-    public static VertexAttribute? Tangent1(Accessors accessors, IEnumerable<Accessors> morphAccessors, ushort[] indices)
+    public static VertexAttribute? Tangent1(Accessors accessors, IEnumerable<Accessors> morphAccessors, ushort[] indices, IoNotifier notifier)
     {
         if (!accessors.TryGetValue("NORMAL", out var normalAccessor))
         {
-            Penumbra.Log.Warning("Normals are required to facilitate import or calculation of tangents.");
+            notifier.Warning("Normals are required to facilitate import or calculation of tangents.");
             return null;
         }
 
         var normals = normalAccessor.AsVector3Array();
         var tangents = accessors.TryGetValue("TANGENT", out var accessor)
             ? accessor.AsVector4Array()
-            : CalculateTangents(accessors, indices, normals);
+            : CalculateTangents(accessors, indices, normals, notifier);
 
         if (tangents == null)
         {
-            Penumbra.Log.Warning("No tangents available for sub-mesh. This could lead to incorrect lighting, or mismatched vertex attributes.");
+            notifier.Warning("No tangents available for sub-mesh. This could lead to incorrect lighting, or mismatched vertex attributes.");
             return null;
         }
 
@@ -309,7 +309,7 @@ public class VertexAttribute
     }
 
     /// <summary> Attempt to calculate tangent values based on other pre-existing data. </summary>
-    private static Vector4[]? CalculateTangents(Accessors accessors, ushort[] indices, IList<Vector3> normals)
+    private static Vector4[]? CalculateTangents(Accessors accessors, ushort[] indices, IList<Vector3> normals, IoNotifier notifier)
     {
         // To calculate tangents, we will also need access to uv data.
         if (!accessors.TryGetValue("TEXCOORD_0", out var uvAccessor))
@@ -318,8 +318,7 @@ public class VertexAttribute
         var positions = accessors["POSITION"].AsVector3Array();
         var uvs       = uvAccessor.AsVector2Array();
 
-        // TODO: Surface this in the UI.
-        Penumbra.Log.Warning(
+        notifier.Warning(
             "Calculating tangents, this may result in degraded light interaction. For best results, ensure tangents are caculated or retained during export from 3D modelling tools.");
 
         var vertexCount = positions.Count;

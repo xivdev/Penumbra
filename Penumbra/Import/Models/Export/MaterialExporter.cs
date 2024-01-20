@@ -22,8 +22,14 @@ public class MaterialExporter
         // variant?
     }
 
+    /// <summary> Dependency-less material configuration, for use when no material data can be resolved. </summary>
+    public static readonly MaterialBuilder Unknown = new MaterialBuilder("UNKNOWN")
+        .WithMetallicRoughnessShader()
+        .WithDoubleSide(true)
+        .WithBaseColor(Vector4.One);
+
     /// <summary> Build a glTF material from a hydrated XIV model, with the provided name. </summary>
-    public static MaterialBuilder Export(Material material, string name)
+    public static MaterialBuilder Export(Material material, string name, IoNotifier notifier)
     {
         Penumbra.Log.Debug($"Exporting material \"{name}\".");
         return material.Mtrl.ShaderPackage.Name switch
@@ -34,7 +40,7 @@ public class MaterialExporter
             "hair.shpk"           => BuildHair(material, name),
             "iris.shpk"           => BuildIris(material, name),
             "skin.shpk"           => BuildSkin(material, name),
-            _                     => BuildFallback(material, name),
+            _                     => BuildFallback(material, name, notifier),
         };
     }
 
@@ -335,9 +341,9 @@ public class MaterialExporter
 
     /// <summary> Build a material from a source with unknown semantics. </summary>
     /// <remarks> Will make a loose effort to fetch common / simple textures. </remarks>
-    private static MaterialBuilder BuildFallback(Material material, string name)
+    private static MaterialBuilder BuildFallback(Material material, string name, IoNotifier notifier)
     {
-        Penumbra.Log.Warning($"Unhandled shader package: {material.Mtrl.ShaderPackage.Name}");
+        notifier.Warning($"Unhandled shader package: {material.Mtrl.ShaderPackage.Name}");
 
         var materialBuilder = BuildSharedBase(material, name)
             .WithMetallicRoughnessShader()

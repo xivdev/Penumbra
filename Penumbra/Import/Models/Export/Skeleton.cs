@@ -28,8 +28,18 @@ public struct GltfSkeleton
     public NodeBuilder Root;
 
     /// <summary> Flattened list of skeleton nodes. </summary>
-    public NodeBuilder[] Joints;
+    public List<NodeBuilder> Joints;
 
     /// <summary> Mapping of bone names to their index within the joints array. </summary>
     public Dictionary<string, int> Names;
+
+    public (NodeBuilder, int) GenerateBone(string name)
+    {
+        var node = new NodeBuilder(name);
+        var index = Joints.Count;
+        Names[name] = index;
+        Joints.Add(node);
+        Root.AddNode(node);
+        return (node, index);
+    }
 }
