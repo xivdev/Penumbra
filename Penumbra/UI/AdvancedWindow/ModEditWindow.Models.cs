@@ -419,10 +419,8 @@ public partial class ModEditWindow
 
     private static bool DrawOtherModelDetails(MdlFile file, bool _)
     {
-        if (!ImGui.CollapsingHeader("Further Content"))
+        if (!ImRaii.CollapsingHeader("Further Content"))
             return false;
-
-        using var furtherContentId = ImRaii.PushId("furtherContent");
 
         using (var table = ImRaii.Table("##data", 2, ImGuiTableFlags.SizingFixedFit))
         {
