@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.GameData;
@@ -13,7 +14,9 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private const int MdlMaterialMaximum = 4;
+    private const int    MdlMaterialMaximum     = 4;
+    private const string MdlImportDocumentation = @"https://github.com/xivdev/Penumbra/wiki/Model-IO#import";
+    private const string MdlExportDocumentation = @"https://github.com/xivdev/Penumbra/wiki/Model-IO#export";
 
     private readonly FileEditor<MdlTab> _modelTab;
     private readonly ModelManager       _models;
@@ -67,6 +70,8 @@ public partial class ModEditWindow
 
     private void DrawImport(MdlTab tab, Vector2 size, bool _1)
     {
+        using var id = ImRaii.PushId("import");
+
         _dragDropManager.CreateImGuiSource("ModelDragDrop",
             m => m.Extensions.Any(e => ValidModelExtensions.Contains(e.ToLowerInvariant())), m =>
             {
@@ -89,6 +94,9 @@ public partial class ModEditWindow
                     if (success && paths.Count > 0)
                         tab.Import(paths[0]);
                 }, 1, _mod!.ModPath.FullName, false);
+
+            ImGui.SameLine();
+            DrawDocumentationLink(MdlImportDocumentation);
         }
 
         if (_dragDropManager.CreateImGuiTarget("ModelDragDrop", out var files, out _) && GetFirstModel(files, out var importFile))
@@ -97,6 +105,7 @@ public partial class ModEditWindow
 
     private void DrawExport(MdlTab tab, Vector2 size, bool _)
     {
+        using var id    = ImRaii.PushId("export");
         using var frame = ImRaii.FramedGroup("Export", size, headerPreIcon: FontAwesomeIcon.FileExport);
 
         if (tab.GamePaths == null)
@@ -110,10 +119,10 @@ public partial class ModEditWindow
         }
 
         DrawGamePathCombo(tab);
-
         var gamePath = tab.GamePathIndex >= 0 && tab.GamePathIndex < tab.GamePaths.Count
             ? tab.GamePaths[tab.GamePathIndex]
             : _customGamePath;
+
         if (ImGuiUtil.DrawDisabledButton("Export to glTF", Vector2.Zero, "Exports this mdl file to glTF, for use in 3D authoring applications.",
                 tab.PendingIo || gamePath.IsEmpty))
             _fileDialog.OpenSavePicker("Save model as glTF.", ".gltf", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
@@ -127,6 +136,9 @@ public partial class ModEditWindow
                 _mod!.ModPath.FullName,
                 false
             );
+
+        ImGui.SameLine();
+        DrawDocumentationLink(MdlExportDocumentation);
     }
     
     private static void DrawIoExceptions(MdlTab tab)
@@ -203,6 +215,24 @@ public partial class ModEditWindow
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             ImGui.SetClipboardText(preview);
         ImGuiUtil.HoverTooltip("Right-Click to copy to clipboard.", ImGuiHoveredFlags.AllowWhenDisabled);
+    }
+
+    private void DrawDocumentationLink(string address)
+    {
+        const string text = "Documentation →";
+
+        var framePadding = ImGui.GetStyle().FramePadding;
+        var width        = ImGui.CalcTextSize(text).X + framePadding.X * 2;
+
+        // Draw the link button. We set the background colour to transparent to mimic the look of a link.
+        using var color = ImRaii.PushColor(ImGuiCol.Button, 0x00000000);
+        CustomGui.DrawLinkButton(Penumbra.Messager, text, address, width);
+
+        // Draw an underline for the text.
+        var lineStart = ImGui.GetItemRectMax();
+        lineStart -= framePadding;
+        var lineEnd = lineStart with { X = ImGui.GetItemRectMin().X + framePadding.X };
+        ImGui.GetWindowDrawList().AddLine(lineStart, lineEnd, 0xFFFFFFFF);
     }
 
     private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
@@ -326,7 +356,7 @@ public partial class ModEditWindow
 
         // Sub meshes
         for (var subMeshOffset = 0; subMeshOffset < mesh.SubMeshCount; subMeshOffset++)
-            ret |= DrawSubMeshAttributes(tab, meshIndex, disabled, subMeshOffset);
+            ret |= DrawSubMeshAttributes(tab, meshIndex, subMeshOffset, disabled);
 
         return ret;
     }
@@ -354,7 +384,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawSubMeshAttributes(MdlTab tab, int meshIndex, bool disabled, int subMeshOffset)
+    private bool DrawSubMeshAttributes(MdlTab tab, int meshIndex, int subMeshOffset, bool disabled)
     {
         using var _ = ImRaii.PushId(subMeshOffset);
 
@@ -368,6 +398,12 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         var widget     = _subMeshAttributeTagWidgets[subMeshIndex];
         var attributes = tab.GetSubMeshAttributes(subMeshIndex);
+
+        if (attributes == null)
+        {
+            attributes = ["invalid attribute data"];
+            disabled = true;
+        }
 
         var tagIndex = widget.Draw(string.Empty, string.Empty, attributes,
             out var editedAttribute, !disabled);
@@ -383,7 +419,7 @@ public partial class ModEditWindow
 
     private static bool DrawOtherModelDetails(MdlFile file, bool _)
     {
-        if (!ImGui.CollapsingHeader("Further Content"))
+        if (!ImRaii.CollapsingHeader("Further Content"))
             return false;
 
         using (var table = ImRaii.Table("##data", 2, ImGuiTableFlags.SizingFixedFit))

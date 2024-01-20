@@ -234,7 +234,7 @@ public class SubMeshImporter
 
         foreach (var (modifiedVertices, morphIndex) in morphModifiedVertices.WithIndex())
         {
-            // Each for a given mesh, each shape key contains a list of shape value mappings.
+            // For a given mesh, each shape key contains a list of shape value mappings.
             var shapeValues = new List<MdlStructs.ShapeValueStruct>();
 
             foreach (var vertexIndex in modifiedVertices)
