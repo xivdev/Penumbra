@@ -386,6 +386,8 @@ public partial class ModEditWindow
         if (!ImGui.CollapsingHeader("Further Content"))
             return false;
 
+        using var furtherContentId = ImRaii.PushId("furtherContent");
+
         using (var table = ImRaii.Table("##data", 2, ImGuiTableFlags.SizingFixedFit))
         {
             if (table)
