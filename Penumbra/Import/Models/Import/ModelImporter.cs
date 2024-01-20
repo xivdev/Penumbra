@@ -134,7 +134,6 @@ public partial class ModelImporter(ModelRoot model)
         var subMeshOffset    = _subMeshes.Count;
         var vertexOffset     = _vertexBuffer.Count;
         var indexOffset      = _indices.Count;
-        var shapeValueOffset = _shapeValues.Count;
 
         var mesh           = MeshImporter.Import(subMeshNodes);
         var meshStartIndex = (uint)(mesh.MeshStruct.StartIndex + indexOffset);
@@ -184,7 +183,7 @@ public partial class ModelImporter(ModelRoot model)
             shapeMeshes.Add(meshShapeKey.ShapeMesh with
             {
                 MeshIndexOffset = meshStartIndex,
-                ShapeValueOffset = (uint)shapeValueOffset,
+                ShapeValueOffset = (uint)_shapeValues.Count,
             });
 
             _shapeValues.AddRange(meshShapeKey.ShapeValues);
