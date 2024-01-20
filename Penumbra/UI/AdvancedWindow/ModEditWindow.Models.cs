@@ -326,7 +326,7 @@ public partial class ModEditWindow
 
         // Sub meshes
         for (var subMeshOffset = 0; subMeshOffset < mesh.SubMeshCount; subMeshOffset++)
-            ret |= DrawSubMeshAttributes(tab, meshIndex, disabled, subMeshOffset);
+            ret |= DrawSubMeshAttributes(tab, meshIndex, subMeshOffset, disabled);
 
         return ret;
     }
@@ -354,7 +354,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawSubMeshAttributes(MdlTab tab, int meshIndex, bool disabled, int subMeshOffset)
+    private bool DrawSubMeshAttributes(MdlTab tab, int meshIndex, int subMeshOffset, bool disabled)
     {
         using var _ = ImRaii.PushId(subMeshOffset);
 
@@ -368,6 +368,12 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         var widget     = _subMeshAttributeTagWidgets[subMeshIndex];
         var attributes = tab.GetSubMeshAttributes(subMeshIndex);
+
+        if (attributes == null)
+        {
+            attributes = ["invalid attribute data"];
+            disabled = true;
+        }
 
         var tagIndex = widget.Draw(string.Empty, string.Empty, attributes,
             out var editedAttribute, !disabled);

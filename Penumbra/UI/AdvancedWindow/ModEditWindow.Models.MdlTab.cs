@@ -14,7 +14,7 @@ public partial class ModEditWindow
         private readonly ModEditWindow _edit;
 
         public  MdlFile        Mdl         { get; private set; }
-        private List<string>[] _attributes;
+        private List<string>?[] _attributes;
 
         public bool ImportKeepMaterials;
         public bool ImportKeepAttributes;
@@ -290,15 +290,21 @@ public partial class ModEditWindow
         }
 
         /// <summary> Create a list of attributes per sub mesh. </summary>
-        private static List<string>[] CreateAttributes(MdlFile mdl)
-            => mdl.SubMeshes.Select(s => Enumerable.Range(0, 32)
-                .Where(idx => ((s.AttributeIndexMask >> idx) & 1) == 1)
-                .Select(idx => mdl.Attributes[idx])
-                .ToList()
-            ).ToArray();
+        private static List<string>?[] CreateAttributes(MdlFile mdl)
+            => mdl.SubMeshes.Select(s => 
+            {
+                var maxAttribute = 31 - BitOperations.LeadingZeroCount(s.AttributeIndexMask);
+                // TODO: Research what results in this - it seems to primarily be reproducible on bgparts, is it garbage data, or an alternative usage of the value?
+                return maxAttribute < mdl.Attributes.Length
+                    ? Enumerable.Range(0, 32)
+                        .Where(idx => ((s.AttributeIndexMask >> idx) & 1) == 1)
+                        .Select(idx => mdl.Attributes[idx])
+                        .ToList()
+                    : null;
+            }).ToArray();
 
         /// <summary> Obtain the attributes associated with a sub mesh by its index. </summary>
-        public IReadOnlyList<string> GetSubMeshAttributes(int subMeshIndex)
+        public IReadOnlyList<string>? GetSubMeshAttributes(int subMeshIndex)
             => _attributes[subMeshIndex];
 
         /// <summary> Remove or add attributes from a sub mesh by its index. </summary>
@@ -308,6 +314,8 @@ public partial class ModEditWindow
         public void UpdateSubMeshAttribute(int subMeshIndex, string? old, string? @new)
         {
             var attributes = _attributes[subMeshIndex];
+            if (attributes == null)
+                return;
 
             if (old != null)
                 attributes.Remove(old);
@@ -325,6 +333,9 @@ public partial class ModEditWindow
 
             foreach (var (attributes, subMeshIndex) in _attributes.WithIndex())
             {
+                if (attributes == null)
+                    continue;
+
                 var mask = 0u;
 
                 foreach (var attribute in attributes)
