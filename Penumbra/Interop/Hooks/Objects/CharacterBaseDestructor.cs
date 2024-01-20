@@ -10,10 +10,10 @@ public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBa
 {
     public enum Priority
     {
-        /// <seealso cref="PathResolving.DrawObjectState"/>
+        /// <seealso cref="PathResolving.DrawObjectState.OnCharacterBaseDestructor"/>
         DrawObjectState = 0,
 
-        /// <seealso cref="ModEditWindow.MtrlTab"/>
+        /// <seealso cref="ModEditWindow.MtrlTab.UnbindFromDrawObjectMaterialInstances"/>
         MtrlTab = -1000,
     }
 

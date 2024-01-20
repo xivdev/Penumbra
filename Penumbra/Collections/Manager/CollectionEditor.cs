@@ -156,9 +156,14 @@ public class CollectionEditor
             // Either copy the unused source settings directly if they are not inheriting,
             // or remove any unused settings for the target if they are inheriting.
             if (savedSettings != null)
+            {
                 ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings)[targetName] = savedSettings.Value;
-            else
-                ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(targetName);
+                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+            }
+            else if (((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(targetName))
+            {
+                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+            }
         }
 
         return true;

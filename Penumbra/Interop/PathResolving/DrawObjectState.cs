@@ -3,7 +3,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
-using Penumbra.Interop.Hooks;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
