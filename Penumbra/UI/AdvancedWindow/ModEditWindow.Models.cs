@@ -15,8 +15,8 @@ namespace Penumbra.UI.AdvancedWindow;
 public partial class ModEditWindow
 {
     private const int    MdlMaterialMaximum     = 4;
-    private const string MdlImportDocumentation = @"https://github.com/xivdev/Penumbra/wiki/Model-IO#import";
-    private const string MdlExportDocumentation = @"https://github.com/xivdev/Penumbra/wiki/Model-IO#export";
+    private const string MdlImportDocumentation = @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-9b49d296-23ab-410a-845b-a3be769b71ea";
+    private const string MdlExportDocumentation = @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-25968400-ebe5-4861-b610-cb1556db7ec4";
 
     private readonly FileEditor<MdlTab> _modelTab;
     private readonly ModelManager       _models;
