@@ -170,8 +170,7 @@ public partial class ModEditWindow
             using var exceptionNode = ImRaii.TreeNode(message);
             if (exceptionNode)
             {
-                ImGui.Dummy(new Vector2(ImGui.GetStyle().IndentSpacing, 0));
-                ImGui.SameLine();
+                using var indent = ImRaii.PushIndent();
                 ImGuiUtil.TextWrapped(exception.ToString());
             }
         }
@@ -202,9 +201,8 @@ public partial class ModEditWindow
             using var warningNode = ImRaii.TreeNode(firstLine);
             if (warningNode)
             {
-                ImGui.Dummy(new Vector2(ImGui.GetStyle().IndentSpacing, 0));
-                ImGui.SameLine();
-                ImGuiUtil.TextWrapped(warning.ToString());
+                using var indent = ImRaii.PushIndent();
+                ImGuiUtil.TextWrapped(warning);
             }
         }
     }

@@ -38,7 +38,9 @@ public class MeshExporter
         public string[]                      Attributes;
     }
 
-    public static Mesh Export(ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
+    public static Mesh Export(in ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials,
+        GltfSkeleton? skeleton,
+        IoNotifier notifier)
     {
         var self = new MeshExporter(config, mdl, lod, meshIndex, materials, skeleton, notifier);
         return new Mesh(self.BuildMeshes(), skeleton);
@@ -65,7 +67,8 @@ public class MeshExporter
     private readonly Type _skinningType;
 
     // TODO: This signature is getting out of control.
-    private MeshExporter(ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
+    private MeshExporter(in ExportConfig config, MdlFile mdl, byte lod, ushort meshIndex, MaterialBuilder[] materials,
+        GltfSkeleton? skeleton, IoNotifier notifier)
     {
         _config    = config;
         _notifier  = notifier;
@@ -118,9 +121,10 @@ public class MeshExporter
                         Ensure all dependencies are enabled in the current collection, and EST entries (if required) are configured.
                         If this is a known issue with this model and you would like to export anyway, enable the ""Generate missing bones"" option."
                     );
-                
+
                 (_, gltfBoneIndex) = skeleton.GenerateBone(boneName);
-                _notifier.Warning($"Generated missing bone \"{boneName}\". Vertices weighted to this bone will not move with the rest of the armature.");
+                _notifier.Warning(
+                    $"Generated missing bone \"{boneName}\". Vertices weighted to this bone will not move with the rest of the armature.");
             }
 
             indexMap.Add((ushort)tableIndex, gltfBoneIndex);
@@ -144,7 +148,7 @@ public class MeshExporter
             .Take(XivMesh.SubMeshCount)
             .WithIndex()
             .Select(subMesh => BuildMesh($"mesh {_meshIndex}.{subMesh.Index}", indices, vertices,
-                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex), (int)subMesh.Value.IndexCount,
+                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex),         (int)subMesh.Value.IndexCount,
                 subMesh.Value.AttributeIndexMask))
             .ToArray();
     }
@@ -233,7 +237,7 @@ public class MeshExporter
 
         return new MeshData
         {
-            Mesh = meshBuilder,
+            Mesh       = meshBuilder,
             Attributes = attributes,
         };
     }

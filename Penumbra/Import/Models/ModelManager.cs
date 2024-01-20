@@ -37,7 +37,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task<IoNotifier> ExportToGltf(ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
+    public Task<IoNotifier> ExportToGltf(in ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
         => EnqueueWithResult(
             new ExportToGltfAction(this, config, mdl, sklbPaths, read, outputPath),
             action => action.Notifier
@@ -189,7 +189,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         string outputPath)
         : IAction
     {
-        public IoNotifier Notifier = new IoNotifier();
+        public readonly IoNotifier Notifier = new();
 
         public void Execute(CancellationToken cancel)
         {
@@ -224,7 +224,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             // be picked up, if relevant, when the model tries to create mappings
             // for a bone in the failed sklb.
             var havokTasks = sklbPaths
-                .Select(path => read(path))
+                .Select(read)
                 .Where(bytes => bytes != null)
                 .Select(bytes => new SklbFile(bytes!))
                 .WithIndex()
@@ -280,7 +280,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             return pngImage ?? throw new Exception("Failed to convert texture to png.");
         }
 
-        private Image<Rgba32> CreateDummyImage()
+        private static Image<Rgba32> CreateDummyImage()
         {
             var image = new Image<Rgba32>(1, 1);
             image[0, 0] = Color.White;
@@ -299,8 +299,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
     private partial class ImportGltfAction(string inputPath) : IAction
     {
-        public MdlFile? Out;
-        public IoNotifier Notifier = new IoNotifier();
+        public          MdlFile?   Out;
+        public readonly IoNotifier Notifier = new();
 
         public void Execute(CancellationToken cancel)
         {

@@ -23,7 +23,7 @@ public class ModelExporter
     }
 
     /// <summary> Export a model in preparation for usage in a glTF file. If provided, skeleton will be used to skin the resulting meshes where appropriate. </summary>
-    public static Model Export(ExportConfig config, MdlFile mdl, IEnumerable<XivSkeleton> xivSkeletons, Dictionary<string, MaterialExporter.Material> rawMaterials, IoNotifier notifier)
+    public static Model Export(in ExportConfig config, MdlFile mdl, IEnumerable<XivSkeleton> xivSkeletons, Dictionary<string, MaterialExporter.Material> rawMaterials, IoNotifier notifier)
     {
         var gltfSkeleton = ConvertSkeleton(xivSkeletons);
         var materials = ConvertMaterials(mdl, rawMaterials, notifier);
@@ -32,7 +32,7 @@ public class ModelExporter
     }
 
     /// <summary> Convert a .mdl to a mesh (group) per LoD. </summary>
-    private static List<MeshExporter.Mesh> ConvertMeshes(ExportConfig config, MdlFile mdl, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
+    private static List<MeshExporter.Mesh> ConvertMeshes(in ExportConfig config, MdlFile mdl, MaterialBuilder[] materials, GltfSkeleton? skeleton, IoNotifier notifier)
     {
         var meshes = new List<MeshExporter.Mesh>();
 
