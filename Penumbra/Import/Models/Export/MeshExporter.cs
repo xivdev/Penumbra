@@ -375,9 +375,9 @@ public class MeshExporter
         {
             (2, true)  => typeof(VertexTexture2ColorFfxiv),
             (2, false) => typeof(VertexTexture2),
-            (1, true)  => typeof(VertexColor1Texture1),
+            (1, true)  => typeof(VertexTexture1ColorFfxiv),
             (1, false) => typeof(VertexTexture1),
-            (0, true)  => typeof(VertexColor1),
+            (0, true)  => typeof(VertexColorFfxiv),
             (0, false) => typeof(VertexEmpty),
 
             _ => throw new Exception("Unreachable."),
@@ -390,16 +390,16 @@ public class MeshExporter
         if (_materialType == typeof(VertexEmpty))
             return new VertexEmpty();
 
-        if (_materialType == typeof(VertexColor1))
-            return new VertexColor1(ToVector4(attributes[MdlFile.VertexUsage.Color]));
+        if (_materialType == typeof(VertexColorFfxiv))
+            return new VertexColorFfxiv(ToVector4(attributes[MdlFile.VertexUsage.Color]));
 
         if (_materialType == typeof(VertexTexture1))
             return new VertexTexture1(ToVector2(attributes[MdlFile.VertexUsage.UV]));
 
-        if (_materialType == typeof(VertexColor1Texture1))
-            return new VertexColor1Texture1(
-                ToVector4(attributes[MdlFile.VertexUsage.Color]),
-                ToVector2(attributes[MdlFile.VertexUsage.UV])
+        if (_materialType == typeof(VertexTexture1ColorFfxiv))
+            return new VertexTexture1ColorFfxiv(
+                ToVector2(attributes[MdlFile.VertexUsage.UV]),
+                ToVector4(attributes[MdlFile.VertexUsage.Color])
             );
 
         // XIV packs two UVs into a single vec4 attribute.
