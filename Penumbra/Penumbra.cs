@@ -192,6 +192,8 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
         sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");
+        if (Dalamud.Utility.Util.IsWine())
+            sb.Append($"> **`Locale Environment Variables:`** {CollectLocaleEnvironmentVariables()}\n");
         sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
@@ -242,5 +244,40 @@ public class Penumbra : IDalamudPlugin
             PrintCollection(collection, collection._cache!);
 
         return sb.ToString();
+    }
+
+    private static string CollectLocaleEnvironmentVariables()
+    {
+        var variableNames = new List<string>();
+        var variables = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables())
+        {
+            var key = (string)variable.Key;
+            if (key.Equals("LANG", StringComparison.Ordinal) || key.StartsWith("LC_", StringComparison.Ordinal))
+            {
+                variableNames.Add(key);
+                variables.Add(key, ((string?)variable.Value) ?? string.Empty);
+            }
+        }
+
+        variableNames.Sort();
+
+        var pos = variableNames.IndexOf("LC_ALL");
+        if (pos > 0) // If it's == 0, we're going to do a no-op.
+        {
+            variableNames.RemoveAt(pos);
+            variableNames.Insert(0, "LC_ALL");
+        }
+
+        pos = variableNames.IndexOf("LANG");
+        if (pos >= 0 && pos < variableNames.Count - 1)
+        {
+            variableNames.RemoveAt(pos);
+            variableNames.Add("LANG");
+        }
+
+        return variableNames.Count == 0
+            ? "None"
+            : string.Join(", ", variableNames.Select(name => $"`{name}={variables[name]}`"));
     }
 }
