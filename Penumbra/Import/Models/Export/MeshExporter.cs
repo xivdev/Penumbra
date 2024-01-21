@@ -373,7 +373,7 @@ public class MeshExporter
 
         return materialUsages switch
         {
-            (2, true)  => typeof(VertexColor1Texture2),
+            (2, true)  => typeof(VertexTexture2ColorFfxiv),
             (2, false) => typeof(VertexTexture2),
             (1, true)  => typeof(VertexColor1Texture1),
             (1, false) => typeof(VertexTexture1),
@@ -413,13 +413,13 @@ public class MeshExporter
             );
         }
 
-        if (_materialType == typeof(VertexColor1Texture2))
+        if (_materialType == typeof(VertexTexture2ColorFfxiv))
         {
             var uv = ToVector4(attributes[MdlFile.VertexUsage.UV]);
-            return new VertexColor1Texture2(
-                ToVector4(attributes[MdlFile.VertexUsage.Color]),
+            return new VertexTexture2ColorFfxiv(
                 new Vector2(uv.X, uv.Y),
-                new Vector2(uv.Z, uv.W)
+                new Vector2(uv.Z, uv.W),
+                ToVector4(attributes[MdlFile.VertexUsage.Color])
             );
         }
 
