@@ -5,8 +5,8 @@ namespace Penumbra.Import.Models.Import;
 /// <summary> Mutable representation of the bounding box surrouding a collection of vertices. </summary>
 public class BoundingBox
 {
-    private Vector3 _minimum = Vector3.Zero;
-    private Vector3 _maximum = Vector3.Zero;
+    private Vector3 _minimum = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+    private Vector3 _maximum = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
 
     /// <summary> Use the specified position to update this bounding box, expanding it if necessary. </summary>
     public void Merge(Vector3 position)
