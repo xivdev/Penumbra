@@ -11,7 +11,7 @@ namespace Penumbra.Mods.Subclasses;
 public class ModSettings
 {
     public static readonly ModSettings Empty = new();
-    public List< uint > Settings { get; private init; } = new();
+    public List< uint > Settings { get; private init; } = [];
     public int Priority { get; set; }
     public bool Enabled { get; set; }
 
@@ -21,7 +21,7 @@ public class ModSettings
         {
             Enabled  = Enabled,
             Priority = Priority,
-            Settings = Settings.ToList(),
+            Settings = [.. Settings],
         };
 
     // Create default settings for a given mod.
@@ -36,30 +36,13 @@ public class ModSettings
     // Return everything required to resolve things for a single mod with given settings (which can be null, in which case the default is used.
     public static (Dictionary< Utf8GamePath, FullPath >, HashSet< MetaManipulation >) GetResolveData( Mod mod, ModSettings? settings )
     {
-        if( settings == null )
-        {
-            settings = DefaultSettings( mod );
-        }
+        if (settings == null)
+            settings = DefaultSettings(mod);
         else
-        {
             settings.AddMissingSettings( mod );
-        }
 
         var dict = new Dictionary< Utf8GamePath, FullPath >();
         var set  = new HashSet< MetaManipulation >();
-
-        void AddOption( ISubMod option )
-        {
-            foreach( var (path, file) in option.Files.Concat( option.FileSwaps ) )
-            {
-                dict.TryAdd( path, file );
-            }
-
-            foreach( var manip in option.Manipulations )
-            {
-                set.Add( manip );
-            }
-        }
 
         foreach( var (group, index) in mod.Groups.WithIndex().OrderByDescending( g => g.Value.Priority ) )
         {
@@ -81,6 +64,19 @@ public class ModSettings
 
         AddOption( mod.Default );
         return ( dict, set );
+
+        void AddOption( ISubMod option )
+        {
+            foreach( var (path, file) in option.Files.Concat( option.FileSwaps ) )
+            {
+                dict.TryAdd( path, file );
+            }
+
+            foreach( var manip in option.Manipulations )
+            {
+                set.Add( manip );
+            }
+        }
     }
 
     // Automatically react to changes in a mods available options.

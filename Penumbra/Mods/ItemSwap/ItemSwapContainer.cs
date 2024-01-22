@@ -95,10 +95,10 @@ public class ItemSwapContainer
     public void LoadMod(Mod? mod, ModSettings? settings)
     {
         Clear();
-        if (mod == null)
+        if (mod == null || mod.Index < 0)
         {
-            _modRedirections  = new Dictionary<Utf8GamePath, FullPath>();
-            _modManipulations = new HashSet<MetaManipulation>();
+            _modRedirections  = [];
+            _modManipulations = [];
         }
         else
         {
