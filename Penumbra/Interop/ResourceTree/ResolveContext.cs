@@ -6,7 +6,6 @@ using FFXIVClientStructs.Interop;
 using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -27,20 +26,23 @@ internal record GlobalResolveContext(ObjectIdentification Identifier, ModCollect
         => new(this, characterBase, slotIndex, slot, equipment, secondaryId);
 }
 
-internal partial record ResolveContext(
+internal unsafe partial record ResolveContext(
     GlobalResolveContext Global,
-    Pointer<CharacterBase> CharacterBase,
+    Pointer<CharacterBase> CharacterBasePointer,
     uint SlotIndex,
     EquipSlot Slot,
     CharacterArmor Equipment,
     SecondaryId SecondaryId)
 {
+    public CharacterBase* CharacterBase
+        => CharacterBasePointer.Value;
+
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
-    private unsafe ModelType ModelType
-        => CharacterBase.Value->GetModelType();
+    private ModelType ModelType
+        => CharacterBase->GetModelType();
 
-    private unsafe ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath)
+    private ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath)
     {
         if (resourceHandle == null)
             return null;
@@ -52,7 +54,7 @@ internal partial record ResolveContext(
         return GetOrCreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
     }
 
-    private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool dx11)
+    private ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool dx11)
     {
         if (resourceHandle == null)
             return null;
@@ -88,7 +90,7 @@ internal partial record ResolveContext(
         return GetOrCreateNode(ResourceType.Tex, (nint)resourceHandle->Texture, &resourceHandle->ResourceHandle, path);
     }
 
-    private unsafe ResourceNode GetOrCreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
+    private ResourceNode GetOrCreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
         Utf8GamePath gamePath)
     {
         if (resourceHandle == null)
@@ -100,7 +102,7 @@ internal partial record ResolveContext(
         return CreateNode(type, objectAddress, resourceHandle, gamePath);
     }
 
-    private unsafe ResourceNode CreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
+    private ResourceNode CreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
         Utf8GamePath gamePath, bool autoAdd = true)
     {
         if (resourceHandle == null)
@@ -119,29 +121,29 @@ internal partial record ResolveContext(
         return node;
     }
 
-    public unsafe ResourceNode? CreateNodeFromEid(ResourceHandle* eid)
+    public ResourceNode? CreateNodeFromEid(ResourceHandle* eid)
     {
         if (eid == null)
             return null;
 
-        if (!Utf8GamePath.FromByteString(CharacterBase.Value->ResolveEidPathAsByteString(), out var path))
+        if (!Utf8GamePath.FromByteString(CharacterBase->ResolveEidPathAsByteString(), out var path))
             return null;
 
         return GetOrCreateNode(ResourceType.Eid, 0, eid, path);
     }
 
-    public unsafe ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
+    public ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
     {
         if (imc == null)
             return null;
 
-        if (!Utf8GamePath.FromByteString(CharacterBase.Value->ResolveImcPathAsByteString(SlotIndex), out var path))
+        if (!Utf8GamePath.FromByteString(CharacterBase->ResolveImcPathAsByteString(SlotIndex), out var path))
             return null;
 
         return GetOrCreateNode(ResourceType.Imc, 0, imc, path);
     }
 
-    public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex, string gamePath)
+    public ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex, string gamePath)
     {
         if (tex == null)
             return null;
@@ -152,7 +154,7 @@ internal partial record ResolveContext(
         return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, path);
     }
 
-    public unsafe ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc)
+    public ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc)
     {
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
@@ -187,30 +189,8 @@ internal partial record ResolveContext(
         return node;
     }
 
-    private unsafe ResourceNode? CreateNodeFromMaterial(Material* mtrl, Utf8GamePath path)
+    private ResourceNode? CreateNodeFromMaterial(Material* mtrl, Utf8GamePath path)
     {
-        static ushort GetTextureIndex(Material* mtrl, ushort texFlags, HashSet<uint> alreadyVisitedSamplerIds)
-        {
-            if ((texFlags & 0x001F) != 0x001F && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[texFlags & 0x001F].Id))
-                return (ushort)(texFlags & 0x001F);
-            if ((texFlags & 0x03E0) != 0x03E0 && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[(texFlags >> 5) & 0x001F].Id))
-                return (ushort)((texFlags >> 5) & 0x001F);
-            if ((texFlags & 0x7C00) != 0x7C00 && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[(texFlags >> 10) & 0x001F].Id))
-                return (ushort)((texFlags >> 10) & 0x001F);
-
-            return 0x001F;
-        }
-
-        static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle, HashSet<uint> alreadyVisitedSamplerIds)
-            => mtrl->TexturesSpan.FindFirst(p => p.Texture == handle && !alreadyVisitedSamplerIds.Contains(p.Id), out var p)
-                ? p.Id
-                : null;
-
-        static uint? GetSamplerCrcById(ShaderPackage* shpk, uint id)
-            => shpk->SamplersSpan.FindFirst(s => s.Id == id, out var s)
-                ? s.CRC
-                : null;
-
         if (mtrl == null || mtrl->MaterialResourceHandle == null)
             return null;
 
@@ -219,9 +199,6 @@ internal partial record ResolveContext(
             return cached;
 
         var node = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
-        if (node == null)
-            return null;
-
         var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName));
         if (shpkNode != null)
         {
@@ -247,11 +224,9 @@ internal partial record ResolveContext(
                 if (shpk != null)
                 {
                     var   index = GetTextureIndex(mtrl, resource->Textures[i].Flags, alreadyProcessedSamplerIds);
-                    uint? samplerId;
-                    if (index != 0x001F)
-                        samplerId = mtrl->Textures[index].Id;
-                    else
-                        samplerId = GetTextureSamplerId(mtrl, resource->Textures[i].TextureResourceHandle, alreadyProcessedSamplerIds);
+                    var samplerId = index != 0x001F 
+                        ? mtrl->Textures[index].Id 
+                        : GetTextureSamplerId(mtrl, resource->Textures[i].TextureResourceHandle, alreadyProcessedSamplerIds);
                     if (samplerId.HasValue)
                     {
                         alreadyProcessedSamplerIds.Add(samplerId.Value);
@@ -271,9 +246,31 @@ internal partial record ResolveContext(
         Global.Nodes.Add((path, (nint)resource), node);
 
         return node;
+
+        static uint? GetSamplerCrcById(ShaderPackage* shpk, uint id)
+            => shpk->SamplersSpan.FindFirst(s => s.Id == id, out var s)
+                ? s.CRC
+                : null;
+
+        static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle, HashSet<uint> alreadyVisitedSamplerIds)
+            => mtrl->TexturesSpan.FindFirst(p => p.Texture == handle && !alreadyVisitedSamplerIds.Contains(p.Id), out var p)
+                ? p.Id
+                : null;
+
+        static ushort GetTextureIndex(Material* mtrl, ushort texFlags, HashSet<uint> alreadyVisitedSamplerIds)
+        {
+            if ((texFlags & 0x001F) != 0x001F && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[texFlags & 0x001F].Id))
+                return (ushort)(texFlags & 0x001F);
+            if ((texFlags & 0x03E0) != 0x03E0 && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[(texFlags >> 5) & 0x001F].Id))
+                return (ushort)((texFlags >> 5) & 0x001F);
+            if ((texFlags & 0x7C00) != 0x7C00 && !alreadyVisitedSamplerIds.Contains(mtrl->Textures[(texFlags >> 10) & 0x001F].Id))
+                return (ushort)((texFlags >> 10) & 0x001F);
+
+            return 0x001F;
+        }
     }
 
-    public unsafe ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
+    public ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
     {
         if (sklb == null || sklb->SkeletonResourceHandle == null)
             return null;
@@ -283,19 +280,10 @@ internal partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonResourceHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
-        if (node != null)
-        {
-            var skpNode = CreateParameterNodeFromPartialSkeleton(sklb, partialSkeletonIndex);
-            if (skpNode != null)
-                node.Children.Add(skpNode);
-            Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
-        }
-
-        return node;
+        return CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
     }
 
-    private unsafe ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
+    private ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
     {
         if (sklb == null || sklb->SkeletonParameterResourceHandle == null)
             return null;
@@ -305,15 +293,7 @@ internal partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonParameterResourceHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, path, false);
-        if (node != null)
-        {
-            if (Global.WithUiData)
-                node.FallbackName = "Skeleton Parameters";
-            Global.Nodes.Add((path, (nint)sklb->SkeletonParameterResourceHandle), node);
-        }
-
-        return node;
+        return CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, path, false);
     }
 
     internal ResourceNode.UiData GuessModelUiData(Utf8GamePath gamePath)
@@ -363,7 +343,7 @@ internal partial record ResolveContext(
         return i >= 0 && i < array.Length ? array[i] : null;
     }
 
-    internal static unsafe ByteString GetResourceHandlePath(ResourceHandle* handle, bool stripPrefix = true)
+    internal static ByteString GetResourceHandlePath(ResourceHandle* handle, bool stripPrefix = true)
     {
         if (handle == null)
             return ByteString.Empty;
@@ -384,7 +364,7 @@ internal partial record ResolveContext(
         return name;
     }
 
-    private static unsafe ulong GetResourceHandleLength(ResourceHandle* handle)
+    private static ulong GetResourceHandleLength(ResourceHandle* handle)
     {
         if (handle == null)
             return 0;
