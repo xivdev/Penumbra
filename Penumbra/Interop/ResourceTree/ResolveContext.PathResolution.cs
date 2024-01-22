@@ -7,7 +7,7 @@ using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using static Penumbra.Interop.Structs.CharacterBaseUtility;
+using static Penumbra.Interop.Structs.StructExtensions;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -71,7 +71,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveModelPathNative()
     {
-        var path = ResolveMdlPath(CharacterBase, SlotIndex);
+        var path = CharacterBase.Value->ResolveMdlPathAsByteString(SlotIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -139,8 +139,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveMonsterMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
-        // TODO: Submit this (Monster->Variant) to ClientStructs
-        var variant  = ResolveMaterialVariant(imc, ((byte*)CharacterBase.Value)[0x8F4]);
+        var variant  = ResolveMaterialVariant(imc, (byte)((Monster*)CharacterBase.Value)->Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
@@ -196,7 +195,7 @@ internal partial record ResolveContext
         ByteString? path;
         try
         {
-            path = ResolveMtrlPath(CharacterBase, SlotIndex, mtrlFileName);
+            path = CharacterBase.Value->ResolveMtrlPathAsByteString(SlotIndex, mtrlFileName);
         }
         catch (AccessViolationException)
         {
@@ -277,7 +276,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveSkeletonPathNative(uint partialSkeletonIndex)
     {
-        var path = ResolveSklbPath(CharacterBase, partialSkeletonIndex);
+        var path = CharacterBase.Value->ResolveSklbPathAsByteString(partialSkeletonIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -305,7 +304,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveSkeletonParameterPathNative(uint partialSkeletonIndex)
     {
-        var path = ResolveSkpPath(CharacterBase, partialSkeletonIndex);
+        var path = CharacterBase.Value->ResolveSkpPathAsByteString(partialSkeletonIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 }

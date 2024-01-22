@@ -13,8 +13,6 @@ using Penumbra.GameData.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
-using static Penumbra.Interop.Structs.CharacterBaseUtility;
-using static Penumbra.Interop.Structs.ModelResourceHandleUtility;
 using static Penumbra.Interop.Structs.StructExtensions;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
 
@@ -126,7 +124,7 @@ internal partial record ResolveContext(
         if (eid == null)
             return null;
 
-        if (!Utf8GamePath.FromByteString(ResolveEidPath(CharacterBase), out var path))
+        if (!Utf8GamePath.FromByteString(CharacterBase.Value->ResolveEidPathAsByteString(), out var path))
             return null;
 
         return GetOrCreateNode(ResourceType.Eid, 0, eid, path);
@@ -137,7 +135,7 @@ internal partial record ResolveContext(
         if (imc == null)
             return null;
 
-        if (!Utf8GamePath.FromByteString(ResolveImcPath(CharacterBase, SlotIndex), out var path))
+        if (!Utf8GamePath.FromByteString(CharacterBase.Value->ResolveImcPathAsByteString(SlotIndex), out var path))
             return null;
 
         return GetOrCreateNode(ResourceType.Imc, 0, imc, path);
@@ -174,7 +172,7 @@ internal partial record ResolveContext(
             if (mtrl == null)
                 continue;
 
-            var mtrlFileName = GetMaterialFileNameBySlot(mdlResource, (uint)i);
+            var mtrlFileName = mdlResource->GetMaterialFileNameBySlot((uint)i);
             var mtrlNode     = CreateNodeFromMaterial(mtrl, ResolveMaterialPath(path, imc, mtrlFileName));
             if (mtrlNode != null)
             {
