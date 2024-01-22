@@ -99,8 +99,7 @@ public static class ServiceManagerA
             .AddSingleton<CreateFileWHook>()
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
-            .AddSingleton<RedrawService>()
-            .AddSingleton<ModelResourceHandleUtility>();
+            .AddSingleton<RedrawService>();
 
     private static ServiceManager AddConfiguration(this ServiceManager services)
         => services.AddSingleton<Configuration>()
