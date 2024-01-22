@@ -198,7 +198,7 @@ internal unsafe partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)resource), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
+        var node     = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
         var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName));
         if (shpkNode != null)
         {
@@ -223,9 +223,9 @@ internal unsafe partial record ResolveContext(
                 string? name = null;
                 if (shpk != null)
                 {
-                    var   index = GetTextureIndex(mtrl, resource->Textures[i].Flags, alreadyProcessedSamplerIds);
-                    var samplerId = index != 0x001F 
-                        ? mtrl->Textures[index].Id 
+                    var index = GetTextureIndex(mtrl, resource->Textures[i].Flags, alreadyProcessedSamplerIds);
+                    var samplerId = index != 0x001F
+                        ? mtrl->Textures[index].Id
                         : GetTextureSamplerId(mtrl, resource->Textures[i].TextureResourceHandle, alreadyProcessedSamplerIds);
                     if (samplerId.HasValue)
                     {
@@ -280,7 +280,13 @@ internal unsafe partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonResourceHandle), out var cached))
             return cached;
 
-        return CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
+        var node    = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
+        var skpNode = CreateParameterNodeFromPartialSkeleton(sklb, partialSkeletonIndex);
+        if (skpNode != null)
+            node.Children.Add(skpNode);
+        Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
+
+        return node;
     }
 
     private ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
@@ -293,7 +299,12 @@ internal unsafe partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonParameterResourceHandle), out var cached))
             return cached;
 
-        return CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, path, false);
+        var node = CreateNode(ResourceType.Skp, (nint)sklb, (ResourceHandle*)sklb->SkeletonParameterResourceHandle, path, false);
+        if (Global.WithUiData)
+            node.FallbackName = "Skeleton Parameters";
+        Global.Nodes.Add((path, (nint)sklb->SkeletonParameterResourceHandle), node);
+
+        return node;
     }
 
     internal ResourceNode.UiData GuessModelUiData(Utf8GamePath gamePath)
