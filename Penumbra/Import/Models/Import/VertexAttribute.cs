@@ -395,7 +395,9 @@ public class VertexAttribute
 
     public static VertexAttribute Color(Accessors accessors)
     {
-        accessors.TryGetValue("COLOR_0", out var accessor);
+        // Try to retrieve the custom color attribute we use for export, falling back to the glTF standard name.
+        if (!accessors.TryGetValue("_FFXIV_COLOR", out var accessor))
+            accessors.TryGetValue("COLOR_0", out accessor);
 
         var element = new MdlStructs.VertexElement()
         {
