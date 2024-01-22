@@ -33,7 +33,7 @@ internal partial record ResolveContext
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
-    private unsafe GenderRace ResolveModelRaceCode()
+    private GenderRace ResolveModelRaceCode()
         => ResolveEqdpRaceCode(Slot, Equipment.Set);
 
     private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, PrimaryId primaryId)
@@ -42,7 +42,7 @@ internal partial record ResolveContext
         if (slotIndex >= 10 || ModelType != ModelType.Human)
             return GenderRace.MidlanderMale;
 
-        var characterRaceCode = (GenderRace)((Human*)CharacterBase.Value)->RaceSexId;
+        var characterRaceCode = (GenderRace)((Human*)CharacterBase)->RaceSexId;
         if (characterRaceCode == GenderRace.MidlanderMale)
             return GenderRace.MidlanderMale;
 
@@ -71,7 +71,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveModelPathNative()
     {
-        var path = CharacterBase.Value->ResolveMdlPathAsByteString(SlotIndex);
+        var path = CharacterBase->ResolveMdlPathAsByteString(SlotIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -139,7 +139,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveMonsterMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
-        var variant  = ResolveMaterialVariant(imc, (byte)((Monster*)CharacterBase.Value)->Variant);
+        var variant  = ResolveMaterialVariant(imc, (byte)((Monster*)CharacterBase)->Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
@@ -195,11 +195,11 @@ internal partial record ResolveContext
         ByteString? path;
         try
         {
-            path = CharacterBase.Value->ResolveMtrlPathAsByteString(SlotIndex, mtrlFileName);
+            path = CharacterBase->ResolveMtrlPathAsByteString(SlotIndex, mtrlFileName);
         }
         catch (AccessViolationException)
         {
-            Penumbra.Log.Error($"Access violation during attempt to resolve material path\nDraw object: {(nint)CharacterBase.Value:X} (of type {ModelType})\nSlot index: {SlotIndex}\nMaterial file name: {(nint)mtrlFileName:X} ({new string((sbyte*)mtrlFileName)})");
+            Penumbra.Log.Error($"Access violation during attempt to resolve material path\nDraw object: {(nint)CharacterBase:X} (of type {ModelType})\nSlot index: {SlotIndex}\nMaterial file name: {(nint)mtrlFileName:X} ({new string((sbyte*)mtrlFileName)})");
             return Utf8GamePath.Empty;
         }
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
@@ -217,7 +217,7 @@ internal partial record ResolveContext
         };
     }
 
-    private unsafe Utf8GamePath ResolveHumanSkeletonPath(uint partialSkeletonIndex)
+    private Utf8GamePath ResolveHumanSkeletonPath(uint partialSkeletonIndex)
     {
         var (raceCode, slot, set) = ResolveHumanSkeletonData(partialSkeletonIndex);
         if (set == 0)
@@ -229,7 +229,7 @@ internal partial record ResolveContext
 
     private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanSkeletonData(uint partialSkeletonIndex)
     {
-        var human             = (Human*)CharacterBase.Value;
+        var human             = (Human*)CharacterBase;
         var characterRaceCode = (GenderRace)human->RaceSexId;
         switch (partialSkeletonIndex)
         {
@@ -262,21 +262,21 @@ internal partial record ResolveContext
 
     private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanEquipmentSkeletonData(EquipSlot slot, EstManipulation.EstType type)
     {
-        var human     = (Human*)CharacterBase.Value;
+        var human     = (Human*)CharacterBase;
         var equipment = ((CharacterArmor*)&human->Head)[slot.ToIndex()];
         return ResolveHumanExtraSkeletonData(ResolveEqdpRaceCode(slot, equipment.Set), type, equipment.Set);
     }
 
-    private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstManipulation.EstType type, PrimaryId primary)
+    private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstManipulation.EstType type, PrimaryId primary)
     {
         var metaCache   = Global.Collection.MetaCache;
-        var skeletonSet = metaCache == null ? default : metaCache.GetEstEntry(type, raceCode, primary);
+        var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary) ?? default;
         return (raceCode, EstManipulation.ToName(type), skeletonSet);
     }
 
     private unsafe Utf8GamePath ResolveSkeletonPathNative(uint partialSkeletonIndex)
     {
-        var path = CharacterBase.Value->ResolveSklbPathAsByteString(partialSkeletonIndex);
+        var path = CharacterBase->ResolveSklbPathAsByteString(partialSkeletonIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -304,7 +304,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveSkeletonParameterPathNative(uint partialSkeletonIndex)
     {
-        var path = CharacterBase.Value->ResolveSkpPathAsByteString(partialSkeletonIndex);
+        var path = CharacterBase->ResolveSkpPathAsByteString(partialSkeletonIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 }
