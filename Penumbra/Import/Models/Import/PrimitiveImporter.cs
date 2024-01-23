@@ -35,21 +35,21 @@ public class PrimitiveImporter
     private readonly IDictionary<ushort, ushort>? _nodeBoneMap;
 
     private ushort[]? _indices;
-    
+
     private List<VertexAttribute>? _vertexAttributes;
-    
+
     private          ushort       _vertexCount;
     private          byte[]       _strides = [0, 0, 0];
     private readonly List<byte>[] _streams = [[], [], []];
-    
-    private BoundingBox _boundingBox = new BoundingBox();
+
+    private readonly BoundingBox _boundingBox = new();
 
     private List<List<MdlStructs.ShapeValueStruct>>? _shapeValues;
 
     private PrimitiveImporter(MeshPrimitive primitive, IDictionary<ushort, ushort>? nodeBoneMap, IoNotifier notifier)
     {
-        _notifier = notifier;
-        _primitive = primitive;
+        _notifier    = notifier;
+        _primitive   = primitive;
         _nodeBoneMap = nodeBoneMap;
     }
 
@@ -154,9 +154,10 @@ public class PrimitiveImporter
                 _streams[attribute.Stream].AddRange(attribute.Build(vertexIndex));
 
             // Record which morph targets have values for this vertex, if any.
+            var index = vertexIndex;
             var changedMorphs = morphModifiedVertices
                 .WithIndex()
-                .Where(pair => _vertexAttributes.Any(attribute => attribute.HasMorph(pair.Index, vertexIndex)))
+                .Where(pair => _vertexAttributes.Any(attribute => attribute.HasMorph(pair.Index, index)))
                 .Select(pair => pair.Value);
             foreach (var modifiedVertices in changedMorphs)
                 modifiedVertices.Add(vertexIndex);
@@ -200,7 +201,7 @@ public class PrimitiveImporter
 
         _shapeValues = morphShapeValues;
     }
-    
+
     private void BuildBoundingBox()
     {
         var positions = _primitive.VertexAccessors["POSITION"].AsVector3Array();

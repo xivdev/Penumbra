@@ -53,7 +53,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 
     private List<string>? _bones;
 
-    private readonly BoundingBox _boundingBox = new BoundingBox();
+    private readonly BoundingBox _boundingBox = new();
 
     private readonly List<string> _metaAttributes = [];
 
@@ -124,7 +124,8 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 
         _material ??= subMesh.Material;
         if (subMesh.Material != null && _material != subMesh.Material)
-            notifier.Warning($"Meshes may only reference one material. Sub-mesh {subMeshName} material \"{subMesh.Material}\" has been ignored.");
+            notifier.Warning(
+                $"Meshes may only reference one material. Sub-mesh {subMeshName} material \"{subMesh.Material}\" has been ignored.");
 
         // Check that vertex declarations match - we need to combine the buffers, so a mismatch would take a whole load of resolution.
         if (_vertexDeclaration == null)

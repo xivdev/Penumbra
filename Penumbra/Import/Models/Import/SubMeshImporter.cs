@@ -46,12 +46,12 @@ public class SubMeshImporter
     private          byte[]?                             _strides;
     private readonly List<byte>[]                        _streams = [[], [], []];
 
-    private List<ushort> _indices = [];
+    private readonly List<ushort> _indices = [];
 
-    private BoundingBox _boundingBox = new BoundingBox();
+    private readonly BoundingBox _boundingBox = new();
 
     private readonly List<string>?                                         _morphNames;
-    private          Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = [];
+    private readonly Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = [];
 
     private SubMeshImporter(Node node, IDictionary<ushort, ushort>? nodeBoneMap, IoNotifier notifier)
     {
@@ -86,7 +86,7 @@ public class SubMeshImporter
         var attributeMask = metaAttributes.Length switch
         {
             < 32 => (1u << metaAttributes.Length) - 1,
-              32 => uint.MaxValue,
+            32   => uint.MaxValue,
             > 32 => throw _notifier.Exception("Models may utilise a maximum of 32 attributes."),
         };
 
@@ -102,22 +102,22 @@ public class SubMeshImporter
                 BoneStartIndex = 0,
                 BoneCount      = 0,
             },
-            Material = _material,
+            Material          = _material,
             VertexDeclaration = _vertexDeclaration.Value,
-            VertexCount = _vertexCount,
-            Strides     = _strides,
-            Streams     = _streams,
-            Indices     = _indices,
-            BoundingBox = _boundingBox,
-            MetaAttributes = metaAttributes, 
-            ShapeValues = _shapeValues,
+            VertexCount       = _vertexCount,
+            Strides           = _strides,
+            Streams           = _streams,
+            Indices           = _indices,
+            BoundingBox       = _boundingBox,
+            MetaAttributes    = metaAttributes,
+            ShapeValues       = _shapeValues,
         };
     }
 
     private void BuildPrimitive(MeshPrimitive meshPrimitive, int index)
     {
         var vertexOffset = _vertexCount;
-        var indexOffset = _indices.Count;
+        var indexOffset  = _indices.Count;
 
         var primitive = PrimitiveImporter.Import(meshPrimitive, _nodeBoneMap, _notifier.WithContext($"Primitive {index}"));
 
@@ -141,7 +141,7 @@ public class SubMeshImporter
             stream.AddRange(primitiveStream);
 
         // Indices
-        _indices.AddRange(primitive.Indices.Select(index => (ushort)(index + vertexOffset)));
+        _indices.AddRange(primitive.Indices.Select(i => (ushort)(i + vertexOffset)));
 
         // Shape values
         foreach (var (primitiveShapeValues, morphIndex) in primitive.ShapeValues.WithIndex())
@@ -181,8 +181,9 @@ public class SubMeshImporter
 
         // We consider any "extras" key with a boolean value set to `true` to be an attribute.
         return nodeExtras?
-            .Where(pair => pair.Value.ValueKind == JsonValueKind.True)
-            .Select(pair => pair.Key)
-            .ToArray() ?? [];
+                .Where(pair => pair.Value.ValueKind == JsonValueKind.True)
+                .Select(pair => pair.Key)
+                .ToArray()
+         ?? [];
     }
 }
