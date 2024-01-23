@@ -2,7 +2,6 @@ using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
-using Penumbra.Import.Models;
 using Penumbra.Import.Models.Export;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;

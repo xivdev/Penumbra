@@ -1,3 +1,5 @@
+using Lumina.Data.Parsing;
+
 namespace Penumbra.Import.Models.Import;
 
 public static class Utility
@@ -30,5 +32,36 @@ public static class Utility
         }
 
         return newMask;
+    }
+
+    /// <summary> Ensures that the two vertex declarations provided are equal, throwing if not. </summary>
+    public static void EnsureVertexDeclarationMatch(MdlStructs.VertexDeclarationStruct current, MdlStructs.VertexDeclarationStruct @new, IoNotifier notifier)
+    {
+        if (VertexDeclarationMismatch(current, @new))
+            throw notifier.Exception(
+                $@"All sub-meshes of a mesh must have equivalent vertex declarations.
+                Current: {FormatVertexDeclaration(current)}
+                New:     {FormatVertexDeclaration(@new)}"
+            );
+    }
+
+    private static string FormatVertexDeclaration(MdlStructs.VertexDeclarationStruct vertexDeclaration)
+        => string.Join(", ", vertexDeclaration.VertexElements.Select(element => $"{element.Usage} ({element.Type}@{element.Stream}:{element.Offset})"));
+
+    private static bool VertexDeclarationMismatch(MdlStructs.VertexDeclarationStruct a, MdlStructs.VertexDeclarationStruct b)
+    {
+        var elA = a.VertexElements;
+        var elB = b.VertexElements;
+
+        if (elA.Length != elB.Length)
+            return true;
+
+        // NOTE: This assumes that elements will always be in the same order. Under the current implementation, that's guaranteed.
+        return elA.Zip(elB).Any(pair =>
+            pair.First.Usage != pair.Second.Usage
+         || pair.First.Type != pair.Second.Type
+         || pair.First.Offset != pair.Second.Offset
+         || pair.First.Stream != pair.Second.Stream
+        );
     }
 }
