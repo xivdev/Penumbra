@@ -19,7 +19,7 @@ public class SubMeshImporter
         public byte[]       Strides;
         public List<byte>[] Streams;
 
-        public ushort[] Indices;
+        public List<ushort> Indices;
 
         public BoundingBox BoundingBox;
 
@@ -36,86 +36,57 @@ public class SubMeshImporter
 
     private readonly IoNotifier _notifier;
 
-    private readonly MeshPrimitive                     _primitive;
-    private readonly IDictionary<ushort, ushort>?      _nodeBoneMap;
-    private readonly IDictionary<string, JsonElement>? _nodeExtras;
+    private readonly Node                         _node;
+    private readonly IDictionary<ushort, ushort>? _nodeBoneMap;
 
-    private List<VertexAttribute>? _vertexAttributes;
+    private string? _material;
 
-    private          ushort       _vertexCount;
-    private          byte[]       _strides = [0, 0, 0];
-    private readonly List<byte>[] _streams;
+    private          MdlStructs.VertexDeclarationStruct? _vertexDeclaration;
+    private          ushort                              _vertexCount;
+    private          byte[]?                             _strides;
+    private readonly List<byte>[]                        _streams = [[], [], []];
 
-    private ushort[]? _indices;
+    private readonly List<ushort> _indices = [];
 
-    private BoundingBox _boundingBox = new BoundingBox();
+    private readonly BoundingBox _boundingBox = new();
 
-    private string[]? _metaAttributes;
-
-    private readonly List<string>?                                          _morphNames;
-    private          Dictionary<string, List<MdlStructs.ShapeValueStruct>>? _shapeValues;
+    private readonly List<string>?                                         _morphNames;
+    private readonly Dictionary<string, List<MdlStructs.ShapeValueStruct>> _shapeValues = [];
 
     private SubMeshImporter(Node node, IDictionary<ushort, ushort>? nodeBoneMap, IoNotifier notifier)
     {
-        _notifier = notifier;
-
-        var mesh = node.Mesh;
-
-        var primitiveCount = mesh.Primitives.Count;
-        if (primitiveCount != 1)
-            throw _notifier.Exception($"Mesh has {primitiveCount} primitives, expected 1.");
-
-        _primitive   = mesh.Primitives[0];
+        _notifier    = notifier;
+        _node        = node;
         _nodeBoneMap = nodeBoneMap;
 
         try
         {
-            _nodeExtras = node.Extras.Deserialize<Dictionary<string, JsonElement>>();
-        }
-        catch
-        {
-            _nodeExtras = null;
-        }
-
-        try
-        {
-            _morphNames = mesh.Extras.GetNode("targetNames").Deserialize<List<string>>();
+            _morphNames = node.Mesh.Extras.GetNode("targetNames").Deserialize<List<string>>();
         }
         catch
         {
             _morphNames = null;
         }
-
-        // All meshes may use up to 3 byte streams.
-        _streams = new List<byte>[3];
-        for (var streamIndex = 0; streamIndex < 3; streamIndex++)
-            _streams[streamIndex] = [];
     }
 
     private SubMesh Create()
     {
         // Build all the data we'll need.
-        // TODO: This structure is verging on a little silly. Reconsider.
-        BuildIndices();
-        BuildVertexAttributes();
-        BuildVertices();
-        BuildBoundingBox();
-        BuildMetaAttributes();
+        foreach (var (primitive, index) in _node.Mesh.Primitives.WithIndex())
+            BuildPrimitive(primitive, index);
 
         ArgumentNullException.ThrowIfNull(_indices);
-        ArgumentNullException.ThrowIfNull(_vertexAttributes);
+        ArgumentNullException.ThrowIfNull(_vertexDeclaration);
+        ArgumentNullException.ThrowIfNull(_strides);
         ArgumentNullException.ThrowIfNull(_shapeValues);
-        ArgumentNullException.ThrowIfNull(_metaAttributes);
 
-        var material = _primitive.Material.Name;
-        if (material == "")
-            material = null;
+        var metaAttributes = BuildMetaAttributes();
 
         // At this level, we assume that attributes are wholly controlled by this sub-mesh.
-        var attributeMask = _metaAttributes.Length switch
+        var attributeMask = metaAttributes.Length switch
         {
-            < 32 => (1u << _metaAttributes.Length) - 1,
-              32 => uint.MaxValue,
+            < 32 => (1u << metaAttributes.Length) - 1,
+            32   => uint.MaxValue,
             > 32 => throw _notifier.Exception("Models may utilise a maximum of 32 attributes."),
         };
 
@@ -124,158 +95,95 @@ public class SubMeshImporter
             SubMeshStruct = new MdlStructs.SubmeshStruct()
             {
                 IndexOffset        = 0,
-                IndexCount         = (uint)_indices.Length,
+                IndexCount         = (uint)_indices.Count,
                 AttributeIndexMask = attributeMask,
 
                 // TODO: Flesh these out. Game doesn't seem to rely on them existing, though.
                 BoneStartIndex = 0,
                 BoneCount      = 0,
             },
-            Material = material,
-            VertexDeclaration = new MdlStructs.VertexDeclarationStruct()
+            Material          = _material,
+            VertexDeclaration = _vertexDeclaration.Value,
+            VertexCount       = _vertexCount,
+            Strides           = _strides,
+            Streams           = _streams,
+            Indices           = _indices,
+            BoundingBox       = _boundingBox,
+            MetaAttributes    = metaAttributes,
+            ShapeValues       = _shapeValues,
+        };
+    }
+
+    private void BuildPrimitive(MeshPrimitive meshPrimitive, int index)
+    {
+        var vertexOffset = _vertexCount;
+        var indexOffset  = _indices.Count;
+
+        var primitive = PrimitiveImporter.Import(meshPrimitive, _nodeBoneMap, _notifier.WithContext($"Primitive {index}"));
+
+        // Material
+        _material ??= primitive.Material;
+        if (primitive.Material != null && _material != primitive.Material)
+            _notifier.Warning($"Meshes may only reference one material. Primitive {index} material \"{primitive.Material}\" has been ignored.");
+
+        // Vertex metadata
+        if (_vertexDeclaration == null)
+            _vertexDeclaration = primitive.VertexDeclaration;
+        else
+            Utility.EnsureVertexDeclarationMatch(_vertexDeclaration.Value, primitive.VertexDeclaration, _notifier);
+
+        _strides ??= primitive.Strides;
+
+        // Vertices
+        _vertexCount += primitive.VertexCount;
+
+        foreach (var (stream, primitiveStream) in _streams.Zip(primitive.Streams))
+            stream.AddRange(primitiveStream);
+
+        // Indices
+        _indices.AddRange(primitive.Indices.Select(i => (ushort)(i + vertexOffset)));
+
+        // Shape values
+        foreach (var (primitiveShapeValues, morphIndex) in primitive.ShapeValues.WithIndex())
+        {
+            // Per glTF spec, all primitives MUST have the same number of morph targets in the same order.
+            // As such, this lookup should be safe - a failure here is a broken glTF file.
+            var name = _morphNames != null ? _morphNames[morphIndex] : $"unnamed_shape_{morphIndex}";
+
+            if (!_shapeValues.TryGetValue(name, out var subMeshShapeValues))
             {
-                VertexElements = _vertexAttributes.Select(attribute => attribute.Element).ToArray(),
-            },
-            VertexCount = _vertexCount,
-            Strides     = _strides,
-            Streams     = _streams,
-            Indices     = _indices,
-            BoundingBox = _boundingBox,
-            MetaAttributes  = _metaAttributes, 
-            ShapeValues = _shapeValues,
-        };
-    }
-
-    private void BuildIndices()
-    {
-        // TODO: glTF supports a bunch of primitive types, ref. Schema2.PrimitiveType. All this code is currently assuming that it's using plain triangles (4). It should probably be generalised to other formats - I _suspect_ we should be able to get away with evaluating the indices to triangles with GetTriangleIndices, but will need investigation.
-        _indices = _primitive.GetIndices().Select(idx => (ushort)idx).ToArray();
-    }
-
-    private void BuildVertexAttributes()
-    {
-        // Tangent calculation requires indices if missing.
-        ArgumentNullException.ThrowIfNull(_indices);
-
-        var accessors = _primitive.VertexAccessors;
-
-        var morphAccessors = Enumerable.Range(0, _primitive.MorphTargetsCount)
-            .Select(index => _primitive.GetMorphTargetAccessors(index)).ToList();
-
-        // Try to build all the attributes the mesh might use.
-        // The order here is chosen to match a typical model's element order.
-        var rawAttributes = new[]
-        {
-            VertexAttribute.Position(accessors, morphAccessors, _notifier),
-            VertexAttribute.BlendWeight(accessors, _notifier),
-            VertexAttribute.BlendIndex(accessors, _nodeBoneMap, _notifier),
-            VertexAttribute.Normal(accessors, morphAccessors),
-            VertexAttribute.Tangent1(accessors, morphAccessors, _indices, _notifier),
-            VertexAttribute.Color(accessors),
-            VertexAttribute.Uv(accessors),
-        };
-
-        var attributes = new List<VertexAttribute>();
-        var offsets = new byte[]
-        {
-            0,
-            0,
-            0,
-        };
-        foreach (var attribute in rawAttributes)
-        {
-            if (attribute == null)
-                continue;
-
-            attributes.Add(attribute.WithOffset(offsets[attribute.Stream]));
-            offsets[attribute.Stream] += attribute.Size;
-        }
-
-        _vertexAttributes = attributes;
-        // After building the attributes, the resulting next offsets are our stream strides.
-        _strides = offsets;
-    }
-
-    private void BuildVertices()
-    {
-        ArgumentNullException.ThrowIfNull(_vertexAttributes);
-
-        // Lists of vertex indices that are effected by each morph target for this primitive.
-        var morphModifiedVertices = Enumerable.Range(0, _primitive.MorphTargetsCount)
-            .Select(_ => new List<int>())
-            .ToArray();
-
-        // We can safely assume that POSITION exists by this point - and if, by some bizarre chance, it doesn't, failing out is sane.
-        _vertexCount = (ushort)_primitive.VertexAccessors["POSITION"].Count;
-
-        for (var vertexIndex = 0; vertexIndex < _vertexCount; vertexIndex++)
-        {
-            // Write out vertex data to streams for each attribute.
-            foreach (var attribute in _vertexAttributes)
-                _streams[attribute.Stream].AddRange(attribute.Build(vertexIndex));
-
-            // Record which morph targets have values for this vertex, if any.
-            var changedMorphs = morphModifiedVertices
-                .WithIndex()
-                .Where(pair => _vertexAttributes.Any(attribute => attribute.HasMorph(pair.Index, vertexIndex)))
-                .Select(pair => pair.Value);
-            foreach (var modifiedVertices in changedMorphs)
-                modifiedVertices.Add(vertexIndex);
-        }
-
-        BuildShapeValues(morphModifiedVertices);
-    }
-
-    private void BuildShapeValues(IEnumerable<List<int>> morphModifiedVertices)
-    {
-        ArgumentNullException.ThrowIfNull(_indices);
-        ArgumentNullException.ThrowIfNull(_vertexAttributes);
-
-        var morphShapeValues = new Dictionary<string, List<MdlStructs.ShapeValueStruct>>();
-
-        foreach (var (modifiedVertices, morphIndex) in morphModifiedVertices.WithIndex())
-        {
-            // For a given mesh, each shape key contains a list of shape value mappings.
-            var shapeValues = new List<MdlStructs.ShapeValueStruct>();
-
-            foreach (var vertexIndex in modifiedVertices)
-            {
-                // Write out the morphed vertex to the vertex streams.
-                foreach (var attribute in _vertexAttributes)
-                    _streams[attribute.Stream].AddRange(attribute.BuildMorph(morphIndex, vertexIndex));
-
-                // Find any indices that target this vertex index and create a mapping.
-                var targetingIndices = _indices.WithIndex()
-                    .SelectWhere(pair => (pair.Value == vertexIndex, pair.Index));
-                shapeValues.AddRange(targetingIndices.Select(targetingIndex => new MdlStructs.ShapeValueStruct
-                {
-                    BaseIndicesIndex     = (ushort)targetingIndex,
-                    ReplacingVertexIndex = _vertexCount,
-                }));
-
-                _vertexCount++;
+                subMeshShapeValues = [];
+                _shapeValues.Add(name, subMeshShapeValues);
             }
 
-            var name = _morphNames != null ? _morphNames[morphIndex] : $"unnamed_shape_{morphIndex}";
-            morphShapeValues.Add(name, shapeValues);
+            subMeshShapeValues.AddRange(primitiveShapeValues.Select(value => value with
+            {
+                BaseIndicesIndex = (ushort)(value.BaseIndicesIndex + indexOffset),
+                ReplacingVertexIndex = (ushort)(value.ReplacingVertexIndex + vertexOffset),
+            }));
         }
 
-        _shapeValues = morphShapeValues;
+        // Bounds
+        _boundingBox.Merge(primitive.BoundingBox);
     }
 
-    private void BuildBoundingBox()
+    private string[] BuildMetaAttributes()
     {
-        var positions = _primitive.VertexAccessors["POSITION"].AsVector3Array();
-        foreach (var position in positions)
-            _boundingBox.Merge(position);
-    }
+        Dictionary<string, JsonElement>? nodeExtras;
+        try
+        {
+            nodeExtras = _node.Extras.Deserialize<Dictionary<string, JsonElement>>();
+        }
+        catch
+        {
+            nodeExtras = null;
+        }
 
-    private void BuildMetaAttributes()
-    {
         // We consider any "extras" key with a boolean value set to `true` to be an attribute.
-        _metaAttributes = _nodeExtras?
-            .Where(pair => pair.Value.ValueKind == JsonValueKind.True)
-            .Select(pair => pair.Key)
-            .ToArray() ?? [];
+        return nodeExtras?
+                .Where(pair => pair.Value.ValueKind == JsonValueKind.True)
+                .Select(pair => pair.Key)
+                .ToArray()
+         ?? [];
     }
 }

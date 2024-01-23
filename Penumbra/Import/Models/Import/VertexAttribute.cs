@@ -30,12 +30,16 @@ public class VertexAttribute
     public byte Size
         => (MdlFile.VertexType)Element.Type switch
         {
-            MdlFile.VertexType.Single3    => 12,
-            MdlFile.VertexType.Single4    => 16,
-            MdlFile.VertexType.UInt       => 4,
-            MdlFile.VertexType.ByteFloat4 => 4,
-            MdlFile.VertexType.Half2      => 4,
-            MdlFile.VertexType.Half4      => 8,
+            MdlFile.VertexType.Single1 => 4,
+            MdlFile.VertexType.Single2 => 8,
+            MdlFile.VertexType.Single3 => 12,
+            MdlFile.VertexType.Single4 => 16,
+            MdlFile.VertexType.UByte4  => 4,
+            MdlFile.VertexType.Short2  => 4,
+            MdlFile.VertexType.Short4  => 8,
+            MdlFile.VertexType.NByte4  => 4,
+            MdlFile.VertexType.Half2   => 4,
+            MdlFile.VertexType.Half4   => 8,
 
             _ => throw new Exception($"Unhandled vertex type {(MdlFile.VertexType)Element.Type}"),
         };
@@ -126,7 +130,7 @@ public class VertexAttribute
         var element = new MdlStructs.VertexElement()
         {
             Stream = 0,
-            Type   = (byte)MdlFile.VertexType.ByteFloat4,
+            Type   = (byte)MdlFile.VertexType.NByte4,
             Usage  = (byte)MdlFile.VertexUsage.BlendWeights,
         };
 
@@ -134,7 +138,7 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => BuildByteFloat4(values[index])
+            index => BuildNByte4(values[index])
         );
     }
 
@@ -152,7 +156,7 @@ public class VertexAttribute
         var element = new MdlStructs.VertexElement()
         {
             Stream = 0,
-            Type   = (byte)MdlFile.VertexType.UInt,
+            Type   = (byte)MdlFile.VertexType.UByte4,
             Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
         };
 
@@ -163,7 +167,7 @@ public class VertexAttribute
             index =>
             {
                 var gltfIndices = values[index];
-                return BuildUInt(new Vector4(
+                return BuildUByte4(new Vector4(
                     boneMap[(ushort)gltfIndices.X],
                     boneMap[(ushort)gltfIndices.Y],
                     boneMap[(ushort)gltfIndices.Z],
@@ -181,7 +185,7 @@ public class VertexAttribute
         var element = new MdlStructs.VertexElement()
         {
             Stream = 1,
-            Type   = (byte)MdlFile.VertexType.Half4,
+            Type   = (byte)MdlFile.VertexType.Single3,
             Usage  = (byte)MdlFile.VertexUsage.Normal,
         };
 
@@ -193,7 +197,7 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => BuildHalf4(new Vector4(values[index], 0)),
+            index => BuildSingle3(values[index]),
             buildMorph: (morphIndex, vertexIndex) =>
             {
                 var value = values[vertexIndex];
@@ -202,7 +206,7 @@ public class VertexAttribute
                 if (delta != null)
                     value += delta.Value;
 
-                return BuildHalf4(new Vector4(value, 0));
+                return BuildSingle3(value);
             }
         );
     }
@@ -224,20 +228,20 @@ public class VertexAttribute
         // There's only one TEXCOORD, output UV coordinates as vec2s.
         if (!accessors.TryGetValue("TEXCOORD_1", out var accessor2))
             return new VertexAttribute(
-                element with { Type = (byte)MdlFile.VertexType.Half2 },
-                index => BuildHalf2(values1[index])
+                element with { Type = (byte)MdlFile.VertexType.Single2 },
+                index => BuildSingle2(values1[index])
             );
 
         var values2 = accessor2.AsVector2Array();
 
         // Two TEXCOORDs are available, repack them into xiv's vec4 [0X, 0Y, 1X, 1Y] format.
         return new VertexAttribute(
-            element with { Type = (byte)MdlFile.VertexType.Half4 },
+            element with { Type = (byte)MdlFile.VertexType.Single4 },
             index =>
             {
                 var value1 = values1[index];
                 var value2 = values2[index];
-                return BuildHalf4(new Vector4(value1.X, value1.Y, value2.X, value2.Y));
+                return BuildSingle4(new Vector4(value1.X, value1.Y, value2.X, value2.Y));
             }
         );
     }
@@ -264,7 +268,7 @@ public class VertexAttribute
         var element = new MdlStructs.VertexElement
         {
             Stream = 1,
-            Type   = (byte)MdlFile.VertexType.ByteFloat4,
+            Type   = (byte)MdlFile.VertexType.NByte4,
             Usage  = (byte)MdlFile.VertexUsage.Tangent1,
         };
 
@@ -305,7 +309,7 @@ public class VertexAttribute
 
         // Byte floats encode 0..1, and bitangents are stored as -1..1. Convert.
         bitangent = (bitangent + Vector3.One) / 2;
-        return BuildByteFloat4(new Vector4(bitangent, handedness));
+        return BuildNByte4(new Vector4(bitangent, handedness));
     }
 
     /// <summary> Attempt to calculate tangent values based on other pre-existing data. </summary>
@@ -402,7 +406,7 @@ public class VertexAttribute
         var element = new MdlStructs.VertexElement()
         {
             Stream = 1,
-            Type   = (byte)MdlFile.VertexType.ByteFloat4,
+            Type   = (byte)MdlFile.VertexType.NByte4,
             Usage  = (byte)MdlFile.VertexUsage.Color,
         };
 
@@ -411,9 +415,16 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => BuildByteFloat4(values?[index] ?? Vector4.One)
+            index => BuildNByte4(values?[index] ?? Vector4.One)
         );
     }
+
+    private static byte[] BuildSingle2(Vector2 input)
+        =>
+        [
+            ..BitConverter.GetBytes(input.X),
+            ..BitConverter.GetBytes(input.Y),
+        ];
 
     private static byte[] BuildSingle3(Vector3 input)
         =>
@@ -423,7 +434,16 @@ public class VertexAttribute
             ..BitConverter.GetBytes(input.Z),
         ];
 
-    private static byte[] BuildUInt(Vector4 input)
+    private static byte[] BuildSingle4(Vector4 input)
+        =>
+        [
+            ..BitConverter.GetBytes(input.X),
+            ..BitConverter.GetBytes(input.Y),
+            ..BitConverter.GetBytes(input.Z),
+            ..BitConverter.GetBytes(input.W),
+        ];
+
+    private static byte[] BuildUByte4(Vector4 input)
         =>
         [
             (byte)input.X,
@@ -432,28 +452,12 @@ public class VertexAttribute
             (byte)input.W,
         ];
 
-    private static byte[] BuildByteFloat4(Vector4 input)
+    private static byte[] BuildNByte4(Vector4 input)
         =>
         [
             (byte)Math.Round(input.X * 255f),
             (byte)Math.Round(input.Y * 255f),
             (byte)Math.Round(input.Z * 255f),
             (byte)Math.Round(input.W * 255f),
-        ];
-
-    private static byte[] BuildHalf2(Vector2 input)
-        =>
-        [
-            ..BitConverter.GetBytes((Half)input.X),
-            ..BitConverter.GetBytes((Half)input.Y),
-        ];
-
-    private static byte[] BuildHalf4(Vector4 input)
-        =>
-        [
-            ..BitConverter.GetBytes((Half)input.X),
-            ..BitConverter.GetBytes((Half)input.Y),
-            ..BitConverter.GetBytes((Half)input.Z),
-            ..BitConverter.GetBytes((Half)input.W),
         ];
 }
