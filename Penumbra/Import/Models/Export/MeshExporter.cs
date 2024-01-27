@@ -241,7 +241,7 @@ public class MeshExporter
         }
         else
         {
-            _notifier.Warning($"Invalid attribute data, ignoring.");
+            _notifier.Warning("Invalid attribute data, ignoring.");
         }
 
         return new MeshData

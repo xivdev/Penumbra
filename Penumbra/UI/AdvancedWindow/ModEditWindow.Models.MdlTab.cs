@@ -92,7 +92,7 @@ public partial class ModEditWindow
                     .ToList();
             });
 
-            task.ContinueWith(t => { GamePaths = FinalizeIo(task); });
+            task.ContinueWith(t => { GamePaths = FinalizeIo(t); });
         }
 
         private EstManipulation[] GetCurrentEstManipulations()
@@ -171,7 +171,7 @@ public partial class ModEditWindow
         /// <summary> Merge material configuration from the source onto the target. </summary>
         /// <param name="target"> Model that will be updated. </param>
         /// <param name="source"> Model to copy material configuration from. </param>
-        public void MergeMaterials(MdlFile target, MdlFile source)
+        private static void MergeMaterials(MdlFile target, MdlFile source)
         {
             target.Materials = source.Materials;
 
@@ -186,7 +186,7 @@ public partial class ModEditWindow
         /// <summary> Merge attribute configuration from the source onto the target. </summary>
         /// <param name="target"> Model that will be updated. ></param>
         /// <param name="source"> Model to copy attribute configuration from. </param>
-        public static void MergeAttributes(MdlFile target, MdlFile source)
+        private static void MergeAttributes(MdlFile target, MdlFile source)
         {
             target.Attributes = source.Attributes;
 
@@ -248,7 +248,7 @@ public partial class ModEditWindow
         }
 
         private void FinalizeIo(Task<IoNotifier> task)
-            => FinalizeIo<IoNotifier, object?>(task, notifier => null, notifier => notifier);
+            => FinalizeIo<IoNotifier, object?>(task, _ => null, notifier => notifier);
 
         private TResult? FinalizeIo<TResult>(Task<TResult> task)
             => FinalizeIo(task, result => result, null);
