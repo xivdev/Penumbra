@@ -28,8 +28,8 @@ public partial class ModEditWindow
 
         private bool            _dirty;
         public  bool            PendingIo    { get; private set; }
-        public  List<Exception> IoExceptions { get; private set; } = [];
-        public  List<string>    IoWarnings   { get; private set; } = [];
+        public  List<Exception> IoExceptions { get; } = [];
+        public  List<string>    IoWarnings   { get; } = [];
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
@@ -92,10 +92,7 @@ public partial class ModEditWindow
                     .ToList();
             });
 
-            task.ContinueWith(t =>
-            {
-                GamePaths = FinalizeIo(task);
-            });
+            task.ContinueWith(t => { GamePaths = FinalizeIo(task); });
         }
 
         private EstManipulation[] GetCurrentEstManipulations()
@@ -246,8 +243,8 @@ public partial class ModEditWindow
         private void BeginIo()
         {
             PendingIo = true;
-            IoWarnings = [];
-            IoExceptions = [];
+            IoWarnings.Clear();
+            IoExceptions.Clear();
         }
 
         private void FinalizeIo(Task<IoNotifier> task)
@@ -264,8 +261,9 @@ public partial class ModEditWindow
             {
                 result = getResult(task.Result);
                 if (getNotifier != null)
-                    IoWarnings = getNotifier(task.Result).GetWarnings().ToList();
+                    IoWarnings.AddRange(getNotifier(task.Result).GetWarnings());
             }
+
             PendingIo = false;
 
             return result;
@@ -273,12 +271,16 @@ public partial class ModEditWindow
 
         private void RecordIoExceptions(Exception? exception)
         {
-            IoExceptions = exception switch
+            switch (exception)
             {
-                null                  => [],
-                AggregateException ae => [.. ae.Flatten().InnerExceptions],
-                _                     => [exception],
-            };
+                case null: break;
+                case AggregateException ae:
+                    IoExceptions.AddRange(ae.Flatten().InnerExceptions);
+                    break;
+                default:
+                    IoExceptions.Add(exception);
+                    break;
+            }
         }
 
         /// <summary> Read a file from the active collection or game. </summary>
