@@ -56,6 +56,24 @@ public sealed class CutsceneService : IService, IDisposable
     public int GetParentIndex(int idx)
         => GetParentIndex((ushort)idx);
 
+    public bool SetParentIndex(int copyIdx, int parentIdx)
+    {
+        if (copyIdx is < CutsceneStartIdx or >= CutsceneEndIdx)
+            return false;
+
+        if (parentIdx is < -1 or >= CutsceneEndIdx)
+            return false;
+
+        if (_objects.GetObjectAddress(copyIdx) == nint.Zero)
+            return false;
+
+        if (parentIdx != -1 && _objects.GetObjectAddress(parentIdx) == nint.Zero)
+            return false;
+
+        _copiedCharacters[copyIdx - CutsceneStartIdx] = (short)parentIdx;
+        return true;
+    }
+
     public short GetParentIndex(ushort idx)
     {
         if (idx is >= CutsceneStartIdx and < CutsceneEndIdx)

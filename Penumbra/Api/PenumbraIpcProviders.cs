@@ -47,6 +47,7 @@ public class PenumbraIpcProviders : IDisposable
     // Game State
     internal readonly FuncProvider<nint, (nint, string)>            GetDrawObjectInfo;
     internal readonly FuncProvider<int, int>                        GetCutsceneParentIndex;
+    internal readonly FuncProvider<int, int, PenumbraApiEc>         SetCutsceneParentIndex;
     internal readonly EventProvider<nint, string, nint, nint, nint> CreatingCharacterBase;
     internal readonly EventProvider<nint, string, nint>             CreatedCharacterBase;
     internal readonly EventProvider<nint, string, string>           GameObjectResourcePathResolved;
@@ -171,6 +172,7 @@ public class PenumbraIpcProviders : IDisposable
         // Game State
         GetDrawObjectInfo      = Ipc.GetDrawObjectInfo.Provider(pi, Api.GetDrawObjectInfo);
         GetCutsceneParentIndex = Ipc.GetCutsceneParentIndex.Provider(pi, Api.GetCutsceneParentIndex);
+        SetCutsceneParentIndex = Ipc.SetCutsceneParentIndex.Provider(pi, Api.SetCutsceneParentIndex);
         CreatingCharacterBase = Ipc.CreatingCharacterBase.Provider(pi,
             () => Api.CreatingCharacterBase += CreatingCharacterBaseEvent,
             () => Api.CreatingCharacterBase -= CreatingCharacterBaseEvent);
@@ -293,6 +295,7 @@ public class PenumbraIpcProviders : IDisposable
         // Game State
         GetDrawObjectInfo.Dispose();
         GetCutsceneParentIndex.Dispose();
+        SetCutsceneParentIndex.Dispose();
         CreatingCharacterBase.Dispose();
         CreatedCharacterBase.Dispose();
         GameObjectResourcePathResolved.Dispose();

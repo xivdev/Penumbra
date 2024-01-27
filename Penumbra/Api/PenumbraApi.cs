@@ -600,6 +600,15 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return _cutsceneService.GetParentIndex(actorIdx);
     }
 
+    public PenumbraApiEc SetCutsceneParentIndex(int copyIdx, int newParentIdx)
+    {
+        CheckInitialized();
+        if (_cutsceneService.SetParentIndex(copyIdx, newParentIdx))
+            return PenumbraApiEc.Success;
+
+        return PenumbraApiEc.InvalidArgument;
+    }
+
     public IList<(string, string)> GetModList()
     {
         CheckInitialized();

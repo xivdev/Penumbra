@@ -484,7 +484,9 @@ public class IpcTester : IDisposable
         private DateTimeOffset _lastResolvedGamePathTime  = DateTimeOffset.MaxValue;
         private string         _currentDrawObjectString   = string.Empty;
         private IntPtr         _currentDrawObject         = IntPtr.Zero;
-        private int            _currentCutsceneActor      = 0;
+        private int            _currentCutsceneActor;
+        private int            _currentCutsceneParent;
+        private PenumbraApiEc  _cutsceneError = PenumbraApiEc.Success;
 
         public GameState(DalamudPluginInterface pi)
         {
@@ -507,7 +509,14 @@ public class IpcTester : IDisposable
                     ? tmp
                     : IntPtr.Zero;
 
-            ImGui.InputInt("Cutscene Actor", ref _currentCutsceneActor, 0);
+            ImGui.InputInt("Cutscene Actor",  ref _currentCutsceneActor,  0);
+            ImGui.InputInt("Cutscene Parent", ref _currentCutsceneParent, 0);
+            if (_cutsceneError is not PenumbraApiEc.Success)
+            {
+                ImGui.SameLine();
+                ImGui.TextUnformatted("Invalid Argument on last Call");
+            }
+
             using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
             if (!table)
                 return;
@@ -525,6 +534,10 @@ public class IpcTester : IDisposable
 
             DrawIntro(Ipc.GetCutsceneParentIndex.Label, "Cutscene Parent");
             ImGui.TextUnformatted(Ipc.GetCutsceneParentIndex.Subscriber(_pi).Invoke(_currentCutsceneActor).ToString());
+
+            DrawIntro(Ipc.SetCutsceneParentIndex.Label, "Cutscene Parent");
+            if (ImGui.Button("Set Parent"))
+                _cutsceneError = Ipc.SetCutsceneParentIndex.Subscriber(_pi).Invoke(_currentCutsceneActor, _currentCutsceneParent);
 
             DrawIntro(Ipc.CreatingCharacterBase.Label, "Last Drawobject created");
             if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
