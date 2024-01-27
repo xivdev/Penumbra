@@ -89,11 +89,15 @@ public class MaterialExporter
             // TODO: handle other textures stored in the mask?
         }
 
+        // Specular extension puts colour on RGB and factor on A. We're already packing like that, so we can reuse the texture.
+        var specularImage = BuildImage(specular, name, "specular");
+
         return BuildSharedBase(material, name)
             .WithBaseColor(BuildImage(baseColor,         name, "basecolor"))
             .WithNormal(BuildImage(operation.Normal,     name, "normal"))
-            .WithSpecularColor(BuildImage(specular,      name, "specular"))
-            .WithEmissive(BuildImage(operation.Emissive, name, "emissive"), Vector3.One, 1);
+            .WithEmissive(BuildImage(operation.Emissive, name, "emissive"), Vector3.One, 1)
+            .WithSpecularFactor(specularImage, 1)
+            .WithSpecularColor(specularImage);
     }
 
     // TODO: It feels a little silly to request the entire normal here when extracting the normal only needs some of the components.
@@ -102,7 +106,7 @@ public class MaterialExporter
     {
         public Image<Rgba32> Normal    { get; } = normal.Clone();
         public Image<Rgba32> BaseColor { get; } = new(normal.Width, normal.Height);
-        public Image<Rgb24>  Specular  { get; } = new(normal.Width, normal.Height);
+        public Image<Rgba32> Specular  { get; } = new(normal.Width, normal.Height);
         public Image<Rgb24>  Emissive  { get; } = new(normal.Width, normal.Height);
 
         private Buffer2D<Rgba32> NormalBuffer
@@ -111,7 +115,7 @@ public class MaterialExporter
         private Buffer2D<Rgba32> BaseColorBuffer
             => BaseColor.Frames.RootFrame.PixelBuffer;
 
-        private Buffer2D<Rgb24> SpecularBuffer
+        private Buffer2D<Rgba32> SpecularBuffer
             => Specular.Frames.RootFrame.PixelBuffer;
 
         private Buffer2D<Rgb24> EmissiveBuffer
@@ -140,7 +144,9 @@ public class MaterialExporter
 
                 // Specular (table)
                 var lerpedSpecularColor = Vector3.Lerp(prevRow.Specular, nextRow.Specular, tableRow.Weight);
-                specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, 1));
+                // float.Lerp is .NET8 ;-;
+                var lerpedSpecularFactor = prevRow.SpecularStrength * (1.0f - tableRow.Weight) + nextRow.SpecularStrength * tableRow.Weight;
+                specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, lerpedSpecularFactor));
 
                 // Emissive (table)
                 var lerpedEmissive = Vector3.Lerp(prevRow.Emissive, nextRow.Emissive, tableRow.Weight);
