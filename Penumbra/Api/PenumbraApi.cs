@@ -30,7 +30,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => (4, 22);
+        => (4, 23);
 
     public event Action<string>? PreSettingsPanelDraw
     {
