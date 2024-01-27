@@ -2,6 +2,7 @@ using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.Import.Models.Export;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
@@ -27,8 +28,8 @@ public partial class ModEditWindow
 
         private bool            _dirty;
         public  bool            PendingIo    { get; private set; }
-        public  List<Exception> IoExceptions { get; private set; } = [];
-        public  List<string>    IoWarnings   { get; private set; } = [];
+        public  List<Exception> IoExceptions { get; } = [];
+        public  List<string>    IoWarnings   { get; } = [];
 
         public MdlTab(ModEditWindow edit, byte[] bytes, string path)
         {
@@ -79,7 +80,7 @@ public partial class ModEditWindow
                 return;
             }
 
-            PendingIo = true;
+            BeginIo();
             var task = Task.Run(() =>
             {
                 // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
@@ -91,12 +92,7 @@ public partial class ModEditWindow
                     .ToList();
             });
 
-            task.ContinueWith(t =>
-            {
-                RecordIoExceptions(t.Exception);
-                GamePaths = t.Result;
-                PendingIo = false;
-            });
+            task.ContinueWith(t => { GamePaths = FinalizeIo(t); });
         }
 
         private EstManipulation[] GetCurrentEstManipulations()
@@ -132,33 +128,22 @@ public partial class ModEditWindow
                 return;
             }
 
-            PendingIo = true;
+            BeginIo();
             _edit._models.ExportToGltf(ExportConfig, Mdl, sklbPaths, ReadFile, outputPath)
-                .ContinueWith(task =>
-                {
-                    RecordIoExceptions(task.Exception);
-                    if (task is { IsCompletedSuccessfully: true, Result: not null })
-                        IoWarnings = task.Result.GetWarnings().ToList();
-                    PendingIo = false;
-                });
+                .ContinueWith(FinalizeIo);
         }
 
         /// <summary> Import a model from an interchange format. </summary>
         /// <param name="inputPath"> Disk path to load model data from. </param>
         public void Import(string inputPath)
         {
-            PendingIo = true;
+            BeginIo();
             _edit._models.ImportGltf(inputPath)
                 .ContinueWith(task =>
                 {
-                    RecordIoExceptions(task.Exception);
-                    if (task is { IsCompletedSuccessfully: true, Result: (not null, _) })
-                    {
-                        IoWarnings = task.Result.Item2.GetWarnings().ToList();
-                        FinalizeImport(task.Result.Item1);
-                    }
-
-                    PendingIo = false;
+                    var mdlFile = FinalizeIo(task, result => result.Item1, result => result.Item2);
+                    if (mdlFile != null)
+                        FinalizeImport(mdlFile);
                 });
         }
 
@@ -186,7 +171,7 @@ public partial class ModEditWindow
         /// <summary> Merge material configuration from the source onto the target. </summary>
         /// <param name="target"> Model that will be updated. </param>
         /// <param name="source"> Model to copy material configuration from. </param>
-        public void MergeMaterials(MdlFile target, MdlFile source)
+        private static void MergeMaterials(MdlFile target, MdlFile source)
         {
             target.Materials = source.Materials;
 
@@ -201,7 +186,7 @@ public partial class ModEditWindow
         /// <summary> Merge attribute configuration from the source onto the target. </summary>
         /// <param name="target"> Model that will be updated. ></param>
         /// <param name="source"> Model to copy attribute configuration from. </param>
-        public static void MergeAttributes(MdlFile target, MdlFile source)
+        private static void MergeAttributes(MdlFile target, MdlFile source)
         {
             target.Attributes = source.Attributes;
 
@@ -255,14 +240,47 @@ public partial class ModEditWindow
             target.ElementIds = [.. elementIds];
         }
 
+        private void BeginIo()
+        {
+            PendingIo = true;
+            IoWarnings.Clear();
+            IoExceptions.Clear();
+        }
+
+        private void FinalizeIo(Task<IoNotifier> task)
+            => FinalizeIo<IoNotifier, object?>(task, _ => null, notifier => notifier);
+
+        private TResult? FinalizeIo<TResult>(Task<TResult> task)
+            => FinalizeIo(task, result => result, null);
+
+        private TResult? FinalizeIo<TTask, TResult>(Task<TTask> task, Func<TTask, TResult> getResult, Func<TTask, IoNotifier>? getNotifier)
+        {
+            TResult? result = default;
+            RecordIoExceptions(task.Exception);
+            if (task is { IsCompletedSuccessfully: true, Result: not null })
+            {
+                result = getResult(task.Result);
+                if (getNotifier != null)
+                    IoWarnings.AddRange(getNotifier(task.Result).GetWarnings());
+            }
+
+            PendingIo = false;
+
+            return result;
+        }
+
         private void RecordIoExceptions(Exception? exception)
         {
-            IoExceptions = exception switch
+            switch (exception)
             {
-                null                  => [],
-                AggregateException ae => [.. ae.Flatten().InnerExceptions],
-                _                     => [exception],
-            };
+                case null: break;
+                case AggregateException ae:
+                    IoExceptions.AddRange(ae.Flatten().InnerExceptions);
+                    break;
+                default:
+                    IoExceptions.Add(exception);
+                    break;
+            }
         }
 
         /// <summary> Read a file from the active collection or game. </summary>

@@ -230,10 +230,19 @@ public class MeshExporter
             { "targetNames", shapeNames },
         });
 
-        var attributes = Enumerable.Range(0, 32)
-            .Where(index => ((attributeMask >> index) & 1) == 1)
-            .Select(index => _mdl.Attributes[index])
-            .ToArray();
+        string[] attributes = [];
+        var maxAttribute = 31 - BitOperations.LeadingZeroCount(attributeMask);
+        if (maxAttribute < _mdl.Attributes.Length)
+        {
+            attributes = Enumerable.Range(0, 32)
+                .Where(index => ((attributeMask >> index) & 1) == 1)
+                .Select(index => _mdl.Attributes[index])
+                .ToArray();
+        }
+        else
+        {
+            _notifier.Warning("Invalid attribute data, ignoring.");
+        }
 
         return new MeshData
         {
