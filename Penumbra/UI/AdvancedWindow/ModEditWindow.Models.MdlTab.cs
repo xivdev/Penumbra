@@ -2,6 +2,7 @@ using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Models;
 using Penumbra.Import.Models.Export;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
@@ -79,7 +80,7 @@ public partial class ModEditWindow
                 return;
             }
 
-            PendingIo = true;
+            BeginIo();
             var task = Task.Run(() =>
             {
                 // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
@@ -93,9 +94,7 @@ public partial class ModEditWindow
 
             task.ContinueWith(t =>
             {
-                RecordIoExceptions(t.Exception);
-                GamePaths = t.Result;
-                PendingIo = false;
+                GamePaths = FinalizeIo(task);
             });
         }
 
@@ -132,33 +131,22 @@ public partial class ModEditWindow
                 return;
             }
 
-            PendingIo = true;
+            BeginIo();
             _edit._models.ExportToGltf(ExportConfig, Mdl, sklbPaths, ReadFile, outputPath)
-                .ContinueWith(task =>
-                {
-                    RecordIoExceptions(task.Exception);
-                    if (task is { IsCompletedSuccessfully: true, Result: not null })
-                        IoWarnings = task.Result.GetWarnings().ToList();
-                    PendingIo = false;
-                });
+                .ContinueWith(FinalizeIo);
         }
 
         /// <summary> Import a model from an interchange format. </summary>
         /// <param name="inputPath"> Disk path to load model data from. </param>
         public void Import(string inputPath)
         {
-            PendingIo = true;
+            BeginIo();
             _edit._models.ImportGltf(inputPath)
                 .ContinueWith(task =>
                 {
-                    RecordIoExceptions(task.Exception);
-                    if (task is { IsCompletedSuccessfully: true, Result: (not null, _) })
-                    {
-                        IoWarnings = task.Result.Item2.GetWarnings().ToList();
-                        FinalizeImport(task.Result.Item1);
-                    }
-
-                    PendingIo = false;
+                    var mdlFile = FinalizeIo(task, result => result.Item1, result => result.Item2);
+                    if (mdlFile != null)
+                        FinalizeImport(mdlFile);
                 });
         }
 
@@ -253,6 +241,34 @@ public partial class ModEditWindow
             }
 
             target.ElementIds = [.. elementIds];
+        }
+
+        private void BeginIo()
+        {
+            PendingIo = true;
+            IoWarnings = [];
+            IoExceptions = [];
+        }
+
+        private void FinalizeIo(Task<IoNotifier> task)
+            => FinalizeIo<IoNotifier, object?>(task, notifier => null, notifier => notifier);
+
+        private TResult? FinalizeIo<TResult>(Task<TResult> task)
+            => FinalizeIo(task, result => result, null);
+
+        private TResult? FinalizeIo<TTask, TResult>(Task<TTask> task, Func<TTask, TResult> getResult, Func<TTask, IoNotifier>? getNotifier)
+        {
+            TResult? result = default;
+            RecordIoExceptions(task.Exception);
+            if (task is { IsCompletedSuccessfully: true, Result: not null })
+            {
+                result = getResult(task.Result);
+                if (getNotifier != null)
+                    IoWarnings = getNotifier(task.Result).GetWarnings().ToList();
+            }
+            PendingIo = false;
+
+            return result;
         }
 
         private void RecordIoExceptions(Exception? exception)
