@@ -17,7 +17,7 @@ public sealed class SingleModGroup : IModGroup
     public int    Priority        { get; set; }
     public uint   DefaultSettings { get; set; }
 
-    public readonly List<SubMod> OptionData = new();
+    public readonly List<SubMod> OptionData = [];
 
     public int OptionPriority(Index _)
         => Priority;
