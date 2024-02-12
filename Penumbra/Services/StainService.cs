@@ -13,7 +13,7 @@ namespace Penumbra.Services;
 public class StainService : IService
 {
     public sealed class StainTemplateCombo(FilterComboColors stainCombo, StmFile stmFile)
-        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), Penumbra.Log)
+        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), MouseWheelType.None, Penumbra.Log)
     {
         protected override float GetFilterWidth()
         {
@@ -70,8 +70,8 @@ public class StainService : IService
     public StainService(IDataManager dataManager, DictStain stainData)
     {
         StainData = stainData;
-        StainCombo = new FilterComboColors(140,
-            () => StainData.Value.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(),
+        StainCombo = new FilterComboColors(140, MouseWheelType.None,
+            () => StainData.Value.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(), 
             Penumbra.Log);
         StmFile       = new StmFile(dataManager);
         TemplateCombo = new StainTemplateCombo(StainCombo, StmFile);

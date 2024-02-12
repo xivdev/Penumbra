@@ -32,7 +32,8 @@ public static class TextureDrawer
 
             if (texture.LoadError is DllNotFoundException)
             {
-                ImGuiUtil.TextColored(Colors.RegexWarningBorder, "A texture handling dependency could not be found. Try installing a current Microsoft VC Redistributable.");
+                ImGuiUtil.TextColored(Colors.RegexWarningBorder,
+                    "A texture handling dependency could not be found. Try installing a current Microsoft VC Redistributable.");
                 if (ImGui.Button("Microsoft VC Redistributables"))
                     Dalamud.Utility.Util.OpenLink(link);
                 ImGuiUtil.HoverTooltip($"Open {link} in your browser.");
@@ -111,13 +112,11 @@ public static class TextureDrawer
         }
     }
 
-    public sealed class PathSelectCombo : FilterComboCache<(string Path, bool Game, bool IsOnPlayer)>
+    public sealed class PathSelectCombo(TextureManager textures, ModEditor editor, Func<ISet<string>> getPlayerResources)
+        : FilterComboCache<(string Path, bool Game, bool IsOnPlayer)>(() => CreateFiles(textures, editor, getPlayerResources),
+            MouseWheelType.None, Penumbra.Log)
     {
         private int _skipPrefix = 0;
-
-        public PathSelectCombo(TextureManager textures, ModEditor editor, Func<ISet<string>> getPlayerResources)
-            : base(() => CreateFiles(textures, editor, getPlayerResources), Penumbra.Log)
-        { }
 
         protected override string ToString((string Path, bool Game, bool IsOnPlayer) obj)
             => obj.Path;
@@ -140,7 +139,8 @@ public static class TextureDrawer
             return ret;
         }
 
-        private static IReadOnlyList<(string Path, bool Game, bool IsOnPlayer)> CreateFiles(TextureManager textures, ModEditor editor, Func<ISet<string>> getPlayerResources)
+        private static IReadOnlyList<(string Path, bool Game, bool IsOnPlayer)> CreateFiles(TextureManager textures, ModEditor editor,
+            Func<ISet<string>> getPlayerResources)
         {
             var playerResources = getPlayerResources();
 

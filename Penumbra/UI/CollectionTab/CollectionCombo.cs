@@ -7,14 +7,10 @@ using Penumbra.GameData.Actors;
 
 namespace Penumbra.UI.CollectionTab;
 
-public sealed class CollectionCombo : FilterComboCache<ModCollection>
+public sealed class CollectionCombo(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
+    : FilterComboCache<ModCollection>(items, MouseWheelType.None, Penumbra.Log)
 {
-    private readonly CollectionManager _collectionManager;
-    private readonly ImRaii.Color      _color = new();
-
-    public CollectionCombo(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
-        : base(items, Penumbra.Log)
-        => _collectionManager = manager;
+    private readonly ImRaii.Color _color = new();
 
     protected override void DrawFilter(int currentSelected, float width)
     {
@@ -24,11 +20,11 @@ public sealed class CollectionCombo : FilterComboCache<ModCollection>
 
     public void Draw(string label, float width, uint color)
     {
-        var current = _collectionManager.Active.ByType(CollectionType.Current, ActorIdentifier.Invalid);
+        var current = manager.Active.ByType(CollectionType.Current, ActorIdentifier.Invalid);
         _color.Push(ImGuiCol.FrameBg, color).Push(ImGuiCol.FrameBgHovered, color);
 
         if (Draw(label, current?.Name ?? string.Empty, string.Empty, width, ImGui.GetTextLineHeightWithSpacing()) && CurrentSelection != null)
-            _collectionManager.Active.SetCollection(CurrentSelection, CollectionType.Current);
+            manager.Active.SetCollection(CurrentSelection, CollectionType.Current);
         _color.Dispose();
     }
 

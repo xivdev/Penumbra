@@ -125,24 +125,11 @@ public class ItemSwapTab : IDisposable, ITab
         Weapon,
     }
 
-    private class ItemSelector : FilterComboCache<EquipItem>
+    private class ItemSelector(ItemData data, FullEquipType type)
+        : FilterComboCache<EquipItem>(() => data.ByType[type], MouseWheelType.None, Penumbra.Log)
     {
-        public ItemSelector(ItemData data, FullEquipType type)
-            : base(() => data.ByType[type], Penumbra.Log)
-        { }
-
         protected override string ToString(EquipItem obj)
             => obj.Name;
-    }
-
-    private class WeaponSelector : FilterComboCache<FullEquipType>
-    {
-        public WeaponSelector()
-            : base(FullEquipTypeExtensions.WeaponTypes.Concat(FullEquipTypeExtensions.ToolTypes), Penumbra.Log)
-        { }
-
-        protected override string ToString(FullEquipType type)
-            => type.ToName();
     }
 
     private readonly Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)> _selectors;
