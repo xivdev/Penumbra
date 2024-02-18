@@ -1,3 +1,4 @@
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -84,11 +85,13 @@ public class TempModManager : IDisposable
             {
                 Penumbra.Log.Verbose($"Removing temporary Mod {mod.Name} from {collection.AnonymizedName}.");
                 collection.Remove(mod);
+                _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, 0, 0, false);
             }
             else
             {
                 Penumbra.Log.Verbose($"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.AnonymizedName}.");
                 collection.Apply(mod, created);
+                _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, 1, 0, false);
             }
         }
         else

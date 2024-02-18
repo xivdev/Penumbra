@@ -322,6 +322,9 @@ public class CollectionCacheManager : IDisposable
             case ModSettingChange.MultiEnableState:
                 FullRecalculation(collection);
                 break;
+            case ModSettingChange.TemporaryMod:
+                // handled otherwise
+                break;
         }
     }
 
