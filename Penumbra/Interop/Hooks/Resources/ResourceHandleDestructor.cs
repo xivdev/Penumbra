@@ -42,7 +42,7 @@ public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHa
 
     private nint Detour(ResourceHandle* resourceHandle)
     {
-        Penumbra.Log.Verbose($"[{Name}] Triggered with 0x{(nint)resourceHandle:X}.");
+        Penumbra.Log.Excessive($"[{Name}] Triggered with 0x{(nint)resourceHandle:X}.");
         Invoke(resourceHandle);
         return _task.Result.Original(resourceHandle);
     }

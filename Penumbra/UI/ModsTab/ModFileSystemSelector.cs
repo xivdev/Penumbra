@@ -12,8 +12,6 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
-using Penumbra.GameData.Enums;
-using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
