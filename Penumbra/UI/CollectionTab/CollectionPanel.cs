@@ -2,6 +2,7 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using ImGuiNET;
@@ -28,7 +29,7 @@ public sealed class CollectionPanel : IDisposable
     private readonly InheritanceUi          _inheritanceUi;
     private readonly ModStorage             _mods;
 
-    private readonly GameFontHandle _nameFont;
+    private readonly IFontHandle _nameFont;
 
     private static readonly IReadOnlyDictionary<CollectionType, (string Name, uint Border)> Buttons      = CreateButtons();
     private static readonly IReadOnlyList<(CollectionType, bool, bool, string, uint)>       AdvancedTree = CreateTree();
@@ -47,7 +48,7 @@ public sealed class CollectionPanel : IDisposable
         _mods                   = mods;
         _individualAssignmentUi = new IndividualAssignmentUi(communicator, actors, manager);
         _inheritanceUi          = new InheritanceUi(manager, _selector);
-        _nameFont               = pi.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
+        _nameFont               = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
     }
 
     public void Dispose()
@@ -426,7 +427,7 @@ public sealed class CollectionPanel : IDisposable
         ImGui.Dummy(Vector2.One);
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
-        using var font  = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+        using var f     = _nameFont.Available ? _nameFont.Push() : null;
         var       name  = Name(collection);
         var       size  = ImGui.CalcTextSize(name).X;
         var       pos   = ImGui.GetContentRegionAvail().X - size + ImGui.GetStyle().FramePadding.X * 2;
@@ -445,7 +446,7 @@ public sealed class CollectionPanel : IDisposable
         if (_inUseCache.Count == 0 && collection.DirectParentOf.Count == 0)
         {
             ImGui.Dummy(Vector2.One);
-            using var font = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+            using var f = _nameFont.Available ? _nameFont.Push() : null;
             ImGuiUtil.DrawTextButton("Collection is not used.", new Vector2(ImGui.GetContentRegionAvail().X, buttonHeight),
                 Colors.PressEnterWarningBg);
             ImGui.Dummy(Vector2.One);
@@ -512,7 +513,7 @@ public sealed class CollectionPanel : IDisposable
             ImGuiUtil.DrawTextButton("Inherited by", ImGui.GetContentRegionAvail() with { Y = 0 }, 0);
         }
 
-        using var font  = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+        using var f     = _nameFont.Available ? _nameFont.Push() : null;
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         ImGuiUtil.DrawTextButton(Name(collection.DirectParentOf[0]), Vector2.Zero, 0);

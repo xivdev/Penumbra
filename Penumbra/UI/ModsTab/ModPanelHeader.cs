@@ -1,4 +1,5 @@
 using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
@@ -14,14 +15,14 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelHeader : IDisposable
 {
     /// <summary> We use a big, nice game font for the title. </summary>
-    private readonly GameFontHandle _nameFont;
+    private readonly IFontHandle _nameFont;
 
     private readonly CommunicatorService _communicator;
 
     public ModPanelHeader(DalamudPluginInterface pi, CommunicatorService communicator)
     {
         _communicator = communicator;
-        _nameFont     = pi.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
+        _nameFont     = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModPanelHeader);
     }
 
@@ -46,7 +47,7 @@ public class ModPanelHeader : IDisposable
         var name = $" {mod.Name} ";
         if (name != _modName)
         {
-            using var font = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+            using var f = _nameFont.Available ? _nameFont.Push() : null;
             _modName      = name;
             _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * UiHelpers.Scale);
         }
@@ -121,7 +122,7 @@ public class ModPanelHeader : IDisposable
 
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
-        using var font  = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+        using var f     = _nameFont.Available ? _nameFont.Push() : null;
         ImGuiUtil.DrawTextButton(_modName, Vector2.Zero, 0);
         return offset;
     }
