@@ -427,7 +427,7 @@ public sealed class CollectionPanel : IDisposable
         ImGui.Dummy(Vector2.One);
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
-        using var f     = _nameFont.Available ? _nameFont.Push() : null;
+        using var f     = _nameFont.Push();
         var       name  = Name(collection);
         var       size  = ImGui.CalcTextSize(name).X;
         var       pos   = ImGui.GetContentRegionAvail().X - size + ImGui.GetStyle().FramePadding.X * 2;
@@ -446,7 +446,7 @@ public sealed class CollectionPanel : IDisposable
         if (_inUseCache.Count == 0 && collection.DirectParentOf.Count == 0)
         {
             ImGui.Dummy(Vector2.One);
-            using var f = _nameFont.Available ? _nameFont.Push() : null;
+            using var f = _nameFont.Push();
             ImGuiUtil.DrawTextButton("Collection is not used.", new Vector2(ImGui.GetContentRegionAvail().X, buttonHeight),
                 Colors.PressEnterWarningBg);
             ImGui.Dummy(Vector2.One);
@@ -513,7 +513,7 @@ public sealed class CollectionPanel : IDisposable
             ImGuiUtil.DrawTextButton("Inherited by", ImGui.GetContentRegionAvail() with { Y = 0 }, 0);
         }
 
-        using var f     = _nameFont.Available ? _nameFont.Push() : null;
+        using var f     = _nameFont.Push();
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         ImGuiUtil.DrawTextButton(Name(collection.DirectParentOf[0]), Vector2.Zero, 0);

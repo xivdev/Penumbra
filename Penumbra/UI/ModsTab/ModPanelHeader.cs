@@ -47,7 +47,7 @@ public class ModPanelHeader : IDisposable
         var name = $" {mod.Name} ";
         if (name != _modName)
         {
-            using var f = _nameFont.Available ? _nameFont.Push() : null;
+            using var f = _nameFont.Push();
             _modName      = name;
             _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * UiHelpers.Scale);
         }
@@ -122,7 +122,7 @@ public class ModPanelHeader : IDisposable
 
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
-        using var f     = _nameFont.Available ? _nameFont.Push() : null;
+        using var f     = _nameFont.Push();
         ImGuiUtil.DrawTextButton(_modName, Vector2.Zero, 0);
         return offset;
     }
