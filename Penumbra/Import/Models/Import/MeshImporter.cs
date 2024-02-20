@@ -167,7 +167,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
         // And finally, merge in the sub-mesh struct itself.
         _subMeshes.Add(subMesh.SubMeshStruct with
         {
-            IndexOffset = (ushort)(subMesh.SubMeshStruct.IndexOffset + indexOffset),
+            IndexOffset = (uint)(subMesh.SubMeshStruct.IndexOffset + indexOffset),
             AttributeIndexMask = Utility.GetMergedAttributeMask(
                 subMesh.SubMeshStruct.AttributeIndexMask, subMesh.MetaAttributes, _metaAttributes),
         });
