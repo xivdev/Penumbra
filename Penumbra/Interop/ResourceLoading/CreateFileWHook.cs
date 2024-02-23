@@ -100,7 +100,7 @@ public unsafe class CreateFileWHook : IDisposable
         {
             // Use static storage.
             var ptr = WriteFileName(name);
-            Penumbra.Log.Verbose($"[ResourceHooks] Calling CreateFileWDetour with {ByteString.FromSpanUnsafe(name, false)}.");
+            Penumbra.Log.Excessive($"[ResourceHooks] Calling CreateFileWDetour with {ByteString.FromSpanUnsafe(name, false)}.");
             return _createFileWHook.OriginalDisposeSafe(ptr, access, shareMode, security, creation, flags, template);
         }
 
