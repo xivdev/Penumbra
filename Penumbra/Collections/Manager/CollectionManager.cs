@@ -2,23 +2,18 @@ using Penumbra.Collections.Cache;
 
 namespace Penumbra.Collections.Manager;
 
-public class CollectionManager
+public class CollectionManager(
+    CollectionStorage storage,
+    ActiveCollections active,
+    InheritanceManager inheritances,
+    CollectionCacheManager caches,
+    TempCollectionManager temp,
+    CollectionEditor editor)
 {
-    public readonly CollectionStorage      Storage;
-    public readonly ActiveCollections      Active;
-    public readonly InheritanceManager     Inheritances;
-    public readonly CollectionCacheManager Caches;
-    public readonly TempCollectionManager  Temp;
-    public readonly CollectionEditor       Editor;
-
-    public CollectionManager(CollectionStorage storage, ActiveCollections active, InheritanceManager inheritances,
-        CollectionCacheManager caches, TempCollectionManager temp, CollectionEditor editor)
-    {
-        Storage      = storage;
-        Active       = active;
-        Inheritances = inheritances;
-        Caches       = caches;
-        Temp         = temp;
-        Editor       = editor;
-    }
+    public readonly CollectionStorage      Storage      = storage;
+    public readonly ActiveCollections      Active       = active;
+    public readonly InheritanceManager     Inheritances = inheritances;
+    public readonly CollectionCacheManager Caches       = caches;
+    public readonly TempCollectionManager  Temp         = temp;
+    public readonly CollectionEditor       Editor       = editor;
 }

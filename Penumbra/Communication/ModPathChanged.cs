@@ -19,14 +19,14 @@ public sealed class ModPathChanged()
 {
     public enum Priority
     {
+        /// <seealso cref="PenumbraApi.ModPathChangeSubscriber"/>
+        Api = int.MinValue,
+
         /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
         EphemeralConfig = -500,
 
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeAddition"/>
         CollectionCacheManagerAddition = -100,
-
-        /// <seealso cref="PenumbraApi.ModPathChangeSubscriber"/>
-        Api = 0,
 
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModPathChange"/>
         ModCacheManager = 0,

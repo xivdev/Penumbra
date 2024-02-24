@@ -323,6 +323,7 @@ public class CollectionCacheManager : IDisposable
                 FullRecalculation(collection);
                 break;
             case ModSettingChange.TemporaryMod:
+            case ModSettingChange.Edited:
                 // handled otherwise
                 break;
         }

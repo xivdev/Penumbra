@@ -1,4 +1,5 @@
 using OtterGui.Classes;
+using Penumbra.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
@@ -18,6 +19,9 @@ public sealed class ModOptionChanged()
 {
     public enum Priority
     {
+        /// <seealso cref="PenumbraApi.OnModOptionEdited"/>
+        Api = int.MinValue,
+
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModOptionChange"/>
         CollectionCacheManager = -100,
 
