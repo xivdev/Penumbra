@@ -433,7 +433,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     private void OnModFileChanged(Mod _1, FileRegistry _2)
     {
-        if (!_config.ForceRedrawOnFileChange)
+        if (!_config.Ephemeral.ForceRedrawOnFileChange)
             return;
 
         RedrawObject(0, RedrawType.Redraw);
