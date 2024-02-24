@@ -1,10 +1,11 @@
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModFileEditor(ModFileCollection files, ModManager modManager)
+public class ModFileEditor(ModFileCollection files, ModManager modManager, CommunicatorService communicator)
 {
     public bool Changes { get; private set; }
 
@@ -136,6 +137,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager)
             try
             {
                 File.Delete(file.File.FullName);
+                communicator.ModFileChanged.Invoke(mod, file);
                 Penumbra.Log.Debug($"[DeleteFiles] Deleted {file.File.FullName} from {mod.Name}.");
                 ++deletions;
             }

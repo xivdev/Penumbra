@@ -195,7 +195,7 @@ public partial class ModEditWindow
             if (subMod.Files.ContainsKey(gamePath) || subMod.FileSwaps.ContainsKey(gamePath))
                 return new QuickImportAction(editor, optionName, gamePath);
 
-            var mod = owner._mod;
+            var mod = owner.Mod;
             if (mod == null)
                 return new QuickImportAction(editor, optionName, gamePath);
 

@@ -4,6 +4,7 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
@@ -56,6 +57,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.CollectionStorage);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.CollectionStorage);
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.CollectionStorage);
+        _communicator.ModFileChanged.Subscribe(OnModFileChanged, ModFileChanged.Priority.CollectionStorage);
         ReadCollections(out DefaultNamed);
     }
 
@@ -65,6 +67,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         _communicator.ModDiscoveryFinished.Unsubscribe(OnModDiscoveryFinished);
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
+        _communicator.ModFileChanged.Unsubscribe(OnModFileChanged);
     }
 
     /// <summary>
@@ -104,7 +107,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         if (!CanAddCollection(name, out var fixedName))
         {
             Penumbra.Messager.NotificationMessage(
-                $"The new collection {name} would lead to the same path {fixedName} as one that already exists.", NotificationType.Warning, false);
+                $"The new collection {name} would lead to the same path {fixedName} as one that already exists.", NotificationType.Warning,
+                false);
             return false;
         }
 
@@ -185,20 +189,23 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             if (!IsValidName(name))
             {
                 // TODO: handle better.
-                Penumbra.Messager.NotificationMessage($"Collection of unsupported name found: {name} is not a valid collection name.", NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage($"Collection of unsupported name found: {name} is not a valid collection name.",
+                    NotificationType.Warning);
                 continue;
             }
 
             if (ByName(name, out _))
             {
-                Penumbra.Messager.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.", NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.",
+                    NotificationType.Warning);
                 continue;
             }
 
             var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings, inheritance);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
-                Penumbra.Messager.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", NotificationType.Warning);
+                Penumbra.Messager.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.",
+                    NotificationType.Warning);
             _collections.Add(collection);
         }
 
@@ -220,7 +227,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             return _collections[^1];
 
         Penumbra.Messager.NotificationMessage(
-            $"Unknown problem creating a collection with the name {ModCollection.DefaultCollectionName}, which is required to exist.", NotificationType.Error);
+            $"Unknown problem creating a collection with the name {ModCollection.DefaultCollectionName}, which is required to exist.",
+            NotificationType.Error);
         return Count > 1 ? _collections[1] : _collections[0];
     }
 
@@ -271,6 +279,20 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         {
             if (collection.Settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
                 _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+        }
+    }
+
+    /// <summary> Update change counters when changing files. </summary>
+    private void OnModFileChanged(Mod mod, FileRegistry file)
+    {
+        if (file.CurrentUsage == 0)
+            return;
+
+        foreach (var collection in this)
+        {
+            var (settings, _) = collection[mod.Index];
+            if (settings is { Enabled: true })
+                collection.IncrementCounter();
         }
     }
 }

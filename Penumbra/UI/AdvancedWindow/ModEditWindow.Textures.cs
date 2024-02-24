@@ -3,6 +3,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterTex;
 using Penumbra.Import.Textures;
+using Penumbra.Mods;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -45,10 +46,10 @@ public partial class ModEditWindow
             using (var disabled = ImRaii.Disabled(!_center.SaveTask.IsCompleted))
             {
                 TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
-                    "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
+                    "Can import game paths as well as your own files.", Mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
                 if (_textureSelectCombo.Draw("##combo",
                         "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
-                        _mod.ModPath.FullName.Length + 1, out var newPath)
+                        Mod.ModPath.FullName.Length + 1, out var newPath)
                  && newPath != tex.Path)
                     tex.Load(_textures, newPath);
 
@@ -86,6 +87,18 @@ public partial class ModEditWindow
         }
     }
 
+    private void RedrawOnSaveBox()
+    {
+        var redraw = _config.Ephemeral.ForceRedrawOnFileChange;
+        if (ImGui.Checkbox("Redraw on Save", ref redraw))
+        {
+            _config.Ephemeral.ForceRedrawOnFileChange = redraw;
+            _config.Ephemeral.Save();
+        }
+
+        ImGuiUtil.HoverTooltip("Force a redraw of your player character whenever you save a file here.");
+    }
+
     private void MipMapInput()
     {
         ImGui.Checkbox("##mipMaps", ref _addMipMaps);
@@ -103,6 +116,8 @@ public partial class ModEditWindow
 
         if (_center.IsLoaded)
         {
+            RedrawOnSaveBox();
+            ImGui.SameLine();
             SaveAsCombo();
             ImGui.SameLine();
             MipMapInput();
@@ -118,6 +133,7 @@ public partial class ModEditWindow
                     tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
                 _center.SaveAs(_left.Type, _textures, _left.Path, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                InvokeChange(Mod, _left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -141,6 +157,7 @@ public partial class ModEditWindow
                     !canConvertInPlace || _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
+                InvokeChange(Mod, _left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -150,6 +167,7 @@ public partial class ModEditWindow
                     !canConvertInPlace || _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
+                InvokeChange(Mod, _left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -160,6 +178,7 @@ public partial class ModEditWindow
                  || _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
+                InvokeChange(Mod, _left.Path);
                 AddReloadTask(_left.Path, false);
             }
         }
@@ -192,6 +211,18 @@ public partial class ModEditWindow
             _center.Draw(_textures, imageSize);
     }
 
+    private void InvokeChange(Mod? mod, string path)
+    {
+        if (mod == null)
+            return;
+
+        if (!_editor.Files.Tex.FindFirst(r => string.Equals(r.File.FullName, path, StringComparison.OrdinalIgnoreCase),
+                out var registry))
+            return;
+
+        _communicator.ModFileChanged.Invoke(mod, registry);
+    }
+
     private void OpenSaveAsDialog(string defaultExtension)
     {
         var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
@@ -201,12 +232,13 @@ public partial class ModEditWindow
                 if (a)
                 {
                     _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                    InvokeChange(Mod, b);
                     if (b == _left.Path)
                         AddReloadTask(_left.Path, false);
                     else if (b == _right.Path)
                         AddReloadTask(_right.Path, true);
                 }
-            }, _mod!.ModPath.FullName, _forceTextureStartPath);
+            }, Mod!.ModPath.FullName, _forceTextureStartPath);
         _forceTextureStartPath = false;
     }
 

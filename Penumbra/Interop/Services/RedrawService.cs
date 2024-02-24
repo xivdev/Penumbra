@@ -8,9 +8,13 @@ using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.Interop;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.Mods;
+using Penumbra.Mods.Editor;
+using Penumbra.Services;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
 namespace Penumbra.Interop.Services;
@@ -106,11 +110,13 @@ public sealed unsafe partial class RedrawService : IDisposable
 {
     private const int FurnitureIdx = 1337;
 
-    private readonly IFramework     _framework;
-    private readonly IObjectTable   _objects;
-    private readonly ITargetManager _targets;
-    private readonly ICondition     _conditions;
-    private readonly IClientState   _clientState;
+    private readonly IFramework          _framework;
+    private readonly IObjectTable        _objects;
+    private readonly ITargetManager      _targets;
+    private readonly ICondition          _conditions;
+    private readonly IClientState        _clientState;
+    private readonly Configuration       _config;
+    private readonly CommunicatorService _communicator;
 
     private readonly List<int> _queue           = new(100);
     private readonly List<int> _afterGPoseQueue = new(GPoseSlots);
@@ -127,19 +133,24 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
-    public RedrawService(IFramework framework, IObjectTable objects, ITargetManager targets, ICondition conditions, IClientState clientState)
+    public RedrawService(IFramework framework, IObjectTable objects, ITargetManager targets, ICondition conditions, IClientState clientState,
+        Configuration config, CommunicatorService communicator)
     {
         _framework        =  framework;
         _objects          =  objects;
         _targets          =  targets;
         _conditions       =  conditions;
         _clientState      =  clientState;
+        _config           =  config;
+        _communicator     =  communicator;
         _framework.Update += OnUpdateEvent;
+        _communicator.ModFileChanged.Subscribe(OnModFileChanged, ModFileChanged.Priority.RedrawService);
     }
 
     public void Dispose()
     {
         _framework.Update -= OnUpdateEvent;
+        _communicator.ModFileChanged.Unsubscribe(OnModFileChanged);
     }
 
     public static DrawState* ActorDrawState(GameObject actor)
@@ -418,5 +429,13 @@ public sealed unsafe partial class RedrawService : IDisposable
 
             gameObject->DisableDraw();
         }
+    }
+
+    private void OnModFileChanged(Mod _1, FileRegistry _2)
+    {
+        if (!_config.ForceRedrawOnFileChange)
+            return;
+
+        RedrawObject(0, RedrawType.Redraw);
     }
 }

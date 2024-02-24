@@ -47,7 +47,6 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool UseNoModsInInspect                 { get; set; } = false;
     public bool HideChangedItemFilters             { get; set; } = false;
     public bool ReplaceNonAsciiOnImport            { get; set; } = false;
-
     public bool HidePrioritiesInSelector  { get; set; } = false;
     public bool HideRedrawBar             { get; set; } = false;
     public int  OptionGroupCollapsibleMin { get; set; } = 5;

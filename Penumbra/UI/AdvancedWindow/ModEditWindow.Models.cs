@@ -94,7 +94,7 @@ public partial class ModEditWindow
                 {
                     if (success && paths.Count > 0)
                         tab.Import(paths[0]);
-                }, 1, _mod!.ModPath.FullName, false);
+                }, 1, Mod!.ModPath.FullName, false);
 
             ImGui.SameLine();
             DrawDocumentationLink(MdlImportDocumentation);
@@ -142,7 +142,7 @@ public partial class ModEditWindow
 
                     tab.Export(path, gamePath);
                 },
-                _mod!.ModPath.FullName,
+                Mod!.ModPath.FullName,
                 false
             );
 

@@ -42,6 +42,9 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.ModDirectoryChanged"/>
     public readonly ModDirectoryChanged ModDirectoryChanged = new();
 
+    /// <inheritdoc cref="Communication.ModFileChanged"/>
+    public readonly ModFileChanged ModFileChanged = new();
+
     /// <inheritdoc cref="Communication.ModPathChanged"/>
     public readonly ModPathChanged ModPathChanged = new();
 

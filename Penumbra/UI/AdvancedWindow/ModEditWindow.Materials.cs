@@ -209,7 +209,7 @@ public partial class ModEditWindow
                 info.Restore();
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(info.Path.FullName[(_mod!.ModPath.FullName.Length + 1)..]);
+            ImGui.TextUnformatted(info.Path.FullName[(Mod!.ModPath.FullName.Length + 1)..]);
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(400 * UiHelpers.Scale);
             var tmp = info.CurrentMaterials[0];

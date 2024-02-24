@@ -60,7 +60,7 @@ public partial class ModEditWindow
         CopyToClipboardButton("Copy all current manipulations to clipboard.", _iconSize, _editor.MetaEditor.Recombine());
         ImGui.SameLine();
         if (ImGui.Button("Write as TexTools Files"))
-            _metaFileManager.WriteAllTexToolsMeta(_mod!);
+            _metaFileManager.WriteAllTexToolsMeta(Mod!);
 
         using var child = ImRaii.Child("##meta", -Vector2.One, true);
         if (!child)

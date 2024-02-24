@@ -143,7 +143,7 @@ public partial class ModEditWindow
             {
                 if (success)
                     tab.LoadShpk(new FullPath(name[0]));
-            }, 1, _mod!.ModPath.FullName, false);
+            }, 1, Mod!.ModPath.FullName, false);
 
         var moddedPath = tab.FindAssociatedShpk(out var defaultPath, out var gamePath);
         ImGui.SameLine();

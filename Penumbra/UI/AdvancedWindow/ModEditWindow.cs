@@ -49,17 +49,18 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly IObjectTable            _objects;
     private readonly CharacterBaseDestructor _characterBaseDestructor;
 
-    private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
 
+    public Mod? Mod { get; private set; }
+
     public void ChangeMod(Mod mod)
     {
-        if (mod == _mod)
+        if (mod == Mod)
             return;
 
         _editor.LoadMod(mod, -1, 0);
-        _mod = mod;
+        Mod = mod;
 
         SizeConstraints = new WindowSizeConstraints
         {
@@ -80,12 +81,12 @@ public partial class ModEditWindow : Window, IDisposable
 
     public void UpdateModels()
     {
-        if (_mod != null)
-            _editor.MdlMaterialEditor.ScanModels(_mod);
+        if (Mod != null)
+            _editor.MdlMaterialEditor.ScanModels(Mod);
     }
 
     public override bool DrawConditions()
-        => _mod != null;
+        => Mod != null;
 
     public override void PreDraw()
     {
@@ -106,13 +107,13 @@ public partial class ModEditWindow : Window, IDisposable
         });
         var manipulations = 0;
         var subMods       = 0;
-        var swaps = _mod!.AllSubMods.Sum(m =>
+        var swaps = Mod!.AllSubMods.Sum(m =>
         {
             ++subMods;
             manipulations += m.Manipulations.Count;
             return m.FileSwaps.Count;
         });
-        sb.Append(_mod!.Name);
+        sb.Append(Mod!.Name);
         if (subMods > 1)
             sb.Append($"   |   {subMods} Options");
 
@@ -271,7 +272,7 @@ public partial class ModEditWindow : Window, IDisposable
 
         ImGui.NewLine();
         if (ImGui.Button("Remove Missing Files from Mod"))
-            _editor.FileEditor.RemoveMissingPaths(_mod!, _editor.Option!);
+            _editor.FileEditor.RemoveMissingPaths(Mod!, _editor.Option!);
 
         using var child = ImRaii.Child("##unusedFiles", -Vector2.One, true);
         if (!child)
@@ -324,8 +325,8 @@ public partial class ModEditWindow : Window, IDisposable
         }
         else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
-            _editor.ModNormalizer.Normalize(_mod!);
-            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(_mod!, _editor.GroupIdx, _editor.OptionIdx));
+            _editor.ModNormalizer.Normalize(Mod!);
+            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.OptionIdx));
         }
 
         if (!_editor.Duplicates.Worker.IsCompleted)
@@ -363,7 +364,7 @@ public partial class ModEditWindow : Window, IDisposable
         foreach (var (set, size, hash) in _editor.Duplicates.Duplicates.Where(s => s.Paths.Length > 1))
         {
             ImGui.TableNextColumn();
-            using var tree = ImRaii.TreeNode(set[0].FullName[(_mod!.ModPath.FullName.Length + 1)..],
+            using var tree = ImRaii.TreeNode(set[0].FullName[(Mod!.ModPath.FullName.Length + 1)..],
                 ImGuiTreeNodeFlags.NoTreePushOnOpen);
             ImGui.TableNextColumn();
             ImGuiUtil.RightAlign(Functions.HumanReadableSize(size));
@@ -384,7 +385,7 @@ public partial class ModEditWindow : Window, IDisposable
             {
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
-                using var node = ImRaii.TreeNode(duplicate.FullName[(_mod!.ModPath.FullName.Length + 1)..], ImGuiTreeNodeFlags.Leaf);
+                using var node = ImRaii.TreeNode(duplicate.FullName[(Mod!.ModPath.FullName.Length + 1)..], ImGuiTreeNodeFlags.Leaf);
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
                 ImGui.TableNextColumn();
@@ -421,7 +422,7 @@ public partial class ModEditWindow : Window, IDisposable
         if (!combo)
             return ret;
 
-        foreach (var (option, idx) in _mod!.AllSubMods.WithIndex())
+        foreach (var (option, idx) in Mod!.AllSubMods.WithIndex())
         {
             using var id = ImRaii.PushId(idx);
             if (ImGui.Selectable(option.FullName, option == _editor.Option))
@@ -537,10 +538,10 @@ public partial class ModEditWindow : Window, IDisposable
         if (currentFile != null)
             return currentFile.Value;
 
-        if (_mod != null)
-            foreach (var option in _mod.Groups.OrderByDescending(g => g.Priority)
+        if (Mod != null)
+            foreach (var option in Mod.Groups.OrderByDescending(g => g.Priority)
                          .SelectMany(g => g.WithIndex().OrderByDescending(o => g.OptionPriority(o.Index)).Select(g => g.Value))
-                         .Append(_mod.Default))
+                         .Append(Mod.Default))
             {
                 if (option.Files.TryGetValue(path, out var value) || option.FileSwaps.TryGetValue(path, out value))
                     return value;
@@ -559,8 +560,8 @@ public partial class ModEditWindow : Window, IDisposable
                 ret.Add(path);
         }
 
-        if (_mod != null)
-            foreach (var option in _mod.Groups.SelectMany(g => g).Append(_mod.Default))
+        if (Mod != null)
+            foreach (var option in Mod.Groups.SelectMany(g => g).Append(Mod.Default))
             {
                 foreach (var path in option.Files.Keys)
                 {
@@ -596,15 +597,15 @@ public partial class ModEditWindow : Window, IDisposable
         _objects                 = objects;
         _framework               = framework;
         _characterBaseDestructor = characterBaseDestructor;
-        _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
-            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
+        _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
+            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
-        _modelTab = new FileEditor<MdlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
-            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty,
+        _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
+            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new MdlTab(this, bytes, path));
-        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
+        _shaderPackageTab = new FileEditor<ShpkTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
-            () => _mod?.ModPath.FullName ?? string.Empty,
+            () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
@@ -629,10 +630,10 @@ public partial class ModEditWindow : Window, IDisposable
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
     {
-        if (type is not (ModPathChangeType.Reloaded or ModPathChangeType.Moved) || mod != _mod)
+        if (type is not (ModPathChangeType.Reloaded or ModPathChangeType.Moved) || mod != Mod)
             return;
 
-        _mod = null;
+        Mod = null;
         ChangeMod(mod);
     }
 }

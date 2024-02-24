@@ -39,6 +39,7 @@ public class EphemeralConfig : ISavable, IDisposable
     public bool                              FixMainWindow                     { get; set; } = false;
     public string                            LastModPath                       { get; set; } = string.Empty;
     public bool                              AdvancedEditingOpen               { get; set; } = false;
+    public bool                              ForceRedrawOnFileChange           { get; set; } = false;
 
     /// <summary>
     /// Load the current configuration.

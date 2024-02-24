@@ -8,39 +8,32 @@ using OtterGui.Compression;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.GameData.Files;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class FileEditor<T> : IDisposable where T : class, IWritable
+public class FileEditor<T>(
+    ModEditWindow owner,
+    CommunicatorService communicator,
+    IDataManager gameData,
+    Configuration config,
+    FileCompactor compactor,
+    FileDialogService fileDialog,
+    string tabName,
+    string fileType,
+    Func<IReadOnlyList<FileRegistry>> getFiles,
+    Func<T, bool, bool> drawEdit,
+    Func<string> getInitialPath,
+    Func<byte[], string, bool, T?> parseFile)
+    : IDisposable
+    where T : class, IWritable
 {
-    private readonly FileDialogService _fileDialog;
-    private readonly IDataManager      _gameData;
-    private readonly ModEditWindow     _owner;
-    private readonly FileCompactor     _compactor;
-
-    public FileEditor(ModEditWindow owner, IDataManager gameData, Configuration config, FileCompactor compactor, FileDialogService fileDialog,
-        string tabName, string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
-        Func<byte[], string, bool, T?> parseFile)
-    {
-        _owner          = owner;
-        _gameData       = gameData;
-        _fileDialog     = fileDialog;
-        _tabName        = tabName;
-        _fileType       = fileType;
-        _drawEdit       = drawEdit;
-        _getInitialPath = getInitialPath;
-        _parseFile      = parseFile;
-        _compactor      = compactor;
-        _combo          = new Combo(config, getFiles);
-    }
-
     public void Draw()
     {
-        using var tab = ImRaii.TabItem(_tabName);
+        using var tab = ImRaii.TabItem(tabName);
         if (!tab)
         {
             _quickImport = null;
@@ -53,10 +46,24 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         ImGui.SameLine();
         ResetButton();
         ImGui.SameLine();
+        RedrawOnSaveBox();
+        ImGui.SameLine();
         DefaultInput();
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
         DrawFilePanel();
+    }
+
+    private void RedrawOnSaveBox()
+    {
+        var redraw = config.Ephemeral.ForceRedrawOnFileChange;
+        if (ImGui.Checkbox("Redraw on Save", ref redraw))
+        {
+            config.Ephemeral.ForceRedrawOnFileChange = redraw;
+            config.Ephemeral.Save();
+        }
+
+        ImGuiUtil.HoverTooltip("Force a redraw of your player character whenever you save a file here.");
     }
 
     public void Dispose()
@@ -66,12 +73,6 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         (_defaultFile as IDisposable)?.Dispose();
         _defaultFile = null;
     }
-
-    private readonly string                         _tabName;
-    private readonly string                         _fileType;
-    private readonly Func<T, bool, bool>            _drawEdit;
-    private readonly Func<string>                   _getInitialPath;
-    private readonly Func<byte[], string, bool, T?> _parseFile;
 
     private FileRegistry? _currentPath;
     private T?            _currentFile;
@@ -85,7 +86,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
     private T?           _defaultFile;
     private Exception?   _defaultException;
 
-    private readonly Combo _combo;
+    private readonly Combo _combo = new(config, getFiles);
 
     private ModEditWindow.QuickImportAction? _quickImport;
 
@@ -99,16 +100,16 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         {
             _isDefaultPathUtf8Valid = Utf8GamePath.FromString(_defaultPath, out _defaultPathUtf8, true);
             _quickImport            = null;
-            _fileDialog.Reset();
+            fileDialog.Reset();
             try
             {
-                var file = _gameData.GetFile(_defaultPath);
+                var file = gameData.GetFile(_defaultPath);
                 if (file != null)
                 {
                     _defaultException = null;
                     (_defaultFile as IDisposable)?.Dispose();
                     _defaultFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
-                    _defaultFile = _parseFile(file.Data, _defaultPath, false);
+                    _defaultFile = parseFile(file.Data, _defaultPath, false);
                 }
                 else
                 {
@@ -126,7 +127,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), new Vector2(ImGui.GetFrameHeight()), "Export this file.",
                 _defaultFile == null, true))
-            _fileDialog.OpenSavePicker($"Export {_defaultPath} to...", _fileType, Path.GetFileNameWithoutExtension(_defaultPath), _fileType,
+            fileDialog.OpenSavePicker($"Export {_defaultPath} to...", fileType, Path.GetFileNameWithoutExtension(_defaultPath), fileType,
                 (success, name) =>
                 {
                     if (!success)
@@ -134,16 +135,16 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
                     try
                     {
-                        _compactor.WriteAllBytes(name, _defaultFile?.Write() ?? throw new Exception("File invalid."));
+                        compactor.WriteAllBytes(name, _defaultFile?.Write() ?? throw new Exception("File invalid."));
                     }
                     catch (Exception e)
                     {
                         Penumbra.Messager.NotificationMessage(e, $"Could not export {_defaultPath}.", NotificationType.Error);
                     }
-                }, _getInitialPath(), false);
+                }, getInitialPath(), false);
 
         _quickImport ??=
-            ModEditWindow.QuickImportAction.Prepare(_owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
+            ModEditWindow.QuickImportAction.Prepare(owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
                 $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
@@ -172,7 +173,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
     private void DrawFileSelectCombo()
     {
-        if (_combo.Draw("##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {_fileType} File...", string.Empty,
+        if (_combo.Draw("##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {fileType} File...", string.Empty,
                 ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight())
          && _combo.CurrentSelection != null)
             UpdateCurrentFile(_combo.CurrentSelection);
@@ -191,7 +192,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
             var bytes = File.ReadAllBytes(_currentPath.File.FullName);
             (_currentFile as IDisposable)?.Dispose();
             _currentFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
-            _currentFile = _parseFile(bytes, _currentPath.File.FullName, true);
+            _currentFile = parseFile(bytes, _currentPath.File.FullName, true);
         }
         catch (Exception e)
         {
@@ -204,9 +205,11 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
     private void SaveButton()
     {
         if (ImGuiUtil.DrawDisabledButton("Save to File", Vector2.Zero,
-                $"Save the selected {_fileType} file with all changes applied. This is not revertible.", !_changed))
+                $"Save the selected {fileType} file with all changes applied. This is not revertible.", !_changed))
         {
-            _compactor.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
+            compactor.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
+            if (owner.Mod != null)
+                communicator.ModFileChanged.Invoke(owner.Mod, _currentPath);
             _changed = false;
         }
     }
@@ -214,7 +217,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
     private void ResetButton()
     {
         if (ImGuiUtil.DrawDisabledButton("Reset Changes", Vector2.Zero,
-                $"Reset all changes made to the {_fileType} file.", !_changed))
+                $"Reset all changes made to the {fileType} file.", !_changed))
         {
             var tmp = _currentPath;
             _currentPath = null;
@@ -232,7 +235,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         {
             if (_currentFile == null)
             {
-                ImGui.TextUnformatted($"Could not parse selected {_fileType} file.");
+                ImGui.TextUnformatted($"Could not parse selected {fileType} file.");
                 if (_currentException != null)
                 {
                     using var tab = ImRaii.PushIndent();
@@ -242,7 +245,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
             else
             {
                 using var id = ImRaii.PushId(0);
-                _changed |= _drawEdit(_currentFile, false);
+                _changed |= drawEdit(_currentFile, false);
             }
         }
 
@@ -258,7 +261,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
             if (_defaultFile == null)
             {
-                ImGui.TextUnformatted($"Could not parse provided {_fileType} game file:\n");
+                ImGui.TextUnformatted($"Could not parse provided {fileType} game file:\n");
                 if (_defaultException != null)
                 {
                     using var tab = ImRaii.PushIndent();
@@ -268,7 +271,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
             else
             {
                 using var id = ImRaii.PushId(1);
-                _drawEdit(_defaultFile, true);
+                drawEdit(_defaultFile, true);
             }
         }
     }
@@ -283,7 +286,7 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
         protected override bool DrawSelectable(int globalIdx, bool selected)
         {
-            var file = Items[globalIdx];
+            var  file = Items[globalIdx];
             bool ret;
             using (var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
             {

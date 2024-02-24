@@ -24,6 +24,7 @@ using Penumbra.Interop.Services;
 using Penumbra.UI;
 using TextureType = Penumbra.Api.Enums.TextureType;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Api;
 
@@ -142,6 +143,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange, Communication.ModSettingChanged.Priority.Api);
         _communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
         _communicator.ModOptionChanged.Subscribe(OnModOptionEdited, ModOptionChanged.Priority.Api);
+        _communicator.ModFileChanged.Subscribe(OnModFileChanged, ModFileChanged.Priority.Api);
     }
 
     public unsafe void Dispose()
@@ -153,6 +155,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _communicator.ModPathChanged.Unsubscribe(ModPathChangeSubscriber);
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _communicator.CreatedCharacterBase.Unsubscribe(OnCreatedCharacterBase);
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionEdited);
+        _communicator.ModFileChanged.Unsubscribe(OnModFileChanged);
         _lumina              = null;
         _communicator        = null!;
         _modManager          = null!;
@@ -1277,11 +1281,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
+    private void OnModFileChanged(Mod mod, FileRegistry file)
+    {
+        if (file.CurrentUsage == 0)
+            return;
+
+        TriggerSettingEdited(mod);
+    }
+
     private void TriggerSettingEdited(Mod mod)
     {
         var collection = _collectionResolver.PlayerCollection();
         var (settings, parent) = collection[mod.Index];
-        if (settings != null)
+        if (settings is { Enabled: true })
             ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Name, mod.Identifier, parent != collection);
     }
 }
