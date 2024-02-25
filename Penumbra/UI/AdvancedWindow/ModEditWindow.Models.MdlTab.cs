@@ -220,24 +220,9 @@ public partial class ModEditWindow
         /// <param name="source"> Model to copy element ids from. </param>
         private static void MergeElementIds(MdlFile target, MdlFile source)
         {
-            var elementIds = new List<MdlStructs.ElementIdStruct>();
-
-            foreach (var sourceElement in source.ElementIds)
-            {
-                var sourceBone  = source.Bones[sourceElement.ParentBoneName];
-                var targetIndex = target.Bones.IndexOf(sourceBone);
-                // Given that there's no means of authoring these at the moment, this should probably remain a hard error.
-                if (targetIndex == -1)
-                    throw new Exception(
-                        $"Failed to merge element IDs. Original model contains element IDs targeting bone {sourceBone}, which is not present on the imported model.");
-
-                elementIds.Add(sourceElement with
-                {
-                    ParentBoneName = (uint)targetIndex,
-                });
-            }
-
-            target.ElementIds = [.. elementIds];
+            // This is overly simplistic, but effectively reproduces what TT did, sort of.
+            // TODO: Get a better idea of what these values represent. `ParentBoneName`, if it is a pointer into the bone array, does not seem to be _bounded_ by the bone array length, at least in the model. I'm guessing it _may_ be pointing into a .sklb instead? (i.e. the weapon's skeleton). EID stuff in general needs more work.
+            target.ElementIds = [.. source.ElementIds];
         }
 
         private void BeginIo()

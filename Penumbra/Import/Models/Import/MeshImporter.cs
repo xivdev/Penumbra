@@ -80,7 +80,6 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
                 StartIndex = 0,
                 IndexCount = (uint)_indices.Count,
 
-                // TODO: import material names
                 MaterialIndex  = 0,
                 SubMeshIndex   = 0,
                 SubMeshCount   = (ushort)_subMeshes.Count,
