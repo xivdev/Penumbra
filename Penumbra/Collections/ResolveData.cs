@@ -1,15 +1,15 @@
 namespace Penumbra.Collections;
 
-public readonly struct ResolveData
+public readonly struct ResolveData(ModCollection collection, nint gameObject)
 {
     public static readonly ResolveData Invalid = new();
 
-    private readonly ModCollection? _modCollection;
+    private readonly ModCollection? _modCollection = collection;
 
     public ModCollection ModCollection
         => _modCollection ?? ModCollection.Empty;
 
-    public readonly nint AssociatedGameObject;
+    public readonly nint AssociatedGameObject = gameObject;
 
     public bool Valid
         => _modCollection != null;
@@ -17,12 +17,6 @@ public readonly struct ResolveData
     public ResolveData()
         : this(null!, nint.Zero)
     { }
-
-    public ResolveData(ModCollection collection, nint gameObject)
-    {
-        _modCollection       = collection;
-        AssociatedGameObject = gameObject;
-    }
 
     public ResolveData(ModCollection collection)
         : this(collection, nint.Zero)
