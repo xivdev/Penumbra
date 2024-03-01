@@ -28,6 +28,7 @@ public class ModPanelEditTab : ITab
     private readonly ModEditWindow           _editWindow;
     private readonly ModEditor               _editor;
     private readonly Configuration           _config;
+    private readonly SharedTagManager        _sharedTagManager;
 
     private readonly TagButtons _modTags = new();
 
@@ -37,7 +38,8 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, Services.MessageService messager,
-        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config)
+        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config,
+        SharedTagManager sharedTagManager)
     {
         _modManager       = modManager;
         _selector         = selector;
@@ -48,6 +50,7 @@ public class ModPanelEditTab : ITab
         _filenames        = filenames;
         _modExportManager = modExportManager;
         _config           = config;
+        _sharedTagManager = sharedTagManager;
     }
 
     public ReadOnlySpan<byte> Label
@@ -80,10 +83,33 @@ public class ModPanelEditTab : ITab
             }
 
         UiHelpers.DefaultLineSpace();
+        var sharedTagsEnabled = _sharedTagManager.SharedTags.Count() > 0;
+        var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
-            out var editedTag);
+            out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
             _modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
+
+        if (sharedTagsEnabled)
+        {
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFrameHeightWithSpacing());
+            ImGui.SetCursorPosX(ImGui.GetWindowWidth() - ImGui.GetFrameHeight() - ImGui.GetStyle().FramePadding.X);
+            var sharedTag = _sharedTagManager.DrawAddFromSharedTags(_selector.Selected!.LocalTags, _selector.Selected!.ModTags, false);
+            if (sharedTag.Length > 0)
+            {
+                var index = _selector.Selected!.ModTags.IndexOf(sharedTag);
+                if (index < 0)
+                {
+                    index = _selector.Selected!.ModTags.Count;
+                    _modManager.DataEditor.ChangeModTag(_selector.Selected, index, sharedTag);
+                }
+                else
+                {
+                    _modManager.DataEditor.ChangeModTag(_selector.Selected, index, string.Empty);
+                }
+
+            }
+        }
 
         UiHelpers.DefaultLineSpace();
         AddOptionGroup.Draw(_filenames, _modManager, _mod, _config.ReplaceNonAsciiOnImport);

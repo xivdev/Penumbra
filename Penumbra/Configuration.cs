@@ -87,6 +87,8 @@ public class Configuration : IPluginConfiguration, ISavable
     public Dictionary<ColorId, uint> Colors { get; set; }
         = Enum.GetValues<ColorId>().ToDictionary(c => c, c => c.Data().DefaultColor);
 
+    public IReadOnlyList<string> SharedTags { get; set; }
+
     /// <summary>
     /// Load the current configuration.
     /// Includes adding new colors and migrating from old versions.

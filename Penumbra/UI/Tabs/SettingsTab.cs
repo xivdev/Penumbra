@@ -41,15 +41,18 @@ public class SettingsTab : ITab
     private readonly DalamudConfigService        _dalamudConfig;
     private readonly DalamudPluginInterface      _pluginInterface;
     private readonly IDataManager                _gameData;
+    private readonly SharedTagManager            _sharedTagManager;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
+
+    private readonly TagButtons _sharedTags = new();
 
     public SettingsTab(DalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
-        IDataManager gameData)
+        IDataManager gameData, SharedTagManager sharedTagConfig)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -69,6 +72,9 @@ public class SettingsTab : ITab
         _gameData                    = gameData;
         if (_compactor.CanCompact)
             _compactor.Enabled = _config.UseFileSystemCompression;
+        _sharedTagManager = sharedTagConfig;
+        if (sharedTagConfig.SharedTags.Count == 0 && _config.SharedTags != null)
+            sharedTagConfig.SharedTags = _config.SharedTags;
     }
 
     public void DrawHeader()
@@ -96,6 +102,7 @@ public class SettingsTab : ITab
         DrawGeneralSettings();
         DrawColorSettings();
         DrawAdvancedSettings();
+        DrawSharedTagsSection();
         DrawSupportButtons();
     }
 
@@ -901,5 +908,22 @@ public class SettingsTab : ITab
         ImGui.SetCursorPos(new Vector2(xPos, 4 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
+    }
+
+    private void DrawSharedTagsSection()
+    {
+        if (!ImGui.CollapsingHeader("Tags"))
+            return;
+
+        var tagIdx = _sharedTags.Draw("Shared Tags: ",
+            "Tags that can be added/removed from mods with 1 click.", _sharedTagManager.SharedTags,
+            out var editedTag);
+
+        if (tagIdx >= 0)
+        {
+            _sharedTagManager.ChangeSharedTag(tagIdx, editedTag);
+            _config.SharedTags = _sharedTagManager.SharedTags;
+            _config.Save();
+        }
     }
 }
