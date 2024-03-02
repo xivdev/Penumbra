@@ -73,8 +73,6 @@ public class SettingsTab : ITab
         if (_compactor.CanCompact)
             _compactor.Enabled = _config.UseFileSystemCompression;
         _sharedTagManager = sharedTagConfig;
-        if (sharedTagConfig.SharedTags.Count == 0 && _config.SharedTags != null)
-            sharedTagConfig.SharedTags = _config.SharedTags;
     }
 
     public void DrawHeader()
@@ -916,14 +914,12 @@ public class SettingsTab : ITab
             return;
 
         var tagIdx = _sharedTags.Draw("Shared Tags: ",
-            "Tags that can be added/removed from mods with 1 click.", _sharedTagManager.SharedTags,
+            "Predefined tags that can be added or removed from mods with a single click.", _sharedTagManager.SharedTags,
             out var editedTag);
 
         if (tagIdx >= 0)
         {
             _sharedTagManager.ChangeSharedTag(tagIdx, editedTag);
-            _config.SharedTags = _sharedTagManager.SharedTags;
-            _config.Save();
         }
     }
 }

@@ -83,7 +83,7 @@ public class ModPanelEditTab : ITab
             }
 
         UiHelpers.DefaultLineSpace();
-        var sharedTagsEnabled = _sharedTagManager.SharedTags.Count() > 0;
+        var sharedTagsEnabled = _sharedTagManager.SharedTags.Count > 0;
         var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
@@ -92,23 +92,7 @@ public class ModPanelEditTab : ITab
 
         if (sharedTagsEnabled)
         {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFrameHeightWithSpacing());
-            ImGui.SetCursorPosX(ImGui.GetWindowWidth() - ImGui.GetFrameHeight() - ImGui.GetStyle().FramePadding.X);
-            var sharedTag = _sharedTagManager.DrawAddFromSharedTags(_selector.Selected!.LocalTags, _selector.Selected!.ModTags, false);
-            if (sharedTag.Length > 0)
-            {
-                var index = _selector.Selected!.ModTags.IndexOf(sharedTag);
-                if (index < 0)
-                {
-                    index = _selector.Selected!.ModTags.Count;
-                    _modManager.DataEditor.ChangeModTag(_selector.Selected, index, sharedTag);
-                }
-                else
-                {
-                    _modManager.DataEditor.ChangeModTag(_selector.Selected, index, string.Empty);
-                }
-
-            }
+            _sharedTagManager.DrawAddFromSharedTagsAndUpdateTags(_selector.Selected!.LocalTags, _selector.Selected!.ModTags, false, _selector.Selected!);
         }
 
         UiHelpers.DefaultLineSpace();

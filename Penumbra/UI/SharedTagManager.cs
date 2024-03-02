@@ -1,19 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dalamud.Interface;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Utility;
 using ImGuiNET;
+using Newtonsoft.Json;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
-using OtterGui.Widgets;
-using Penumbra.Mods;
+using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
+using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra.UI;
-public sealed class SharedTagManager
+public sealed class SharedTagManager : ISavable
 {
+    private readonly ModManager _modManager;
+    private readonly SaveService _saveService;
+
     private static uint _tagButtonAddColor = ColorId.SharedTagAdd.Value();
     private static uint _tagButtonRemoveColor = ColorId.SharedTagRemove.Value();
 
@@ -22,11 +25,66 @@ public sealed class SharedTagManager
     private const string PopupContext = "SharedTagsPopup";
     private bool _isPopupOpen = false;
 
+    // Operations on this list assume that it is sorted and will keep it sorted if that is the case.
+    // The list also gets re-sorted when first loaded from config in case the config was modified.
+    [JsonRequired]
+    private readonly List<string> _sharedTags = [];
+    [JsonIgnore]
+    public IReadOnlyList<string> SharedTags => _sharedTags;
 
-    public IReadOnlyList<string> SharedTags { get; internal set; } = Array.Empty<string>();
+    public int ConfigVersion = 1;
 
-    public SharedTagManager()
+    public SharedTagManager(ModManager modManager, SaveService saveService)
     {
+        _modManager = modManager;
+        _saveService = saveService;
+        Load();
+    }
+
+    public string ToFilename(FilenameService fileNames)
+    {
+        return fileNames.SharedTagFile;
+    }
+
+    public void Save(StreamWriter writer)
+    {
+        using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
+        serializer.Serialize(jWriter, this);
+    }
+
+    public void Save()
+        => _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
+
+    private void Load()
+    {
+        static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
+        {
+            Penumbra.Log.Error(
+                $"Error parsing shared tags Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
+            errorArgs.ErrorContext.Handled = true;
+        }
+
+        if (!File.Exists(_saveService.FileNames.SharedTagFile))
+            return;
+
+        try
+        {
+            var text = File.ReadAllText(_saveService.FileNames.SharedTagFile);
+            JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
+            {
+                Error = HandleDeserializationError,
+            });
+
+            // Any changes to this within this class should keep it sorted, but in case someone went in and manually changed the JSON, run a sort on initial load.
+            _sharedTags.Sort();
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Messager.NotificationMessage(ex,
+                "Error reading shared tags Configuration, reverting to default.",
+                "Error reading shared tags Configuration", NotificationType.Error);
+        }
     }
 
     public void ChangeSharedTag(int tagIdx, string tag)
@@ -34,32 +92,74 @@ public sealed class SharedTagManager
         if (tagIdx < 0 || tagIdx > SharedTags.Count)
             return;
 
-        if (tagIdx == SharedTags.Count) // Adding a new tag
+        // In the case of editing a tag, remove what's there prior to doing an insert.
+        if (tagIdx != SharedTags.Count)
         {
-            SharedTags = SharedTags.Append(tag).Distinct().Where(tag => tag.Length > 0).OrderBy(a => a).ToArray();
+            _sharedTags.RemoveAt(tagIdx);
         }
-        else // Editing an existing tag
+
+        if (!string.IsNullOrEmpty(tag))
         {
-            var tmpTags = SharedTags.ToArray();
-            tmpTags[tagIdx] = tag;
-            SharedTags = tmpTags.Distinct().Where(tag => tag.Length > 0).OrderBy(a => a).ToArray();
+            // Taking advantage of the fact that BinarySearch returns the complement of the correct sorted position for the tag.
+            var existingIdx = _sharedTags.BinarySearch(tag);
+            if (existingIdx < 0)
+                _sharedTags.Insert(~existingIdx, tag);
+        }
+
+        Save();
+    }
+
+    public void DrawAddFromSharedTagsAndUpdateTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal, Mods.Mod mod)
+    {
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFrameHeightWithSpacing());
+        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - ImGui.GetFrameHeight() - ImGui.GetStyle().FramePadding.X);
+
+        var sharedTag = DrawAddFromSharedTags(localTags, modTags, editLocal);
+
+        if (sharedTag.Length > 0)
+        {
+            var index = editLocal ? mod.LocalTags.IndexOf(sharedTag) : mod.ModTags.IndexOf(sharedTag);
+
+            if (editLocal)
+            {
+                if (index < 0)
+                {
+                    index = mod.LocalTags.Count;
+                    _modManager.DataEditor.ChangeLocalTag(mod, index, sharedTag);
+                }
+                else
+                {
+                    _modManager.DataEditor.ChangeLocalTag(mod, index, string.Empty);
+                }
+            } else
+            {
+                if (index < 0)
+                {
+                    index = mod.ModTags.Count;
+                    _modManager.DataEditor.ChangeModTag(mod, index, sharedTag);
+                }
+                else
+                {
+                    _modManager.DataEditor.ChangeModTag(mod, index, string.Empty);
+                }
+            }
+
         }
     }
 
     public string DrawAddFromSharedTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal)
     {
-        var tagToAdd = "";
+        var tagToAdd = string.Empty;
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Tags.ToIconString(), new Vector2(ImGui.GetFrameHeight()), "Add Shared Tag... (Right-click to close popup)",
             false, true) || _isPopupOpen)
             return DrawSharedTagsPopup(localTags, modTags, editLocal);
-
 
         return tagToAdd;
     }
 
     private string DrawSharedTagsPopup(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal)
     {
-        var selected = "";
+        var selected = string.Empty;
         if (!ImGui.IsPopupOpen(PopupContext))
         {
             ImGui.OpenPopup(PopupContext);
@@ -75,16 +175,15 @@ public sealed class SharedTagManager
         if (!popup)
             return selected;
 
-        ImGui.Text("Shared Tags");
+        ImGui.TextUnformatted("Shared Tags");
         ImGuiUtil.HoverTooltip("Right-click to close popup");
         ImGui.Separator();
 
-        foreach (var tag in SharedTags)
+        foreach (var (tag, idx) in SharedTags.WithIndex())
         {
-            if (DrawColoredButton(localTags, modTags, tag, editLocal))
+            if (DrawColoredButton(localTags, modTags, tag, editLocal, idx))
             {
                 selected = tag;
-                return selected;
             }
             ImGui.SameLine();
         }
@@ -97,8 +196,10 @@ public sealed class SharedTagManager
         return selected;
     }
 
-    private static bool DrawColoredButton(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, string buttonLabel, bool editLocal)
+    private static bool DrawColoredButton(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, string buttonLabel, bool editLocal, int index)
     {
+        var ret = false;
+
         var isLocalTagPresent = localTags.Contains(buttonLabel);
         var isModTagPresent = modTags.Contains(buttonLabel);
 
@@ -116,21 +217,24 @@ public sealed class SharedTagManager
         if (buttonWidth + ImGui.GetStyle().ItemSpacing.X >= ImGui.GetContentRegionAvail().X)
             ImGui.NewLine();
 
-        // Trimmed tag names can collide, but the full tags are guaranteed distinct so use the full tag as the ID to avoid an ImGui moment.
-        ImRaii.PushId(buttonLabel);
+        // Trimmed tag names can collide, and while tag names are currently distinct this may not always be the case. As such use the index to avoid an ImGui moment.
+        using var id = ImRaii.PushId(index);
 
         if (editLocal && isModTagPresent || !editLocal && isLocalTagPresent)
         {
             using var alpha = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f);
             ImGui.Button(displayedLabel);
-            alpha.Pop();
-            return false;
+        }
+        else
+        {
+            using (ImRaii.PushColor(ImGuiCol.Button, isLocalTagPresent || isModTagPresent ? _tagButtonRemoveColor : _tagButtonAddColor))
+            {
+                if (ImGui.Button(displayedLabel))
+                    ret = true;
+            }
         }
 
-        using (ImRaii.PushColor(ImGuiCol.Button, isLocalTagPresent || isModTagPresent ? _tagButtonRemoveColor : _tagButtonAddColor))
-        {
-            return ImGui.Button(displayedLabel);
-        }
+        return ret;
     }
 
     private static string TrimButtonTextToWidth(string fullText, float maxWidth)
@@ -156,5 +260,4 @@ public sealed class SharedTagManager
     {
         return ImGui.CalcTextSize(text).X + 2 * ImGui.GetStyle().FramePadding.X;
     }
-
 }

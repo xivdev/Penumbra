@@ -36,7 +36,7 @@ public class ModPanelDescriptionTab : ITab
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
 
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
-        var sharedTagsEnabled = _sharedTagManager.SharedTags.Count() > 0;
+        var sharedTagsEnabled = _sharedTagManager.SharedTags.Count > 0;
         var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _localTags.Draw("Local Tags: ",
             "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
@@ -48,23 +48,7 @@ public class ModPanelDescriptionTab : ITab
 
         if (sharedTagsEnabled)
         {
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFrameHeightWithSpacing());
-            ImGui.SetCursorPosX(ImGui.GetWindowWidth() - ImGui.GetFrameHeight() - ImGui.GetStyle().FramePadding.X);
-            var sharedTag = _sharedTagManager.DrawAddFromSharedTags(_selector.Selected!.LocalTags, _selector.Selected!.ModTags, true);
-            if (sharedTag.Length > 0)
-            {
-                var index = _selector.Selected!.LocalTags.IndexOf(sharedTag);
-                if (index < 0)
-                {
-                    index = _selector.Selected!.LocalTags.Count;
-                    _modManager.DataEditor.ChangeLocalTag(_selector.Selected, index, sharedTag);
-                }
-                else
-                {
-                    _modManager.DataEditor.ChangeLocalTag(_selector.Selected, index, string.Empty);
-                }
-
-            }
+            _sharedTagManager.DrawAddFromSharedTagsAndUpdateTags(_selector.Selected!.LocalTags, _selector.Selected!.ModTags, true, _selector.Selected!);
         }
 
         if (_selector.Selected!.ModTags.Count > 0)
