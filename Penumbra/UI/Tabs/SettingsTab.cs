@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -223,7 +224,15 @@ public class SettingsTab : ITab
 
         using var group = ImRaii.Group();
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
-        var       save = ImGui.InputText("##rootDirectory", ref _newModDirectory, RootDirectoryMaxLength, ImGuiInputTextFlags.EnterReturnsTrue);
+        bool save;
+        using (ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale, !_modManager.Valid))
+        {
+            using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.RegexWarningBorder)
+                .Push(ImGuiCol.TextDisabled, Colors.RegexWarningBorder, !_modManager.Valid);
+            save = ImGui.InputTextWithHint("##rootDirectory", "Enter Root Directory here (MANDATORY)...", ref _newModDirectory,
+                RootDirectoryMaxLength, ImGuiInputTextFlags.EnterReturnsTrue);
+        }
+
         var       selected = ImGui.IsItemActive();
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3, 0));
         ImGui.SameLine();
