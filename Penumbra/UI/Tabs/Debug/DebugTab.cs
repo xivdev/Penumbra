@@ -86,7 +86,7 @@ public class DebugTab : Window, ITab
     private readonly ImportPopup               _importPopup;
     private readonly FrameworkManager          _framework;
     private readonly TextureManager            _textureManager;
-    private readonly SkinFixer                 _skinFixer;
+    private readonly ShaderReplacementFixer    _shaderReplacementFixer;
     private readonly RedrawService             _redraws;
     private readonly DictEmote                _emotes;
     private readonly Diagnostics               _diagnostics;
@@ -99,7 +99,7 @@ public class DebugTab : Window, ITab
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, SkinFixer skinFixer, RedrawService redraws, DictEmote emotes, Diagnostics diagnostics, IpcTester ipcTester)
+        TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes, Diagnostics diagnostics, IpcTester ipcTester)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -130,7 +130,7 @@ public class DebugTab : Window, ITab
         _importPopup               = importPopup;
         _framework                 = framework;
         _textureManager            = textureManager;
-        _skinFixer                 = skinFixer;
+        _shaderReplacementFixer    = shaderReplacementFixer;
         _redraws                   = redraws;
         _emotes                    = emotes;
         _diagnostics               = diagnostics;
@@ -702,20 +702,25 @@ public class DebugTab : Window, ITab
         if (!ImGui.CollapsingHeader("Character Utility"))
             return;
 
-        var enableSkinFixer = _skinFixer.Enabled;
-        if (ImGui.Checkbox("Enable Skin Fixer", ref enableSkinFixer))
-            _skinFixer.Enabled = enableSkinFixer;
+        var enableShaderReplacementFixer = _shaderReplacementFixer.Enabled;
+        if (ImGui.Checkbox("Enable Shader Replacement Fixer", ref enableShaderReplacementFixer))
+            _shaderReplacementFixer.Enabled = enableShaderReplacementFixer;
 
-        if (enableSkinFixer)
+        if (enableShaderReplacementFixer)
         {
             ImGui.SameLine();
             ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+            var slowPathCallDeltas = _shaderReplacementFixer.GetAndResetSlowPathCallDeltas();
             ImGui.SameLine();
-            ImGui.TextUnformatted($"\u0394 Slow-Path Calls: {_skinFixer.GetAndResetSlowPathCallDelta()}");
+            ImGui.TextUnformatted($"\u0394 Slow-Path Calls for skin.shpk: {slowPathCallDeltas.Skin}");
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"characterglass.shpk: {slowPathCallDeltas.CharacterGlass}");
             ImGui.SameLine();
             ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
             ImGui.SameLine();
-            ImGui.TextUnformatted($"Materials with Modded skin.shpk: {_skinFixer.ModdedSkinShpkCount}");
+            ImGui.TextUnformatted($"Materials with Modded skin.shpk: {_shaderReplacementFixer.ModdedSkinShpkCount}");
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"characterglass.shpk: {_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
         }
 
         using var table = Table("##CharacterUtility", 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
