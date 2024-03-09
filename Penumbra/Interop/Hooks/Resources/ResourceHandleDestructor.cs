@@ -13,8 +13,8 @@ public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHa
         /// <seealso cref="PathResolving.SubfileHelper"/>
         SubfileHelper,
 
-        /// <seealso cref="SkinFixer"/>
-        SkinFixer,
+        /// <seealso cref="ShaderReplacementFixer"/>
+        ShaderReplacementFixer,
     }
 
     public ResourceHandleDestructor(HookManager hooks)

@@ -92,6 +92,7 @@ public static class ServiceManagerA
                 return new CutsceneResolver(cutsceneService.GetParentIndex);
             })
             .AddSingleton<CharacterUtility>()
+            .AddSingleton<ModelRenderer>()
             .AddSingleton<ResourceManagerService>()
             .AddSingleton<ResourceService>()
             .AddSingleton<FileReadService>()
@@ -133,7 +134,7 @@ public static class ServiceManagerA
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ResourceTreeFactory>()
             .AddSingleton<MetaFileManager>()
-            .AddSingleton<SkinFixer>();
+            .AddSingleton<ShaderReplacementFixer>();
 
     private static ServiceManager AddResolvers(this ServiceManager services)
         => services.AddSingleton<CollectionResolver>()

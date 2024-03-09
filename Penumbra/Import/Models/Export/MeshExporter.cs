@@ -214,10 +214,18 @@ public class MeshExporter
             var morphBuilder = meshBuilder.UseMorphTarget(shapeNames.Count);
             shapeNames.Add(shape.ShapeName);
 
-            foreach (var shapeValue in shapeValues)
+            foreach (var (shapeValue, shapeValueIndex) in shapeValues.WithIndex())
             {
+                var gltfIndex = gltfIndices[shapeValue.BaseIndicesIndex - indexBase];
+
+                if (gltfIndex == -1)
+                {
+                    _notifier.Warning($"{name}: Shape {shape.ShapeName} mapping {shapeValueIndex} targets a degenerate triangle, ignoring.");
+                    continue;
+                }
+
                 morphBuilder.SetVertex(
-                    primitiveVertices[gltfIndices[shapeValue.BaseIndicesIndex - indexBase]].GetGeometry(),
+                    primitiveVertices[gltfIndex].GetGeometry(),
                     vertices[shapeValue.ReplacingVertexIndex].GetGeometry()
                 );
             }

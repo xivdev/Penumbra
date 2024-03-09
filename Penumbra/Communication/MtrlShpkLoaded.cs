@@ -10,7 +10,7 @@ public sealed class MtrlShpkLoaded() : EventWrapper<nint, nint, MtrlShpkLoaded.P
 {
     public enum Priority
     {
-        /// <seealso cref="Interop.Services.SkinFixer.OnMtrlShpkLoaded"/>
-        SkinFixer = 0,
+        /// <seealso cref="Interop.Services.ShaderReplacementFixer.OnMtrlShpkLoaded"/>
+        ShaderReplacementFixer = 0,
     }
 }
