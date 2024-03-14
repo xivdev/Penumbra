@@ -79,7 +79,7 @@ public static class TexFileParser
         w.Write(header.Width);
         w.Write(header.Height);
         w.Write(header.Depth);
-        w.Write(header.MipLevelsCount);
+        w.Write(header.MipLevels);
         w.Write((byte)0); // TODO Lumina Update
         unsafe
         {
@@ -99,7 +99,7 @@ public static class TexFileParser
             Height         = (ushort)meta.Height,
             Width          = (ushort)meta.Width,
             Depth          = (ushort)Math.Max(meta.Depth, 1),
-            MipLevelsCount = (byte)Math.Min(meta.MipLevels, 13),
+            MipLevels = (byte)Math.Min(meta.MipLevels, 13),
             Format         = meta.Format.ToTexFormat(),
             Type = meta.Dimension switch
             {
@@ -143,7 +143,7 @@ public static class TexFileParser
             Height     = header.Height,
             Width      = header.Width,
             Depth      = Math.Max(header.Depth, (ushort)1),
-            MipLevels  = header.MipLevelsCount,
+            MipLevels  = header.MipLevels,
             ArraySize  = 1,
             Format     = header.Format.ToDXGI(),
             Dimension  = header.Type.ToDimension(),

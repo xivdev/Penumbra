@@ -50,12 +50,12 @@
             <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="Lumina.Excel">
-            <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
-            <Private>False</Private>
-        </Reference>
         <Reference Include="FFXIVClientStructs">
             <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Lumina.Excel">
+          <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Newtonsoft.Json">
@@ -70,7 +70,7 @@
     <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.3" />
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.2" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3" />
         <PackageReference Include="SharpCompress" Version="0.33.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
         <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0030" />
@@ -78,6 +78,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\LooseTextureCompilerCore\LooseTextureCompilerCore.csproj" />
         <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
         <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
         <ProjectReference Include="..\Penumbra.Api\Penumbra.Api.csproj" />

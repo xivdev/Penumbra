@@ -20,13 +20,15 @@ public class ModPanelTabBar
         Conflicts,
         Collections,
         Edit,
+        AssetCompiler
     };
 
     public readonly  ModPanelSettingsTab     Settings;
     public readonly  ModPanelDescriptionTab  Description;
     public readonly  ModPanelCollectionsTab  Collections;
-    public readonly  ModPanelConflictsTab    Conflicts;
+    public readonly  ModPanelConflictsTab Conflicts;
     public readonly  ModPanelChangedItemsTab ChangedItems;
+    public readonly  ModPanelLooseAssetCompilerTab AssetCompiler;
     public readonly  ModPanelEditTab         Edit;
     private readonly ModEditWindow           _modEditWindow;
     private readonly ModManager              _modManager;
@@ -37,7 +39,7 @@ public class ModPanelTabBar
     private         Mod?            _lastMod      = null;
 
     public ModPanelTabBar(ModEditWindow modEditWindow, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
-        ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
+        ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelLooseAssetCompilerTab assetCompiler, ModPanelEditTab edit, ModManager modManager,
         TutorialService tutorial, ModPanelCollectionsTab collections)
     {
         _modEditWindow = modEditWindow;
@@ -49,6 +51,7 @@ public class ModPanelTabBar
         _modManager    = modManager;
         _tutorial      = tutorial;
         Collections    = collections;
+        AssetCompiler = assetCompiler;
 
         Tabs = new ITab[]
         {
@@ -58,6 +61,7 @@ public class ModPanelTabBar
             ChangedItems,
             Collections,
             Edit,
+            AssetCompiler,
         };
     }
 
@@ -88,6 +92,7 @@ public class ModPanelTabBar
             ModPanelTabType.Conflicts    => Conflicts.Label,
             ModPanelTabType.Collections  => Collections.Label,
             ModPanelTabType.Edit         => Edit.Label,
+            ModPanelTabType.AssetCompiler => AssetCompiler.Label,
             _                            => ReadOnlySpan<byte>.Empty,
         };
 
@@ -103,8 +108,8 @@ public class ModPanelTabBar
             return ModPanelTabType.Conflicts;
         if (label == Collections.Label)
             return ModPanelTabType.Collections;
-        if (label == Edit.Label)
-            return ModPanelTabType.Edit;
+        if (label == AssetCompiler.Label)
+            return ModPanelTabType.AssetCompiler;
 
         return 0;
     }
