@@ -62,6 +62,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         _updatePending = true;
     }
 
+    [SkipLocalsInit]
     private void OnFrameworkUpdate(IFramework _)
     {
         if (!_updatePending)

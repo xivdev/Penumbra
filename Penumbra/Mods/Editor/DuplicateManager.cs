@@ -7,8 +7,8 @@ namespace Penumbra.Mods.Editor;
 
 public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config)
 {
-    private readonly SHA256                                           _hasher      = SHA256.Create();
-    private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates  = [];
+    private readonly SHA256                                           _hasher     = SHA256.Create();
+    private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = [];
 
     public IReadOnlyList<(FullPath[] Paths, long Size, byte[] Hash)> Duplicates
         => _duplicates;
@@ -164,17 +164,17 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
     }
 
     /// <summary> Check if two files are identical on a binary level. Returns true if they are identical. </summary>
+    [SkipLocalsInit]
     public static unsafe bool CompareFilesDirectly(FullPath f1, FullPath f2)
     {
+        const int size = 256;
         if (!f1.Exists || !f2.Exists)
             return false;
 
-        using var s1      = File.OpenRead(f1.FullName);
-        using var s2      = File.OpenRead(f2.FullName);
-        var       buffer1 = stackalloc byte[256];
-        var       buffer2 = stackalloc byte[256];
-        var       span1   = new Span<byte>(buffer1, 256);
-        var       span2   = new Span<byte>(buffer2, 256);
+        using var  s1    = File.OpenRead(f1.FullName);
+        using var  s2    = File.OpenRead(f2.FullName);
+        Span<byte> span1 = stackalloc byte[size];
+        Span<byte> span2 = stackalloc byte[size];
 
         while (true)
         {
@@ -186,7 +186,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
             if (!span1[..bytes1].SequenceEqual(span2[..bytes2]))
                 return false;
 
-            if (bytes1 < 256)
+            if (bytes1 < size)
                 return true;
         }
     }
