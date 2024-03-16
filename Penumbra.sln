@@ -18,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.Api", "Penumbra.Ap
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.String", "Penumbra.String\Penumbra.String.csproj", "{5549BAFD-6357-4B1A-800C-75AC36E5B76D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Penumbra.CrashHandler", "Penumbra.CrashHandler\Penumbra.CrashHandler.csproj", "{EE834491-A98F-4395-BE0D-6861AE5AD953}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{5549BAFD-6357-4B1A-800C-75AC36E5B76D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5549BAFD-6357-4B1A-800C-75AC36E5B76D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5549BAFD-6357-4B1A-800C-75AC36E5B76D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

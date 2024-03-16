@@ -7,7 +7,7 @@ namespace Penumbra.UI.Tabs;
 public class OnScreenTab : ITab
 {
     private readonly Configuration      _config;
-    private          ResourceTreeViewer _viewer;
+    private readonly ResourceTreeViewer _viewer;
 
     public OnScreenTab(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer)
     {

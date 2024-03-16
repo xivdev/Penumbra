@@ -2,9 +2,11 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 using Penumbra.String;
 
 namespace Penumbra.Interop.Hooks.Animation;
@@ -12,15 +14,18 @@ namespace Penumbra.Interop.Hooks.Animation;
 /// <summary> Load a VFX specifically for a character. </summary>
 public sealed unsafe class LoadCharacterVfx : FastHook<LoadCharacterVfx.Delegate>
 {
-    private readonly GameState          _state;
-    private readonly CollectionResolver _collectionResolver;
-    private readonly IObjectTable       _objects;
+    private readonly GameState           _state;
+    private readonly CollectionResolver  _collectionResolver;
+    private readonly IObjectTable        _objects;
+    private readonly CrashHandlerService _crashHandler;
 
-    public LoadCharacterVfx(HookManager hooks, GameState state, CollectionResolver collectionResolver, IObjectTable objects)
+    public LoadCharacterVfx(HookManager hooks, GameState state, CollectionResolver collectionResolver, IObjectTable objects,
+        CrashHandlerService crashHandler)
     {
         _state              = state;
         _collectionResolver = collectionResolver;
         _objects            = objects;
+        _crashHandler       = crashHandler;
         Task                = hooks.CreateHook<Delegate>("Load Character VFX", Sigs.LoadCharacterVfx, Detour, true);
     }
 
@@ -45,6 +50,7 @@ public sealed unsafe class LoadCharacterVfx : FastHook<LoadCharacterVfx.Delegate
         }
 
         var last = _state.SetAnimationData(newData);
+        _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadCharacterVfx);
         var ret  = Task.Result.Original(vfxPath, vfxParams, unk1, unk2, unk3, unk4);
         Penumbra.Log.Excessive(
             $"[Load Character VFX] Invoked with {new ByteString(vfxPath)}, 0x{vfxParams->GameObjectId:X}, {vfxParams->TargetCount}, {unk1}, {unk2}, {unk3}, {unk4} -> 0x{ret:X}.");

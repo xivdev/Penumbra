@@ -3,8 +3,10 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.CrashHandler;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Hooks.Animation;
 
@@ -14,19 +16,21 @@ namespace Penumbra.Interop.Hooks.Animation;
 /// </summary>
 public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResources.Delegate>
 {
-    private readonly GameState            _state;
-    private readonly CollectionResolver   _collectionResolver;
-    private readonly ICondition           _conditions;
-    private readonly IObjectTable         _objects;
+    private readonly GameState           _state;
+    private readonly CollectionResolver  _collectionResolver;
+    private readonly ICondition          _conditions;
+    private readonly IObjectTable        _objects;
+    private readonly CrashHandlerService _crashHandler;
 
     public LoadTimelineResources(HookManager hooks, GameState state, CollectionResolver collectionResolver, ICondition conditions,
-        IObjectTable objects)
+        IObjectTable objects, CrashHandlerService crashHandler)
     {
         _state              = state;
         _collectionResolver = collectionResolver;
         _conditions         = conditions;
         _objects            = objects;
-        Task               = hooks.CreateHook<Delegate>("Load Timeline Resources", Sigs.LoadTimelineResources, Detour, true);
+        _crashHandler       = crashHandler;
+        Task                = hooks.CreateHook<Delegate>("Load Timeline Resources", Sigs.LoadTimelineResources, Detour, true);
     }
 
     public delegate ulong Delegate(nint timeline);
@@ -39,7 +43,13 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
         if (_conditions[ConditionFlag.OccupiedInCutSceneEvent] || _conditions[ConditionFlag.WatchingCutscene78])
             return Task.Result.Original(timeline);
 
-        var last = _state.SetAnimationData(GetDataFromTimeline(_objects, _collectionResolver, timeline));
+        var newData = GetDataFromTimeline(_objects, _collectionResolver, timeline);
+        var last    = _state.SetAnimationData(newData);
+
+#if false
+        // This is called far too often and spams the log too much.
+        _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadTimelineResources);
+#endif
         var ret  = Task.Result.Original(timeline);
         _state.RestoreAnimationData(last);
         return ret;
