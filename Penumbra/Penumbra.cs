@@ -19,7 +19,6 @@ using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Structs;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
@@ -74,8 +73,8 @@ public class Penumbra : IDalamudPlugin
             _tempCollections     = _services.GetService<TempCollectionManager>();
             _redrawService       = _services.GetService<RedrawService>();
             _communicatorService = _services.GetService<CommunicatorService>();
-            _services.GetService<ResourceService>();            // Initialize because not required anywhere else.
-            _services.GetService<ModCacheManager>();            // Initialize because not required anywhere else.
+            _services.GetService<ResourceService>(); // Initialize because not required anywhere else.
+            _services.GetService<ModCacheManager>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
             _services.GetService<ShaderReplacementFixer>();
@@ -248,14 +247,14 @@ public class Penumbra : IDalamudPlugin
     private static string CollectLocaleEnvironmentVariables()
     {
         var variableNames = new List<string>();
-        var variables = new Dictionary<string, string>(StringComparer.Ordinal);
+        var variables     = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables())
         {
             var key = (string)variable.Key;
             if (key.Equals("LANG", StringComparison.Ordinal) || key.StartsWith("LC_", StringComparison.Ordinal))
             {
                 variableNames.Add(key);
-                variables.Add(key, ((string?)variable.Value) ?? string.Empty);
+                variables.Add(key, (string?)variable.Value ?? string.Empty);
             }
         }
 
