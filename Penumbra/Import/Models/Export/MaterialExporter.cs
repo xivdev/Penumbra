@@ -53,7 +53,7 @@ public class MaterialExporter
         var normal = material.Textures[TextureUsage.SamplerNormal];
 
         var operation = new ProcessCharacterNormalOperation(normal, table);
-        ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds(), in operation);
+        ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds, in operation);
 
         // Check if full textures are provided, and merge in if available.
         var baseColor = operation.BaseColor;
@@ -199,7 +199,7 @@ public class MaterialExporter
             small.Mutate(context => context.Resize(large.Width, large.Height));
 
             var operation = new MultiplyOperation<TPixel1, TPixel2>(target, multiplier);
-            ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, target.Bounds(), in operation);
+            ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, target.Bounds, in operation);
         }
     }
 
