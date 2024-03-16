@@ -13,6 +13,9 @@ public static class CrashDataExtensions
         {
             ImGui.TextUnformatted(nameof(data.Mode));
             ImGui.TextUnformatted(nameof(data.CrashTime));
+            ImGui.TextUnformatted("Current Age");
+            ImGui.TextUnformatted(nameof(data.Version));
+            ImGui.TextUnformatted(nameof(data.GameVersion));
             ImGui.TextUnformatted(nameof(data.ExitCode));
             ImGui.TextUnformatted(nameof(data.ProcessId));
             ImGui.TextUnformatted(nameof(data.TotalModdedFilesLoaded));
@@ -25,6 +28,9 @@ public static class CrashDataExtensions
         {
             ImGui.TextUnformatted(data.Mode);
             ImGui.TextUnformatted(data.CrashTime.ToString());
+            ImGui.TextUnformatted((DateTimeOffset.UtcNow - data.CrashTime).ToString(@"dd\.hh\:mm\:ss"));
+            ImGui.TextUnformatted(data.Version);
+            ImGui.TextUnformatted(data.GameVersion);
             ImGui.TextUnformatted(data.ExitCode.ToString());
             ImGui.TextUnformatted(data.ProcessId.ToString());
             ImGui.TextUnformatted(data.TotalModdedFilesLoaded.ToString());

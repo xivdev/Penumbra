@@ -22,15 +22,17 @@ public sealed class CrashHandlerService : IDisposable, IService
     private readonly ActorManager        _actors;
     private readonly ResourceLoader      _resourceLoader;
     private readonly Configuration       _config;
+    private readonly ValidityChecker     _validityChecker;
 
     public CrashHandlerService(FilenameService files, CommunicatorService communicator, ActorManager actors, ResourceLoader resourceLoader,
-        Configuration config)
+        Configuration config, ValidityChecker validityChecker)
     {
-        _files          = files;
-        _communicator   = communicator;
-        _actors         = actors;
-        _resourceLoader = resourceLoader;
-        _config         = config;
+        _files           = files;
+        _communicator    = communicator;
+        _actors          = actors;
+        _resourceLoader  = resourceLoader;
+        _config          = config;
+        _validityChecker = validityChecker;
 
         if (!_config.UseCrashHandler)
             return;
@@ -152,6 +154,8 @@ public sealed class CrashHandlerService : IDisposable, IService
             };
             info.ArgumentList.Add(_files.LogFileName);
             info.ArgumentList.Add(Environment.ProcessId.ToString());
+            info.ArgumentList.Add($"{_validityChecker.Version} ({_validityChecker.CommitHash})");
+            info.ArgumentList.Add(_validityChecker.GameVersion);
             _child = Process.Start(info);
             if (_child == null)
                 throw new Exception("Child Process could not be created.");
@@ -177,7 +181,7 @@ public sealed class CrashHandlerService : IDisposable, IService
             JsonObject jObj;
             lock (_eventWriter)
             {
-                jObj = reader.Dump("Manual Dump", Environment.ProcessId, 0);
+                jObj = reader.Dump("Manual Dump", Environment.ProcessId, 0, $"{_validityChecker.Version} ({_validityChecker.CommitHash})", _validityChecker.GameVersion);
             }
 
             var       logFile = _files.LogFileName;

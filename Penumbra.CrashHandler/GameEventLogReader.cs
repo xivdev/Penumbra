@@ -25,15 +25,17 @@ public sealed class GameEventLogReader : IDisposable
     }
 
 
-    public JsonObject Dump(string mode, int processId, int exitCode)
+    public JsonObject Dump(string mode, int processId, int exitCode, string version, string gameVersion)
     {
         var crashTime = DateTimeOffset.UtcNow;
         var obj = new JsonObject
         {
-            [nameof(CrashData.Mode)]      = mode,
-            [nameof(CrashData.CrashTime)] = DateTimeOffset.UtcNow,
-            [nameof(CrashData.ProcessId)] = processId,
-            [nameof(CrashData.ExitCode)]  = exitCode,
+            [nameof(CrashData.Mode)]        = mode,
+            [nameof(CrashData.CrashTime)]   = DateTimeOffset.UtcNow,
+            [nameof(CrashData.ProcessId)]   = processId,
+            [nameof(CrashData.ExitCode)]    = exitCode,
+            [nameof(CrashData.Version)]     = version,
+            [nameof(CrashData.GameVersion)] = gameVersion,
         };
 
         foreach (var (reader, singular, _) in Readers)

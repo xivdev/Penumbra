@@ -7,7 +7,7 @@ public class CrashHandler
 {
     public static void Main(string[] args)
     {
-        if (args.Length < 2 || !int.TryParse(args[1], out var pid))
+        if (args.Length < 4 || !int.TryParse(args[1], out var pid))
             return;
 
         try
@@ -17,7 +17,7 @@ public class CrashHandler
 
             parent.WaitForExit();
             var       exitCode = parent.ExitCode;
-            var       obj      = reader.Dump("Crash", pid, exitCode);
+            var       obj      = reader.Dump("Crash", pid, exitCode, args[2], args[3]);
             using var fs       = File.Open(args[0], FileMode.Create);
             using var w        = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
             obj.WriteTo(w, new JsonSerializerOptions() { WriteIndented = true });

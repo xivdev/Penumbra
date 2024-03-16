@@ -24,6 +24,12 @@ public class CrashData
     /// <summary> The time this crash data was generated. </summary>
     public DateTimeOffset CrashTime { get; set; } = DateTimeOffset.UnixEpoch;
 
+    /// <summary> Penumbra's Version when this crash data was created. </summary>
+    public string Version { get; set; } = string.Empty;
+
+    /// <summary> The Game's Version when this crash data was created. </summary>
+    public string GameVersion { get; set; } = string.Empty;
+
     /// <summary> The FFXIV process ID when this data was generated. </summary>
     public int ProcessId { get; set; } = 0;
 
@@ -52,11 +58,11 @@ public class CrashData
         => LastVfxFuncsInvoked.Count == 0 ? default : LastVfxFuncsInvoked[0];
 
     /// <summary> A collection of the last few characters loaded before this crash data was generated. </summary>
-    public List<CharacterLoadedEntry> LastCharactersLoaded { get; } = [];
+    public List<CharacterLoadedEntry> LastCharactersLoaded { get; set; } = [];
 
     /// <summary> A collection of the last few modded files loaded before this crash data was generated. </summary>
-    public List<ModdedFileLoadedEntry> LastModdedFilesLoaded { get; } = [];
+    public List<ModdedFileLoadedEntry> LastModdedFilesLoaded { get; set; } = [];
 
     /// <summary> A collection of the last few vfx functions invoked before this crash data was generated. </summary>
-    public List<VfxFuncInvokedEntry> LastVfxFuncsInvoked { get; } = [];
+    public List<VfxFuncInvokedEntry> LastVfxFuncsInvoked { get; set; } = [];
 }
