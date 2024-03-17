@@ -100,8 +100,8 @@ public class SettingsTab : ITab
 
         DrawGeneralSettings();
         DrawColorSettings();
-        DrawAdvancedSettings();
         DrawPredefinedTagsSection();
+        DrawAdvancedSettings();
         DrawSupportButtons();
     }
 
