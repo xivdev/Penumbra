@@ -42,7 +42,7 @@ public class SettingsTab : ITab
     private readonly DalamudConfigService        _dalamudConfig;
     private readonly DalamudPluginInterface      _pluginInterface;
     private readonly IDataManager                _gameData;
-    private readonly SharedTagManager            _sharedTagManager;
+    private readonly PredefinedTagManager        _predefinedTagManager;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -53,7 +53,7 @@ public class SettingsTab : ITab
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
-        IDataManager gameData, SharedTagManager sharedTagConfig)
+        IDataManager gameData, PredefinedTagManager predefinedTagConfig)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -73,7 +73,7 @@ public class SettingsTab : ITab
         _gameData                    = gameData;
         if (_compactor.CanCompact)
             _compactor.Enabled = _config.UseFileSystemCompression;
-        _sharedTagManager = sharedTagConfig;
+        _predefinedTagManager = predefinedTagConfig;
     }
 
     public void DrawHeader()
@@ -101,7 +101,7 @@ public class SettingsTab : ITab
         DrawGeneralSettings();
         DrawColorSettings();
         DrawAdvancedSettings();
-        DrawSharedTagsSection();
+        DrawPredefinedTagsSection();
         DrawSupportButtons();
     }
 
@@ -239,7 +239,7 @@ public class SettingsTab : ITab
         }
 
         var       selected = ImGui.IsItemActive();
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3, 0));
+        using var style    = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3, 0));
         ImGui.SameLine();
         DrawDirectoryPickerButton();
         style.Pop();
@@ -388,7 +388,7 @@ public class SettingsTab : ITab
             "Hide the Penumbra main window when you manually hide the in-game user interface.", _config.HideUiWhenUiHidden,
             v =>
             {
-                _config.HideUiWhenUiHidden           = v;
+                _config.HideUiWhenUiHidden                   = v;
                 _pluginInterface.UiBuilder.DisableUserUiHide = !v;
             });
         Checkbox("Hide Config Window when in Cutscenes",
@@ -917,18 +917,16 @@ public class SettingsTab : ITab
             _penumbra.ForceChangelogOpen();
     }
 
-    private void DrawSharedTagsSection()
+    private void DrawPredefinedTagsSection()
     {
         if (!ImGui.CollapsingHeader("Tags"))
             return;
 
-        var tagIdx = _sharedTags.Draw("Shared Tags: ",
-            "Predefined tags that can be added or removed from mods with a single click.", _sharedTagManager.SharedTags,
+        var tagIdx = _sharedTags.Draw("Predefined Tags: ",
+            "Predefined tags that can be added or removed from mods with a single click.", _predefinedTagManager.SharedTags,
             out var editedTag);
 
         if (tagIdx >= 0)
-        {
-            _sharedTagManager.ChangeSharedTag(tagIdx, editedTag);
-        }
+            _predefinedTagManager.ChangeSharedTag(tagIdx, editedTag);
     }
 }

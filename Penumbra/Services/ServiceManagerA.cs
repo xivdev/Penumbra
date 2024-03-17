@@ -105,7 +105,7 @@ public static class ServiceManagerA
     private static ServiceManager AddConfiguration(this ServiceManager services)
         => services.AddSingleton<Configuration>()
             .AddSingleton<EphemeralConfig>()
-            .AddSingleton<SharedTagManager>();
+            .AddSingleton<PredefinedTagManager>();
 
     private static ServiceManager AddCollections(this ServiceManager services)
         => services.AddSingleton<CollectionStorage>()

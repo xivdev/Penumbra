@@ -1,6 +1,5 @@
 ﻿using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Utility;
 using ImGuiNET;
 using Newtonsoft.Json;
 using OtterGui;
@@ -12,44 +11,45 @@ using Penumbra.UI.Classes;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra.UI;
-public sealed class SharedTagManager : ISavable
+
+public sealed class PredefinedTagManager : ISavable
 {
-    private readonly ModManager _modManager;
+    private readonly ModManager  _modManager;
     private readonly SaveService _saveService;
 
-    private static uint _tagButtonAddColor = ColorId.SharedTagAdd.Value();
-    private static uint _tagButtonRemoveColor = ColorId.SharedTagRemove.Value();
+    private static uint _tagButtonAddColor    = ColorId.PredefinedTagAdd.Value();
+    private static uint _tagButtonRemoveColor = ColorId.PredefinedTagRemove.Value();
 
     private static float _minTagButtonWidth = 15;
 
     private const string PopupContext = "SharedTagsPopup";
-    private bool _isPopupOpen = false;
+    private       bool   _isPopupOpen = false;
 
     // Operations on this list assume that it is sorted and will keep it sorted if that is the case.
     // The list also gets re-sorted when first loaded from config in case the config was modified.
     [JsonRequired]
     private readonly List<string> _sharedTags = [];
+
     [JsonIgnore]
-    public IReadOnlyList<string> SharedTags => _sharedTags;
+    public IReadOnlyList<string> SharedTags
+        => _sharedTags;
 
     public int ConfigVersion = 1;
 
-    public SharedTagManager(ModManager modManager, SaveService saveService)
+    public PredefinedTagManager(ModManager modManager, SaveService saveService)
     {
-        _modManager = modManager;
+        _modManager  = modManager;
         _saveService = saveService;
         Load();
     }
 
     public string ToFilename(FilenameService fileNames)
-    {
-        return fileNames.SharedTagFile;
-    }
+        => fileNames.PredefinedTagFile;
 
     public void Save(StreamWriter writer)
     {
-        using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
+        using var jWriter    = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
         serializer.Serialize(jWriter, this);
     }
 
@@ -65,12 +65,12 @@ public sealed class SharedTagManager : ISavable
             errorArgs.ErrorContext.Handled = true;
         }
 
-        if (!File.Exists(_saveService.FileNames.SharedTagFile))
+        if (!File.Exists(_saveService.FileNames.PredefinedTagFile))
             return;
 
         try
         {
-            var text = File.ReadAllText(_saveService.FileNames.SharedTagFile);
+            var text = File.ReadAllText(_saveService.FileNames.PredefinedTagFile);
             JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
             {
                 Error = HandleDeserializationError,
@@ -94,9 +94,7 @@ public sealed class SharedTagManager : ISavable
 
         // In the case of editing a tag, remove what's there prior to doing an insert.
         if (tagIdx != SharedTags.Count)
-        {
             _sharedTags.RemoveAt(tagIdx);
-        }
 
         if (!string.IsNullOrEmpty(tag))
         {
@@ -109,7 +107,8 @@ public sealed class SharedTagManager : ISavable
         Save();
     }
 
-    public void DrawAddFromSharedTagsAndUpdateTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal, Mods.Mod mod)
+    public void DrawAddFromSharedTagsAndUpdateTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal,
+        Mods.Mod mod)
     {
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFrameHeightWithSpacing());
         ImGui.SetCursorPosX(ImGui.GetWindowWidth() - ImGui.GetFrameHeight() - ImGui.GetStyle().FramePadding.X);
@@ -131,7 +130,8 @@ public sealed class SharedTagManager : ISavable
                 {
                     _modManager.DataEditor.ChangeLocalTag(mod, index, string.Empty);
                 }
-            } else
+            }
+            else
             {
                 if (index < 0)
                 {
@@ -143,15 +143,16 @@ public sealed class SharedTagManager : ISavable
                     _modManager.DataEditor.ChangeModTag(mod, index, string.Empty);
                 }
             }
-
         }
     }
 
     public string DrawAddFromSharedTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal)
     {
         var tagToAdd = string.Empty;
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Tags.ToIconString(), new Vector2(ImGui.GetFrameHeight()), "Add Shared Tag... (Right-click to close popup)",
-            false, true) || _isPopupOpen)
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Tags.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
+                "Add Shared Tag... (Right-click to close popup)",
+                false, true)
+         || _isPopupOpen)
             return DrawSharedTagsPopup(localTags, modTags, editLocal);
 
         return tagToAdd;
@@ -167,9 +168,9 @@ public sealed class SharedTagManager : ISavable
         }
 
         var display = ImGui.GetIO().DisplaySize;
-        var height = Math.Min(display.Y / 4, 10 * ImGui.GetFrameHeightWithSpacing());
-        var width = display.X / 6;
-        var size = new Vector2(width, height);
+        var height  = Math.Min(display.Y / 4, 10 * ImGui.GetFrameHeightWithSpacing());
+        var width   = display.X / 6;
+        var size    = new Vector2(width, height);
         ImGui.SetNextWindowSize(size);
         using var popup = ImRaii.Popup(PopupContext);
         if (!popup)
@@ -182,26 +183,23 @@ public sealed class SharedTagManager : ISavable
         foreach (var (tag, idx) in SharedTags.WithIndex())
         {
             if (DrawColoredButton(localTags, modTags, tag, editLocal, idx))
-            {
                 selected = tag;
-            }
             ImGui.SameLine();
         }
 
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-        {
             _isPopupOpen = false;
-        }
 
         return selected;
     }
 
-    private static bool DrawColoredButton(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, string buttonLabel, bool editLocal, int index)
+    private static bool DrawColoredButton(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, string buttonLabel,
+        bool editLocal, int index)
     {
         var ret = false;
 
         var isLocalTagPresent = localTags.Contains(buttonLabel);
-        var isModTagPresent = modTags.Contains(buttonLabel);
+        var isModTagPresent   = modTags.Contains(buttonLabel);
 
         var buttonWidth = CalcTextButtonWidth(buttonLabel);
         // Would prefer to be able to fit at least 2 buttons per line so the popup doesn't look sparse with lots of long tags. Thus long tags will be trimmed.
@@ -210,7 +208,7 @@ public sealed class SharedTagManager : ISavable
         if (buttonWidth >= maxButtonWidth)
         {
             displayedLabel = TrimButtonTextToWidth(buttonLabel, maxButtonWidth);
-            buttonWidth = CalcTextButtonWidth(displayedLabel);
+            buttonWidth    = CalcTextButtonWidth(displayedLabel);
         }
 
         // Prevent adding a new tag past the right edge of the popup
@@ -247,9 +245,8 @@ public sealed class SharedTagManager : ISavable
 
             // An ellipsis will be used to indicate trimmed tags
             if (CalcTextButtonWidth(nextTrim + "...") < maxWidth)
-            {
                 return nextTrim + "...";
-            }
+
             trimmedText = nextTrim;
         }
 
@@ -257,7 +254,5 @@ public sealed class SharedTagManager : ISavable
     }
 
     private static float CalcTextButtonWidth(string text)
-    {
-        return ImGui.CalcTextSize(text).X + 2 * ImGui.GetStyle().FramePadding.X;
-    }
+        => ImGui.CalcTextSize(text).X + 2 * ImGui.GetStyle().FramePadding.X;
 }
