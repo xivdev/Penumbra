@@ -1,5 +1,6 @@
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using OtterGui.Classes;
 using OtterGui.Services;
 
@@ -20,6 +21,7 @@ public class ValidityChecker : IService
 
     public readonly string Version;
     public readonly string CommitHash;
+    public readonly string GameVersion;
 
     public ValidityChecker(DalamudPluginInterface pi)
     {
@@ -28,14 +30,19 @@ public class ValidityChecker : IService
         IsValidSourceRepo      = CheckSourceRepo(pi);
 
         var assembly = GetType().Assembly;
-        Version    = assembly.GetName().Version?.ToString() ?? string.Empty;
-        CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
+        Version     = assembly.GetName().Version?.ToString() ?? string.Empty;
+        CommitHash  = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
+        GameVersion = GetGameVersion();
     }
+
+    private static unsafe string GetGameVersion()
+        => Framework.Instance()->GameVersion[0];
 
     public void LogExceptions()
     {
         if (ImcExceptions.Count > 0)
-            Penumbra.Messager.NotificationMessage($"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.", NotificationType.Warning);
+            Penumbra.Messager.NotificationMessage($"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
+                NotificationType.Warning);
     }
 
     // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.

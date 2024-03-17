@@ -54,6 +54,7 @@ internal unsafe partial record ResolveContext(
         return GetOrCreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
     }
 
+    [SkipLocalsInit]
     private ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool dx11)
     {
         if (resourceHandle == null)

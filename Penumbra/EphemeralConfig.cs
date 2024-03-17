@@ -47,7 +47,7 @@ public class EphemeralConfig : ISavable, IDisposable
     /// </summary>
     public EphemeralConfig(SaveService saveService, ModPathChanged modPathChanged)
     {
-        _saveService         = saveService;
+        _saveService    = saveService;
         _modPathChanged = modPathChanged;
         Load();
         _modPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.EphemeralConfig);
@@ -94,9 +94,9 @@ public class EphemeralConfig : ISavable, IDisposable
 
     public void Save(StreamWriter writer)
     {
-        using var jWriter    = new JsonTextWriter(writer);
+        using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
-        var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
+        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
         serializer.Serialize(jWriter, this);
     }
 

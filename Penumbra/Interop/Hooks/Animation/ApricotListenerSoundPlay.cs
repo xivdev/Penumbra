@@ -2,21 +2,25 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Hooks.Animation;
 
 /// <summary> Called for some sound effects caused by animations or VFX. </summary>
 public sealed unsafe class ApricotListenerSoundPlay : FastHook<ApricotListenerSoundPlay.Delegate>
 {
-    private readonly GameState          _state;
-    private readonly CollectionResolver _collectionResolver;
+    private readonly GameState           _state;
+    private readonly CollectionResolver  _collectionResolver;
+    private readonly CrashHandlerService _crashHandler;
 
-    public ApricotListenerSoundPlay(HookManager hooks, GameState state, CollectionResolver collectionResolver)
+    public ApricotListenerSoundPlay(HookManager hooks, GameState state, CollectionResolver collectionResolver, CrashHandlerService crashHandler)
     {
         _state              = state;
         _collectionResolver = collectionResolver;
+        _crashHandler       = crashHandler;
         Task                = hooks.CreateHook<Delegate>("Apricot Listener Sound Play", Sigs.ApricotListenerSoundPlay, Detour, true);
     }
 
@@ -46,6 +50,7 @@ public sealed unsafe class ApricotListenerSoundPlay : FastHook<ApricotListenerSo
                 newData = _collectionResolver.IdentifyCollection(drawObject, true);
         }
 
+        _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.ApricotSoundPlay);
         var last = _state.SetAnimationData(newData);
         var ret  = Task.Result.Original(a1, a2, a3, a4, a5, a6);
         _state.RestoreAnimationData(last);

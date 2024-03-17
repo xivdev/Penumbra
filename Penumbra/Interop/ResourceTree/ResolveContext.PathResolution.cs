@@ -89,6 +89,7 @@ internal partial record ResolveContext
         };
     }
 
+    [SkipLocalsInit]
     private unsafe Utf8GamePath ResolveEquipmentMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
         var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
@@ -100,6 +101,7 @@ internal partial record ResolveContext
         return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
     }
 
+    [SkipLocalsInit]
     private unsafe Utf8GamePath ResolveWeaponMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
         var setIdHigh = Equipment.Set.Id / 100;
@@ -168,7 +170,7 @@ internal partial record ResolveContext
     {
         var modelPosition = modelPath.IndexOf("/model/"u8);
         if (modelPosition < 0)
-            return Span<byte>.Empty;
+            return [];
 
         var baseDirectory = modelPath[..modelPosition];
 

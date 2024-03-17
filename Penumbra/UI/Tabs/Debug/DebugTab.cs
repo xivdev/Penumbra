@@ -53,7 +53,7 @@ public class Diagnostics(IServiceProvider provider)
         foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
-            var container = (IAsyncDataContainer) provider.GetRequiredService(type);
+            var container = (IAsyncDataContainer)provider.GetRequiredService(type);
             ImGuiUtil.DrawTableColumn(container.Name);
             ImGuiUtil.DrawTableColumn(container.Time.ToString());
             ImGuiUtil.DrawTableColumn(Functions.HumanReadableSize(container.Memory));
@@ -88,18 +88,22 @@ public class DebugTab : Window, ITab
     private readonly TextureManager            _textureManager;
     private readonly ShaderReplacementFixer    _shaderReplacementFixer;
     private readonly RedrawService             _redraws;
-    private readonly DictEmote                _emotes;
+    private readonly DictEmote                 _emotes;
     private readonly Diagnostics               _diagnostics;
     private readonly IObjectTable              _objects;
     private readonly IClientState              _clientState;
     private readonly IpcTester                 _ipcTester;
+    private readonly CrashHandlerPanel         _crashHandlerPanel;
 
-    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, IObjectTable objects, IClientState clientState,
-        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
+    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, IObjectTable objects,
+        IClientState clientState,
+        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
+        CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes, Diagnostics diagnostics, IpcTester ipcTester)
+        TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
+        Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -134,7 +138,8 @@ public class DebugTab : Window, ITab
         _redraws                   = redraws;
         _emotes                    = emotes;
         _diagnostics               = diagnostics;
-        _ipcTester            = ipcTester;
+        _ipcTester                 = ipcTester;
+        _crashHandlerPanel         = crashHandlerPanel;
         _objects                   = objects;
         _clientState               = clientState;
     }
@@ -158,6 +163,9 @@ public class DebugTab : Window, ITab
             return;
 
         DrawDebugTabGeneral();
+        ImGui.NewLine();
+        _crashHandlerPanel.Draw();
+        ImGui.NewLine();
         _diagnostics.DrawDiagnostics();
         DrawPerformanceTab();
         ImGui.NewLine();
@@ -256,6 +264,7 @@ public class DebugTab : Window, ITab
                 PrintValue("Web Server Enabled",               _httpApi.Enabled.ToString());
             }
         }
+
 
         var issues = _modManager.WithIndex().Count(p => p.Index != p.Value.Index);
         using (var tree = TreeNode($"Mods ({issues} Issues)###Mods"))
@@ -394,7 +403,7 @@ public class DebugTab : Window, ITab
     private void DrawPerformanceTab()
     {
         ImGui.NewLine();
-        if (ImGui.CollapsingHeader("Performance"))
+        if (!ImGui.CollapsingHeader("Performance"))
             return;
 
         using (var start = TreeNode("Startup Performance", ImGuiTreeNodeFlags.DefaultOpen))

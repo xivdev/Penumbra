@@ -8,31 +8,22 @@ using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class EffectiveTab : ITab
+public class EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
+    : ITab
 {
-    private readonly CollectionManager      _collectionManager;
-    private readonly CollectionSelectHeader _collectionHeader;
-
-    public EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
-    {
-        _collectionManager = collectionManager;
-        _collectionHeader  = collectionHeader;
-    }
-
     public ReadOnlySpan<byte> Label
         => "Effective Changes"u8;
 
     public void DrawContent()
     {
         SetupEffectiveSizes();
-        _collectionHeader.Draw(true);
+        collectionHeader.Draw(true);
         DrawFilters();
         using var child = ImRaii.Child("##EffectiveChangesTab", -Vector2.One, false);
         if (!child)
@@ -48,7 +39,7 @@ public class EffectiveTab : ITab
         ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, _effectiveArrowLength);
         ImGui.TableSetupColumn("##file",     ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength);
 
-        DrawEffectiveRows(_collectionManager.Active.Current, skips, height,
+        DrawEffectiveRows(collectionManager.Active.Current, skips, height,
             _effectiveFilePathFilter.Length > 0 || _effectiveGamePathFilter.Length > 0);
     }
 

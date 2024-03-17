@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Api;
+using Penumbra.Services;
 
 namespace Penumbra.Communication;
 
@@ -19,5 +20,8 @@ public sealed class CreatingCharacterBase()
     {
         /// <seealso cref="PenumbraApi.CreatingCharacterBase"/>
         Api = 0,
+
+        /// <seealso cref="CrashHandlerService.OnCreatingCharacterBase"/>
+        CrashHandler = 0,
     }
 }

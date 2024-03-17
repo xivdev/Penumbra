@@ -16,6 +16,12 @@ public class FilenameService(DalamudPluginInterface pi) : IService
     public readonly string ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
     public readonly string SharedTagFile         = Path.Combine(pi.ConfigDirectory.FullName, "shared_tags.json");
 
+    public readonly string CrashHandlerExe =
+        Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Penumbra.CrashHandler.exe");
+
+    public readonly string LogFileName =
+        Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(pi.ConfigDirectory.FullName)!)!, "Penumbra.log");
+
     /// <summary> Obtain the path of a collection file given its name.</summary>
     public string CollectionFile(ModCollection collection)
         => CollectionFile(collection.Name);
