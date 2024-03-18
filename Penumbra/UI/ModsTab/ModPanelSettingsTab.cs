@@ -211,6 +211,11 @@ public class ModPanelSettingsTab : ITab
         var       selectedOption = _empty ? (int)group.DefaultSettings : (int)_settings.Settings[groupIdx];
         var       minWidth       = Widget.BeginFramedGroup(group.Name, description:group.Description);
 
+        DrawCollapseHandling(group, minWidth, DrawOptions);
+
+        Widget.EndFramedGroup();
+        return;
+
         void DrawOptions()
         {
             for (var idx = 0; idx < group.Count; ++idx)
@@ -227,10 +232,6 @@ public class ModPanelSettingsTab : ITab
                 ImGuiComponents.HelpMarker(option.Description);
             }
         }
-
-        DrawCollapseHandling(group, minWidth, DrawOptions);
-
-        Widget.EndFramedGroup();
     }
 
 
