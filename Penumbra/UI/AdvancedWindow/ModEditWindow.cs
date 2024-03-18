@@ -326,7 +326,7 @@ public partial class ModEditWindow : Window, IDisposable
         else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
             _editor.ModNormalizer.Normalize(Mod!);
-            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.OptionIdx));
+            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.OptionIdx), TaskScheduler.Default);
         }
 
         if (!_editor.Duplicates.Worker.IsCompleted)

@@ -46,12 +46,12 @@ public partial class TexToolsImporter : IDisposable
         ExtractedMods  = new List<(FileInfo, DirectoryInfo?, Exception?)>(count);
         _token         = _cancellation.Token;
         Task.Run(ImportFiles, _token)
-            .ContinueWith(_ => CloseStreams())
+            .ContinueWith(_ => CloseStreams(), TaskScheduler.Default)
             .ContinueWith(_ =>
             {
                 foreach (var (file, dir, error) in ExtractedMods)
                     handler(file, dir, error);
-            });
+            }, TaskScheduler.Default);
     }
 
     private void CloseStreams()

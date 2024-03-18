@@ -255,7 +255,7 @@ public partial class ModEditWindow
                 return;
 
             _framework.RunOnFrameworkThread(() => tex.Reload(_textures));
-        });
+        }, TaskScheduler.Default);
     }
 
     private Vector2 GetChildWidth()

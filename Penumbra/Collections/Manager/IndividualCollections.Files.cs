@@ -41,7 +41,7 @@ public partial class IndividualCollections
                 saver.ImmediateSave(parent);
             IsLoaded = true;
             Loaded.Invoke();
-        });
+        }, TaskScheduler.Default);
         return false;
     }
 

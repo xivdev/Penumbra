@@ -23,7 +23,7 @@ public class ModCacheManager : IDisposable
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
-        identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation());
+        identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation(), TaskScheduler.Default);
         OnModDiscoveryFinished();
     }
 

@@ -162,7 +162,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                     {
                         return _tasks.TryRemove(a, out var unused);
                     }
-                }, CancellationToken.None);
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
                 return (t, token);
             }).Item1;
         }
@@ -178,7 +178,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 throw task.Exception;
 
             return process(action);
-        });
+        }, TaskScheduler.Default);
 
     private class ExportToGltfAction(
         ModelManager manager,
