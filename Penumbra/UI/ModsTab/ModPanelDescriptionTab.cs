@@ -29,17 +29,18 @@ public class ModPanelDescriptionTab(
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
 
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
-        var sharedTagsEnabled     = predefinedTagsConfig.SharedTags.Count > 0;
-        var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
+        var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.SharedTags.Count > 0
+            ? (true, ImGui.GetFrameHeight() + ImGui.GetStyle().WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0))
+            : (false, 0);
         var tagIdx = _localTags.Draw("Local Tags: ",
             "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
           + "If the mod already contains a local tag in its own tags, the local tag will be ignored.", selector.Selected!.LocalTags,
-            out var editedTag, rightEndOffset: sharedTagButtonOffset);
+            out var editedTag, rightEndOffset: predefinedTagButtonOffset);
         tutorial.OpenTutorial(BasicTutorialSteps.Tags);
         if (tagIdx >= 0)
             modManager.DataEditor.ChangeLocalTag(selector.Selected!, tagIdx, editedTag);
 
-        if (sharedTagsEnabled)
+        if (predefinedTagsEnabled)
             predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, true,
                 selector.Selected!);
 

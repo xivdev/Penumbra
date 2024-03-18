@@ -110,9 +110,7 @@ public sealed class PredefinedTagManager : ISavable
     public void DrawAddFromSharedTagsAndUpdateTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal,
         Mods.Mod mod)
     {
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - ImGui.GetFrameHeightWithSpacing());
-        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - ImGui.GetFrameHeight() - ImGui.GetStyle().FramePadding.X);
-
+        ImGui.SameLine(ImGui.GetContentRegionMax().X - ImGui.GetFrameHeight() - ImGui.GetStyle().WindowPadding.X);
         var sharedTag = DrawAddFromSharedTags(localTags, modTags, editLocal);
 
         if (sharedTag.Length > 0)
