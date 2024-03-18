@@ -138,6 +138,22 @@ public class ModSettings
         }
     }
 
+    public bool FixAllSettings(Mod mod)
+    {
+        var ret = false;
+        for (var i = 0; i < Settings.Count; ++i)
+        {
+            var newValue = FixSetting(mod.Groups[i], Settings[i]);
+            if (newValue != Settings[i])
+            {
+                ret         = true;
+                Settings[i] = newValue;
+            }
+        }
+
+        return AddMissingSettings(mod) || ret;
+    }
+
     // Ensure that a value is valid for a group.
     private static uint FixSetting(IModGroup group, uint value)
         => group.Type switch

@@ -64,7 +64,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
             {
                 var token = new CancellationTokenSource();
                 var task  = Enqueue(a, token.Token);
-                task.ContinueWith(_ => _tasks.TryRemove(a, out var unused), CancellationToken.None);
+                task.ContinueWith(_ => _tasks.TryRemove(a, out var unused), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
                 return (task, token);
             }).Item1;
         }

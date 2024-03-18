@@ -92,7 +92,7 @@ public partial class ModEditWindow
                     .ToList();
             });
 
-            task.ContinueWith(t => { GamePaths = FinalizeIo(t); });
+            task.ContinueWith(t => { GamePaths = FinalizeIo(t); }, TaskScheduler.Default);
         }
 
         private EstManipulation[] GetCurrentEstManipulations()
@@ -130,7 +130,7 @@ public partial class ModEditWindow
 
             BeginIo();
             _edit._models.ExportToGltf(ExportConfig, Mdl, sklbPaths, ReadFile, outputPath)
-                .ContinueWith(FinalizeIo);
+                .ContinueWith(FinalizeIo, TaskScheduler.Default);
         }
 
         /// <summary> Import a model from an interchange format. </summary>
@@ -144,7 +144,7 @@ public partial class ModEditWindow
                     var mdlFile = FinalizeIo(task, result => result.Item1, result => result.Item2);
                     if (mdlFile != null)
                         FinalizeImport(mdlFile);
-                });
+                }, TaskScheduler.Default);
         }
 
         /// <summary> Finalise the import of a .mdl, applying any post-import transformations and state updates. </summary>
