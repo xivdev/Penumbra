@@ -9,7 +9,8 @@ using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class MessageService(Logger log, UiBuilder uiBuilder, IChatGui chat) : OtterGui.Classes.MessageService(log, uiBuilder, chat), IService
+public class MessageService(Logger log, UiBuilder uiBuilder, IChatGui chat, INotificationManager notificationManager)
+    : OtterGui.Classes.MessageService(log, uiBuilder, chat, notificationManager), IService
 {
     public void LinkItem(Item item)
     {

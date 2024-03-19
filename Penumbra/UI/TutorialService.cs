@@ -108,7 +108,7 @@ public class TutorialService
             .Register("Initial Setup, Step 8: Mod Import",
                 "Click this button to open a file selector with which to select TTMP mod files. You can select multiple at once.\n\n"
               + "It is not recommended to import huge mod packs of all your TexTools mods, but rather import the mods themselves, otherwise you lose out on a lot of Penumbra features!\n\n"
-              + "A feature to import raw texture mods for Tattoos etc. is available under Advanced Editing, but is currently a work in progress.") // TODO
+              + "A feature to import raw texture mods for Tattoos etc. is available under Advanced Editing, but is currently a work in progress.")
             .Register("Advanced Help", "Click this button to get detailed information on what you can do in the mod selector.\n\n"
               + "Import and select a mod now to continue.")
             .Register("Mod Filters", "You can filter the available mods by name, author, changed items or various attributes here.")

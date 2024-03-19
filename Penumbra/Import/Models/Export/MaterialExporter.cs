@@ -144,8 +144,7 @@ public class MaterialExporter
 
                 // Specular (table)
                 var lerpedSpecularColor = Vector3.Lerp(prevRow.Specular, nextRow.Specular, tableRow.Weight);
-                // float.Lerp is .NET8 ;-; #TODO
-                var lerpedSpecularFactor = prevRow.SpecularStrength * (1.0f - tableRow.Weight) + nextRow.SpecularStrength * tableRow.Weight;
+                var lerpedSpecularFactor = float.Lerp(prevRow.SpecularStrength, nextRow.SpecularStrength, tableRow.Weight);
                 specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, lerpedSpecularFactor));
 
                 // Emissive (table)

@@ -81,7 +81,8 @@ public static class ServiceManagerA
             .AddDalamudService<ITextureProvider>(pi)
             .AddDalamudService<ITextureSubstitutionProvider>(pi)
             .AddDalamudService<IGameInteropProvider>(pi)
-            .AddDalamudService<IPluginLog>(pi);
+            .AddDalamudService<IPluginLog>(pi)
+            .AddDalamudService<INotificationManager>(pi);
 
     private static ServiceManager AddInterop(this ServiceManager services)
         => services.AddSingleton<FrameworkManager>()
