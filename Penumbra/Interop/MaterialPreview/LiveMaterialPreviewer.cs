@@ -1,5 +1,5 @@
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.MaterialPreview;
 
@@ -11,7 +11,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
     private readonly float[] _originalMaterialParameter;
     private readonly uint[]  _originalSamplerFlags;
 
-    public LiveMaterialPreviewer(IObjectTable objects, MaterialInfo materialInfo)
+    public LiveMaterialPreviewer(ObjectManager objects, MaterialInfo materialInfo)
         : base(objects, materialInfo)
     {
         var mtrlHandle = Material->MaterialResourceHandle;

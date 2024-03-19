@@ -71,8 +71,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>
                     foreach (var (tag, data) in tags)
                         _predefinedTags.TryAdd(tag, data);
                     break;
-                default:
-                    throw new Exception($"Invalid version {version}.");
+                default: throw new Exception($"Invalid version {version}.");
             }
         }
         catch (Exception ex)

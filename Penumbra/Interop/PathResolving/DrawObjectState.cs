@@ -1,8 +1,7 @@
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.GameData.Interop;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
@@ -11,7 +10,7 @@ namespace Penumbra.Interop.PathResolving;
 
 public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>, IService
 {
-    private readonly IObjectTable            _objects;
+    private readonly ObjectManager           _objects;
     private readonly CreateCharacterBase     _createCharacterBase;
     private readonly WeaponReload            _weaponReload;
     private readonly CharacterBaseDestructor _characterBaseDestructor;
@@ -22,7 +21,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     public nint LastGameObject
         => _gameState.LastGameObject;
 
-    public unsafe DrawObjectState(IObjectTable objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
+    public unsafe DrawObjectState(ObjectManager objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
         CharacterBaseDestructor characterBaseDestructor, GameState gameState)
     {
         _objects                 = objects;
@@ -95,11 +94,11 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     /// </summary>
     private unsafe void InitializeDrawObjects()
     {
-        for (var i = 0; i < _objects.Length; ++i)
+        for (var i = 0; i < _objects.Count; ++i)
         {
-            var ptr = (GameObject*)_objects.GetObjectAddress(i);
-            if (ptr != null && ptr->IsCharacter() && ptr->DrawObject != null)
-                IterateDrawObjectTree(&ptr->DrawObject->Object, (nint)ptr, false, false);
+            var ptr = _objects[i];
+            if (ptr is { IsCharacter: true, Model.Valid: true })
+                IterateDrawObjectTree((Object*)ptr.Model.Address, ptr, false, false);
         }
     }
 

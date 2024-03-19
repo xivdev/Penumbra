@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Interop;
 using Penumbra.Interop.SafeHandles;
 
 namespace Penumbra.Interop.MaterialPreview;
@@ -20,7 +21,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
 
     public Half[] ColorTable { get; }
 
-    public LiveColorTablePreviewer(IObjectTable objects, IFramework framework, MaterialInfo materialInfo)
+    public LiveColorTablePreviewer(ObjectManager objects, IFramework framework, MaterialInfo materialInfo)
         : base(objects, materialInfo)
     {
         _framework = framework;

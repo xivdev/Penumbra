@@ -3,6 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.String;
 
@@ -14,17 +15,17 @@ public sealed class CutsceneService : IService, IDisposable
     public const int CutsceneEndIdx   = (int)ScreenActor.CutsceneEnd;
     public const int CutsceneSlots    = CutsceneEndIdx - CutsceneStartIdx;
 
-    private readonly IObjectTable        _objects;
+    private readonly ObjectManager       _objects;
     private readonly CopyCharacter       _copyCharacter;
     private readonly CharacterDestructor _characterDestructor;
     private readonly short[]             _copiedCharacters = Enumerable.Repeat((short)-1, CutsceneSlots).ToArray();
 
     public IEnumerable<KeyValuePair<int, Dalamud.Game.ClientState.Objects.Types.GameObject>> Actors
         => Enumerable.Range(CutsceneStartIdx, CutsceneSlots)
-            .Where(i => _objects[i] != null)
-            .Select(i => KeyValuePair.Create(i, this[i] ?? _objects[i]!));
+            .Where(i => _objects[i].Valid)
+            .Select(i => KeyValuePair.Create(i, this[i] ?? _objects.GetDalamudObject(i)!));
 
-    public unsafe CutsceneService(IObjectTable objects, CopyCharacter copyCharacter, CharacterDestructor characterDestructor,
+    public unsafe CutsceneService(ObjectManager objects, CopyCharacter copyCharacter, CharacterDestructor characterDestructor,
         IClientState clientState)
     {
         _objects             = objects;
@@ -42,13 +43,13 @@ public sealed class CutsceneService : IService, IDisposable
     /// Does not check for valid input index.
     /// Returns null if no connected actor is set or the actor does not exist anymore.
     /// </summary>
-    public Dalamud.Game.ClientState.Objects.Types.GameObject? this[int idx]
+    private Dalamud.Game.ClientState.Objects.Types.GameObject? this[int idx]
     {
         get
         {
             Debug.Assert(idx is >= CutsceneStartIdx and < CutsceneEndIdx);
             idx = _copiedCharacters[idx - CutsceneStartIdx];
-            return idx < 0 ? null : _objects[idx];
+            return idx < 0 ? null : _objects.GetDalamudObject(idx);
         }
     }
 
@@ -64,10 +65,10 @@ public sealed class CutsceneService : IService, IDisposable
         if (parentIdx is < -1 or >= CutsceneEndIdx)
             return false;
 
-        if (_objects.GetObjectAddress(copyIdx) == nint.Zero)
+        if (!_objects[copyIdx].Valid)
             return false;
 
-        if (parentIdx != -1 && _objects.GetObjectAddress(parentIdx) == nint.Zero)
+        if (parentIdx != -1 && !_objects[parentIdx].Valid)
             return false;
 
         _copiedCharacters[copyIdx - CutsceneStartIdx] = (short)parentIdx;
@@ -99,9 +100,9 @@ public sealed class CutsceneService : IService, IDisposable
                 {
                     // A hack to deal with GPose actors leaving and thus losing the link, we just set the home world instead.
                     // I do not think this breaks anything?
-                    var address = (GameObject*)_objects.GetObjectAddress(i + CutsceneStartIdx);
-                    if (address != null && address->GetObjectKind() is (byte)ObjectKind.Pc)
-                        ((Character*)address)->HomeWorld = character->HomeWorld;
+                    var address = _objects[i + CutsceneStartIdx];
+                    if (address.IsPlayer)
+                        address.AsCharacter->HomeWorld = character->HomeWorld;
 
                     _copiedCharacters[i] = -1;
                 }
@@ -125,7 +126,7 @@ public sealed class CutsceneService : IService, IDisposable
 
     /// <summary> Try to recover GPose actors on reloads into a running game. </summary>
     /// <remarks> This is not 100% accurate due to world IDs, minions etc., but will be mostly sane. </remarks>
-    private unsafe void RecoverGPoseActors()
+    private void RecoverGPoseActors()
     {
         Dictionary<ByteString, short>? actors = null;
 
@@ -143,11 +144,11 @@ public sealed class CutsceneService : IService, IDisposable
         bool TryGetName(int idx, out ByteString name)
         {
             name = ByteString.Empty;
-            var address = (GameObject*)_objects.GetObjectAddress(idx);
-            if (address == null)
+            var address = _objects[idx];
+            if (!address.Valid)
                 return false;
 
-            name = new ByteString(address->Name);
+            name = address.Utf8Name;
             return !name.IsEmpty;
         }
 

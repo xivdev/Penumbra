@@ -20,6 +20,7 @@ using Penumbra.String.Classes;
 using Penumbra.Services;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.GameData.Interop;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.Services;
 using Penumbra.UI;
@@ -93,7 +94,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     private IDataManager          _gameData;
     private IFramework            _framework;
-    private IObjectTable          _objects;
+    private ObjectManager         _objects;
     private ModManager            _modManager;
     private ResourceLoader        _resourceLoader;
     private Configuration         _config;
@@ -111,7 +112,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private TextureManager        _textureManager;
     private ResourceTreeFactory   _resourceTreeFactory;
 
-    public unsafe PenumbraApi(CommunicatorService communicator, IDataManager gameData, IFramework framework, IObjectTable objects,
+    public unsafe PenumbraApi(CommunicatorService communicator, IDataManager gameData, IFramework framework, ObjectManager objects,
         ModManager modManager, ResourceLoader resourceLoader, Configuration config, CollectionManager collectionManager,
         TempCollectionManager tempCollections, TempModManager tempMods, ActorManager actors, CollectionResolver collectionResolver,
         CutsceneService cutsceneService, ModImportManager modImportManager, CollectionEditor collectionEditor, RedrawService redrawService,
@@ -928,10 +929,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        if (actorIndex < 0 || actorIndex >= _objects.Length)
+        if (actorIndex < 0 || actorIndex >= _objects.Count)
             return PenumbraApiEc.InvalidArgument;
 
-        var identifier = _actors.FromObject(_objects[actorIndex], false, false, true);
+        var identifier = _actors.FromObject(_objects[actorIndex], out _, false, false, true);
         if (!identifier.IsValid)
             return PenumbraApiEc.InvalidArgument;
 
@@ -1076,11 +1077,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects)
     {
-        var characters       = gameObjects.Select(index => _objects[index]).OfType<Character>();
+        var characters       = gameObjects.Select(index => _objects.GetDalamudObject((int) index)).OfType<Character>();
         var resourceTrees    = _resourceTreeFactory.FromCharacters(characters, 0);
         var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
-        return Array.ConvertAll(gameObjects, obj => pathDictionaries.TryGetValue(obj, out var pathDict) ? pathDict : null);
+        return Array.ConvertAll(gameObjects, obj => pathDictionaries.GetValueOrDefault(obj));
     }
 
     public IReadOnlyDictionary<ushort, IReadOnlyDictionary<string, string[]>> GetPlayerResourcePaths()
@@ -1091,39 +1092,39 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return pathDictionaries.AsReadOnly();
     }
 
-    public IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[] GetGameObjectResourcesOfType(ResourceType type, bool withUIData,
+    public IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?[] GetGameObjectResourcesOfType(ResourceType type, bool withUiData,
         params ushort[] gameObjects)
     {
-        var characters      = gameObjects.Select(index => _objects[index]).OfType<Character>();
-        var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUiData : 0);
+        var characters      = gameObjects.Select(index => _objects.GetDalamudObject((int)index)).OfType<Character>();
+        var resourceTrees   = _resourceTreeFactory.FromCharacters(characters, withUiData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
-        return Array.ConvertAll(gameObjects, obj => resDictionaries.TryGetValue(obj, out var resDict) ? resDict : null);
+        return Array.ConvertAll(gameObjects, obj => resDictionaries.GetValueOrDefault(obj));
     }
 
     public IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>> GetPlayerResourcesOfType(ResourceType type,
-        bool withUIData)
+        bool withUiData)
     {
         var resourceTrees = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly
-          | (withUIData ? ResourceTreeFactory.Flags.WithUiData : 0));
+          | (withUiData ? ResourceTreeFactory.Flags.WithUiData : 0));
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
         return resDictionaries.AsReadOnly();
     }
 
-    public Ipc.ResourceTree?[] GetGameObjectResourceTrees(bool withUIData, params ushort[] gameObjects)
+    public Ipc.ResourceTree?[] GetGameObjectResourceTrees(bool withUiData, params ushort[] gameObjects)
     {
-        var characters    = gameObjects.Select(index => _objects[index]).OfType<Character>();
-        var resourceTrees = _resourceTreeFactory.FromCharacters(characters, withUIData ? ResourceTreeFactory.Flags.WithUiData : 0);
+        var characters    = gameObjects.Select(index => _objects.GetDalamudObject((int)index)).OfType<Character>();
+        var resourceTrees = _resourceTreeFactory.FromCharacters(characters, withUiData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionary = ResourceTreeApiHelper.EncapsulateResourceTrees(resourceTrees);
 
-        return Array.ConvertAll(gameObjects, obj => resDictionary.TryGetValue(obj, out var nodes) ? nodes : null);
+        return Array.ConvertAll(gameObjects, obj => resDictionary.GetValueOrDefault(obj));
     }
 
-    public IReadOnlyDictionary<ushort, Ipc.ResourceTree> GetPlayerResourceTrees(bool withUIData)
+    public IReadOnlyDictionary<ushort, Ipc.ResourceTree> GetPlayerResourceTrees(bool withUiData)
     {
         var resourceTrees = _resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly
-          | (withUIData ? ResourceTreeFactory.Flags.WithUiData : 0));
+          | (withUiData ? ResourceTreeFactory.Flags.WithUiData : 0));
         var resDictionary = ResourceTreeApiHelper.EncapsulateResourceTrees(resourceTrees);
 
         return resDictionary.AsReadOnly();
@@ -1165,11 +1166,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private unsafe bool AssociatedCollection(int gameObjectIdx, out ModCollection collection)
     {
         collection = _collectionManager.Active.Default;
-        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Length)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Count)
             return false;
 
-        var ptr  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(gameObjectIdx);
-        var data = _collectionResolver.IdentifyCollection(ptr, false);
+        var ptr  = _objects[gameObjectIdx];
+        var data = _collectionResolver.IdentifyCollection(ptr.AsObject, false);
         if (data.Valid)
             collection = data.ModCollection;
 
@@ -1179,10 +1180,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private unsafe ActorIdentifier AssociatedIdentifier(int gameObjectIdx)
     {
-        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Length)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Count)
             return ActorIdentifier.Invalid;
 
-        var ptr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(gameObjectIdx);
+        var ptr = _objects[gameObjectIdx];
         return _actors.FromObject(ptr, out _, false, true, true);
     }
 

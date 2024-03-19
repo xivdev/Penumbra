@@ -1,10 +1,11 @@
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.String;
+using Model = Penumbra.GameData.Interop.Model;
 
 namespace Penumbra.Interop.MaterialPreview;
 
@@ -18,13 +19,13 @@ public enum DrawObjectType
 
 public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectType Type, int ModelSlot, int MaterialSlot)
 {
-    public nint GetCharacter(IObjectTable objects)
-        => objects.GetObjectAddress(ObjectIndex.Index);
+    public Actor GetCharacter(ObjectManager objects)
+        => objects[ObjectIndex];
 
-    public nint GetDrawObject(nint address)
+    public nint GetDrawObject(Actor address)
         => GetDrawObject(Type, address);
 
-    public unsafe Material* GetDrawObjectMaterial(IObjectTable objects)
+    public unsafe Material* GetDrawObjectMaterial(ObjectManager objects)
         => GetDrawObjectMaterial((CharacterBase*)GetDrawObject(GetCharacter(objects)));
 
     public unsafe Material* GetDrawObjectMaterial(CharacterBase* drawObject)
@@ -60,13 +61,13 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
 
             foreach (var type in Enum.GetValues<DrawObjectType>())
             {
-                var drawObject = (CharacterBase*)GetDrawObject(type, objectPtr);
-                if (drawObject == null)
+                var drawObject = GetDrawObject(type, objectPtr);
+                if (!drawObject.Valid)
                     continue;
 
-                for (var i = 0; i < drawObject->SlotCount; ++i)
+                for (var i = 0; i < drawObject.AsCharacterBase->SlotCount; ++i)
                 {
-                    var model = drawObject->Models[i];
+                    var model = drawObject.AsCharacterBase->Models[i];
                     if (model == null)
                         continue;
 
@@ -88,19 +89,18 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
         return result;
     }
 
-    private static unsafe nint GetDrawObject(DrawObjectType type, nint address)
+    private static unsafe Model GetDrawObject(DrawObjectType type, Actor address)
     {
-        var gameObject = (Character*)address;
-        if (gameObject == null)
-            return nint.Zero;
+        if (!address.Valid)
+            return Model.Null;
 
         return type switch
         {
-            DrawObjectType.Character => (nint)gameObject->GameObject.GetDrawObject(),
-            DrawObjectType.Mainhand  => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
-            DrawObjectType.Offhand   => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
-            DrawObjectType.Vfx       => (nint)gameObject->DrawData.Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject,
-            _                        => nint.Zero,
+            DrawObjectType.Character => address.Model,
+            DrawObjectType.Mainhand  => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject,
+            DrawObjectType.Offhand   => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject,
+            DrawObjectType.Vfx       => address.AsCharacter->DrawData.Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject,
+            _                        => Model.Null,
         };
     }
 }

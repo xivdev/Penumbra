@@ -3,8 +3,8 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.Collections;
-using Penumbra.CrashHandler;
 using Penumbra.GameData;
+using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Services;
 
@@ -19,11 +19,11 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
     private readonly GameState           _state;
     private readonly CollectionResolver  _collectionResolver;
     private readonly ICondition          _conditions;
-    private readonly IObjectTable        _objects;
+    private readonly ObjectManager       _objects;
     private readonly CrashHandlerService _crashHandler;
 
     public LoadTimelineResources(HookManager hooks, GameState state, CollectionResolver collectionResolver, ICondition conditions,
-        IObjectTable objects, CrashHandlerService crashHandler)
+        ObjectManager objects, CrashHandlerService crashHandler)
     {
         _state              = state;
         _collectionResolver = collectionResolver;
@@ -56,7 +56,7 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
     }
 
     /// <summary> Use timelines vfuncs to obtain the associated game object. </summary>
-    public static ResolveData GetDataFromTimeline(IObjectTable objects, CollectionResolver resolver, nint timeline)
+    public static ResolveData GetDataFromTimeline(ObjectManager objects, CollectionResolver resolver, nint timeline)
     {
         try
         {
@@ -64,10 +64,10 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
             {
                 var getGameObjectIdx = ((delegate* unmanaged<nint, int>**)timeline)[0][Offsets.GetGameObjectIdxVfunc];
                 var idx              = getGameObjectIdx(timeline);
-                if (idx >= 0 && idx < objects.Length)
+                if (idx >= 0 && idx < objects.Count)
                 {
-                    var obj = (GameObject*)objects.GetObjectAddress(idx);
-                    return obj != null ? resolver.IdentifyCollection(obj, true) : ResolveData.Invalid;
+                    var obj = objects[idx];
+                    return obj.Valid ? resolver.IdentifyCollection(obj.AsObject, true) : ResolveData.Invalid;
                 }
             }
         }

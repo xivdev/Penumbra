@@ -11,6 +11,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Interop;
 using Penumbra.Interop.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -57,7 +58,7 @@ public unsafe partial class RedrawService
     // this will be in obj and true will be returned.
     private bool FindCorrectActor(int idx, out GameObject? obj)
     {
-        obj = _objects[idx];
+        obj = _objects.GetDalamudObject(idx);
         if (!InGPose || obj == null || IsGPoseActor(idx))
             return false;
 
@@ -70,21 +71,21 @@ public unsafe partial class RedrawService
 
             if (name == gPoseName)
             {
-                obj = _objects[GPosePlayerIdx + i];
+                obj = _objects.GetDalamudObject(GPosePlayerIdx + i);
                 return true;
             }
         }
 
         for (; _gPoseNameCounter < GPoseSlots; ++_gPoseNameCounter)
         {
-            var gPoseName = _objects[GPosePlayerIdx + _gPoseNameCounter]?.Name.ToString();
+            var gPoseName = _objects.GetDalamudObject(GPosePlayerIdx + _gPoseNameCounter)?.Name.ToString();
             _gPoseNames[_gPoseNameCounter] = gPoseName;
             if (gPoseName == null)
                 break;
 
             if (name == gPoseName)
             {
-                obj = _objects[GPosePlayerIdx + _gPoseNameCounter];
+                obj = _objects.GetDalamudObject(GPosePlayerIdx + _gPoseNameCounter);
                 return true;
             }
         }
@@ -111,7 +112,7 @@ public sealed unsafe partial class RedrawService : IDisposable
     private const int FurnitureIdx = 1337;
 
     private readonly IFramework          _framework;
-    private readonly IObjectTable        _objects;
+    private readonly ObjectManager       _objects;
     private readonly ITargetManager      _targets;
     private readonly ICondition          _conditions;
     private readonly IClientState        _clientState;
@@ -133,7 +134,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
-    public RedrawService(IFramework framework, IObjectTable objects, ITargetManager targets, ICondition conditions, IClientState clientState,
+    public RedrawService(IFramework framework, ObjectManager objects, ITargetManager targets, ICondition conditions, IClientState clientState,
         Configuration config, CommunicatorService communicator)
     {
         _framework        =  framework;
@@ -170,7 +171,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             DisableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
+        if (actor is PlayerCharacter && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
             *ActorDrawState(mountOrOrnament) |= DrawState.Invisibility;
             if (gPose)
@@ -189,7 +190,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             EnableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects[tableIndex + 1] is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
+        if (actor is PlayerCharacter && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
             *ActorDrawState(mountOrOrnament) &= ~DrawState.Invisibility;
             if (gPose)
@@ -212,7 +213,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     private void ReloadActorAfterGPose(GameObject? actor)
     {
-        if (_objects[GPosePlayerIdx] != null)
+        if (_objects[GPosePlayerIdx].Valid)
         {
             ReloadActor(actor);
             return;
@@ -230,7 +231,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (_target < 0)
             return;
 
-        var actor = _objects[_target];
+        var actor = _objects.GetDalamudObject(_target);
         if (actor == null || _targets.Target != null)
             return;
 
@@ -316,12 +317,12 @@ public sealed unsafe partial class RedrawService : IDisposable
             if (idx < 0)
             {
                 var newIdx = ~idx;
-                WriteInvisible(_objects[newIdx]);
+                WriteInvisible(_objects.GetDalamudObject(newIdx));
                 _afterGPoseQueue[numKept++] = newIdx;
             }
             else
             {
-                WriteVisible(_objects[idx]);
+                WriteVisible(_objects.GetDalamudObject(idx));
             }
         }
 
@@ -357,8 +358,8 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     private GameObject? GetLocalPlayer()
     {
-        var gPosePlayer = _objects[GPosePlayerIdx];
-        return gPosePlayer ?? _objects[0];
+        var gPosePlayer = _objects.GetDalamudObject(GPosePlayerIdx);
+        return gPosePlayer ?? _objects.GetDalamudObject(0);
     }
 
     public bool GetName(string lowerName, out GameObject? actor)
@@ -379,7 +380,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (!ret && lowerName.Length > 1 && lowerName[0] == '#' && ushort.TryParse(lowerName[1..], out var objectIndex))
         {
             ret   = true;
-            actor = _objects[objectIndex];
+            actor = _objects.GetDalamudObject((int) objectIndex);
         }
 
         return ret;
@@ -387,8 +388,8 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public void RedrawObject(int tableIndex, RedrawType settings)
     {
-        if (tableIndex >= 0 && tableIndex < _objects.Length)
-            RedrawObject(_objects[tableIndex], settings);
+        if (tableIndex >= 0 && tableIndex < _objects.Count)
+            RedrawObject(_objects.GetDalamudObject(tableIndex), settings);
     }
 
     public void RedrawObject(string name, RedrawType settings)
@@ -399,13 +400,13 @@ public sealed unsafe partial class RedrawService : IDisposable
         else if (GetName(lowerName, out var target))
             RedrawObject(target, settings);
         else
-            foreach (var actor in _objects.Where(a => a.Name.ToString().ToLowerInvariant() == lowerName))
+            foreach (var actor in _objects.Objects.Where(a => a.Name.ToString().ToLowerInvariant() == lowerName))
                 RedrawObject(actor, settings);
     }
 
     public void RedrawAll(RedrawType settings)
     {
-        foreach (var actor in _objects)
+        foreach (var actor in _objects.Objects)
             RedrawObject(actor, settings);
     }
 

@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
@@ -18,6 +19,7 @@ using Penumbra.Collections.Manager;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.Api;
 
@@ -40,7 +42,7 @@ public class IpcTester : IDisposable
     private readonly Temporary        _temporary;
     private readonly ResourceTree     _resourceTree;
 
-    public IpcTester(Configuration config, DalamudPluginInterface pi, IObjectTable objects, IClientState clientState,
+    public IpcTester(Configuration config, DalamudPluginInterface pi, ObjectManager objects, IClientState clientState,
         PenumbraIpcProviders ipcProviders, ModManager modManager, CollectionManager collections, TempModManager tempMods,
         TempCollectionManager tempCollections, SaveService saveService)
     {
@@ -280,16 +282,16 @@ public class IpcTester : IDisposable
         {
             ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
             using var popup = ImRaii.Popup("Config Popup");
-            if (popup)
-            {
-                using (var font = ImRaii.PushFont(UiBuilder.MonoFont))
-                {
-                    ImGuiUtil.TextWrapped(_currentConfiguration);
-                }
+            if (!popup)
+                return;
 
-                if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
-                    ImGui.CloseCurrentPopup();
+            using (ImRaii.PushFont(UiBuilder.MonoFont))
+            {
+                ImGuiUtil.TextWrapped(_currentConfiguration);
             }
+
+            if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
+                ImGui.CloseCurrentPopup();
         }
 
         private void UpdateModDirectoryChanged(string path, bool valid)
@@ -304,15 +306,15 @@ public class IpcTester : IDisposable
         public readonly  EventSubscriber<ChangedItemType, uint>              Tooltip;
         public readonly  EventSubscriber<MouseButton, ChangedItemType, uint> Click;
 
-        private string         _lastDrawnMod        = string.Empty;
-        private DateTimeOffset _lastDrawnModTime    = DateTimeOffset.MinValue;
-        private bool           _subscribedToTooltip = false;
-        private bool           _subscribedToClick   = false;
-        private string         _lastClicked         = string.Empty;
-        private string         _lastHovered         = string.Empty;
-        private TabType        _selectTab           = TabType.None;
-        private string         _modName             = string.Empty;
-        private PenumbraApiEc  _ec                  = PenumbraApiEc.Success;
+        private string         _lastDrawnMod     = string.Empty;
+        private DateTimeOffset _lastDrawnModTime = DateTimeOffset.MinValue;
+        private bool           _subscribedToTooltip;
+        private bool           _subscribedToClick;
+        private string         _lastClicked = string.Empty;
+        private string         _lastHovered = string.Empty;
+        private TabType        _selectTab   = TabType.None;
+        private string         _modName     = string.Empty;
+        private PenumbraApiEc  _ec          = PenumbraApiEc.Success;
 
         public Ui(DalamudPluginInterface pi)
         {
@@ -401,14 +403,14 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface       _pi;
         private readonly IClientState                 _clientState;
-        private readonly IObjectTable                 _objects;
+        private readonly ObjectManager                _objects;
         public readonly  EventSubscriber<IntPtr, int> Redrawn;
 
-        private string _redrawName        = string.Empty;
-        private int    _redrawIndex       = 0;
+        private string _redrawName = string.Empty;
+        private int    _redrawIndex;
         private string _lastRedrawnString = "None";
 
-        public Redrawing(DalamudPluginInterface pi, IObjectTable objects, IClientState clientState)
+        public Redrawing(DalamudPluginInterface pi, ObjectManager objects, IClientState clientState)
         {
             _pi          = pi;
             _objects     = objects;
@@ -440,8 +442,8 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.RedrawObjectByIndex.Label, "Redraw by Index");
             var tmp = _redrawIndex;
             ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
-            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _objects.Length))
-                _redrawIndex = Math.Clamp(tmp, 0, _objects.Length);
+            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _objects.Count))
+                _redrawIndex = Math.Clamp(tmp, 0, _objects.Count);
 
             ImGui.SameLine();
             if (ImGui.Button("Redraw##Index"))
@@ -458,12 +460,12 @@ public class IpcTester : IDisposable
         private void SetLastRedrawn(IntPtr address, int index)
         {
             if (index < 0
-             || index > _objects.Length
+             || index > _objects.Count
              || address == IntPtr.Zero
-             || _objects[index]?.Address != address)
+             || _objects[index].Address != address)
                 _lastRedrawnString = "Invalid";
 
-            _lastRedrawnString = $"{_objects[index]!.Name} (0x{address:X}, {index})";
+            _lastRedrawnString = $"{_objects[index].Utf8Name} (0x{address:X}, {index})";
         }
     }
 
@@ -588,8 +590,8 @@ public class IpcTester : IDisposable
         private string                       _currentResolvePath      = string.Empty;
         private string                       _currentResolveCharacter = string.Empty;
         private string                       _currentReversePath      = string.Empty;
-        private int                          _currentReverseIdx       = 0;
-        private Task<(string[], string[][])> _task                    = Task.FromException<(string[], string[][])>(new Exception());
+        private int                          _currentReverseIdx;
+        private Task<(string[], string[][])> _task = Task.FromException<(string[], string[][])>(new Exception());
 
         public Resolve(DalamudPluginInterface pi)
             => _pi = pi;
@@ -696,8 +698,6 @@ public class IpcTester : IDisposable
                 return text;
             }
 
-            ;
-
             DrawIntro(Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)");
             if (forwardArray.Length > 0 || reverseArray.Length > 0)
             {
@@ -721,18 +721,18 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private int               _objectIdx      = 0;
+        private int               _objectIdx;
         private string            _collectionName = string.Empty;
         private bool              _allowCreation  = true;
         private bool              _allowDeletion  = true;
         private ApiCollectionType _type           = ApiCollectionType.Current;
 
         private string                               _characterCollectionName = string.Empty;
-        private IList<string>                        _collections             = new List<string>();
+        private IList<string>                        _collections             = [];
         private string                               _changedItemCollection   = string.Empty;
         private IReadOnlyDictionary<string, object?> _changedItems            = new Dictionary<string, object?>();
         private PenumbraApiEc                        _returnCode              = PenumbraApiEc.Success;
-        private string?                              _oldCollection           = null;
+        private string?                              _oldCollection;
 
         public Collections(DalamudPluginInterface pi)
             => _pi = pi;
@@ -845,8 +845,8 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private string _characterName   = string.Empty;
-        private int    _gameObjectIndex = 0;
+        private string _characterName = string.Empty;
+        private int    _gameObjectIndex;
 
         public Meta(DalamudPluginInterface pi)
             => _pi = pi;
@@ -1040,11 +1040,11 @@ public class IpcTester : IDisposable
         private string                                           _settingsModName          = string.Empty;
         private string                                           _settingsCollection       = string.Empty;
         private bool                                             _settingsAllowInheritance = true;
-        private bool                                             _settingsInherit          = false;
-        private bool                                             _settingsEnabled          = false;
-        private int                                              _settingsPriority         = 0;
+        private bool                                             _settingsInherit;
+        private bool                                             _settingsEnabled;
+        private int                                              _settingsPriority;
         private IDictionary<string, (IList<string>, GroupType)>? _availableSettings;
-        private IDictionary<string, IList<string>>?              _currentSettings = null;
+        private IDictionary<string, IList<string>>?              _currentSettings;
 
         public ModSettings(DalamudPluginInterface pi)
         {
@@ -1287,7 +1287,7 @@ public class IpcTester : IDisposable
         private string        _tempFilePath       = "test/success.mtrl";
         private string        _tempManipulation   = string.Empty;
         private PenumbraApiEc _lastTempError;
-        private int           _tempActorIndex = 0;
+        private int           _tempActorIndex;
         private bool          _forceOverwrite;
 
         public void Draw()
@@ -1441,15 +1441,13 @@ public class IpcTester : IDisposable
         }
     }
 
-    private class ResourceTree
+    private class ResourceTree(DalamudPluginInterface pi, ObjectManager objects)
     {
-        private readonly DalamudPluginInterface _pi;
-        private readonly IObjectTable           _objects;
-        private readonly Stopwatch              _stopwatch = new();
+        private readonly Stopwatch _stopwatch = new();
 
         private string       _gameObjectIndices = "0";
         private ResourceType _type              = ResourceType.Mtrl;
-        private bool         _withUIData        = false;
+        private bool         _withUiData;
 
         private (string, IReadOnlyDictionary<string, string[]>?)[]?                        _lastGameObjectResourcePaths;
         private (string, IReadOnlyDictionary<string, string[]>?)[]?                        _lastPlayerResourcePaths;
@@ -1459,12 +1457,6 @@ public class IpcTester : IDisposable
         private (string, Ipc.ResourceTree)[]?                                              _lastPlayerResourceTrees;
         private TimeSpan                                                                   _lastCallDuration;
 
-        public ResourceTree(DalamudPluginInterface pi, IObjectTable objects)
-        {
-            _pi      = pi;
-            _objects = objects;
-        }
-
         public void Draw()
         {
             using var _ = ImRaii.TreeNode("Resource Tree");
@@ -1473,7 +1465,7 @@ public class IpcTester : IDisposable
 
             ImGui.InputText("GameObject indices", ref _gameObjectIndices, 511);
             ImGuiUtil.GenericEnumCombo("Resource type", ImGui.CalcItemWidth(), _type, out _type, Enum.GetValues<ResourceType>());
-            ImGui.Checkbox("Also get names and icons", ref _withUIData);
+            ImGui.Checkbox("Also get names and icons", ref _withUiData);
 
             using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
             if (!table)
@@ -1483,7 +1475,7 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourcePaths"))
             {
                 var gameObjects = GetSelectedGameObjects();
-                var subscriber  = Ipc.GetGameObjectResourcePaths.Subscriber(_pi);
+                var subscriber  = Ipc.GetGameObjectResourcePaths.Subscriber(pi);
                 _stopwatch.Restart();
                 var resourcePaths = subscriber.Invoke(gameObjects);
 
@@ -1499,7 +1491,7 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcePaths.Label, "Get local player resource paths");
             if (ImGui.Button("Get##PlayerResourcePaths"))
             {
-                var subscriber = Ipc.GetPlayerResourcePaths.Subscriber(_pi);
+                var subscriber = Ipc.GetPlayerResourcePaths.Subscriber(pi);
                 _stopwatch.Restart();
                 var resourcePaths = subscriber.Invoke();
 
@@ -1515,9 +1507,9 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourcesOfType"))
             {
                 var gameObjects = GetSelectedGameObjects();
-                var subscriber  = Ipc.GetGameObjectResourcesOfType.Subscriber(_pi);
+                var subscriber  = Ipc.GetGameObjectResourcesOfType.Subscriber(pi);
                 _stopwatch.Restart();
-                var resourcesOfType = subscriber.Invoke(_type, _withUIData, gameObjects);
+                var resourcesOfType = subscriber.Invoke(_type, _withUiData, gameObjects);
 
                 _lastCallDuration = _stopwatch.Elapsed;
                 _lastGameObjectResourcesOfType = gameObjects
@@ -1531,9 +1523,9 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourcesOfType.Label, "Get local player resources of type");
             if (ImGui.Button("Get##PlayerResourcesOfType"))
             {
-                var subscriber = Ipc.GetPlayerResourcesOfType.Subscriber(_pi);
+                var subscriber = Ipc.GetPlayerResourcesOfType.Subscriber(pi);
                 _stopwatch.Restart();
-                var resourcesOfType = subscriber.Invoke(_type, _withUIData);
+                var resourcesOfType = subscriber.Invoke(_type, _withUiData);
 
                 _lastCallDuration = _stopwatch.Elapsed;
                 _lastPlayerResourcesOfType = resourcesOfType
@@ -1547,9 +1539,9 @@ public class IpcTester : IDisposable
             if (ImGui.Button("Get##GameObjectResourceTrees"))
             {
                 var gameObjects = GetSelectedGameObjects();
-                var subscriber  = Ipc.GetGameObjectResourceTrees.Subscriber(_pi);
+                var subscriber  = Ipc.GetGameObjectResourceTrees.Subscriber(pi);
                 _stopwatch.Restart();
-                var trees = subscriber.Invoke(_withUIData, gameObjects);
+                var trees = subscriber.Invoke(_withUiData, gameObjects);
 
                 _lastCallDuration = _stopwatch.Elapsed;
                 _lastGameObjectResourceTrees = gameObjects
@@ -1563,9 +1555,9 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.GetPlayerResourceTrees.Label, "Get local player resource trees");
             if (ImGui.Button("Get##PlayerResourceTrees"))
             {
-                var subscriber = Ipc.GetPlayerResourceTrees.Subscriber(_pi);
+                var subscriber = Ipc.GetPlayerResourceTrees.Subscriber(pi);
                 _stopwatch.Restart();
-                var trees = subscriber.Invoke(_withUIData);
+                var trees = subscriber.Invoke(_withUiData);
 
                 _lastCallDuration = _stopwatch.Elapsed;
                 _lastPlayerResourceTrees = trees
@@ -1666,13 +1658,13 @@ public class IpcTester : IDisposable
         {
             DrawWithHeaders(result, resources =>
             {
-                using var table = ImRaii.Table(string.Empty, _withUIData ? 3 : 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = ImRaii.Table(string.Empty, _withUiData ? 3 : 2, ImGuiTableFlags.SizingFixedFit);
                 if (!table)
                     return;
 
                 ImGui.TableSetupColumn("Resource Handle", ImGuiTableColumnFlags.WidthStretch, 0.15f);
-                ImGui.TableSetupColumn("Actual Path",     ImGuiTableColumnFlags.WidthStretch, _withUIData ? 0.55f : 0.85f);
-                if (_withUIData)
+                ImGui.TableSetupColumn("Actual Path",     ImGuiTableColumnFlags.WidthStretch, _withUiData ? 0.55f : 0.85f);
+                if (_withUiData)
                     ImGui.TableSetupColumn("Icon & Name", ImGuiTableColumnFlags.WidthStretch, 0.3f);
                 ImGui.TableHeadersRow();
 
@@ -1682,7 +1674,7 @@ public class IpcTester : IDisposable
                     TextUnformattedMono($"0x{resourceHandle:X}");
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted(actualPath);
-                    if (_withUIData)
+                    if (_withUiData)
                     {
                         ImGui.TableNextColumn();
                         TextUnformattedMono(icon.ToString());
@@ -1699,11 +1691,11 @@ public class IpcTester : IDisposable
             {
                 ImGui.TextUnformatted($"Name: {tree.Name}\nRaceCode: {(GenderRace)tree.RaceCode}");
 
-                using var table = ImRaii.Table(string.Empty, _withUIData ? 7 : 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Resizable);
+                using var table = ImRaii.Table(string.Empty, _withUiData ? 7 : 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Resizable);
                 if (!table)
                     return;
 
-                if (_withUIData)
+                if (_withUiData)
                 {
                     ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 0.5f);
                     ImGui.TableSetupColumn("Type", ImGuiTableColumnFlags.WidthStretch, 0.1f);
@@ -1726,11 +1718,11 @@ public class IpcTester : IDisposable
                     ImGui.TableNextColumn();
                     var hasChildren = node.Children.Any();
                     using var treeNode = ImRaii.TreeNode(
-                        $"{(_withUIData ? node.Name ?? "Unknown" : node.Type)}##{node.ObjectAddress:X8}",
+                        $"{(_withUiData ? node.Name ?? "Unknown" : node.Type)}##{node.ObjectAddress:X8}",
                         hasChildren
                             ? ImGuiTreeNodeFlags.SpanFullWidth
                             : ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen);
-                    if (_withUIData)
+                    if (_withUiData)
                     {
                         ImGui.TableNextColumn();
                         TextUnformattedMono(node.Type.ToString());
@@ -1770,10 +1762,10 @@ public class IpcTester : IDisposable
 
         private unsafe string GameObjectToString(ObjectIndex gameObjectIndex)
         {
-            var gameObject = _objects[gameObjectIndex.Index];
+            var gameObject = objects[gameObjectIndex];
 
-            return gameObject != null
-                ? $"[{gameObjectIndex}] {gameObject.Name} ({gameObject.ObjectKind})"
+            return gameObject.Valid
+                ? $"[{gameObjectIndex}] {gameObject.Utf8Name} ({(ObjectKind)gameObject.AsObject->ObjectKind})"
                 : $"[{gameObjectIndex}] null";
         }
     }

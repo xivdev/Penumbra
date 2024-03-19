@@ -1,7 +1,7 @@
-using Dalamud.Plugin.Services;
 using OtterGui.Services;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
+using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
@@ -13,10 +13,10 @@ public sealed unsafe class ScheduleClipUpdate : FastHook<ScheduleClipUpdate.Dele
 {
     private readonly GameState           _state;
     private readonly CollectionResolver  _collectionResolver;
-    private readonly IObjectTable        _objects;
+    private readonly ObjectManager       _objects;
     private readonly CrashHandlerService _crashHandler;
 
-    public ScheduleClipUpdate(HookManager hooks, GameState state, CollectionResolver collectionResolver, IObjectTable objects,
+    public ScheduleClipUpdate(HookManager hooks, GameState state, CollectionResolver collectionResolver, ObjectManager objects,
         CrashHandlerService crashHandler)
     {
         _state              = state;

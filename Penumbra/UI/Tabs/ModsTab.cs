@@ -14,6 +14,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.UI.ModsTab;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 using Penumbra.Collections.Manager;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.UI.Tabs;
 
@@ -28,7 +29,7 @@ public class ModsTab(
     IClientState clientState,
     CollectionSelectHeader collectionHeader,
     ITargetManager targets,
-    IObjectTable objectTable)
+    ObjectManager objects)
     : ITab
 {
     private readonly ActiveCollections _activeCollections = collectionManager.Active;
@@ -128,7 +129,7 @@ public class ModsTab(
         using var disabled = ImRaii.Disabled(clientState.LocalPlayer == null);
         ImGui.SameLine();
         var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 5 };
-        var tt = objectTable.GetObjectAddress(0) == nint.Zero
+        var tt = !objects[0].Valid
             ? "\nCan only be used when you are logged in and your character is available."
             : string.Empty;
         DrawButton(buttonWidth, "All", string.Empty, tt);

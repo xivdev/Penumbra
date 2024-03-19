@@ -21,6 +21,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Interop;
 using Penumbra.Import.Structs;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.PathResolving;
@@ -90,12 +91,12 @@ public class DebugTab : Window, ITab
     private readonly RedrawService             _redraws;
     private readonly DictEmote                 _emotes;
     private readonly Diagnostics               _diagnostics;
-    private readonly IObjectTable              _objects;
+    private readonly ObjectManager             _objects;
     private readonly IClientState              _clientState;
     private readonly IpcTester                 _ipcTester;
     private readonly CrashHandlerPanel         _crashHandlerPanel;
 
-    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, IObjectTable objects,
+    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         CharacterUtility characterUtility, ResidentResourceManager residentResources,
@@ -430,7 +431,7 @@ public class DebugTab : Window, ITab
         DrawSpecial("Current Card",    _actors.GetCardPlayer());
         DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
 
-        foreach (var obj in _objects)
+        foreach (var obj in _objects.Objects)
         {
             ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");

@@ -1,12 +1,13 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.MaterialPreview;
 
 public abstract unsafe class LiveMaterialPreviewerBase : IDisposable
 {
-    private readonly IObjectTable _objects;
+    private readonly ObjectManager _objects;
 
     public readonly    MaterialInfo   MaterialInfo;
     public readonly    CharacterBase* DrawObject;
@@ -14,7 +15,7 @@ public abstract unsafe class LiveMaterialPreviewerBase : IDisposable
 
     protected bool Valid;
 
-    public LiveMaterialPreviewerBase(IObjectTable objects, MaterialInfo materialInfo)
+    public LiveMaterialPreviewerBase(ObjectManager objects, MaterialInfo materialInfo)
     {
         _objects = objects;
 
