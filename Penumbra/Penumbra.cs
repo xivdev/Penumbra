@@ -51,7 +51,7 @@ public class Penumbra : IDalamudPlugin
     {
         try
         {
-            _services        = ServiceManagerA.CreateProvider(this, pluginInterface, Log);
+            _services        = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
             Messager         = _services.GetService<MessageService>();
             _validityChecker = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
