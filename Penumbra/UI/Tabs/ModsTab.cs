@@ -110,7 +110,7 @@ public class ModsTab(
         var frameColor  = ImGui.GetColorU32(ImGuiCol.FrameBg);
         using (var _ = ImRaii.Group())
         {
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            using (ImRaii.PushFont(UiBuilder.IconFont))
             {
                 ImGuiUtil.DrawTextButton(FontAwesomeIcon.InfoCircle.ToIconString(), frameHeight, frameColor);
                 ImGui.SameLine();

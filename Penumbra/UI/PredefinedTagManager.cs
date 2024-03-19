@@ -17,22 +17,19 @@ public sealed class PredefinedTagManager : ISavable
     private readonly ModManager  _modManager;
     private readonly SaveService _saveService;
 
-    private static uint _tagButtonAddColor    = ColorId.PredefinedTagAdd.Value();
-    private static uint _tagButtonRemoveColor = ColorId.PredefinedTagRemove.Value();
+    private bool _isListOpen = false;
+    private uint _enabledColor;
+    private uint _disabledColor;
 
-    private static float _minTagButtonWidth = 15;
-
-    private const string PopupContext = "SharedTagsPopup";
-    private       bool   _isPopupOpen = false;
 
     // Operations on this list assume that it is sorted and will keep it sorted if that is the case.
     // The list also gets re-sorted when first loaded from config in case the config was modified.
     [JsonRequired]
-    private readonly List<string> _sharedTags = [];
+    private readonly List<string> _predefinedTags = [];
 
     [JsonIgnore]
-    public IReadOnlyList<string> SharedTags
-        => _sharedTags;
+    public IReadOnlyList<string> PredefinedTags
+        => _predefinedTags;
 
     public int ConfigVersion = 1;
 
@@ -48,8 +45,9 @@ public sealed class PredefinedTagManager : ISavable
 
     public void Save(StreamWriter writer)
     {
-        using var jWriter    = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-        var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
+        using var jWriter = new JsonTextWriter(writer);
+        jWriter.Formatting = Formatting.Indented;
+        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
         serializer.Serialize(jWriter, this);
     }
 
@@ -58,13 +56,6 @@ public sealed class PredefinedTagManager : ISavable
 
     private void Load()
     {
-        static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
-        {
-            Penumbra.Log.Error(
-                $"Error parsing shared tags Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
-            errorArgs.ErrorContext.Handled = true;
-        }
-
         if (!File.Exists(_saveService.FileNames.PredefinedTagFile))
             return;
 
@@ -77,7 +68,7 @@ public sealed class PredefinedTagManager : ISavable
             });
 
             // Any changes to this within this class should keep it sorted, but in case someone went in and manually changed the JSON, run a sort on initial load.
-            _sharedTags.Sort();
+            _predefinedTags.Sort();
         }
         catch (Exception ex)
         {
@@ -85,23 +76,32 @@ public sealed class PredefinedTagManager : ISavable
                 "Error reading shared tags Configuration, reverting to default.",
                 "Error reading shared tags Configuration", NotificationType.Error);
         }
+
+        return;
+
+        static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
+        {
+            Penumbra.Log.Error(
+                $"Error parsing shared tags Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
+            errorArgs.ErrorContext.Handled = true;
+        }
     }
 
     public void ChangeSharedTag(int tagIdx, string tag)
     {
-        if (tagIdx < 0 || tagIdx > SharedTags.Count)
+        if (tagIdx < 0 || tagIdx > PredefinedTags.Count)
             return;
 
         // In the case of editing a tag, remove what's there prior to doing an insert.
-        if (tagIdx != SharedTags.Count)
-            _sharedTags.RemoveAt(tagIdx);
+        if (tagIdx != PredefinedTags.Count)
+            _predefinedTags.RemoveAt(tagIdx);
 
         if (!string.IsNullOrEmpty(tag))
         {
             // Taking advantage of the fact that BinarySearch returns the complement of the correct sorted position for the tag.
-            var existingIdx = _sharedTags.BinarySearch(tag);
+            var existingIdx = _predefinedTags.BinarySearch(tag);
             if (existingIdx < 0)
-                _sharedTags.Insert(~existingIdx, tag);
+                _predefinedTags.Insert(~existingIdx, tag);
         }
 
         Save();
@@ -110,145 +110,81 @@ public sealed class PredefinedTagManager : ISavable
     public void DrawAddFromSharedTagsAndUpdateTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal,
         Mods.Mod mod)
     {
-        ImGui.SameLine(ImGui.GetContentRegionMax().X - ImGui.GetFrameHeight() - ImGui.GetStyle().WindowPadding.X);
-        var sharedTag = DrawAddFromSharedTags(localTags, modTags, editLocal);
+        DrawToggleButton();
+        if (!DrawList(localTags, modTags, editLocal, out var changedTag, out var index))
+            return;
 
-        if (sharedTag.Length > 0)
-        {
-            var index = editLocal ? mod.LocalTags.IndexOf(sharedTag) : mod.ModTags.IndexOf(sharedTag);
-
-            if (editLocal)
-            {
-                if (index < 0)
-                {
-                    index = mod.LocalTags.Count;
-                    _modManager.DataEditor.ChangeLocalTag(mod, index, sharedTag);
-                }
-                else
-                {
-                    _modManager.DataEditor.ChangeLocalTag(mod, index, string.Empty);
-                }
-            }
-            else
-            {
-                if (index < 0)
-                {
-                    index = mod.ModTags.Count;
-                    _modManager.DataEditor.ChangeModTag(mod, index, sharedTag);
-                }
-                else
-                {
-                    _modManager.DataEditor.ChangeModTag(mod, index, string.Empty);
-                }
-            }
-        }
+        if (editLocal)
+            _modManager.DataEditor.ChangeLocalTag(mod, index, changedTag);
+        else
+            _modManager.DataEditor.ChangeModTag(mod, index, changedTag);
     }
 
-    public string DrawAddFromSharedTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal)
+    private void DrawToggleButton()
     {
-        var tagToAdd = string.Empty;
+        ImGui.SameLine(ImGui.GetContentRegionMax().X
+          - ImGui.GetFrameHeight()
+          - (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ItemInnerSpacing.X : 0));
+        using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), _isListOpen);
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Tags.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
-                "Add Shared Tag... (Right-click to close popup)",
-                false, true)
-         || _isPopupOpen)
-            return DrawSharedTagsPopup(localTags, modTags, editLocal);
-
-        return tagToAdd;
+                "Add Predefined Tags...", false, true))
+            _isListOpen = !_isListOpen;
     }
 
-    private string DrawSharedTagsPopup(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal)
+    private bool DrawList(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal, out string changedTag,
+        out int changedIndex)
     {
-        var selected = string.Empty;
-        if (!ImGui.IsPopupOpen(PopupContext))
-        {
-            ImGui.OpenPopup(PopupContext);
-            _isPopupOpen = true;
-        }
+        changedTag   = string.Empty;
+        changedIndex = -1;
 
-        var display = ImGui.GetIO().DisplaySize;
-        var height  = Math.Min(display.Y / 4, 10 * ImGui.GetFrameHeightWithSpacing());
-        var width   = display.X / 6;
-        var size    = new Vector2(width, height);
-        ImGui.SetNextWindowSize(size);
-        using var popup = ImRaii.Popup(PopupContext);
-        if (!popup)
-            return selected;
+        if (!_isListOpen)
+            return false;
 
-        ImGui.TextUnformatted("Shared Tags");
-        ImGuiUtil.HoverTooltip("Right-click to close popup");
+        ImGui.TextUnformatted("Predefined Tags");
         ImGui.Separator();
 
-        foreach (var (tag, idx) in SharedTags.WithIndex())
+        var ret = false;
+        _enabledColor        = ColorId.PredefinedTagAdd.Value();
+        _disabledColor       = ColorId.PredefinedTagRemove.Value();
+        var (edited, others) = editLocal ? (localTags, modTags) : (modTags, localTags);
+        foreach (var (tag, idx) in PredefinedTags.WithIndex())
         {
-            if (DrawColoredButton(localTags, modTags, tag, editLocal, idx))
-                selected = tag;
+            var tagIdx  = edited.IndexOf(tag);
+            var inOther = tagIdx < 0 && others.IndexOf(tag) >= 0;
+            if (DrawColoredButton(tag, idx, tagIdx, inOther))
+            {
+                (changedTag, changedIndex) = tagIdx >= 0 ? (string.Empty, tagIdx) : (tag, edited.Count);
+                ret                        = true;
+            }
+
             ImGui.SameLine();
         }
 
-        if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-            _isPopupOpen = false;
-
-        return selected;
+        ImGui.NewLine();
+        ImGui.Separator();
+        return ret;
     }
 
-    private static bool DrawColoredButton(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, string buttonLabel,
-        bool editLocal, int index)
+    private bool DrawColoredButton(string buttonLabel, int index, int tagIdx, bool inOther)
     {
-        var ret = false;
-
-        var isLocalTagPresent = localTags.Contains(buttonLabel);
-        var isModTagPresent   = modTags.Contains(buttonLabel);
-
-        var buttonWidth = CalcTextButtonWidth(buttonLabel);
-        // Would prefer to be able to fit at least 2 buttons per line so the popup doesn't look sparse with lots of long tags. Thus long tags will be trimmed.
-        var maxButtonWidth = (ImGui.GetContentRegionMax().X - ImGui.GetWindowContentRegionMin().X) * 0.5f - ImGui.GetStyle().ItemSpacing.X;
-        var displayedLabel = buttonLabel;
-        if (buttonWidth >= maxButtonWidth)
-        {
-            displayedLabel = TrimButtonTextToWidth(buttonLabel, maxButtonWidth);
-            buttonWidth    = CalcTextButtonWidth(displayedLabel);
-        }
-
+        using var id          = ImRaii.PushId(index);
+        var       buttonWidth = CalcTextButtonWidth(buttonLabel);
         // Prevent adding a new tag past the right edge of the popup
         if (buttonWidth + ImGui.GetStyle().ItemSpacing.X >= ImGui.GetContentRegionAvail().X)
             ImGui.NewLine();
 
-        // Trimmed tag names can collide, and while tag names are currently distinct this may not always be the case. As such use the index to avoid an ImGui moment.
-        using var id = ImRaii.PushId(index);
+        bool ret;
+        using (ImRaii.Disabled(inOther))
+        {
+            using var color = ImRaii.PushColor(ImGuiCol.Button, tagIdx >= 0 || inOther ? _disabledColor : _enabledColor);
+            ret = ImGui.Button(buttonLabel);
+        }
 
-        if (editLocal && isModTagPresent || !editLocal && isLocalTagPresent)
-        {
-            using var alpha = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f);
-            ImGui.Button(displayedLabel);
-        }
-        else
-        {
-            using (ImRaii.PushColor(ImGuiCol.Button, isLocalTagPresent || isModTagPresent ? _tagButtonRemoveColor : _tagButtonAddColor))
-            {
-                if (ImGui.Button(displayedLabel))
-                    ret = true;
-            }
-        }
+        if (inOther && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetTooltip("This tag is already present in the other set of tags.");
+
 
         return ret;
-    }
-
-    private static string TrimButtonTextToWidth(string fullText, float maxWidth)
-    {
-        var trimmedText = fullText;
-
-        while (trimmedText.Length > _minTagButtonWidth)
-        {
-            var nextTrim = trimmedText.Substring(0, Math.Max(trimmedText.Length - 1, 0));
-
-            // An ellipsis will be used to indicate trimmed tags
-            if (CalcTextButtonWidth(nextTrim + "...") < maxWidth)
-                return nextTrim + "...";
-
-            trimmedText = nextTrim;
-        }
-
-        return trimmedText;
     }
 
     private static float CalcTextButtonWidth(string text)
