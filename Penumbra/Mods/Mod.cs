@@ -45,19 +45,19 @@ public sealed class Mod : IMod
     public string                Description { get; internal set; } = string.Empty;
     public string                Version     { get; internal set; } = string.Empty;
     public string                Website     { get; internal set; } = string.Empty;
-    public IReadOnlyList<string> ModTags     { get; internal set; } = Array.Empty<string>();
+    public IReadOnlyList<string> ModTags     { get; internal set; } = [];
 
 
     // Local Data
     public long                  ImportDate { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
-    public IReadOnlyList<string> LocalTags  { get; internal set; } = Array.Empty<string>();
+    public IReadOnlyList<string> LocalTags  { get; internal set; } = [];
     public string                Note       { get; internal set; } = string.Empty;
     public bool                  Favorite   { get; internal set; } = false;
 
 
     // Options
     public readonly SubMod          Default;
-    public readonly List<IModGroup> Groups = new();
+    public readonly List<IModGroup> Groups = [];
 
     ISubMod IMod.Default
         => Default;

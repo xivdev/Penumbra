@@ -14,6 +14,7 @@ public class FilenameService(DalamudPluginInterface pi) : IService
     public readonly string EphemeralConfigFile   = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
     public readonly string FilesystemFile        = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
     public readonly string ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
+    public readonly string PredefinedTagFile     = Path.Combine(pi.ConfigDirectory.FullName, "predefined_tags.json");
 
     public readonly string CrashHandlerExe =
         Path.Combine(pi.AssemblyLocation.DirectoryName!, "Penumbra.CrashHandler.exe");
@@ -43,7 +44,7 @@ public class FilenameService(DalamudPluginInterface pi) : IService
         get
         {
             var directory = new DirectoryInfo(CollectionDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : Array.Empty<FileInfo>();
+            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
         }
     }
 
@@ -53,7 +54,7 @@ public class FilenameService(DalamudPluginInterface pi) : IService
         get
         {
             var directory = new DirectoryInfo(LocalDataDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : Array.Empty<FileInfo>();
+            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
         }
     }
 

@@ -17,17 +17,20 @@ using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelEditTab : ITab
+public class ModPanelEditTab(
+    ModManager modManager,
+    ModFileSystemSelector selector,
+    ModFileSystem fileSystem,
+    Services.MessageService messager,
+    ModEditWindow editWindow,
+    ModEditor editor,
+    FilenameService filenames,
+    ModExportManager modExportManager,
+    Configuration config,
+    PredefinedTagManager predefinedTagManager)
+    : ITab
 {
-    private readonly Services.MessageService _messager;
-    private readonly FilenameService         _filenames;
-    private readonly ModManager              _modManager;
-    private readonly ModExportManager        _modExportManager;
-    private readonly ModFileSystem           _fileSystem;
-    private readonly ModFileSystemSelector   _selector;
-    private readonly ModEditWindow           _editWindow;
-    private readonly ModEditor               _editor;
-    private readonly Configuration           _config;
+    private readonly ModManager _modManager = modManager;
 
     private readonly TagButtons _modTags = new();
 
@@ -35,20 +38,6 @@ public class ModPanelEditTab : ITab
     private Vector2            _itemSpacing = Vector2.Zero;
     private ModFileSystem.Leaf _leaf        = null!;
     private Mod                _mod         = null!;
-
-    public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, Services.MessageService messager,
-        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager, Configuration config)
-    {
-        _modManager       = modManager;
-        _selector         = selector;
-        _fileSystem       = fileSystem;
-        _messager         = messager;
-        _editWindow       = editWindow;
-        _editor           = editor;
-        _filenames        = filenames;
-        _modExportManager = modExportManager;
-        _config           = config;
-    }
 
     public ReadOnlySpan<byte> Label
         => "Edit Mod"u8;
@@ -59,8 +48,8 @@ public class ModPanelEditTab : ITab
         if (!child)
             return;
 
-        _leaf = _selector.SelectedLeaf!;
-        _mod  = _selector.Selected!;
+        _leaf = selector.SelectedLeaf!;
+        _mod  = selector.Selected!;
 
         _cellPadding = ImGui.GetStyle().CellPadding with { X = 2 * UiHelpers.Scale };
         _itemSpacing = ImGui.GetStyle().CellPadding with { X = 4 * UiHelpers.Scale };
@@ -72,21 +61,27 @@ public class ModPanelEditTab : ITab
         if (Input.Text("Mod Path", Input.Path, Input.None, _leaf.FullName(), out var newPath, 256, UiHelpers.InputTextWidth.X))
             try
             {
-                _fileSystem.RenameAndMove(_leaf, newPath);
+                fileSystem.RenameAndMove(_leaf, newPath);
             }
             catch (Exception e)
             {
-                _messager.NotificationMessage(e.Message, NotificationType.Warning, false);
+                messager.NotificationMessage(e.Message, NotificationType.Warning, false);
             }
 
         UiHelpers.DefaultLineSpace();
+        var sharedTagsEnabled     = predefinedTagManager.Count > 0;
+        var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
-            out var editedTag);
+            out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
             _modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
 
+        if (sharedTagsEnabled)
+            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, false,
+                selector.Selected!);
+
         UiHelpers.DefaultLineSpace();
-        AddOptionGroup.Draw(_filenames, _modManager, _mod, _config.ReplaceNonAsciiOnImport);
+        AddOptionGroup.Draw(filenames, _modManager, _mod, config.ReplaceNonAsciiOnImport);
         UiHelpers.DefaultLineSpace();
 
         for (var groupIdx = 0; groupIdx < _mod.Groups.Count; ++groupIdx)
@@ -134,11 +129,11 @@ public class ModPanelEditTab : ITab
     {
         if (ImGui.Button("Update Bibo Material", buttonSize))
         {
-            _editor.LoadMod(_mod);
-            _editor.MdlMaterialEditor.ReplaceAllMaterials("bibo",     "b");
-            _editor.MdlMaterialEditor.ReplaceAllMaterials("bibopube", "c");
-            _editor.MdlMaterialEditor.SaveAllModels(_editor.Compactor);
-            _editWindow.UpdateModels();
+            editor.LoadMod(_mod);
+            editor.MdlMaterialEditor.ReplaceAllMaterials("bibo",     "b");
+            editor.MdlMaterialEditor.ReplaceAllMaterials("bibopube", "c");
+            editor.MdlMaterialEditor.SaveAllModels(editor.Compactor);
+            editWindow.UpdateModels();
         }
 
         ImGuiUtil.HoverTooltip(
@@ -150,7 +145,7 @@ public class ModPanelEditTab : ITab
 
     private void BackupButtons(Vector2 buttonSize)
     {
-        var backup = new ModBackup(_modExportManager, _mod);
+        var backup = new ModBackup(modExportManager, _mod);
         var tt = ModBackup.CreatingBackup
             ? "Already exporting a mod."
             : backup.Exists
@@ -161,16 +156,16 @@ public class ModPanelEditTab : ITab
 
         ImGui.SameLine();
         tt = backup.Exists
-            ? $"Delete existing mod export \"{backup.Name}\" (hold {_config.DeleteModModifier} while clicking)."
+            ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
-        if (ImGuiUtil.DrawDisabledButton("Delete Export", buttonSize, tt, !backup.Exists || !_config.DeleteModModifier.IsActive()))
+        if (ImGuiUtil.DrawDisabledButton("Delete Export", buttonSize, tt, !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Delete();
 
         tt = backup.Exists
-            ? $"Restore mod from exported file \"{backup.Name}\" (hold {_config.DeleteModModifier} while clicking)."
+            ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
         ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton("Restore From Export", buttonSize, tt, !backup.Exists || !_config.DeleteModModifier.IsActive()))
+        if (ImGuiUtil.DrawDisabledButton("Restore From Export", buttonSize, tt, !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Restore(_modManager);
         if (backup.Exists)
         {
@@ -208,13 +203,13 @@ public class ModPanelEditTab : ITab
             _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, Input.Description));
 
         ImGui.SameLine();
-        var fileExists = File.Exists(_filenames.ModMetaPath(_mod));
+        var fileExists = File.Exists(filenames.ModMetaPath(_mod));
         var tt = fileExists
             ? "Open the metadata json file in the text editor of your choice."
             : "The metadata json file does not exist.";
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", UiHelpers.IconButtonSize, tt,
                 !fileExists, true))
-            Process.Start(new ProcessStartInfo(_filenames.ModMetaPath(_mod)) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
     }
 
     /// <summary> Do some edits outside of iterations. </summary>
@@ -438,7 +433,7 @@ public class ModPanelEditTab : ITab
             _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, groupIdx));
 
         ImGui.SameLine();
-        var fileName   = _filenames.OptionGroupFile(_mod, groupIdx, _config.ReplaceNonAsciiOnImport);
+        var fileName   = filenames.OptionGroupFile(_mod, groupIdx, config.ReplaceNonAsciiOnImport);
         var fileExists = File.Exists(fileName);
         tt = fileExists
             ? $"Open the {group.Name} json file in the text editor of your choice."
