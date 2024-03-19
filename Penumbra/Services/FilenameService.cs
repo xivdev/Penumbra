@@ -16,7 +16,7 @@ public class FilenameService(DalamudPluginInterface pi) : IService
     public readonly string ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
 
     public readonly string CrashHandlerExe =
-        Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Penumbra.CrashHandler.exe");
+        Path.Combine(pi.AssemblyLocation.DirectoryName!, "Penumbra.CrashHandler.exe");
 
     public readonly string LogFileName =
         Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(pi.ConfigDirectory.FullName)!)!, "Penumbra.log");
