@@ -924,7 +924,7 @@ public class SettingsTab : ITab
             return;
 
         var tagIdx = _sharedTags.Draw("Predefined Tags: ",
-            "Predefined tags that can be added or removed from mods with a single click.", _predefinedTagManager.PredefinedTags,
+            "Predefined tags that can be added or removed from mods with a single click.", _predefinedTagManager,
             out var editedTag);
 
         if (tagIdx >= 0)

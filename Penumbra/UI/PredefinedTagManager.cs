@@ -2,6 +2,7 @@
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
@@ -12,8 +13,13 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra.UI;
 
-public sealed class PredefinedTagManager : ISavable
+public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>
 {
+    public const int Version = 1;
+
+    public record struct TagData
+    { }
+
     private readonly ModManager  _modManager;
     private readonly SaveService _saveService;
 
@@ -21,17 +27,7 @@ public sealed class PredefinedTagManager : ISavable
     private uint _enabledColor;
     private uint _disabledColor;
 
-
-    // Operations on this list assume that it is sorted and will keep it sorted if that is the case.
-    // The list also gets re-sorted when first loaded from config in case the config was modified.
-    [JsonRequired]
-    private readonly List<string> _predefinedTags = [];
-
-    [JsonIgnore]
-    public IReadOnlyList<string> PredefinedTags
-        => _predefinedTags;
-
-    public int ConfigVersion = 1;
+    private readonly SortedList<string, TagData> _predefinedTags = [];
 
     public PredefinedTagManager(ModManager modManager, SaveService saveService)
     {
@@ -47,8 +43,12 @@ public sealed class PredefinedTagManager : ISavable
     {
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
-        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
-        serializer.Serialize(jWriter, this);
+        var jObj = new JObject()
+        {
+            ["Version"] = Version,
+            ["Tags"]    = JObject.FromObject(_predefinedTags),
+        };
+        jObj.WriteTo(jWriter);
     }
 
     public void Save()
@@ -61,48 +61,38 @@ public sealed class PredefinedTagManager : ISavable
 
         try
         {
-            var text = File.ReadAllText(_saveService.FileNames.PredefinedTagFile);
-            JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
+            var text    = File.ReadAllText(_saveService.FileNames.PredefinedTagFile);
+            var jObj    = JObject.Parse(text);
+            var version = jObj["Version"]?.ToObject<int>() ?? 0;
+            switch (version)
             {
-                Error = HandleDeserializationError,
-            });
-
-            // Any changes to this within this class should keep it sorted, but in case someone went in and manually changed the JSON, run a sort on initial load.
-            _predefinedTags.Sort();
+                case 1:
+                    var tags = jObj["Tags"]?.ToObject<Dictionary<string, TagData>>() ?? [];
+                    foreach (var (tag, data) in tags)
+                        _predefinedTags.TryAdd(tag, data);
+                    break;
+                default:
+                    throw new Exception($"Invalid version {version}.");
+            }
         }
         catch (Exception ex)
         {
             Penumbra.Messager.NotificationMessage(ex,
-                "Error reading shared tags Configuration, reverting to default.",
-                "Error reading shared tags Configuration", NotificationType.Error);
-        }
-
-        return;
-
-        static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
-        {
-            Penumbra.Log.Error(
-                $"Error parsing shared tags Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
-            errorArgs.ErrorContext.Handled = true;
+                "Error reading predefined tags Configuration, reverting to default.",
+                "Error reading predefined tags Configuration", NotificationType.Error);
         }
     }
 
     public void ChangeSharedTag(int tagIdx, string tag)
     {
-        if (tagIdx < 0 || tagIdx > PredefinedTags.Count)
+        if (tagIdx < 0 || tagIdx > _predefinedTags.Count)
             return;
 
-        // In the case of editing a tag, remove what's there prior to doing an insert.
-        if (tagIdx != PredefinedTags.Count)
+        if (tagIdx != _predefinedTags.Count)
             _predefinedTags.RemoveAt(tagIdx);
 
         if (!string.IsNullOrEmpty(tag))
-        {
-            // Taking advantage of the fact that BinarySearch returns the complement of the correct sorted position for the tag.
-            var existingIdx = _predefinedTags.BinarySearch(tag);
-            if (existingIdx < 0)
-                _predefinedTags.Insert(~existingIdx, tag);
-        }
+            _predefinedTags.TryAdd(tag, default);
 
         Save();
     }
@@ -147,7 +137,7 @@ public sealed class PredefinedTagManager : ISavable
         _enabledColor        = ColorId.PredefinedTagAdd.Value();
         _disabledColor       = ColorId.PredefinedTagRemove.Value();
         var (edited, others) = editLocal ? (localTags, modTags) : (modTags, localTags);
-        foreach (var (tag, idx) in PredefinedTags.WithIndex())
+        foreach (var (tag, idx) in _predefinedTags.Keys.WithIndex())
         {
             var tagIdx  = edited.IndexOf(tag);
             var inOther = tagIdx < 0 && others.IndexOf(tag) >= 0;
@@ -189,4 +179,16 @@ public sealed class PredefinedTagManager : ISavable
 
     private static float CalcTextButtonWidth(string text)
         => ImGui.CalcTextSize(text).X + 2 * ImGui.GetStyle().FramePadding.X;
+
+    public IEnumerator<string> GetEnumerator()
+        => _predefinedTags.Keys.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+    public int Count
+        => _predefinedTags.Count;
+
+    public string this[int index]
+        => _predefinedTags.Keys[index];
 }
