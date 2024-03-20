@@ -9,15 +9,15 @@ public class MemoryMappedBuffer : IDisposable
 {
     private const int MinHeaderLength = 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4;
 
-    private readonly MemoryMappedFile _file;
-    private readonly MemoryMappedViewAccessor _header;
+    private readonly MemoryMappedFile           _file;
+    private readonly MemoryMappedViewAccessor   _header;
     private readonly MemoryMappedViewAccessor[] _lines;
 
-    public readonly int Version;
-    public readonly uint LineCount;
-    public readonly uint LineCapacity;
+    public readonly  int  Version;
+    public readonly  uint LineCount;
+    public readonly  uint LineCapacity;
     private readonly uint _lineMask;
-    private bool _disposed;
+    private          bool _disposed;
 
     protected uint CurrentLineCount
     {
@@ -39,20 +39,20 @@ public class MemoryMappedBuffer : IDisposable
 
     public MemoryMappedBuffer(string mapName, int version, uint lineCount, uint lineCapacity)
     {
-        Version = version;
-        LineCount = BitOperations.RoundUpToPowerOf2(Math.Clamp(lineCount, 2, int.MaxValue >> 3));
+        Version      = version;
+        LineCount    = BitOperations.RoundUpToPowerOf2(Math.Clamp(lineCount,    2, int.MaxValue >> 3));
         LineCapacity = BitOperations.RoundUpToPowerOf2(Math.Clamp(lineCapacity, 2, int.MaxValue >> 3));
-        _lineMask = LineCount - 1;
-        var fileName = Encoding.UTF8.GetBytes(mapName);
+        _lineMask    = LineCount - 1;
+        var fileName     = Encoding.UTF8.GetBytes(mapName);
         var headerLength = (uint)(4 + 4 + 4 + 4 + 4 + 4 + 4 + fileName.Length + 1);
         headerLength = (headerLength & 0b111) > 0 ? (headerLength & ~0b111u) + 0b1000 : headerLength;
         var capacity = LineCount * LineCapacity + headerLength;
         _file = MemoryMappedFile.CreateNew(mapName, capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None,
             HandleInheritability.Inheritable);
         _header = _file.CreateViewAccessor(0, headerLength);
-        _header.Write(0, headerLength);
-        _header.Write(4, Version);
-        _header.Write(8, LineCount);
+        _header.Write(0,  headerLength);
+        _header.Write(4,  Version);
+        _header.Write(8,  LineCount);
         _header.Write(12, LineCapacity);
         _header.WriteArray(28, fileName, 0, fileName.Length);
         _header.Write(fileName.Length + 28, (byte)0);
@@ -65,16 +65,16 @@ public class MemoryMappedBuffer : IDisposable
         uint? expectedMinLineCapacity = null)
     {
         _file = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.ReadWrite, HandleInheritability.Inheritable);
-        using var headerLine = _file.CreateViewAccessor(0, 4, MemoryMappedFileAccess.Read);
-        var headerLength = headerLine.ReadUInt32(0);
+        using var headerLine   = _file.CreateViewAccessor(0, 4, MemoryMappedFileAccess.Read);
+        var       headerLength = headerLine.ReadUInt32(0);
         if (headerLength < MinHeaderLength)
             Throw($"Map {mapName} did not contain a valid header.");
 
-        _header = _file.CreateViewAccessor(0, headerLength, MemoryMappedFileAccess.ReadWrite);
-        Version = _header.ReadInt32(4);
-        LineCount = _header.ReadUInt32(8);
+        _header      = _file.CreateViewAccessor(0, headerLength, MemoryMappedFileAccess.ReadWrite);
+        Version      = _header.ReadInt32(4);
+        LineCount    = _header.ReadUInt32(8);
         LineCapacity = _header.ReadUInt32(12);
-        _lineMask = LineCount - 1;
+        _lineMask    = LineCount - 1;
         if (expectedVersion.HasValue && expectedVersion.Value != Version)
             Throw($"Map {mapName} has version {Version} instead of {expectedVersion.Value}.");
 
@@ -122,25 +122,25 @@ public class MemoryMappedBuffer : IDisposable
 
     protected static int WriteString(string text, Span<byte> span)
     {
-        var bytes = Encoding.UTF8.GetBytes(text);
-        var length = bytes.Length + 1;
+        var bytes  = Encoding.UTF8.GetBytes(text);
+        var source = (Span<byte>)bytes;
+        var length = source.Length + 1;
         if (length > span.Length)
-            throw new Exception($"String {text} is too long to write into span.");
-
-        bytes.CopyTo(span);
+            source = source[..(span.Length - 1)];
+        source.CopyTo(span);
         span[bytes.Length] = 0;
-        return length;
+        return source.Length + 1;
     }
 
     protected static int WriteSpan(ReadOnlySpan<byte> input, Span<byte> span)
     {
         var length = input.Length + 1;
         if (length > span.Length)
-            throw new Exception("Byte array is too long to write into span.");
+            input = input[..(span.Length - 1)];
 
         input.CopyTo(span);
         span[input.Length] = 0;
-        return length;
+        return input.Length + 1;
     }
 
     protected Span<byte> GetLine(int i)
@@ -150,7 +150,7 @@ public class MemoryMappedBuffer : IDisposable
 
         lock (_header)
         {
-            var lineIdx = CurrentLinePosition + i & _lineMask;
+            var lineIdx = (CurrentLinePosition + i) & _lineMask;
             if (lineIdx > CurrentLineCount)
                 return null;
 
@@ -168,8 +168,8 @@ public class MemoryMappedBuffer : IDisposable
             if (currentLineCount == LineCount)
             {
                 var currentLinePos = CurrentLinePosition;
-                view = _lines[currentLinePos]!;
-                CurrentLinePosition = currentLinePos + 1 & _lineMask;
+                view                = _lines[currentLinePos]!;
+                CurrentLinePosition = (currentLinePos + 1) & _lineMask;
             }
             else
             {

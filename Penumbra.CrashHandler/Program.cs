@@ -14,12 +14,21 @@ public class CrashHandler
         {
             using var reader = new GameEventLogReader();
             var       parent = Process.GetProcessById(pid);
-
+            using var handle = parent.SafeHandle;
             parent.WaitForExit();
-            var       exitCode = parent.ExitCode;
-            var       obj      = reader.Dump("Crash", pid, exitCode, args[2], args[3]);
-            using var fs       = File.Open(args[0], FileMode.Create);
-            using var w        = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
+            int exitCode;
+            try
+            {
+                exitCode = parent.ExitCode;
+            }
+            catch (Exception ex)
+            {
+                exitCode = -1;
+            }
+
+            var       obj = reader.Dump("Crash", pid, exitCode, args[2], args[3]);
+            using var fs  = File.Open(args[0], FileMode.Create);
+            using var w   = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
             obj.WriteTo(w, new JsonSerializerOptions() { WriteIndented = true });
         }
         catch (Exception ex)
