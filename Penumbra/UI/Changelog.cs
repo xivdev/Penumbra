@@ -47,18 +47,46 @@ public class PenumbraChangelog
         Add8_2_0(Changelog);
         Add8_3_0(Changelog);
         Add1_0_0_0(Changelog);
+        Add1_0_2_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_0_2_0(Changelog log)
+        => log.NextVersion("Version 1.0.2.0")
+            .RegisterEntry("Updated to .net8 and XIV 6.58, using some new framework facilities to improve performance and stability.")
+            .RegisterHighlight(
+                "Added an experimental crash handler that is supposed to write a Penumbra.log file when the game crashes, containing Penumbra-specific information.")
+            .RegisterEntry("Various improvements to model import/export by ackwell (throughout all patches).")
+            .RegisterHighlight(
+                "Added predefined tags that can be setup in the Settings tab and can be more easily applied or removed from mods. (by DZD)")
+            .RegisterEntry(
+                "The first empty option in a single-select option group imported from a TTMP will now keep its location instead of being moved to the first option.")
+            .RegisterEntry("Further empty options are still removed.", 1)
+            .RegisterEntry("Made it more obvious if a user has not set their root directory yet.")
+            .RegisterEntry("Added the characterglass.shpk shader file to special shader treatment to fix issues when replacing it. (By Ny)")
+            .RegisterEntry("Fixed some issues with the file sizes of compressed files.")
+            .RegisterEntry("Fixed an issue where reloading a mod did not ensure settings for that mod being correct afterwards.")
+            .RegisterEntry("Added an option to automatically redraw the player character when saving files. (1.0.0.8)")
+            .RegisterEntry("Fixed issue with manipulating mods not triggering some events.  (1.0.0.7)")
+            .RegisterEntry("Fixed issue with temporary mods not triggering some events.  (1.0.0.6)")
+            .RegisterEntry("Fixed issue when renaming mods while the advanced edit window is open. (1.0.0.6)")
+            .RegisterEntry("Fixed issue with empty option groups. (1.0.0.5)")
+            .RegisterEntry("Fixed issues with cutscene character identification. (1.0.0.4)")
+            .RegisterEntry("Added locale environment information to support info. (1.0.0.4)")
+            .RegisterEntry("Fixed an issue with copied mod settings in IPC missing unused settings. (1.0.0.3)");
 
     private static void Add1_0_0_0(Changelog log)
         => log.NextVersion("Version 1.0.0.0")
             .RegisterHighlight("Mods in the mod selector can now be filtered by changed item categories.")
             .RegisterHighlight("Model Editing options in the Advanced Editing Window have been greatly extended (by ackwell):")
             .RegisterEntry("Attributes and referenced materials can now be set per mesh.", 1)
-            .RegisterEntry("Model files (.mdl) can now be exported to the well-established glTF format, which can be imported e.g. by Blender.", 1)
+            .RegisterEntry("Model files (.mdl) can now be exported to the well-established glTF format, which can be imported e.g. by Blender.",
+                1)
             .RegisterEntry("glTF files can also be imported back to a .mdl file.", 1)
-            .RegisterHighlight("Model Export and Import are a work in progress and may encounter issues, not support all cases or produce wrong results, please let us know!", 1)
+            .RegisterHighlight(
+                "Model Export and Import are a work in progress and may encounter issues, not support all cases or produce wrong results, please let us know!",
+                1)
             .RegisterEntry("The last selected mod and the open/close state of the Advanced Editing Window are now stored across launches.")
             .RegisterEntry("Footsteps of certain mounts will now be associated to collections correctly.")
             .RegisterEntry("Save-in-Place in the texture tab now requires the configurable modifier.")
@@ -67,7 +95,8 @@ public class PenumbraChangelog
             .RegisterEntry("Fixed an issue with the mod panels header not updating its data when the selected mod updates.")
             .RegisterEntry("Fixed some issues with EQDP files for invalid characters.")
             .RegisterEntry("Fixed an issue with the FileDialog being drawn twice in certain situations.")
-            .RegisterEntry("A lot of backend changes that should not have an effect on users, but may cause issues if something got messed up.");
+            .RegisterEntry(
+                "A lot of backend changes that should not have an effect on users, but may cause issues if something got messed up.");
 
     private static void Add8_3_0(Changelog log)
         => log.NextVersion("Version 0.8.3.0")
