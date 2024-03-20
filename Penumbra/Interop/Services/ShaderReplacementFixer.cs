@@ -2,12 +2,14 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Services;
+using CSModelRenderer = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRenderer;
 
 namespace Penumbra.Interop.Services;
 
@@ -22,18 +24,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
     [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
     private readonly nint* _humanVTable = null!;
 
-    private delegate nint CharacterBaseOnRenderMaterialDelegate(nint drawObject, OnRenderMaterialParams* param);
-    private delegate nint ModelRendererOnRenderMaterialDelegate(nint modelRenderer, nint outFlags, nint param, Material* material, uint materialIndex);
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct OnRenderMaterialParams
-    {
-        [FieldOffset(0x0)]
-        public Model* Model;
-
-        [FieldOffset(0x8)]
-        public uint MaterialIndex;
-    }
+    private delegate nint CharacterBaseOnRenderMaterialDelegate(CharacterBase* drawObject, CSModelRenderer.OnRenderMaterialParams* param);
+    private delegate nint ModelRendererOnRenderMaterialDelegate(CSModelRenderer* modelRenderer, ushort* outFlags, CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex);
 
     private readonly Hook<CharacterBaseOnRenderMaterialDelegate> _humanOnRenderMaterialHook;
 
@@ -135,7 +127,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
             Interlocked.Decrement(ref _moddedCharacterGlassShpkCount);
     }
 
-    private nint OnRenderHumanMaterial(nint human, OnRenderMaterialParams* param)
+    private nint OnRenderHumanMaterial(CharacterBase* human, CSModelRenderer.OnRenderMaterialParams* param)
     {
         // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
         if (!Enabled || _moddedSkinShpkCount == 0)
@@ -167,7 +159,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
         }
     }
 
-    private nint ModelRendererOnRenderMaterialDetour(nint modelRenderer, nint outFlags, nint param, Material* material, uint materialIndex)
+    private nint ModelRendererOnRenderMaterialDetour(CSModelRenderer* modelRenderer, ushort* outFlags, CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex)
     {
 
         // If we don't have any on-screen instances of modded characterglass.shpk, we don't need the slow path at all.
