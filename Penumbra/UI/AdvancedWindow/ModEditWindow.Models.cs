@@ -508,6 +508,11 @@ public partial class ModEditWindow
                 ImGuiUtil.DrawTableColumn(file.VertexDeclarations.Length.ToString());
                 ImGuiUtil.DrawTableColumn("Stack Size");
                 ImGuiUtil.DrawTableColumn(file.StackSize.ToString());
+                for (var lod = 0; lod < file.Lods.Length; lod++)
+                {
+                    ImGuiUtil.DrawTableColumn("LoD " + lod + " Triangle Count");
+                    ImGuiUtil.DrawTableColumn(GetTriangleCountForLod(file, lod).ToString());
+                }
             }
         }
 
@@ -553,6 +558,18 @@ public partial class ModEditWindow
     {
         file = files.FirstOrDefault(f => ValidModelExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
         return file != null;
+    }
+
+    private static long GetTriangleCountForLod(MdlFile model, int lod)
+    {
+        var vertSum = 0u;
+        var meshIndex = model.Lods[lod].MeshIndex;
+        var meshCount = model.Lods[lod].MeshCount;
+
+        for (var i = meshIndex; i < meshIndex + meshCount; i++)
+            vertSum += model.Meshes[i].IndexCount;
+
+        return vertSum / 3;
     }
 
     private static readonly string[] ValidModelExtensions =
