@@ -69,17 +69,17 @@ internal sealed class CharacterBaseBuffer : MemoryMappedBuffer, ICharacterBaseBu
     public uint TotalCount
         => TotalWrittenLines;
 
-    public static IBufferReader CreateReader()
-        => new CharacterBaseBuffer(false);
+    public static IBufferReader CreateReader(int pid)
+        => new CharacterBaseBuffer(false, pid);
 
-    public static ICharacterBaseBufferWriter CreateWriter()
-        => new CharacterBaseBuffer();
+    public static ICharacterBaseBufferWriter CreateWriter(int pid)
+        => new CharacterBaseBuffer(pid);
 
-    private CharacterBaseBuffer(bool writer)
-        : base(_name, _version)
+    private CharacterBaseBuffer(bool writer, int pid)
+        : base($"{_name}_{pid}_{_version}", _version)
     { }
 
-    private CharacterBaseBuffer()
-        : base(_name, _version, _lineCount, _lineCapacity)
+    private CharacterBaseBuffer(int pid)
+        : base($"{_name}_{pid}_{_version}", _version, _lineCount, _lineCapacity)
     { }
 }

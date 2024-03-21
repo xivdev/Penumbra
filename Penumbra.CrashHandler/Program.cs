@@ -12,7 +12,7 @@ public class CrashHandler
 
         try
         {
-            using var reader = new GameEventLogReader();
+            using var reader = new GameEventLogReader(pid);
             var       parent = Process.GetProcessById(pid);
             using var handle = parent.SafeHandle;
             parent.WaitForExit();

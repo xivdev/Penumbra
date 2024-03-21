@@ -83,17 +83,17 @@ internal sealed class ModdedFileBuffer : MemoryMappedBuffer, IModdedFileBufferWr
         }
     }
 
-    public static IBufferReader CreateReader()
-        => new ModdedFileBuffer(false);
+    public static IBufferReader CreateReader(int pid)
+        => new ModdedFileBuffer(false, pid);
 
-    public static IModdedFileBufferWriter CreateWriter()
-        => new ModdedFileBuffer();
+    public static IModdedFileBufferWriter CreateWriter(int pid)
+        => new ModdedFileBuffer(pid);
 
-    private ModdedFileBuffer(bool writer)
-        : base(_name, _version)
+    private ModdedFileBuffer(bool writer, int pid)
+        : base($"{_name}_{pid}_{_version}", _version)
     { }
 
-    private ModdedFileBuffer()
-        : base(_name, _version, _lineCount, _lineCapacity)
+    private ModdedFileBuffer(int pid)
+        : base($"{_name}_{pid}_{_version}", _version, _lineCount, _lineCapacity)
     { }
 }

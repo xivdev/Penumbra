@@ -88,18 +88,18 @@ internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimation
         }
     }
 
-    public static IBufferReader CreateReader()
-        => new AnimationInvocationBuffer(false);
+    public static IBufferReader CreateReader(int pid)
+        => new AnimationInvocationBuffer(false, pid);
 
-    public static IAnimationInvocationBufferWriter CreateWriter()
-        => new AnimationInvocationBuffer();
+    public static IAnimationInvocationBufferWriter CreateWriter(int pid)
+        => new AnimationInvocationBuffer(pid);
 
-    private AnimationInvocationBuffer(bool writer)
-        : base(_name, _version)
+    private AnimationInvocationBuffer(bool writer, int pid)
+        : base($"{_name}_{pid}_{_version}", _version)
     { }
 
-    private AnimationInvocationBuffer()
-        : base(_name, _version, _lineCount, _lineCapacity)
+    private AnimationInvocationBuffer(int pid)
+        : base($"{_name}_{pid}_{_version}", _version, _lineCount, _lineCapacity)
     { }
 
     private static string ToName(AnimationInvocationType type)

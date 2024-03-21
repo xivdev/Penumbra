@@ -11,7 +11,7 @@ public class MemoryMappedBuffer : IDisposable
 
     private readonly MemoryMappedFile           _file;
     private readonly MemoryMappedViewAccessor   _header;
-    private readonly MemoryMappedViewAccessor[] _lines;
+    private readonly MemoryMappedViewAccessor[] _lines = [];
 
     public readonly  int  Version;
     public readonly  uint LineCount;
@@ -64,7 +64,8 @@ public class MemoryMappedBuffer : IDisposable
     public MemoryMappedBuffer(string mapName, int? expectedVersion = null, uint? expectedMinLineCount = null,
         uint? expectedMinLineCapacity = null)
     {
-        _file = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.ReadWrite, HandleInheritability.Inheritable);
+        _lines = [];
+        _file  = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.ReadWrite, HandleInheritability.Inheritable);
         using var headerLine   = _file.CreateViewAccessor(0, 4, MemoryMappedFileAccess.Read);
         var       headerLength = headerLine.ReadUInt32(0);
         if (headerLength < MinHeaderLength)
@@ -96,6 +97,7 @@ public class MemoryMappedBuffer : IDisposable
         void Throw(string text)
         {
             _file.Dispose();
+            _header?.Dispose();
             _disposed = true;
             throw new Exception(text);
         }
@@ -204,10 +206,10 @@ public class MemoryMappedBuffer : IDisposable
         if (_disposed)
             return;
 
-        _header.Dispose();
+        _header?.Dispose();
         foreach (var line in _lines)
-            line.Dispose();
-        _file.Dispose();
+            line?.Dispose();
+        _file?.Dispose();
     }
 
     ~MemoryMappedBuffer()

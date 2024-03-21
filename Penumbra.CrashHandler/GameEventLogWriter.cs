@@ -2,11 +2,11 @@
 
 namespace Penumbra.CrashHandler;
 
-public sealed class GameEventLogWriter : IDisposable
+public sealed class GameEventLogWriter(int pid) : IDisposable
 {
-    public readonly ICharacterBaseBufferWriter       CharacterBase        = CharacterBaseBuffer.CreateWriter();
-    public readonly IModdedFileBufferWriter          FileLoaded           = ModdedFileBuffer.CreateWriter();
-    public readonly IAnimationInvocationBufferWriter AnimationFuncInvoked = AnimationInvocationBuffer.CreateWriter();
+    public readonly ICharacterBaseBufferWriter       CharacterBase        = CharacterBaseBuffer.CreateWriter(pid);
+    public readonly IModdedFileBufferWriter          FileLoaded           = ModdedFileBuffer.CreateWriter(pid);
+    public readonly IAnimationInvocationBufferWriter AnimationFuncInvoked = AnimationInvocationBuffer.CreateWriter(pid);
 
     public void Dispose()
     {

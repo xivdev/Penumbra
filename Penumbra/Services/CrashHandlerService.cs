@@ -24,6 +24,8 @@ public sealed class CrashHandlerService : IDisposable, IService
     private readonly Configuration       _config;
     private readonly ValidityChecker     _validityChecker;
 
+    private string _tempExecutableDirectory = string.Empty;
+
     public CrashHandlerService(FilenameService files, CommunicatorService communicator, ActorManager actors, ResourceLoader resourceLoader,
         Configuration config, ValidityChecker validityChecker)
     {
@@ -54,6 +56,7 @@ public sealed class CrashHandlerService : IDisposable, IService
         }
 
         Unsubscribe();
+        CleanExecutables();
     }
 
     private Process?            _child;
@@ -177,11 +180,12 @@ public sealed class CrashHandlerService : IDisposable, IService
 
         try
         {
-            using var  reader = new GameEventLogReader();
+            using var  reader = new GameEventLogReader(Environment.ProcessId);
             JsonObject jObj;
             lock (_eventWriter)
             {
-                jObj = reader.Dump("Manual Dump", Environment.ProcessId, 0, $"{_validityChecker.Version} ({_validityChecker.CommitHash})", _validityChecker.GameVersion);
+                jObj = reader.Dump("Manual Dump", Environment.ProcessId, 0, $"{_validityChecker.Version} ({_validityChecker.CommitHash})",
+                    _validityChecker.GameVersion);
             }
 
             var       logFile = _files.LogFileName;
@@ -198,14 +202,31 @@ public sealed class CrashHandlerService : IDisposable, IService
         }
     }
 
-    private string CopyExecutables()
+    private void CleanExecutables()
     {
         var parent = Path.GetDirectoryName(_files.CrashHandlerExe)!;
-        var folder = Path.Combine(parent, "temp");
-        Directory.CreateDirectory(folder);
+        foreach (var dir in Directory.EnumerateDirectories(parent, "temp_*"))
+        {
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Debug($"Could not delete {dir}:\n{ex}");
+            }
+        }
+    }
+
+    private string CopyExecutables()
+    {
+        CleanExecutables();
+        var parent = Path.GetDirectoryName(_files.CrashHandlerExe)!;
+        _tempExecutableDirectory = Path.Combine(parent, $"temp_{Environment.ProcessId}");
+        Directory.CreateDirectory(_tempExecutableDirectory);
         foreach (var file in Directory.EnumerateFiles(parent, "Penumbra.CrashHandler.*"))
-            File.Copy(file, Path.Combine(folder, Path.GetFileName(file)), true);
-        return Path.Combine(folder, Path.GetFileName(_files.CrashHandlerExe));
+            File.Copy(file, Path.Combine(_tempExecutableDirectory, Path.GetFileName(file)), true);
+        return Path.Combine(_tempExecutableDirectory, Path.GetFileName(_files.CrashHandlerExe));
     }
 
     public void LogAnimation(nint character, ModCollection collection, AnimationInvocationType type)
@@ -213,10 +234,17 @@ public sealed class CrashHandlerService : IDisposable, IService
         if (_eventWriter == null)
             return;
 
-        var name = GetActorName(character);
-        lock (_eventWriter)
+        try
         {
-            _eventWriter?.AnimationFuncInvoked.WriteLine(character, name.Span, collection.Name, type);
+            var name = GetActorName(character);
+            lock (_eventWriter)
+            {
+                _eventWriter?.AnimationFuncInvoked.WriteLine(character, name.Span, collection.Name, type);
+            }
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Warning($"Error logging animation function {type} to crash handler:\n{ex}");
         }
     }
 
@@ -225,11 +253,18 @@ public sealed class CrashHandlerService : IDisposable, IService
         if (_eventWriter == null)
             return;
 
-        var name = GetActorName(address);
-
-        lock (_eventWriter)
+        try
         {
-            _eventWriter?.CharacterBase.WriteLine(address, name.Span, collection);
+            var name = GetActorName(address);
+
+            lock (_eventWriter)
+            {
+                _eventWriter?.CharacterBase.WriteLine(address, name.Span, collection);
+            }
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Warning($"Error logging character creation to crash handler:\n{ex}");
         }
     }
 
@@ -249,15 +284,22 @@ public sealed class CrashHandlerService : IDisposable, IService
         if (manipulatedPath == null || _eventWriter == null)
             return;
 
-        var dashIdx = manipulatedPath.Value.InternalName[0] == (byte)'|' ? manipulatedPath.Value.InternalName.IndexOf((byte)'|', 1) : -1;
-        if (dashIdx >= 0 && !Utf8GamePath.IsRooted(manipulatedPath.Value.InternalName.Substring(dashIdx + 1)))
-            return;
-
-        var name = GetActorName(resolveData.AssociatedGameObject);
-        lock (_eventWriter)
+        try
         {
-            _eventWriter!.FileLoaded.WriteLine(resolveData.AssociatedGameObject, name.Span, resolveData.ModCollection.Name,
-                manipulatedPath.Value.InternalName.Span, originalPath.Path.Span);
+            var dashIdx = manipulatedPath.Value.InternalName[0] == (byte)'|' ? manipulatedPath.Value.InternalName.IndexOf((byte)'|', 1) : -1;
+            if (dashIdx >= 0 && !Utf8GamePath.IsRooted(manipulatedPath.Value.InternalName.Substring(dashIdx + 1)))
+                return;
+
+            var name = GetActorName(resolveData.AssociatedGameObject);
+            lock (_eventWriter)
+            {
+                _eventWriter!.FileLoaded.WriteLine(resolveData.AssociatedGameObject, name.Span, resolveData.ModCollection.Name,
+                    manipulatedPath.Value.InternalName.Span, originalPath.Path.Span);
+            }
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Warning($"Error logging resource to crash handler:\n{ex}");
         }
     }
 
@@ -276,7 +318,7 @@ public sealed class CrashHandlerService : IDisposable, IService
         try
         {
             CloseEventWriter();
-            _eventWriter = new GameEventLogWriter();
+            _eventWriter = new GameEventLogWriter(Environment.ProcessId);
             Penumbra.Log.Debug("Opened new Event Writer for crash handler.");
         }
         catch (Exception ex)

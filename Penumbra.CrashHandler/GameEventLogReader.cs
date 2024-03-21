@@ -9,13 +9,13 @@ public interface IBufferReader
     public IEnumerable<JsonObject> GetLines(DateTimeOffset crashTime);
 }
 
-public sealed class GameEventLogReader : IDisposable
+public sealed class GameEventLogReader(int pid) : IDisposable
 {
     public readonly (IBufferReader Reader, string TypeSingular, string TypePlural)[] Readers =
     [
-        (CharacterBaseBuffer.CreateReader(), "CharacterLoaded", "CharactersLoaded"),
-        (ModdedFileBuffer.CreateReader(), "ModdedFileLoaded", "ModdedFilesLoaded"),
-        (AnimationInvocationBuffer.CreateReader(), "VFXFuncInvoked", "VFXFuncsInvoked"),
+        (CharacterBaseBuffer.CreateReader(pid), "CharacterLoaded", "CharactersLoaded"),
+        (ModdedFileBuffer.CreateReader(pid), "ModdedFileLoaded", "ModdedFilesLoaded"),
+        (AnimationInvocationBuffer.CreateReader(pid), "VFXFuncInvoked", "VFXFuncsInvoked"),
     ];
 
     public void Dispose()
