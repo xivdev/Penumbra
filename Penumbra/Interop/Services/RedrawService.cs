@@ -388,7 +388,7 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     public void RedrawObject(int tableIndex, RedrawType settings)
     {
-        if (tableIndex >= 0 && tableIndex < _objects.Count)
+        if (tableIndex >= 0 && tableIndex < _objects.TotalCount)
             RedrawObject(_objects.GetDalamudObject(tableIndex), settings);
     }
 

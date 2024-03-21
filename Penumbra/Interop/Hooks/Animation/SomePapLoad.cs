@@ -35,7 +35,7 @@ public sealed unsafe class SomePapLoad : FastHook<SomePapLoad.Delegate>
         if (timelinePtr != nint.Zero)
         {
             var actorIdx = (int)(*(*(ulong**)timelinePtr + 1) >> 3);
-            if (actorIdx >= 0 && actorIdx < _objects.Count)
+            if (actorIdx >= 0 && actorIdx < _objects.TotalCount)
             {
                 var newData = _collectionResolver.IdentifyCollection(_objects[actorIdx].AsObject, true);
                 var last = _state.SetAnimationData(newData);

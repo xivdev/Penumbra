@@ -442,8 +442,8 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.RedrawObjectByIndex.Label, "Redraw by Index");
             var tmp = _redrawIndex;
             ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
-            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _objects.Count))
-                _redrawIndex = Math.Clamp(tmp, 0, _objects.Count);
+            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _objects.TotalCount))
+                _redrawIndex = Math.Clamp(tmp, 0, _objects.TotalCount);
 
             ImGui.SameLine();
             if (ImGui.Button("Redraw##Index"))
@@ -460,7 +460,7 @@ public class IpcTester : IDisposable
         private void SetLastRedrawn(IntPtr address, int index)
         {
             if (index < 0
-             || index > _objects.Count
+             || index > _objects.TotalCount
              || address == IntPtr.Zero
              || _objects[index].Address != address)
                 _lastRedrawnString = "Invalid";

@@ -431,16 +431,16 @@ public class DebugTab : Window, ITab
         DrawSpecial("Current Card",    _actors.GetCardPlayer());
         DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
 
-        foreach (var obj in _objects.Objects)
+        foreach (var obj in _objects)
         {
             ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
             ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
                 ? string.Empty
                 : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
-            var identifier = _actors.FromObject(obj, false, true, false);
+            var identifier = _actors.FromObject(obj, out _, false, true, false);
             ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
-            var id = obj.ObjectKind == ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.DataId}" : identifier.DataId.ToString();
+            var id = obj.AsObject->ObjectKind ==(byte)  ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.AsObject->DataID}" : identifier.DataId.ToString();
             ImGuiUtil.DrawTableColumn(id);
         }
 

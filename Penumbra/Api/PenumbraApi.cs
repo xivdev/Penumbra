@@ -929,7 +929,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        if (actorIndex < 0 || actorIndex >= _objects.Count)
+        if (actorIndex < 0 || actorIndex >= _objects.TotalCount)
             return PenumbraApiEc.InvalidArgument;
 
         var identifier = _actors.FromObject(_objects[actorIndex], out _, false, false, true);
@@ -1166,7 +1166,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private unsafe bool AssociatedCollection(int gameObjectIdx, out ModCollection collection)
     {
         collection = _collectionManager.Active.Default;
-        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Count)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.TotalCount)
             return false;
 
         var ptr  = _objects[gameObjectIdx];
@@ -1180,7 +1180,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private unsafe ActorIdentifier AssociatedIdentifier(int gameObjectIdx)
     {
-        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.Count)
+        if (gameObjectIdx < 0 || gameObjectIdx >= _objects.TotalCount)
             return ActorIdentifier.Invalid;
 
         var ptr = _objects[gameObjectIdx];

@@ -94,11 +94,10 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     /// </summary>
     private unsafe void InitializeDrawObjects()
     {
-        for (var i = 0; i < _objects.Count; ++i)
+        foreach(var actor in _objects)
         {
-            var ptr = _objects[i];
-            if (ptr is { IsCharacter: true, Model.Valid: true })
-                IterateDrawObjectTree((Object*)ptr.Model.Address, ptr, false, false);
+            if (actor is { IsCharacter: true, Model.Valid: true })
+                IterateDrawObjectTree((Object*)actor.Model.Address, actor, false, false);
         }
     }
 

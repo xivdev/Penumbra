@@ -64,7 +64,7 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
             {
                 var getGameObjectIdx = ((delegate* unmanaged<nint, int>**)timeline)[0][Offsets.GetGameObjectIdxVfunc];
                 var idx              = getGameObjectIdx(timeline);
-                if (idx >= 0 && idx < objects.Count)
+                if (idx >= 0 && idx < objects.TotalCount)
                 {
                     var obj = objects[idx];
                     return obj.Valid ? resolver.IdentifyCollection(obj.AsObject, true) : ResolveData.Invalid;
