@@ -33,12 +33,24 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => (4, 23);
+        => (4, 24);
+
+    public event Action<string, float, float>? PreSettingsTabBarDraw
+    {
+        add => _communicator.PreSettingsTabBarDraw.Subscribe(value!, Communication.PreSettingsTabBarDraw.Priority.Default);
+        remove => _communicator.PreSettingsTabBarDraw.Unsubscribe(value!);
+    }
 
     public event Action<string>? PreSettingsPanelDraw
     {
         add => _communicator.PreSettingsPanelDraw.Subscribe(value!, Communication.PreSettingsPanelDraw.Priority.Default);
         remove => _communicator.PreSettingsPanelDraw.Unsubscribe(value!);
+    }
+
+    public event Action<string>? PostEnabledDraw
+    {
+        add => _communicator.PostEnabledDraw.Subscribe(value!, Communication.PostEnabledDraw.Priority.Default);
+        remove => _communicator.PostEnabledDraw.Unsubscribe(value!);
     }
 
     public event Action<string>? PostSettingsPanelDraw

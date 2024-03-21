@@ -61,13 +61,15 @@ public class ModPanelSettingsTab : ITab
 
         DrawInheritedWarning();
         UiHelpers.DefaultLineSpace();
-        _communicator.PreSettingsPanelDraw.Invoke(_selector.Selected!.ModPath.Name);
+        _communicator.PreSettingsPanelDraw.Invoke(_selector.Selected!.Identifier);
         DrawEnabledInput();
         _tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
         ImGui.SameLine();
         DrawPriorityInput();
         _tutorial.OpenTutorial(BasicTutorialSteps.Priority);
         DrawRemoveSettings();
+
+        _communicator.PostEnabledDraw.Invoke(_selector.Selected!.Identifier);
 
         if (_selector.Selected!.Groups.Count > 0)
         {
@@ -98,7 +100,7 @@ public class ModPanelSettingsTab : ITab
         }
 
         UiHelpers.DefaultLineSpace();
-        _communicator.PostSettingsPanelDraw.Invoke(_selector.Selected!.ModPath.Name);
+        _communicator.PostSettingsPanelDraw.Invoke(_selector.Selected!.Identifier);
     }
 
     /// <summary> Draw a big red bar if the current setting is inherited. </summary>

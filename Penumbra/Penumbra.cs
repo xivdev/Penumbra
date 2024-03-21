@@ -95,6 +95,17 @@ public class Penumbra : IDalamudPlugin
 
             if (_characterUtility.Ready)
                 _residentResources.Reload();
+
+            var api = _services.GetService<IPenumbraApi>();
+            api.PostEnabledDraw += ImGui.TextUnformatted;
+            api.PreSettingsTabBarDraw += (name, width, titleWidth) =>
+            {
+                ImGui.TextUnformatted(width.ToString());
+                ImGui.TextUnformatted(titleWidth.ToString());
+                ImGui.TextUnformatted(ImGui.GetContentRegionMax().X.ToString());
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (width - titleWidth) / 2);
+                ImGui.Button("Test", new Vector2(titleWidth, 0));
+            };
         }
         catch (Exception ex)
         {

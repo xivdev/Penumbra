@@ -57,8 +57,14 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.EnabledChanged"/>
     public readonly EnabledChanged EnabledChanged = new();
 
+    /// <inheritdoc cref="Communication.PreSettingsTabBarDraw"/>
+    public readonly PreSettingsTabBarDraw PreSettingsTabBarDraw = new();
+
     /// <inheritdoc cref="Communication.PreSettingsPanelDraw"/>
     public readonly PreSettingsPanelDraw PreSettingsPanelDraw = new();
+
+    /// <inheritdoc cref="Communication.PostEnabledDraw"/>
+    public readonly PostEnabledDraw PostEnabledDraw = new();
 
     /// <inheritdoc cref="Communication.PostSettingsPanelDraw"/>
     public readonly PostSettingsPanelDraw PostSettingsPanelDraw = new();
@@ -91,7 +97,9 @@ public class CommunicatorService : IDisposable, IService
         ModSettingChanged.Dispose();
         CollectionInheritanceChanged.Dispose();
         EnabledChanged.Dispose();
+        PreSettingsTabBarDraw.Dispose();
         PreSettingsPanelDraw.Dispose();
+        PostEnabledDraw.Dispose();
         PostSettingsPanelDraw.Dispose();
         ChangedItemHover.Dispose();
         ChangedItemClick.Dispose();

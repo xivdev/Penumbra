@@ -32,9 +32,14 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void Draw()
     {
-        var offset = DrawModName();
-        DrawVersion(offset);
-        DrawSecondRow(offset);
+        using (ImRaii.Group())
+        {
+            var offset = DrawModName();
+            DrawVersion(offset);
+            DrawSecondRow(offset);
+        }
+
+        _communicator.PreSettingsTabBarDraw.Invoke(_mod.Identifier, ImGui.GetItemRectSize().X, _nameWidth);
     }
 
     /// <summary>
@@ -43,6 +48,7 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void UpdateModData(Mod mod)
     {
+        _mod = mod;
         // Name
         var name = $" {mod.Name} ";
         if (name != _modName)
@@ -90,6 +96,7 @@ public class ModPanelHeader : IDisposable
     }
 
     // Header data.
+    private Mod    _mod              = null!;
     private string _modName          = string.Empty;
     private string _modAuthor        = string.Empty;
     private string _modVersion       = string.Empty;
@@ -102,6 +109,8 @@ public class ModPanelHeader : IDisposable
     private float _modVersionWidth;
     private float _modWebsiteButtonWidth;
     private float _secondRowWidth;
+
+    private float _nameWidth;
 
     /// <summary>
     /// Draw the mod name in the game font with a 2px border, centered,
@@ -124,6 +133,7 @@ public class ModPanelHeader : IDisposable
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
         using var f     = _nameFont.Push();
         ImGuiUtil.DrawTextButton(_modName, Vector2.Zero, 0);
+        _nameWidth = ImGui.GetItemRectSize().X;
         return offset;
     }
 
