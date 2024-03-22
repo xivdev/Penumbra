@@ -30,7 +30,9 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly EventProvider<string, bool> ModDirectoryChanged;
 
     // UI
+    internal readonly EventProvider<string, float, float>                  PreSettingsTabBarDraw;
     internal readonly EventProvider<string>                                PreSettingsDraw;
+    internal readonly EventProvider<string>                                PostEnabledDraw;
     internal readonly EventProvider<string>                                PostSettingsDraw;
     internal readonly EventProvider<ChangedItemType, uint>                 ChangedItemTooltip;
     internal readonly EventProvider<MouseButton, ChangedItemType, uint>    ChangedItemClick;
@@ -130,8 +132,8 @@ public class PenumbraIpcProviders : IDisposable
         FuncProvider<ResourceType, bool, IReadOnlyDictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>>>
         GetPlayerResourcesOfType;
 
-    internal readonly FuncProvider<bool, ushort[], Ipc.ResourceTree?[]>                         GetGameObjectResourceTrees;
-    internal readonly FuncProvider<bool, IReadOnlyDictionary<ushort, Ipc.ResourceTree>>         GetPlayerResourceTrees;
+    internal readonly FuncProvider<bool, ushort[], Ipc.ResourceTree?[]>                 GetGameObjectResourceTrees;
+    internal readonly FuncProvider<bool, IReadOnlyDictionary<ushort, Ipc.ResourceTree>> GetPlayerResourceTrees;
 
     public PenumbraIpcProviders(DalamudPluginInterface pi, IPenumbraApi api, ModManager modManager, CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)
@@ -153,7 +155,11 @@ public class PenumbraIpcProviders : IDisposable
         ModDirectoryChanged = Ipc.ModDirectoryChanged.Provider(pi, a => Api.ModDirectoryChanged += a, a => Api.ModDirectoryChanged -= a);
 
         // UI
-        PreSettingsDraw  = Ipc.PreSettingsDraw.Provider(pi, a => Api.PreSettingsPanelDraw   += a, a => Api.PreSettingsPanelDraw  -= a);
+        PreSettingsTabBarDraw =
+            Ipc.PreSettingsTabBarDraw.Provider(pi, a => Api.PreSettingsTabBarDraw += a, a => Api.PreSettingsTabBarDraw -= a);
+        PreSettingsDraw = Ipc.PreSettingsDraw.Provider(pi, a => Api.PreSettingsPanelDraw += a, a => Api.PreSettingsPanelDraw -= a);
+        PostEnabledDraw =
+            Ipc.PostEnabledDraw.Provider(pi, a => Api.PostEnabledDraw += a, a => Api.PostEnabledDraw -= a);
         PostSettingsDraw = Ipc.PostSettingsDraw.Provider(pi, a => Api.PostSettingsPanelDraw += a, a => Api.PostSettingsPanelDraw -= a);
         ChangedItemTooltip =
             Ipc.ChangedItemTooltip.Provider(pi, () => Api.ChangedItemTooltip += OnTooltip, () => Api.ChangedItemTooltip -= OnTooltip);
@@ -278,7 +284,9 @@ public class PenumbraIpcProviders : IDisposable
         ModDirectoryChanged.Dispose();
 
         // UI
+        PreSettingsTabBarDraw.Dispose();
         PreSettingsDraw.Dispose();
+        PostEnabledDraw.Dispose();
         PostSettingsDraw.Dispose();
         ChangedItemTooltip.Dispose();
         ChangedItemClick.Dispose();
