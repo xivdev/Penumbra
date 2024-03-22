@@ -21,7 +21,7 @@ public class CrashHandler
             {
                 exitCode = parent.ExitCode;
             }
-            catch (Exception ex)
+            catch
             {
                 exitCode = -1;
             }
