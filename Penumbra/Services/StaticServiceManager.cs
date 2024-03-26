@@ -132,6 +132,7 @@ public static class StaticServiceManager
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ResourceTreeFactory>()
             .AddSingleton<MetaFileManager>()
+            .AddSingleton<PreBoneDeformerReplacer>()
             .AddSingleton<ShaderReplacementFixer>();
 
     private static ServiceManager AddResolvers(this ServiceManager services)

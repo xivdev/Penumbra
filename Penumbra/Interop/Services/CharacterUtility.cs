@@ -28,6 +28,7 @@ public unsafe class CharacterUtility : IDisposable
 
     public bool         Ready { get; private set; }
     public event Action LoadingFinished;
+    public nint         DefaultHumanPbdResource    { get; private set; }
     public nint         DefaultTransparentResource { get; private set; }
     public nint         DefaultDecalResource       { get; private set; }
     public nint         DefaultSkinShpkResource    { get; private set; }
@@ -86,6 +87,12 @@ public unsafe class CharacterUtility : IDisposable
             var (data, length) = resource->GetData();
             list.SetDefaultResource(data, length);
             anyMissing |= !_lists[i].Ready;
+        }
+
+        if (DefaultHumanPbdResource == nint.Zero)
+        {
+            DefaultHumanPbdResource =  (nint)Address->HumanPbdResource;
+            anyMissing              |= DefaultHumanPbdResource == nint.Zero;
         }
 
         if (DefaultTransparentResource == nint.Zero)
@@ -151,6 +158,7 @@ public unsafe class CharacterUtility : IDisposable
         foreach (var list in _lists)
             list.Dispose();
 
+        Address->HumanPbdResource       = (ResourceHandle*)DefaultHumanPbdResource;
         Address->TransparentTexResource = (TextureResourceHandle*)DefaultTransparentResource;
         Address->DecalTexResource       = (TextureResourceHandle*)DefaultDecalResource;
         Address->SkinShpkResource       = (ResourceHandle*)DefaultSkinShpkResource;

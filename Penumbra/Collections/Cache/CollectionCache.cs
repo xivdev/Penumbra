@@ -8,6 +8,9 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
+using Penumbra.Interop.SafeHandles;
+using System.IO;
+using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.Collections.Cache;
 
@@ -20,13 +23,14 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// </summary>
 public class CollectionCache : IDisposable
 {
-    private readonly CollectionCacheManager                           _manager;
-    private readonly ModCollection                                    _collection;
-    public readonly  CollectionModData                                ModData       = new();
-    private readonly SortedList<string, (SingleArray<IMod>, object?)> _changedItems = [];
-    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>      ResolvedFiles = new();
-    public readonly  MetaCache                                        Meta;
-    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      ConflictDict = [];
+    private readonly CollectionCacheManager                                 _manager;
+    private readonly ModCollection                                          _collection;
+    public readonly  CollectionModData                                      ModData       = new();
+    private readonly SortedList<string, (SingleArray<IMod>, object?)>       _changedItems = [];
+    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>            ResolvedFiles = new();
+    public readonly  ConcurrentDictionary<Utf8GamePath, SafeResourceHandle> LoadedResources = new();
+    public readonly  MetaCache                                              Meta;
+    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>            ConflictDict = [];
 
     public int Calculating = -1;
 
@@ -136,6 +140,13 @@ public class CollectionCache : IDisposable
     public void RemoveMod(IMod mod, bool addMetaChanges)
         => _manager.AddChange(ChangeData.ModRemoval(this, mod, addMetaChanges));
 
+    /// <summary> Invalidates caches subsequently to a resolved file being modified. </summary>
+    private void InvalidateResolvedFile(Utf8GamePath path)
+    {
+        if (LoadedResources.Remove(path, out var handle))
+            handle.Dispose();
+    }
+
     /// <summary> Force a file to be resolved to a specific path regardless of conflicts. </summary>
     internal void ForceFileSync(Utf8GamePath path, FullPath fullPath)
     {
@@ -148,17 +159,20 @@ public class CollectionCache : IDisposable
             if (fullPath.FullName.Length > 0)
             {
                 ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
+                InvalidateResolvedFile(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, fullPath, modPath.Path,
                     Mod.ForcedFiles);
             }
             else
             {
+                InvalidateResolvedFile(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, modPath.Path, null);
             }
         }
         else if (fullPath.FullName.Length > 0)
         {
             ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
+            InvalidateResolvedFile(path);
             InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, fullPath, FullPath.Empty, Mod.ForcedFiles);
         }
     }
@@ -181,6 +195,7 @@ public class CollectionCache : IDisposable
         {
             if (ResolvedFiles.Remove(path, out var mp))
             {
+                InvalidateResolvedFile(path);
                 if (mp.Mod != mod)
                     Penumbra.Log.Warning(
                         $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
@@ -295,6 +310,7 @@ public class CollectionCache : IDisposable
             if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
             {
                 ModData.AddPath(mod, path);
+                InvalidateResolvedFile(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, file, FullPath.Empty, mod);
                 return;
             }
@@ -309,6 +325,7 @@ public class CollectionCache : IDisposable
                 ModData.RemovePath(modPath.Mod, path);
                 ResolvedFiles[path] = new ModPath(mod, file);
                 ModData.AddPath(mod, path);
+                InvalidateResolvedFile(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, file, modPath.Path, mod);
             }
         }

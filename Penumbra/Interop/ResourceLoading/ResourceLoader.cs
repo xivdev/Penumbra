@@ -1,6 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -36,6 +37,33 @@ public unsafe class ResourceLoader : IDisposable
         _resolvedData = resolveData;
         var ret = _resources.GetResource(category, type, path);
         _resolvedData = ResolveData.Invalid;
+        return ret;
+    }
+
+    /// <summary> Load a resource for a given path and a specific collection. </summary>
+    public SafeResourceHandle LoadResolvedSafeResource(ResourceCategory category, ResourceType type, ByteString path, ResolveData resolveData)
+    {
+        _resolvedData = resolveData;
+        var ret = _resources.GetSafeResource(category, type, path);
+        _resolvedData = ResolveData.Invalid;
+        return ret;
+    }
+
+    public SafeResourceHandle LoadCacheableSafeResource(ResourceCategory category, ResourceType type, Utf8GamePath path, ResolveData resolveData)
+    {
+        var cache = resolveData.ModCollection._cache;
+        if (cache == null)
+            return LoadResolvedSafeResource(category, type, path.Path, resolveData);
+
+        if (cache.LoadedResources.TryGetValue(path, out var cached))
+            return cached.Clone();
+
+        var ret = LoadResolvedSafeResource(category, type, path.Path, resolveData);
+
+        cached = ret.Clone();
+        if (!cache.LoadedResources.TryAdd(path, cached))
+            cached.Dispose();
+
         return ret;
     }
 
