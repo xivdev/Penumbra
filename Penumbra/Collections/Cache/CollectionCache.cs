@@ -9,8 +9,6 @@ using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Interop.SafeHandles;
-using System.IO;
-using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.Collections.Cache;
 
