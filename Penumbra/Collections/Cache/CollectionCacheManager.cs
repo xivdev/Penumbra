@@ -4,6 +4,7 @@ using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -21,8 +22,8 @@ public class CollectionCacheManager : IDisposable
     private readonly  CollectionStorage   _storage;
     private readonly  ActiveCollections   _active;
     internal readonly ResolvedFileChanged ResolvedFileChanged;
-
-    internal readonly MetaFileManager MetaFileManager;
+    internal readonly MetaFileManager     MetaFileManager;
+    internal readonly ResourceLoader      ResourceLoader;
 
     private readonly ConcurrentQueue<CollectionCache.ChangeData> _changeQueue = new();
 
@@ -35,7 +36,7 @@ public class CollectionCacheManager : IDisposable
         => _storage.Where(c => c.HasCache);
 
     public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator, TempModManager tempMods, ModStorage modStorage,
-        MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage)
+        MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage, ResourceLoader resourceLoader)
     {
         _framework          = framework;
         _communicator       = communicator;
@@ -44,6 +45,7 @@ public class CollectionCacheManager : IDisposable
         MetaFileManager     = metaFileManager;
         _active             = active;
         _storage            = storage;
+        ResourceLoader      = resourceLoader;
         ResolvedFileChanged = _communicator.ResolvedFileChanged;
 
         if (!_active.Individuals.IsLoaded)

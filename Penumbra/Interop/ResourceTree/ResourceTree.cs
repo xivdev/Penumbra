@@ -156,7 +156,7 @@ public class ResourceTree
         var genericContext = globalContext.CreateContext(&human->CharacterBase);
 
         var cache = globalContext.Collection._cache;
-        if (cache != null && cache.LoadedResources.TryGetValue(PreBoneDeformerReplacer.PreBoneDeformerPath, out var pbdHandle))
+        if (cache != null && cache.CustomResources.TryGetValue(PreBoneDeformerReplacer.PreBoneDeformerPath, out var pbdHandle))
         {
             var pbdNode = genericContext.CreateNodeFromPbd(pbdHandle.ResourceHandle);
             if (pbdNode != null)

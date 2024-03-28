@@ -5,6 +5,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Hooks.Resources;
@@ -13,7 +14,7 @@ using CSModelRenderer = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRen
 
 namespace Penumbra.Interop.Services;
 
-public sealed unsafe class ShaderReplacementFixer : IDisposable
+public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredService
 {
     public static ReadOnlySpan<byte> SkinShpkName
         => "skin.shpk"u8;
@@ -21,11 +22,10 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
     public static ReadOnlySpan<byte> CharacterGlassShpkName
         => "characterglass.shpk"u8;
 
-    [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
-    private readonly nint* _humanVTable = null!;
-
     private delegate nint CharacterBaseOnRenderMaterialDelegate(CharacterBase* drawObject, CSModelRenderer.OnRenderMaterialParams* param);
-    private delegate nint ModelRendererOnRenderMaterialDelegate(CSModelRenderer* modelRenderer, ushort* outFlags, CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex);
+
+    private delegate nint ModelRendererOnRenderMaterialDelegate(CSModelRenderer* modelRenderer, ushort* outFlags,
+        CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex);
 
     private readonly Hook<CharacterBaseOnRenderMaterialDelegate> _humanOnRenderMaterialHook;
 
@@ -59,14 +59,15 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
         => _moddedCharacterGlassShpkCount;
 
     public ShaderReplacementFixer(ResourceHandleDestructor resourceHandleDestructor, CharacterUtility utility, ModelRenderer modelRenderer,
-        CommunicatorService communicator, IGameInteropProvider interop)
+        CommunicatorService communicator, IGameInteropProvider interop, CharacterBaseVTables vTables)
     {
         interop.InitializeFromAttributes(this);
-        _resourceHandleDestructor  = resourceHandleDestructor;
-        _utility                   = utility;
-        _modelRenderer             = modelRenderer;
-        _communicator              = communicator;
-        _humanOnRenderMaterialHook = interop.HookFromAddress<CharacterBaseOnRenderMaterialDelegate>(_humanVTable[62], OnRenderHumanMaterial);
+        _resourceHandleDestructor = resourceHandleDestructor;
+        _utility                  = utility;
+        _modelRenderer            = modelRenderer;
+        _communicator             = communicator;
+        _humanOnRenderMaterialHook =
+            interop.HookFromAddress<CharacterBaseOnRenderMaterialDelegate>(vTables.HumanVTable[62], OnRenderHumanMaterial);
         _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.ShaderReplacementFixer);
         _resourceHandleDestructor.Subscribe(OnResourceHandleDestructor, ResourceHandleDestructor.Priority.ShaderReplacementFixer);
         _humanOnRenderMaterialHook.Enable();
@@ -82,7 +83,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
         _moddedCharacterGlassShpkMaterials.Clear();
         _moddedSkinShpkMaterials.Clear();
         _moddedCharacterGlassShpkCount = 0;
-        _moddedSkinShpkCount = 0;
+        _moddedSkinShpkCount           = 0;
     }
 
     public (ulong Skin, ulong CharacterGlass) GetAndResetSlowPathCallDeltas()
@@ -106,16 +107,12 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
         var shpkName = mtrl->ShpkNameSpan;
 
         if (SkinShpkName.SequenceEqual(shpkName) && (nint)shpk != _utility.DefaultSkinShpkResource)
-        {
             if (_moddedSkinShpkMaterials.TryAdd(mtrlResourceHandle))
                 Interlocked.Increment(ref _moddedSkinShpkCount);
-        }
 
         if (CharacterGlassShpkName.SequenceEqual(shpkName) && shpk != _modelRenderer.DefaultCharacterGlassShaderPackage)
-        {
             if (_moddedCharacterGlassShpkMaterials.TryAdd(mtrlResourceHandle))
                 Interlocked.Increment(ref _moddedCharacterGlassShpkCount);
-        }
     }
 
     private void OnResourceHandleDestructor(Structs.ResourceHandle* handle)
@@ -159,9 +156,9 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable
         }
     }
 
-    private nint ModelRendererOnRenderMaterialDetour(CSModelRenderer* modelRenderer, ushort* outFlags, CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex)
+    private nint ModelRendererOnRenderMaterialDetour(CSModelRenderer* modelRenderer, ushort* outFlags,
+        CSModelRenderer.OnRenderModelParams* param, Material* material, uint materialIndex)
     {
-
         // If we don't have any on-screen instances of modded characterglass.shpk, we don't need the slow path at all.
         if (!Enabled || _moddedCharacterGlassShpkCount == 0)
             return _modelRendererOnRenderMaterialHook.Original(modelRenderer, outFlags, param, material, materialIndex);

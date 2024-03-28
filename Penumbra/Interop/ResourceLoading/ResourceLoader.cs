@@ -49,24 +49,6 @@ public unsafe class ResourceLoader : IDisposable
         return ret;
     }
 
-    public SafeResourceHandle LoadCacheableSafeResource(ResourceCategory category, ResourceType type, Utf8GamePath path, ResolveData resolveData)
-    {
-        var cache = resolveData.ModCollection._cache;
-        if (cache == null)
-            return LoadResolvedSafeResource(category, type, path.Path, resolveData);
-
-        if (cache.LoadedResources.TryGetValue(path, out var cached))
-            return cached.Clone();
-
-        var ret = LoadResolvedSafeResource(category, type, path.Path, resolveData);
-
-        cached = ret.Clone();
-        if (!cache.LoadedResources.TryAdd(path, cached))
-            cached.Dispose();
-
-        return ret;
-    }
-
     /// <summary> The function to use to resolve a given path. </summary>
     public Func<Utf8GamePath, ResourceCategory, ResourceType, (FullPath?, ResolveData)> ResolvePath = null!;
 
