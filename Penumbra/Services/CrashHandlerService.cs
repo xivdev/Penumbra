@@ -36,7 +36,7 @@ public sealed class CrashHandlerService : IDisposable, IService
         _config          = config;
         _validityChecker = validityChecker;
 
-        if (!_config.UseCrashHandler)
+        if (_config.UseCrashHandler ?? false)
             return;
 
         OpenEventWriter();
@@ -84,7 +84,7 @@ public sealed class CrashHandlerService : IDisposable, IService
 
     public void Enable()
     {
-        if (_config.UseCrashHandler)
+        if (_config.UseCrashHandler ?? false)
             return;
 
         _config.UseCrashHandler = true;
@@ -97,7 +97,7 @@ public sealed class CrashHandlerService : IDisposable, IService
 
     public void Disable()
     {
-        if (!_config.UseCrashHandler)
+        if (!(_config.UseCrashHandler ?? false))
             return;
 
         _config.UseCrashHandler = false;

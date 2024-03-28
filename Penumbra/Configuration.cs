@@ -33,12 +33,12 @@ public class Configuration : IPluginConfiguration, ISavable
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
 
-    public bool UseCrashHandler                { get; set; } = true;
-    public bool OpenWindowAtStart              { get; set; } = false;
-    public bool HideUiInGPose                  { get; set; } = false;
-    public bool HideUiInCutscenes              { get; set; } = true;
-    public bool HideUiWhenUiHidden             { get; set; } = false;
-    public bool UseDalamudUiTextureRedirection { get; set; } = true;
+    public bool? UseCrashHandler                { get; set; } = null;
+    public bool  OpenWindowAtStart              { get; set; } = false;
+    public bool  HideUiInGPose                  { get; set; } = false;
+    public bool  HideUiInCutscenes              { get; set; } = true;
+    public bool  HideUiWhenUiHidden             { get; set; } = false;
+    public bool  UseDalamudUiTextureRedirection { get; set; } = true;
 
     public bool UseCharacterCollectionInMainWindow { get; set; } = true;
     public bool UseCharacterCollectionsInCards     { get; set; } = true;
@@ -48,9 +48,9 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool UseNoModsInInspect                 { get; set; } = false;
     public bool HideChangedItemFilters             { get; set; } = false;
     public bool ReplaceNonAsciiOnImport            { get; set; } = false;
-    public bool HidePrioritiesInSelector  { get; set; } = false;
-    public bool HideRedrawBar             { get; set; } = false;
-    public int  OptionGroupCollapsibleMin { get; set; } = 5;
+    public bool HidePrioritiesInSelector           { get; set; } = false;
+    public bool HideRedrawBar                      { get; set; } = false;
+    public int  OptionGroupCollapsibleMin          { get; set; } = 5;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 

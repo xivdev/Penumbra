@@ -43,6 +43,7 @@ public class SettingsTab : ITab
     private readonly DalamudPluginInterface      _pluginInterface;
     private readonly IDataManager                _gameData;
     private readonly PredefinedTagManager        _predefinedTagManager;
+    private readonly CrashHandlerService         _crashService;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -53,7 +54,7 @@ public class SettingsTab : ITab
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
-        IDataManager gameData, PredefinedTagManager predefinedTagConfig)
+        IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -74,6 +75,7 @@ public class SettingsTab : ITab
         if (_compactor.CanCompact)
             _compactor.Enabled = _config.UseFileSystemCompression;
         _predefinedTagManager = predefinedTagConfig;
+        _crashService         = crashService;
     }
 
     public void DrawHeader()
@@ -704,6 +706,7 @@ public class SettingsTab : ITab
         if (!header)
             return;
 
+        DrawCrashHandler();
         DrawMinimumDimensionConfig();
         Checkbox("Auto Deduplicate on Import",
             "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
@@ -719,6 +722,20 @@ public class SettingsTab : ITab
         DrawReloadResourceButton();
         DrawReloadFontsButton();
         ImGui.NewLine();
+    }
+
+    private void DrawCrashHandler()
+    {
+        Checkbox("Enable Penumbra Crash Logging (Experimental)",
+            "Enables Penumbra to launch a secondary process that records some game activity which may or may not help diagnosing Penumbra-related game crashes.",
+            _config.UseCrashHandler ?? false,
+            v =>
+            {
+                if (v)
+                    _crashService.Enable();
+                else
+                    _crashService.Disable();
+            });
     }
 
     private void DrawCompressionBox()
