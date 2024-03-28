@@ -35,39 +35,28 @@ public partial class ModEditWindow
 
     private void UpdateFile(MdlFile file, bool force)
     {
-        if (file == _lastFile)
+        if (file == _lastFile && !force)
+            return;
+
+        _lastFile = file;
+        var subMeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
+        if (_subMeshAttributeTagWidgets.Count != subMeshTotal)
         {
-            if (force)
-                UpdateMeshes();
-        }
-        else
-        {
-            UpdateMeshes();
-            _lastFile    = file;
-            _lodTriCount = Enumerable.Range(0, file.Lods.Length).Select(l => GetTriangleCountForLod(file, l)).ToArray();
+            _subMeshAttributeTagWidgets.Clear();
+            _subMeshAttributeTagWidgets.AddRange(
+                Enumerable.Range(0, subMeshTotal).Select(_ => new TagButtons())
+            );
         }
 
-        return;
-
-        void UpdateMeshes()
-        {
-            var subMeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
-            if (_subMeshAttributeTagWidgets.Count != subMeshTotal)
-            {
-                _subMeshAttributeTagWidgets.Clear();
-                _subMeshAttributeTagWidgets.AddRange(
-                    Enumerable.Range(0, subMeshTotal).Select(_ => new TagButtons())
-                );
-            }
-        }
+        _lodTriCount = Enumerable.Range(0, file.Lods.Length).Select(l => GetTriangleCountForLod(file, l)).ToArray();
     }
 
     private bool DrawModelPanel(MdlTab tab, bool disabled)
     {
-        UpdateFile(tab.Mdl, tab.Dirty);
+        var ret = tab.Dirty;
+        UpdateFile(tab.Mdl, ret);
         DrawImportExport(tab, disabled);
 
-        var ret = tab.Dirty;
         ret |= DrawModelMaterialDetails(tab, disabled);
 
         if (ImGui.CollapsingHeader($"Meshes ({_lastFile.Meshes.Length})###meshes"))
