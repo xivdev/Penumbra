@@ -5,6 +5,7 @@ namespace Penumbra.Interop.Structs;
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct CharacterUtilityData
 {
+    public const int IndexHumanPbd       = 63;
     public const int IndexTransparentTex = 72;
     public const int IndexDecalTex       = 73;
     public const int IndexSkinShpk       = 76;
@@ -71,6 +72,9 @@ public unsafe struct CharacterUtilityData
 
     public ResourceHandle* EqdpResource(GenderRace raceCode, bool accessory)
         => Resource((int)EqdpIdx(raceCode, accessory));
+
+    [FieldOffset(8 + IndexHumanPbd * 8)]
+    public ResourceHandle* HumanPbdResource;
 
     [FieldOffset(8 + (int)MetaIndex.HumanCmp * 8)]
     public ResourceHandle* HumanCmpResource;

@@ -4,10 +4,12 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
+using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
+using CSResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop.ResourceLoading;
 
@@ -25,11 +27,11 @@ public unsafe class ResourceService : IDisposable
         _getResourceAsyncHook.Enable();
         _resourceHandleDestructorHook.Enable();
         _incRefHook = interop.HookFromAddress<ResourceHandlePrototype>(
-            (nint)FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.MemberFunctionPointers.IncRef,
+            (nint)CSResourceHandle.MemberFunctionPointers.IncRef,
             ResourceHandleIncRefDetour);
         _incRefHook.Enable();
         _decRefHook = interop.HookFromAddress<ResourceHandleDecRefPrototype>(
-            (nint)FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.MemberFunctionPointers.DecRef,
+            (nint)CSResourceHandle.MemberFunctionPointers.DecRef,
             ResourceHandleDecRefDetour);
         _decRefHook.Enable();
     }
@@ -40,6 +42,9 @@ public unsafe class ResourceService : IDisposable
         return GetResourceHandler(true, (ResourceManager*)_resourceManager.ResourceManagerAddress,
             &category,                  &type, &hash, path.Path, null, false);
     }
+
+    public SafeResourceHandle GetSafeResource(ResourceCategory category, ResourceType type, ByteString path)
+        => new((CSResourceHandle*)GetResource(category, type, path), false);
 
     public void Dispose()
     {

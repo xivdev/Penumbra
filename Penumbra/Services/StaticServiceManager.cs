@@ -131,8 +131,7 @@ public static class StaticServiceManager
         => services.AddSingleton<ResourceLoader>()
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ResourceTreeFactory>()
-            .AddSingleton<MetaFileManager>()
-            .AddSingleton<ShaderReplacementFixer>();
+            .AddSingleton<MetaFileManager>();
 
     private static ServiceManager AddResolvers(this ServiceManager services)
         => services.AddSingleton<CollectionResolver>()

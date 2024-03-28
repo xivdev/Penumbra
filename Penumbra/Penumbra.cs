@@ -77,7 +77,6 @@ public class Penumbra : IDalamudPlugin
             _services.GetService<ModCacheManager>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
-            _services.GetService<ShaderReplacementFixer>();
 
             _services.GetService<DalamudSubstitutionProvider>(); // Initialize before Interface.
 

@@ -18,13 +18,14 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// The Cache contains all required temporary data to use a collection.
 /// It will only be setup if a collection gets activated in any way.
 /// </summary>
-public class CollectionCache : IDisposable
+public sealed class CollectionCache : IDisposable
 {
     private readonly CollectionCacheManager                           _manager;
     private readonly ModCollection                                    _collection;
     public readonly  CollectionModData                                ModData       = new();
     private readonly SortedList<string, (SingleArray<IMod>, object?)> _changedItems = [];
     public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>      ResolvedFiles = new();
+    public readonly  CustomResourceCache                              CustomResources;
     public readonly  MetaCache                                        Meta;
     public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      ConflictDict = [];
 
@@ -37,7 +38,7 @@ public class CollectionCache : IDisposable
         => ConflictDict.Values;
 
     public SingleArray<ModConflicts> Conflicts(IMod mod)
-        => ConflictDict.TryGetValue(mod, out SingleArray<ModConflicts> c) ? c : new SingleArray<ModConflicts>();
+        => ConflictDict.TryGetValue(mod, out var c) ? c : new SingleArray<ModConflicts>();
 
     private int _changedItemsSaveCounter = -1;
 
@@ -54,16 +55,21 @@ public class CollectionCache : IDisposable
     // The cache reacts through events on its collection changing.
     public CollectionCache(CollectionCacheManager manager, ModCollection collection)
     {
-        _manager    = manager;
-        _collection = collection;
-        Meta        = new MetaCache(manager.MetaFileManager, _collection);
+        _manager        = manager;
+        _collection     = collection;
+        Meta            = new MetaCache(manager.MetaFileManager, _collection);
+        CustomResources = new CustomResourceCache(manager.ResourceLoader);
     }
 
     public void Dispose()
-        => Meta.Dispose();
+    {
+        Meta.Dispose();
+        CustomResources.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     ~CollectionCache()
-        => Meta.Dispose();
+        => Dispose();
 
     // Resolve a given game path according to this collection.
     public FullPath? ResolvePath(Utf8GamePath gameResourcePath)
@@ -72,7 +78,7 @@ public class CollectionCache : IDisposable
             return null;
 
         if (candidate.Path.InternalName.Length > Utf8GamePath.MaxGamePathLength
-         || candidate.Path.IsRooted && !candidate.Path.Exists)
+         || candidate.Path is { IsRooted: true, Exists: false })
             return null;
 
         return candidate.Path;
@@ -100,7 +106,7 @@ public class CollectionCache : IDisposable
     public HashSet<Utf8GamePath>[] ReverseResolvePaths(IReadOnlyCollection<string> fullPaths)
     {
         if (fullPaths.Count == 0)
-            return Array.Empty<HashSet<Utf8GamePath>>();
+            return [];
 
         var ret  = new HashSet<Utf8GamePath>[fullPaths.Count];
         var dict = new Dictionary<FullPath, int>(fullPaths.Count);
@@ -108,8 +114,8 @@ public class CollectionCache : IDisposable
         {
             dict[new FullPath(path)] = idx;
             ret[idx] = !Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var utf8)
-                ? new HashSet<Utf8GamePath> { utf8 }
-                : new HashSet<Utf8GamePath>();
+                ? [utf8]
+                : [];
         }
 
         foreach (var (game, full) in ResolvedFiles)
@@ -148,17 +154,20 @@ public class CollectionCache : IDisposable
             if (fullPath.FullName.Length > 0)
             {
                 ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
+                CustomResources.Invalidate(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, fullPath, modPath.Path,
                     Mod.ForcedFiles);
             }
             else
             {
+                CustomResources.Invalidate(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, modPath.Path, null);
             }
         }
         else if (fullPath.FullName.Length > 0)
         {
             ResolvedFiles.TryAdd(path, new ModPath(Mod.ForcedFiles, fullPath));
+            CustomResources.Invalidate(path);
             InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, fullPath, FullPath.Empty, Mod.ForcedFiles);
         }
     }
@@ -181,6 +190,7 @@ public class CollectionCache : IDisposable
         {
             if (ResolvedFiles.Remove(path, out var mp))
             {
+                CustomResources.Invalidate(path);
                 if (mp.Mod != mod)
                     Penumbra.Log.Warning(
                         $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
@@ -295,6 +305,7 @@ public class CollectionCache : IDisposable
             if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
             {
                 ModData.AddPath(mod, path);
+                CustomResources.Invalidate(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, file, FullPath.Empty, mod);
                 return;
             }
@@ -309,13 +320,14 @@ public class CollectionCache : IDisposable
                 ModData.RemovePath(modPath.Mod, path);
                 ResolvedFiles[path] = new ModPath(mod, file);
                 ModData.AddPath(mod, path);
+                CustomResources.Invalidate(path);
                 InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, file, modPath.Path, mod);
             }
         }
         catch (Exception ex)
         {
             Penumbra.Log.Error(
-                $"[{Thread.CurrentThread.ManagedThreadId}] Error adding redirection {file} -> {path} for mod {mod.Name} to collection cache {AnonymizedName}:\n{ex}");
+                $"[{Environment.CurrentManagedThreadId}] Error adding redirection {file} -> {path} for mod {mod.Name} to collection cache {AnonymizedName}:\n{ex}");
         }
     }
 

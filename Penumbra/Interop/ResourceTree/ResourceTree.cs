@@ -1,4 +1,3 @@
-using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
@@ -6,6 +5,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Services;
 using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
@@ -154,6 +154,22 @@ public class ResourceTree
     private unsafe void AddHumanResources(GlobalResolveContext globalContext, Human* human)
     {
         var genericContext = globalContext.CreateContext(&human->CharacterBase);
+
+        var cache = globalContext.Collection._cache;
+        if (cache != null && cache.CustomResources.TryGetValue(PreBoneDeformerReplacer.PreBoneDeformerPath, out var pbdHandle))
+        {
+            var pbdNode = genericContext.CreateNodeFromPbd(pbdHandle.ResourceHandle);
+            if (pbdNode != null)
+            {
+                if (globalContext.WithUiData)
+                {
+                    pbdNode = pbdNode.Clone();
+                    pbdNode.FallbackName = "Racial Deformer";
+                    pbdNode.Icon = ChangedItemDrawer.ChangedItemIcon.Customization;
+                }
+                Nodes.Add(pbdNode);
+            }
+        }
 
         var decalId = (byte)(human->Customize[(int)CustomizeIndex.Facepaint] & 0x7F);
         var decalPath = decalId != 0
