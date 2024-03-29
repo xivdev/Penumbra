@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
@@ -170,7 +171,7 @@ public partial class ModEditWindow
 
         using var t = ImRaii.TreeNode($"Additional Data (Size: {file.AdditionalData.Length})###AdditionalData");
         if (t)
-            ImGuiUtil.TextWrapped(string.Join(' ', file.AdditionalData.Select(c => $"{c:X2}")));
+            Widget.DrawHexViewer(file.AdditionalData);
     }
 
     private void DrawMaterialReassignmentTab()

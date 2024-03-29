@@ -10,6 +10,7 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Interop;
 using Penumbra.String;
 using static Penumbra.GameData.Files.ShpkFile;
+using OtterGui.Widgets;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -172,11 +173,16 @@ public partial class ModEditWindow
             ret |= DrawShaderPackageResourceArray("Samplers",               "slot", false, shader.Samplers,  true);
             ret |= DrawShaderPackageResourceArray("Unordered Access Views", "slot", true,  shader.Uavs,      true);
 
-            if (shader.AdditionalHeader.Length > 0)
+            if (shader.DeclaredInputs != 0)
+                ImRaii.TreeNode($"Declared Inputs: {shader.DeclaredInputs}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            if (shader.UsedInputs != 0)
+                ImRaii.TreeNode($"Used Inputs: {shader.UsedInputs}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+
+            if (shader.AdditionalHeader.Length > 8)
             {
                 using var t2 = ImRaii.TreeNode($"Additional Header (Size: {shader.AdditionalHeader.Length})###AdditionalHeader");
                 if (t2)
-                    ImGuiUtil.TextWrapped(string.Join(' ', shader.AdditionalHeader.Select(c => $"{c:X2}")));
+                    Widget.DrawHexViewer(shader.AdditionalHeader);
             }
 
             if (tab.Shpk.Disassembled)
@@ -549,7 +555,7 @@ public partial class ModEditWindow
         {
             using var t = ImRaii.TreeNode($"Additional Data (Size: {tab.Shpk.AdditionalData.Length})###AdditionalData");
             if (t)
-                ImGuiUtil.TextWrapped(string.Join(' ', tab.Shpk.AdditionalData.Select(c => $"{c:X2}")));
+                Widget.DrawHexViewer(tab.Shpk.AdditionalData);
         }
     }
 

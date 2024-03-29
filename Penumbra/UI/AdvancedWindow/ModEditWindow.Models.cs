@@ -560,7 +560,7 @@ public partial class ModEditWindow
         {
             using var t = ImRaii.TreeNode($"Additional Data (Size: {_lastFile.RemainingData.Length})###AdditionalData");
             if (t)
-                ImGuiUtil.TextWrapped(string.Join(' ', _lastFile.RemainingData.Select(c => $"{c:X2}")));
+                Widget.DrawHexViewer(_lastFile.RemainingData);
         }
 
         return false;
