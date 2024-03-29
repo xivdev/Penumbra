@@ -583,23 +583,18 @@ public class IpcTester : IDisposable
         }
     }
 
-    private class Resolve
+    private class Resolve(DalamudPluginInterface pi)
     {
-        private readonly DalamudPluginInterface _pi;
-
         private string                       _currentResolvePath      = string.Empty;
         private string                       _currentResolveCharacter = string.Empty;
         private string                       _currentReversePath      = string.Empty;
         private int                          _currentReverseIdx;
-        private Task<(string[], string[][])> _task = Task.FromException<(string[], string[][])>(new Exception());
-
-        public Resolve(DalamudPluginInterface pi)
-            => _pi = pi;
+        private Task<(string[], string[][])> _task = Task.FromResult<(string[], string[][])>(([], []));
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode("Resolving");
-            if (!_)
+            using var tree = ImRaii.TreeNode("Resolving");
+            if (!tree)
                 return;
 
             ImGui.InputTextWithHint("##resolvePath",      "Resolve this game path...", ref _currentResolvePath, Utf8GamePath.MaxGamePathLength);
@@ -613,28 +608,28 @@ public class IpcTester : IDisposable
 
             DrawIntro(Ipc.ResolveDefaultPath.Label, "Default Collection Resolve");
             if (_currentResolvePath.Length != 0)
-                ImGui.TextUnformatted(Ipc.ResolveDefaultPath.Subscriber(_pi).Invoke(_currentResolvePath));
+                ImGui.TextUnformatted(Ipc.ResolveDefaultPath.Subscriber(pi).Invoke(_currentResolvePath));
 
             DrawIntro(Ipc.ResolveInterfacePath.Label, "Interface Collection Resolve");
             if (_currentResolvePath.Length != 0)
-                ImGui.TextUnformatted(Ipc.ResolveInterfacePath.Subscriber(_pi).Invoke(_currentResolvePath));
+                ImGui.TextUnformatted(Ipc.ResolveInterfacePath.Subscriber(pi).Invoke(_currentResolvePath));
 
             DrawIntro(Ipc.ResolvePlayerPath.Label, "Player Collection Resolve");
             if (_currentResolvePath.Length != 0)
-                ImGui.TextUnformatted(Ipc.ResolvePlayerPath.Subscriber(_pi).Invoke(_currentResolvePath));
+                ImGui.TextUnformatted(Ipc.ResolvePlayerPath.Subscriber(pi).Invoke(_currentResolvePath));
 
             DrawIntro(Ipc.ResolveCharacterPath.Label, "Character Collection Resolve");
             if (_currentResolvePath.Length != 0 && _currentResolveCharacter.Length != 0)
-                ImGui.TextUnformatted(Ipc.ResolveCharacterPath.Subscriber(_pi).Invoke(_currentResolvePath, _currentResolveCharacter));
+                ImGui.TextUnformatted(Ipc.ResolveCharacterPath.Subscriber(pi).Invoke(_currentResolvePath, _currentResolveCharacter));
 
             DrawIntro(Ipc.ResolveGameObjectPath.Label, "Game Object Collection Resolve");
             if (_currentResolvePath.Length != 0)
-                ImGui.TextUnformatted(Ipc.ResolveGameObjectPath.Subscriber(_pi).Invoke(_currentResolvePath, _currentReverseIdx));
+                ImGui.TextUnformatted(Ipc.ResolveGameObjectPath.Subscriber(pi).Invoke(_currentResolvePath, _currentReverseIdx));
 
             DrawIntro(Ipc.ReverseResolvePath.Label, "Reversed Game Paths");
             if (_currentReversePath.Length > 0)
             {
-                var list = Ipc.ReverseResolvePath.Subscriber(_pi).Invoke(_currentReversePath, _currentResolveCharacter);
+                var list = Ipc.ReverseResolvePath.Subscriber(pi).Invoke(_currentReversePath, _currentResolveCharacter);
                 if (list.Length > 0)
                 {
                     ImGui.TextUnformatted(list[0]);
@@ -646,7 +641,7 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)");
             if (_currentReversePath.Length > 0)
             {
-                var list = Ipc.ReverseResolvePlayerPath.Subscriber(_pi).Invoke(_currentReversePath);
+                var list = Ipc.ReverseResolvePlayerPath.Subscriber(pi).Invoke(_currentReversePath);
                 if (list.Length > 0)
                 {
                     ImGui.TextUnformatted(list[0]);
@@ -658,7 +653,7 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)");
             if (_currentReversePath.Length > 0)
             {
-                var list = Ipc.ReverseResolveGameObjectPath.Subscriber(_pi).Invoke(_currentReversePath, _currentReverseIdx);
+                var list = Ipc.ReverseResolveGameObjectPath.Subscriber(pi).Invoke(_currentReversePath, _currentReverseIdx);
                 if (list.Length > 0)
                 {
                     ImGui.TextUnformatted(list[0]);
@@ -668,19 +663,31 @@ public class IpcTester : IDisposable
             }
 
             var forwardArray = _currentResolvePath.Length > 0
-                ? new[]
-                {
-                    _currentResolvePath,
-                }
+                ? [_currentResolvePath]
                 : Array.Empty<string>();
             var reverseArray = _currentReversePath.Length > 0
-                ? new[]
-                {
-                    _currentReversePath,
-                }
+                ? [_currentReversePath]
                 : Array.Empty<string>();
 
-            string ConvertText((string[], string[][]) data)
+            DrawIntro(Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)");
+            if (forwardArray.Length > 0 || reverseArray.Length > 0)
+            {
+                var ret = Ipc.ResolvePlayerPaths.Subscriber(pi).Invoke(forwardArray, reverseArray);
+                ImGui.TextUnformatted(ConvertText(ret));
+            }
+
+            DrawIntro(Ipc.ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)");
+            if (ImGui.Button("Start"))
+                _task = Ipc.ResolvePlayerPathsAsync.Subscriber(pi).Invoke(forwardArray, reverseArray);
+            var hovered = ImGui.IsItemHovered();
+            ImGui.SameLine();
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted(_task.Status.ToString());
+            if ((hovered || ImGui.IsItemHovered()) && _task.IsCompletedSuccessfully)
+                ImGui.SetTooltip(ConvertText(_task.Result));
+            return;
+
+            static string ConvertText((string[], string[][]) data)
             {
                 var text = string.Empty;
                 if (data.Item1.Length > 0)
@@ -697,23 +704,6 @@ public class IpcTester : IDisposable
 
                 return text;
             }
-
-            DrawIntro(Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)");
-            if (forwardArray.Length > 0 || reverseArray.Length > 0)
-            {
-                var ret = Ipc.ResolvePlayerPaths.Subscriber(_pi).Invoke(forwardArray, reverseArray);
-                ImGui.TextUnformatted(ConvertText(ret));
-            }
-
-            DrawIntro(Ipc.ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)");
-            if (ImGui.Button("Start"))
-                _task = Ipc.ResolvePlayerPathsAsync.Subscriber(_pi).Invoke(forwardArray, reverseArray);
-            var hovered = ImGui.IsItemHovered();
-            ImGui.SameLine();
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextUnformatted(_task.Status.ToString());
-            if ((hovered || ImGui.IsItemHovered()) && _task.IsCompletedSuccessfully)
-                ImGui.SetTooltip(ConvertText(_task.Result));
         }
     }
 
