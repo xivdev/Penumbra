@@ -36,7 +36,7 @@ public class ModMerger : IDisposable
 
     public readonly HashSet<SubMod> SelectedOptions = [];
 
-    public readonly IReadOnlyList<string> Warnings = new List<string>();
+    public readonly IReadOnlyList<string> Warnings = [];
     public          Exception?            Error { get; private set; }
 
     public ModMerger(ModManager mods, ModOptionEditor editor, ModFileSystemSelector selector, DuplicateManager duplicates,
@@ -78,7 +78,8 @@ public class ModMerger : IDisposable
                 MergeWithOptions();
             else
                 MergeIntoOption(OptionGroupName, OptionName);
-            _duplicates.DeduplicateMod(MergeToMod.ModPath);
+
+            _duplicates.DeduplicateMod(MergeToMod.ModPath, true);
         }
         catch (Exception ex)
         {
@@ -134,10 +135,10 @@ public class ModMerger : IDisposable
             return;
         }
 
-        var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName);
+        var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
         if (groupCreated)
             _createdGroups.Add(groupIdx);
-        var (option, optionCreated) = _editor.FindOrAddOption(MergeToMod!, groupIdx, optionName);
+        var (option, optionCreated) = _editor.FindOrAddOption(MergeToMod!, groupIdx, optionName, SaveType.None);
         if (optionCreated)
             _createdOptions.Add(option);
         var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.ReplaceNonAsciiOnImport);
@@ -155,27 +156,6 @@ public class ModMerger : IDisposable
         var redirections = option.FileData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         var swaps        = option.FileSwapData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         var manips       = option.ManipulationData.ToHashSet();
-
-        bool GetFullPath(FullPath input, out FullPath ret)
-        {
-            if (fromFileToFile)
-            {
-                if (!_fileToFile.TryGetValue(input.FullName, out var s))
-                {
-                    ret = input;
-                    return false;
-                }
-
-                ret = new FullPath(s);
-                return true;
-            }
-
-            if (!Utf8RelPath.FromFile(input, MergeFromMod!.ModPath, out var relPath))
-                throw new Exception($"Could not create relative path from {input} and {MergeFromMod!.ModPath}.");
-
-            ret = new FullPath(MergeToMod!.ModPath, relPath);
-            return true;
-        }
 
         foreach (var originalOption in mergeOptions)
         {
@@ -204,9 +184,31 @@ public class ModMerger : IDisposable
             }
         }
 
-        _editor.OptionSetFiles(MergeToMod!, option.GroupIdx, option.OptionIdx, redirections);
-        _editor.OptionSetFileSwaps(MergeToMod!, option.GroupIdx, option.OptionIdx, swaps);
-        _editor.OptionSetManipulations(MergeToMod!, option.GroupIdx, option.OptionIdx, manips);
+        _editor.OptionSetFiles(MergeToMod!, option.GroupIdx, option.OptionIdx, redirections, SaveType.None);
+        _editor.OptionSetFileSwaps(MergeToMod!, option.GroupIdx, option.OptionIdx, swaps, SaveType.None);
+        _editor.OptionSetManipulations(MergeToMod!, option.GroupIdx, option.OptionIdx, manips, SaveType.ImmediateSync);
+        return;
+
+        bool GetFullPath(FullPath input, out FullPath ret)
+        {
+            if (fromFileToFile)
+            {
+                if (!_fileToFile.TryGetValue(input.FullName, out var s))
+                {
+                    ret = input;
+                    return false;
+                }
+
+                ret = new FullPath(s);
+                return true;
+            }
+
+            if (!Utf8RelPath.FromFile(input, MergeFromMod!.ModPath, out var relPath))
+                throw new Exception($"Could not create relative path from {input} and {MergeFromMod!.ModPath}.");
+
+            ret = new FullPath(MergeToMod!.ModPath, relPath);
+            return true;
+        }
     }
 
     private void CopyFiles(DirectoryInfo directory)

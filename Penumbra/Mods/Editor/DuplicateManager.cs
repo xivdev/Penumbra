@@ -1,3 +1,4 @@
+using OtterGui.Classes;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
@@ -81,7 +82,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
             if (useModManager)
             {
-                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict);
+                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict, SaveType.ImmediateSync);
             }
             else
             {
@@ -216,18 +217,21 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
     }
 
     /// <summary> Deduplicate a mod simply by its directory without any confirmation or waiting time. </summary>
-    internal void DeduplicateMod(DirectoryInfo modDirectory)
+    internal void DeduplicateMod(DirectoryInfo modDirectory, bool useModManager = false)
     {
         try
         {
-            var mod = new Mod(modDirectory);
-            modManager.Creator.ReloadMod(mod, true, out _);
+            if (!useModManager || !modManager.TryGetMod(modDirectory.Name, string.Empty, out var mod))
+            {
+                mod = new Mod(modDirectory);
+                modManager.Creator.ReloadMod(mod, true, out _);
+            }
 
             Clear();
             var files = new ModFileCollection();
             files.UpdateAll(mod, mod.Default);
-            CheckDuplicates(files.Available.OrderByDescending(f => f.FileSize).ToArray(), CancellationToken.None);
-            DeleteDuplicates(files, mod, mod.Default, false);
+            CheckDuplicates([.. files.Available.OrderByDescending(f => f.FileSize)], CancellationToken.None);
+            DeleteDuplicates(files, mod, mod.Default, useModManager);
         }
         catch (Exception e)
         {

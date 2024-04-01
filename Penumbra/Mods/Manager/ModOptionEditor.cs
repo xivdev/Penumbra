@@ -78,7 +78,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Add a new, empty option group of the given type and name. </summary>
-    public void AddModGroup(Mod mod, GroupType type, string newName)
+    public void AddModGroup(Mod mod, GroupType type, string newName, SaveType saveType = SaveType.ImmediateSync)
     {
         if (!VerifyFileName(mod, null, newName, true))
             return;
@@ -96,18 +96,18 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                 Name     = newName,
                 Priority = maxPriority,
             });
-        saveService.ImmediateSave(new ModSaveGroup(mod, mod.Groups.Count - 1, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, new ModSaveGroup(mod, mod.Groups.Count - 1, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, mod.Groups.Count - 1, -1, -1);
     }
 
     /// <summary> Add a new mod, empty option group of the given type and name if it does not exist already. </summary>
-    public (IModGroup, int, bool) FindOrAddModGroup(Mod mod, GroupType type, string newName)
+    public (IModGroup, int, bool) FindOrAddModGroup(Mod mod, GroupType type, string newName, SaveType saveType = SaveType.ImmediateSync)
     {
         var idx = mod.Groups.IndexOf(g => g.Name == newName);
         if (idx >= 0)
             return (mod.Groups[idx], idx, false);
 
-        AddModGroup(mod, type, newName);
+        AddModGroup(mod, type, newName, saveType);
         if (mod.Groups[^1].Name != newName)
             throw new Exception($"Could not create new mod group with name {newName}.");
 
@@ -226,7 +226,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Add a new empty option of the given name for the given group. </summary>
-    public void AddOption(Mod mod, int groupIdx, string newName)
+    public void AddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
     {
         var group  = mod.Groups[groupIdx];
         var subMod = new SubMod(mod) { Name = newName };
@@ -241,19 +241,19 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                 break;
         }
 
-        saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1);
     }
 
     /// <summary> Add a new empty option of the given name for the given group if it does not exist already. </summary>
-    public (SubMod, bool) FindOrAddOption(Mod mod, int groupIdx, string newName)
+    public (SubMod, bool) FindOrAddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
     {
         var group = mod.Groups[groupIdx];
         var idx   = group.IndexOf(o => o.Name == newName);
         if (idx >= 0)
             return ((SubMod)group[idx], false);
 
-        AddOption(mod, groupIdx, newName);
+        AddOption(mod, groupIdx, newName, saveType);
         if (group[^1].Name != newName)
             throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
 
@@ -324,7 +324,8 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Set the meta manipulations for a given option. Replaces existing manipulations. </summary>
-    public void OptionSetManipulations(Mod mod, int groupIdx, int optionIdx, HashSet<MetaManipulation> manipulations)
+    public void OptionSetManipulations(Mod mod, int groupIdx, int optionIdx, HashSet<MetaManipulation> manipulations,
+        SaveType saveType = SaveType.Queue)
     {
         var subMod = GetSubMod(mod, groupIdx, optionIdx);
         if (subMod.Manipulations.Count == manipulations.Count
@@ -333,12 +334,13 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
 
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
         subMod.ManipulationData.SetTo(manipulations);
-        saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1);
     }
 
     /// <summary> Set the file redirections for a given option. Replaces existing redirections. </summary>
-    public void OptionSetFiles(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> replacements)
+    public void OptionSetFiles(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> replacements,
+        SaveType saveType = SaveType.Queue)
     {
         var subMod = GetSubMod(mod, groupIdx, optionIdx);
         if (subMod.FileData.SetEquals(replacements))
@@ -346,7 +348,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
 
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
         subMod.FileData.SetTo(replacements);
-        saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1);
     }
 
@@ -364,7 +366,8 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Set the file swaps for a given option. Replaces existing swaps. </summary>
-    public void OptionSetFileSwaps(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> swaps)
+    public void OptionSetFileSwaps(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> swaps,
+        SaveType saveType = SaveType.Queue)
     {
         var subMod = GetSubMod(mod, groupIdx, optionIdx);
         if (subMod.FileSwapData.SetEquals(swaps))
@@ -372,7 +375,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
 
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
         subMod.FileSwapData.SetTo(swaps);
-        saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+        saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1);
     }
 

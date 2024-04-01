@@ -213,7 +213,7 @@ public sealed class CrashHandlerService : IDisposable, IService
             }
             catch (Exception ex)
             {
-                Penumbra.Log.Debug($"Could not delete {dir}:\n{ex}");
+                Penumbra.Log.Verbose($"Could not delete {dir}. This is generally not an error:\n{ex}");
             }
         }
     }
