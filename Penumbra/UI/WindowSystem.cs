@@ -27,7 +27,8 @@ public class PenumbraWindowSystem : IDisposable
         _windowSystem.AddWindow(editWindow);
         _windowSystem.AddWindow(importPopup);
         _windowSystem.AddWindow(debugTab);
-        _uiBuilder.OpenConfigUi          += Window.Toggle;
+        _uiBuilder.OpenMainUi            += Window.Toggle;
+        _uiBuilder.OpenConfigUi          += Window.OpenSettings;
         _uiBuilder.Draw                  += _windowSystem.Draw;
         _uiBuilder.Draw                  += _fileDialog.Draw;
         _uiBuilder.DisableGposeUiHide    =  !config.HideUiInGPose;
@@ -40,7 +41,8 @@ public class PenumbraWindowSystem : IDisposable
 
     public void Dispose()
     {
-        _uiBuilder.OpenConfigUi -= Window.Toggle;
+        _uiBuilder.OpenMainUi   -= Window.Toggle;
+        _uiBuilder.OpenConfigUi -= Window.OpenSettings;
         _uiBuilder.Draw         -= _windowSystem.Draw;
         _uiBuilder.Draw         -= _fileDialog.Draw;
     }

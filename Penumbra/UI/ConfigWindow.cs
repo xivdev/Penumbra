@@ -4,6 +4,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
+using Penumbra.Api.Enums;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
@@ -33,6 +34,12 @@ public sealed class ConfigWindow : Window
         RespectCloseHotkey = true;
         tutorial.UpdateTutorialStep();
         IsOpen = _config.OpenWindowAtStart;
+    }
+
+    public void OpenSettings()
+    {
+        _configTabs.SelectTab = TabType.Settings;
+        IsOpen                = true;
     }
 
     public void Setup(Penumbra penumbra, ConfigTabBar configTabs)
