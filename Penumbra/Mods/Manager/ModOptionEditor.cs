@@ -34,8 +34,6 @@ public enum ModOptionChangeType
 
 public class ModOptionEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
 {
-
-
     /// <summary> Change the type of a group given by mod and index to type, if possible. </summary>
     public void ChangeModGroupType(Mod mod, int groupIdx, GroupType type)
     {
@@ -86,7 +84,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         if (!VerifyFileName(mod, null, newName, true))
             return;
 
-        var maxPriority = mod.Groups.Count == 0 ? 0 : mod.Groups.Max(o => o.Priority) + 1;
+        var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
 
         mod.Groups.Add(type == GroupType.Multi
             ? new MultiModGroup
@@ -169,7 +167,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Change the internal priority of the given option group. </summary>
-    public void ChangeGroupPriority(Mod mod, int groupIdx, int newPriority)
+    public void ChangeGroupPriority(Mod mod, int groupIdx, ModPriority newPriority)
     {
         var group = mod.Groups[groupIdx];
         if (group.Priority == newPriority)
@@ -186,7 +184,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Change the internal priority of the given option. </summary>
-    public void ChangeOptionPriority(Mod mod, int groupIdx, int optionIdx, int newPriority)
+    public void ChangeOptionPriority(Mod mod, int groupIdx, int optionIdx, ModPriority newPriority)
     {
         switch (mod.Groups[groupIdx])
         {
@@ -240,7 +238,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                 s.OptionData.Add(subMod);
                 break;
             case MultiModGroup m:
-                m.PrioritizedOptions.Add((subMod, 0));
+                m.PrioritizedOptions.Add((subMod, ModPriority.Default));
                 break;
         }
 
@@ -263,8 +261,12 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         return ((SubMod)group[^1], true);
     }
 
-    /// <summary> Add an existing option to a given group with a given priority. </summary>
-    public void AddOption(Mod mod, int groupIdx, ISubMod option, int priority = 0)
+    /// <summary> Add an existing option to a given group with default priority. </summary> 
+    public void AddOption(Mod mod, int groupIdx, ISubMod option)
+        => AddOption(mod, groupIdx, option, ModPriority.Default);
+
+    /// <summary> Add an existing option to a given group with a given priority. </summary> 
+    public void AddOption(Mod mod, int groupIdx, ISubMod option, ModPriority priority)
     {
         if (option is not SubMod o)
             return;

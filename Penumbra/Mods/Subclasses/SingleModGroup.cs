@@ -12,14 +12,14 @@ public sealed class SingleModGroup : IModGroup
     public GroupType Type
         => GroupType.Single;
 
-    public string  Name            { get; set; } = "Option";
-    public string  Description     { get; set; } = "A mutually exclusive group of settings.";
-    public int     Priority        { get; set; }
-    public Setting DefaultSettings { get; set; }
+    public string      Name            { get; set; } = "Option";
+    public string      Description     { get; set; } = "A mutually exclusive group of settings.";
+    public ModPriority Priority        { get; set; }
+    public Setting     DefaultSettings { get; set; }
 
     public readonly List<SubMod> OptionData = [];
 
-    public int OptionPriority(Index _)
+    public ModPriority OptionPriority(Index _)
         => Priority;
 
     public ISubMod this[Index idx]
@@ -42,7 +42,7 @@ public sealed class SingleModGroup : IModGroup
         {
             Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Priority        = json[nameof(Priority)]?.ToObject<int>() ?? 0,
+            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
@@ -72,9 +72,9 @@ public sealed class SingleModGroup : IModGroup
                     Name            = Name,
                     Description     = Description,
                     Priority        = Priority,
-                    DefaultSettings = Setting.Multi((int) DefaultSettings.Value),
+                    DefaultSettings = Setting.Multi((int)DefaultSettings.Value),
                 };
-                multi.PrioritizedOptions.AddRange(OptionData.Select((o, i) => (o, i)));
+                multi.PrioritizedOptions.AddRange(OptionData.Select((o, i) => (o, new ModPriority(i))));
                 return multi;
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }

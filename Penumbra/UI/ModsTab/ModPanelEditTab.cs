@@ -511,7 +511,8 @@ public class ModPanelEditTab(
             {
                 var isDefaultOption = group.DefaultSettings.HasFlag(optionIdx);
                 if (ImGui.Checkbox("##default", ref isDefaultOption))
-                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx,
+                        group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
 
                 ImGuiUtil.HoverTooltip($"{(isDefaultOption ? "Disable" : "Enable")} {option.Name} per default in this group.");
             }
@@ -669,10 +670,10 @@ public class ModPanelEditTab(
         public const int Description = -7;
 
         // Temporary strings
-        private static string? _currentEdit;
-        private static int?    _currentGroupPriority;
-        private static int     _currentField = None;
-        private static int     _optionIndex  = None;
+        private static string?      _currentEdit;
+        private static ModPriority? _currentGroupPriority;
+        private static int          _currentField = None;
+        private static int          _optionIndex  = None;
 
         public static void Reset()
         {
@@ -705,13 +706,13 @@ public class ModPanelEditTab(
             return false;
         }
 
-        public static bool Priority(string label, int field, int option, int oldValue, out int value, float width)
+        public static bool Priority(string label, int field, int option, ModPriority oldValue, out ModPriority value, float width)
         {
-            var tmp = field == _currentField && option == _optionIndex ? _currentGroupPriority ?? oldValue : oldValue;
+            var tmp = (field == _currentField && option == _optionIndex ? _currentGroupPriority ?? oldValue : oldValue).Value;
             ImGui.SetNextItemWidth(width);
             if (ImGui.InputInt(label, ref tmp, 0, 0))
             {
-                _currentGroupPriority = tmp;
+                _currentGroupPriority = new ModPriority(tmp);
                 _optionIndex          = option;
                 _currentField         = field;
             }
@@ -724,7 +725,7 @@ public class ModPanelEditTab(
                 return ret;
             }
 
-            value = 0;
+            value = ModPriority.Default;
             return false;
         }
     }

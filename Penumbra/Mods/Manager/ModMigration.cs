@@ -61,10 +61,9 @@ public static partial class ModMigration
         if (fileVersion > 0)
             return false;
 
-        var swaps = json["FileSwaps"]?.ToObject<Dictionary<Utf8GamePath, FullPath>>()
-         ?? new Dictionary<Utf8GamePath, FullPath>();
-        var groups        = json["Groups"]?.ToObject<Dictionary<string, OptionGroupV0>>() ?? new Dictionary<string, OptionGroupV0>();
-        var priority      = 1;
+        var swaps         = json["FileSwaps"]?.ToObject<Dictionary<Utf8GamePath, FullPath>>() ?? [];
+        var groups        = json["Groups"]?.ToObject<Dictionary<string, OptionGroupV0>>() ?? [];
+        var priority      = new ModPriority(1);
         var seenMetaFiles = new HashSet<FullPath>();
         foreach (var group in groups.Values)
             ConvertGroup(creator, mod, group, ref priority, seenMetaFiles);
@@ -116,7 +115,8 @@ public static partial class ModMigration
         return true;
     }
 
-    private static void ConvertGroup(ModCreator creator, Mod mod, OptionGroupV0 group, ref int priority, HashSet<FullPath> seenMetaFiles)
+    private static void ConvertGroup(ModCreator creator, Mod mod, OptionGroupV0 group, ref ModPriority priority,
+        HashSet<FullPath> seenMetaFiles)
     {
         if (group.Options.Count == 0)
             return;
@@ -125,7 +125,7 @@ public static partial class ModMigration
         {
             case GroupType.Multi:
 
-                var optionPriority = 0;
+                var optionPriority = ModPriority.Default;
                 var newMultiGroup = new MultiModGroup()
                 {
                     Name        = group.GroupName,

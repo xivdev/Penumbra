@@ -53,7 +53,7 @@ public sealed class SubMod : ISubMod
         OptionIdx = optionIdx;
     }
 
-    public void Load(DirectoryInfo basePath, JToken json, out int priority)
+    public void Load(DirectoryInfo basePath, JToken json, out ModPriority priority)
     {
         FileData.Clear();
         FileSwapData.Clear();
@@ -62,7 +62,7 @@ public sealed class SubMod : ISubMod
         // Every option has a name, but priorities are only relevant for multi group options.
         Name        = json[nameof(ISubMod.Name)]?.ToObject<string>() ?? string.Empty;
         Description = json[nameof(ISubMod.Description)]?.ToObject<string>() ?? string.Empty;
-        priority    = json[nameof(IModGroup.Priority)]?.ToObject<int>() ?? 0;
+        priority    = json[nameof(IModGroup.Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default;
 
         var files = (JObject?)json[nameof(Files)];
         if (files != null)

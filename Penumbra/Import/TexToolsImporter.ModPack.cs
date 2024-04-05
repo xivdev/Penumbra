@@ -153,7 +153,7 @@ public partial class TexToolsImporter
 
         // Iterate through all pages
         var options       = new List<ISubMod>();
-        var groupPriority = 0;
+        var groupPriority = ModPriority.Default;
         var groupNames    = new HashSet<string>();
         foreach (var page in modList.ModPackPages)
         {
@@ -209,9 +209,9 @@ public partial class TexToolsImporter
                         }
                     }
 
-                    _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
+                    _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority.Value,
                         defaultSettings ?? Setting.Zero, group.Description, options);
-                    ++groupPriority;
+                    groupPriority += 1;
                 }
             }
         }

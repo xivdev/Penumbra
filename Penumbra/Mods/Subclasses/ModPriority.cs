@@ -8,7 +8,9 @@ public readonly record struct ModPriority(int Value) :
     IAdditionOperators<ModPriority, ModPriority, ModPriority>,
     IAdditionOperators<ModPriority, int, ModPriority>,
     ISubtractionOperators<ModPriority, ModPriority, ModPriority>,
-    ISubtractionOperators<ModPriority, int, ModPriority>
+    ISubtractionOperators<ModPriority, int, ModPriority>,
+    IIncrementOperators<ModPriority>,
+    IComparable<ModPriority>
 {
     public static readonly ModPriority Default  = new(0);
     public static readonly ModPriority MaxValue = new(int.MaxValue);
@@ -58,4 +60,10 @@ public readonly record struct ModPriority(int Value) :
 
     public static ModPriority operator -(ModPriority left, int right)
         => new(left.Value - right);
+
+    public static ModPriority operator ++(ModPriority value)
+        => new(value.Value + 1);
+
+    public int CompareTo(ModPriority other)
+        => Value.CompareTo(other.Value);
 }

@@ -8,13 +8,13 @@ public interface IModGroup : IEnumerable<ISubMod>
 {
     public const int MaxMultiOptions = 32;
 
-    public string    Name            { get; }
-    public string    Description     { get; }
-    public GroupType Type            { get; }
-    public int       Priority        { get; }
-    public Setting   DefaultSettings { get; set; }
+    public string      Name            { get; }
+    public string      Description     { get; }
+    public GroupType   Type            { get; }
+    public ModPriority Priority        { get; }
+    public Setting     DefaultSettings { get; set; }
 
-    public int OptionPriority(Index optionIdx);
+    public ModPriority OptionPriority(Index optionIdx);
 
     public ISubMod this[Index idx] { get; }
 
@@ -94,7 +94,11 @@ public readonly struct ModSaveGroup : ISavable
             j.WritePropertyName("Options");
             j.WriteStartArray();
             for (var idx = 0; idx < _group.Count; ++idx)
-                ISubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type == GroupType.Multi ? _group.OptionPriority(idx) : null);
+                ISubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type switch
+                {
+                    GroupType.Multi => _group.OptionPriority(idx),
+                    _ => null,
+                });
 
             j.WriteEndArray();
             j.WriteEndObject();

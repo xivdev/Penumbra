@@ -235,7 +235,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
 
     /// <summary> Create a file for an option group from given data. </summary>
     public void CreateOptionGroup(DirectoryInfo baseFolder, GroupType type, string name,
-        int priority, int index, Setting defaultSettings, string desc, IEnumerable<ISubMod> subMods)
+        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<ISubMod> subMods)
     {
         switch (type)
         {
@@ -248,7 +248,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                     Priority        = priority,
                     DefaultSettings = defaultSettings,
                 };
-                group.PrioritizedOptions.AddRange(subMods.OfType<SubMod>().Select((s, idx) => (s, idx)));
+                group.PrioritizedOptions.AddRange(subMods.OfType<SubMod>().Select((s, idx) => (s, new ModPriority(idx))));
                 _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }

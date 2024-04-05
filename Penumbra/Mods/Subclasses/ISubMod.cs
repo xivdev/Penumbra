@@ -16,7 +16,7 @@ public interface ISubMod
 
     public bool IsDefault { get; }
 
-    public static void WriteSubMod(JsonWriter j, JsonSerializer serializer, ISubMod mod, DirectoryInfo basePath, int? priority)
+    public static void WriteSubMod(JsonWriter j, JsonSerializer serializer, ISubMod mod, DirectoryInfo basePath, ModPriority? priority)
     {
         j.WriteStartObject();
         j.WritePropertyName(nameof(Name));
@@ -26,7 +26,7 @@ public interface ISubMod
         if (priority != null)
         {
             j.WritePropertyName(nameof(IModGroup.Priority));
-            j.WriteValue(priority.Value);
+            j.WriteValue(priority.Value.Value);
         }
 
         j.WritePropertyName(nameof(mod.Files));

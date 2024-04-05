@@ -14,12 +14,12 @@ public sealed class MultiModGroup : IModGroup
     public GroupType Type
         => GroupType.Multi;
 
-    public string  Name            { get; set; } = "Group";
-    public string  Description     { get; set; } = "A non-exclusive group of settings.";
-    public int     Priority        { get; set; }
-    public Setting DefaultSettings { get; set; }
+    public string      Name            { get; set; } = "Group";
+    public string      Description     { get; set; } = "A non-exclusive group of settings.";
+    public ModPriority Priority        { get; set; }
+    public Setting     DefaultSettings { get; set; }
 
-    public int OptionPriority(Index idx)
+    public ModPriority OptionPriority(Index idx)
         => PrioritizedOptions[idx].Priority;
 
     public ISubMod this[Index idx]
@@ -29,7 +29,7 @@ public sealed class MultiModGroup : IModGroup
     public int Count
         => PrioritizedOptions.Count;
 
-    public readonly List<(SubMod Mod, int Priority)> PrioritizedOptions = new();
+    public readonly List<(SubMod Mod, ModPriority Priority)> PrioritizedOptions = [];
 
     public IEnumerator<ISubMod> GetEnumerator()
         => PrioritizedOptions.Select(o => o.Mod).GetEnumerator();
@@ -43,7 +43,7 @@ public sealed class MultiModGroup : IModGroup
         {
             Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Priority        = json[nameof(Priority)]?.ToObject<int>() ?? 0,
+            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
