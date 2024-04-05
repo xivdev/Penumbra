@@ -1,6 +1,7 @@
 {
     "Author": "Ottermandias, Adam, Wintermute",
     "Name": "Penumbra",
+    "Punchline": "Runtime mod loader and manager.",
     "Description": "Runtime mod loader and manager.",
     "InternalName": "Penumbra",
     "AssemblyVersion": "9.0.0.1",
