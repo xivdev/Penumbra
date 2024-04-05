@@ -12,10 +12,10 @@ public sealed class SingleModGroup : IModGroup
     public GroupType Type
         => GroupType.Single;
 
-    public string Name            { get; set; } = "Option";
-    public string Description     { get; set; } = "A mutually exclusive group of settings.";
-    public int    Priority        { get; set; }
-    public uint   DefaultSettings { get; set; }
+    public string  Name            { get; set; } = "Option";
+    public string  Description     { get; set; } = "A mutually exclusive group of settings.";
+    public int     Priority        { get; set; }
+    public Setting DefaultSettings { get; set; }
 
     public readonly List<SubMod> OptionData = [];
 
@@ -43,7 +43,7 @@ public sealed class SingleModGroup : IModGroup
             Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
             Priority        = json[nameof(Priority)]?.ToObject<int>() ?? 0,
-            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<uint>() ?? 0u,
+            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
             return null;
@@ -57,9 +57,7 @@ public sealed class SingleModGroup : IModGroup
                 ret.OptionData.Add(subMod);
             }
 
-        if ((int)ret.DefaultSettings >= ret.Count)
-            ret.DefaultSettings = 0;
-
+        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
         return ret;
     }
 
@@ -74,7 +72,7 @@ public sealed class SingleModGroup : IModGroup
                     Name            = Name,
                     Description     = Description,
                     Priority        = Priority,
-                    DefaultSettings = 1u << (int)DefaultSettings,
+                    DefaultSettings = Setting.Multi((int) DefaultSettings.Value),
                 };
                 multi.PrioritizedOptions.AddRange(OptionData.Select((o, i) => (o, i)));
                 return multi;
@@ -87,19 +85,20 @@ public sealed class SingleModGroup : IModGroup
         if (!OptionData.Move(optionIdxFrom, optionIdxTo))
             return false;
 
+        var currentIndex = DefaultSettings.AsIndex;
         // Update default settings with the move.
-        if (DefaultSettings == optionIdxFrom)
+        if (currentIndex == optionIdxFrom)
         {
-            DefaultSettings = (uint)optionIdxTo;
+            DefaultSettings = Setting.Single(optionIdxTo);
         }
         else if (optionIdxFrom < optionIdxTo)
         {
-            if (DefaultSettings > optionIdxFrom && DefaultSettings <= optionIdxTo)
-                --DefaultSettings;
+            if (currentIndex > optionIdxFrom && currentIndex <= optionIdxTo)
+                DefaultSettings = Setting.Single(currentIndex - 1);
         }
-        else if (DefaultSettings < optionIdxFrom && DefaultSettings >= optionIdxTo)
+        else if (currentIndex < optionIdxFrom && currentIndex >= optionIdxTo)
         {
-            ++DefaultSettings;
+            DefaultSettings = Setting.Single(currentIndex + 1);
         }
 
         UpdatePositions(Math.Min(optionIdxFrom, optionIdxTo));
@@ -111,4 +110,7 @@ public sealed class SingleModGroup : IModGroup
         foreach (var (o, i) in OptionData.WithIndex().Skip(from))
             o.SetPosition(o.GroupIdx, i);
     }
+
+    public Setting FixSetting(Setting setting)
+        => Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(Count - 1)));
 }

@@ -12,7 +12,7 @@ public interface IModGroup : IEnumerable<ISubMod>
     public string    Description     { get; }
     public GroupType Type            { get; }
     public int       Priority        { get; }
-    public uint      DefaultSettings { get; set; }
+    public Setting   DefaultSettings { get; set; }
 
     public int OptionPriority(Index optionIdx);
 
@@ -31,6 +31,9 @@ public interface IModGroup : IEnumerable<ISubMod>
     public IModGroup Convert(GroupType type);
     public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
     public void      UpdatePositions(int from = 0);
+
+    /// <summary> Ensure that a value is valid for a group. </summary>
+    public Setting FixSetting(Setting setting);
 }
 
 public readonly struct ModSaveGroup : ISavable
@@ -87,7 +90,7 @@ public readonly struct ModSaveGroup : ISavable
             j.WritePropertyName(nameof(Type));
             j.WriteValue(_group.Type.ToString());
             j.WritePropertyName(nameof(_group.DefaultSettings));
-            j.WriteValue(_group.DefaultSettings);
+            j.WriteValue(_group.DefaultSettings.Value);
             j.WritePropertyName("Options");
             j.WriteStartArray();
             for (var idx = 0; idx < _group.Count; ++idx)

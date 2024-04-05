@@ -13,7 +13,7 @@ public class TemporaryMod : IMod
 {
     public LowerString Name     { get; init; } = LowerString.Empty;
     public int         Index    { get; init; } = -2;
-    public int         Priority { get; init; } = int.MaxValue;
+    public ModPriority Priority { get; init; } = ModPriority.MaxValue;
 
     public int TotalManipulations
         => Default.Manipulations.Count;
@@ -27,10 +27,7 @@ public class TemporaryMod : IMod
         => Array.Empty<IModGroup>();
 
     public IEnumerable<SubMod> AllSubMods
-        => new[]
-        {
-            Default,
-        };
+        => [Default];
 
     public TemporaryMod()
         => Default = new SubMod(this);

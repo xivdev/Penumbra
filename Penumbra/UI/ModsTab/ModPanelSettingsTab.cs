@@ -26,7 +26,7 @@ public class ModPanelSettingsTab : ITab
     private ModSettings   _settings   = null!;
     private ModCollection _collection = null!;
     private bool          _empty;
-    private int?          _currentPriority = null;
+    private int?          _currentPriority;
 
     public ModPanelSettingsTab(CollectionManager collectionManager, ModManager modManager, ModFileSystemSelector selector,
         TutorialService tutorial, CommunicatorService communicator, Configuration config)
@@ -136,15 +136,15 @@ public class ModPanelSettingsTab : ITab
     private void DrawPriorityInput()
     {
         using var group    = ImRaii.Group();
-        var       priority = _currentPriority ?? _settings.Priority;
+        var       priority = _currentPriority ?? _settings.Priority.Value;
         ImGui.SetNextItemWidth(50 * UiHelpers.Scale);
         if (ImGui.InputInt("##Priority", ref priority, 0, 0))
             _currentPriority = priority;
 
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {
-            if (_currentPriority != _settings.Priority)
-                _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, _selector.Selected!, _currentPriority.Value);
+            if (_currentPriority != _settings.Priority.Value)
+                _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, _selector.Selected!, new ModPriority(_currentPriority.Value));
 
             _currentPriority = null;
         }
@@ -179,7 +179,7 @@ public class ModPanelSettingsTab : ITab
     private void DrawSingleGroupCombo(IModGroup group, int groupIdx)
     {
         using var id             = ImRaii.PushId(groupIdx);
-        var       selectedOption = _empty ? (int)group.DefaultSettings : (int)_settings.Settings[groupIdx];
+        var       selectedOption = _empty ? group.DefaultSettings.AsIndex : _settings.Settings[groupIdx].AsIndex;
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X * 3 / 4);
         using (var combo = ImRaii.Combo(string.Empty, group[selectedOption].Name))
         {
@@ -189,7 +189,8 @@ public class ModPanelSettingsTab : ITab
                     id.Push(idx2);
                     var option = group[idx2];
                     if (ImGui.Selectable(option.Name, idx2 == selectedOption))
-                        _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, (uint)idx2);
+                        _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx,
+                            Setting.Single(idx2));
 
                     if (option.Description.Length > 0)
                         ImGuiUtil.SelectableHelpMarker(option.Description);
@@ -210,8 +211,8 @@ public class ModPanelSettingsTab : ITab
     private void DrawSingleGroupRadio(IModGroup group, int groupIdx)
     {
         using var id             = ImRaii.PushId(groupIdx);
-        var       selectedOption = _empty ? (int)group.DefaultSettings : (int)_settings.Settings[groupIdx];
-        var       minWidth       = Widget.BeginFramedGroup(group.Name, description:group.Description);
+        var       selectedOption = _empty ? group.DefaultSettings.AsIndex : _settings.Settings[groupIdx].AsIndex;
+        var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
 
         DrawCollapseHandling(group, minWidth, DrawOptions);
 
@@ -225,7 +226,8 @@ public class ModPanelSettingsTab : ITab
                 using var i      = ImRaii.PushId(idx);
                 var       option = group[idx];
                 if (ImGui.RadioButton(option.Name, selectedOption == idx))
-                    _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, (uint)idx);
+                    _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx,
+                        Setting.Single(idx));
 
                 if (option.Description.Length <= 0)
                     continue;
@@ -291,7 +293,17 @@ public class ModPanelSettingsTab : ITab
     {
         using var id       = ImRaii.PushId(groupIdx);
         var       flags    = _empty ? group.DefaultSettings : _settings.Settings[groupIdx];
-        var       minWidth = Widget.BeginFramedGroup(group.Name, description: group.Description);
+        var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+
+        DrawCollapseHandling(group, minWidth, DrawOptions);
+
+        Widget.EndFramedGroup();
+        var label = $"##multi{groupIdx}";
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            ImGui.OpenPopup($"##multi{groupIdx}");
+
+        DrawMultiPopup(group, groupIdx, label);
+        return;
 
         void DrawOptions()
         {
@@ -299,12 +311,11 @@ public class ModPanelSettingsTab : ITab
             {
                 using var i       = ImRaii.PushId(idx);
                 var       option  = group[idx];
-                var       flag    = 1u << idx;
-                var       setting = (flags & flag) != 0;
+                var       setting = flags.HasFlag(idx);
 
                 if (ImGui.Checkbox(option.Name, ref setting))
                 {
-                    flags = setting ? flags | flag : flags & ~flag;
+                    flags = flags.SetBit(idx, setting);
                     _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, flags);
                 }
 
@@ -315,14 +326,10 @@ public class ModPanelSettingsTab : ITab
                 }
             }
         }
+    }
 
-        DrawCollapseHandling(group, minWidth, DrawOptions);
-
-        Widget.EndFramedGroup();
-        var label = $"##multi{groupIdx}";
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
-            ImGui.OpenPopup($"##multi{groupIdx}");
-
+    private void DrawMultiPopup(IModGroup group, int groupIdx, string label)
+    {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.PopupBorderSize, 1);
         using var popup = ImRaii.Popup(label);
         if (!popup)
@@ -331,12 +338,10 @@ public class ModPanelSettingsTab : ITab
         ImGui.TextUnformatted(group.Name);
         ImGui.Separator();
         if (ImGui.Selectable("Enable All"))
-        {
-            flags = group.Count == 32 ? uint.MaxValue : (1u << group.Count) - 1u;
-            _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, flags);
-        }
+            _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx,
+                Setting.AllBits(group.Count));
 
         if (ImGui.Selectable("Disable All"))
-            _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, 0);
+            _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, Setting.Zero);
     }
 }

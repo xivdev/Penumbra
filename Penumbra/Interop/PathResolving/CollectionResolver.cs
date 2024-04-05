@@ -18,6 +18,7 @@ public sealed unsafe class CollectionResolver(
     PerformanceTracker performance,
     IdentifiedCollectionCache cache,
     IClientState clientState,
+    ObjectManager objects,
     IGameGui gameGui,
     ActorManager actors,
     CutsceneService cutscenes,
@@ -35,8 +36,8 @@ public sealed unsafe class CollectionResolver(
     public ModCollection PlayerCollection()
     {
         using var performance1 = performance.Measure(PerformanceType.IdentifyCollection);
-        var       gameObject   = (GameObject*)(clientState.LocalPlayer?.Address ?? nint.Zero);
-        if (gameObject == null)
+        var       gameObject   = objects[0];
+        if (!gameObject.Valid)
             return collectionManager.Active.ByType(CollectionType.Yourself)
              ?? collectionManager.Active.Default;
 

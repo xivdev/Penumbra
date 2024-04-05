@@ -8,6 +8,7 @@ using Penumbra.Interop.ResourceLoading;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -288,7 +289,7 @@ public class CollectionCacheManager : IDisposable
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
-    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool _)
+    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool _)
     {
         if (!collection.HasCache)
             return;
@@ -300,9 +301,9 @@ public class CollectionCacheManager : IDisposable
                 cache.ReloadMod(mod!, true);
                 break;
             case ModSettingChange.EnableState:
-                if (oldValue == 0)
+                if (oldValue == Setting.False)
                     cache.AddMod(mod!, true);
-                else if (oldValue == 1)
+                else if (oldValue == Setting.True)
                     cache.RemoveMod(mod!, true);
                 else if (collection[mod!.Index].Settings?.Enabled == true)
                     cache.ReloadMod(mod!, true);

@@ -341,15 +341,15 @@ public class ConfigMigrationService(SaveService saveService) : IService
             var text = File.ReadAllText(collectionJson.FullName);
             var data = JArray.Parse(text);
 
-            var maxPriority = 0;
+            var maxPriority = ModPriority.Default;
             var dict        = new Dictionary<string, ModSettings.SavedSettings>();
             foreach (var setting in data.Cast<JObject>())
             {
-                var modName  = (string)setting["FolderName"]!;
-                var enabled  = (bool)setting["Enabled"]!;
-                var priority = (int)setting["Priority"]!;
-                var settings = setting["Settings"]!.ToObject<Dictionary<string, long>>()
-                 ?? setting["Conf"]!.ToObject<Dictionary<string, long>>();
+                var modName  = setting["FolderName"]?.ToObject<string>()!;
+                var enabled  = setting["Enabled"]?.ToObject<bool>() ?? false;
+                var priority = setting["Priority"]?.ToObject<ModPriority>() ?? ModPriority.Default;
+                var settings = setting["Settings"]!.ToObject<Dictionary<string, Setting>>()
+                 ?? setting["Conf"]!.ToObject<Dictionary<string, Setting>>();
 
                 dict[modName] = new ModSettings.SavedSettings()
                 {
@@ -357,7 +357,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
                     Priority = priority,
                     Settings = settings!,
                 };
-                maxPriority = Math.Max(maxPriority, priority);
+                maxPriority = maxPriority.Max(priority);
             }
 
             InvertModListOrder = _data[nameof(InvertModListOrder)]?.ToObject<bool>() ?? InvertModListOrder;
@@ -365,8 +365,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection = ModCollection.CreateFromData(saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict,
-                Array.Empty<string>());
+            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

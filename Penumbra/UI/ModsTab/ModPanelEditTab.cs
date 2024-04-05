@@ -502,18 +502,16 @@ public class ModPanelEditTab(
 
             if (group.Type == GroupType.Single)
             {
-                if (ImGui.RadioButton("##default", group.DefaultSettings == optionIdx))
-                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, (uint)optionIdx);
+                if (ImGui.RadioButton("##default", group.DefaultSettings.AsIndex == optionIdx))
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, Setting.Single(optionIdx));
 
                 ImGuiUtil.HoverTooltip($"Set {option.Name} as the default choice for this group.");
             }
             else
             {
-                var isDefaultOption = ((group.DefaultSettings >> optionIdx) & 1) != 0;
+                var isDefaultOption = group.DefaultSettings.HasFlag(optionIdx);
                 if (ImGui.Checkbox("##default", ref isDefaultOption))
-                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, isDefaultOption
-                        ? group.DefaultSettings | (1u << optionIdx)
-                        : group.DefaultSettings & ~(1u << optionIdx));
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
 
                 ImGuiUtil.HoverTooltip($"{(isDefaultOption ? "Disable" : "Enable")} {option.Name} per default in this group.");
             }

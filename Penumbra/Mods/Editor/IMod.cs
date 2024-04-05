@@ -7,8 +7,8 @@ public interface IMod
 {
     LowerString Name { get; }
 
-    public int Index    { get; }
-    public int Priority { get; }
+    public int      Index    { get; }
+    public ModPriority Priority { get; }
 
     public ISubMod                  Default { get; }
     public IReadOnlyList<IModGroup> Groups  { get; }

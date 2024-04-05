@@ -235,7 +235,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
 
     /// <summary> Create a file for an option group from given data. </summary>
     public void CreateOptionGroup(DirectoryInfo baseFolder, GroupType type, string name,
-        int priority, int index, uint defaultSettings, string desc, IEnumerable<ISubMod> subMods)
+        int priority, int index, Setting defaultSettings, string desc, IEnumerable<ISubMod> subMods)
     {
         switch (type)
         {

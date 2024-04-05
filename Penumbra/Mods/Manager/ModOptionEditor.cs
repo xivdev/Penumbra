@@ -1,3 +1,4 @@
+using System.Security.AccessControl;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
@@ -33,6 +34,8 @@ public enum ModOptionChangeType
 
 public class ModOptionEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
 {
+
+
     /// <summary> Change the type of a group given by mod and index to type, if possible. </summary>
     public void ChangeModGroupType(Mod mod, int groupIdx, GroupType type)
     {
@@ -46,7 +49,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Change the settings stored as default options in a mod.</summary>
-    public void ChangeModGroupDefaultOption(Mod mod, int groupIdx, uint defaultOption)
+    public void ChangeModGroupDefaultOption(Mod mod, int groupIdx, Setting defaultOption)
     {
         var group = mod.Groups[groupIdx];
         if (group.DefaultSettings == defaultOption)

@@ -191,15 +191,15 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             }
         }
 
-        if (state.Priority != 0 && !_config.HidePrioritiesInSelector)
+        if (!state.Priority.IsDefault && !_config.HidePrioritiesInSelector)
         {
             var line           = ImGui.GetItemRectMin().Y;
             var itemPos        = ImGui.GetItemRectMax().X;
             var maxWidth       = ImGui.GetWindowPos().X + ImGui.GetWindowContentRegionMax().X;
             var priorityString = $"[{state.Priority}]";
-            var Size           = ImGui.CalcTextSize(priorityString).X;
+            var size           = ImGui.CalcTextSize(priorityString).X;
             var remainingSpace = maxWidth - itemPos;
-            var offset         = remainingSpace - Size;
+            var offset         = remainingSpace - size;
             if (ImGui.GetScrollMaxY() == 0)
                 offset -= ImGui.GetStyle().ItemInnerSpacing.X;
 
@@ -427,7 +427,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     #region Automatic cache update functions.
 
-    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
+    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool inherited)
     {
         if (collection != _collectionManager.Active.Current)
             return;
@@ -517,8 +517,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct ModState
     {
-        public ColorId Color;
-        public int     Priority;
+        public ColorId     Color;
+        public ModPriority Priority;
     }
 
     private const StringComparison                  IgnoreCase   = StringComparison.OrdinalIgnoreCase;
@@ -744,7 +744,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         state = new ModState
         {
             Color    = ColorId.EnabledMod,
-            Priority = settings?.Priority ?? 0,
+            Priority = settings?.Priority ?? ModPriority.Default,
         };
         if (ApplyStringFilters(leaf, mod))
             return true;

@@ -237,7 +237,7 @@ public sealed class CollectionCache : IDisposable
             if (settings is not { Enabled: true })
                 return;
 
-            foreach (var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending(g => g.Item1.Priority))
+            foreach (var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
             {
                 if (group.Count == 0)
                     continue;
@@ -246,13 +246,13 @@ public sealed class CollectionCache : IDisposable
                 switch (group.Type)
                 {
                     case GroupType.Single:
-                        AddSubMod(group[(int)config], mod);
+                        AddSubMod(group[config.AsIndex], mod);
                         break;
                     case GroupType.Multi:
                     {
                         foreach (var (option, _) in group.WithIndex()
-                                     .Where(p => ((1 << p.Item2) & config) != 0)
-                                     .OrderByDescending(p => group.OptionPriority(p.Item2)))
+                                     .Where(p => config.HasFlag(p.Index))
+                                     .OrderByDescending(p => group.OptionPriority(p.Index)))
                             AddSubMod(option, mod);
 
                         break;

@@ -3,6 +3,7 @@ using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Communication;
 
@@ -12,13 +13,13 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the collection in which the setting was changed. </item>
 ///     <item>Parameter is the type of change. </item>
 ///     <item>Parameter is the mod the setting was changed for, unless it was a multi-change. </item>
-///     <item>Parameter is the old value of the setting before the change as int. </item>
+///     <item>Parameter is the old value of the setting before the change as Setting. </item>
 ///     <item>Parameter is the index of the changed group if the change type is Setting. </item>
 ///     <item>Parameter is whether the change was inherited from another collection. </item>
 /// </list>
 /// </summary>
 public sealed class ModSettingChanged()
-    : EventWrapper<ModCollection, ModSettingChange, Mod?, int, int, bool, ModSettingChanged.Priority>(nameof(ModSettingChanged))
+    : EventWrapper<ModCollection, ModSettingChange, Mod?, Setting, int, bool, ModSettingChanged.Priority>(nameof(ModSettingChanged))
 {
     public enum Priority
     {

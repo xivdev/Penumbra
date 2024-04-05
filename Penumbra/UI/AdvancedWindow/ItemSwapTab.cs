@@ -694,7 +694,7 @@ public class ItemSwapTab : IDisposable, ITab
         UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection[_mod.Index].Settings : null);
     }
 
-    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
+    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool inherited)
     {
         if (collection != _collectionManager.Active.Current || mod != _mod)
             return;

@@ -11,8 +11,8 @@ namespace Penumbra.Mods.Subclasses;
 public class ModSettings
 {
     public static readonly ModSettings Empty = new();
-    public                 List<uint>  Settings { get; private init; } = [];
-    public                 int         Priority { get; set; }
+    public                 SettingList Settings { get; private init; } = [];
+    public                 ModPriority    Priority { get; set; }
     public                 bool        Enabled  { get; set; }
 
     // Create an independent copy of the current settings.
@@ -21,7 +21,7 @@ public class ModSettings
         {
             Enabled  = Enabled,
             Priority = Priority,
-            Settings = [.. Settings],
+            Settings = Settings.Clone(),
         };
 
     // Create default settings for a given mod.
@@ -29,8 +29,8 @@ public class ModSettings
         => new()
         {
             Enabled  = false,
-            Priority = 0,
-            Settings = mod.Groups.Select(g => g.DefaultSettings).ToList(),
+            Priority = ModPriority.Default,
+            Settings = SettingList.Default(mod),
         };
 
     // Return everything required to resolve things for a single mod with given settings (which can be null, in which case the default is used.
@@ -39,7 +39,7 @@ public class ModSettings
         if (settings == null)
             settings = DefaultSettings(mod);
         else
-            settings.AddMissingSettings(mod);
+            settings.Settings.FixSize(mod);
 
         var dict = new Dictionary<Utf8GamePath, FullPath>();
         var set  = new HashSet<MetaManipulation>();
@@ -49,13 +49,13 @@ public class ModSettings
             if (group.Type is GroupType.Single)
             {
                 if (group.Count > 0)
-                    AddOption(group[(int)settings.Settings[index]]);
+                    AddOption(group[settings.Settings[index].AsIndex]);
             }
             else
             {
                 foreach (var (option, optionIdx) in group.WithIndex().OrderByDescending(o => group.OptionPriority(o.Index)))
                 {
-                    if (((settings.Settings[index] >> optionIdx) & 1) == 1)
+                    if (settings.Settings[index].HasFlag(optionIdx))
                         AddOption(option);
                 }
             }
@@ -97,8 +97,8 @@ public class ModSettings
                 var config = Settings[groupIdx];
                 Settings[groupIdx] = group.Type switch
                 {
-                    GroupType.Single => (uint)Math.Max(Math.Min(group.Count - 1, BitOperations.TrailingZeroCount(config)), 0),
-                    GroupType.Multi  => 1u << (int)config,
+                    GroupType.Single => config.TurnMulti(group.Count),
+                    GroupType.Multi  => Setting.Multi((int)config.Value),
                     _                => config,
                 };
                 return config != Settings[groupIdx];
@@ -111,9 +111,11 @@ public class ModSettings
                 var config = Settings[groupIdx];
                 Settings[groupIdx] = group.Type switch
                 {
-                    GroupType.Single => config >= optionIdx ? config > 1 ? config - 1 : 0 : config,
-                    GroupType.Multi  => Functions.RemoveBit(config, optionIdx),
-                    _                => config,
+                    GroupType.Single => config.AsIndex >= optionIdx
+                        ? config.AsIndex > 1 ? Setting.Single(config.AsIndex - 1) : Setting.Zero
+                        : config,
+                    GroupType.Multi => config.RemoveBit(optionIdx),
+                    _               => config,
                 };
                 return config != Settings[groupIdx];
             }
@@ -128,8 +130,8 @@ public class ModSettings
                 var config = Settings[groupIdx];
                 Settings[groupIdx] = group.Type switch
                 {
-                    GroupType.Single => config == optionIdx ? (uint)movedToIdx : config,
-                    GroupType.Multi  => Functions.MoveBit(config, optionIdx, movedToIdx),
+                    GroupType.Single => config.AsIndex == optionIdx ? Setting.Single(movedToIdx) : config,
+                    GroupType.Multi  => config.MoveBit(optionIdx, movedToIdx),
                     _                => config,
                 };
                 return config != Settings[groupIdx];
@@ -138,96 +140,52 @@ public class ModSettings
         }
     }
 
-    public bool FixAllSettings(Mod mod)
+    /// <summary> Set a setting. Ensures that there are enough settings and fixes the setting beforehand. </summary>
+    public void SetValue(Mod mod, int groupIdx, Setting newValue)
     {
-        var ret = false;
-        for (var i = 0; i < Settings.Count; ++i)
-        {
-            var newValue = FixSetting(mod.Groups[i], Settings[i]);
-            if (newValue != Settings[i])
-            {
-                ret         = true;
-                Settings[i] = newValue;
-            }
-        }
-
-        return AddMissingSettings(mod) || ret;
-    }
-
-    // Ensure that a value is valid for a group.
-    private static uint FixSetting(IModGroup group, uint value)
-        => group.Type switch
-        {
-            GroupType.Single => (uint)Math.Min(value, group.Count - 1),
-            GroupType.Multi  => (uint)(value & ((1ul << group.Count) - 1)),
-            _                => value,
-        };
-
-    // Set a setting. Ensures that there are enough settings and fixes the setting beforehand.
-    public void SetValue(Mod mod, int groupIdx, uint newValue)
-    {
-        AddMissingSettings(mod);
+        Settings.FixSize(mod);
         var group = mod.Groups[groupIdx];
-        Settings[groupIdx] = FixSetting(group, newValue);
-    }
-
-    // Add defaulted settings up to the required count.
-    private bool AddMissingSettings(Mod mod)
-    {
-        var changes = false;
-        for (var i = Settings.Count; i < mod.Groups.Count; ++i)
-        {
-            Settings.Add(mod.Groups[i].DefaultSettings);
-            changes = true;
-        }
-
-        return changes;
+        Settings[groupIdx] = group.FixSetting(newValue);
     }
 
     // A simple struct conversion to easily save settings by name instead of value.
     public struct SavedSettings
     {
-        public Dictionary<string, long> Settings;
-        public int                      Priority;
-        public bool                     Enabled;
+        public Dictionary<string, Setting> Settings;
+        public ModPriority                    Priority;
+        public bool                        Enabled;
 
         public SavedSettings DeepCopy()
-            => new()
-            {
-                Enabled  = Enabled,
-                Priority = Priority,
-                Settings = Settings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-            };
+            => this with { Settings = Settings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) };
 
         public SavedSettings(ModSettings settings, Mod mod)
         {
             Priority = settings.Priority;
             Enabled  = settings.Enabled;
-            Settings = new Dictionary<string, long>(mod.Groups.Count);
-            settings.AddMissingSettings(mod);
+            Settings = new Dictionary<string, Setting>(mod.Groups.Count);
+            settings.Settings.FixSize(mod);
 
             foreach (var (group, setting) in mod.Groups.Zip(settings.Settings))
                 Settings.Add(group.Name, setting);
         }
 
         // Convert and fix.
-        public bool ToSettings(Mod mod, out ModSettings settings)
+        public readonly bool ToSettings(Mod mod, out ModSettings settings)
         {
-            var list    = new List<uint>(mod.Groups.Count);
+            var list    = new SettingList(mod.Groups.Count);
             var changes = Settings.Count != mod.Groups.Count;
             foreach (var group in mod.Groups)
             {
                 if (Settings.TryGetValue(group.Name, out var config))
                 {
-                    var castConfig   = (uint)Math.Clamp(config, 0, uint.MaxValue);
-                    var actualConfig = FixSetting(group, castConfig);
+                    var actualConfig = group.FixSetting(config);
                     list.Add(actualConfig);
                     if (actualConfig != config)
                         changes = true;
                 }
                 else
                 {
-                    list.Add(0);
+                    list.Add(group.DefaultSettings);
                     changes = true;
                 }
             }
@@ -245,7 +203,7 @@ public class ModSettings
 
     // Return the settings for a given mod in a shareable format, using the names of groups and options instead of indices.
     // Does not repair settings but ignores settings not fitting to the given mod.
-    public (bool Enabled, int Priority, Dictionary<string, IList<string>> Settings) ConvertToShareable(Mod mod)
+    public (bool Enabled, ModPriority Priority, Dictionary<string, IList<string>> Settings) ConvertToShareable(Mod mod)
     {
         var dict = new Dictionary<string, IList<string>>(Settings.Count);
         foreach (var (setting, idx) in Settings.WithIndex())
@@ -254,16 +212,13 @@ public class ModSettings
                 break;
 
             var group = mod.Groups[idx];
-            if (group.Type == GroupType.Single && setting < group.Count)
+            if (group.Type == GroupType.Single && setting.Value < (ulong)group.Count)
             {
-                dict.Add(group.Name, new[]
-                {
-                    group[(int)setting].Name,
-                });
+                dict.Add(group.Name, [group[(int)setting.Value].Name]);
             }
             else
             {
-                var list = group.Where((_, optionIdx) => (setting & (1 << optionIdx)) != 0).Select(o => o.Name).ToList();
+                var list = group.Where((_, optionIdx) => (setting.Value & (1ul << optionIdx)) != 0).Select(o => o.Name).ToList();
                 dict.Add(group.Name, list);
             }
         }

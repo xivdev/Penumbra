@@ -14,10 +14,10 @@ public sealed class MultiModGroup : IModGroup
     public GroupType Type
         => GroupType.Multi;
 
-    public string Name            { get; set; } = "Group";
-    public string Description     { get; set; } = "A non-exclusive group of settings.";
-    public int    Priority        { get; set; }
-    public uint   DefaultSettings { get; set; }
+    public string  Name            { get; set; } = "Group";
+    public string  Description     { get; set; } = "A non-exclusive group of settings.";
+    public int     Priority        { get; set; }
+    public Setting DefaultSettings { get; set; }
 
     public int OptionPriority(Index idx)
         => PrioritizedOptions[idx].Priority;
@@ -44,7 +44,7 @@ public sealed class MultiModGroup : IModGroup
             Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
             Priority        = json[nameof(Priority)]?.ToObject<int>() ?? 0,
-            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<uint>() ?? 0,
+            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
             return null;
@@ -56,7 +56,8 @@ public sealed class MultiModGroup : IModGroup
                 if (ret.PrioritizedOptions.Count == IModGroup.MaxMultiOptions)
                 {
                     Penumbra.Messager.NotificationMessage(
-                        $"Multi Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.", NotificationType.Warning);
+                        $"Multi Group {ret.Name} in {mod.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.",
+                        NotificationType.Warning);
                     break;
                 }
 
@@ -66,7 +67,7 @@ public sealed class MultiModGroup : IModGroup
                 ret.PrioritizedOptions.Add((subMod, priority));
             }
 
-        ret.DefaultSettings = (uint)(ret.DefaultSettings & ((1ul << ret.Count) - 1));
+        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
 
         return ret;
     }
@@ -82,7 +83,7 @@ public sealed class MultiModGroup : IModGroup
                     Name            = Name,
                     Description     = Description,
                     Priority        = Priority,
-                    DefaultSettings = (uint)Math.Max(Math.Min(Count - 1, BitOperations.TrailingZeroCount(DefaultSettings)), 0),
+                    DefaultSettings = DefaultSettings.TurnMulti(Count),
                 };
                 multi.OptionData.AddRange(PrioritizedOptions.Select(p => p.Mod));
                 return multi;
@@ -95,7 +96,7 @@ public sealed class MultiModGroup : IModGroup
         if (!PrioritizedOptions.Move(optionIdxFrom, optionIdxTo))
             return false;
 
-        DefaultSettings = Functions.MoveBit(DefaultSettings, optionIdxFrom, optionIdxTo);
+        DefaultSettings = DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);
         UpdatePositions(Math.Min(optionIdxFrom, optionIdxTo));
         return true;
     }
@@ -105,4 +106,7 @@ public sealed class MultiModGroup : IModGroup
         foreach (var ((o, _), i) in PrioritizedOptions.WithIndex().Skip(from))
             o.SetPosition(o.GroupIdx, i);
     }
+
+    public Setting FixSetting(Setting setting)
+        => new(setting.Value & ((1ul << Count) - 1));
 }

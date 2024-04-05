@@ -211,7 +211,7 @@ public class DebugTab : Window, ITab
                 color.Pop();
                 foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
                 {
-                    using var id    = mod is TemporaryMod t ? PushId(t.Priority) : PushId(((Mod)mod).ModPath.Name);
+                    using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
                     using var node2 = TreeNode(mod.Name.Text);
                     if (!node2)
                         continue;

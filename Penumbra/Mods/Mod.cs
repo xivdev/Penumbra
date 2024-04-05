@@ -12,7 +12,7 @@ public sealed class Mod : IMod
     {
         Name     = "Forced Files",
         Index    = -1,
-        Priority = int.MaxValue,
+        Priority = ModPriority.MaxValue,
     };
 
     // Main Data
@@ -26,9 +26,9 @@ public sealed class Mod : IMod
     public bool IsTemporary
         => Index < 0;
 
-    /// <summary>Unused if Index < 0 but used for special temporary mods.</summary>
-    public int Priority
-        => 0;
+    /// <summary>Unused if Index is less than 0 but used for special temporary mods.</summary>
+    public ModPriority Priority
+        => ModPriority.Default;
 
     internal Mod(DirectoryInfo modPath)
     {

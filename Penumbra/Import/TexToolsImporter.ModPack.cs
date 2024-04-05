@@ -174,7 +174,7 @@ public partial class TexToolsImporter
                      ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
                             numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
 
-                    uint? defaultSettings = group.SelectionType == GroupType.Multi ? 0u : null;
+                    Setting? defaultSettings = group.SelectionType == GroupType.Multi ? Setting.Zero : null;
                     for (var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i)
                     {
                         var option = allOptions[i + optionIdx];
@@ -186,8 +186,8 @@ public partial class TexToolsImporter
                         options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option));
                         if (option.IsChecked)
                             defaultSettings = group.SelectionType == GroupType.Multi
-                                ? defaultSettings!.Value | (1u << i)
-                                : (uint)i;
+                                ? defaultSettings!.Value | Setting.Multi(i)
+                                : Setting.Single(i);
 
                         ++_currentOptionIdx;
                     }
@@ -205,12 +205,12 @@ public partial class TexToolsImporter
                             _currentOptionName = option.Name;
                             options.Insert(idx, ModCreator.CreateEmptySubMod(option.Name));
                             if (option.IsChecked)
-                                defaultSettings = (uint) idx;
+                                defaultSettings = Setting.Single(idx);
                         }
                     }
 
                     _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
-                        defaultSettings ?? 0, group.Description, options);
+                        defaultSettings ?? Setting.Zero, group.Description, options);
                     ++groupPriority;
                 }
             }

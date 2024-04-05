@@ -268,7 +268,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             case ModPathChangeType.Reloaded:
                 foreach (var collection in this)
                 {
-                    if (collection.Settings[mod.Index]?.FixAllSettings(mod) ?? false)
+                    if (collection.Settings[mod.Index]?.Settings.FixAll(mod) ?? false)
                         _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
                 }
 

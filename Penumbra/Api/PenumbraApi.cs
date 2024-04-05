@@ -27,6 +27,7 @@ using Penumbra.UI;
 using TextureType = Penumbra.Api.Enums.TextureType;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Api;
 
@@ -649,7 +650,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         var shareSettings = settings.ConvertToShareable(mod);
         return (PenumbraApiEc.Success,
-            (shareSettings.Enabled, shareSettings.Priority, shareSettings.Settings, collection.Settings[mod.Index] != null));
+            (shareSettings.Enabled, shareSettings.Priority.Value, shareSettings.Settings, collection.Settings[mod.Index] != null));
     }
 
     public PenumbraApiEc ReloadMod(string modDirectory, string modName)
@@ -791,7 +792,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
             return PenumbraApiEc.ModMissing;
 
-        return _collectionEditor.SetModPriority(collection, mod, priority) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
+        return _collectionEditor.SetModPriority(collection, mod, new ModPriority(priority))
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.NothingChanged;
     }
 
     public PenumbraApiEc TrySetModSetting(string collectionName, string modDirectory, string modName, string optionGroupName,
@@ -820,7 +823,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 Args("CollectionName", collectionName, "ModDirectory", modDirectory, "ModName", modName, "OptionGroupName", optionGroupName,
                     "OptionName",      optionName));
 
-        var setting = mod.Groups[groupIdx].Type == GroupType.Multi ? 1u << optionIdx : (uint)optionIdx;
+        var setting = mod.Groups[groupIdx].Type switch
+        {
+            GroupType.Multi  => Setting.Multi(optionIdx),
+            GroupType.Single => Setting.Single(optionIdx),
+            _                => Setting.Zero,
+        };
 
         return Return(
             _collectionEditor.SetModSetting(collection, mod, groupIdx, setting) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged,
@@ -850,7 +858,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         var group = mod.Groups[groupIdx];
 
-        uint setting = 0;
+        var setting = Setting.Zero;
         if (group.Type == GroupType.Single)
         {
             var optionIdx = optionNames.Count == 0 ? -1 : group.IndexOf(o => o.Name == optionNames[^1]);
@@ -859,7 +867,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                     Args("CollectionName", collectionName, "ModDirectory", modDirectory, "ModName", modName, "OptionGroupName", optionGroupName,
                         "#optionNames",    optionNames.Count.ToString()));
 
-            setting = (uint)optionIdx;
+            setting = Setting.Single(optionIdx);
         }
         else
         {
@@ -871,7 +879,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                         Args("CollectionName", collectionName, "ModDirectory", modDirectory, "ModName", modName, "OptionGroupName",
                             optionGroupName,   "#optionNames", optionNames.Count.ToString()));
 
-                setting |= 1u << optionIdx;
+                setting |= Setting.Multi(optionIdx);
             }
         }
 
@@ -993,7 +1001,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!ConvertManips(manipString, out var m))
             return PenumbraApiEc.InvalidManipulation;
 
-        return _tempMods.Register(tag, null, p, m, priority) switch
+        return _tempMods.Register(tag, null, p, m, new ModPriority(priority)) switch
         {
             RedirectResult.Success => PenumbraApiEc.Success,
             _                      => PenumbraApiEc.UnknownError,
@@ -1014,7 +1022,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!ConvertManips(manipString, out var m))
             return PenumbraApiEc.InvalidManipulation;
 
-        return _tempMods.Register(tag, collection, p, m, priority) switch
+        return _tempMods.Register(tag, collection, p, m, new ModPriority(priority)) switch
         {
             RedirectResult.Success => PenumbraApiEc.Success,
             _                      => PenumbraApiEc.UnknownError,
@@ -1024,7 +1032,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc RemoveTemporaryModAll(string tag, int priority)
     {
         CheckInitialized();
-        return _tempMods.Unregister(tag, null, priority) switch
+        return _tempMods.Unregister(tag, null, new ModPriority(priority)) switch
         {
             RedirectResult.Success       => PenumbraApiEc.Success,
             RedirectResult.NotRegistered => PenumbraApiEc.NothingChanged,
@@ -1039,7 +1047,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
          && !_collectionManager.Storage.ByName(collectionName, out collection))
             return PenumbraApiEc.CollectionMissing;
 
-        return _tempMods.Unregister(tag, collection, priority) switch
+        return _tempMods.Unregister(tag, collection, new ModPriority(priority)) switch
         {
             RedirectResult.Success       => PenumbraApiEc.Success,
             RedirectResult.NotRegistered => PenumbraApiEc.NothingChanged,
@@ -1089,7 +1097,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public IReadOnlyDictionary<string, string[]>?[] GetGameObjectResourcePaths(ushort[] gameObjects)
     {
-        var characters       = gameObjects.Select(index => _objects.GetDalamudObject((int) index)).OfType<Character>();
+        var characters       = gameObjects.Select(index => _objects.GetDalamudObject((int)index)).OfType<Character>();
         var resourceTrees    = _resourceTreeFactory.FromCharacters(characters, 0);
         var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
@@ -1153,7 +1161,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var collection = _tempCollections.Collections.TryGetCollection(identifier, out var c)
             ? c
             : _collectionManager.Active.Individual(identifier);
-        var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty<MetaManipulation>();
+        var set = collection.MetaCache?.Manipulations.ToArray() ?? [];
         return Functions.ToCompressedBase64(set, MetaManipulation.CurrentVersion);
     }
 
@@ -1161,7 +1169,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         AssociatedCollection(gameObjectIdx, out var collection);
-        var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty<MetaManipulation>();
+        var set = collection.MetaCache?.Manipulations.ToArray() ?? [];
         return Functions.ToCompressedBase64(set, MetaManipulation.CurrentVersion);
     }
 
@@ -1190,7 +1198,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private unsafe ActorIdentifier AssociatedIdentifier(int gameObjectIdx)
+    private ActorIdentifier AssociatedIdentifier(int gameObjectIdx)
     {
         if (gameObjectIdx < 0 || gameObjectIdx >= _objects.TotalCount)
             return ActorIdentifier.Invalid;
@@ -1217,10 +1225,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         CheckInitialized();
         try
         {
-            if (Path.IsPathRooted(resolvedPath))
-                return _lumina?.GetFileFromDisk<T>(resolvedPath);
-
-            return _gameData.GetFile<T>(resolvedPath);
+            return Path.IsPathRooted(resolvedPath) 
+                ? _lumina?.GetFileFromDisk<T>(resolvedPath) 
+                : _gameData.GetFile<T>(resolvedPath);
         }
         catch (Exception e)
         {
@@ -1295,7 +1302,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return _actors.CreatePlayer(b, worldId);
     }
 
-    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int _1, int _2, bool inherited)
+    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting _1, int _2, bool inherited)
         => ModSettingChanged?.Invoke(type, collection.Name, mod?.ModPath.Name ?? string.Empty, inherited);
 
     private void OnCreatedCharacterBase(nint gameObject, ModCollection collection, nint drawObject)
