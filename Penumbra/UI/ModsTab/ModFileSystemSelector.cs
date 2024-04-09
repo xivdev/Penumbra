@@ -66,7 +66,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SubscribeRightClickMain(() => ClearQuickMove(1, _config.QuickMoveFolder2, () => {_config.QuickMoveFolder2 = string.Empty; _config.Save();}), 120);
         SubscribeRightClickMain(() => ClearQuickMove(2, _config.QuickMoveFolder3, () => {_config.QuickMoveFolder3 = string.Empty; _config.Save();}), 130);
         UnsubscribeRightClickLeaf(RenameLeaf);
-        SubscribeRightClickLeaf(RenameLeafMod, 1000);
+        SetRenameSearchPath(_config.ShowRename);
         AddButton(AddNewModButton,    0);
         AddButton(AddImportModButton, 1);
         AddButton(AddHelpButton,      2);
@@ -90,6 +90,37 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection, ModDiscoveryStarted.Priority.ModFileSystemSelector);
         _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection, ModDiscoveryFinished.Priority.ModFileSystemSelector);
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
+    }
+
+    public void SetRenameSearchPath(RenameField value)
+    {
+        switch (value)
+        {
+            case RenameField.RenameSearchPath:
+                SubscribeRightClickLeaf(RenameLeafMod, 1000);
+                UnsubscribeRightClickLeaf(RenameMod);
+                break;
+            case RenameField.RenameData:
+                UnsubscribeRightClickLeaf(RenameLeafMod);
+                SubscribeRightClickLeaf(RenameMod, 1000);
+                break;
+            case RenameField.BothSearchPathPrio:
+                UnsubscribeRightClickLeaf(RenameLeafMod);
+                UnsubscribeRightClickLeaf(RenameMod);
+                SubscribeRightClickLeaf(RenameLeafMod, 1001);
+                SubscribeRightClickLeaf(RenameMod,     1000);
+                break;
+            case RenameField.BothDataPrio:
+                UnsubscribeRightClickLeaf(RenameLeafMod);
+                UnsubscribeRightClickLeaf(RenameMod);
+                SubscribeRightClickLeaf(RenameLeafMod, 1000);
+                SubscribeRightClickLeaf(RenameMod,     1001);
+                break;
+            default:
+                UnsubscribeRightClickLeaf(RenameLeafMod);
+                UnsubscribeRightClickLeaf(RenameMod);
+                break;
+        }
     }
 
     private static readonly string[] ValidModExtensions =
@@ -300,6 +331,22 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         ImGui.Separator();
         RenameLeaf(leaf);
+    }
+
+    private void RenameMod(ModFileSystem.Leaf leaf)
+    {
+        ImGui.Separator();
+        var currentName = leaf.Value.Name.Text;
+        if (ImGui.IsWindowAppearing())
+            ImGui.SetKeyboardFocusHere(0);
+        ImGui.TextUnformatted("Rename Mod:");
+        if (ImGui.InputText("##RenameMod", ref currentName, 256, ImGuiInputTextFlags.EnterReturnsTrue))
+        {
+            _modManager.DataEditor.ChangeModName(leaf.Value, currentName);
+            ImGui.CloseCurrentPopup();
+        }
+
+        ImGuiUtil.HoverTooltip("Enter a new name here to rename the changed mod.");
     }
 
     private void DeleteModButton(Vector2 size)

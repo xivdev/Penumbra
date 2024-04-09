@@ -533,12 +533,42 @@ public class SettingsTab : ITab
             "Instead of keeping the mod-selector in the Installed Mods tab a fixed width, this will let it scale with the total size of the Penumbra window.");
     }
 
+    private void DrawRenameSettings()
+    {
+        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        using (var combo = ImRaii.Combo("##renameSettings", _config.ShowRename.GetData().Name))
+        {
+            if (combo)
+                foreach (var value in Enum.GetValues<RenameField>())
+                {
+                    var (name, desc) = value.GetData();
+                    if (ImGui.Selectable(name, _config.ShowRename == value))
+                    {
+                        _config.ShowRename = value;
+                        _selector.SetRenameSearchPath(value);
+                        _config.Save();
+                    }
+
+                    ImGuiUtil.HoverTooltip(desc);
+                }
+        }
+
+        ImGui.SameLine();
+        const string tt =
+            "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector.";
+        ImGuiComponents.HelpMarker(tt);
+        ImGui.SameLine();
+        ImGui.TextUnformatted("Rename Fields in Mod Context Menu");
+        ImGuiUtil.HoverTooltip(tt);
+    }
+
     /// <summary> Draw all settings pertaining to the mod selector. </summary>
     private void DrawModSelectorSettings()
     {
         DrawFolderSortType();
         DrawAbsoluteSizeSelector();
         DrawRelativeSizeSelector();
+        DrawRenameSettings();
         Checkbox("Open Folders by Default", "Whether to start with all folders collapsed or expanded in the mod selector.",
             _config.OpenFoldersByDefault,   v =>
             {
