@@ -1,5 +1,5 @@
+using System.Text.Unicode;
 using Dalamud.Hooking;
-using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using OtterGui.Services;
@@ -57,7 +57,6 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveSklbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSklb)}",  hooks, vTable[72], type, ResolveSklb, ResolveSklbHuman);
         _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[74], type, ResolveSkp, ResolveSkpHuman);
         _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[77], ResolveTmb);
-        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], ResolveVfx);
         _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], type, ResolveVfx, ResolveVfxHuman);
         // @formatter:on
         Enable();
@@ -183,22 +182,27 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
     {
-        if (slotIndex <= 4) return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+        if (slotIndex <= 4)
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
+        var changedEquipData = ((Human*)drawObject)->ChangedEquipData;
         // Enable vfxs for accessories
-        var data = Marshal.ReadIntPtr(drawObject + 0xA38);
-        if (data == IntPtr.Zero) return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+        if (changedEquipData == null)
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        var slot = data + 12 * (nint)slotIndex;
-        var model = Marshal.ReadInt16(slot);
-        var variant = Marshal.ReadInt16(slot + 2);
-        var vfxId = Marshal.ReadInt16(slot + 8);
+        var slot    = (ushort*)(changedEquipData + 12 * (nint)slotIndex);
+        var model   = slot[0];
+        var variant = slot[1];
+        var vfxId   = slot[4];
 
-        if (model == 0 || variant == 0 || vfxId == 0) return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
-        var path = "chara/accessory/a" + model.ToString().PadLeft(4, '0') + "/vfx/eff/va" + vfxId.ToString().PadLeft(4, '0') + ".avfx";
+        if (model == 0 || variant == 0 || vfxId == 0)
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        MemoryHelper.WriteString(pathBuffer, path);
-        Marshal.WriteIntPtr(unkOutParam, 0x00000004);
+        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), $"chara/accessory/a{model:D4}/vfx/eff/va{vfxId:D4}.avfx",
+                out _))
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+        *(ulong*)unkOutParam = 4;
         return ResolvePath(drawObject, pathBuffer);
     }
 
