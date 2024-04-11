@@ -198,7 +198,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         if (model == 0 || variant == 0 || vfxId == 0)
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), $"chara/accessory/a{model:D4}/vfx/eff/va{vfxId:D4}.avfx",
+        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), $"chara/accessory/a{model:D4}/vfx/eff/va{vfxId:D4}.avfx\0",
                 out _))
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
