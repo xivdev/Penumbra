@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using OtterGui.Services;
@@ -57,6 +58,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[74], type, ResolveSkp, ResolveSkpHuman);
         _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[77], ResolveTmb);
         _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], ResolveVfx);
+        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], type, ResolveVfx, ResolveVfxHuman);
         // @formatter:on
         Enable();
     }
@@ -177,6 +179,27 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         using var est = GetEstChanges(drawObject, out var data);
         return ResolvePath(data, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+    }
+
+    private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
+    {
+        if (slotIndex <= 4) return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+        // Enable vfxs for accessories
+        var data = Marshal.ReadIntPtr(drawObject + 0xA38);
+        if (data == IntPtr.Zero) return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+        var slot = data + 12 * (nint)slotIndex;
+        var model = Marshal.ReadInt16(slot);
+        var variant = Marshal.ReadInt16(slot + 2);
+        var vfxId = Marshal.ReadInt16(slot + 8);
+
+        if (model == 0 || variant == 0 || vfxId == 0) return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+        var path = "chara/accessory/a" + model.ToString().PadLeft(4, '0') + "/vfx/eff/va" + vfxId.ToString().PadLeft(4, '0') + ".avfx";
+
+        MemoryHelper.WriteString(pathBuffer, path);
+        Marshal.WriteIntPtr(unkOutParam, 0x00000004);
+        return ResolvePath(drawObject, pathBuffer);
     }
 
     private DisposableContainer GetEstChanges(nint drawObject, out ResolveData data)
