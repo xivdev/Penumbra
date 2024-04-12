@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Api;
+using Penumbra.Api.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
@@ -19,8 +20,11 @@ public sealed class ModPathChanged()
 {
     public enum Priority
     {
-        /// <seealso cref="PenumbraApi.ModPathChangeSubscriber"/>
-        Api = int.MinValue,
+        /// <seealso cref="ModsApi.OnModPathChange"/>
+        ApiMods = int.MinValue,
+
+        /// <seealso cref="ModSettingsApi.OnModPathChange"/>
+        ApiModSettings = int.MinValue,
 
         /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
         EphemeralConfig = -500,

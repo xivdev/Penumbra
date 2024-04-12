@@ -4,9 +4,9 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Subclasses;
 
-public interface IModGroup : IEnumerable<ISubMod>
+public interface IModGroup : IReadOnlyCollection<ISubMod>
 {
-    public const int MaxMultiOptions = 32;
+    public const int MaxMultiOptions = 63;
 
     public string      Name            { get; }
     public string      Description     { get; }
@@ -18,15 +18,7 @@ public interface IModGroup : IEnumerable<ISubMod>
 
     public ISubMod this[Index idx] { get; }
 
-    public int Count { get; }
-
-    public bool IsOption
-        => Type switch
-        {
-            GroupType.Single => Count > 1,
-            GroupType.Multi  => Count > 0,
-            _                => false,
-        };
+    public bool IsOption { get; }
 
     public IModGroup Convert(GroupType type);
     public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
@@ -94,11 +86,13 @@ public readonly struct ModSaveGroup : ISavable
             j.WritePropertyName("Options");
             j.WriteStartArray();
             for (var idx = 0; idx < _group.Count; ++idx)
+            {
                 ISubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type switch
                 {
                     GroupType.Multi => _group.OptionPriority(idx),
-                    _ => null,
+                    _               => null,
                 });
+            }
 
             j.WriteEndArray();
             j.WriteEndObject();

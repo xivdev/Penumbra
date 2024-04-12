@@ -513,7 +513,7 @@ public class CommandHandler : IDisposable
 
         collection = string.Equals(lowerName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase)
             ? ModCollection.Empty
-            : _collectionManager.Storage.ByName(lowerName, out var c)
+            : _collectionManager.Storage.ByIdentifier(lowerName, out var c)
                 ? c
                 : null;
         if (collection != null)

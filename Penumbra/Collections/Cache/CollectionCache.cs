@@ -243,14 +243,14 @@ public sealed class CollectionCache : IDisposable
                     continue;
 
                 var config = settings.Settings[groupIndex];
-                switch (group.Type)
+                switch (group)
                 {
-                    case GroupType.Single:
-                        AddSubMod(group[config.AsIndex], mod);
+                    case SingleModGroup single:
+                        AddSubMod(single[config.AsIndex], mod);
                         break;
-                    case GroupType.Multi:
+                    case MultiModGroup multi:
                     {
-                        foreach (var (option, _) in group.WithIndex()
+                        foreach (var (option, _) in multi.WithIndex()
                                      .Where(p => config.HasFlag(p.Index))
                                      .OrderByDescending(p => group.OptionPriority(p.Index)))
                             AddSubMod(option, mod);

@@ -1,4 +1,5 @@
 using OtterGui.Classes;
+using Penumbra.Api.Api;
 
 namespace Penumbra.Communication;
 
@@ -12,7 +13,7 @@ public sealed class PostSettingsPanelDraw() : EventWrapper<string, PostSettingsP
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.PostSettingsPanelDraw"/>
+        /// <seealso cref="PenumbraApi.PostSettingsPanelDraw"/>
         Default = 0,
     }
 }

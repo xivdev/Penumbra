@@ -25,6 +25,9 @@ public sealed class SingleModGroup : IModGroup
     public ISubMod this[Index idx]
         => OptionData[idx];
 
+    public bool IsOption
+        => Count > 1;
+
     [JsonIgnore]
     public int Count
         => OptionData.Count;

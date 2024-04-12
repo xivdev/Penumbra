@@ -239,7 +239,7 @@ public sealed class CrashHandlerService : IDisposable, IService
             var name = GetActorName(character);
             lock (_eventWriter)
             {
-                _eventWriter?.AnimationFuncInvoked.WriteLine(character, name.Span, collection.Name, type);
+                _eventWriter?.AnimationFuncInvoked.WriteLine(character, name.Span, collection.Id, type);
             }
         }
         catch (Exception ex)
@@ -248,7 +248,7 @@ public sealed class CrashHandlerService : IDisposable, IService
         }
     }
 
-    private void OnCreatingCharacterBase(nint address, string collection, nint _1, nint _2, nint _3)
+    private void OnCreatingCharacterBase(nint address, Guid collection, nint _1, nint _2, nint _3)
     {
         if (_eventWriter == null)
             return;
@@ -293,7 +293,7 @@ public sealed class CrashHandlerService : IDisposable, IService
             var name = GetActorName(resolveData.AssociatedGameObject);
             lock (_eventWriter)
             {
-                _eventWriter!.FileLoaded.WriteLine(resolveData.AssociatedGameObject, name.Span, resolveData.ModCollection.Name,
+                _eventWriter!.FileLoaded.WriteLine(resolveData.AssociatedGameObject, name.Span, resolveData.ModCollection.Id,
                     manipulatedPath.Value.InternalName.Span, originalPath.Path.Span);
             }
         }

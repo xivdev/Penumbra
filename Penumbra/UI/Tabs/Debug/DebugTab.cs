@@ -40,6 +40,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using ImGuiClip = OtterGui.ImGuiClip;
+using Penumbra.Api.IpcTester;
 
 namespace Penumbra.UI.Tabs.Debug;
 
@@ -76,7 +77,6 @@ public class DebugTab : Window, ITab
     private readonly CharacterUtility          _characterUtility;
     private readonly ResidentResourceManager   _residentResources;
     private readonly ResourceManagerService    _resourceManager;
-    private readonly PenumbraIpcProviders      _ipc;
     private readonly CollectionResolver        _collectionResolver;
     private readonly DrawObjectState           _drawObjectState;
     private readonly PathState                 _pathState;
@@ -100,7 +100,7 @@ public class DebugTab : Window, ITab
         IClientState clientState,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         CharacterUtility characterUtility, ResidentResourceManager residentResources,
-        ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
+        ResourceManagerService resourceManager, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
@@ -124,7 +124,6 @@ public class DebugTab : Window, ITab
         _characterUtility          = characterUtility;
         _residentResources         = residentResources;
         _resourceManager           = resourceManager;
-        _ipc                       = ipc;
         _collectionResolver        = collectionResolver;
         _drawObjectState           = drawObjectState;
         _pathState                 = pathState;
@@ -440,7 +439,9 @@ public class DebugTab : Window, ITab
                 : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
             var identifier = _actors.FromObject(obj, out _, false, true, false);
             ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
-            var id = obj.AsObject->ObjectKind ==(byte)  ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.AsObject->DataID}" : identifier.DataId.ToString();
+            var id = obj.AsObject->ObjectKind == (byte)ObjectKind.BattleNpc
+                ? $"{identifier.DataId} | {obj.AsObject->DataID}"
+                : identifier.DataId.ToString();
             ImGuiUtil.DrawTableColumn(id);
         }
 
@@ -969,13 +970,8 @@ public class DebugTab : Window, ITab
     /// <summary> Draw information about IPC options and availability. </summary>
     private void DrawDebugTabIpc()
     {
-        if (!ImGui.CollapsingHeader("IPC"))
-        {
-            _ipcTester.UnsubscribeEvents();
-            return;
-        }
-
-        _ipcTester.Draw();
+        if (ImGui.CollapsingHeader("IPC"))
+            _ipcTester.Draw();
     }
 
     /// <summary> Helper to print a property and its value in a 2-column table. </summary>

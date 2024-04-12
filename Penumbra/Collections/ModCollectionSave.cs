@@ -28,6 +28,8 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteStartObject();
         j.WritePropertyName("Version");
         j.WriteValue(ModCollection.CurrentVersion);
+        j.WritePropertyName(nameof(ModCollection.Id));
+        j.WriteValue(modCollection.Identifier);
         j.WritePropertyName(nameof(ModCollection.Name));
         j.WriteValue(modCollection.Name);
         j.WritePropertyName(nameof(ModCollection.Settings));
@@ -55,20 +57,20 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
 
         // Inherit by collection name.
         j.WritePropertyName("Inheritance");
-        x.Serialize(j, modCollection.InheritanceByName ?? modCollection.DirectlyInheritsFrom.Select(c => c.Name));
+        x.Serialize(j, modCollection.InheritanceByName ?? modCollection.DirectlyInheritsFrom.Select(c => c.Identifier));
         j.WriteEndObject();
     }
 
-    public static bool LoadFromFile(FileInfo file, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
+    public static bool LoadFromFile(FileInfo file, out Guid id, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
         out IReadOnlyList<string> inheritance)
     {
-        settings    = new Dictionary<string, ModSettings.SavedSettings>();
-        inheritance = Array.Empty<string>();
+        settings    = [];
+        inheritance = [];
         if (!file.Exists)
         {
             Penumbra.Log.Error("Could not read collection because file does not exist.");
-            name = string.Empty;
-
+            name    = string.Empty;
+            id      = Guid.Empty;
             version = 0;
             return false;
         }
@@ -76,8 +78,9 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         try
         {
             var obj = JObject.Parse(File.ReadAllText(file.FullName));
-            name    = obj[nameof(ModCollection.Name)]?.ToObject<string>() ?? string.Empty;
             version = obj["Version"]?.ToObject<int>() ?? 0;
+            name    = obj[nameof(ModCollection.Name)]?.ToObject<string>() ?? string.Empty;
+            id      = obj[nameof(ModCollection.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
             // Custom deserialization that is converted with the constructor. 
             settings    = obj[nameof(ModCollection.Settings)]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>() ?? settings;
             inheritance = obj["Inheritance"]?.ToObject<List<string>>() ?? inheritance;
@@ -87,6 +90,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         {
             name    = string.Empty;
             version = 0;
+            id      = Guid.Empty;
             Penumbra.Log.Error($"Could not read collection information from file:\n{e}");
             return false;
         }

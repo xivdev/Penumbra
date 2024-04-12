@@ -1,4 +1,5 @@
 using OtterGui.Classes;
+using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 
 namespace Penumbra.Communication;
@@ -14,7 +15,7 @@ public sealed class ChangedItemClick() : EventWrapper<MouseButton, object?, Chan
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.ChangedItemClicked"/>
+        /// <seealso cref="UiApi.OnChangedItemClick"/>
         Default = 0,
 
         /// <seealso cref="Penumbra.SetupApi"/>

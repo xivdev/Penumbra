@@ -272,22 +272,19 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
             return;
 
         var group = mod.Groups[groupIdx];
-        if (group.Type is GroupType.Multi && group.Count >= IModGroup.MaxMultiOptions)
-        {
-            Penumbra.Log.Error(
-                $"Could not add option {option.Name} to {group.Name} for mod {mod.Name}, "
-              + $"since only up to {IModGroup.MaxMultiOptions} options are supported in one group.");
-            return;
-        }
-
-        o.SetPosition(groupIdx, group.Count);
-
         switch (group)
         {
+            case MultiModGroup { Count: >= IModGroup.MaxMultiOptions }:
+                Penumbra.Log.Error(
+                    $"Could not add option {option.Name} to {group.Name} for mod {mod.Name}, "
+                  + $"since only up to {IModGroup.MaxMultiOptions} options are supported in one group.");
+                return;
             case SingleModGroup s:
+                o.SetPosition(groupIdx, s.Count);
                 s.OptionData.Add(o);
                 break;
             case MultiModGroup m:
+                o.SetPosition(groupIdx, m.Count);
                 m.PrioritizedOptions.Add((o, priority));
                 break;
         }

@@ -17,7 +17,7 @@ namespace Penumbra.Collections;
 /// </summary>
 public partial class ModCollection
 {
-    public const int    CurrentVersion        = 1;
+    public const int    CurrentVersion        = 2;
     public const string DefaultCollectionName = "Default";
     public const string EmptyCollectionName   = "None";
 
@@ -27,15 +27,23 @@ public partial class ModCollection
     /// </summary>
     public static readonly ModCollection Empty = CreateEmpty(EmptyCollectionName, 0, 0);
 
-    /// <summary> The name of a collection can not contain characters invalid in a path. </summary>
-    public string Name { get; internal init; }
+    /// <summary> The name of a collection. </summary>
+    public string Name { get; set; } = string.Empty;
+
+    public Guid Id { get; }
+
+    public string Identifier
+        => Id.ToString();
+
+    public string ShortIdentifier
+        => Identifier[..8];
 
     public override string ToString()
-        => Name;
+        => Name.Length > 0 ? Name : ShortIdentifier;
 
     /// <summary> Get the first two letters of a collection name and its Index (or None if it is the empty collection). </summary>
     public string AnonymizedName
-        => this == Empty ? Empty.Name : Name.Length > 2 ? $"{Name[..2]}... ({Index})" : $"{Name} ({Index})";
+        => this == Empty ? Empty.Name : Name == DefaultCollectionName ? Name : ShortIdentifier;
 
     /// <summary> The index of the collection is set and kept up-to-date by the CollectionManager. </summary>
     public int Index { get; internal set; }
@@ -112,16 +120,16 @@ public partial class ModCollection
     public ModCollection Duplicate(string name, int index)
     {
         Debug.Assert(index > 0, "Collection duplicated with non-positive index.");
-        return new ModCollection(name, index, 0, CurrentVersion, Settings.Select(s => s?.DeepCopy()).ToList(),
+        return new ModCollection(Guid.NewGuid(), name, index, 0, CurrentVersion, Settings.Select(s => s?.DeepCopy()).ToList(),
             [.. DirectlyInheritsFrom], UnusedSettings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DeepCopy()));
     }
 
     /// <summary> Constructor for reading from files. </summary>
-    public static ModCollection CreateFromData(SaveService saver, ModStorage mods, string name, int version, int index,
+    public static ModCollection CreateFromData(SaveService saver, ModStorage mods, Guid id, string name, int version, int index,
         Dictionary<string, ModSettings.SavedSettings> allSettings, IReadOnlyList<string> inheritances)
     {
         Debug.Assert(index > 0, "Collection read with non-positive index.");
-        var ret = new ModCollection(name, index, 0, version, new List<ModSettings?>(), new List<ModCollection>(), allSettings)
+        var ret = new ModCollection(id, name, index, 0, version, [], [], allSettings)
         {
             InheritanceByName = inheritances,
         };
@@ -134,8 +142,7 @@ public partial class ModCollection
     public static ModCollection CreateTemporary(string name, int index, int changeCounter)
     {
         Debug.Assert(index < 0, "Temporary collection created with non-negative index.");
-        var ret = new ModCollection(name, index, changeCounter, CurrentVersion, new List<ModSettings?>(), new List<ModCollection>(),
-            new Dictionary<string, ModSettings.SavedSettings>());
+        var ret = new ModCollection(Guid.NewGuid(), name, index, changeCounter, CurrentVersion, [], [], []);
         return ret;
     }
 
@@ -143,9 +150,8 @@ public partial class ModCollection
     public static ModCollection CreateEmpty(string name, int index, int modCount)
     {
         Debug.Assert(index >= 0, "Empty collection created with negative index.");
-        return new ModCollection(name, index, 0, CurrentVersion, Enumerable.Repeat((ModSettings?)null, modCount).ToList(),
-            new List<ModCollection>(),
-            new Dictionary<string, ModSettings.SavedSettings>());
+        return new ModCollection(Guid.Empty, name, index, 0, CurrentVersion, Enumerable.Repeat((ModSettings?)null, modCount).ToList(), [],
+            []);
     }
 
     /// <summary> Add settings for a new appended mod, by checking if the mod had settings from a previous deletion. </summary>
@@ -193,10 +199,11 @@ public partial class ModCollection
             saver.ImmediateSave(new ModCollectionSave(mods, this));
     }
 
-    private ModCollection(string name, int index, int changeCounter, int version, List<ModSettings?> appliedSettings,
+    private ModCollection(Guid id, string name, int index, int changeCounter, int version, List<ModSettings?> appliedSettings,
         List<ModCollection> inheritsFrom, Dictionary<string, ModSettings.SavedSettings> settings)
     {
         Name                 = name;
+        Id                   = id;
         Index                = index;
         ChangeCounter        = changeCounter;
         Settings             = appliedSettings;

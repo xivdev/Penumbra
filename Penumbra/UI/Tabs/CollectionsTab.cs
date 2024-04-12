@@ -41,12 +41,12 @@ public sealed class CollectionsTab : IDisposable, ITab
     }
 
     public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator,
-        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial)
+        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, FilenameService fileNames)
     {
         _config   = configuration.Ephemeral;
         _tutorial = tutorial;
         _selector = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial);
-        _panel    = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage);
+        _panel    = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage, fileNames);
     }
 
     public void Dispose()

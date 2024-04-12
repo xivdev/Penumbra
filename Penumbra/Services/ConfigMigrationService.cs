@@ -223,7 +223,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
             try
             {
                 var jObject = JObject.Parse(File.ReadAllText(collection.FullName));
-                if (jObject[nameof(ModCollection.Name)]?.ToObject<string>() == ForcedCollection)
+                if (jObject["Name"]?.ToObject<string>() == ForcedCollection)
                     continue;
 
                 jObject[nameof(ModCollection.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
@@ -365,7 +365,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict, []);
+            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, Guid.NewGuid(), ModCollection.DefaultCollectionName, 0, 1, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

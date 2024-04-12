@@ -76,7 +76,7 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
                 case ResourceType.Mtrl:
                 case ResourceType.Avfx:
                 case ResourceType.Tmb:
-                    var fullPath = new FullPath($"|{resolveData.ModCollection.Name}_{resolveData.ModCollection.ChangeCounter}|{path}");
+                    var fullPath = new FullPath($"|{resolveData.ModCollection.Id.OptimizedString()}_{resolveData.ModCollection.ChangeCounter}|{path}");
                     data = (fullPath, resolveData);
                     return;
             }

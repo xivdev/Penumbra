@@ -138,12 +138,21 @@ public class InheritanceManager : IDisposable
             var changes = false;
             foreach (var subCollectionName in collection.InheritanceByName)
             {
-                if (_storage.ByName(subCollectionName, out var subCollection))
+                if (Guid.TryParse(subCollectionName, out var guid) && _storage.ById(guid, out var subCollection))
                 {
                     if (AddInheritance(collection, subCollection, false))
                         continue;
 
                     changes = true;
+                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", NotificationType.Warning);
+                }
+                else if (_storage.ByName(subCollectionName, out subCollection))
+                {
+                    changes = true;
+                    Penumbra.Log.Information($"Migrating inheritance for {collection.AnonymizedName} from name to GUID.");
+                    if (AddInheritance(collection, subCollection, false))
+                        continue;
+
                     Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", NotificationType.Warning);
                 }
                 else

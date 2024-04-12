@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Api;
+using Penumbra.Api.Api;
 using Penumbra.Services;
 
 namespace Penumbra.Communication;
@@ -14,7 +15,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is a pointer to the equip data array. </item>
 /// </list> </summary>
 public sealed class CreatingCharacterBase()
-    : EventWrapper<nint, string, nint, nint, nint, CreatingCharacterBase.Priority>(nameof(CreatingCharacterBase))
+    : EventWrapper<nint, Guid, nint, nint, nint, CreatingCharacterBase.Priority>(nameof(CreatingCharacterBase))
 {
     public enum Priority
     {

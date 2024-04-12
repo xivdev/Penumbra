@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Types;
-using Penumbra.Api;
+using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
+using Penumbra.Api.Helpers;
 using Penumbra.String.Classes;
 using Penumbra.UI;
 
@@ -8,7 +9,8 @@ namespace Penumbra.Interop.ResourceTree;
 
 internal static class ResourceTreeApiHelper
 {
-    public static Dictionary<ushort, IReadOnlyDictionary<string, string[]>> GetResourcePathDictionaries(IEnumerable<(Character, ResourceTree)> resourceTrees)
+    public static Dictionary<ushort, Dictionary<string, HashSet<string>>> GetResourcePathDictionaries(
+        IEnumerable<(Character, ResourceTree)> resourceTrees)
     {
         var pathDictionaries = new Dictionary<ushort, Dictionary<string, HashSet<string>>>(4);
 
@@ -23,8 +25,7 @@ internal static class ResourceTreeApiHelper
             CollectResourcePaths(pathDictionary, resourceTree);
         }
 
-        return pathDictionaries.ToDictionary(pair => pair.Key,
-            pair => (IReadOnlyDictionary<string, string[]>)pair.Value.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray()).AsReadOnly());
+        return pathDictionaries;
     }
 
     private static void CollectResourcePaths(Dictionary<string, HashSet<string>> pathDictionary, ResourceTree resourceTree)
@@ -37,7 +38,7 @@ internal static class ResourceTreeApiHelper
             var fullPath = node.FullPath.ToPath();
             if (!pathDictionary.TryGetValue(fullPath, out var gamePaths))
             {
-                gamePaths = new();
+                gamePaths = [];
                 pathDictionary.Add(fullPath, gamePaths);
             }
 
@@ -46,17 +47,17 @@ internal static class ResourceTreeApiHelper
         }
     }
 
-    public static Dictionary<ushort, IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>> GetResourcesOfType(IEnumerable<(Character, ResourceTree)> resourceTrees,
+    public static Dictionary<ushort, GameResourceDict> GetResourcesOfType(IEnumerable<(Character, ResourceTree)> resourceTrees,
         ResourceType type)
     {
-        var resDictionaries = new Dictionary<ushort, Dictionary<nint, (string, string, ChangedItemIcon)>>(4);
+        var resDictionaries = new Dictionary<ushort, GameResourceDict>(4);
         foreach (var (gameObject, resourceTree) in resourceTrees)
         {
             if (resDictionaries.ContainsKey(gameObject.ObjectIndex))
                 continue;
 
-            var resDictionary = new Dictionary<nint, (string, string, ChangedItemIcon)>();
-            resDictionaries.Add(gameObject.ObjectIndex, resDictionary);
+            var resDictionary = new Dictionary<nint, (string, string, uint)>();
+            resDictionaries.Add(gameObject.ObjectIndex, new GameResourceDict(resDictionary));
 
             foreach (var node in resourceTree.FlatNodes)
             {
@@ -66,38 +67,16 @@ internal static class ResourceTreeApiHelper
                     continue;
 
                 var fullPath = node.FullPath.ToPath();
-                resDictionary.Add(node.ResourceHandle, (fullPath, node.Name ?? string.Empty, ChangedItemDrawer.ToApiIcon(node.Icon)));
+                resDictionary.Add(node.ResourceHandle, (fullPath, node.Name ?? string.Empty, (uint)ChangedItemDrawer.ToApiIcon(node.Icon)));
             }
         }
 
-        return resDictionaries.ToDictionary(pair => pair.Key,
-                pair => (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>)pair.Value.AsReadOnly());
+        return resDictionaries;
     }
 
-    public static Dictionary<ushort, Ipc.ResourceTree> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
+    public static Dictionary<ushort, JObject> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
     {
-        static Ipc.ResourceNode GetIpcNode(ResourceNode node) =>
-            new()
-            {
-                Type = node.Type,
-                Icon = ChangedItemDrawer.ToApiIcon(node.Icon),
-                Name = node.Name,
-                GamePath = node.GamePath.Equals(Utf8GamePath.Empty) ? null : node.GamePath.ToString(),
-                ActualPath = node.FullPath.ToString(),
-                ObjectAddress = node.ObjectAddress,
-                ResourceHandle = node.ResourceHandle,
-                Children = node.Children.Select(GetIpcNode).ToList(),
-            };
-
-        static Ipc.ResourceTree GetIpcTree(ResourceTree tree) =>
-            new()
-            {
-                Name = tree.Name,
-                RaceCode = (ushort)tree.RaceCode,
-                Nodes = tree.Nodes.Select(GetIpcNode).ToList(),
-            };
-
-        var resDictionary = new Dictionary<ushort, Ipc.ResourceTree>(4);
+        var resDictionary = new Dictionary<ushort, JObject>(4);
         foreach (var (gameObject, resourceTree) in resourceTrees)
         {
             if (resDictionary.ContainsKey(gameObject.ObjectIndex))
@@ -107,5 +86,38 @@ internal static class ResourceTreeApiHelper
         }
 
         return resDictionary;
+
+        static JObject GetIpcTree(ResourceTree tree)
+        {
+            var ret = new JObject
+            {
+                [nameof(ResourceTreeDto.Name)]     = tree.Name,
+                [nameof(ResourceTreeDto.RaceCode)] = (ushort)tree.RaceCode,
+            };
+            var children = new JArray();
+            foreach (var child in tree.Nodes)
+                children.Add(GetIpcNode(child));
+            ret[nameof(ResourceTreeDto.Nodes)] = children;
+            return ret;
+        }
+
+        static JObject GetIpcNode(ResourceNode node)
+        {
+            var ret = new JObject
+            {
+                [nameof(ResourceNodeDto.Type)]           = new JValue(node.Type),
+                [nameof(ResourceNodeDto.Icon)]           = new JValue(ChangedItemDrawer.ToApiIcon(node.Icon)),
+                [nameof(ResourceNodeDto.Name)]           = node.Name,
+                [nameof(ResourceNodeDto.GamePath)]       = node.GamePath.Equals(Utf8GamePath.Empty) ? null : node.GamePath.ToString(),
+                [nameof(ResourceNodeDto.ActualPath)]     = node.FullPath.ToString(),
+                [nameof(ResourceNodeDto.ObjectAddress)]  = node.ObjectAddress,
+                [nameof(ResourceNodeDto.ResourceHandle)] = node.ResourceHandle,
+            };
+            var children = new JArray();
+            foreach (var child in node.Children)
+                children.Add(GetIpcNode(child));
+            ret[nameof(ResourceNodeDto.Children)] = children;
+            return ret;
+        }
     }
 }

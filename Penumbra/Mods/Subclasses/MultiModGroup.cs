@@ -25,6 +25,9 @@ public sealed class MultiModGroup : IModGroup
     public ISubMod this[Index idx]
         => PrioritizedOptions[idx].Mod;
 
+    public bool IsOption
+        => Count > 0;
+
     [JsonIgnore]
     public int Count
         => PrioritizedOptions.Count;

@@ -19,7 +19,7 @@ public class ModCombo : FilterComboCache<Mod>
 public class ModStorage : IReadOnlyList<Mod>
 {
     /// <summary> The actual list of mods. </summary>
-    protected readonly List<Mod> Mods = new();
+    protected readonly List<Mod> Mods = [];
 
     public int Count
         => Mods.Count;

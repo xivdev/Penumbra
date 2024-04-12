@@ -1,3 +1,4 @@
+using OtterGui;
 using Penumbra.Api;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
@@ -9,13 +10,13 @@ namespace Penumbra.Collections.Manager;
 
 public class TempCollectionManager : IDisposable
 {
-    public          int                   GlobalChangeCounter { get; private set; } = 0;
+    public          int                   GlobalChangeCounter { get; private set; }
     public readonly IndividualCollections Collections;
 
-    private readonly CommunicatorService               _communicator;
-    private readonly CollectionStorage                 _storage;
-    private readonly ActorManager                      _actors;
-    private readonly Dictionary<string, ModCollection> _customCollections = new();
+    private readonly CommunicatorService             _communicator;
+    private readonly CollectionStorage               _storage;
+    private readonly ActorManager                    _actors;
+    private readonly Dictionary<Guid, ModCollection> _customCollections = [];
 
     public TempCollectionManager(Configuration config, CommunicatorService communicator, ActorManager actors, CollectionStorage storage)
     {
@@ -42,36 +43,36 @@ public class TempCollectionManager : IDisposable
         => _customCollections.Values;
 
     public bool CollectionByName(string name, [NotNullWhen(true)] out ModCollection? collection)
-        => _customCollections.TryGetValue(name.ToLowerInvariant(), out collection);
+        => _customCollections.Values.FindFirst(c => string.Equals(name, c.Name, StringComparison.OrdinalIgnoreCase), out collection);
 
-    public string CreateTemporaryCollection(string name)
+    public bool CollectionById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
+        => _customCollections.TryGetValue(id, out collection);
+
+    public Guid CreateTemporaryCollection(string name)
     {
-        if (_storage.ByName(name, out _))
-            return string.Empty;
-
         if (GlobalChangeCounter == int.MaxValue)
             GlobalChangeCounter = 0;
         var collection = ModCollection.CreateTemporary(name, ~Count, GlobalChangeCounter++);
-        Penumbra.Log.Debug($"Creating temporary collection {collection.AnonymizedName}.");
-        if (_customCollections.TryAdd(collection.Name.ToLowerInvariant(), collection))
+        Penumbra.Log.Debug($"Creating temporary collection {collection.Name} with {collection.Id}.");
+        if (_customCollections.TryAdd(collection.Id, collection))
         {
             // Temporary collection created.
             _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, string.Empty);
-            return collection.Name;
+            return collection.Id;
         }
 
-        return string.Empty;
+        return Guid.Empty;
     }
 
-    public bool RemoveTemporaryCollection(string collectionName)
+    public bool RemoveTemporaryCollection(Guid collectionId)
     {
-        if (!_customCollections.Remove(collectionName.ToLowerInvariant(), out var collection))
+        if (!_customCollections.Remove(collectionId, out var collection))
         {
-            Penumbra.Log.Debug($"Tried to delete temporary collection {collectionName.ToLowerInvariant()}, but did not exist.");
+            Penumbra.Log.Debug($"Tried to delete temporary collection {collectionId}, but did not exist.");
             return false;
         }
 
-        Penumbra.Log.Debug($"Deleted temporary collection {collection.AnonymizedName}.");
+        Penumbra.Log.Debug($"Deleted temporary collection {collection.Id}.");
         GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
         for (var i = 0; i < Collections.Count; ++i)
         {
@@ -80,7 +81,7 @@ public class TempCollectionManager : IDisposable
 
             // Temporary collection assignment removed.
             _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
-            Penumbra.Log.Verbose($"Unassigned temporary collection {collection.AnonymizedName} from {Collections[i].DisplayName}.");
+            Penumbra.Log.Verbose($"Unassigned temporary collection {collection.Id} from {Collections[i].DisplayName}.");
             Collections.Delete(i--);
         }
 
@@ -98,32 +99,32 @@ public class TempCollectionManager : IDisposable
         return true;
     }
 
-    public bool AddIdentifier(string collectionName, params ActorIdentifier[] identifiers)
+    public bool AddIdentifier(Guid collectionId, params ActorIdentifier[] identifiers)
     {
-        if (!_customCollections.TryGetValue(collectionName.ToLowerInvariant(), out var collection))
+        if (!_customCollections.TryGetValue(collectionId, out var collection))
             return false;
 
         return AddIdentifier(collection, identifiers);
     }
 
-    public bool AddIdentifier(string collectionName, string characterName, ushort worldId = ushort.MaxValue)
+    public bool AddIdentifier(Guid collectionId, string characterName, ushort worldId = ushort.MaxValue)
     {
-        if (!ByteString.FromString(characterName, out var byteString, false))
+        if (!ByteString.FromString(characterName, out var byteString))
             return false;
 
         var identifier = _actors.CreatePlayer(byteString, worldId);
         if (!identifier.IsValid)
             return false;
 
-        return AddIdentifier(collectionName, identifier);
+        return AddIdentifier(collectionId, identifier);
     }
 
     internal bool RemoveByCharacterName(string characterName, ushort worldId = ushort.MaxValue)
     {
-        if (!ByteString.FromString(characterName, out var byteString, false))
+        if (!ByteString.FromString(characterName, out var byteString))
             return false;
 
         var identifier = _actors.CreatePlayer(byteString, worldId);
-        return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Name);
+        return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Id);
     }
 }

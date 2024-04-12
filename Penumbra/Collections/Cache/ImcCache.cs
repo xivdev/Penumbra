@@ -116,7 +116,7 @@ public readonly struct ImcCache : IDisposable
     }
 
     private static FullPath CreateImcPath(ModCollection collection, Utf8GamePath path)
-        => new($"|{collection.Name}_{collection.ChangeCounter}|{path}");
+        => new($"|{collection.Id.OptimizedString()}_{collection.ChangeCounter}|{path}");
 
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
         => _imcFiles.TryGetValue(path, out file);

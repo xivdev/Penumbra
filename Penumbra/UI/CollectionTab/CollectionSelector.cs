@@ -24,7 +24,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
 
     public CollectionSelector(Configuration config, CommunicatorService communicator, CollectionStorage storage, ActiveCollections active,
         TutorialService tutorial)
-        : base(new List<ModCollection>(), Flags.Delete | Flags.Add | Flags.Duplicate | Flags.Filter)
+        : base([], Flags.Delete | Flags.Add | Flags.Duplicate | Flags.Filter)
     {
         _config       = config;
         _communicator = communicator;

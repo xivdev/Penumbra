@@ -25,8 +25,8 @@ public partial class ModEditWindow
         var resources = ResourceTreeApiHelper
             .GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
             .Values
-            .SelectMany(resources => resources.Values)
-            .Select(resource => resource.Item1);
+            .SelectMany(r => r.Values)
+            .Select(r => r.Item1);
 
         return new HashSet<string>(resources, StringComparer.OrdinalIgnoreCase);
     }

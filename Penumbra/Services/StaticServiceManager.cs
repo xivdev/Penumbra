@@ -9,6 +9,7 @@ using OtterGui.Classes;
 using OtterGui.Log;
 using OtterGui.Services;
 using Penumbra.Api;
+using Penumbra.Api.Api;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
@@ -30,8 +31,10 @@ using Penumbra.UI.ModsTab;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
 using Penumbra.UI.Tabs.Debug;
+using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
+using Penumbra.Api.IpcTester;
 
 namespace Penumbra.Services;
 
@@ -195,10 +198,5 @@ public static class StaticServiceManager
             .AddSingleton<ModelManager>();
 
     private static ServiceManager AddApi(this ServiceManager services)
-        => services.AddSingleton<PenumbraApi>()
-            .AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>())
-            .AddSingleton<PenumbraIpcProviders>()
-            .AddSingleton<HttpApi>()
-            .AddSingleton<IpcTester>()
-            .AddSingleton<DalamudSubstitutionProvider>();
+        => services.AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>());
 }

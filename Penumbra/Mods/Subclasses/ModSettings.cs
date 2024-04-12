@@ -12,7 +12,7 @@ public class ModSettings
 {
     public static readonly ModSettings Empty = new();
     public                 SettingList Settings { get; private init; } = [];
-    public                 ModPriority    Priority { get; set; }
+    public                 ModPriority Priority { get; set; }
     public                 bool        Enabled  { get; set; }
 
     // Create an independent copy of the current settings.
@@ -152,7 +152,7 @@ public class ModSettings
     public struct SavedSettings
     {
         public Dictionary<string, Setting> Settings;
-        public ModPriority                    Priority;
+        public ModPriority                 Priority;
         public bool                        Enabled;
 
         public SavedSettings DeepCopy()
@@ -203,9 +203,9 @@ public class ModSettings
 
     // Return the settings for a given mod in a shareable format, using the names of groups and options instead of indices.
     // Does not repair settings but ignores settings not fitting to the given mod.
-    public (bool Enabled, ModPriority Priority, Dictionary<string, IList<string>> Settings) ConvertToShareable(Mod mod)
+    public (bool Enabled, ModPriority Priority, Dictionary<string, List<string>> Settings) ConvertToShareable(Mod mod)
     {
-        var dict = new Dictionary<string, IList<string>>(Settings.Count);
+        var dict = new Dictionary<string, List<string>>(Settings.Count);
         foreach (var (setting, idx) in Settings.WithIndex())
         {
             if (idx >= mod.Groups.Count)

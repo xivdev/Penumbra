@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -9,7 +10,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Api;
 
-public class DalamudSubstitutionProvider : IDisposable
+public class DalamudSubstitutionProvider : IDisposable, IApiService
 {
     private readonly ITextureSubstitutionProvider _substitution;
     private readonly ActiveCollectionData         _activeCollectionData;

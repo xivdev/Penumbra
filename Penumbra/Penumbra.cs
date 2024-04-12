@@ -20,6 +20,7 @@ using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
 using Penumbra.GameData.Enums;
 using Penumbra.UI;
+using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
@@ -105,8 +106,7 @@ public class Penumbra : IDalamudPlugin
 
     private void SetupApi()
     {
-        var api = _services.GetService<IPenumbraApi>();
-        _services.GetService<PenumbraIpcProviders>();
+        _services.GetService<IpcProviders>();
         _communicatorService.ChangedItemHover.Subscribe(it =>
         {
             if (it is (Item, FullEquipType))

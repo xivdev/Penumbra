@@ -1,7 +1,6 @@
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -48,6 +47,25 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         return true;
     }
 
+    /// <summary> Find a collection by its id. If the GUID is empty, the empty collection is returned. </summary>
+    public bool ById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
+    {
+        if (id != Guid.Empty)
+            return _collections.FindFirst(c => c.Id == id, out collection);
+
+        collection = ModCollection.Empty;
+        return true;
+    }
+
+    /// <summary> Find a collection by an identifier, which is interpreted as a GUID first and if it does not correspond to one, as a name. </summary>
+    public bool ByIdentifier(string identifier, [NotNullWhen(true)] out ModCollection? collection)
+    {
+        if (Guid.TryParse(identifier, out var guid))
+            return ById(guid, out collection);
+
+        return ByName(identifier, out collection);
+    }
+
     public CollectionStorage(CommunicatorService communicator, SaveService saveService, ModStorage modStorage)
     {
         _communicator = communicator;
@@ -71,31 +89,6 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     }
 
     /// <summary>
-    /// Returns true if the name is not empty, it is not the name of the empty collection
-    /// and no existing collection results in the same filename as name. Also returns the fixed name.
-    /// </summary>
-    public bool CanAddCollection(string name, out string fixedName)
-    {
-        if (!IsValidName(name))
-        {
-            fixedName = string.Empty;
-            return false;
-        }
-
-        name = name.ToLowerInvariant();
-        if (name.Length == 0
-         || name == ModCollection.Empty.Name.ToLowerInvariant()
-         || _collections.Any(c => c.Name.ToLowerInvariant() == name))
-        {
-            fixedName = string.Empty;
-            return false;
-        }
-
-        fixedName = name;
-        return true;
-    }
-
-    /// <summary>
     /// Add a new collection of the given name.
     /// If duplicate is not-null, the new collection will be a duplicate of it.
     /// If the name of the collection would result in an already existing filename, skip it.
@@ -104,14 +97,6 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// </summary>
     public bool AddCollection(string name, ModCollection? duplicate)
     {
-        if (!CanAddCollection(name, out var fixedName))
-        {
-            Penumbra.Messager.NotificationMessage(
-                $"The new collection {name} would lead to the same path {fixedName} as one that already exists.", NotificationType.Warning,
-                false);
-            return false;
-        }
-
         var newCollection = duplicate?.Duplicate(name, _collections.Count)
          ?? ModCollection.CreateEmpty(name, _collections.Count, _modStorage.Count);
         _collections.Add(newCollection);
@@ -167,15 +152,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     }
 
     /// <summary>
-    /// Check if a name is valid to use for a collection.
-    /// Does not check for uniqueness.
-    /// </summary>
-    private static bool IsValidName(string name)
-        => name.Length is > 0 and < 64 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
-
-    /// <summary>
     /// Read all collection files in the Collection Directory.
-    /// Ensure that the default named collection exists, and apply inheritances afterwards.
+    /// Ensure that the default named collection exists, and apply inheritances afterward.
     /// Duplicate collection files are not deleted, just not added here.
     /// </summary>
     private void ReadCollections(out ModCollection defaultNamedCollection)
@@ -183,29 +161,46 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         Penumbra.Log.Debug("[Collections] Reading saved collections...");
         foreach (var file in _saveService.FileNames.CollectionFiles)
         {
-            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance))
+            if (!ModCollectionSave.LoadFromFile(file, out var id, out var name, out var version, out var settings, out var inheritance))
                 continue;
 
-            if (!IsValidName(name))
+            if (id == Guid.Empty)
             {
-                // TODO: handle better.
-                Penumbra.Messager.NotificationMessage($"Collection of unsupported name found: {name} is not a valid collection name.",
+                Penumbra.Messager.NotificationMessage("Collection without ID found.", NotificationType.Warning);
+                continue;
+            }
+
+            if (ById(id, out _))
+            {
+                Penumbra.Messager.NotificationMessage($"Duplicate collection found: {id} already exists. Import skipped.",
                     NotificationType.Warning);
                 continue;
             }
 
-            if (ByName(name, out _))
-            {
-                Penumbra.Messager.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.",
-                    NotificationType.Warning);
-                continue;
-            }
-
-            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings, inheritance);
+            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, id, name, version, Count, settings, inheritance);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
-                Penumbra.Messager.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.",
-                    NotificationType.Warning);
+                try
+                {
+                    if (version >= 2)
+                    {
+                        File.Move(file.FullName, correctName, false);
+                        Penumbra.Messager.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Identifier}, renamed.",
+                            NotificationType.Warning);
+                    }
+                    else
+                    {
+                        _saveService.ImmediateSaveSync(new ModCollectionSave(_modStorage, collection));
+                        File.Delete(file.FullName);
+                        Penumbra.Log.Information($"Migrated collection {name} to Guid {id}.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Penumbra.Messager.NotificationMessage(e,
+                        $"Collection {file.Name} does not correspond to {collection.Identifier}, but could not rename.", NotificationType.Error);
+                }
+
             _collections.Add(collection);
         }
 

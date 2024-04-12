@@ -130,7 +130,7 @@ public sealed unsafe class MetaState : IDisposable
         _lastCreatedCollection = _collectionResolver.IdentifyLastGameObjectCollection(true);
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero)
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection.Name, (nint)modelCharaId, (nint)customize, (nint)equipData);
+                _lastCreatedCollection.ModCollection.Id, (nint)modelCharaId, (nint)customize, (nint)equipData);
 
         var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
             UsesDecal(*(uint*)modelCharaId, (nint)customize));

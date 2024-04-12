@@ -119,7 +119,7 @@ public class CollectionCacheManager : IDisposable
     /// Does not create caches.
     /// </summary>
     public void CalculateEffectiveFileList(ModCollection collection)
-        => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Name,
+        => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Identifier,
             () => CalculateEffectiveFileListInternal(collection));
 
     private void CalculateEffectiveFileListInternal(ModCollection collection)

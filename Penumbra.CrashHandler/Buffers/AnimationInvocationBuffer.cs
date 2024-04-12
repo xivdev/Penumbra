@@ -24,7 +24,7 @@ public record struct VfxFuncInvokedEntry(
     string InvocationType,
     string CharacterName,
     string CharacterAddress,
-    string CollectionName) : ICrashDataEntry;
+    Guid CollectionId) : ICrashDataEntry;
 
 /// <summary> Only expose the write interface for the buffer. </summary>
 public interface IAnimationInvocationBufferWriter
@@ -32,19 +32,19 @@ public interface IAnimationInvocationBufferWriter
     /// <summary> Write a line into the buffer with the given data. </summary>
     /// <param name="characterAddress"> The address of the related character, if known. </param>
     /// <param name="characterName"> The name of the related character, anonymized or relying on index if unavailable, if known. </param>
-    /// <param name="collectionName"> The name of the associated collection. Not anonymized. </param>
+    /// <param name="collectionId"> The GUID of the associated collection. </param>
     /// <param name="type"> The type of VFX func called. </param>
-    public void WriteLine(nint characterAddress, ReadOnlySpan<byte> characterName, string collectionName, AnimationInvocationType type);
+    public void WriteLine(nint characterAddress, ReadOnlySpan<byte> characterName, Guid collectionId, AnimationInvocationType type);
 }
 
 internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimationInvocationBufferWriter, IBufferReader
 {
     private const int    _version      = 1;
     private const int    _lineCount    = 64;
-    private const int    _lineCapacity = 256;
+    private const int    _lineCapacity = 128;
     private const string _name         = "Penumbra.AnimationInvocation";
 
-    public void WriteLine(nint characterAddress, ReadOnlySpan<byte> characterName, string collectionName, AnimationInvocationType type)
+    public void WriteLine(nint characterAddress, ReadOnlySpan<byte> characterName, Guid collectionId, AnimationInvocationType type)
     {
         var accessor = GetCurrentLineLocking();
         lock (accessor)
@@ -53,10 +53,10 @@ internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimation
             accessor.Write(8,  Environment.CurrentManagedThreadId);
             accessor.Write(12, (int)type);
             accessor.Write(16, characterAddress);
-            var span = GetSpan(accessor, 24, 104);
+            var span = GetSpan(accessor, 24, 16);
+            collectionId.TryWriteBytes(span);
+            span = GetSpan(accessor, 40);
             WriteSpan(characterName, span);
-            span = GetSpan(accessor, 128);
-            WriteString(collectionName, span);
         }
     }
 
@@ -68,13 +68,13 @@ internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimation
         var lineCount = (int)CurrentLineCount;
         for (var i = lineCount - 1; i >= 0; --i)
         {
-            var line           = GetLine(i);
-            var timestamp      = DateTimeOffset.FromUnixTimeMilliseconds(BitConverter.ToInt64(line));
-            var thread         = BitConverter.ToInt32(line[8..]);
-            var type           = (AnimationInvocationType)BitConverter.ToInt32(line[12..]);
-            var address        = BitConverter.ToUInt64(line[16..]);
-            var characterName  = ReadString(line[24..]);
-            var collectionName = ReadString(line[128..]);
+            var line          = GetLine(i);
+            var timestamp     = DateTimeOffset.FromUnixTimeMilliseconds(BitConverter.ToInt64(line));
+            var thread        = BitConverter.ToInt32(line[8..]);
+            var type          = (AnimationInvocationType)BitConverter.ToInt32(line[12..]);
+            var address       = BitConverter.ToUInt64(line[16..]);
+            var collectionId  = new Guid(line[24..40]);
+            var characterName = ReadString(line[40..]);
             yield return new JsonObject()
             {
                 [nameof(VfxFuncInvokedEntry.Age)]              = (crashTime - timestamp).TotalSeconds,
@@ -83,7 +83,7 @@ internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimation
                 [nameof(VfxFuncInvokedEntry.InvocationType)]   = ToName(type),
                 [nameof(VfxFuncInvokedEntry.CharacterName)]    = characterName,
                 [nameof(VfxFuncInvokedEntry.CharacterAddress)] = address.ToString("X"),
-                [nameof(VfxFuncInvokedEntry.CollectionName)]   = collectionName,
+                [nameof(VfxFuncInvokedEntry.CollectionId)]     = collectionId,
             };
         }
     }

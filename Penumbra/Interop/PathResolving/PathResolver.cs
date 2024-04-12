@@ -1,3 +1,4 @@
+using System.Runtime;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -43,8 +44,8 @@ public class PathResolver : IDisposable
     }
 
     /// <summary> Obtain a temporary or permanent collection by name. </summary>
-    public bool CollectionByName(string name, [NotNullWhen(true)] out ModCollection? collection)
-        => _tempCollections.CollectionByName(name, out collection) || _collectionManager.Storage.ByName(name, out collection);
+    public bool CollectionById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
+        => _tempCollections.CollectionById(id, out collection) || _collectionManager.Storage.ById(id, out collection);
 
     /// <summary> Try to resolve the given game path to the replaced path. </summary>
     public (FullPath?, ResolveData) ResolvePath(Utf8GamePath path, ResourceCategory category, ResourceType resourceType)
@@ -136,9 +137,10 @@ public class PathResolver : IDisposable
             return;
 
         var lastUnderscore = additionalData.LastIndexOf((byte)'_');
-        var name           = lastUnderscore == -1 ? additionalData.ToString() : additionalData.Substring(0, lastUnderscore).ToString();
+        var idString       = lastUnderscore == -1 ? additionalData : additionalData.Substring(0, lastUnderscore);
         if (Utf8GamePath.FromByteString(path, out var gamePath)
-         && CollectionByName(name, out var collection)
+         && GuidExtensions.FromOptimizedString(idString.Span, out var id)
+         && CollectionById(id, out var collection)
          && collection.HasCache
          && collection.GetImcFile(gamePath, out var file))
         {
