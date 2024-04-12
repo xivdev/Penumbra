@@ -77,7 +77,7 @@ public partial class ModCollection
         else
         {
             _cache.Meta.SetFiles();
-            Penumbra.Log.Debug($"Set CharacterUtility resources for collection {Name}.");
+            Penumbra.Log.Debug($"Set CharacterUtility resources for collection {Identifier}.");
         }
     }
 

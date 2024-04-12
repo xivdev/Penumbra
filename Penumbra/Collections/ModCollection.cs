@@ -28,7 +28,7 @@ public partial class ModCollection
     public static readonly ModCollection Empty = CreateEmpty(EmptyCollectionName, 0, 0);
 
     /// <summary> The name of a collection. </summary>
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; set; }
 
     public Guid Id { get; }
 

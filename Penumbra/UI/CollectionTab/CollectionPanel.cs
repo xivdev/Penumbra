@@ -35,7 +35,8 @@ public sealed class CollectionPanel : IDisposable
 
     private static readonly IReadOnlyDictionary<CollectionType, (string Name, uint Border)> Buttons      = CreateButtons();
     private static readonly IReadOnlyList<(CollectionType, bool, bool, string, uint)>       AdvancedTree = CreateTree();
-    private readonly        List<(CollectionType Type, ActorIdentifier Identifier)>         _inUseCache  = new();
+    private readonly        List<(CollectionType Type, ActorIdentifier Identifier)>         _inUseCache  = [];
+    private                 string?                                                         _newName;
 
     private int _draggedIndividualAssignment = -1;
 
@@ -93,6 +94,18 @@ public sealed class CollectionPanel : IDisposable
 
         var first = true;
 
+        Button(CollectionType.NonPlayerChild);
+        Button(CollectionType.NonPlayerElderly);
+        foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+        {
+            Button(CollectionTypeExtensions.FromParts(race, Gender.Male,   false));
+            Button(CollectionTypeExtensions.FromParts(race, Gender.Female, false));
+            Button(CollectionTypeExtensions.FromParts(race, Gender.Male,   true));
+            Button(CollectionTypeExtensions.FromParts(race, Gender.Female, true));
+        }
+
+        return;
+
         void Button(CollectionType type)
         {
             var (name, border) = Buttons[type];
@@ -111,16 +124,6 @@ public sealed class CollectionPanel : IDisposable
             ImGui.SameLine();
             if (ImGui.GetContentRegionAvail().X < buttonWidth.X + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X)
                 ImGui.NewLine();
-        }
-
-        Button(CollectionType.NonPlayerChild);
-        Button(CollectionType.NonPlayerElderly);
-        foreach (var race in Enum.GetValues<SubRace>().Skip(1))
-        {
-            Button(CollectionTypeExtensions.FromParts(race, Gender.Male,   false));
-            Button(CollectionTypeExtensions.FromParts(race, Gender.Female, false));
-            Button(CollectionTypeExtensions.FromParts(race, Gender.Male,   true));
-            Button(CollectionTypeExtensions.FromParts(race, Gender.Female, true));
         }
     }
 
@@ -228,12 +231,20 @@ public sealed class CollectionPanel : IDisposable
         ImGui.SameLine();
         ImGui.BeginGroup();
         using var style      = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
-        var       name       = collection.Name;
+        var       name       = _newName ?? collection.Name;
         var       identifier = collection.Identifier;
         var       width      = ImGui.GetContentRegionAvail().X;
         var       fileName   = _fileNames.CollectionFile(collection);
         ImGui.SetNextItemWidth(width);
-        ImGui.InputText("##name", ref name, 128);
+        if (ImGui.InputText("##name", ref name, 128))
+            _newName = name;
+        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null)
+        {
+            collection.Name = _newName;
+            _newName        = null;
+        }
+        else if (ImGui.IsItemDeactivated())
+            _newName = null;
         using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
             if (ImGui.Button(collection.Identifier, new Vector2(width, 0)))
