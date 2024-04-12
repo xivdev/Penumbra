@@ -1,5 +1,4 @@
 using OtterGui.Classes;
-using Penumbra.Api;
 using Penumbra.Api.Api;
 
 namespace Penumbra.Communication;
@@ -15,7 +14,7 @@ public sealed class ModDirectoryChanged() : EventWrapper<string, bool, ModDirect
 {
     public enum Priority
     {
-        /// <seealso cref="PenumbraApi.ModDirectoryChanged"/>
+        /// <seealso cref="PluginStateApi.ModDirectoryChanged"/>
         Api = 0,
 
         /// <seealso cref="UI.FileDialogService.OnModDirectoryChange"/>

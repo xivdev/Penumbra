@@ -13,16 +13,16 @@ public class PluginStateApi(Configuration config, CommunicatorService communicat
     public string GetConfiguration()
         => JsonConvert.SerializeObject(config, Formatting.Indented);
 
-    public event Action<string, bool>? ModDirectoryChanged
+    public event Action<string, bool> ModDirectoryChanged
     {
-        add => communicator.ModDirectoryChanged.Subscribe(value!, Communication.ModDirectoryChanged.Priority.Api);
-        remove => communicator.ModDirectoryChanged.Unsubscribe(value!);
+        add => communicator.ModDirectoryChanged.Subscribe(value, Communication.ModDirectoryChanged.Priority.Api);
+        remove => communicator.ModDirectoryChanged.Unsubscribe(value);
     }
 
     public bool GetEnabledState()
         => config.EnableMods;
 
-    public event Action<bool>? EnabledChange
+    public event Action<bool> EnabledChange
     {
         add => communicator.EnabledChanged.Subscribe(value!, EnabledChanged.Priority.Api);
         remove => communicator.EnabledChanged.Unsubscribe(value!);
