@@ -19,6 +19,7 @@ public sealed class IpcProviders : IDisposable, IApiService
         _providers =
         [
             IpcSubscribers.GetCollections.Provider(pi, api.Collection),
+            IpcSubscribers.GetCollectionsByIdentifier.Provider(pi, api.Collection),
             IpcSubscribers.GetChangedItemsForCollection.Provider(pi, api.Collection),
             IpcSubscribers.GetCollection.Provider(pi, api.Collection),
             IpcSubscribers.GetCollectionForObject.Provider(pi, api.Collection),

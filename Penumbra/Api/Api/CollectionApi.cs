@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -9,6 +10,24 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
 {
     public Dictionary<Guid, string> GetCollections()
         => collections.Storage.ToDictionary(c => c.Id, c => c.Name);
+
+    public List<(Guid Id, string Name)> GetCollectionsByIdentifier(string identifier)
+    {
+        if (identifier.Length == 0)
+            return [];
+
+        var list = new List<(Guid Id, string Name)>(4);
+        if (Guid.TryParse(identifier, out var guid) && collections.Storage.ById(guid, out var collection) && collection != ModCollection.Empty)
+            list.Add((collection.Id, collection.Name));
+        else if (identifier.Length >= 8)
+            list.AddRange(collections.Storage.Where(c => c.Identifier.StartsWith(identifier, StringComparison.OrdinalIgnoreCase))
+                .Select(c => (c.Id, c.Name)));
+
+        list.AddRange(collections.Storage
+            .Where(c => string.Equals(c.Name, identifier, StringComparison.OrdinalIgnoreCase) && !list.Contains((c.Id, c.Name)))
+            .Select(c => (c.Id, c.Name)));
+        return list;
+    }
 
     public Dictionary<string, object?> GetChangedItemsForCollection(Guid collectionId)
     {

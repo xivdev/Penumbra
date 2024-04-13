@@ -35,7 +35,7 @@ public class CollectionsIpcTester(DalamudPluginInterface pi) : IUiService
 
         ImGuiUtil.GenericEnumCombo("Collection Type", 200, _type, out _type, t => ((CollectionType)t).ToName());
         ImGui.InputInt("Object Index##Collections", ref _objectIdx, 0, 0);
-        ImGuiUtil.GuidInput("Collection Id##Collections", "Collection GUID...", string.Empty, ref _collectionId, ref _collectionIdString);
+        ImGuiUtil.GuidInput("Collection Id##Collections", "Collection Identifier...", string.Empty, ref _collectionId, ref _collectionIdString);
         ImGui.Checkbox("Allow Assignment Creation", ref _allowCreation);
         ImGui.SameLine();
         ImGui.Checkbox("Allow Assignment Deletion", ref _allowDeletion);
@@ -47,6 +47,25 @@ public class CollectionsIpcTester(DalamudPluginInterface pi) : IUiService
         IpcTester.DrawIntro("Last Return Code", _returnCode.ToString());
         if (_oldCollection != null)
             ImGui.TextUnformatted(!_oldCollection.HasValue ? "Created" : _oldCollection.ToString());
+
+        IpcTester.DrawIntro(GetCollectionsByIdentifier.Label, "Collection Identifier");
+        var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionIdString);
+        if (collectionList.Count == 0)
+        {
+            DrawCollection(null);
+        }
+        else
+        {
+            DrawCollection(collectionList[0]);
+            foreach (var pair in collectionList.Skip(1))
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                DrawCollection(pair);
+            }
+        }
 
         IpcTester.DrawIntro(GetCollection.Label, "Current Collection");
         DrawCollection(new GetCollection(pi).Invoke(ApiCollectionType.Current));

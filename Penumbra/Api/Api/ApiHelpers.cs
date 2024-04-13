@@ -48,8 +48,10 @@ public class ApiHelpers(
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     internal static PenumbraApiEc Return(PenumbraApiEc ec, LazyString args, [CallerMemberName] string name = "Unknown")
     {
-        Penumbra.Log.Debug(
-            $"[{name}] Called with {args}, returned {ec}.");
+        if (ec is PenumbraApiEc.Success or PenumbraApiEc.NothingChanged)
+            Penumbra.Log.Verbose($"[{name}] Called with {args}, returned {ec}.");
+        else
+            Penumbra.Log.Debug($"[{name}] Called with {args}, returned {ec}.");
         return ec;
     }
 
