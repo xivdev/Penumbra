@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
