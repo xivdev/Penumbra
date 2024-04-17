@@ -5,7 +5,6 @@ using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
-using Penumbra.Communication;
 
 namespace Penumbra.Api.IpcTester;
 
@@ -38,6 +37,12 @@ public class UiIpcTester : IUiService, IDisposable
         PostSettingsPanelDraw = IpcSubscribers.PostSettingsPanelDraw.Subscriber(pi, UpdateLastDrawnMod);
         ChangedItemTooltip    = IpcSubscribers.ChangedItemTooltip.Subscriber(pi, AddedTooltip);
         ChangedItemClicked    = IpcSubscribers.ChangedItemClicked.Subscriber(pi, AddedClick);
+        PreSettingsTabBar.Disable();
+        PreSettingsPanel.Disable();
+        PostEnabled.Disable();
+        PostSettingsPanelDraw.Disable();
+        ChangedItemTooltip.Disable();
+        ChangedItemClicked.Disable();
     }
 
     public void Dispose()

@@ -22,9 +22,10 @@ public class RedrawingIpcTester : IUiService, IDisposable
 
     public RedrawingIpcTester(DalamudPluginInterface pi, ObjectManager objects)
     {
-        _pi          = pi;
-        _objects     = objects;
-        Redrawn      = GameObjectRedrawn.Subscriber(_pi, SetLastRedrawn);
+        _pi      = pi;
+        _objects = objects;
+        Redrawn  = GameObjectRedrawn.Subscriber(_pi, SetLastRedrawn);
+        Redrawn.Disable();
     }
 
     public void Dispose()

@@ -36,6 +36,8 @@ public class PluginStateIpcTester : IUiService, IDisposable
         Initialized         = IpcSubscribers.Initialized.Subscriber(pi, AddInitialized);
         Disposed            = IpcSubscribers.Disposed.Subscriber(pi, AddDisposed);
         EnabledChange       = IpcSubscribers.EnabledChange.Subscriber(pi, SetLastEnabled);
+        ModDirectoryChanged.Disable();
+        EnabledChange.Disable();
     }
 
     public void Dispose()

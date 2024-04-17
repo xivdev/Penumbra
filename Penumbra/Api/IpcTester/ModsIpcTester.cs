@@ -55,13 +55,19 @@ public class ModsIpcTester : IUiService, IDisposable
             _lastMovedModFrom = s1;
             _lastMovedModTo   = s2;
         });
+        DeleteSubscriber.Disable();
+        AddSubscriber.Disable();
+        MoveSubscriber.Disable();
     }
 
     public void Dispose()
     {
         DeleteSubscriber.Dispose();
+        DeleteSubscriber.Disable();
         AddSubscriber.Dispose();
+        AddSubscriber.Disable();
         MoveSubscriber.Dispose();
+        MoveSubscriber.Disable();
     }
 
     public void Draw()

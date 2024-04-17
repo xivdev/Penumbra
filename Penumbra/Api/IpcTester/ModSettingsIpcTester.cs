@@ -37,6 +37,7 @@ public class ModSettingsIpcTester : IUiService, IDisposable
     {
         _pi            = pi;
         SettingChanged = ModSettingChanged.Subscriber(pi, UpdateLastModSetting);
+        SettingChanged.Disable();
     }
 
     public void Dispose()

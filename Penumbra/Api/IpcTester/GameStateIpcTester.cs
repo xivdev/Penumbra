@@ -33,9 +33,12 @@ public class GameStateIpcTester : IUiService, IDisposable
     public GameStateIpcTester(DalamudPluginInterface pi)
     {
         _pi                            = pi;
-        CharacterBaseCreating          = CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
-        CharacterBaseCreated           = CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
+        CharacterBaseCreating          = IpcSubscribers.CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
+        CharacterBaseCreated           = IpcSubscribers.CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
         GameObjectResourcePathResolved = IpcSubscribers.GameObjectResourcePathResolved.Subscriber(pi, UpdateGameObjectResourcePath);
+        CharacterBaseCreating.Disable();
+        CharacterBaseCreated.Disable();
+        GameObjectResourcePathResolved.Disable();
     }
 
     public void Dispose()
