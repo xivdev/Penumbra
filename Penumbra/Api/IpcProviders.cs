@@ -61,6 +61,7 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.CopyModSettings.Provider(pi, api.ModSettings),
 
             IpcSubscribers.ApiVersion.Provider(pi, api),
+            new FuncProvider<(int Major, int Minor)>(pi, "Penumbra.ApiVersions", () => api.ApiVersion), // backward compatibility
             IpcSubscribers.GetModDirectory.Provider(pi, api.PluginState),
             IpcSubscribers.GetConfiguration.Provider(pi, api.PluginState),
             IpcSubscribers.ModDirectoryChanged.Provider(pi, api.PluginState),
