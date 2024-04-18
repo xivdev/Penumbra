@@ -312,6 +312,7 @@ public class MeshExporter
     {
         return type switch
         {
+            MdlFile.VertexType.Single2 => new Vector2(reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.Single3 => new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.Single4 => new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.UByte4  => reader.ReadBytes(4),
@@ -379,6 +380,7 @@ public class MeshExporter
             {
                 MdlFile.VertexType.Half2   => 1,
                 MdlFile.VertexType.Half4   => 2,
+                MdlFile.VertexType.Single2 => 1,
                 MdlFile.VertexType.Single4 => 2,
                 _                          => throw _notifier.Exception($"Unexpected UV vertex type {type}."),
             };
