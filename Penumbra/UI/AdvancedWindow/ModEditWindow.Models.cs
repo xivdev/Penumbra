@@ -145,8 +145,8 @@ public partial class ModEditWindow
 
         if (ImGuiUtil.DrawDisabledButton("Export to glTF", Vector2.Zero, "Exports this mdl file to glTF, for use in 3D authoring applications.",
                 tab.PendingIo || gamePath.IsEmpty))
-            _fileDialog.OpenSavePicker("Save model as glTF.", ".gltf", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
-                ".gltf", (valid, path) =>
+            _fileDialog.OpenSavePicker("Save model as glTF.", ".glb", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
+                ".glb", (valid, path) =>
                 {
                     if (!valid)
                         return;
