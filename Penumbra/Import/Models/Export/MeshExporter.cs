@@ -3,6 +3,7 @@ using Lumina.Data.Parsing;
 using Lumina.Extensions;
 using OtterGui;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.IO;
@@ -55,7 +56,7 @@ public class MeshExporter
     private readonly byte    _lod;
     private readonly ushort  _meshIndex;
 
-    private MdlStructs.MeshStruct XivMesh
+    private MeshStruct XivMesh
         => _mdl.Meshes[_meshIndex];
 
     private readonly MaterialBuilder _material;
@@ -109,8 +110,8 @@ public class MeshExporter
         var xivBoneTable = _mdl.BoneTables[XivMesh.BoneTableIndex];
 
         var indexMap = new Dictionary<ushort, int>();
-
-        foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take(xivBoneTable.BoneCount).WithIndex())
+        // #TODO @ackwell maybe fix for V6 Models, I think this works fine.
+        foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take((int)xivBoneTable.BoneCount).WithIndex())
         {
             var boneName = _mdl.Bones[xivBoneIndex];
             if (!skeleton.Names.TryGetValue(boneName, out var gltfBoneIndex))
@@ -238,19 +239,15 @@ public class MeshExporter
             { "targetNames", shapeNames },
         });
 
-        string[] attributes = [];
-        var maxAttribute = 31 - BitOperations.LeadingZeroCount(attributeMask);
+        string[] attributes   = [];
+        var      maxAttribute = 31 - BitOperations.LeadingZeroCount(attributeMask);
         if (maxAttribute < _mdl.Attributes.Length)
-        {
             attributes = Enumerable.Range(0, 32)
                 .Where(index => ((attributeMask >> index) & 1) == 1)
                 .Select(index => _mdl.Attributes[index])
                 .ToArray();
-        }
         else
-        {
             _notifier.Warning("Invalid attribute data, ignoring.");
-        }
 
         return new MeshData
         {
@@ -278,7 +275,7 @@ public class MeshExporter
         for (var streamIndex = 0; streamIndex < MaximumMeshBufferStreams; streamIndex++)
         {
             streams[streamIndex] = new BinaryReader(new MemoryStream(_mdl.RemainingData));
-            streams[streamIndex].Seek(_mdl.VertexOffset[_lod] + XivMesh.VertexBufferOffset[streamIndex]);
+            streams[streamIndex].Seek(_mdl.VertexOffset[_lod] + XivMesh.VertexBufferOffset(streamIndex));
         }
 
         var sortedElements = _mdl.VertexDeclarations[_meshIndex].VertexElements
@@ -315,7 +312,7 @@ public class MeshExporter
             MdlFile.VertexType.Single3 => new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.Single4 => new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.UByte4  => reader.ReadBytes(4),
-            MdlFile.VertexType.NByte4  => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f,
+            MdlFile.VertexType.NByte4 => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f,
                 reader.ReadByte() / 255f),
             MdlFile.VertexType.Half2 => new Vector2((float)reader.ReadHalf(), (float)reader.ReadHalf()),
             MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(),

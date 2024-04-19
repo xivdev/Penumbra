@@ -483,7 +483,7 @@ public partial class ModEditWindow
             if (table)
             {
                 ImGuiUtil.DrawTableColumn("Version");
-                ImGuiUtil.DrawTableColumn(_lastFile.Version.ToString());
+                ImGuiUtil.DrawTableColumn($"0x{_lastFile.Version:X}");
                 ImGuiUtil.DrawTableColumn("Radius");
                 ImGuiUtil.DrawTableColumn(_lastFile.Radius.ToString(CultureInfo.InvariantCulture));
                 ImGuiUtil.DrawTableColumn("Model Clip Out Distance");

@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.MaterialPreview;
@@ -601,7 +602,7 @@ public partial class ModEditWindow
                 var stm = _edit._stainService.StmFile;
                 var dye = Mtrl.DyeTable[rowIdx];
                 if (stm.TryGetValue(dye.Template, _edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
-                    row.ApplyDyeTemplate(dye, dyes);
+                    row.ApplyDyeTemplate(dye, dyes, default);
             }
 
             if (HighlightedColorTableRow == rowIdx)
@@ -628,12 +629,12 @@ public partial class ModEditWindow
             {
                 var stm     = _edit._stainService.StmFile;
                 var stainId = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
-                for (var i = 0; i < MtrlFile.ColorTable.NumRows; ++i)
+                for (var i = 0; i < ColorTable.NumUsedRows; ++i)
                 {
                     ref var row = ref rows[i];
                     var     dye = Mtrl.DyeTable[i];
                     if (stm.TryGetValue(dye.Template, stainId, out var dyes))
-                        row.ApplyDyeTemplate(dye, dyes);
+                        row.ApplyDyeTemplate(dye, dyes, default);
                 }
             }
 
@@ -647,7 +648,7 @@ public partial class ModEditWindow
             }
         }
 
-        private static void ApplyHighlight(ref MtrlFile.ColorTable.Row row, float time)
+        private static void ApplyHighlight(ref ColorTable.Row row, float time)
         {
             var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
             var baseColor = ColorId.InGameHighlight.Value();
