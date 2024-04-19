@@ -30,16 +30,16 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
         return num;
     }
 
-    public void Revert(Mod mod, ISubMod option)
+    public void Revert(Mod mod, SubMod option)
     {
         files.UpdateAll(mod, option);
         Changes = false;
     }
 
     /// <summary> Remove all path redirections where the pointed-to file does not exist. </summary>
-    public void RemoveMissingPaths(Mod mod, ISubMod option)
+    public void RemoveMissingPaths(Mod mod, SubMod option)
     {
-        void HandleSubMod(ISubMod subMod, int groupIdx, int optionIdx)
+        void HandleSubMod(SubMod subMod, int groupIdx, int optionIdx)
         {
             var newDict = subMod.Files.Where(kvp => CheckAgainstMissing(mod, subMod, kvp.Value, kvp.Key, subMod == option))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
@@ -61,7 +61,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
     /// If path is empty, it    will be deleted instead.
     /// If pathIdx is equal to the  total number of paths, path will be added, otherwise replaced.
     /// </summary>
-    public bool SetGamePath(ISubMod option, int fileIdx, int pathIdx, Utf8GamePath path)
+    public bool SetGamePath(SubMod option, int fileIdx, int pathIdx, Utf8GamePath path)
     {
         if (!CanAddGamePath(path) || fileIdx < 0 || fileIdx > files.Available.Count)
             return false;
@@ -84,7 +84,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
     /// Transform a set of files to the appropriate game paths with the given number of folders skipped,
     /// and add them to the given option.
     /// </summary>
-    public int AddPathsToSelected(ISubMod option, IEnumerable<FileRegistry> files1, int skipFolders = 0)
+    public int AddPathsToSelected(SubMod option, IEnumerable<FileRegistry> files1, int skipFolders = 0)
     {
         var failed = 0;
         foreach (var file in files1)
@@ -111,7 +111,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
     }
 
     /// <summary> Remove all paths in the current option from the given files. </summary>
-    public void RemovePathsFromSelected(ISubMod option, IEnumerable<FileRegistry> files1)
+    public void RemovePathsFromSelected(SubMod option, IEnumerable<FileRegistry> files1)
     {
         foreach (var file in files1)
         {
@@ -129,7 +129,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
     }
 
     /// <summary> Delete all given files from your filesystem </summary>
-    public void DeleteFiles(Mod mod, ISubMod option, IEnumerable<FileRegistry> files1)
+    public void DeleteFiles(Mod mod, SubMod option, IEnumerable<FileRegistry> files1)
     {
         var deletions = 0;
         foreach (var file in files1)
@@ -155,7 +155,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
     }
 
 
-    private bool CheckAgainstMissing(Mod mod, ISubMod option, FullPath file, Utf8GamePath key, bool removeUsed)
+    private bool CheckAgainstMissing(Mod mod, SubMod option, FullPath file, Utf8GamePath key, bool removeUsed)
     {
         if (!files.Missing.Contains(file))
             return true;

@@ -192,7 +192,7 @@ public partial class ModEditWindow
         ImGuiUtil.RightAlign(rightText);
     }
 
-    private void PrintGamePath(int i, int j, FileRegistry registry, ISubMod subMod, Utf8GamePath gamePath)
+    private void PrintGamePath(int i, int j, FileRegistry registry, SubMod subMod, Utf8GamePath gamePath)
     {
         using var id = ImRaii.PushId(j);
         ImGui.TableNextColumn();
@@ -228,7 +228,7 @@ public partial class ModEditWindow
         }
     }
 
-    private void PrintNewGamePath(int i, FileRegistry registry, ISubMod subMod)
+    private void PrintNewGamePath(int i, FileRegistry registry, SubMod subMod)
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
         var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();

@@ -24,7 +24,7 @@ public sealed class MultiModGroup : IModGroup
     public ModPriority OptionPriority(Index idx)
         => PrioritizedOptions[idx].Priority;
 
-    public ISubMod this[Index idx]
+    public SubMod this[Index idx]
         => PrioritizedOptions[idx].Mod;
 
     public bool IsOption
@@ -36,7 +36,7 @@ public sealed class MultiModGroup : IModGroup
 
     public readonly List<(SubMod Mod, ModPriority Priority)> PrioritizedOptions = [];
 
-    public IEnumerator<ISubMod> GetEnumerator()
+    public IEnumerator<SubMod> GetEnumerator()
         => PrioritizedOptions.Select(o => o.Mod).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -117,7 +117,7 @@ public sealed class MultiModGroup : IModGroup
         foreach (var (option, index) in PrioritizedOptions.WithIndex().OrderByDescending(o => o.Value.Priority))
         {
             if (setting.HasFlag(index))
-                ((ISubMod)option.Mod).AddData(redirections, manipulations);
+                option.Mod.AddData(redirections, manipulations);
         }
     }
 

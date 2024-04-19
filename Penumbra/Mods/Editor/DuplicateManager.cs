@@ -29,7 +29,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
         Worker                   = Task.Run(() => CheckDuplicates(filesTmp, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
-    public void DeleteDuplicates(ModFileCollection files, Mod mod, ISubMod option, bool useModManager)
+    public void DeleteDuplicates(ModFileCollection files, Mod mod, SubMod option, bool useModManager)
     {
         if (!Worker.IsCompleted || _duplicates.Count == 0)
             return;
@@ -72,7 +72,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
         return;
 
-        void HandleSubMod(ISubMod subMod, int groupIdx, int optionIdx)
+        void HandleSubMod(SubMod subMod, int groupIdx, int optionIdx)
         {
             var changes = false;
             var dict = subMod.Files.ToDictionary(kvp => kvp.Key,
@@ -86,8 +86,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
             }
             else
             {
-                var sub = (SubMod)subMod;
-                sub.FileData = dict;
+                subMod.FileData = dict;
                 saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
             }
         }

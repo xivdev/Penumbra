@@ -39,11 +39,8 @@ public class TemporaryMod : IMod
                 dict.TryAdd(gamePath, file);
         }
 
-        return new AppliedModData(dict, Default.Manipulations);
+        return new AppliedModData(dict, Default.ManipulationData);
     }
-
-    ISubMod IMod.Default
-        => Default;
 
     public IReadOnlyList<IModGroup> Groups
         => Array.Empty<IModGroup>();

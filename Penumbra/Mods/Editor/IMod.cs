@@ -6,8 +6,8 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods.Editor;
 
 public record struct AppliedModData(
-    IReadOnlyCollection<KeyValuePair<Utf8GamePath, FullPath>> FileRedirections,
-    IReadOnlyCollection<MetaManipulation> Manipulations)
+    Dictionary<Utf8GamePath, FullPath> FileRedirections,
+    HashSet<MetaManipulation> Manipulations)
 {
     public static readonly AppliedModData Empty = new([], []);
 }
@@ -19,13 +19,9 @@ public interface IMod
     public int         Index    { get; }
     public ModPriority Priority { get; }
 
+    public IReadOnlyList<IModGroup> Groups { get; }
+
     public AppliedModData GetData(ModSettings? settings = null);
-
-
-    public ISubMod                  Default { get; }
-    public IReadOnlyList<IModGroup> Groups  { get; }
-
-    public IEnumerable<SubMod> AllSubMods { get; }
 
     // Cache
     public int TotalManipulations { get; }

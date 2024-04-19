@@ -32,6 +32,9 @@ public sealed class Mod : IMod
     public ModPriority Priority
         => ModPriority.Default;
 
+    IReadOnlyList<IModGroup> IMod.Groups
+        => Groups;
+
     internal Mod(DirectoryInfo modPath)
     {
         ModPath = modPath;
@@ -74,18 +77,12 @@ public sealed class Mod : IMod
             group.AddData(config, dictRedirections, setManips);
         }
 
-        ((ISubMod)Default).AddData(dictRedirections, setManips);
+        Default.AddData(dictRedirections, setManips);
         return new AppliedModData(dictRedirections, setManips);
     }
 
-    ISubMod IMod.Default
-        => Default;
-
-    IReadOnlyList<IModGroup> IMod.Groups
-        => Groups;
-
     public IEnumerable<SubMod> AllSubMods
-        => Groups.SelectMany(o => o).OfType<SubMod>().Prepend(Default);
+        => Groups.SelectMany(o => o).Prepend(Default);
 
     public List<FullPath> FindUnusedFiles()
     {

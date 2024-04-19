@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -15,7 +16,7 @@ namespace Penumbra.Mods.Subclasses;
 /// Nothing is checked for existence or validity when loading.
 /// Objects are also not checked for uniqueness, the first appearance of a game path or meta path decides.
 /// </summary>
-public sealed class SubMod : ISubMod
+public sealed class SubMod
 {
     public string Name { get; set; } = "Default";
 
@@ -30,6 +31,16 @@ public sealed class SubMod : ISubMod
 
     public bool IsDefault
         => GroupIdx < 0;
+
+    public void AddData(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    {
+        foreach (var (path, file) in Files)
+            redirections.TryAdd(path, file);
+
+        foreach (var (path, file) in FileSwaps)
+            redirections.TryAdd(path, file);
+        manipulations.UnionWith(Manipulations);
+    }
 
     public Dictionary<Utf8GamePath, FullPath> FileData         = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwapData     = [];
@@ -60,8 +71,8 @@ public sealed class SubMod : ISubMod
         ManipulationData.Clear();
 
         // Every option has a name, but priorities are only relevant for multi group options.
-        Name        = json[nameof(ISubMod.Name)]?.ToObject<string>() ?? string.Empty;
-        Description = json[nameof(ISubMod.Description)]?.ToObject<string>() ?? string.Empty;
+        Name        = json[nameof(Name)]?.ToObject<string>() ?? string.Empty;
+        Description = json[nameof(Description)]?.ToObject<string>() ?? string.Empty;
         priority    = json[nameof(IModGroup.Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default;
 
         var files = (JObject?)json[nameof(Files)];
@@ -103,5 +114,44 @@ public sealed class SubMod : ISubMod
                 Penumbra.Log.Error($"Could not delete incorporated meta file {file}:\n{e}");
             }
         }
+    }
+
+    public static void WriteSubMod(JsonWriter j, JsonSerializer serializer, SubMod mod, DirectoryInfo basePath, ModPriority? priority)
+    {
+        j.WriteStartObject();
+        j.WritePropertyName(nameof(Name));
+        j.WriteValue(mod.Name);
+        j.WritePropertyName(nameof(Description));
+        j.WriteValue(mod.Description);
+        if (priority != null)
+        {
+            j.WritePropertyName(nameof(IModGroup.Priority));
+            j.WriteValue(priority.Value.Value);
+        }
+
+        j.WritePropertyName(nameof(mod.Files));
+        j.WriteStartObject();
+        foreach (var (gamePath, file) in mod.Files)
+        {
+            if (file.ToRelPath(basePath, out var relPath))
+            {
+                j.WritePropertyName(gamePath.ToString());
+                j.WriteValue(relPath.ToString());
+            }
+        }
+
+        j.WriteEndObject();
+        j.WritePropertyName(nameof(mod.FileSwaps));
+        j.WriteStartObject();
+        foreach (var (gamePath, file) in mod.FileSwaps)
+        {
+            j.WritePropertyName(gamePath.ToString());
+            j.WriteValue(file.ToString());
+        }
+
+        j.WriteEndObject();
+        j.WritePropertyName(nameof(mod.Manipulations));
+        serializer.Serialize(j, mod.Manipulations);
+        j.WriteEndObject();
     }
 }

@@ -6,7 +6,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
-public interface IModGroup : IReadOnlyCollection<ISubMod>
+public interface IModGroup : IReadOnlyCollection<SubMod>
 {
     public const int MaxMultiOptions = 63;
 
@@ -18,7 +18,7 @@ public interface IModGroup : IReadOnlyCollection<ISubMod>
 
     public ModPriority OptionPriority(Index optionIdx);
 
-    public ISubMod this[Index idx] { get; }
+    public SubMod this[Index idx] { get; }
 
     public bool IsOption { get; }
 
@@ -37,7 +37,7 @@ public readonly struct ModSaveGroup : ISavable
     private readonly DirectoryInfo _basePath;
     private readonly IModGroup?    _group;
     private readonly int           _groupIdx;
-    private readonly ISubMod?      _defaultMod;
+    private readonly SubMod?      _defaultMod;
     private readonly bool          _onlyAscii;
 
     public ModSaveGroup(Mod mod, int groupIdx, bool onlyAscii)
@@ -59,7 +59,7 @@ public readonly struct ModSaveGroup : ISavable
         _onlyAscii = onlyAscii;
     }
 
-    public ModSaveGroup(DirectoryInfo basePath, ISubMod @default, bool onlyAscii)
+    public ModSaveGroup(DirectoryInfo basePath, SubMod @default, bool onlyAscii)
     {
         _basePath   = basePath;
         _groupIdx   = -1;
@@ -91,7 +91,7 @@ public readonly struct ModSaveGroup : ISavable
             j.WriteStartArray();
             for (var idx = 0; idx < _group.Count; ++idx)
             {
-                ISubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type switch
+                SubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type switch
                 {
                     GroupType.Multi => _group.OptionPriority(idx),
                     _               => null,
@@ -103,7 +103,7 @@ public readonly struct ModSaveGroup : ISavable
         }
         else
         {
-            ISubMod.WriteSubMod(j, serializer, _defaultMod!, _basePath, null);
+            SubMod.WriteSubMod(j, serializer, _defaultMod!, _basePath, null);
         }
     }
 }

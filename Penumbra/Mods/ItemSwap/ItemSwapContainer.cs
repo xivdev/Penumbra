@@ -5,6 +5,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.Meta;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 
@@ -15,14 +16,13 @@ public class ItemSwapContainer
     private readonly MetaFileManager      _manager;
     private readonly ObjectIdentification _identifier;
 
-    private Dictionary<Utf8GamePath, FullPath> _modRedirections  = [];
-    private HashSet<MetaManipulation>          _modManipulations = [];
+    private AppliedModData _appliedModData = AppliedModData.Empty;
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> ModRedirections
-        => _modRedirections;
+        => _appliedModData.FileRedirections;
 
     public IReadOnlySet<MetaManipulation> ModManipulations
-        => _modManipulations;
+        => _appliedModData.Manipulations;
 
     public readonly List<Swap> Swaps = [];
 
@@ -97,12 +97,11 @@ public class ItemSwapContainer
         Clear();
         if (mod == null || mod.Index < 0)
         {
-            _modRedirections  = [];
-            _modManipulations = [];
+            _appliedModData  = AppliedModData.Empty;
         }
         else
         {
-            (_modRedirections, _modManipulations) = ModSettings.GetResolveData(mod, settings);
+            _appliedModData = ModSettings.GetResolveData(mod, settings);
         }
     }
 
@@ -120,7 +119,7 @@ public class ItemSwapContainer
 
     private Func<MetaManipulation, MetaManipulation> MetaResolver(ModCollection? collection)
     {
-        var set = collection?.MetaCache?.Manipulations.ToHashSet() ?? _modManipulations;
+        var set = collection?.MetaCache?.Manipulations.ToHashSet() ?? _appliedModData.Manipulations;
         return m => set.TryGetValue(m, out var a) ? a : m;
     }
 

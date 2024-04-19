@@ -152,7 +152,7 @@ public partial class TexToolsImporter
         }
 
         // Iterate through all pages
-        var options       = new List<ISubMod>();
+        var options       = new List<SubMod>();
         var groupPriority = ModPriority.Default;
         var groupNames    = new HashSet<string>();
         foreach (var page in modList.ModPackPages)

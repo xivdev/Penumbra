@@ -24,7 +24,7 @@ public sealed class SingleModGroup : IModGroup
     public ModPriority OptionPriority(Index _)
         => Priority;
 
-    public ISubMod this[Index idx]
+    public SubMod this[Index idx]
         => OptionData[idx];
 
     public bool IsOption
@@ -34,7 +34,7 @@ public sealed class SingleModGroup : IModGroup
     public int Count
         => OptionData.Count;
 
-    public IEnumerator<ISubMod> GetEnumerator()
+    public IEnumerator<SubMod> GetEnumerator()
         => OptionData.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
