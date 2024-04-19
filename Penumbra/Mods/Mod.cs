@@ -1,5 +1,7 @@
 using OtterGui;
 using OtterGui.Classes;
+using Penumbra.Collections.Cache;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
@@ -58,6 +60,23 @@ public sealed class Mod : IMod
     // Options
     public readonly SubMod          Default;
     public readonly List<IModGroup> Groups = [];
+
+    public AppliedModData GetData(ModSettings? settings = null)
+    {
+        if (settings is not { Enabled: true })
+            return AppliedModData.Empty;
+
+        var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
+        var setManips        = new HashSet<MetaManipulation>(TotalManipulations);
+        foreach (var (group, groupIndex) in Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
+        {
+            var config = settings.Settings[groupIndex];
+            group.AddData(config, dictRedirections, setManips);
+        }
+
+        ((ISubMod)Default).AddData(dictRedirections, setManips);
+        return new AppliedModData(dictRedirections, setManips);
+    }
 
     ISubMod IMod.Default
         => Default;

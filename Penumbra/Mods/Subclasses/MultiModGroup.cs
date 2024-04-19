@@ -5,6 +5,8 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
@@ -108,6 +110,15 @@ public sealed class MultiModGroup : IModGroup
     {
         foreach (var ((o, _), i) in PrioritizedOptions.WithIndex().Skip(from))
             o.SetPosition(o.GroupIdx, i);
+    }
+
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    {
+        foreach (var (option, index) in PrioritizedOptions.WithIndex().OrderByDescending(o => o.Value.Priority))
+        {
+            if (setting.HasFlag(index))
+                ((ISubMod)option.Mod).AddData(redirections, manipulations);
+        }
     }
 
     public Setting FixSetting(Setting setting)

@@ -1,6 +1,8 @@
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Services;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
@@ -23,6 +25,8 @@ public interface IModGroup : IReadOnlyCollection<ISubMod>
     public IModGroup Convert(GroupType type);
     public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
     public void      UpdatePositions(int from = 0);
+
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations);
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);

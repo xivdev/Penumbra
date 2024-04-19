@@ -14,6 +14,16 @@ public interface ISubMod
     public IReadOnlyDictionary<Utf8GamePath, FullPath> FileSwaps     { get; }
     public IReadOnlySet<MetaManipulation>              Manipulations { get; }
 
+    public void AddData(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    {
+        foreach (var (path, file) in Files)
+            redirections.TryAdd(path, file);
+
+        foreach (var (path, file) in FileSwaps)
+            redirections.TryAdd(path, file);
+        manipulations.UnionWith(Manipulations);
+    }
+
     public bool IsDefault { get; }
 
     public static void WriteSubMod(JsonWriter j, JsonSerializer serializer, ISubMod mod, DirectoryInfo basePath, ModPriority? priority)

@@ -3,6 +3,8 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
@@ -113,6 +115,9 @@ public sealed class SingleModGroup : IModGroup
         foreach (var (o, i) in OptionData.WithIndex().Skip(from))
             o.SetPosition(o.GroupIdx, i);
     }
+
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+        => this[setting.AsIndex].AddData(redirections, manipulations);
 
     public Setting FixSetting(Setting setting)
         => Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(Count - 1)));
