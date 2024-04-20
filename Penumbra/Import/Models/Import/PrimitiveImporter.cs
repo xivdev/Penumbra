@@ -65,7 +65,7 @@ public class PrimitiveImporter
         ArgumentNullException.ThrowIfNull(_indices);
         ArgumentNullException.ThrowIfNull(_shapeValues);
 
-        var material = _primitive.Material.Name;
+        var material = _primitive.Material?.Name;
         if (material == "")
             material = null;
 
