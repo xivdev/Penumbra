@@ -382,7 +382,7 @@ public partial class ModEditWindow
             {
                 ImGuiComponents.HelpMarker(
                     "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
-                  + "or absolute (e.g. \"chara/full/path/to/filename.mtrl\").",
+                  + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\").",
                   FontAwesomeIcon.TimesCircle);
             }
         
