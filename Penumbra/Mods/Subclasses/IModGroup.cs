@@ -82,7 +82,7 @@ public readonly struct ModSaveGroup : ISavable
             j.WritePropertyName(nameof(_group.Description));
             j.WriteValue(_group.Description);
             j.WritePropertyName(nameof(_group.Priority));
-            j.WriteValue(_group.Priority);
+            j.WriteValue(_group.Priority.Value);
             j.WritePropertyName(nameof(Type));
             j.WriteValue(_group.Type.ToString());
             j.WritePropertyName(nameof(_group.DefaultSettings));
