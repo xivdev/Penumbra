@@ -16,7 +16,7 @@ public interface IModGroup : IReadOnlyCollection<SubMod>
     public ModPriority Priority        { get; }
     public Setting     DefaultSettings { get; set; }
 
-    public ModPriority OptionPriority(Index optionIdx);
+    public FullPath? FindBestMatch(Utf8GamePath gamePath);
 
     public SubMod this[Index idx] { get; }
 
@@ -37,7 +37,7 @@ public readonly struct ModSaveGroup : ISavable
     private readonly DirectoryInfo _basePath;
     private readonly IModGroup?    _group;
     private readonly int           _groupIdx;
-    private readonly SubMod?      _defaultMod;
+    private readonly SubMod?       _defaultMod;
     private readonly bool          _onlyAscii;
 
     public ModSaveGroup(Mod mod, int groupIdx, bool onlyAscii)

@@ -21,8 +21,10 @@ public sealed class SingleModGroup : IModGroup
 
     public readonly List<SubMod> OptionData = [];
 
-    public ModPriority OptionPriority(Index _)
-        => Priority;
+    public FullPath? FindBestMatch(Utf8GamePath gamePath)
+        => OptionData
+            .SelectWhere(m => (m.FileData.TryGetValue(gamePath, out var file) || m.FileSwapData.TryGetValue(gamePath, out file), file))
+            .FirstOrDefault();
 
     public SubMod this[Index idx]
         => OptionData[idx];

@@ -21,8 +21,10 @@ public sealed class MultiModGroup : IModGroup
     public ModPriority Priority        { get; set; }
     public Setting     DefaultSettings { get; set; }
 
-    public ModPriority OptionPriority(Index idx)
-        => PrioritizedOptions[idx].Priority;
+    public FullPath? FindBestMatch(Utf8GamePath gamePath)
+        => PrioritizedOptions.OrderByDescending(o => o.Priority)
+            .SelectWhere(o => (o.Mod.FileData.TryGetValue(gamePath, out var file) || o.Mod.FileSwapData.TryGetValue(gamePath, out file), file))
+            .FirstOrDefault();
 
     public SubMod this[Index idx]
         => PrioritizedOptions[idx].Mod;

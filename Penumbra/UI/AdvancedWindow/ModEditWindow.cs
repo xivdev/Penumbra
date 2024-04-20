@@ -540,13 +540,16 @@ public partial class ModEditWindow : Window, IDisposable
             return currentFile.Value;
 
         if (Mod != null)
-            foreach (var option in Mod.Groups.OrderByDescending(g => g.Priority)
-                         .SelectMany(g => g.WithIndex().OrderByDescending(o => g.OptionPriority(o.Index)).Select(g => g.Value))
-                         .Append(Mod.Default))
+        {
+            foreach (var option in Mod.Groups.OrderByDescending(g => g.Priority))
             {
-                if (option.Files.TryGetValue(path, out var value) || option.FileSwaps.TryGetValue(path, out value))
-                    return value;
+                if (option.FindBestMatch(path) is { } fullPath)
+                    return fullPath;
             }
+
+            if (Mod.Default.Files.TryGetValue(path, out var value) || Mod.Default.FileSwaps.TryGetValue(path, out value))
+                return value;
+        }
 
         return new FullPath(path);
     }
