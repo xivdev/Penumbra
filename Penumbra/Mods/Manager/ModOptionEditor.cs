@@ -158,10 +158,10 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     {
         var group  = mod.Groups[groupIdx];
         var option = group[optionIdx];
-        if (option.Description == newDescription || option is not SubMod s)
+        if (option.Description == newDescription)
             return;
 
-        s.Description = newDescription;
+        option.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1);
     }
