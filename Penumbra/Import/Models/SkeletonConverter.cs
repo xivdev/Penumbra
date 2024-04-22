@@ -84,9 +84,8 @@ public static class SkeletonConverter
             .Where(n => n.NodeType != XmlNodeType.Comment)
             .Select(n =>
             {
-                var text = n.InnerText.Trim()[1..];
-                // TODO: surely there's a less shit way to do this I mean seriously
-                return BitConverter.ToSingle(BitConverter.GetBytes(int.Parse(text, NumberStyles.HexNumber)));
+                var text = n.InnerText.AsSpan().Trim()[1..];
+                return BitConverter.Int32BitsToSingle(int.Parse(text, NumberStyles.HexNumber));
             })
             .ToArray();
 
