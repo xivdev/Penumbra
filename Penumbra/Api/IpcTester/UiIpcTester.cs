@@ -32,9 +32,9 @@ public class UiIpcTester : IUiService, IDisposable
     {
         _pi                   = pi;
         PreSettingsTabBar     = IpcSubscribers.PreSettingsTabBarDraw.Subscriber(pi, UpdateLastDrawnMod);
-        PreSettingsPanel      = IpcSubscribers.PreSettingsPanelDraw.Subscriber(pi, UpdateLastDrawnMod);
+        PreSettingsPanel      = IpcSubscribers.PreSettingsDraw.Subscriber(pi, UpdateLastDrawnMod);
         PostEnabled           = IpcSubscribers.PostEnabledDraw.Subscriber(pi, UpdateLastDrawnMod);
-        PostSettingsPanelDraw = IpcSubscribers.PostSettingsPanelDraw.Subscriber(pi, UpdateLastDrawnMod);
+        PostSettingsPanelDraw = IpcSubscribers.PostSettingsDraw.Subscriber(pi, UpdateLastDrawnMod);
         ChangedItemTooltip    = IpcSubscribers.ChangedItemTooltip.Subscriber(pi, AddedTooltip);
         ChangedItemClicked    = IpcSubscribers.ChangedItemClicked.Subscriber(pi, AddedClick);
         PreSettingsTabBar.Disable();
@@ -76,7 +76,7 @@ public class UiIpcTester : IUiService, IDisposable
         if (!table)
             return;
 
-        IpcTester.DrawIntro(IpcSubscribers.PostSettingsPanelDraw.Label, "Last Drawn Mod");
+        IpcTester.DrawIntro(IpcSubscribers.PostSettingsDraw.Label, "Last Drawn Mod");
         ImGui.TextUnformatted(_lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None");
 
         IpcTester.DrawIntro(IpcSubscribers.ChangedItemTooltip.Label, "Add Tooltip");

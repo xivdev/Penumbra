@@ -62,6 +62,7 @@ public sealed class IpcProviders : IDisposable, IApiService
 
             IpcSubscribers.ApiVersion.Provider(pi, api),
             new FuncProvider<(int Major, int Minor)>(pi, "Penumbra.ApiVersions", () => api.ApiVersion), // backward compatibility
+            new FuncProvider<int>(pi, "Penumbra.ApiVersion", () => api.ApiVersion.Breaking), // backward compatibility
             IpcSubscribers.GetModDirectory.Provider(pi, api.PluginState),
             IpcSubscribers.GetConfiguration.Provider(pi, api.PluginState),
             IpcSubscribers.ModDirectoryChanged.Provider(pi, api.PluginState),
@@ -99,9 +100,9 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.ChangedItemTooltip.Provider(pi, api.Ui),
             IpcSubscribers.ChangedItemClicked.Provider(pi, api.Ui),
             IpcSubscribers.PreSettingsTabBarDraw.Provider(pi, api.Ui),
-            IpcSubscribers.PreSettingsPanelDraw.Provider(pi, api.Ui),
+            IpcSubscribers.PreSettingsDraw.Provider(pi, api.Ui),
             IpcSubscribers.PostEnabledDraw.Provider(pi, api.Ui),
-            IpcSubscribers.PostSettingsPanelDraw.Provider(pi, api.Ui),
+            IpcSubscribers.PostSettingsDraw.Provider(pi, api.Ui),
             IpcSubscribers.OpenMainWindow.Provider(pi, api.Ui),
             IpcSubscribers.CloseMainWindow.Provider(pi, api.Ui),
         ];
