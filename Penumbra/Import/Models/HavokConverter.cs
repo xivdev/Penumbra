@@ -71,8 +71,7 @@ public static unsafe class HavokConverter
     /// <param name="filePath"> Path to a file on the filesystem. </param>
     private static hkResource* Read(string filePath)
     {
-        var path = Marshal.StringToHGlobalAnsi(filePath);
-
+        var path                = Encoding.UTF8.GetBytes(filePath);
         var builtinTypeRegistry = hkBuiltinTypeRegistry.Instance();
 
         var loadOptions = stackalloc hkSerializeUtil.LoadOptions[1];
@@ -81,8 +80,7 @@ public static unsafe class HavokConverter
         loadOptions->TypeInfoRegistry = builtinTypeRegistry->GetTypeInfoRegistry();
 
         // TODO: probably can use LoadFromBuffer for this.
-        var resource = hkSerializeUtil.LoadFromFile((byte*)path, null, loadOptions);
-        return resource;
+        return hkSerializeUtil.LoadFromFile(path, null, loadOptions);
     }
 
     /// <summary> Serializes an hkResource* to a temporary file. </summary>
@@ -94,9 +92,9 @@ public static unsafe class HavokConverter
     )
     {
         var tempFile = CreateTempFile();
-        var path     = Marshal.StringToHGlobalAnsi(tempFile);
+        var path     = Encoding.UTF8.GetBytes(tempFile);
         var oStream  = new hkOstream();
-        oStream.Ctor((byte*)path);
+        oStream.Ctor(path);
 
         var result = stackalloc hkResult[1];
 
