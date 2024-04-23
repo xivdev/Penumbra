@@ -56,13 +56,13 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
 
         var dict = new Dictionary<string, (string[], int)>(mod.Groups.Count);
         foreach (var g in mod.Groups)
-            dict.Add(g.Name, (g.Select(o => o.Name).ToArray(), (int)g.Type));
+            dict.Add(g.Name, (g.Options.Select(o => o.Name).ToArray(), (int)g.Type));
         return new AvailableModSettings(dict);
     }
 
     public Dictionary<string, (string[], int)>? GetAvailableModSettingsBase(string modDirectory, string modName)
         => _modManager.TryGetMod(modDirectory, modName, out var mod)
-            ? mod.Groups.ToDictionary(g => g.Name, g => (g.Select(o => o.Name).ToArray(), (int)g.Type))
+            ? mod.Groups.ToDictionary(g => g.Name, g => (g.Options.Select(o => o.Name).ToArray(), (int)g.Type))
             : null;
 
     public (PenumbraApiEc, (bool, int, Dictionary<string, List<string>>, bool)?) GetCurrentModSettings(Guid collectionId, string modDirectory,
@@ -153,7 +153,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         if (groupIdx < 0)
             return ApiHelpers.Return(PenumbraApiEc.OptionGroupMissing, args);
 
-        var optionIdx = mod.Groups[groupIdx].IndexOf(o => o.Name == optionName);
+        var optionIdx = mod.Groups[groupIdx].Options.IndexOf(o => o.Name == optionName);
         if (optionIdx < 0)
             return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 
@@ -190,7 +190,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         {
             case SingleModGroup single:
             {
-                var optionIdx = optionNames.Count == 0 ? -1 : single.IndexOf(o => o.Name == optionNames[^1]);
+                var optionIdx = optionNames.Count == 0 ? -1 : single.OptionData.IndexOf(o => o.Name == optionNames[^1]);
                 if (optionIdx < 0)
                     return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 
@@ -201,7 +201,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             {
                 foreach (var name in optionNames)
                 {
-                    var optionIdx = multi.IndexOf(o => o.Name == name);
+                    var optionIdx = multi.PrioritizedOptions.IndexOf(o => o.Mod.Name == name);
                     if (optionIdx < 0)
                         return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 

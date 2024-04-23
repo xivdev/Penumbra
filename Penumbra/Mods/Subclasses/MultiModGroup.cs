@@ -1,5 +1,4 @@
 using Dalamud.Interface.Internal.Notifications;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
@@ -11,11 +10,12 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods.Subclasses;
 
 /// <summary> Groups that allow all available options to be selected at once. </summary>
-public sealed class MultiModGroup : IModGroup
+public sealed class MultiModGroup(Mod mod) : IModGroup
 {
     public GroupType Type
         => GroupType.Multi;
 
+    public Mod         Mod             { get; set; } = mod;
     public string      Name            { get; set; } = "Group";
     public string      Description     { get; set; } = "A non-exclusive group of settings.";
     public ModPriority Priority        { get; set; }
@@ -26,27 +26,58 @@ public sealed class MultiModGroup : IModGroup
             .SelectWhere(o => (o.Mod.FileData.TryGetValue(gamePath, out var file) || o.Mod.FileSwapData.TryGetValue(gamePath, out file), file))
             .FirstOrDefault();
 
-    public SubMod this[Index idx]
-        => PrioritizedOptions[idx].Mod;
+    public int AddOption(Mod mod, string name, string description = "")
+    {
+        var groupIdx = mod.Groups.IndexOf(this);
+        if (groupIdx < 0)
+            return -1;
+
+        var subMod = new SubMod(mod, this)
+        {
+            Name        = name,
+            Description = description,
+        };
+        PrioritizedOptions.Add((subMod, ModPriority.Default));
+        return PrioritizedOptions.Count - 1;
+    }
+
+    public bool ChangeOptionDescription(int optionIndex, string newDescription)
+    {
+        if (optionIndex < 0 || optionIndex >= PrioritizedOptions.Count)
+            return false;
+
+        var option = PrioritizedOptions[optionIndex].Mod;
+        if (option.Description == newDescription)
+            return false;
+
+        option.Description = newDescription;
+        return true;
+    }
+
+    public bool ChangeOptionName(int optionIndex, string newName)
+    {
+        if (optionIndex < 0 || optionIndex >= PrioritizedOptions.Count)
+            return false;
+
+        var option = PrioritizedOptions[optionIndex].Mod;
+        if (option.Name == newName)
+            return false;
+
+        option.Name = newName;
+        return true;
+    }
+
+    public IReadOnlyList<IModOption> Options
+        => PrioritizedOptions.Select(p => p.Mod).ToArray();
 
     public bool IsOption
-        => Count > 0;
-
-    [JsonIgnore]
-    public int Count
-        => PrioritizedOptions.Count;
+        => PrioritizedOptions.Count > 0;
 
     public readonly List<(SubMod Mod, ModPriority Priority)> PrioritizedOptions = [];
 
-    public IEnumerator<SubMod> GetEnumerator()
-        => PrioritizedOptions.Select(o => o.Mod).GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
-
     public static MultiModGroup? Load(Mod mod, JObject json, int groupIdx)
     {
-        var ret = new MultiModGroup()
+        var ret = new MultiModGroup(mod)
         {
             Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
@@ -68,8 +99,7 @@ public sealed class MultiModGroup : IModGroup
                     break;
                 }
 
-                var subMod = new SubMod(mod);
-                subMod.SetPosition(groupIdx, ret.PrioritizedOptions.Count);
+                var subMod = new SubMod(mod, ret);
                 subMod.Load(mod.ModPath, child, out var priority);
                 ret.PrioritizedOptions.Add((subMod, priority));
             }
@@ -85,12 +115,12 @@ public sealed class MultiModGroup : IModGroup
         {
             case GroupType.Multi: return this;
             case GroupType.Single:
-                var multi = new SingleModGroup()
+                var multi = new SingleModGroup(Mod)
                 {
                     Name            = Name,
                     Description     = Description,
                     Priority        = Priority,
-                    DefaultSettings = DefaultSettings.TurnMulti(Count),
+                    DefaultSettings = DefaultSettings.TurnMulti(PrioritizedOptions.Count),
                 };
                 multi.OptionData.AddRange(PrioritizedOptions.Select(p => p.Mod));
                 return multi;
@@ -104,14 +134,7 @@ public sealed class MultiModGroup : IModGroup
             return false;
 
         DefaultSettings = DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);
-        UpdatePositions(Math.Min(optionIdxFrom, optionIdxTo));
         return true;
-    }
-
-    public void UpdatePositions(int from = 0)
-    {
-        foreach (var ((o, _), i) in PrioritizedOptions.WithIndex().Skip(from))
-            o.SetPosition(o.GroupIdx, i);
     }
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
@@ -124,5 +147,12 @@ public sealed class MultiModGroup : IModGroup
     }
 
     public Setting FixSetting(Setting setting)
-        => new(setting.Value & ((1ul << Count) - 1));
+        => new(setting.Value & ((1ul << PrioritizedOptions.Count) - 1));
+
+    /// <summary> Create a group without a mod only for saving it in the creator. </summary>
+    internal static MultiModGroup CreateForSaving(string name)
+        => new(null!)
+        {
+            Name = name,
+        };
 }

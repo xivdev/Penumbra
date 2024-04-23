@@ -6,25 +6,27 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
-public interface IModGroup : IReadOnlyCollection<SubMod>
+public interface IModGroup
 {
     public const int MaxMultiOptions = 63;
 
+    public Mod         Mod             { get; }
     public string      Name            { get; }
     public string      Description     { get; }
     public GroupType   Type            { get; }
-    public ModPriority Priority        { get; }
+    public ModPriority Priority        { get; set; }
     public Setting     DefaultSettings { get; set; }
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath);
+    public int       AddOption(Mod mod, string name, string description = "");
+    public bool      ChangeOptionDescription(int optionIndex, string newDescription);
+    public bool      ChangeOptionName(int optionIndex, string newName);
 
-    public SubMod this[Index idx] { get; }
-
-    public bool IsOption { get; }
+    public IReadOnlyList<IModOption> Options  { get; }
+    public bool                      IsOption { get; }
 
     public IModGroup Convert(GroupType type);
     public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
-    public void      UpdatePositions(int from = 0);
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations);
 

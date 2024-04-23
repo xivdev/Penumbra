@@ -71,7 +71,7 @@ public class ModMergeTab(ModMerger modMerger)
 
             color = color == Colors.DiscordColor
                 ? Colors.DiscordColor
-                : group == null || group.Any(o => o.Name == modMerger.OptionName)
+                : group == null || group.Options.Any(o => o.Name == modMerger.OptionName)
                     ? Colors.PressEnterWarningBg
                     : Colors.DiscordColor;
             c.Push(ImGuiCol.Border, color);
@@ -184,18 +184,26 @@ public class ModMergeTab(ModMerger modMerger)
             else
             {
                 ImGuiUtil.DrawTableColumn(option.Name);
-                var group = option.ParentMod.Groups[option.GroupIdx];
+                var group = option.Group;
+                var optionEnumerator = group switch
+                {
+                    SingleModGroup single => single.OptionData,
+                    MultiModGroup multi   => multi.PrioritizedOptions.Select(o => o.Mod),
+                    _                     => [],
+                };
                 ImGui.TableNextColumn();
                 ImGui.Selectable(group.Name, false);
                 if (ImGui.BeginPopupContextItem("##groupContext"))
                 {
                     if (ImGui.MenuItem("Select All"))
-                        foreach (var opt in group)
-                            Handle((SubMod)opt, true);
+                        // ReSharper disable once PossibleMultipleEnumeration
+                        foreach (var opt in optionEnumerator)
+                            Handle(opt, true);
 
                     if (ImGui.MenuItem("Unselect All"))
-                        foreach (var opt in group)
-                            Handle((SubMod)opt, false);
+                        // ReSharper disable once PossibleMultipleEnumeration
+                        foreach (var opt in optionEnumerator)
+                            Handle(opt, false);
                     ImGui.EndPopup();
                 }
             }

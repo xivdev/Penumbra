@@ -24,7 +24,8 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
                 num += dict.TryAdd(path.Item2, file.File) ? 0 : 1;
         }
 
-        modManager.OptionEditor.OptionSetFiles(mod, option.GroupIdx, option.OptionIdx, dict);
+        var (groupIdx, optionIdx) = option.GetIndices();
+        modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict);
         files.UpdatePaths(mod, option);
         Changes = false;
         return num;

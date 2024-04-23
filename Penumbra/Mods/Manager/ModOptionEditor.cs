@@ -87,12 +87,12 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
 
         mod.Groups.Add(type == GroupType.Multi
-            ? new MultiModGroup
+            ? new MultiModGroup(mod)
             {
                 Name     = newName,
                 Priority = maxPriority,
             }
-            : new SingleModGroup
+            : new SingleModGroup(mod)
             {
                 Name     = newName,
                 Priority = maxPriority,
@@ -120,7 +120,6 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     {
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, -1, -1);
         mod.Groups.RemoveAt(groupIdx);
-        UpdateSubModPositions(mod, groupIdx);
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1);
     }
@@ -131,7 +130,6 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         if (!mod.Groups.Move(groupIdxFrom, groupIdxTo))
             return;
 
-        UpdateSubModPositions(mod, Math.Min(groupIdxFrom, groupIdxTo));
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupMoved, mod, groupIdxFrom, -1, groupIdxTo);
     }
@@ -156,12 +154,9 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     /// <summary> Change the description of the given option. </summary>
     public void ChangeOptionDescription(Mod mod, int groupIdx, int optionIdx, string newDescription)
     {
-        var group  = mod.Groups[groupIdx];
-        var option = group[optionIdx];
-        if (option.Description == newDescription)
+        if (!mod.Groups[groupIdx].ChangeOptionDescription(optionIdx, newDescription))
             return;
 
-        option.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1);
     }
@@ -173,12 +168,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         if (group.Priority == newPriority)
             return;
 
-        var _ = group switch
-        {
-            SingleModGroup s => s.Priority = newPriority,
-            MultiModGroup m  => m.Priority = newPriority,
-            _                => newPriority,
-        };
+        group.Priority = newPriority;
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.PriorityChanged, mod, groupIdx, -1, -1);
     }
@@ -188,14 +178,11 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     {
         switch (mod.Groups[groupIdx])
         {
-            case SingleModGroup:
-                ChangeGroupPriority(mod, groupIdx, newPriority);
-                break;
-            case MultiModGroup m:
-                if (m.PrioritizedOptions[optionIdx].Priority == newPriority)
+            case MultiModGroup multi:
+                if (multi.PrioritizedOptions[optionIdx].Priority == newPriority)
                     return;
 
-                m.PrioritizedOptions[optionIdx] = (m.PrioritizedOptions[optionIdx].Mod, newPriority);
+                multi.PrioritizedOptions[optionIdx] = (multi.PrioritizedOptions[optionIdx].Mod, newPriority);
                 saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
                 communicator.ModOptionChanged.Invoke(ModOptionChangeType.PriorityChanged, mod, groupIdx, optionIdx, -1);
                 return;
@@ -205,60 +192,63 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     /// <summary> Rename the given option. </summary>
     public void RenameOption(Mod mod, int groupIdx, int optionIdx, string newName)
     {
-        switch (mod.Groups[groupIdx])
-        {
-            case SingleModGroup s:
-                if (s.OptionData[optionIdx].Name == newName)
-                    return;
-
-                s.OptionData[optionIdx].Name = newName;
-                break;
-            case MultiModGroup m:
-                var option = m.PrioritizedOptions[optionIdx].Mod;
-                if (option.Name == newName)
-                    return;
-
-                option.Name = newName;
-                break;
-        }
+        if (!mod.Groups[groupIdx].ChangeOptionName(optionIdx, newName))
+            return;
 
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1);
     }
 
     /// <summary> Add a new empty option of the given name for the given group. </summary>
-    public void AddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
+    public int AddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
     {
-        var group  = mod.Groups[groupIdx];
-        var subMod = new SubMod(mod) { Name = newName };
-        subMod.SetPosition(groupIdx, group.Count);
-        switch (group)
-        {
-            case SingleModGroup s:
-                s.OptionData.Add(subMod);
-                break;
-            case MultiModGroup m:
-                m.PrioritizedOptions.Add((subMod, ModPriority.Default));
-                break;
-        }
+        var group = mod.Groups[groupIdx];
+        var idx   = group.AddOption(mod, newName);
+        if (idx < 0)
+            return -1;
 
         saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
+        return idx;
     }
 
     /// <summary> Add a new empty option of the given name for the given group if it does not exist already. </summary>
-    public (SubMod, bool) FindOrAddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
+    public (SubMod, int, bool) FindOrAddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
     {
         var group = mod.Groups[groupIdx];
-        var idx   = group.IndexOf(o => o.Name == newName);
-        if (idx >= 0)
-            return ((SubMod)group[idx], false);
+        switch (group)
+        {
+            case SingleModGroup single:
+            {
+                var idx = single.OptionData.IndexOf(o => o.Name == newName);
+                if (idx >= 0)
+                    return (single.OptionData[idx], idx, false);
 
-        AddOption(mod, groupIdx, newName, saveType);
-        if (group[^1].Name != newName)
-            throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
+                idx = single.AddOption(mod, newName);
+                if (idx < 0)
+                    throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
 
-        return ((SubMod)group[^1], true);
+                saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+                communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
+                return (single.OptionData[^1], single.OptionData.Count - 1, true);
+            }
+            case MultiModGroup multi:
+            {
+                var idx = multi.PrioritizedOptions.IndexOf(o => o.Mod.Name == newName);
+                if (idx >= 0)
+                    return (multi.PrioritizedOptions[idx].Mod, idx, false);
+
+                idx = multi.AddOption(mod, newName);
+                if (idx < 0)
+                    throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
+
+                saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+                communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
+                return (multi.PrioritizedOptions[^1].Mod, multi.PrioritizedOptions.Count - 1, true);
+            }
+        }
+
+        throw new Exception($"{nameof(FindOrAddOption)} is not supported for mod groups of type {group.GetType()}.");
     }
 
     /// <summary> Add an existing option to a given group with default priority. </summary> 
@@ -269,25 +259,28 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     public void AddOption(Mod mod, int groupIdx, SubMod option, ModPriority priority)
     {
         var group = mod.Groups[groupIdx];
+        int idx;
         switch (group)
         {
-            case MultiModGroup { Count: >= IModGroup.MaxMultiOptions }:
+            case MultiModGroup { PrioritizedOptions.Count: >= IModGroup.MaxMultiOptions }:
                 Penumbra.Log.Error(
                     $"Could not add option {option.Name} to {group.Name} for mod {mod.Name}, "
                   + $"since only up to {IModGroup.MaxMultiOptions} options are supported in one group.");
                 return;
             case SingleModGroup s:
-                option.SetPosition(groupIdx, s.Count);
+                idx = s.OptionData.Count;
                 s.OptionData.Add(option);
                 break;
             case MultiModGroup m:
-                option.SetPosition(groupIdx, m.Count);
+                idx = m.PrioritizedOptions.Count;
                 m.PrioritizedOptions.Add((option, priority));
                 break;
+            default: 
+                return;
         }
 
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
     }
 
     /// <summary> Delete the given option from the given group. </summary>
@@ -306,7 +299,6 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                 break;
         }
 
-        group.UpdatePositions(optionIdx);
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionDeleted, mod, groupIdx, optionIdx, -1);
     }
@@ -394,16 +386,6 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                 NotificationType.Warning, false);
 
         return false;
-    }
-
-    /// <summary> Update the indices stored in options from a given group on. </summary>
-    private static void UpdateSubModPositions(Mod mod, int fromGroup)
-    {
-        foreach (var (group, groupIdx) in mod.Groups.WithIndex().Skip(fromGroup))
-        {
-            foreach (var (o, optionIdx) in group.OfType<SubMod>().WithIndex())
-                o.SetPosition(groupIdx, optionIdx);
-        }
     }
 
     /// <summary> Get the correct option for the given group and option index. </summary>

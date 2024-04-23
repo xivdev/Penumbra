@@ -253,7 +253,7 @@ public class ItemSwapTab : IDisposable, ITab
         _subModValid = _mod != null
          && _newGroupName.Length > 0
          && _newOptionName.Length > 0
-         && (_selectedGroup?.All(o => o.Name != _newOptionName) ?? true);
+         && (_selectedGroup?.Options.All(o => o.Name != _newOptionName) ?? true);
     }
 
     private void CreateMod()
@@ -275,7 +275,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         var            groupCreated     = false;
         var            dirCreated       = false;
-        var            optionCreated    = false;
+        var            optionCreated    = -1;
         DirectoryInfo? optionFolderName = null;
         try
         {
@@ -294,14 +294,17 @@ public class ItemSwapTab : IDisposable, ITab
                     groupCreated   = true;
                 }
 
-                _modManager.OptionEditor.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
-                optionCreated    = true;
+                var optionIdx = _modManager.OptionEditor.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
+                if (optionIdx < 0)
+                    throw new Exception($"Failure creating mod option.");
+
+                optionCreated    = optionIdx;
                 optionFolderName = Directory.CreateDirectory(optionFolderName.FullName);
                 dirCreated       = true;
                 if (!_swapData.WriteMod(_modManager, _mod,
                         _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps,
                         optionFolderName,
-                        _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1))
+                        _mod.Groups.IndexOf(_selectedGroup), optionIdx))
                     throw new Exception("Failure writing files for mod swap.");
             }
         }
@@ -310,8 +313,8 @@ public class ItemSwapTab : IDisposable, ITab
             Penumbra.Messager.NotificationMessage(e, "Could not create new Swap Option.", NotificationType.Error, false);
             try
             {
-                if (optionCreated && _selectedGroup != null)
-                    _modManager.OptionEditor.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1);
+                if (optionCreated >= 0 && _selectedGroup != null)
+                    _modManager.OptionEditor.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), optionCreated);
 
                 if (groupCreated)
                 {

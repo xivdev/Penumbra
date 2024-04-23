@@ -1,10 +1,61 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
+
+public class SingleSubMod(Mod mod, SingleModGroup group) : IModOption, IModDataContainer
+{
+    internal readonly Mod            Mod   = mod;
+    internal readonly SingleModGroup Group = group;
+
+    public string Name { get; set; } = "Option";
+
+    public string FullName
+        => $"{Group.Name}: {Name}";
+
+    public string Description { get; set; } = string.Empty;
+
+    public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
+    public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
+    public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
+}
+
+public class MultiSubMod(Mod mod, MultiModGroup group) : IModOption, IModDataContainer
+{
+    internal readonly Mod           Mod   = mod;
+    internal readonly MultiModGroup Group = group;
+
+    public string Name { get; set; } = "Option";
+
+    public string FullName
+        => $"{Group.Name}: {Name}";
+
+    public string      Description { get; set; } = string.Empty;
+    public ModPriority Priority    { get; set; } = ModPriority.Default;
+
+    public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
+    public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
+    public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
+}
+
+public class DefaultSubMod(IMod mod) : IModDataContainer
+{
+    public string FullName
+        => "Default Option";
+
+    public string Description
+        => string.Empty;
+
+    internal readonly IMod Mod = mod;
+
+    public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
+    public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
+    public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
+}
 
 /// <summary>
 /// A sub mod is a collection of
@@ -16,21 +67,51 @@ namespace Penumbra.Mods.Subclasses;
 /// Nothing is checked for existence or validity when loading.
 /// Objects are also not checked for uniqueness, the first appearance of a game path or meta path decides.
 /// </summary>
-public sealed class SubMod
+public sealed class SubMod(IMod mod, IModGroup group) : IModOption
 {
     public string Name { get; set; } = "Default";
 
     public string FullName
-        => GroupIdx < 0 ? "Default Option" : $"{ParentMod.Groups[GroupIdx].Name}: {Name}";
+        => Group == null ? "Default Option" : $"{Group.Name}: {Name}";
 
     public string Description { get; set; } = string.Empty;
 
-    internal IMod ParentMod { get; private init; }
-    internal int  GroupIdx  { get; private set; }
-    internal int  OptionIdx { get; private set; }
+    internal readonly IMod       Mod   = mod;
+    internal readonly IModGroup? Group = group;
 
+    internal (int GroupIdx, int OptionIdx) GetIndices()
+    {
+        if (IsDefault)
+            return (-1, 0);
+
+        var groupIdx = Mod.Groups.IndexOf(Group);
+        if (groupIdx < 0)
+            throw new Exception($"Group {Group.Name} from SubMod {Name} is not contained in Mod {Mod.Name}.");
+
+        return (groupIdx, GetOptionIndex());
+    }
+
+    private int GetOptionIndex()
+    {
+        var optionIndex = Group switch
+        {
+            null                  => 0,
+            SingleModGroup single => single.OptionData.IndexOf(this),
+            MultiModGroup multi   => multi.PrioritizedOptions.IndexOf(p => p.Mod == this),
+            _                     => throw new Exception($"Group {Group.Name} from SubMod {Name} has unknown type {typeof(Group)}"),
+        };
+        if (optionIndex < 0)
+            throw new Exception($"Group {Group!.Name} from SubMod {Name} does not contain this SubMod.");
+
+        return optionIndex;
+    }
+
+    public static SubMod CreateDefault(IMod mod)
+        => new(mod, null!);
+
+    [MemberNotNullWhen(false, nameof(Group))]
     public bool IsDefault
-        => GroupIdx < 0;
+        => Group == null;
 
     public void AddData(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
     {
@@ -46,9 +127,6 @@ public sealed class SubMod
     public Dictionary<Utf8GamePath, FullPath> FileSwapData     = [];
     public HashSet<MetaManipulation>          ManipulationData = [];
 
-    public SubMod(IMod parentMod)
-        => ParentMod = parentMod;
-
     public IReadOnlyDictionary<Utf8GamePath, FullPath> Files
         => FileData;
 
@@ -57,12 +135,6 @@ public sealed class SubMod
 
     public IReadOnlySet<MetaManipulation> Manipulations
         => ManipulationData;
-
-    public void SetPosition(int groupIdx, int optionIdx)
-    {
-        GroupIdx  = groupIdx;
-        OptionIdx = optionIdx;
-    }
 
     public void Load(DirectoryInfo basePath, JToken json, out ModPriority priority)
     {
@@ -115,6 +187,14 @@ public sealed class SubMod
             }
         }
     }
+
+    /// <summary> Create a sub mod without a mod or group only for saving it in the creator. </summary>
+    internal static SubMod CreateForSaving(string name)
+        => new(null!, null!)
+        {
+            Name = name,
+        };
+
 
     public static void WriteSubMod(JsonWriter j, JsonSerializer serializer, SubMod mod, DirectoryInfo basePath, ModPriority? priority)
     {

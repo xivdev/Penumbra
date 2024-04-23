@@ -167,28 +167,27 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
             // Normalize all other options.
             foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
             {
-                _redirections[groupIdx + 1].EnsureCapacity(group.Count);
-                for (var i = _redirections[groupIdx + 1].Count; i < group.Count; ++i)
-                    _redirections[groupIdx + 1].Add([]);
-
                 var groupDir = ModCreator.CreateModFolder(directory, group.Name, _config.ReplaceNonAsciiOnImport, true);
-                foreach (var option in group.OfType<SubMod>())
+                switch (group)
                 {
-                    var optionDir = ModCreator.CreateModFolder(groupDir, option.Name, _config.ReplaceNonAsciiOnImport, true);
+                    case SingleModGroup single:
+                        _redirections[groupIdx + 1].EnsureCapacity(single.OptionData.Count);
+                        for (var i = _redirections[groupIdx + 1].Count; i < single.OptionData.Count; ++i)
+                            _redirections[groupIdx + 1].Add([]);
 
-                    newDict = _redirections[groupIdx + 1][option.OptionIdx];
-                    newDict.Clear();
-                    newDict.EnsureCapacity(option.FileData.Count);
-                    foreach (var (gamePath, fullPath) in option.FileData)
-                    {
-                        var relPath      = new Utf8RelPath(gamePath).ToString();
-                        var newFullPath  = Path.Combine(optionDir.FullName, relPath);
-                        var redirectPath = new FullPath(Path.Combine(Mod.ModPath.FullName, groupDir.Name, optionDir.Name, relPath));
-                        Directory.CreateDirectory(Path.GetDirectoryName(newFullPath)!);
-                        File.Copy(fullPath.FullName, newFullPath, true);
-                        newDict.Add(gamePath, redirectPath);
-                        ++Step;
-                    }
+                        foreach (var (option, optionIdx) in single.OptionData.WithIndex())
+                            HandleSubMod(groupDir, option, _redirections[groupIdx + 1][optionIdx]);
+
+                        break;
+                    case MultiModGroup multi:
+                        _redirections[groupIdx + 1].EnsureCapacity(multi.PrioritizedOptions.Count);
+                        for (var i = _redirections[groupIdx + 1].Count; i < multi.PrioritizedOptions.Count; ++i)
+                            _redirections[groupIdx + 1].Add([]);
+
+                        foreach (var ((option, _), optionIdx) in multi.PrioritizedOptions.WithIndex())
+                            HandleSubMod(groupDir, option, _redirections[groupIdx + 1][optionIdx]);
+
+                        break;
                 }
             }
 
@@ -200,6 +199,24 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
         }
 
         return false;
+
+        void HandleSubMod(DirectoryInfo groupDir, SubMod option, Dictionary<Utf8GamePath, FullPath> newDict)
+        {
+            var optionDir = ModCreator.CreateModFolder(groupDir, option.Name, _config.ReplaceNonAsciiOnImport, true);
+
+            newDict.Clear();
+            newDict.EnsureCapacity(option.FileData.Count);
+            foreach (var (gamePath, fullPath) in option.FileData)
+            {
+                var relPath      = new Utf8RelPath(gamePath).ToString();
+                var newFullPath  = Path.Combine(optionDir.FullName, relPath);
+                var redirectPath = new FullPath(Path.Combine(Mod.ModPath.FullName, groupDir.Name, optionDir.Name, relPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(newFullPath)!);
+                File.Copy(fullPath.FullName, newFullPath, true);
+                newDict.Add(gamePath, redirectPath);
+                ++Step;
+            }
+        }
     }
 
     private bool MoveOldFiles()
@@ -274,9 +291,20 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
 
     private void ApplyRedirections()
     {
-        foreach (var option in Mod.AllSubMods)
-            _modManager.OptionEditor.OptionSetFiles(Mod, option.GroupIdx, option.OptionIdx,
-                _redirections[option.GroupIdx + 1][option.OptionIdx]);
+        foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
+        {
+            switch (group)
+            {
+                case SingleModGroup single:
+                    foreach (var (_, optionIdx) in single.OptionData.WithIndex())
+                        _modManager.OptionEditor.OptionSetFiles(Mod, groupIdx, optionIdx, _redirections[groupIdx + 1][optionIdx]);
+                    break;
+                case MultiModGroup multi:
+                    foreach (var (_, optionIdx) in multi.PrioritizedOptions.WithIndex())
+                        _modManager.OptionEditor.OptionSetFiles(Mod, groupIdx, optionIdx, _redirections[groupIdx + 1][optionIdx]);
+                    break;
+            }
+        }
 
         ++Step;
     }

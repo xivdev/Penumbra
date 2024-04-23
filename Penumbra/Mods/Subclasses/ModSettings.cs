@@ -68,7 +68,7 @@ public class ModSettings
                 var config = Settings[groupIdx];
                 Settings[groupIdx] = group.Type switch
                 {
-                    GroupType.Single => config.TurnMulti(group.Count),
+                    GroupType.Single => config.TurnMulti(group.Options.Count),
                     GroupType.Multi  => Setting.Multi((int)config.Value),
                     _                => config,
                 };
@@ -182,15 +182,15 @@ public class ModSettings
             if (idx >= mod.Groups.Count)
                 break;
 
-            var group = mod.Groups[idx];
-            if (group.Type == GroupType.Single && setting.Value < (ulong)group.Count)
+            switch (mod.Groups[idx])
             {
-                dict.Add(group.Name, [group[(int)setting.Value].Name]);
-            }
-            else
-            {
-                var list = group.Where((_, optionIdx) => (setting.Value & (1ul << optionIdx)) != 0).Select(o => o.Name).ToList();
-                dict.Add(group.Name, list);
+                case SingleModGroup single when setting.Value < (ulong)single.Options.Count:
+                    dict.Add(single.Name, [single.Options[setting.AsIndex].Name]);
+                    break;
+                case MultiModGroup multi:
+                    var list = multi.Options.WithIndex().Where(p => setting.HasFlag(p.Index)).Select(p => p.Value.Name).ToList();
+                    dict.Add(multi.Name, list);
+                    break;
             }
         }
 

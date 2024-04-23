@@ -78,7 +78,10 @@ public partial class ModEditWindow : Window, IDisposable
     }
 
     public void ChangeOption(SubMod? subMod)
-        => _editor.LoadOption(subMod?.GroupIdx ?? -1, subMod?.OptionIdx ?? 0);
+    {
+        var (groupIdx, optionIdx) = subMod?.GetIndices() ?? (-1, 0);
+        _editor.LoadOption(groupIdx, optionIdx);
+    }
 
     public void UpdateModels()
     {
@@ -428,7 +431,8 @@ public partial class ModEditWindow : Window, IDisposable
             using var id = ImRaii.PushId(idx);
             if (ImGui.Selectable(option.FullName, option == _editor.Option))
             {
-                _editor.LoadOption(option.GroupIdx, option.OptionIdx);
+                var (groupIdx, optionIdx) = option.GetIndices();
+                _editor.LoadOption(groupIdx, optionIdx);
                 ret = true;
             }
         }
@@ -565,7 +569,7 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         if (Mod != null)
-            foreach (var option in Mod.Groups.SelectMany(g => g).Append(Mod.Default))
+            foreach (var option in Mod.AllSubMods)
             {
                 foreach (var path in option.Files.Keys)
                 {

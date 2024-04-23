@@ -16,7 +16,11 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-public partial class ModCreator(SaveService _saveService, Configuration config, ModDataEditor _dataEditor, MetaFileManager _metaFileManager,
+public partial class ModCreator(
+    SaveService _saveService,
+    Configuration config,
+    ModDataEditor _dataEditor,
+    MetaFileManager _metaFileManager,
     GamePathParser _gamePathParser)
 {
     public readonly Configuration Config = config;
@@ -106,7 +110,6 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
     public void LoadDefaultOption(Mod mod)
     {
         var defaultFile = _saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
-        mod.Default.SetPosition(-1, 0);
         try
         {
             if (!File.Exists(defaultFile))
@@ -241,27 +244,21 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
         {
             case GroupType.Multi:
             {
-                var group = new MultiModGroup()
-                {
-                    Name            = name,
-                    Description     = desc,
-                    Priority        = priority,
-                    DefaultSettings = defaultSettings,
-                };
+                var group = MultiModGroup.CreateForSaving(name);
+                group.Description     = desc;
+                group.Priority        = priority;
+                group.DefaultSettings = defaultSettings;
                 group.PrioritizedOptions.AddRange(subMods.Select((s, idx) => (s, new ModPriority(idx))));
                 _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
             case GroupType.Single:
             {
-                var group = new SingleModGroup()
-                {
-                    Name            = name,
-                    Description     = desc,
-                    Priority        = priority,
-                    DefaultSettings = defaultSettings,
-                };
-                group.OptionData.AddRange(subMods.OfType<SubMod>());
+                var group = SingleModGroup.CreateForSaving(name);
+                group.Description     = desc;
+                group.Priority        = priority;
+                group.DefaultSettings = defaultSettings;
+                group.OptionData.AddRange(subMods);
                 _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
@@ -275,24 +272,14 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
             .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath, true), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
-        var mod = new SubMod(null!) // Mod is irrelevant here, only used for saving.
-        {
-            Name        = option.Name,
-            Description = option.Description,
-        };
+        var mod = SubMod.CreateForSaving(option.Name);
+        mod.Description = option.Description;
         foreach (var (_, gamePath, file) in list)
             mod.FileData.TryAdd(gamePath, file);
 
         IncorporateMetaChanges(mod, baseFolder, true);
         return mod;
     }
-
-    /// <summary> Create an empty sub mod for single groups with None options. </summary>
-    internal static SubMod CreateEmptySubMod(string name)
-        => new SubMod(null!) // Mod is irrelevant here, only used for saving.
-        {
-            Name = name,
-        };
 
     /// <summary>
     /// Create the default data file from all unused files that were not handled before

@@ -2,6 +2,7 @@ using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
@@ -211,7 +212,14 @@ public class ModCacheManager : IDisposable
         foreach (var group in mod.Groups)
         {
             mod.HasOptions |= group.IsOption;
-            foreach (var s in group)
+            var optionEnumerator = group switch
+            {
+                SingleModGroup single => single.OptionData,
+                MultiModGroup multi   => multi.PrioritizedOptions.Select(o => o.Mod),
+                _                     => [],
+            };
+
+            foreach (var s in optionEnumerator)
             {
                 mod.TotalFileCount     += s.Files.Count;
                 mod.TotalSwapCount     += s.FileSwaps.Count;

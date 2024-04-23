@@ -1,3 +1,4 @@
+using System;
 using OtterGui;
 using OtterGui.Compression;
 using Penumbra.Mods.Subclasses;
@@ -72,12 +73,18 @@ public class ModEditor(
             if (groupIdx >= 0)
             {
                 Group = Mod.Groups[groupIdx];
-                if (optionIdx >= 0 && optionIdx < Group.Count)
+                switch(Group)
                 {
-                    Option    = Group[optionIdx];
-                    GroupIdx  = groupIdx;
-                    OptionIdx = optionIdx;
-                    return;
+                    case SingleModGroup single when optionIdx >= 0 && optionIdx < single.OptionData.Count:
+                        Option    = single.OptionData[optionIdx];
+                        GroupIdx  = groupIdx;
+                        OptionIdx = optionIdx;
+                        return;
+                    case MultiModGroup multi when optionIdx >= 0 && optionIdx < multi.PrioritizedOptions.Count:
+                        Option    = multi.PrioritizedOptions[optionIdx].Mod;
+                        GroupIdx  = groupIdx;
+                        OptionIdx = optionIdx;
+                        return;
                 }
             }
         }
@@ -109,8 +116,17 @@ public class ModEditor(
         action(mod.Default, -1, 0);
         foreach (var (group, groupIdx) in mod.Groups.WithIndex())
         {
-            for (var optionIdx = 0; optionIdx < group.Count; ++optionIdx)
-                action(group[optionIdx], groupIdx, optionIdx);
+            switch (group)
+            {
+                case SingleModGroup single:
+                    for (var optionIdx = 0; optionIdx < single.OptionData.Count; ++optionIdx)
+                        action(single.OptionData[optionIdx], groupIdx, optionIdx);
+                    break;
+                case MultiModGroup multi:
+                    for (var optionIdx = 0; optionIdx < multi.PrioritizedOptions.Count; ++optionIdx)
+                        action(multi.PrioritizedOptions[optionIdx].Mod, groupIdx, optionIdx);
+                    break;
+            }
         }
     }
 

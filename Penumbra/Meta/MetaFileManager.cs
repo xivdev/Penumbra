@@ -54,7 +54,13 @@ public unsafe class MetaFileManager
                 if (!dir.Exists)
                     dir.Create();
 
-                foreach (var option in group.OfType<SubMod>())
+                var optionEnumerator = group switch
+                {
+                    SingleModGroup single => single.OptionData,
+                    MultiModGroup multi   => multi.PrioritizedOptions.Select(o => o.Mod),
+                    _                     => [],
+                };
+                foreach (var option in optionEnumerator)
                 {
                     var optionDir = ModCreator.NewOptionDirectory(dir, option.Name, Config.ReplaceNonAsciiOnImport);
                     if (!optionDir.Exists)

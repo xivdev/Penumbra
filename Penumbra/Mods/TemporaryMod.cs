@@ -49,7 +49,7 @@ public class TemporaryMod : IMod
         => [Default];
 
     public TemporaryMod()
-        => Default = new SubMod(this);
+        => Default = SubMod.CreateDefault(this);
 
     public void SetFile(Utf8GamePath gamePath, FullPath fullPath)
         => Default.FileData[gamePath] = fullPath;

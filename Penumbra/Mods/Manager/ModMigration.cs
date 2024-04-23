@@ -126,7 +126,7 @@ public static partial class ModMigration
             case GroupType.Multi:
 
                 var optionPriority = ModPriority.Default;
-                var newMultiGroup = new MultiModGroup()
+                var newMultiGroup = new MultiModGroup(mod)
                 {
                     Name        = group.GroupName,
                     Priority    = priority++,
@@ -134,7 +134,7 @@ public static partial class ModMigration
                 };
                 mod.Groups.Add(newMultiGroup);
                 foreach (var option in group.Options)
-                    newMultiGroup.PrioritizedOptions.Add((SubModFromOption(creator, mod, option, seenMetaFiles), optionPriority++));
+                    newMultiGroup.PrioritizedOptions.Add((SubModFromOption(creator, mod, newMultiGroup, option, seenMetaFiles), optionPriority++));
 
                 break;
             case GroupType.Single:
@@ -144,7 +144,7 @@ public static partial class ModMigration
                     return;
                 }
 
-                var newSingleGroup = new SingleModGroup()
+                var newSingleGroup = new SingleModGroup(mod)
                 {
                     Name        = group.GroupName,
                     Priority    = priority++,
@@ -152,7 +152,7 @@ public static partial class ModMigration
                 };
                 mod.Groups.Add(newSingleGroup);
                 foreach (var option in group.Options)
-                    newSingleGroup.OptionData.Add(SubModFromOption(creator, mod, option, seenMetaFiles));
+                    newSingleGroup.OptionData.Add(SubModFromOption(creator, mod, newSingleGroup, option, seenMetaFiles));
 
                 break;
         }
@@ -171,9 +171,9 @@ public static partial class ModMigration
         }
     }
 
-    private static SubMod SubModFromOption(ModCreator creator, Mod mod, OptionV0 option, HashSet<FullPath> seenMetaFiles)
+    private static SubMod SubModFromOption(ModCreator creator, Mod mod, IModGroup group, OptionV0 option, HashSet<FullPath> seenMetaFiles)
     {
-        var subMod = new SubMod(mod) { Name = option.OptionName };
+        var subMod = new SubMod(mod, group) { Name = option.OptionName };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
         creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
         return subMod;

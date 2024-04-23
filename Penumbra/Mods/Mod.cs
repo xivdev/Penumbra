@@ -38,7 +38,7 @@ public sealed class Mod : IMod
     internal Mod(DirectoryInfo modPath)
     {
         ModPath = modPath;
-        Default = new SubMod(this);
+        Default = SubMod.CreateDefault(this);
     }
 
     public override string ToString()
@@ -82,7 +82,12 @@ public sealed class Mod : IMod
     }
 
     public IEnumerable<SubMod> AllSubMods
-        => Groups.SelectMany(o => o).Prepend(Default);
+        => Groups.SelectMany(o => o switch
+        {
+            SingleModGroup single => single.OptionData,
+            MultiModGroup multi   => multi.PrioritizedOptions.Select(s => s.Mod),
+            _                     => [],
+        }).Prepend(Default);
 
     public List<FullPath> FindUnusedFiles()
     {

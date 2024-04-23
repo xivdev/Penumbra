@@ -324,7 +324,7 @@ public class ModPanelEditTab(
                 ? mod.Description
                 : optionIdx < 0
                     ? mod.Groups[groupIdx].Description
-                    : mod.Groups[groupIdx][optionIdx].Description;
+                    : mod.Groups[groupIdx].Options[optionIdx].Description;
             _oldDescription = _newDescription;
 
             _mod = mod;
@@ -479,17 +479,24 @@ public class ModPanelEditTab(
             ImGui.TableSetupColumn("delete",      ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
             ImGui.TableSetupColumn("priority",    ImGuiTableColumnFlags.WidthFixed, 50 * UiHelpers.Scale);
 
-            var group = panel._mod.Groups[groupIdx];
-            for (var optionIdx = 0; optionIdx < group.Count; ++optionIdx)
-                EditOption(panel, group, groupIdx, optionIdx);
-
+            switch (panel._mod.Groups[groupIdx])
+            {
+                case SingleModGroup single: 
+                    for (var optionIdx = 0; optionIdx < single.OptionData.Count; ++optionIdx)
+                        EditOption(panel, single, groupIdx, optionIdx);
+                    break;
+                case MultiModGroup multi:
+                    for (var optionIdx = 0; optionIdx < multi.PrioritizedOptions.Count; ++optionIdx)
+                        EditOption(panel, multi, groupIdx, optionIdx);
+                    break;
+            }
             DrawNewOption(panel, groupIdx, UiHelpers.IconButtonSize);
         }
 
         /// <summary> Draw a line for a single option. </summary>
         private static void EditOption(ModPanelEditTab panel, IModGroup group, int groupIdx, int optionIdx)
         {
-            var       option = group[optionIdx];
+            var       option = group.Options[optionIdx];
             using var id     = ImRaii.PushId(optionIdx);
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
@@ -547,10 +554,16 @@ public class ModPanelEditTab(
         {
             var mod   = panel._mod;
             var group = mod.Groups[groupIdx];
+            var count = group switch
+            {
+                SingleModGroup single => single.OptionData.Count,
+                MultiModGroup multi => multi.PrioritizedOptions.Count,
+                _ => throw new Exception($"Dragging options to an option group of type {group.GetType()} is not supported."),
+            };
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Selectable($"Option #{group.Count + 1}");
-            Target(panel, group, groupIdx, group.Count);
+            ImGui.Selectable($"Option #{count + 1}");
+            Target(panel, group, groupIdx, count);
             ImGui.TableNextColumn();
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
@@ -562,7 +575,7 @@ public class ModPanelEditTab(
             }
 
             ImGui.TableNextColumn();
-            var canAddGroup = mod.Groups[groupIdx].Type != GroupType.Multi || mod.Groups[groupIdx].Count < IModGroup.MaxMultiOptions;
+            var canAddGroup = mod.Groups[groupIdx].Type != GroupType.Multi || count < IModGroup.MaxMultiOptions;
             var validName   = _newOptionName.Length > 0 && _newOptionNameIdx == groupIdx;
             var tt = canAddGroup
                 ? validName ? "Add a new option to this group." : "Please enter a name for the new option."
@@ -588,7 +601,7 @@ public class ModPanelEditTab(
                 _dragDropOptionIdx = optionIdx;
             }
 
-            ImGui.TextUnformatted($"Dragging option {group[optionIdx].Name} from group {group.Name}...");
+            ImGui.TextUnformatted($"Dragging option {group.Options[optionIdx].Name} from group {group.Name}...");
         }
 
         private static void Target(ModPanelEditTab panel, IModGroup group, int groupIdx, int optionIdx)
@@ -611,12 +624,17 @@ public class ModPanelEditTab(
                     var sourceGroupIdx = _dragDropGroupIdx;
                     var sourceOption   = _dragDropOptionIdx;
                     var sourceGroup    = panel._mod.Groups[sourceGroupIdx];
-                    var currentCount   = group.Count;
-                    var option         = sourceGroup[sourceOption];
-                    var priority = sourceGroup switch
+                    var currentCount = group switch
                     {
-                        MultiModGroup multi => multi.PrioritizedOptions[_dragDropOptionIdx].Priority,
-                        _                   => ModPriority.Default,
+                        SingleModGroup single => single.OptionData.Count,
+                        MultiModGroup multi => multi.PrioritizedOptions.Count,
+                        _ => throw new Exception($"Dragging options to an option group of type {group.GetType()} is not supported."),
+                    };
+                    var (option, priority) = sourceGroup switch
+                    {
+                        SingleModGroup single => (single.OptionData[_dragDropOptionIdx], ModPriority.Default),
+                        MultiModGroup multi => multi.PrioritizedOptions[_dragDropOptionIdx],
+                        _ => throw new Exception($"Dragging options from an option group of type {sourceGroup.GetType()} is not supported."),
                     };
                     panel._delayedActions.Enqueue(() =>
                     {
@@ -651,7 +669,7 @@ public class ModPanelEditTab(
         if (ImGui.Selectable(GroupTypeName(GroupType.Single), group.Type == GroupType.Single))
             _modManager.OptionEditor.ChangeModGroupType(_mod, groupIdx, GroupType.Single);
 
-        var       canSwitchToMulti = group.Count <= IModGroup.MaxMultiOptions;
+        var       canSwitchToMulti = group.Options.Count <= IModGroup.MaxMultiOptions;
         using var style            = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f, !canSwitchToMulti);
         if (ImGui.Selectable(GroupTypeName(GroupType.Multi), group.Type == GroupType.Multi) && canSwitchToMulti)
             _modManager.OptionEditor.ChangeModGroupType(_mod, groupIdx, GroupType.Multi);
