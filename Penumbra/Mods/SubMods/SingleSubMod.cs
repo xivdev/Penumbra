@@ -63,7 +63,7 @@ public class SingleSubMod(Mod mod, SingleModGroup group) : IModDataOption
     }
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => ((IModDataContainer)this).AddDataTo(redirections, manipulations);
+        => IModDataContainer.AddDataTo(this, redirections, manipulations);
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
         => (Group.GetIndex(), GetDataIndex());

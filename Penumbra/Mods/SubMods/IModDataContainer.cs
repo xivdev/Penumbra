@@ -16,14 +16,14 @@ public interface IModDataContainer
     public Dictionary<Utf8GamePath, FullPath> FileSwaps { get; set; }
     public HashSet<MetaManipulation> Manipulations { get; set; }
 
-    public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public static void AddDataTo(IModDataContainer container, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
     {
-        foreach (var (path, file) in Files)
+        foreach (var (path, file) in container.Files)
             redirections.TryAdd(path, file);
 
-        foreach (var (path, file) in FileSwaps)
+        foreach (var (path, file) in container.FileSwaps)
             redirections.TryAdd(path, file);
-        manipulations.UnionWith(Manipulations);
+        manipulations.UnionWith(container.Manipulations);
     }
 
     public string GetName()

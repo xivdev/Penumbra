@@ -65,7 +65,7 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : IModDataOption
     }
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => ((IModDataContainer)this).AddDataTo(redirections, manipulations);
+        => IModDataContainer.AddDataTo(this, redirections, manipulations);
 
     public static MultiSubMod CreateForSaving(string name, string description, ModPriority priority)
         => new(null!, null!)

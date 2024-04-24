@@ -23,7 +23,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
         => null;
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => ((IModDataContainer)this).AddDataTo(redirections, manipulations);
+        => IModDataContainer.AddDataTo(this, redirections, manipulations);
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
         => (-1, 0);
