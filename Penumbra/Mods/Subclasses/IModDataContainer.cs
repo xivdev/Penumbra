@@ -1,12 +1,16 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
 public interface IModDataContainer
 {
+    public IMod       Mod   { get; }
+    public IModGroup? Group { get; }
+
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; }
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; }
     public HashSet<MetaManipulation>          Manipulations { get; set; }
@@ -20,6 +24,32 @@ public interface IModDataContainer
             redirections.TryAdd(path, file);
         manipulations.UnionWith(Manipulations);
     }
+
+    public string GetName()
+        => this switch
+        {
+            IModOption o  => o.FullName,
+            DefaultSubMod => DefaultSubMod.FullName,
+            _             => $"Container {GetDataIndices().DataIndex + 1}",
+        };
+
+    public string GetFullName()
+        => this switch
+        {
+            IModOption o         => o.FullName,
+            DefaultSubMod        => DefaultSubMod.FullName,
+            _ when Group != null => $"{Group.Name}: Container {GetDataIndices().DataIndex + 1}",
+            _                    => $"Container {GetDataIndices().DataIndex + 1}",
+        };
+
+    public static void Clone(IModDataContainer from, IModDataContainer to)
+    {
+        to.Files         = new Dictionary<Utf8GamePath, FullPath>(from.Files);
+        to.FileSwaps     = new Dictionary<Utf8GamePath, FullPath>(from.FileSwaps);
+        to.Manipulations = [.. from.Manipulations];
+    }
+
+    public (int GroupIndex, int DataIndex) GetDataIndices();
 
     public static void Load(JToken json, IModDataContainer data, DirectoryInfo basePath)
     {
@@ -76,5 +106,23 @@ public interface IModDataContainer
         j.WritePropertyName(nameof(data.Manipulations));
         serializer.Serialize(j, data.Manipulations);
         j.WriteEndObject();
+    }
+
+    internal static void DeleteDeleteList(IEnumerable<string> deleteList, bool delete)
+    {
+        if (!delete)
+            return;
+
+        foreach (var file in deleteList)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not delete incorporated meta file {file}:\n{e}");
+            }
+        }
     }
 }

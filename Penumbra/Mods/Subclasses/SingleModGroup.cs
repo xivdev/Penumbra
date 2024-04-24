@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
@@ -8,7 +9,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods.Subclasses;
 
 /// <summary> Groups that allow only one of their available options to be selected. </summary>
-public sealed class SingleModGroup(Mod mod) : IModGroup
+public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
 {
     public GroupType Type
         => GroupType.Single;
@@ -19,16 +20,19 @@ public sealed class SingleModGroup(Mod mod) : IModGroup
     public ModPriority Priority        { get; set; }
     public Setting     DefaultSettings { get; set; }
 
-    public readonly List<SubMod> OptionData = [];
+    public readonly List<SingleSubMod> OptionData = [];
+
+    IReadOnlyList<IModDataOption> ITexToolsGroup.OptionData
+        => OptionData;
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
         => OptionData
-            .SelectWhere(m => (m.FileData.TryGetValue(gamePath, out var file) || m.FileSwapData.TryGetValue(gamePath, out file), file))
+            .SelectWhere(m => (m.Files.TryGetValue(gamePath, out var file) || m.FileSwaps.TryGetValue(gamePath, out file), file))
             .FirstOrDefault();
 
     public int AddOption(Mod mod, string name, string description = "")
     {
-        var subMod = new SubMod(mod, this)
+        var subMod = new SingleSubMod(mod, this)
         {
             Name        = name,
             Description = description,
@@ -37,33 +41,10 @@ public sealed class SingleModGroup(Mod mod) : IModGroup
         return OptionData.Count - 1;
     }
 
-    public bool ChangeOptionDescription(int optionIndex, string newDescription)
-    {
-        if (optionIndex < 0 || optionIndex >= OptionData.Count)
-            return false;
-
-        var option = OptionData[optionIndex];
-        if (option.Description == newDescription)
-            return false;
-
-        option.Description = newDescription;
-        return true;
-    }
-
-    public bool ChangeOptionName(int optionIndex, string newName)
-    {
-        if (optionIndex < 0 || optionIndex >= OptionData.Count)
-            return false;
-
-        var option = OptionData[optionIndex];
-        if (option.Name == newName)
-            return false;
-
-        option.Name = newName;
-        return true;
-    }
-
     public IReadOnlyList<IModOption> Options
+        => OptionData;
+
+    public IReadOnlyList<IModDataContainer> DataContainers
         => OptionData;
 
     public bool IsOption
@@ -85,8 +66,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup
         if (options != null)
             foreach (var child in options.Children())
             {
-                var subMod = new SubMod(mod, ret);
-                subMod.Load(mod.ModPath, child, out _);
+                var subMod = new SingleSubMod(mod, ret, child);
                 ret.OptionData.Add(subMod);
             }
 
@@ -107,7 +87,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup
                     Priority        = Priority,
                     DefaultSettings = Setting.Multi((int)DefaultSettings.Value),
                 };
-                multi.PrioritizedOptions.AddRange(OptionData.Select((o, i) => (o, new ModPriority(i))));
+                multi.OptionData.AddRange(OptionData.Select((o, i) => o.ConvertToMulti(Mod, multi, new ModPriority(i))));
                 return multi;
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
@@ -137,11 +117,38 @@ public sealed class SingleModGroup(Mod mod) : IModGroup
         return true;
     }
 
+    public int GetIndex()
+    {
+        var groupIndex = Mod.Groups.IndexOf(this);
+        if (groupIndex < 0)
+            throw new Exception($"Mod {Mod.Name} from Group {Name} does not contain this group.");
+
+        return groupIndex;
+    }
+
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => OptionData[setting.AsIndex].AddData(redirections, manipulations);
+        => OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);
 
     public Setting FixSetting(Setting setting)
         => OptionData.Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(OptionData.Count - 1)));
+
+    public (int Redirections, int Swaps, int Manips) GetCounts()
+        => IModGroup.GetCountsBase(this);
+
+    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
+    {
+        IModGroup.WriteJsonBase(jWriter, this);
+        jWriter.WritePropertyName("Options");
+        jWriter.WriteStartArray();
+        foreach (var option in OptionData)
+        {
+            IModOption.WriteModOption(jWriter, option);
+            IModDataContainer.WriteModData(jWriter, serializer, option, basePath ?? Mod.ModPath);
+        }
+
+        jWriter.WriteEndArray();
+        jWriter.WriteEndObject();
+    }
 
     /// <summary> Create a group without a mod only for saving it in the creator. </summary>
     internal static SingleModGroup CreateForSaving(string name)

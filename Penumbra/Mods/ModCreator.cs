@@ -112,10 +112,8 @@ public partial class ModCreator(
         var defaultFile = _saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
         try
         {
-            if (!File.Exists(defaultFile))
-                mod.Default.Load(mod.ModPath, new JObject(), out _);
-            else
-                mod.Default.Load(mod.ModPath, JObject.Parse(File.ReadAllText(defaultFile)), out _);
+            var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
+            IModDataContainer.Load(jObject, mod.Default, mod.ModPath);
         }
         catch (Exception e)
         {
@@ -154,7 +152,7 @@ public partial class ModCreator(
     {
         var          changes    = false;
         List<string> deleteList = new();
-        foreach (var subMod in mod.AllSubMods)
+        foreach (var subMod in mod.AllDataContainers)
         {
             var (localChanges, localDeleteList) =  IncorporateMetaChanges(subMod, mod.ModPath, false);
             changes                             |= localChanges;
@@ -162,7 +160,7 @@ public partial class ModCreator(
                 deleteList.AddRange(localDeleteList);
         }
 
-        SubMod.DeleteDeleteList(deleteList, delete);
+        IModDataContainer.DeleteDeleteList(deleteList, delete);
 
         if (!changes)
             return;
@@ -176,10 +174,10 @@ public partial class ModCreator(
     /// If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
     /// If delete is true, the files are deleted afterwards.
     /// </summary>
-    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(SubMod option, DirectoryInfo basePath, bool delete)
+    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(IModDataContainer option, DirectoryInfo basePath, bool delete)
     {
         var deleteList   = new List<string>();
-        var oldSize      = option.ManipulationData.Count;
+        var oldSize      = option.Manipulations.Count;
         var deleteString = delete ? "with deletion." : "without deletion.";
         foreach (var (key, file) in option.Files.ToList())
         {
@@ -189,7 +187,7 @@ public partial class ModCreator(
             {
                 if (ext1 == ".meta" || ext2 == ".meta")
                 {
-                    option.FileData.Remove(key);
+                    option.Files.Remove(key);
                     if (!file.Exists)
                         continue;
 
@@ -198,11 +196,11 @@ public partial class ModCreator(
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
-                    option.ManipulationData.UnionWith(meta.MetaManipulations);
+                    option.Manipulations.UnionWith(meta.MetaManipulations);
                 }
                 else if (ext1 == ".rgsp" || ext2 == ".rgsp")
                 {
-                    option.FileData.Remove(key);
+                    option.Files.Remove(key);
                     if (!file.Exists)
                         continue;
 
@@ -212,7 +210,7 @@ public partial class ModCreator(
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
 
-                    option.ManipulationData.UnionWith(rgsp.MetaManipulations);
+                    option.Manipulations.UnionWith(rgsp.MetaManipulations);
                 }
             }
             catch (Exception e)
@@ -221,8 +219,8 @@ public partial class ModCreator(
             }
         }
 
-        SubMod.DeleteDeleteList(deleteList, delete);
-        return (oldSize < option.ManipulationData.Count, deleteList);
+        IModDataContainer.DeleteDeleteList(deleteList, delete);
+        return (oldSize < option.Manipulations.Count, deleteList);
     }
 
     /// <summary>
@@ -238,7 +236,7 @@ public partial class ModCreator(
 
     /// <summary> Create a file for an option group from given data. </summary>
     public void CreateOptionGroup(DirectoryInfo baseFolder, GroupType type, string name,
-        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<SubMod> subMods)
+        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<MultiSubMod> subMods)
     {
         switch (type)
         {
@@ -248,7 +246,7 @@ public partial class ModCreator(
                 group.Description     = desc;
                 group.Priority        = priority;
                 group.DefaultSettings = defaultSettings;
-                group.PrioritizedOptions.AddRange(subMods.Select((s, idx) => (s, new ModPriority(idx))));
+                group.OptionData.AddRange(subMods.Select(s => s.Clone(null!, group)));
                 _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
@@ -258,7 +256,7 @@ public partial class ModCreator(
                 group.Description     = desc;
                 group.Priority        = priority;
                 group.DefaultSettings = defaultSettings;
-                group.OptionData.AddRange(subMods);
+                group.OptionData.AddRange(subMods.Select(s => s.ConvertToSingle(null!, group)));
                 _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
@@ -266,16 +264,15 @@ public partial class ModCreator(
     }
 
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>
-    public SubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option)
+    public MultiSubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option, ModPriority priority)
     {
         var list = optionFolder.EnumerateNonHiddenFiles()
             .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath, true), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
-        var mod = SubMod.CreateForSaving(option.Name);
-        mod.Description = option.Description;
+        var mod = MultiSubMod.CreateForSaving(option.Name, option.Description, priority);
         foreach (var (_, gamePath, file) in list)
-            mod.FileData.TryAdd(gamePath, file);
+            mod.Files.TryAdd(gamePath, file);
 
         IncorporateMetaChanges(mod, baseFolder, true);
         return mod;
@@ -292,7 +289,7 @@ public partial class ModCreator(
         foreach (var file in mod.FindUnusedFiles())
         {
             if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath, true))
-                mod.Default.FileData.TryAdd(gamePath, file);
+                mod.Default.Files.TryAdd(gamePath, file);
         }
 
         IncorporateMetaChanges(mod.Default, directory, true);

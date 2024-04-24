@@ -305,7 +305,7 @@ public class FileEditor<T>(
                     UiHelpers.Text(gamePath.Path);
                     ImGui.TableNextColumn();
                     using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
-                    ImGui.TextUnformatted(option.FullName);
+                    ImGui.TextUnformatted(option.GetFullName());
                 }
             }
 

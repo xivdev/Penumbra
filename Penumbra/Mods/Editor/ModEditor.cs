@@ -1,4 +1,3 @@
-using System;
 using OtterGui;
 using OtterGui.Compression;
 using Penumbra.Mods.Subclasses;
@@ -25,20 +24,20 @@ public class ModEditor(
     public readonly MdlMaterialEditor MdlMaterialEditor = mdlMaterialEditor;
     public readonly FileCompactor     Compactor         = compactor;
 
-    public Mod? Mod       { get; private set; }
-    public int  GroupIdx  { get; private set; }
-    public int  OptionIdx { get; private set; }
+    public Mod? Mod      { get; private set; }
+    public int  GroupIdx { get; private set; }
+    public int  DataIdx  { get; private set; }
 
-    public IModGroup? Group  { get; private set; }
-    public SubMod?   Option { get; private set; }
+    public IModGroup?         Group          { get; private set; }
+    public IModDataContainer? Option         { get; private set; }
 
     public void LoadMod(Mod mod)
         => LoadMod(mod, -1, 0);
 
-    public void LoadMod(Mod mod, int groupIdx, int optionIdx)
+    public void LoadMod(Mod mod, int groupIdx, int dataIdx)
     {
         Mod = mod;
-        LoadOption(groupIdx, optionIdx, true);
+        LoadOption(groupIdx, dataIdx, true);
         Files.UpdateAll(mod, Option!);
         SwapEditor.Revert(Option!);
         MetaEditor.Load(Mod!, Option!);
@@ -46,9 +45,9 @@ public class ModEditor(
         MdlMaterialEditor.ScanModels(Mod!);
     }
 
-    public void LoadOption(int groupIdx, int optionIdx)
+    public void LoadOption(int groupIdx, int dataIdx)
     {
-        LoadOption(groupIdx, optionIdx, true);
+        LoadOption(groupIdx, dataIdx, true);
         SwapEditor.Revert(Option!);
         Files.UpdatePaths(Mod!, Option!);
         MetaEditor.Load(Mod!, Option!);
@@ -57,44 +56,38 @@ public class ModEditor(
     }
 
     /// <summary> Load the correct option by indices for the currently loaded mod if possible, unload if not.  </summary>
-    private void LoadOption(int groupIdx, int optionIdx, bool message)
+    private void LoadOption(int groupIdx, int dataIdx, bool message)
     {
         if (Mod != null && Mod.Groups.Count > groupIdx)
         {
-            if (groupIdx == -1 && optionIdx == 0)
+            if (groupIdx == -1 && dataIdx == 0)
             {
-                Group     = null;
-                Option    = Mod.Default;
-                GroupIdx  = groupIdx;
-                OptionIdx = optionIdx;
+                Group          = null;
+                Option         = Mod.Default;
+                GroupIdx       = groupIdx;
+                DataIdx        = dataIdx;
                 return;
             }
 
             if (groupIdx >= 0)
             {
                 Group = Mod.Groups[groupIdx];
-                switch(Group)
+                if (dataIdx >= 0 && dataIdx < Group.DataContainers.Count)
                 {
-                    case SingleModGroup single when optionIdx >= 0 && optionIdx < single.OptionData.Count:
-                        Option    = single.OptionData[optionIdx];
-                        GroupIdx  = groupIdx;
-                        OptionIdx = optionIdx;
-                        return;
-                    case MultiModGroup multi when optionIdx >= 0 && optionIdx < multi.PrioritizedOptions.Count:
-                        Option    = multi.PrioritizedOptions[optionIdx].Mod;
-                        GroupIdx  = groupIdx;
-                        OptionIdx = optionIdx;
-                        return;
+                    Option         = Group.DataContainers[dataIdx];
+                    GroupIdx       = groupIdx;
+                    DataIdx        = dataIdx;
+                    return;
                 }
             }
         }
 
-        Group     = null;
-        Option    = Mod?.Default;
-        GroupIdx  = -1;
-        OptionIdx = 0;
+        Group          = null;
+        Option         = Mod?.Default;
+        GroupIdx       = -1;
+        DataIdx        = 0;
         if (message)
-            Penumbra.Log.Error($"Loading invalid option {groupIdx} {optionIdx} for Mod {Mod?.Name ?? "Unknown"}.");
+            Penumbra.Log.Error($"Loading invalid option {groupIdx} {dataIdx} for Mod {Mod?.Name ?? "Unknown"}.");
     }
 
     public void Clear()
@@ -111,7 +104,7 @@ public class ModEditor(
         => Clear();
 
     /// <summary> Apply a option action to all available option in a mod, including the default option. </summary>
-    public static void ApplyToAllOptions(Mod mod, Action<SubMod, int, int> action)
+    public static void ApplyToAllOptions(Mod mod, Action<IModDataContainer, int, int> action)
     {
         action(mod.Default, -1, 0);
         foreach (var (group, groupIdx) in mod.Groups.WithIndex())
@@ -123,8 +116,8 @@ public class ModEditor(
                         action(single.OptionData[optionIdx], groupIdx, optionIdx);
                     break;
                 case MultiModGroup multi:
-                    for (var optionIdx = 0; optionIdx < multi.PrioritizedOptions.Count; ++optionIdx)
-                        action(multi.PrioritizedOptions[optionIdx].Mod, groupIdx, optionIdx);
+                    for (var optionIdx = 0; optionIdx < multi.OptionData.Count; ++optionIdx)
+                        action(multi.OptionData[optionIdx], groupIdx, optionIdx);
                     break;
             }
         }

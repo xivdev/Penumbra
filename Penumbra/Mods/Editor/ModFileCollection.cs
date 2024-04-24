@@ -38,13 +38,13 @@ public class ModFileCollection : IDisposable
 
     public bool Ready { get; private set; } = true;
 
-    public void UpdateAll(Mod mod, SubMod option)
+    public void UpdateAll(Mod mod, IModDataContainer option)
     {
         UpdateFiles(mod, new CancellationToken());
         UpdatePaths(mod, option, false, new CancellationToken());
     }
 
-    public void UpdatePaths(Mod mod, SubMod option)
+    public void UpdatePaths(Mod mod, IModDataContainer option)
         => UpdatePaths(mod, option, true, new CancellationToken());
 
     public void Clear()
@@ -59,7 +59,7 @@ public class ModFileCollection : IDisposable
     public void ClearMissingFiles()
         => _missing.Clear();
 
-    public void RemoveUsedPath(SubMod option, FileRegistry? file, Utf8GamePath gamePath)
+    public void RemoveUsedPath(IModDataContainer option, FileRegistry? file, Utf8GamePath gamePath)
     {
         _usedPaths.Remove(gamePath);
         if (file != null)
@@ -69,10 +69,10 @@ public class ModFileCollection : IDisposable
         }
     }
 
-    public void RemoveUsedPath(SubMod option, FullPath file, Utf8GamePath gamePath)
+    public void RemoveUsedPath(IModDataContainer option, FullPath file, Utf8GamePath gamePath)
         => RemoveUsedPath(option, _available.FirstOrDefault(f => f.File.Equals(file)), gamePath);
 
-    public void AddUsedPath(SubMod option, FileRegistry? file, Utf8GamePath gamePath)
+    public void AddUsedPath(IModDataContainer option, FileRegistry? file, Utf8GamePath gamePath)
     {
         _usedPaths.Add(gamePath);
         if (file == null)
@@ -82,7 +82,7 @@ public class ModFileCollection : IDisposable
         file.SubModUsage.Add((option, gamePath));
     }
 
-    public void AddUsedPath(SubMod option, FullPath file, Utf8GamePath gamePath)
+    public void AddUsedPath(IModDataContainer option, FullPath file, Utf8GamePath gamePath)
         => AddUsedPath(option, _available.FirstOrDefault(f => f.File.Equals(file)), gamePath);
 
     public void ChangeUsedPath(FileRegistry file, int pathIdx, Utf8GamePath gamePath)
@@ -154,14 +154,14 @@ public class ModFileCollection : IDisposable
         _usedPaths.Clear();
     }
 
-    private void UpdatePaths(Mod mod, SubMod option, bool clearRegistries, CancellationToken tok)
+    private void UpdatePaths(Mod mod, IModDataContainer option, bool clearRegistries, CancellationToken tok)
     {
         tok.ThrowIfCancellationRequested();
         ClearPaths(clearRegistries, tok);
 
         tok.ThrowIfCancellationRequested();
 
-        foreach (var subMod in mod.AllSubMods)
+        foreach (var subMod in mod.AllDataContainers)
         {
             foreach (var (gamePath, file) in subMod.Files)
             {

@@ -85,7 +85,7 @@ public partial class ModEditWindow
             {
                 // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
                 // NOTE: We're using case-insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
-                return mod.AllSubMods
+                return mod.AllDataContainers
                     .SelectMany(m => m.Files.Concat(m.FileSwaps))
                     .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
                     .Select(kv => kv.Key)
@@ -103,7 +103,7 @@ public partial class ModEditWindow
                 return [];
 
             // Filter then prepend the current option to ensure it's chosen first.
-            return mod.AllSubMods
+            return mod.AllDataContainers
                 .Where(subMod => subMod != option)
                 .Prepend(option)
                 .SelectMany(subMod => subMod.Manipulations)

@@ -114,7 +114,7 @@ public class ModPanelTabBar
         if (ImGui.TabItemButton("Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip))
         {
             _modEditWindow.ChangeMod(mod);
-            _modEditWindow.ChangeOption((SubMod)mod.Default);
+            _modEditWindow.ChangeOption(mod.Default);
             _modEditWindow.IsOpen = true;
         }
 

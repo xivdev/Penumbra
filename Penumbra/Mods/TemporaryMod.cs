@@ -18,49 +18,46 @@ public class TemporaryMod : IMod
     public int TotalManipulations
         => Default.Manipulations.Count;
 
-    public readonly SubMod Default;
+    public readonly DefaultSubMod Default;
 
     public AppliedModData GetData(ModSettings? settings = null)
     {
         Dictionary<Utf8GamePath, FullPath> dict;
-        if (Default.FileSwapData.Count == 0)
+        if (Default.FileSwaps.Count == 0)
         {
-            dict = Default.FileData;
+            dict = Default.Files;
         }
-        else if (Default.FileData.Count == 0)
+        else if (Default.Files.Count == 0)
         {
-            dict = Default.FileSwapData;
+            dict = Default.FileSwaps;
         }
         else
         {
             // Need to ensure uniqueness.
-            dict = new Dictionary<Utf8GamePath, FullPath>(Default.FileData.Count + Default.FileSwaps.Count);
-            foreach (var (gamePath, file) in Default.FileData.Concat(Default.FileSwaps))
+            dict = new Dictionary<Utf8GamePath, FullPath>(Default.Files.Count + Default.FileSwaps.Count);
+            foreach (var (gamePath, file) in Default.Files.Concat(Default.FileSwaps))
                 dict.TryAdd(gamePath, file);
         }
 
-        return new AppliedModData(dict, Default.ManipulationData);
+        return new AppliedModData(dict, Default.Manipulations);
     }
 
     public IReadOnlyList<IModGroup> Groups
         => Array.Empty<IModGroup>();
 
-    public IEnumerable<SubMod> AllSubMods
-        => [Default];
-
     public TemporaryMod()
-        => Default = SubMod.CreateDefault(this);
+        => Default = new(this);
 
     public void SetFile(Utf8GamePath gamePath, FullPath fullPath)
-        => Default.FileData[gamePath] = fullPath;
+        => Default.Files[gamePath] = fullPath;
 
     public bool SetManipulation(MetaManipulation manip)
-        => Default.ManipulationData.Remove(manip) | Default.ManipulationData.Add(manip);
+        => Default.Manipulations.Remove(manip) | Default.Manipulations.Add(manip);
 
     public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, HashSet<MetaManipulation> manips)
     {
-        Default.FileData         = dict;
-        Default.ManipulationData = manips;
+        Default.Files         = dict;
+        Default.Manipulations = manips;
     }
 
     public static void SaveTempCollection(Configuration config, SaveService saveService, ModManager modManager, ModCollection collection,
@@ -93,16 +90,16 @@ public class TemporaryMod : IMod
                 {
                     var target = Path.Combine(fileDir.FullName, Path.GetFileName(targetPath));
                     File.Copy(targetPath, target, true);
-                    defaultMod.FileData[gamePath] = new FullPath(target);
+                    defaultMod.Files[gamePath] = new FullPath(target);
                 }
                 else
                 {
-                    defaultMod.FileSwapData[gamePath] = new FullPath(targetPath);
+                    defaultMod.FileSwaps[gamePath] = new FullPath(targetPath);
                 }
             }
 
             foreach (var manip in collection.MetaCache?.Manipulations ?? Array.Empty<MetaManipulation>())
-                defaultMod.ManipulationData.Add(manip);
+                defaultMod.Manipulations.Add(manip);
 
             saveService.ImmediateSave(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
             modManager.AddMod(dir);

@@ -50,17 +50,15 @@ public unsafe class MetaFileManager
             TexToolsMeta.WriteTexToolsMeta(this, mod.Default.Manipulations, mod.ModPath);
             foreach (var group in mod.Groups)
             {
+                if (group is not ITexToolsGroup texToolsGroup)
+                    continue;
+
                 var dir = ModCreator.NewOptionDirectory(mod.ModPath, group.Name, Config.ReplaceNonAsciiOnImport);
                 if (!dir.Exists)
                     dir.Create();
 
-                var optionEnumerator = group switch
-                {
-                    SingleModGroup single => single.OptionData,
-                    MultiModGroup multi   => multi.PrioritizedOptions.Select(o => o.Mod),
-                    _                     => [],
-                };
-                foreach (var option in optionEnumerator)
+
+                foreach (var option in texToolsGroup.OptionData)
                 {
                     var optionDir = ModCreator.NewOptionDirectory(dir, option.Name, Config.ReplaceNonAsciiOnImport);
                     if (!optionDir.Exists)
@@ -99,7 +97,7 @@ public unsafe class MetaFileManager
             return;
 
         ResidentResources.Reload();
-        if (collection?._cache == null)
+        if (collection._cache == null)
             CharacterUtility.ResetAll();
         else
             collection._cache.Meta.SetFiles();

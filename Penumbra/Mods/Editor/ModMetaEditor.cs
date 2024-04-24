@@ -103,7 +103,7 @@ public class ModMetaEditor(ModManager modManager)
         Changes = true;
     }
 
-    public void Load(Mod mod, SubMod currentOption)
+    public void Load(Mod mod, IModDataContainer currentOption)
     {
         OtherImcCount  = 0;
         OtherEqpCount  = 0;
@@ -111,7 +111,7 @@ public class ModMetaEditor(ModManager modManager)
         OtherGmpCount  = 0;
         OtherEstCount  = 0;
         OtherRspCount  = 0;
-        foreach (var option in mod.AllSubMods)
+        foreach (var option in mod.AllDataContainers)
         {
             if (option == currentOption)
                 continue;

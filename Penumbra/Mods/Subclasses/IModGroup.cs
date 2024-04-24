@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
@@ -5,6 +6,11 @@ using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
+
+public interface ITexToolsGroup
+{
+    public IReadOnlyList<IModDataOption> OptionData { get; }
+}
 
 public interface IModGroup
 {
@@ -19,28 +25,89 @@ public interface IModGroup
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath);
     public int       AddOption(Mod mod, string name, string description = "");
-    public bool      ChangeOptionDescription(int optionIndex, string newDescription);
-    public bool      ChangeOptionName(int optionIndex, string newName);
 
-    public IReadOnlyList<IModOption> Options  { get; }
-    public bool                      IsOption { get; }
+    public IReadOnlyList<IModOption>        Options        { get; }
+    public IReadOnlyList<IModDataContainer> DataContainers { get; }
+    public bool                             IsOption       { get; }
 
     public IModGroup Convert(GroupType type);
     public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
+
+    public int GetIndex();
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations);
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);
+
+    public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null);
+
+    public bool ChangeOptionDescription(int optionIndex, string newDescription)
+    {
+        if (optionIndex < 0 || optionIndex >= Options.Count)
+            return false;
+
+        var option = Options[optionIndex];
+        if (option.Description == newDescription)
+            return false;
+
+        option.Description = newDescription;
+        return true;
+    }
+
+    public bool ChangeOptionName(int optionIndex, string newName)
+    {
+        if (optionIndex < 0 || optionIndex >= Options.Count)
+            return false;
+
+        var option = Options[optionIndex];
+        if (option.Name == newName)
+            return false;
+
+        option.Name = newName;
+        return true;
+    }
+
+    public static void WriteJsonBase(JsonTextWriter jWriter, IModGroup group)
+    {
+        jWriter.WriteStartObject();
+        jWriter.WritePropertyName(nameof(group.Name));
+        jWriter.WriteValue(group!.Name);
+        jWriter.WritePropertyName(nameof(group.Description));
+        jWriter.WriteValue(group.Description);
+        jWriter.WritePropertyName(nameof(group.Priority));
+        jWriter.WriteValue(group.Priority.Value);
+        jWriter.WritePropertyName(nameof(group.Type));
+        jWriter.WriteValue(group.Type.ToString());
+        jWriter.WritePropertyName(nameof(group.DefaultSettings));
+        jWriter.WriteValue(group.DefaultSettings.Value);
+    }
+
+    public (int Redirections, int Swaps, int Manips) GetCounts();
+
+    public static (int Redirections, int Swaps, int Manips) GetCountsBase(IModGroup group)
+    {
+        var redirectionCount = 0;
+        var swapCount        = 0;
+        var manipCount       = 0;
+        foreach (var option in group.DataContainers)
+        {
+            redirectionCount += option.Files.Count;
+            swapCount        += option.FileSwaps.Count;
+            manipCount       += option.Manipulations.Count;
+        }
+
+        return (redirectionCount, swapCount, manipCount);
+    }
 }
 
 public readonly struct ModSaveGroup : ISavable
 {
-    private readonly DirectoryInfo _basePath;
-    private readonly IModGroup?    _group;
-    private readonly int           _groupIdx;
-    private readonly SubMod?       _defaultMod;
-    private readonly bool          _onlyAscii;
+    private readonly DirectoryInfo  _basePath;
+    private readonly IModGroup?     _group;
+    private readonly int            _groupIdx;
+    private readonly DefaultSubMod? _defaultMod;
+    private readonly bool           _onlyAscii;
 
     public ModSaveGroup(Mod mod, int groupIdx, bool onlyAscii)
     {
@@ -61,7 +128,7 @@ public readonly struct ModSaveGroup : ISavable
         _onlyAscii = onlyAscii;
     }
 
-    public ModSaveGroup(DirectoryInfo basePath, SubMod @default, bool onlyAscii)
+    public ModSaveGroup(DirectoryInfo basePath, DefaultSubMod @default, bool onlyAscii)
     {
         _basePath   = basePath;
         _groupIdx   = -1;
@@ -77,42 +144,11 @@ public readonly struct ModSaveGroup : ISavable
         using var j = new JsonTextWriter(writer);
         j.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };
+        j.WriteStartObject();
         if (_groupIdx >= 0)
-        {
-            j.WriteStartObject();
-            j.WritePropertyName(nameof(_group.Name));
-            j.WriteValue(_group!.Name);
-            j.WritePropertyName(nameof(_group.Description));
-            j.WriteValue(_group.Description);
-            j.WritePropertyName(nameof(_group.Priority));
-            j.WriteValue(_group.Priority.Value);
-            j.WritePropertyName(nameof(Type));
-            j.WriteValue(_group.Type.ToString());
-            j.WritePropertyName(nameof(_group.DefaultSettings));
-            j.WriteValue(_group.DefaultSettings.Value);
-            switch (_group)
-            {
-                case SingleModGroup single:
-                    j.WritePropertyName("Options");
-                    j.WriteStartArray();
-                    foreach (var option in single.OptionData)
-                        SubMod.WriteSubMod(j, serializer, option, _basePath, null);
-                    j.WriteEndArray();
-                    j.WriteEndObject();
-                    break;
-                case MultiModGroup multi:
-                    j.WritePropertyName("Options");
-                    j.WriteStartArray();
-                    foreach (var (option, priority) in multi.PrioritizedOptions)
-                        SubMod.WriteSubMod(j, serializer, option, _basePath, priority);
-                    j.WriteEndArray();
-                    j.WriteEndObject();
-                    break;
-            }
-        }
+            _group!.WriteJson(j, serializer);
         else
-        {
-            SubMod.WriteSubMod(j, serializer, _defaultMod!, _basePath, null);
-        }
+            IModDataContainer.WriteModData(j, serializer, _defaultMod!, _basePath);
+        j.WriteEndObject();
     }
 }

@@ -1,4 +1,3 @@
-using System.Security.AccessControl;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
@@ -179,10 +178,10 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         switch (mod.Groups[groupIdx])
         {
             case MultiModGroup multi:
-                if (multi.PrioritizedOptions[optionIdx].Priority == newPriority)
+                if (multi.OptionData[optionIdx].Priority == newPriority)
                     return;
 
-                multi.PrioritizedOptions[optionIdx] = (multi.PrioritizedOptions[optionIdx].Mod, newPriority);
+                multi.OptionData[optionIdx].Priority = newPriority;
                 saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
                 communicator.ModOptionChanged.Invoke(ModOptionChangeType.PriorityChanged, mod, groupIdx, optionIdx, -1);
                 return;
@@ -213,70 +212,62 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Add a new empty option of the given name for the given group if it does not exist already. </summary>
-    public (SubMod, int, bool) FindOrAddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
+    public (IModOption, int, bool) FindOrAddOption(Mod mod, int groupIdx, string newName, SaveType saveType = SaveType.Queue)
     {
         var group = mod.Groups[groupIdx];
-        switch (group)
-        {
-            case SingleModGroup single:
-            {
-                var idx = single.OptionData.IndexOf(o => o.Name == newName);
-                if (idx >= 0)
-                    return (single.OptionData[idx], idx, false);
+        var idx   = group.Options.IndexOf(o => o.Name == newName);
+        if (idx >= 0)
+            return (group.Options[idx], idx, false);
 
-                idx = single.AddOption(mod, newName);
-                if (idx < 0)
-                    throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
+        idx = group.AddOption(mod, newName);
+        if (idx < 0)
+            throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
 
-                saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-                communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
-                return (single.OptionData[^1], single.OptionData.Count - 1, true);
-            }
-            case MultiModGroup multi:
-            {
-                var idx = multi.PrioritizedOptions.IndexOf(o => o.Mod.Name == newName);
-                if (idx >= 0)
-                    return (multi.PrioritizedOptions[idx].Mod, idx, false);
-
-                idx = multi.AddOption(mod, newName);
-                if (idx < 0)
-                    throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
-
-                saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-                communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
-                return (multi.PrioritizedOptions[^1].Mod, multi.PrioritizedOptions.Count - 1, true);
-            }
-        }
-
-        throw new Exception($"{nameof(FindOrAddOption)} is not supported for mod groups of type {group.GetType()}.");
+        saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, idx, -1);
+        return (group.Options[idx], idx, true);
     }
 
-    /// <summary> Add an existing option to a given group with default priority. </summary> 
-    public void AddOption(Mod mod, int groupIdx, SubMod option)
-        => AddOption(mod, groupIdx, option, ModPriority.Default);
-
-    /// <summary> Add an existing option to a given group with a given priority. </summary> 
-    public void AddOption(Mod mod, int groupIdx, SubMod option, ModPriority priority)
+    /// <summary> Add an existing option to a given group. </summary> 
+    public void AddOption(Mod mod, int groupIdx, IModOption option)
     {
         var group = mod.Groups[groupIdx];
         int idx;
         switch (group)
         {
-            case MultiModGroup { PrioritizedOptions.Count: >= IModGroup.MaxMultiOptions }:
+            case MultiModGroup { OptionData.Count: >= IModGroup.MaxMultiOptions }:
                 Penumbra.Log.Error(
                     $"Could not add option {option.Name} to {group.Name} for mod {mod.Name}, "
                   + $"since only up to {IModGroup.MaxMultiOptions} options are supported in one group.");
                 return;
             case SingleModGroup s:
+            {
                 idx = s.OptionData.Count;
-                s.OptionData.Add(option);
+                var newOption = new SingleSubMod(s.Mod, s)
+                {
+                    Name        = option.Name,
+                    Description = option.Description,
+                };
+                if (option is IModDataContainer data)
+                    IModDataContainer.Clone(data, newOption);
+                s.OptionData.Add(newOption);
                 break;
+            }
             case MultiModGroup m:
-                idx = m.PrioritizedOptions.Count;
-                m.PrioritizedOptions.Add((option, priority));
+            {
+                idx = m.OptionData.Count;
+                var newOption = new MultiSubMod(m.Mod, m)
+                {
+                    Name        = option.Name,
+                    Description = option.Description,
+                    Priority    = option is MultiSubMod s ? s.Priority : ModPriority.Default,
+                };
+                if (option is IModDataContainer data)
+                    IModDataContainer.Clone(data, newOption);
+                m.OptionData.Add(newOption);
                 break;
-            default: 
-                return;
+            }
+            default: return;
         }
 
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
@@ -295,7 +286,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
 
                 break;
             case MultiModGroup m:
-                m.PrioritizedOptions.RemoveAt(optionIdx);
+                m.OptionData.RemoveAt(optionIdx);
                 break;
         }
 
@@ -315,59 +306,59 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Set the meta manipulations for a given option. Replaces existing manipulations. </summary>
-    public void OptionSetManipulations(Mod mod, int groupIdx, int optionIdx, HashSet<MetaManipulation> manipulations,
+    public void OptionSetManipulations(Mod mod, int groupIdx, int dataContainerIdx, HashSet<MetaManipulation> manipulations,
         SaveType saveType = SaveType.Queue)
     {
-        var subMod = GetSubMod(mod, groupIdx, optionIdx);
+        var subMod = GetSubMod(mod, groupIdx, dataContainerIdx);
         if (subMod.Manipulations.Count == manipulations.Count
          && subMod.Manipulations.All(m => manipulations.TryGetValue(m, out var old) && old.EntryEquals(m)))
             return;
 
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
-        subMod.ManipulationData.SetTo(manipulations);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, dataContainerIdx, -1);
+        subMod.Manipulations.SetTo(manipulations);
         saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, mod, groupIdx, dataContainerIdx, -1);
     }
 
     /// <summary> Set the file redirections for a given option. Replaces existing redirections. </summary>
-    public void OptionSetFiles(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> replacements,
+    public void OptionSetFiles(Mod mod, int groupIdx, int dataContainerIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> replacements,
         SaveType saveType = SaveType.Queue)
     {
-        var subMod = GetSubMod(mod, groupIdx, optionIdx);
-        if (subMod.FileData.SetEquals(replacements))
+        var subMod = GetSubMod(mod, groupIdx, dataContainerIdx);
+        if (subMod.Files.SetEquals(replacements))
             return;
 
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
-        subMod.FileData.SetTo(replacements);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, dataContainerIdx, -1);
+        subMod.Files.SetTo(replacements);
         saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesChanged, mod, groupIdx, dataContainerIdx, -1);
     }
 
     /// <summary> Add additional file redirections to a given option, keeping already existing ones. Only fires an event if anything is actually added.</summary>
-    public void OptionAddFiles(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> additions)
+    public void OptionAddFiles(Mod mod, int groupIdx, int dataContainerIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> additions)
     {
-        var subMod   = GetSubMod(mod, groupIdx, optionIdx);
-        var oldCount = subMod.FileData.Count;
-        subMod.FileData.AddFrom(additions);
-        if (oldCount != subMod.FileData.Count)
+        var subMod   = GetSubMod(mod, groupIdx, dataContainerIdx);
+        var oldCount = subMod.Files.Count;
+        subMod.Files.AddFrom(additions);
+        if (oldCount != subMod.Files.Count)
         {
             saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-            communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesAdded, mod, groupIdx, optionIdx, -1);
+            communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesAdded, mod, groupIdx, dataContainerIdx, -1);
         }
     }
 
     /// <summary> Set the file swaps for a given option. Replaces existing swaps. </summary>
-    public void OptionSetFileSwaps(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> swaps,
+    public void OptionSetFileSwaps(Mod mod, int groupIdx, int dataContainerIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> swaps,
         SaveType saveType = SaveType.Queue)
     {
-        var subMod = GetSubMod(mod, groupIdx, optionIdx);
-        if (subMod.FileSwapData.SetEquals(swaps))
+        var subMod = GetSubMod(mod, groupIdx, dataContainerIdx);
+        if (subMod.FileSwaps.SetEquals(swaps))
             return;
 
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
-        subMod.FileSwapData.SetTo(swaps);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, dataContainerIdx, -1);
+        subMod.FileSwaps.SetTo(swaps);
         saveService.Save(saveType, new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1);
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, dataContainerIdx, -1);
     }
 
 
@@ -389,17 +380,12 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Get the correct option for the given group and option index. </summary>
-    private static SubMod GetSubMod(Mod mod, int groupIdx, int optionIdx)
+    private static IModDataContainer GetSubMod(Mod mod, int groupIdx, int dataContainerIdx)
     {
-        if (groupIdx == -1 && optionIdx == 0)
+        if (groupIdx == -1 && dataContainerIdx == 0)
             return mod.Default;
 
-        return mod.Groups[groupIdx] switch
-        {
-            SingleModGroup s => s.OptionData[optionIdx],
-            MultiModGroup m  => m.PrioritizedOptions[optionIdx].Mod,
-            _                => throw new InvalidOperationException(),
-        };
+        return mod.Groups[groupIdx].DataContainers[dataContainerIdx];
     }
 }
 

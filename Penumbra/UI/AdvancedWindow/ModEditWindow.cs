@@ -77,10 +77,10 @@ public partial class ModEditWindow : Window, IDisposable
         _forceTextureStartPath = true;
     }
 
-    public void ChangeOption(SubMod? subMod)
+    public void ChangeOption(IModDataContainer? subMod)
     {
-        var (groupIdx, optionIdx) = subMod?.GetIndices() ?? (-1, 0);
-        _editor.LoadOption(groupIdx, optionIdx);
+        var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
+        _editor.LoadOption(groupIdx, dataIdx);
     }
 
     public void UpdateModels()
@@ -111,7 +111,7 @@ public partial class ModEditWindow : Window, IDisposable
         });
         var manipulations = 0;
         var subMods       = 0;
-        var swaps = Mod!.AllSubMods.Sum(m =>
+        var swaps = Mod!.AllDataContainers.Sum(m =>
         {
             ++subMods;
             manipulations += m.Manipulations.Count;
@@ -330,7 +330,7 @@ public partial class ModEditWindow : Window, IDisposable
         else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
             _editor.ModNormalizer.Normalize(Mod!);
-            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.OptionIdx), TaskScheduler.Default);
+            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.DataIdx), TaskScheduler.Default);
         }
 
         if (!_editor.Duplicates.Worker.IsCompleted)
@@ -405,7 +405,7 @@ public partial class ModEditWindow : Window, IDisposable
         var          width         = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
         var          ret           = false;
         if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
-                _editor.Option!.IsDefault))
+                _editor.Option is DefaultSubMod))
         {
             _editor.LoadOption(-1, 0);
             ret = true;
@@ -414,7 +414,7 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
         {
-            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
+            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
             ret = true;
         }
 
@@ -422,17 +422,17 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.SetNextItemWidth(width.X);
         style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
         using var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value());
-        using var combo = ImRaii.Combo("##optionSelector", _editor.Option.FullName);
+        using var combo = ImRaii.Combo("##optionSelector", _editor.Option!.GetFullName());
         if (!combo)
             return ret;
 
-        foreach (var (option, idx) in Mod!.AllSubMods.WithIndex())
+        foreach (var (option, idx) in Mod!.AllDataContainers.WithIndex())
         {
             using var id = ImRaii.PushId(idx);
-            if (ImGui.Selectable(option.FullName, option == _editor.Option))
+            if (ImGui.Selectable(option.GetFullName(), option == _editor.Option))
             {
-                var (groupIdx, optionIdx) = option.GetIndices();
-                _editor.LoadOption(groupIdx, optionIdx);
+                var (groupIdx, dataIdx) = option.GetDataIndices();
+                _editor.LoadOption(groupIdx, dataIdx);
                 ret = true;
             }
         }
@@ -455,7 +455,7 @@ public partial class ModEditWindow : Window, IDisposable
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
         ImGui.NewLine();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
-            _editor.SwapEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
+            _editor.SwapEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
 
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
@@ -569,7 +569,7 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         if (Mod != null)
-            foreach (var option in Mod.AllSubMods)
+            foreach (var option in Mod.AllDataContainers)
             {
                 foreach (var path in option.Files.Keys)
                 {

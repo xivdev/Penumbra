@@ -201,7 +201,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             {
                 foreach (var name in optionNames)
                 {
-                    var optionIdx = multi.PrioritizedOptions.IndexOf(o => o.Mod.Name == name);
+                    var optionIdx = multi.OptionData.IndexOf(o => o.Mod.Name == name);
                     if (optionIdx < 0)
                         return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 

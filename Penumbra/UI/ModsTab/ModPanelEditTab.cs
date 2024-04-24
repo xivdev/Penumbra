@@ -486,7 +486,7 @@ public class ModPanelEditTab(
                         EditOption(panel, single, groupIdx, optionIdx);
                     break;
                 case MultiModGroup multi:
-                    for (var optionIdx = 0; optionIdx < multi.PrioritizedOptions.Count; ++optionIdx)
+                    for (var optionIdx = 0; optionIdx < multi.OptionData.Count; ++optionIdx)
                         EditOption(panel, multi, groupIdx, optionIdx);
                     break;
             }
@@ -542,7 +542,7 @@ public class ModPanelEditTab(
             if (group is not MultiModGroup multi)
                 return;
 
-            if (Input.Priority("##Priority", groupIdx, optionIdx, multi.PrioritizedOptions[optionIdx].Priority, out var priority,
+            if (Input.Priority("##Priority", groupIdx, optionIdx, multi.OptionData[optionIdx].Priority, out var priority,
                     50 * UiHelpers.Scale))
                 panel._modManager.OptionEditor.ChangeOptionPriority(panel._mod, groupIdx, optionIdx, priority);
 
@@ -557,7 +557,7 @@ public class ModPanelEditTab(
             var count = group switch
             {
                 SingleModGroup single => single.OptionData.Count,
-                MultiModGroup multi => multi.PrioritizedOptions.Count,
+                MultiModGroup multi => multi.OptionData.Count,
                 _ => throw new Exception($"Dragging options to an option group of type {group.GetType()} is not supported."),
             };
             ImGui.TableNextColumn();
@@ -591,6 +591,9 @@ public class ModPanelEditTab(
         // Handle drag and drop to move options inside a group or into another group.
         private static void Source(IModGroup group, int groupIdx, int optionIdx)
         {
+            if (group is not ITexToolsGroup)
+                return;
+
             using var source = ImRaii.DragDropSource();
             if (!source)
                 return;
@@ -606,6 +609,9 @@ public class ModPanelEditTab(
 
         private static void Target(ModPanelEditTab panel, IModGroup group, int groupIdx, int optionIdx)
         {
+            if (group is not ITexToolsGroup)
+                return;
+
             using var target = ImRaii.DragDropTarget();
             if (!target.Success || !ImGuiUtil.IsDropping(DragDropLabel))
                 return;
@@ -624,22 +630,12 @@ public class ModPanelEditTab(
                     var sourceGroupIdx = _dragDropGroupIdx;
                     var sourceOption   = _dragDropOptionIdx;
                     var sourceGroup    = panel._mod.Groups[sourceGroupIdx];
-                    var currentCount = group switch
-                    {
-                        SingleModGroup single => single.OptionData.Count,
-                        MultiModGroup multi => multi.PrioritizedOptions.Count,
-                        _ => throw new Exception($"Dragging options to an option group of type {group.GetType()} is not supported."),
-                    };
-                    var (option, priority) = sourceGroup switch
-                    {
-                        SingleModGroup single => (single.OptionData[_dragDropOptionIdx], ModPriority.Default),
-                        MultiModGroup multi => multi.PrioritizedOptions[_dragDropOptionIdx],
-                        _ => throw new Exception($"Dragging options from an option group of type {sourceGroup.GetType()} is not supported."),
-                    };
+                    var currentCount   = group.DataContainers.Count;
+                    var option         = ((ITexToolsGroup) sourceGroup).OptionData[_dragDropOptionIdx];
                     panel._delayedActions.Enqueue(() =>
                     {
                         panel._modManager.OptionEditor.DeleteOption(panel._mod, sourceGroupIdx, sourceOption);
-                        panel._modManager.OptionEditor.AddOption(panel._mod, groupIdx, option, priority);
+                        panel._modManager.OptionEditor.AddOption(panel._mod, groupIdx, option);
                         panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, currentCount, optionIdx);
                     });
                 }

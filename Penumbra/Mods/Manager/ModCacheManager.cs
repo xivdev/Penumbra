@@ -176,13 +176,13 @@ public class ModCacheManager : IDisposable
     }
 
     private static void UpdateFileCount(Mod mod)
-        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count);
+        => mod.TotalFileCount = mod.AllDataContainers.Sum(s => s.Files.Count);
 
     private static void UpdateSwapCount(Mod mod)
-        => mod.TotalSwapCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count);
+        => mod.TotalSwapCount = mod.AllDataContainers.Sum(s => s.FileSwaps.Count);
 
     private static void UpdateMetaCount(Mod mod)
-        => mod.TotalManipulations = mod.AllSubMods.Sum(s => s.Manipulations.Count);
+        => mod.TotalManipulations = mod.AllDataContainers.Sum(s => s.Manipulations.Count);
 
     private static void UpdateHasOptions(Mod mod)
         => mod.HasOptions = mod.Groups.Any(o => o.IsOption);
@@ -194,10 +194,10 @@ public class ModCacheManager : IDisposable
     {
         var changedItems = (SortedList<string, object?>)mod.ChangedItems;
         changedItems.Clear();
-        foreach (var gamePath in mod.AllSubMods.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
+        foreach (var gamePath in mod.AllDataContainers.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
             _identifier.Identify(changedItems, gamePath.ToString());
 
-        foreach (var manip in mod.AllSubMods.SelectMany(m => m.Manipulations))
+        foreach (var manip in mod.AllDataContainers.SelectMany(m => m.Manipulations))
             ComputeChangedItems(_identifier, changedItems, manip);
 
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
@@ -211,20 +211,11 @@ public class ModCacheManager : IDisposable
         mod.HasOptions         = false;
         foreach (var group in mod.Groups)
         {
-            mod.HasOptions |= group.IsOption;
-            var optionEnumerator = group switch
-            {
-                SingleModGroup single => single.OptionData,
-                MultiModGroup multi   => multi.PrioritizedOptions.Select(o => o.Mod),
-                _                     => [],
-            };
-
-            foreach (var s in optionEnumerator)
-            {
-                mod.TotalFileCount     += s.Files.Count;
-                mod.TotalSwapCount     += s.FileSwaps.Count;
-                mod.TotalManipulations += s.Manipulations.Count;
-            }
+            mod.HasOptions             |= group.IsOption;
+            var (files, swaps, manips) =  group.GetCounts();
+            mod.TotalFileCount         += files;
+            mod.TotalSwapCount         += swaps;
+            mod.TotalManipulations     += manips;
         }
     }
 

@@ -50,8 +50,7 @@ public class ModMergeTab(ModMerger modMerger)
         ImGui.SameLine();
         DrawCombo(size - ImGui.GetItemRectSize().X - ImGui.GetStyle().ItemSpacing.X);
 
-        var width = ImGui.GetItemRectSize();
-        using (var g = ImRaii.Group())
+        using (ImRaii.Group())
         {
             using var disabled    = ImRaii.Disabled(modMerger.MergeFromMod.HasOptions);
             var       buttonWidth = (size - ImGui.GetStyle().ItemSpacing.X) / 2;
@@ -124,13 +123,13 @@ public class ModMergeTab(ModMerger modMerger)
         ImGui.Dummy(Vector2.One);
         var buttonSize = new Vector2((size - 2 * ImGui.GetStyle().ItemSpacing.X) / 3, 0);
         if (ImGui.Button("Select All", buttonSize))
-            modMerger.SelectedOptions.UnionWith(modMerger.MergeFromMod!.AllSubMods);
+            modMerger.SelectedOptions.UnionWith(modMerger.MergeFromMod!.AllDataContainers);
         ImGui.SameLine();
         if (ImGui.Button("Unselect All", buttonSize))
             modMerger.SelectedOptions.Clear();
         ImGui.SameLine();
         if (ImGui.Button("Invert Selection", buttonSize))
-            modMerger.SelectedOptions.SymmetricExceptWith(modMerger.MergeFromMod!.AllSubMods);
+            modMerger.SelectedOptions.SymmetricExceptWith(modMerger.MergeFromMod!.AllDataContainers);
         DrawOptionTable(size);
     }
 
@@ -144,7 +143,7 @@ public class ModMergeTab(ModMerger modMerger)
 
     private void DrawOptionTable(float size)
     {
-        var options = modMerger.MergeFromMod!.AllSubMods.ToList();
+        var options = modMerger.MergeFromMod!.AllDataContainers.ToList();
         var height = modMerger.Warnings.Count == 0 && modMerger.Error == null
             ? ImGui.GetContentRegionAvail().Y - 3 * ImGui.GetFrameHeightWithSpacing()
             : 8 * ImGui.GetFrameHeightWithSpacing();
@@ -176,47 +175,41 @@ public class ModMergeTab(ModMerger modMerger)
             if (ImGui.Checkbox("##check", ref selected))
                 Handle(option, selected);
 
-            if (option.IsDefault)
+            if (option.Group is not { } group)
             {
-                ImGuiUtil.DrawTableColumn(option.FullName);
+                ImGuiUtil.DrawTableColumn(option.GetFullName());
                 ImGui.TableNextColumn();
             }
             else
             {
-                ImGuiUtil.DrawTableColumn(option.Name);
-                var group = option.Group;
-                var optionEnumerator = group switch
-                {
-                    SingleModGroup single => single.OptionData,
-                    MultiModGroup multi   => multi.PrioritizedOptions.Select(o => o.Mod),
-                    _                     => [],
-                };
+                ImGuiUtil.DrawTableColumn(option.GetName());
+                
                 ImGui.TableNextColumn();
                 ImGui.Selectable(group.Name, false);
                 if (ImGui.BeginPopupContextItem("##groupContext"))
                 {
                     if (ImGui.MenuItem("Select All"))
                         // ReSharper disable once PossibleMultipleEnumeration
-                        foreach (var opt in optionEnumerator)
+                        foreach (var opt in group.DataContainers)
                             Handle(opt, true);
 
                     if (ImGui.MenuItem("Unselect All"))
                         // ReSharper disable once PossibleMultipleEnumeration
-                        foreach (var opt in optionEnumerator)
+                        foreach (var opt in group.DataContainers)
                             Handle(opt, false);
                     ImGui.EndPopup();
                 }
             }
 
             ImGui.TableNextColumn();
-            ImGuiUtil.RightAlign(option.FileData.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
+            ImGuiUtil.RightAlign(option.Files.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
             ImGui.TableNextColumn();
-            ImGuiUtil.RightAlign(option.FileSwapData.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
+            ImGuiUtil.RightAlign(option.FileSwaps.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
             ImGui.TableNextColumn();
             ImGuiUtil.RightAlign(option.Manipulations.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
             continue;
 
-            void Handle(SubMod option2, bool selected2)
+            void Handle(IModDataContainer option2, bool selected2)
             {
                 if (selected2)
                     modMerger.SelectedOptions.Add(option2);

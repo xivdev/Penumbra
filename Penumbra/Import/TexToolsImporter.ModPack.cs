@@ -152,7 +152,7 @@ public partial class TexToolsImporter
         }
 
         // Iterate through all pages
-        var options       = new List<SubMod>();
+        var options       = new List<MultiSubMod>();
         var groupPriority = ModPriority.Default;
         var groupNames    = new HashSet<string>();
         foreach (var page in modList.ModPackPages)
@@ -183,7 +183,7 @@ public partial class TexToolsImporter
                         var optionFolder = ModCreator.NewSubFolderName(groupFolder, option.Name, _config.ReplaceNonAsciiOnImport)
                          ?? new DirectoryInfo(Path.Combine(groupFolder.FullName, $"Option {i + optionIdx + 1}"));
                         ExtractSimpleModList(optionFolder, option.ModsJsons);
-                        options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option));
+                        options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option, new ModPriority(i)));
                         if (option.IsChecked)
                             defaultSettings = group.SelectionType == GroupType.Multi
                                 ? defaultSettings!.Value | Setting.Multi(i)
@@ -203,7 +203,7 @@ public partial class TexToolsImporter
                         {
                             var option = group.OptionList[idx];
                             _currentOptionName = option.Name;
-                            options.Insert(idx, SubMod.CreateForSaving(option.Name));
+                            options.Insert(idx, MultiSubMod.CreateForSaving(option.Name, option.Description, ModPriority.Default));
                             if (option.IsChecked)
                                 defaultSettings = Setting.Single(idx);
                         }

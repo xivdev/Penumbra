@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
@@ -168,27 +169,11 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
             foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
             {
                 var groupDir = ModCreator.CreateModFolder(directory, group.Name, _config.ReplaceNonAsciiOnImport, true);
-                switch (group)
-                {
-                    case SingleModGroup single:
-                        _redirections[groupIdx + 1].EnsureCapacity(single.OptionData.Count);
-                        for (var i = _redirections[groupIdx + 1].Count; i < single.OptionData.Count; ++i)
-                            _redirections[groupIdx + 1].Add([]);
-
-                        foreach (var (option, optionIdx) in single.OptionData.WithIndex())
-                            HandleSubMod(groupDir, option, _redirections[groupIdx + 1][optionIdx]);
-
-                        break;
-                    case MultiModGroup multi:
-                        _redirections[groupIdx + 1].EnsureCapacity(multi.PrioritizedOptions.Count);
-                        for (var i = _redirections[groupIdx + 1].Count; i < multi.PrioritizedOptions.Count; ++i)
-                            _redirections[groupIdx + 1].Add([]);
-
-                        foreach (var ((option, _), optionIdx) in multi.PrioritizedOptions.WithIndex())
-                            HandleSubMod(groupDir, option, _redirections[groupIdx + 1][optionIdx]);
-
-                        break;
-                }
+                _redirections[groupIdx + 1].EnsureCapacity(group.DataContainers.Count);
+                for (var i = _redirections[groupIdx + 1].Count; i < group.DataContainers.Count; ++i)
+                    _redirections[groupIdx + 1].Add([]);
+                foreach (var (data, dataIdx) in group.DataContainers.WithIndex())
+                    HandleSubMod(groupDir, data, _redirections[groupIdx + 1][dataIdx]);
             }
 
             return true;
@@ -200,13 +185,14 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
 
         return false;
 
-        void HandleSubMod(DirectoryInfo groupDir, SubMod option, Dictionary<Utf8GamePath, FullPath> newDict)
+        void HandleSubMod(DirectoryInfo groupDir, IModDataContainer option, Dictionary<Utf8GamePath, FullPath> newDict)
         {
-            var optionDir = ModCreator.CreateModFolder(groupDir, option.Name, _config.ReplaceNonAsciiOnImport, true);
+            var name      = option.GetName();
+            var optionDir = ModCreator.CreateModFolder(groupDir, name, _config.ReplaceNonAsciiOnImport, true);
 
             newDict.Clear();
-            newDict.EnsureCapacity(option.FileData.Count);
-            foreach (var (gamePath, fullPath) in option.FileData)
+            newDict.EnsureCapacity(option.Files.Count);
+            foreach (var (gamePath, fullPath) in option.Files)
             {
                 var relPath      = new Utf8RelPath(gamePath).ToString();
                 var newFullPath  = Path.Combine(optionDir.FullName, relPath);
@@ -300,7 +286,7 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
                         _modManager.OptionEditor.OptionSetFiles(Mod, groupIdx, optionIdx, _redirections[groupIdx + 1][optionIdx]);
                     break;
                 case MultiModGroup multi:
-                    foreach (var (_, optionIdx) in multi.PrioritizedOptions.WithIndex())
+                    foreach (var (_, optionIdx) in multi.OptionData.WithIndex())
                         _modManager.OptionEditor.OptionSetFiles(Mod, groupIdx, optionIdx, _redirections[groupIdx + 1][optionIdx]);
                     break;
             }

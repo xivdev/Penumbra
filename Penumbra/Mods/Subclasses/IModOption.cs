@@ -15,6 +15,8 @@ public interface IModOption
         option.Description = json[nameof(Description)]?.ToObject<string>() ?? string.Empty;
     }
 
+    public (int GroupIndex, int OptionIndex) GetOptionIndices();
+
     public static void WriteModOption(JsonWriter j, IModOption option)
     {
         j.WritePropertyName(nameof(Name));

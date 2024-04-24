@@ -71,14 +71,14 @@ public static partial class ModMigration
         foreach (var unusedFile in mod.FindUnusedFiles().Where(f => !seenMetaFiles.Contains(f)))
         {
             if (unusedFile.ToGamePath(mod.ModPath, out var gamePath)
-             && !mod.Default.FileData.TryAdd(gamePath, unusedFile))
-                Penumbra.Log.Error($"Could not add {gamePath} because it already points to {mod.Default.FileData[gamePath]}.");
+             && !mod.Default.Files.TryAdd(gamePath, unusedFile))
+                Penumbra.Log.Error($"Could not add {gamePath} because it already points to {mod.Default.Files[gamePath]}.");
         }
 
-        mod.Default.FileSwapData.Clear();
-        mod.Default.FileSwapData.EnsureCapacity(swaps.Count);
+        mod.Default.FileSwaps.Clear();
+        mod.Default.FileSwaps.EnsureCapacity(swaps.Count);
         foreach (var (gamePath, swapPath) in swaps)
-            mod.Default.FileSwapData.Add(gamePath, swapPath);
+            mod.Default.FileSwaps.Add(gamePath, swapPath);
 
         creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true);
         foreach (var (_, index) in mod.Groups.WithIndex())
@@ -134,7 +134,7 @@ public static partial class ModMigration
                 };
                 mod.Groups.Add(newMultiGroup);
                 foreach (var option in group.Options)
-                    newMultiGroup.PrioritizedOptions.Add((SubModFromOption(creator, mod, newMultiGroup, option, seenMetaFiles), optionPriority++));
+                    newMultiGroup.OptionData.Add(SubModFromOption(creator, mod, newMultiGroup, option, optionPriority++, seenMetaFiles));
 
                 break;
             case GroupType.Single:
@@ -158,22 +158,41 @@ public static partial class ModMigration
         }
     }
 
-    private static void AddFilesToSubMod(SubMod mod, DirectoryInfo basePath, OptionV0 option, HashSet<FullPath> seenMetaFiles)
+    private static void AddFilesToSubMod(IModDataContainer mod, DirectoryInfo basePath, OptionV0 option, HashSet<FullPath> seenMetaFiles)
     {
         foreach (var (relPath, gamePaths) in option.OptionFiles)
         {
             var fullPath = new FullPath(basePath, relPath);
             foreach (var gamePath in gamePaths)
-                mod.FileData.TryAdd(gamePath, fullPath);
+                mod.Files.TryAdd(gamePath, fullPath);
 
             if (fullPath.Extension is ".meta" or ".rgsp")
                 seenMetaFiles.Add(fullPath);
         }
     }
 
-    private static SubMod SubModFromOption(ModCreator creator, Mod mod, IModGroup group, OptionV0 option, HashSet<FullPath> seenMetaFiles)
+    private static SingleSubMod SubModFromOption(ModCreator creator, Mod mod, SingleModGroup group, OptionV0 option,
+        HashSet<FullPath> seenMetaFiles)
     {
-        var subMod = new SubMod(mod, group) { Name = option.OptionName };
+        var subMod = new SingleSubMod(mod, group)
+        {
+            Name        = option.OptionName,
+            Description = option.OptionDesc,
+        };
+        AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
+        return subMod;
+    }
+
+    private static MultiSubMod SubModFromOption(ModCreator creator, Mod mod, MultiModGroup group, OptionV0 option,
+        ModPriority priority, HashSet<FullPath> seenMetaFiles)
+    {
+        var subMod = new MultiSubMod(mod, group)
+        {
+            Name        = option.OptionName,
+            Description = option.OptionDesc,
+            Priority    = priority,
+        };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
         creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
         return subMod;

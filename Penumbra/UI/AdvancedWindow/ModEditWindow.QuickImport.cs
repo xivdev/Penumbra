@@ -187,8 +187,8 @@ public partial class ModEditWindow
             if (editor == null)
                 return new QuickImportAction(owner._editor, FallbackOptionName, gamePath);
 
-            var subMod     = editor.Option;
-            var optionName = subMod!.FullName;
+            var subMod     = editor.Option!;
+            var optionName = subMod is IModOption o ? o.FullName : FallbackOptionName;
             if (gamePath.IsEmpty || file == null || editor.FileEditor.Changes)
                 return new QuickImportAction(editor, optionName, gamePath);
 
@@ -199,7 +199,7 @@ public partial class ModEditWindow
             if (mod == null)
                 return new QuickImportAction(editor, optionName, gamePath);
 
-            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod, owner._config.ReplaceNonAsciiOnImport);
+            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod as IModOption, owner._config.ReplaceNonAsciiOnImport);
             var targetPath = new FullPath(Path.Combine(preferredPath.FullName, gamePath.ToString())).FullName;
             if (File.Exists(targetPath))
                 return new QuickImportAction(editor, optionName, gamePath);
@@ -222,16 +222,16 @@ public partial class ModEditWindow
             {
                 fileRegistry,
             }, _subDirs);
-            _editor.FileEditor.Apply(_editor.Mod!, (SubMod)_editor.Option!);
+            _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
 
             return fileRegistry;
         }
 
-        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, SubMod subMod, bool replaceNonAscii)
+        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, IModOption? subMod, bool replaceNonAscii)
         {
             var path    = mod.ModPath;
             var subDirs = 0;
-            if (subMod == mod.Default)
+            if (subMod == null)
                 return (path, subDirs);
 
             var name     = subMod.Name;

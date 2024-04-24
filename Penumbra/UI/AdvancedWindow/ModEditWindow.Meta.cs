@@ -45,7 +45,7 @@ public partial class ModEditWindow
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
         ImGui.NewLine();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
-            _editor.MetaEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
+            _editor.MetaEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
 
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
