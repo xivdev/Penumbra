@@ -21,7 +21,7 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;

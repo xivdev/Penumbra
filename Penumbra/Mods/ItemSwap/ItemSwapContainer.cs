@@ -7,7 +7,7 @@ using Penumbra.String.Classes;
 using Penumbra.Meta;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Mods.ItemSwap;
 

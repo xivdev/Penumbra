@@ -5,7 +5,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Interop;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Api.Api;

@@ -13,9 +13,10 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 

@@ -3,7 +3,9 @@ using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Util;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 

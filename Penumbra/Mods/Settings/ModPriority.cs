@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Penumbra.Mods.Subclasses;
+namespace Penumbra.Mods.Settings;
 
 [JsonConverter(typeof(Converter))]
 public readonly record struct ModPriority(int Value) :

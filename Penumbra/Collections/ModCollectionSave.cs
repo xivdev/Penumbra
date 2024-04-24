@@ -2,7 +2,7 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Services;
 using Newtonsoft.Json;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Collections;
 

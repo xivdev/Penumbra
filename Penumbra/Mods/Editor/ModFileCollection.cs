@@ -1,5 +1,5 @@
 using OtterGui;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;

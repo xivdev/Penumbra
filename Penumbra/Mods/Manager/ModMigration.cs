@@ -2,7 +2,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Api.Enums;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 

@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using OtterGui;
 
-namespace Penumbra.Mods.Subclasses;
+namespace Penumbra.Mods.Settings;
 
 [JsonConverter(typeof(Converter))]
 public readonly record struct Setting(ulong Value)

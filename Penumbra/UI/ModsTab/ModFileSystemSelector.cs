@@ -14,7 +14,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using MessageService = Penumbra.Services.MessageService;

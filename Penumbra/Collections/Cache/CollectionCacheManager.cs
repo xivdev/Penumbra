@@ -8,7 +8,7 @@ using Penumbra.Interop.ResourceLoading;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 

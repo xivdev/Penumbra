@@ -11,7 +11,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
 using Penumbra.Services;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 

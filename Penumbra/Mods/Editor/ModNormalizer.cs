@@ -3,8 +3,9 @@ using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Tasks;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;

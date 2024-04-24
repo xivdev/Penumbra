@@ -9,8 +9,10 @@ using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 

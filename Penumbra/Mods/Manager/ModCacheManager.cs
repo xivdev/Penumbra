@@ -2,7 +2,6 @@ using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;

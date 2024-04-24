@@ -1,7 +1,7 @@
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 
 namespace Penumbra.Collections;

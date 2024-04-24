@@ -6,7 +6,7 @@ using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Api;
 

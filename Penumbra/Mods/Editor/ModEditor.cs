@@ -1,6 +1,7 @@
 using OtterGui;
 using OtterGui.Compression;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Editor;
 

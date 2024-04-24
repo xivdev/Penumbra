@@ -8,8 +8,10 @@ using Penumbra.UI.Classes;
 using Dalamud.Interface.Components;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
+using Penumbra.Mods.SubMods;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.UI.ModsTab;
 

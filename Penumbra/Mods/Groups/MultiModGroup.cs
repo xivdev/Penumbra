@@ -6,9 +6,11 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Mods.Subclasses;
+namespace Penumbra.Mods.Groups;
 
 /// <summary> Groups that allow all available options to be selected at once. </summary>
 public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
@@ -16,11 +18,11 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupType Type
         => GroupType.Multi;
 
-    public          Mod               Mod             { get; set; } = mod;
-    public          string            Name            { get; set; } = "Group";
-    public          string            Description     { get; set; } = "A non-exclusive group of settings.";
-    public          ModPriority       Priority        { get; set; }
-    public          Setting           DefaultSettings { get; set; }
+    public Mod Mod { get; set; } = mod;
+    public string Name { get; set; } = "Group";
+    public string Description { get; set; } = "A non-exclusive group of settings.";
+    public ModPriority Priority { get; set; }
+    public Setting DefaultSettings { get; set; }
     public readonly List<MultiSubMod> OptionData = [];
 
     public IReadOnlyList<IModOption> Options
@@ -45,7 +47,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
         var subMod = new MultiSubMod(mod, this)
         {
-            Name        = name,
+            Name = name,
             Description = description,
         };
         OptionData.Add(subMod);
@@ -56,9 +58,9 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     {
         var ret = new MultiModGroup(mod)
         {
-            Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
-            Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
+            Name = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
+            Description = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
+            Priority = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
@@ -93,9 +95,9 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
             case GroupType.Single:
                 var single = new SingleModGroup(Mod)
                 {
-                    Name            = Name,
-                    Description     = Description,
-                    Priority        = Priority,
+                    Name = Name,
+                    Description = Description,
+                    Priority = Priority,
                     DefaultSettings = DefaultSettings.TurnMulti(OptionData.Count),
                 };
                 single.OptionData.AddRange(OptionData.Select(o => o.ConvertToSingle(Mod, single)));
@@ -152,7 +154,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => IModGroup.GetCountsBase(this);
 
     public Setting FixSetting(Setting setting)
-        => new(setting.Value & ((1ul << OptionData.Count) - 1));
+        => new(setting.Value & (1ul << OptionData.Count) - 1);
 
     /// <summary> Create a group without a mod only for saving it in the creator. </summary>
     internal static MultiModGroup CreateForSaving(string name)

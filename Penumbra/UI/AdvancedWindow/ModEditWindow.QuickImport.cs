@@ -8,7 +8,7 @@ using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;

@@ -8,8 +8,9 @@ using Penumbra.Communication;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 
 namespace Penumbra.Api.Api;

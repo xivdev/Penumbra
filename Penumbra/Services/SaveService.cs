@@ -2,7 +2,7 @@ using OtterGui.Classes;
 using OtterGui.Log;
 using OtterGui.Services;
 using Penumbra.Mods;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
 
 namespace Penumbra.Services;
 

@@ -4,7 +4,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;

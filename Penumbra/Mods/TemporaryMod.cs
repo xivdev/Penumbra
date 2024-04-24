@@ -2,8 +2,10 @@ using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -46,7 +48,7 @@ public class TemporaryMod : IMod
         => Array.Empty<IModGroup>();
 
     public TemporaryMod()
-        => Default = new(this);
+        => Default = new DefaultSubMod(this);
 
     public void SetFile(Utf8GamePath gamePath, FullPath fullPath)
         => Default.Files[gamePath] = fullPath;

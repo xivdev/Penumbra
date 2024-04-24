@@ -4,7 +4,7 @@ using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Communication;
 

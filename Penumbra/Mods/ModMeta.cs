@@ -4,31 +4,27 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods;
 
-public readonly struct ModMeta : ISavable
+public readonly struct ModMeta(Mod mod) : ISavable
 {
     public const uint FileVersion = 3;
 
-    private readonly Mod _mod;
-
-    public ModMeta(Mod mod)
-        => _mod = mod;
-
     public string ToFilename(FilenameService fileNames)
-        => fileNames.ModMetaPath(_mod);
+        => fileNames.ModMetaPath(mod);
 
     public void Save(StreamWriter writer)
     {
         var jObject = new JObject
         {
             { nameof(FileVersion), JToken.FromObject(FileVersion) },
-            { nameof(Mod.Name), JToken.FromObject(_mod.Name) },
-            { nameof(Mod.Author), JToken.FromObject(_mod.Author) },
-            { nameof(Mod.Description), JToken.FromObject(_mod.Description) },
-            { nameof(Mod.Version), JToken.FromObject(_mod.Version) },
-            { nameof(Mod.Website), JToken.FromObject(_mod.Website) },
-            { nameof(Mod.ModTags), JToken.FromObject(_mod.ModTags) },
+            { nameof(Mod.Name), JToken.FromObject(mod.Name) },
+            { nameof(Mod.Author), JToken.FromObject(mod.Author) },
+            { nameof(Mod.Description), JToken.FromObject(mod.Description) },
+            { nameof(Mod.Version), JToken.FromObject(mod.Version) },
+            { nameof(Mod.Website), JToken.FromObject(mod.Website) },
+            { nameof(Mod.ModTags), JToken.FromObject(mod.ModTags) },
         };
-        using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        using var jWriter = new JsonTextWriter(writer);
+        jWriter.Formatting = Formatting.Indented;
         jObject.WriteTo(jWriter);
     }
 }

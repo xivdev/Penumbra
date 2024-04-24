@@ -4,7 +4,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Mods.Editor;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 

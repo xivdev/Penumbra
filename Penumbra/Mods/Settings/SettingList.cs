@@ -1,4 +1,4 @@
-namespace Penumbra.Mods.Subclasses;
+namespace Penumbra.Mods.Settings;
 
 public class SettingList : List<Setting>
 {

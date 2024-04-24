@@ -4,9 +4,11 @@ using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Mods.Subclasses;
+namespace Penumbra.Mods.Groups;
 
 /// <summary> Groups that allow only one of their available options to be selected. </summary>
 public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
@@ -14,11 +16,11 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupType Type
         => GroupType.Single;
 
-    public Mod         Mod             { get; set; } = mod;
-    public string      Name            { get; set; } = "Option";
-    public string      Description     { get; set; } = "A mutually exclusive group of settings.";
-    public ModPriority Priority        { get; set; }
-    public Setting     DefaultSettings { get; set; }
+    public Mod Mod { get; set; } = mod;
+    public string Name { get; set; } = "Option";
+    public string Description { get; set; } = "A mutually exclusive group of settings.";
+    public ModPriority Priority { get; set; }
+    public Setting DefaultSettings { get; set; }
 
     public readonly List<SingleSubMod> OptionData = [];
 
@@ -34,7 +36,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     {
         var subMod = new SingleSubMod(mod, this)
         {
-            Name        = name,
+            Name = name,
             Description = description,
         };
         OptionData.Add(subMod);
@@ -55,9 +57,9 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         var options = json["Options"];
         var ret = new SingleModGroup(mod)
         {
-            Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
-            Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
+            Name = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
+            Description = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
+            Priority = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
@@ -82,9 +84,9 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
             case GroupType.Multi:
                 var multi = new MultiModGroup(Mod)
                 {
-                    Name            = Name,
-                    Description     = Description,
-                    Priority        = Priority,
+                    Name = Name,
+                    Description = Description,
+                    Priority = Priority,
                     DefaultSettings = Setting.Multi((int)DefaultSettings.Value),
                 };
                 multi.OptionData.AddRange(OptionData.Select((o, i) => o.ConvertToMulti(Mod, multi, new ModPriority(i))));

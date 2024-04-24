@@ -1,6 +1,6 @@
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Editor;
 

@@ -10,7 +10,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
