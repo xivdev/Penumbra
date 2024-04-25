@@ -15,24 +15,7 @@ public interface IModDataContainer
     public Dictionary<Utf8GamePath, FullPath> FileSwaps { get; set; }
     public HashSet<MetaManipulation> Manipulations { get; set; }
 
-    public string GetName()
-        => this switch
-        {
-            IModOption o  => o.FullName,
-            DefaultSubMod => DefaultSubMod.FullName,
-            _             => $"Container {GetDataIndices().DataIndex + 1}",
-        };
-
-    public string GetFullName()
-        => this switch
-        {
-            IModOption o         => o.FullName,
-            DefaultSubMod        => DefaultSubMod.FullName,
-            _ when Group != null => $"{Group.Name}: Container {GetDataIndices().DataIndex + 1}",
-            _                    => $"Container {GetDataIndices().DataIndex + 1}",
-        };
-
+    public string GetName();
+    public string GetFullName();
     public (int GroupIndex, int DataIndex) GetDataIndices();
 }
-
-public interface IModDataOption : IModOption, IModDataContainer;

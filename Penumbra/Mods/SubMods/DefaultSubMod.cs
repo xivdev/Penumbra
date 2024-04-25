@@ -1,4 +1,3 @@
-using Newtonsoft.Json.Linq;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
@@ -24,6 +23,12 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
 
     public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
         => SubModHelpers.AddContainerTo(this, redirections, manipulations);
+
+    public string GetName()
+        => FullName;
+
+    public string GetFullName()
+        => FullName;
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
         => (-1, 0);
