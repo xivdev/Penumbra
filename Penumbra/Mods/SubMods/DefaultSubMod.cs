@@ -22,8 +22,8 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
     IModGroup? IModDataContainer.Group
         => null;
 
-    public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => IModDataContainer.AddDataTo(this, redirections, manipulations);
+    public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+        => SubModHelpers.AddContainerTo(this, redirections, manipulations);
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
         => (-1, 0);

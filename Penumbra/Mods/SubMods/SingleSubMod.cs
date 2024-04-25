@@ -33,8 +33,8 @@ public class SingleSubMod(Mod mod, SingleModGroup group) : IModDataOption
     public SingleSubMod(Mod mod, SingleModGroup group, JToken json)
         : this(mod, group)
     {
-        IModOption.Load(json, this);
-        IModDataContainer.Load(json, this, mod.ModPath);
+        SubModHelpers.LoadOptionData(json, this);
+        SubModHelpers.LoadDataContainer(json, this, mod.ModPath);
     }
 
     public SingleSubMod Clone(Mod mod, SingleModGroup group)
@@ -44,7 +44,7 @@ public class SingleSubMod(Mod mod, SingleModGroup group) : IModDataOption
             Name = Name,
             Description = Description,
         };
-        IModDataContainer.Clone(this, ret);
+        SubModHelpers.Clone(this, ret);
 
         return ret;
     }
@@ -57,13 +57,13 @@ public class SingleSubMod(Mod mod, SingleModGroup group) : IModDataOption
             Description = Description,
             Priority = priority,
         };
-        IModDataContainer.Clone(this, ret);
+        SubModHelpers.Clone(this, ret);
 
         return ret;
     }
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => IModDataContainer.AddDataTo(this, redirections, manipulations);
+        => SubModHelpers.AddContainerTo(this, redirections, manipulations);
 
     public (int GroupIndex, int DataIndex) GetDataIndices()
         => (Group.GetIndex(), GetDataIndex());

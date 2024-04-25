@@ -35,8 +35,8 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : IModDataOption
     public MultiSubMod(Mod mod, MultiModGroup group, JToken json)
         : this(mod, group)
     {
-        IModOption.Load(json, this);
-        IModDataContainer.Load(json, this, mod.ModPath);
+        SubModHelpers.LoadOptionData(json, this);
+        SubModHelpers.LoadDataContainer(json, this, mod.ModPath);
         Priority = json[nameof(IModGroup.Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default;
     }
 
@@ -48,7 +48,7 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : IModDataOption
             Description = Description,
             Priority = Priority,
         };
-        IModDataContainer.Clone(this, ret);
+        SubModHelpers.Clone(this, ret);
 
         return ret;
     }
@@ -60,12 +60,12 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : IModDataOption
             Name = Name,
             Description = Description,
         };
-        IModDataContainer.Clone(this, ret);
+        SubModHelpers.Clone(this, ret);
         return ret;
     }
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => IModDataContainer.AddDataTo(this, redirections, manipulations);
+        => SubModHelpers.AddContainerTo(this, redirections, manipulations);
 
     public static MultiSubMod CreateForSaving(string name, string description, ModPriority priority)
         => new(null!, null!)

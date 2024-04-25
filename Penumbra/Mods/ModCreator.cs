@@ -115,7 +115,7 @@ public partial class ModCreator(
         try
         {
             var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
-            IModDataContainer.Load(jObject, mod.Default, mod.ModPath);
+            SubModHelpers.LoadDataContainer(jObject, mod.Default, mod.ModPath);
         }
         catch (Exception e)
         {
@@ -162,7 +162,7 @@ public partial class ModCreator(
                 deleteList.AddRange(localDeleteList);
         }
 
-        IModDataContainer.DeleteDeleteList(deleteList, delete);
+        DeleteDeleteList(deleteList, delete);
 
         if (!changes)
             return;
@@ -221,7 +221,7 @@ public partial class ModCreator(
             }
         }
 
-        IModDataContainer.DeleteDeleteList(deleteList, delete);
+        DeleteDeleteList(deleteList, delete);
         return (oldSize < option.Manipulations.Count, deleteList);
     }
 
@@ -392,10 +392,8 @@ public partial class ModCreator(
                 Penumbra.Log.Debug($"Writing the first {IModGroup.MaxMultiOptions} options to {Path.GetFileName(oldPath)} after split.");
                 using (var oldFile = File.CreateText(oldPath))
                 {
-                    using var j = new JsonTextWriter(oldFile)
-                    {
-                        Formatting = Formatting.Indented,
-                    };
+                    using var j = new JsonTextWriter(oldFile);
+                    j.Formatting = Formatting.Indented;
                     json.WriteTo(j);
                 }
 
@@ -403,10 +401,8 @@ public partial class ModCreator(
                     $"Writing the remaining {options.Count - IModGroup.MaxMultiOptions} options to {Path.GetFileName(newPath)} after split.");
                 using (var newFile = File.CreateText(newPath))
                 {
-                    using var j = new JsonTextWriter(newFile)
-                    {
-                        Formatting = Formatting.Indented,
-                    };
+                    using var j = new JsonTextWriter(newFile);
+                    j.Formatting = Formatting.Indented;
                     clone.WriteTo(j);
                 }
 
@@ -436,8 +432,8 @@ public partial class ModCreator(
             var json = JObject.Parse(File.ReadAllText(file.FullName));
             switch (json[nameof(Type)]?.ToObject<GroupType>() ?? GroupType.Single)
             {
-                case GroupType.Multi:  return MultiModGroup.Load(mod, json, groupIdx);
-                case GroupType.Single: return SingleModGroup.Load(mod, json, groupIdx);
+                case GroupType.Multi:  return MultiModGroup.Load(mod, json);
+                case GroupType.Single: return SingleModGroup.Load(mod, json);
             }
         }
         catch (Exception e)
@@ -446,5 +442,23 @@ public partial class ModCreator(
         }
 
         return null;
+    }
+
+    internal static void DeleteDeleteList(IEnumerable<string> deleteList, bool delete)
+    {
+        if (!delete)
+            return;
+
+        foreach (var file in deleteList)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not delete incorporated meta file {file}:\n{e}");
+            }
+        }
     }
 }

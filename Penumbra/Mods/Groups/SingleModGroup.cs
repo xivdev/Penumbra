@@ -52,7 +52,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public bool IsOption
         => OptionData.Count > 1;
 
-    public static SingleModGroup? Load(Mod mod, JObject json, int groupIdx)
+    public static SingleModGroup? Load(Mod mod, JObject json)
     {
         var options = json["Options"];
         var ret = new SingleModGroup(mod)
@@ -144,8 +144,8 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         jWriter.WriteStartArray();
         foreach (var option in OptionData)
         {
-            IModOption.WriteModOption(jWriter, option);
-            IModDataContainer.WriteModData(jWriter, serializer, option, basePath ?? Mod.ModPath);
+            SubModHelpers.WriteModOption(jWriter, option);
+            SubModHelpers.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
         }
 
         jWriter.WriteEndArray();

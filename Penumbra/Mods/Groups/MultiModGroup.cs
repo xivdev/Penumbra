@@ -54,7 +54,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         return OptionData.Count - 1;
     }
 
-    public static MultiModGroup? Load(Mod mod, JObject json, int groupIdx)
+    public static MultiModGroup? Load(Mod mod, JObject json)
     {
         var ret = new MultiModGroup(mod)
         {
@@ -140,10 +140,10 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         jWriter.WriteStartArray();
         foreach (var option in OptionData)
         {
-            IModOption.WriteModOption(jWriter, option);
+            SubModHelpers.WriteModOption(jWriter, option);
             jWriter.WritePropertyName(nameof(option.Priority));
             jWriter.WriteValue(option.Priority.Value);
-            IModDataContainer.WriteModData(jWriter, serializer, option, basePath ?? Mod.ModPath);
+            SubModHelpers.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
         }
 
         jWriter.WriteEndArray();

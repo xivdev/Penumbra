@@ -78,7 +78,7 @@ public sealed class Mod : IMod
             group.AddData(config, dictRedirections, setManips);
         }
 
-        Default.AddDataTo(dictRedirections, setManips);
+        Default.AddTo(dictRedirections, setManips);
         return new AppliedModData(dictRedirections, setManips);
     }
 

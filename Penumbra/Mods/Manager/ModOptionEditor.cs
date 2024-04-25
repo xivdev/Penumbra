@@ -251,7 +251,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                     Description = option.Description,
                 };
                 if (option is IModDataContainer data)
-                    IModDataContainer.Clone(data, newOption);
+                    SubModHelpers.Clone(data, newOption);
                 s.OptionData.Add(newOption);
                 break;
             }
@@ -265,7 +265,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                     Priority    = option is MultiSubMod s ? s.Priority : ModPriority.Default,
                 };
                 if (option is IModDataContainer data)
-                    IModDataContainer.Clone(data, newOption);
+                    SubModHelpers.Clone(data, newOption);
                 m.OptionData.Add(newOption);
                 break;
             }
