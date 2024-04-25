@@ -135,15 +135,17 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
     {
-        IModGroup.WriteJsonBase(jWriter, this);
+        ModSaveGroup.WriteJsonBase(jWriter, this);
         jWriter.WritePropertyName("Options");
         jWriter.WriteStartArray();
         foreach (var option in OptionData)
         {
+            jWriter.WriteStartObject();
             SubModHelpers.WriteModOption(jWriter, option);
             jWriter.WritePropertyName(nameof(option.Priority));
             jWriter.WriteValue(option.Priority.Value);
             SubModHelpers.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
+            jWriter.WriteEndObject();
         }
 
         jWriter.WriteEndArray();

@@ -54,4 +54,19 @@ public readonly struct ModSaveGroup : ISavable
             SubModHelpers.WriteModContainer(j, serializer, _defaultMod!, _basePath);
         j.WriteEndObject();
     }
+
+    public static void WriteJsonBase(JsonTextWriter jWriter, IModGroup group)
+    {
+        jWriter.WriteStartObject();
+        jWriter.WritePropertyName(nameof(group.Name));
+        jWriter.WriteValue(group!.Name);
+        jWriter.WritePropertyName(nameof(group.Description));
+        jWriter.WriteValue(group.Description);
+        jWriter.WritePropertyName(nameof(group.Priority));
+        jWriter.WriteValue(group.Priority.Value);
+        jWriter.WritePropertyName(nameof(group.Type));
+        jWriter.WriteValue(group.Type.ToString());
+        jWriter.WritePropertyName(nameof(group.DefaultSettings));
+        jWriter.WriteValue(group.DefaultSettings.Value);
+    }
 }

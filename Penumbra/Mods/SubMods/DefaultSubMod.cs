@@ -11,9 +11,9 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
 
     internal readonly IMod Mod = mod;
 
-    public Dictionary<Utf8GamePath, FullPath> Files { get; set; } = [];
-    public Dictionary<Utf8GamePath, FullPath> FileSwaps { get; set; } = [];
-    public HashSet<MetaManipulation> Manipulations { get; set; } = [];
+    public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
+    public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
+    public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
 
     IMod IModDataContainer.Mod
         => Mod;
