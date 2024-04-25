@@ -1,5 +1,7 @@
 using OtterGui;
 using OtterGui.Classes;
+using Penumbra.Collections.Cache;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
@@ -30,6 +32,9 @@ public sealed class Mod : IMod
     public ModPriority Priority
         => ModPriority.Default;
 
+    IReadOnlyList<IModGroup> IMod.Groups
+        => Groups;
+
     internal Mod(DirectoryInfo modPath)
     {
         ModPath = modPath;
@@ -59,14 +64,25 @@ public sealed class Mod : IMod
     public readonly SubMod          Default;
     public readonly List<IModGroup> Groups = [];
 
-    ISubMod IMod.Default
-        => Default;
+    public AppliedModData GetData(ModSettings? settings = null)
+    {
+        if (settings is not { Enabled: true })
+            return AppliedModData.Empty;
 
-    IReadOnlyList<IModGroup> IMod.Groups
-        => Groups;
+        var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
+        var setManips        = new HashSet<MetaManipulation>(TotalManipulations);
+        foreach (var (group, groupIndex) in Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
+        {
+            var config = settings.Settings[groupIndex];
+            group.AddData(config, dictRedirections, setManips);
+        }
+
+        Default.AddData(dictRedirections, setManips);
+        return new AppliedModData(dictRedirections, setManips);
+    }
 
     public IEnumerable<SubMod> AllSubMods
-        => Groups.SelectMany(o => o).OfType<SubMod>().Prepend(Default);
+        => Groups.SelectMany(o => o).Prepend(Default);
 
     public List<FullPath> FindUnusedFiles()
     {

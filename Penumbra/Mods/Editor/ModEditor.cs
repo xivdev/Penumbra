@@ -29,7 +29,7 @@ public class ModEditor(
     public int  OptionIdx { get; private set; }
 
     public IModGroup? Group  { get; private set; }
-    public ISubMod?   Option { get; private set; }
+    public SubMod?   Option { get; private set; }
 
     public void LoadMod(Mod mod)
         => LoadMod(mod, -1, 0);
@@ -104,7 +104,7 @@ public class ModEditor(
         => Clear();
 
     /// <summary> Apply a option action to all available option in a mod, including the default option. </summary>
-    public static void ApplyToAllOptions(Mod mod, Action<ISubMod, int, int> action)
+    public static void ApplyToAllOptions(Mod mod, Action<SubMod, int, int> action)
     {
         action(mod.Default, -1, 0);
         foreach (var (group, groupIdx) in mod.Groups.WithIndex())

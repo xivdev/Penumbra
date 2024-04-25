@@ -532,10 +532,10 @@ public class ModPanelEditTab(
                 panel._delayedActions.Enqueue(() => panel._modManager.OptionEditor.DeleteOption(panel._mod, groupIdx, optionIdx));
 
             ImGui.TableNextColumn();
-            if (group.Type != GroupType.Multi)
+            if (group is not MultiModGroup multi)
                 return;
 
-            if (Input.Priority("##Priority", groupIdx, optionIdx, group.OptionPriority(optionIdx), out var priority,
+            if (Input.Priority("##Priority", groupIdx, optionIdx, multi.PrioritizedOptions[optionIdx].Priority, out var priority,
                     50 * UiHelpers.Scale))
                 panel._modManager.OptionEditor.ChangeOptionPriority(panel._mod, groupIdx, optionIdx, priority);
 
@@ -613,7 +613,11 @@ public class ModPanelEditTab(
                     var sourceGroup    = panel._mod.Groups[sourceGroupIdx];
                     var currentCount   = group.Count;
                     var option         = sourceGroup[sourceOption];
-                    var priority       = sourceGroup.OptionPriority(_dragDropOptionIdx);
+                    var priority = sourceGroup switch
+                    {
+                        MultiModGroup multi => multi.PrioritizedOptions[_dragDropOptionIdx].Priority,
+                        _                   => ModPriority.Default,
+                    };
                     panel._delayedActions.Enqueue(() =>
                     {
                         panel._modManager.OptionEditor.DeleteOption(panel._mod, sourceGroupIdx, sourceOption);

@@ -1,10 +1,12 @@
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Services;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
-public interface IModGroup : IReadOnlyCollection<ISubMod>
+public interface IModGroup : IReadOnlyCollection<SubMod>
 {
     public const int MaxMultiOptions = 63;
 
@@ -14,15 +16,17 @@ public interface IModGroup : IReadOnlyCollection<ISubMod>
     public ModPriority Priority        { get; }
     public Setting     DefaultSettings { get; set; }
 
-    public ModPriority OptionPriority(Index optionIdx);
+    public FullPath? FindBestMatch(Utf8GamePath gamePath);
 
-    public ISubMod this[Index idx] { get; }
+    public SubMod this[Index idx] { get; }
 
     public bool IsOption { get; }
 
     public IModGroup Convert(GroupType type);
     public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
     public void      UpdatePositions(int from = 0);
+
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations);
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);
@@ -33,7 +37,7 @@ public readonly struct ModSaveGroup : ISavable
     private readonly DirectoryInfo _basePath;
     private readonly IModGroup?    _group;
     private readonly int           _groupIdx;
-    private readonly ISubMod?      _defaultMod;
+    private readonly SubMod?       _defaultMod;
     private readonly bool          _onlyAscii;
 
     public ModSaveGroup(Mod mod, int groupIdx, bool onlyAscii)
@@ -55,7 +59,7 @@ public readonly struct ModSaveGroup : ISavable
         _onlyAscii = onlyAscii;
     }
 
-    public ModSaveGroup(DirectoryInfo basePath, ISubMod @default, bool onlyAscii)
+    public ModSaveGroup(DirectoryInfo basePath, SubMod @default, bool onlyAscii)
     {
         _basePath   = basePath;
         _groupIdx   = -1;
@@ -68,8 +72,9 @@ public readonly struct ModSaveGroup : ISavable
 
     public void Save(StreamWriter writer)
     {
-        using var j          = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-        var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
+        using var j = new JsonTextWriter(writer);
+        j.Formatting = Formatting.Indented;
+        var serializer = new JsonSerializer { Formatting = Formatting.Indented };
         if (_groupIdx >= 0)
         {
             j.WriteStartObject();
@@ -78,28 +83,34 @@ public readonly struct ModSaveGroup : ISavable
             j.WritePropertyName(nameof(_group.Description));
             j.WriteValue(_group.Description);
             j.WritePropertyName(nameof(_group.Priority));
-            j.WriteValue(_group.Priority);
+            j.WriteValue(_group.Priority.Value);
             j.WritePropertyName(nameof(Type));
             j.WriteValue(_group.Type.ToString());
             j.WritePropertyName(nameof(_group.DefaultSettings));
             j.WriteValue(_group.DefaultSettings.Value);
-            j.WritePropertyName("Options");
-            j.WriteStartArray();
-            for (var idx = 0; idx < _group.Count; ++idx)
+            switch (_group)
             {
-                ISubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type switch
-                {
-                    GroupType.Multi => _group.OptionPriority(idx),
-                    _               => null,
-                });
+                case SingleModGroup single:
+                    j.WritePropertyName("Options");
+                    j.WriteStartArray();
+                    foreach (var option in single.OptionData)
+                        SubMod.WriteSubMod(j, serializer, option, _basePath, null);
+                    j.WriteEndArray();
+                    j.WriteEndObject();
+                    break;
+                case MultiModGroup multi:
+                    j.WritePropertyName("Options");
+                    j.WriteStartArray();
+                    foreach (var (option, priority) in multi.PrioritizedOptions)
+                        SubMod.WriteSubMod(j, serializer, option, _basePath, priority);
+                    j.WriteEndArray();
+                    j.WriteEndObject();
+                    break;
             }
-
-            j.WriteEndArray();
-            j.WriteEndObject();
         }
         else
         {
-            ISubMod.WriteSubMod(j, serializer, _defaultMod!, _basePath, null);
+            SubMod.WriteSubMod(j, serializer, _defaultMod!, _basePath, null);
         }
     }
 }

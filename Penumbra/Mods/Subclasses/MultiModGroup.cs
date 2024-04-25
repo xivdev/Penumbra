@@ -5,6 +5,8 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
@@ -19,10 +21,12 @@ public sealed class MultiModGroup : IModGroup
     public ModPriority Priority        { get; set; }
     public Setting     DefaultSettings { get; set; }
 
-    public ModPriority OptionPriority(Index idx)
-        => PrioritizedOptions[idx].Priority;
+    public FullPath? FindBestMatch(Utf8GamePath gamePath)
+        => PrioritizedOptions.OrderByDescending(o => o.Priority)
+            .SelectWhere(o => (o.Mod.FileData.TryGetValue(gamePath, out var file) || o.Mod.FileSwapData.TryGetValue(gamePath, out file), file))
+            .FirstOrDefault();
 
-    public ISubMod this[Index idx]
+    public SubMod this[Index idx]
         => PrioritizedOptions[idx].Mod;
 
     public bool IsOption
@@ -34,7 +38,7 @@ public sealed class MultiModGroup : IModGroup
 
     public readonly List<(SubMod Mod, ModPriority Priority)> PrioritizedOptions = [];
 
-    public IEnumerator<ISubMod> GetEnumerator()
+    public IEnumerator<SubMod> GetEnumerator()
         => PrioritizedOptions.Select(o => o.Mod).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -108,6 +112,15 @@ public sealed class MultiModGroup : IModGroup
     {
         foreach (var ((o, _), i) in PrioritizedOptions.WithIndex().Skip(from))
             o.SetPosition(o.GroupIdx, i);
+    }
+
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    {
+        foreach (var (option, index) in PrioritizedOptions.WithIndex().OrderByDescending(o => o.Value.Priority))
+        {
+            if (setting.HasFlag(index))
+                option.Mod.AddData(redirections, manipulations);
+        }
     }
 
     public Setting FixSetting(Setting setting)

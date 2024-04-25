@@ -235,7 +235,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
 
     /// <summary> Create a file for an option group from given data. </summary>
     public void CreateOptionGroup(DirectoryInfo baseFolder, GroupType type, string name,
-        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<ISubMod> subMods)
+        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<SubMod> subMods)
     {
         switch (type)
         {
@@ -248,7 +248,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                     Priority        = priority,
                     DefaultSettings = defaultSettings,
                 };
-                group.PrioritizedOptions.AddRange(subMods.OfType<SubMod>().Select((s, idx) => (s, new ModPriority(idx))));
+                group.PrioritizedOptions.AddRange(subMods.Select((s, idx) => (s, new ModPriority(idx))));
                 _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
@@ -269,7 +269,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
     }
 
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>
-    public ISubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option)
+    public SubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option)
     {
         var list = optionFolder.EnumerateNonHiddenFiles()
             .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath, true), gamePath, new FullPath(f)))
@@ -288,7 +288,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
     }
 
     /// <summary> Create an empty sub mod for single groups with None options. </summary>
-    internal static ISubMod CreateEmptySubMod(string name)
+    internal static SubMod CreateEmptySubMod(string name)
         => new SubMod(null!) // Mod is irrelevant here, only used for saving.
         {
             Name = name,

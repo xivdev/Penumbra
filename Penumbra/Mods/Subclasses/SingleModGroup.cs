@@ -3,6 +3,8 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Subclasses;
 
@@ -19,10 +21,12 @@ public sealed class SingleModGroup : IModGroup
 
     public readonly List<SubMod> OptionData = [];
 
-    public ModPriority OptionPriority(Index _)
-        => Priority;
+    public FullPath? FindBestMatch(Utf8GamePath gamePath)
+        => OptionData
+            .SelectWhere(m => (m.FileData.TryGetValue(gamePath, out var file) || m.FileSwapData.TryGetValue(gamePath, out file), file))
+            .FirstOrDefault();
 
-    public ISubMod this[Index idx]
+    public SubMod this[Index idx]
         => OptionData[idx];
 
     public bool IsOption
@@ -32,7 +36,7 @@ public sealed class SingleModGroup : IModGroup
     public int Count
         => OptionData.Count;
 
-    public IEnumerator<ISubMod> GetEnumerator()
+    public IEnumerator<SubMod> GetEnumerator()
         => OptionData.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -113,6 +117,9 @@ public sealed class SingleModGroup : IModGroup
         foreach (var (o, i) in OptionData.WithIndex().Skip(from))
             o.SetPosition(o.GroupIdx, i);
     }
+
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+        => this[setting.AsIndex].AddData(redirections, manipulations);
 
     public Setting FixSetting(Setting setting)
         => Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(Count - 1)));

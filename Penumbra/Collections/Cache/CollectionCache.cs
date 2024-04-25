@@ -2,12 +2,10 @@ using OtterGui;
 using OtterGui.Classes;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Collections.Cache;
 
@@ -231,37 +229,12 @@ public sealed class CollectionCache : IDisposable
     /// <summary> Add all files and possibly manipulations of a given mod according to its settings in this collection. </summary>
     internal void AddModSync(IMod mod, bool addMetaChanges)
     {
-        if (mod.Index >= 0)
-        {
-            var settings = _collection[mod.Index].Settings;
-            if (settings is not { Enabled: true })
-                return;
+        var files = GetFiles(mod);
+        foreach (var (path, file) in files.FileRedirections)
+            AddFile(path, file, mod);
 
-            foreach (var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
-            {
-                if (group.Count == 0)
-                    continue;
-
-                var config = settings.Settings[groupIndex];
-                switch (group)
-                {
-                    case SingleModGroup single:
-                        AddSubMod(single[config.AsIndex], mod);
-                        break;
-                    case MultiModGroup multi:
-                    {
-                        foreach (var (option, _) in multi.WithIndex()
-                                     .Where(p => config.HasFlag(p.Index))
-                                     .OrderByDescending(p => group.OptionPriority(p.Index)))
-                            AddSubMod(option, mod);
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        AddSubMod(mod.Default, mod);
+        foreach (var manip in files.Manipulations)
+            AddManipulation(manip, mod);
 
         if (addMetaChanges)
         {
@@ -273,14 +246,15 @@ public sealed class CollectionCache : IDisposable
         }
     }
 
-    // Add all files and possibly manipulations of a specific submod
-    private void AddSubMod(ISubMod subMod, IMod parentMod)
+    private AppliedModData GetFiles(IMod mod)
     {
-        foreach (var (path, file) in subMod.Files.Concat(subMod.FileSwaps))
-            AddFile(path, file, parentMod);
+        if (mod.Index < 0)
+            return mod.GetData();
 
-        foreach (var manip in subMod.Manipulations)
-            AddManipulation(manip, parentMod);
+        var settings = _collection[mod.Index].Settings;
+        return settings is not { Enabled: true } 
+            ? AppliedModData.Empty 
+            : mod.GetData(settings);
     }
 
     /// <summary> Invoke only if not in a full recalculation. </summary>

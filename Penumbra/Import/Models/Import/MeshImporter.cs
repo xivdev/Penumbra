@@ -1,5 +1,6 @@
 using Lumina.Data.Parsing;
 using OtterGui;
+using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
@@ -8,7 +9,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 {
     public struct Mesh
     {
-        public MdlStructs.MeshStruct          MeshStruct;
+        public MeshStruct          MeshStruct;
         public List<MdlStructs.SubmeshStruct> SubMeshStructs;
 
         public string? Material;
@@ -69,10 +70,14 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 
         return new Mesh
         {
-            MeshStruct = new MdlStructs.MeshStruct
+            MeshStruct = new MeshStruct
             {
-                VertexBufferOffset = [0, (uint)_streams[0].Count, (uint)(_streams[0].Count + _streams[1].Count)],
-                VertexBufferStride = _strides,
+                VertexBufferOffset1 = 0,
+                VertexBufferOffset2 = (uint)_streams[0].Count,
+                VertexBufferOffset3 = (uint)(_streams[0].Count + _streams[1].Count),
+                VertexBufferStride1 = _strides[0],
+                VertexBufferStride2 = _strides[1],
+                VertexBufferStride3 = _strides[2],
                 VertexCount        = _vertexCount,
                 VertexStreamCount = (byte)_vertexDeclaration.Value.VertexElements
                     .Select(element => element.Stream + 1)

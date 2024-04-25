@@ -151,7 +151,7 @@ public class ModMerger : IDisposable
         MergeIntoOption(MergeFromMod!.AllSubMods.Reverse(), option, true);
     }
 
-    private void MergeIntoOption(IEnumerable<ISubMod> mergeOptions, SubMod option, bool fromFileToFile)
+    private void MergeIntoOption(IEnumerable<SubMod> mergeOptions, SubMod option, bool fromFileToFile)
     {
         var redirections = option.FileData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         var swaps        = option.FileSwapData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);

@@ -158,10 +158,10 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     {
         var group  = mod.Groups[groupIdx];
         var option = group[optionIdx];
-        if (option.Description == newDescription || option is not SubMod s)
+        if (option.Description == newDescription)
             return;
 
-        s.Description = newDescription;
+        option.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1);
     }
@@ -262,15 +262,12 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     }
 
     /// <summary> Add an existing option to a given group with default priority. </summary> 
-    public void AddOption(Mod mod, int groupIdx, ISubMod option)
+    public void AddOption(Mod mod, int groupIdx, SubMod option)
         => AddOption(mod, groupIdx, option, ModPriority.Default);
 
     /// <summary> Add an existing option to a given group with a given priority. </summary> 
-    public void AddOption(Mod mod, int groupIdx, ISubMod option, ModPriority priority)
+    public void AddOption(Mod mod, int groupIdx, SubMod option, ModPriority priority)
     {
-        if (option is not SubMod o)
-            return;
-
         var group = mod.Groups[groupIdx];
         switch (group)
         {
@@ -280,12 +277,12 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                   + $"since only up to {IModGroup.MaxMultiOptions} options are supported in one group.");
                 return;
             case SingleModGroup s:
-                o.SetPosition(groupIdx, s.Count);
-                s.OptionData.Add(o);
+                option.SetPosition(groupIdx, s.Count);
+                s.OptionData.Add(option);
                 break;
             case MultiModGroup m:
-                o.SetPosition(groupIdx, m.Count);
-                m.PrioritizedOptions.Add((o, priority));
+                option.SetPosition(groupIdx, m.Count);
+                m.PrioritizedOptions.Add((option, priority));
                 break;
         }
 

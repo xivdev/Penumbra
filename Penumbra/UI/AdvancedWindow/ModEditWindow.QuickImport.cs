@@ -227,7 +227,7 @@ public partial class ModEditWindow
             return fileRegistry;
         }
 
-        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, ISubMod subMod, bool replaceNonAscii)
+        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, SubMod subMod, bool replaceNonAscii)
         {
             var path    = mod.ModPath;
             var subDirs = 0;

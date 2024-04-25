@@ -2,6 +2,7 @@ using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
@@ -34,44 +35,14 @@ public class ModSettings
         };
 
     // Return everything required to resolve things for a single mod with given settings (which can be null, in which case the default is used.
-    public static (Dictionary<Utf8GamePath, FullPath>, HashSet<MetaManipulation>) GetResolveData(Mod mod, ModSettings? settings)
+    public static AppliedModData GetResolveData(Mod mod, ModSettings? settings)
     {
         if (settings == null)
             settings = DefaultSettings(mod);
         else
             settings.Settings.FixSize(mod);
 
-        var dict = new Dictionary<Utf8GamePath, FullPath>();
-        var set  = new HashSet<MetaManipulation>();
-
-        foreach (var (group, index) in mod.Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
-        {
-            if (group.Type is GroupType.Single)
-            {
-                if (group.Count > 0)
-                    AddOption(group[settings.Settings[index].AsIndex]);
-            }
-            else
-            {
-                foreach (var (option, optionIdx) in group.WithIndex().OrderByDescending(o => group.OptionPriority(o.Index)))
-                {
-                    if (settings.Settings[index].HasFlag(optionIdx))
-                        AddOption(option);
-                }
-            }
-        }
-
-        AddOption(mod.Default);
-        return (dict, set);
-
-        void AddOption(ISubMod option)
-        {
-            foreach (var (path, file) in option.Files.Concat(option.FileSwaps))
-                dict.TryAdd(path, file);
-
-            foreach (var manip in option.Manipulations)
-                set.Add(manip);
-        }
+        return mod.GetData(settings);
     }
 
     // Automatically react to changes in a mods available options.

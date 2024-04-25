@@ -4,6 +4,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.String.Functions;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -74,7 +75,7 @@ public partial class ModEditWindow
             ImGui.TableHeader("Dye Preview");
         }
 
-        for (var i = 0; i < MtrlFile.ColorTable.NumRows; ++i)
+        for (var i = 0; i < ColorTable.NumUsedRows; ++i)
         {
             ret |= DrawColorTableRow(tab, i, disabled);
             ImGui.TableNextRow();
@@ -115,8 +116,8 @@ public partial class ModEditWindow
         {
             var ret = false;
             if (tab.Mtrl.HasDyeTable)
-                for (var i = 0; i < MtrlFile.ColorTable.NumRows; ++i)
-                    ret |= tab.Mtrl.ApplyDyeTemplate(_stainService.StmFile, i, dyeId);
+                for (var i = 0; i < ColorTable.NumUsedRows; ++i)
+                    ret |= tab.Mtrl.ApplyDyeTemplate(_stainService.StmFile, i, dyeId, 0);
 
             tab.UpdateColorTablePreview();
 
@@ -140,21 +141,21 @@ public partial class ModEditWindow
         {
             var text = ImGui.GetClipboardText();
             var data = Convert.FromBase64String(text);
-            if (data.Length < Marshal.SizeOf<MtrlFile.ColorTable>())
+            if (data.Length < Marshal.SizeOf<ColorTable>())
                 return false;
 
             ref var rows = ref tab.Mtrl.Table;
             fixed (void* ptr = data, output = &rows)
             {
-                MemoryUtility.MemCpyUnchecked(output, ptr, Marshal.SizeOf<MtrlFile.ColorTable>());
-                if (data.Length >= Marshal.SizeOf<MtrlFile.ColorTable>() + Marshal.SizeOf<MtrlFile.ColorDyeTable>()
+                MemoryUtility.MemCpyUnchecked(output, ptr, Marshal.SizeOf<ColorTable>());
+                if (data.Length >= Marshal.SizeOf<ColorTable>() + Marshal.SizeOf<ColorDyeTable>()
                  && tab.Mtrl.HasDyeTable)
                 {
                     ref var dyeRows = ref tab.Mtrl.DyeTable;
                     fixed (void* output2 = &dyeRows)
                     {
-                        MemoryUtility.MemCpyUnchecked(output2, (byte*)ptr + Marshal.SizeOf<MtrlFile.ColorTable>(),
-                            Marshal.SizeOf<MtrlFile.ColorDyeTable>());
+                        MemoryUtility.MemCpyUnchecked(output2, (byte*)ptr + Marshal.SizeOf<ColorTable>(),
+                            Marshal.SizeOf<ColorDyeTable>());
                     }
                 }
             }
@@ -169,7 +170,7 @@ public partial class ModEditWindow
         }
     }
 
-    private static unsafe void ColorTableCopyClipboardButton(MtrlFile.ColorTable.Row row, MtrlFile.ColorDyeTable.Row dye)
+    private static unsafe void ColorTableCopyClipboardButton(ColorTable.Row row, ColorDyeTable.Row dye)
     {
         if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Clipboard.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
                 "Export this row to your clipboard.", false, true))
@@ -177,11 +178,11 @@ public partial class ModEditWindow
 
         try
         {
-            var data = new byte[MtrlFile.ColorTable.Row.Size + 2];
+            var data = new byte[ColorTable.Row.Size + 2];
             fixed (byte* ptr = data)
             {
-                MemoryUtility.MemCpyUnchecked(ptr,                                &row, MtrlFile.ColorTable.Row.Size);
-                MemoryUtility.MemCpyUnchecked(ptr + MtrlFile.ColorTable.Row.Size, &dye, 2);
+                MemoryUtility.MemCpyUnchecked(ptr,                                &row, ColorTable.Row.Size);
+                MemoryUtility.MemCpyUnchecked(ptr + ColorTable.Row.Size, &dye, 2);
             }
 
             var text = Convert.ToBase64String(data);
@@ -217,15 +218,15 @@ public partial class ModEditWindow
         {
             var text = ImGui.GetClipboardText();
             var data = Convert.FromBase64String(text);
-            if (data.Length != MtrlFile.ColorTable.Row.Size + 2
+            if (data.Length != ColorTable.Row.Size + 2
              || !tab.Mtrl.HasTable)
                 return false;
 
             fixed (byte* ptr = data)
             {
-                tab.Mtrl.Table[rowIdx] = *(MtrlFile.ColorTable.Row*)ptr;
+                tab.Mtrl.Table[rowIdx] = *(ColorTable.Row*)ptr;
                 if (tab.Mtrl.HasDyeTable)
-                    tab.Mtrl.DyeTable[rowIdx] = *(MtrlFile.ColorDyeTable.Row*)(ptr + MtrlFile.ColorTable.Row.Size);
+                    tab.Mtrl.DyeTable[rowIdx] = *(ColorDyeTable.Row*)(ptr + ColorTable.Row.Size);
             }
 
             tab.UpdateColorTableRowPreview(rowIdx);
@@ -451,7 +452,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawDyePreview(MtrlTab tab, int rowIdx, bool disabled, MtrlFile.ColorDyeTable.Row dye, float floatSize)
+    private bool DrawDyePreview(MtrlTab tab, int rowIdx, bool disabled, ColorDyeTable.Row dye, float floatSize)
     {
         var stain = _stainService.StainCombo.CurrentSelection.Key;
         if (stain == 0 || !_stainService.StmFile.Entries.TryGetValue(dye.Template, out var entry))
@@ -463,7 +464,7 @@ public partial class ModEditWindow
         var ret = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
             "Apply the selected dye to this row.", disabled, true);
 
-        ret = ret && tab.Mtrl.ApplyDyeTemplate(_stainService.StmFile, rowIdx, stain);
+        ret = ret && tab.Mtrl.ApplyDyeTemplate(_stainService.StmFile, rowIdx, stain, 0);
         if (ret)
             tab.UpdateColorTableRowPreview(rowIdx);
 

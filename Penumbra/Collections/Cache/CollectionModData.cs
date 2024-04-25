@@ -1,10 +1,12 @@
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
+/// <summary>
+///     Contains associations between a mod and the paths and meta manipulations affected by that mod.
+/// </summary>
 public class CollectionModData
 {
     private readonly Dictionary<IMod, (HashSet<Utf8GamePath>, HashSet<MetaManipulation>)> _data = new();
@@ -17,7 +19,7 @@ public class CollectionModData
         if (_data.Remove(mod, out var data))
             return data;
 
-        return (Array.Empty<Utf8GamePath>(), Array.Empty<MetaManipulation>());
+        return ([], []);
     }
 
     public void AddPath(IMod mod, Utf8GamePath path)
@@ -28,7 +30,7 @@ public class CollectionModData
         }
         else
         {
-            data = (new HashSet<Utf8GamePath> { path }, new HashSet<MetaManipulation>());
+            data = ([path], []);
             _data.Add(mod, data);
         }
     }
@@ -41,7 +43,7 @@ public class CollectionModData
         }
         else
         {
-            data = (new HashSet<Utf8GamePath>(), new HashSet<MetaManipulation> { manipulation });
+            data = ([], [manipulation]);
             _data.Add(mod, data);
         }
     }

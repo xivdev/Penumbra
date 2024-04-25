@@ -11,7 +11,7 @@ public class ModSwapEditor(ModManager modManager)
     public IReadOnlyDictionary<Utf8GamePath, FullPath> Swaps
         => _swaps;
 
-    public void Revert(ISubMod option)
+    public void Revert(SubMod option)
     {
         _swaps.SetTo(option.FileSwaps);
         Changes = false;

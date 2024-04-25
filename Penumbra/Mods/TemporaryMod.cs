@@ -20,8 +20,27 @@ public class TemporaryMod : IMod
 
     public readonly SubMod Default;
 
-    ISubMod IMod.Default
-        => Default;
+    public AppliedModData GetData(ModSettings? settings = null)
+    {
+        Dictionary<Utf8GamePath, FullPath> dict;
+        if (Default.FileSwapData.Count == 0)
+        {
+            dict = Default.FileData;
+        }
+        else if (Default.FileData.Count == 0)
+        {
+            dict = Default.FileSwapData;
+        }
+        else
+        {
+            // Need to ensure uniqueness.
+            dict = new Dictionary<Utf8GamePath, FullPath>(Default.FileData.Count + Default.FileSwaps.Count);
+            foreach (var (gamePath, file) in Default.FileData.Concat(Default.FileSwaps))
+                dict.TryAdd(gamePath, file);
+        }
+
+        return new AppliedModData(dict, Default.ManipulationData);
+    }
 
     public IReadOnlyList<IModGroup> Groups
         => Array.Empty<IModGroup>();
@@ -53,7 +72,8 @@ public class TemporaryMod : IMod
             dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Name, config.ReplaceNonAsciiOnImport, true);
             var fileDir = Directory.CreateDirectory(Path.Combine(dir.FullName, "files"));
             modManager.DataEditor.CreateMeta(dir, collection.Name, character ?? config.DefaultModAuthor,
-                $"Mod generated from temporary collection {collection.Id} for {character ?? "Unknown Character"} with name {collection.Name}.", null, null);
+                $"Mod generated from temporary collection {collection.Id} for {character ?? "Unknown Character"} with name {collection.Name}.",
+                null, null);
             var mod        = new Mod(dir);
             var defaultMod = mod.Default;
             foreach (var (gamePath, fullPath) in collection.ResolvedFiles)
@@ -86,7 +106,8 @@ public class TemporaryMod : IMod
 
             saveService.ImmediateSave(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
             modManager.AddMod(dir);
-            Penumbra.Log.Information($"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identifier}.");
+            Penumbra.Log.Information(
+                $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identifier}.");
         }
         catch (Exception e)
         {

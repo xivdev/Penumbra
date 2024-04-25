@@ -71,7 +71,7 @@ public static unsafe class HavokConverter
     /// <param name="filePath"> Path to a file on the filesystem. </param>
     private static hkResource* Read(string filePath)
     {
-        var path = Encoding.UTF8.GetBytes(filePath);
+        var path                = Encoding.UTF8.GetBytes(filePath);
         var builtinTypeRegistry = hkBuiltinTypeRegistry.Instance();
 
         var loadOptions = stackalloc hkSerializeUtil.LoadOptions[1];

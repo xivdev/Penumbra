@@ -1,3 +1,4 @@
+using System.Security.AccessControl;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
@@ -311,22 +312,31 @@ public sealed class ModManager : ModStorage, IDisposable
     /// </summary>
     private void ScanMods()
     {
-        var options = new ParallelOptions()
+        try
         {
-            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
-        };
-        var queue = new ConcurrentQueue<Mod>();
-        Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
-        {
-            var mod = Creator.LoadMod(dir, false);
-            if (mod != null)
-                queue.Enqueue(mod);
-        });
+            var options = new ParallelOptions()
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
+            };
+            var queue = new ConcurrentQueue<Mod>();
+            Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
+            {
+                var mod = Creator.LoadMod(dir, false);
+                if (mod != null)
+                    queue.Enqueue(mod);
+            });
 
-        foreach (var mod in queue)
+            foreach (var mod in queue)
+            {
+                mod.Index = Count;
+                Mods.Add(mod);
+            }
+        }
+        catch (Exception ex)
         {
-            mod.Index = Count;
-            Mods.Add(mod);
+            Valid = false;
+            _communicator.ModDirectoryChanged.Invoke(BasePath.FullName, false);
+            Penumbra.Log.Error($"Could not scan for mods:\n{ex}");
         }
     }
 }

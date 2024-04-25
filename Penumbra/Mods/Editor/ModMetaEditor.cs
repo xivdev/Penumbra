@@ -103,7 +103,7 @@ public class ModMetaEditor(ModManager modManager)
         Changes = true;
     }
 
-    public void Load(Mod mod, ISubMod currentOption)
+    public void Load(Mod mod, SubMod currentOption)
     {
         OtherImcCount  = 0;
         OtherEqpCount  = 0;
