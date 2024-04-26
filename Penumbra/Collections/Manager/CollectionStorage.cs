@@ -184,21 +184,39 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
                 {
                     if (version >= 2)
                     {
-                        File.Move(file.FullName, correctName, false);
-                        Penumbra.Messager.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Identifier}, renamed.",
-                            NotificationType.Warning);
+                        try
+                        {
+                            File.Move(file.FullName, correctName, false);
+                            Penumbra.Messager.NotificationMessage(
+                                $"Collection {file.Name} does not correspond to {collection.Identifier}, renamed.",
+                                NotificationType.Warning);
+                        }
+                        catch (Exception ex)
+                        {
+                            Penumbra.Messager.NotificationMessage(
+                                $"Collection {file.Name} does not correspond to {collection.Identifier}, rename failed:\n{ex}",
+                                NotificationType.Warning);
+                        }
                     }
                     else
                     {
                         _saveService.ImmediateSaveSync(new ModCollectionSave(_modStorage, collection));
-                        File.Delete(file.FullName);
-                        Penumbra.Log.Information($"Migrated collection {name} to Guid {id}.");
+                        try
+                        {
+                            File.Move(file.FullName, file.FullName + ".bak", true);
+                            Penumbra.Log.Information($"Migrated collection {name} to Guid {id} with backup of old file.");
+                        }
+                        catch (Exception ex)
+                        {
+                            Penumbra.Log.Information($"Migrated collection {name} to Guid {id}, rename of old file failed:\n{ex}");
+                        }
                     }
                 }
                 catch (Exception e)
                 {
                     Penumbra.Messager.NotificationMessage(e,
-                        $"Collection {file.Name} does not correspond to {collection.Identifier}, but could not rename.", NotificationType.Error);
+                        $"Collection {file.Name} does not correspond to {collection.Identifier}, but could not rename.",
+                        NotificationType.Error);
                 }
 
             _collections.Add(collection);
