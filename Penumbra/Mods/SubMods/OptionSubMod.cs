@@ -6,25 +6,29 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
-public interface IModDataOption : IModDataContainer, IModOption;
-
-public abstract class OptionSubMod<T>(Mod mod, T group) : IModDataOption
-    where T : IModGroup
+public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContainer
 {
-    internal readonly Mod       Mod   = mod;
-    internal readonly IModGroup Group = group;
+    protected readonly IModGroup Group = group;
 
-    public string Name { get; set; } = "Option";
+    public Mod Mod
+        => Group.Mod;
+
+    public string Name        { get; set; } = "Option";
+    public string Description { get; set; } = string.Empty;
 
     public string FullName
-        => $"{Group!.Name}: {Name}";
+        => $"{Group.Name}: {Name}";
 
-    public string Description { get; set; } = string.Empty;
+    Mod IModOption.Mod
+        => Mod;
 
     IMod IModDataContainer.Mod
         => Mod;
 
     IModGroup IModDataContainer.Group
+        => Group;
+
+    IModGroup IModOption.Group
         => Group;
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
@@ -43,8 +47,8 @@ public abstract class OptionSubMod<T>(Mod mod, T group) : IModDataOption
     public (int GroupIndex, int DataIndex) GetDataIndices()
         => (Group.GetIndex(), GetDataIndex());
 
-    public (int GroupIndex, int OptionIndex) GetOptionIndices()
-        => (Group.GetIndex(), GetDataIndex());
+    public int GetIndex()
+        => SubMod.GetIndex(this);
 
     private int GetDataIndex()
     {
@@ -54,4 +58,11 @@ public abstract class OptionSubMod<T>(Mod mod, T group) : IModDataOption
 
         return dataIndex;
     }
+}
+
+public abstract class OptionSubMod<T>(T group) : OptionSubMod(group)
+    where T : IModGroup
+{
+    public new T Group
+        => (T)base.Group;
 }

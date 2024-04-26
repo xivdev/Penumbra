@@ -4,18 +4,18 @@ using Penumbra.Mods.Settings;
 
 namespace Penumbra.Mods.SubMods;
 
-public class SingleSubMod(Mod mod, SingleModGroup singleGroup) : OptionSubMod<SingleModGroup>(mod, singleGroup)
+public class SingleSubMod(SingleModGroup singleGroup) : OptionSubMod<SingleModGroup>(singleGroup)
 {
-    public SingleSubMod(Mod mod, SingleModGroup singleGroup, JToken json)
-        : this(mod, singleGroup)
+    public SingleSubMod(SingleModGroup singleGroup, JToken json)
+        : this(singleGroup)
     {
         SubMod.LoadOptionData(json, this);
-        SubMod.LoadDataContainer(json, this, mod.ModPath);
+        SubMod.LoadDataContainer(json, this, singleGroup.Mod.ModPath);
     }
 
-    public SingleSubMod Clone(Mod mod, SingleModGroup group)
+    public SingleSubMod Clone(SingleModGroup group)
     {
-        var ret = new SingleSubMod(mod, group)
+        var ret = new SingleSubMod(group)
         {
             Name        = Name,
             Description = Description,
@@ -25,9 +25,9 @@ public class SingleSubMod(Mod mod, SingleModGroup singleGroup) : OptionSubMod<Si
         return ret;
     }
 
-    public MultiSubMod ConvertToMulti(Mod mod, MultiModGroup group, ModPriority priority)
+    public MultiSubMod ConvertToMulti(MultiModGroup group, ModPriority priority)
     {
-        var ret = new MultiSubMod(mod, group)
+        var ret = new MultiSubMod(group)
         {
             Name        = Name,
             Description = Description,

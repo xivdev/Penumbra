@@ -1,3 +1,4 @@
+using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -8,6 +9,7 @@ using Penumbra.Meta;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.ItemSwap;
 
@@ -40,8 +42,7 @@ public class ItemSwapContainer
         NoSwaps,
     }
 
-    public bool WriteMod(ModManager manager, Mod mod, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null,
-        int groupIndex = -1, int optionIndex = 0)
+    public bool WriteMod(ModManager manager, Mod mod, IModDataContainer container, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null)
     {
         var convertedManips = new HashSet<MetaManipulation>(Swaps.Count);
         var convertedFiles  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
@@ -80,9 +81,9 @@ public class ItemSwapContainer
                 }
             }
 
-            manager.OptionEditor.OptionSetFiles(mod, groupIndex, optionIndex, convertedFiles);
-            manager.OptionEditor.OptionSetFileSwaps(mod, groupIndex, optionIndex, convertedSwaps);
-            manager.OptionEditor.OptionSetManipulations(mod, groupIndex, optionIndex, convertedManips);
+            manager.OptionEditor.SetFiles(container, convertedFiles, SaveType.None);
+            manager.OptionEditor.SetFileSwaps(container, convertedSwaps, SaveType.None);
+            manager.OptionEditor.SetManipulations(container, convertedManips, SaveType.ImmediateSync);
             return true;
         }
         catch (Exception e)

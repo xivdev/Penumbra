@@ -4,6 +4,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Settings;
 
@@ -45,63 +46,64 @@ public class ModSettings
     }
 
     // Automatically react to changes in a mods available options.
-    public bool HandleChanges(ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx)
+    public bool HandleChanges(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, int fromIdx)
     {
         switch (type)
         {
             case ModOptionChangeType.GroupRenamed: return true;
             case ModOptionChangeType.GroupAdded:
                 // Add new empty setting for new mod.
-                Settings.Insert(groupIdx, mod.Groups[groupIdx].DefaultSettings);
+                Settings.Insert(group!.GetIndex(), group.DefaultSettings);
                 return true;
             case ModOptionChangeType.GroupDeleted:
                 // Remove setting for deleted mod.
-                Settings.RemoveAt(groupIdx);
+                Settings.RemoveAt(fromIdx);
                 return true;
             case ModOptionChangeType.GroupTypeChanged:
             {
                 // Fix settings for a changed group type.
                 // Single -> Multi: set single as enabled, rest as disabled
                 // Multi -> Single: set the first enabled option or 0.
-                var group  = mod.Groups[groupIdx];
-                var config = Settings[groupIdx];
-                Settings[groupIdx] = group.Type switch
+                var idx    = group!.GetIndex();
+                var config = Settings[idx];
+                Settings[idx] = group.Type switch
                 {
                     GroupType.Single => config.TurnMulti(group.Options.Count),
                     GroupType.Multi  => Setting.Multi((int)config.Value),
                     _                => config,
                 };
-                return config != Settings[groupIdx];
+                return config != Settings[idx];
             }
             case ModOptionChangeType.OptionDeleted:
             {
                 // Single -> select the previous option if any.
                 // Multi -> excise the corresponding bit.
-                var group  = mod.Groups[groupIdx];
-                var config = Settings[groupIdx];
-                Settings[groupIdx] = group.Type switch
+                var groupIdx = group!.GetIndex();
+                var config   = Settings[groupIdx];
+                Settings[groupIdx] = group!.Type switch
                 {
-                    GroupType.Single => config.AsIndex >= optionIdx
-                        ? config.AsIndex > 1 ? Setting.Single(config.AsIndex - 1) : Setting.Zero
-                        : config,
-                    GroupType.Multi => config.RemoveBit(optionIdx),
-                    _               => config,
+                    GroupType.Single => config.RemoveSingle(fromIdx),
+                    GroupType.Multi  => config.RemoveBit(fromIdx),
+                    GroupType.Imc    => config.RemoveBit(fromIdx),
+                    _                => config,
                 };
                 return config != Settings[groupIdx];
             }
             case ModOptionChangeType.GroupMoved:
                 // Move the group the same way.
-                return Settings.Move(groupIdx, movedToIdx);
+                return Settings.Move(fromIdx, group!.GetIndex());
             case ModOptionChangeType.OptionMoved:
             {
                 // Single -> select the moved option if it was currently selected
                 // Multi -> move the corresponding bit
-                var group  = mod.Groups[groupIdx];
-                var config = Settings[groupIdx];
-                Settings[groupIdx] = group.Type switch
+                var groupIdx = group!.GetIndex();
+                var toIdx    = option!.GetIndex();
+                var config   = Settings[groupIdx];
+                Settings[groupIdx] = group!.Type switch
                 {
-                    GroupType.Single => config.AsIndex == optionIdx ? Setting.Single(movedToIdx) : config,
-                    GroupType.Multi  => config.MoveBit(optionIdx, movedToIdx),
+                    GroupType.Single => config.MoveSingle(fromIdx, toIdx),
+                    GroupType.Multi  => config.MoveBit(fromIdx, toIdx),
+                    GroupType.Imc    => config.MoveBit(fromIdx, toIdx),
                     _                => config,
                 };
                 return config != Settings[groupIdx];

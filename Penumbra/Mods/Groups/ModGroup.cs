@@ -5,6 +5,7 @@ namespace Penumbra.Mods.Groups;
 
 public static class ModGroup
 {
+    /// <summary> Create a new mod group based on the given type. </summary>
     public static IModGroup Create(Mod mod, GroupType type, string name)
     {
         var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
@@ -16,6 +17,11 @@ public static class ModGroup
                 Priority = maxPriority,
             },
             GroupType.Multi => new MultiModGroup(mod)
+            {
+                Name     = name,
+                Priority = maxPriority,
+            },
+            GroupType.Imc => new ImcModGroup(mod)
             {
                 Name     = name,
                 Priority = maxPriority,
@@ -38,5 +44,14 @@ public static class ModGroup
         }
 
         return (redirectionCount, swapCount, manipCount);
+    }
+
+    public static int GetIndex(IModGroup group)
+    {
+        var groupIndex = group.Mod.Groups.IndexOf(group);
+        if (groupIndex < 0)
+            throw new Exception($"Mod {group.Mod.Name} from Group {group.Name} does not contain this group.");
+
+        return groupIndex;
     }
 }

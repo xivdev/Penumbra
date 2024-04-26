@@ -17,12 +17,12 @@ public class ModSwapEditor(ModManager modManager)
         Changes = false;
     }
 
-    public void Apply(Mod mod, int groupIdx, int optionIdx)
+    public void Apply(IModDataContainer container)
     {
         if (!Changes)
             return;
 
-        modManager.OptionEditor.OptionSetFileSwaps(mod, groupIdx, optionIdx, _swaps);
+        modManager.OptionEditor.SetFileSwaps(container, _swaps);
         Changes = false;
     }
 

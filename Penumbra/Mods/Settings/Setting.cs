@@ -41,6 +41,34 @@ public readonly record struct Setting(ulong Value)
     public Setting TurnMulti(int count)
         => new(Math.Max((ulong)Math.Min(count - 1, BitOperations.TrailingZeroCount(Value)), 0));
 
+    public Setting RemoveSingle(int singleIdx)
+    {
+        var settingIndex = AsIndex;
+        if (settingIndex >= singleIdx)
+            return settingIndex > 1 ? Single(settingIndex - 1) : Zero;
+
+        return this;
+    }
+
+    public Setting MoveSingle(int singleIdxFrom, int singleIdxTo)
+    {
+        var currentIndex = AsIndex;
+        if (currentIndex == singleIdxFrom)
+            return Single(singleIdxTo);
+
+        if (singleIdxFrom < singleIdxTo)
+        {
+            if (currentIndex > singleIdxFrom && currentIndex <= singleIdxTo)
+                return Single(currentIndex - 1);
+        }
+        else if (currentIndex < singleIdxFrom && currentIndex >= singleIdxTo)
+        {
+            return Single(currentIndex + 1);
+        }
+
+        return this;
+    }
+
     public ModPriority AsPriority
         => new((int)(Value & 0xFFFFFFFF));
 

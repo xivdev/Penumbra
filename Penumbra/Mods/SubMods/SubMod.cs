@@ -1,30 +1,25 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods.Groups;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
 public static class SubMod
 {
-    public static IModOption Create(IModGroup group, string name, string description = "")
-        => group switch
-        {
-            SingleModGroup single => new SingleSubMod(group.Mod, single)
-            {
-                Name        = name,
-                Description = description,
-            },
-            MultiModGroup multi => new MultiSubMod(group.Mod, multi)
-            {
-                Name        = name,
-                Description = description,
-            },
-            _ => throw new ArgumentOutOfRangeException(nameof(group)),
-        };
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+    public static int GetIndex(IModOption option)
+    {
+        var dataIndex = option.Group.Options.IndexOf(option);
+        if (dataIndex < 0)
+            throw new Exception($"Group {option.Group.Name} from option {option.Name} does not contain this option.");
+
+        return dataIndex;
+    }
 
     /// <summary> Add all unique meta manipulations, file redirections and then file swaps from a ModDataContainer to the given sets. Skip any keys that are already contained. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void AddContainerTo(IModDataContainer container, Dictionary<Utf8GamePath, FullPath> redirections,
         HashSet<MetaManipulation> manipulations)
     {
@@ -37,6 +32,7 @@ public static class SubMod
     }
 
     /// <summary> Replace all data of <paramref name="to"/> with the data of <paramref name="from"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void Clone(IModDataContainer from, IModDataContainer to)
     {
         to.Files         = new Dictionary<Utf8GamePath, FullPath>(from.Files);
@@ -45,6 +41,7 @@ public static class SubMod
     }
 
     /// <summary> Load all file redirections, file swaps and meta manipulations from a JToken of that option into a data container. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void LoadDataContainer(JToken json, IModDataContainer data, DirectoryInfo basePath)
     {
         data.Files.Clear();
@@ -75,6 +72,7 @@ public static class SubMod
     }
 
     /// <summary> Load the relevant data for a selectable option from a JToken of that option. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void LoadOptionData(JToken json, IModOption option)
     {
         option.Name        = json[nameof(option.Name)]?.ToObject<string>() ?? string.Empty;
@@ -82,6 +80,7 @@ public static class SubMod
     }
 
     /// <summary> Write file redirections, file swaps and meta manipulations from a data container on a JsonWriter. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void WriteModContainer(JsonWriter j, JsonSerializer serializer, IModDataContainer data, DirectoryInfo basePath)
     {
         j.WritePropertyName(nameof(data.Files));
@@ -111,6 +110,7 @@ public static class SubMod
     }
 
     /// <summary> Write the data for a selectable mod option on a JsonWriter. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void WriteModOption(JsonWriter j, IModOption option)
     {
         j.WritePropertyName(nameof(option.Name));

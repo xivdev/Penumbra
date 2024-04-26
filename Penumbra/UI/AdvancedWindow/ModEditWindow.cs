@@ -455,7 +455,7 @@ public partial class ModEditWindow : Window, IDisposable
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
         ImGui.NewLine();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
-            _editor.SwapEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
+            _editor.SwapEditor.Apply(_editor.Option!);
 
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
@@ -627,7 +627,7 @@ public partial class ModEditWindow : Window, IDisposable
     public void Dispose()
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
-        _editor?.Dispose();
+        _editor.Dispose();
         _materialTab.Dispose();
         _modelTab.Dispose();
         _shaderPackageTab.Dispose();

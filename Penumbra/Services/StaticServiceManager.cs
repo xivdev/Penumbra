@@ -121,7 +121,6 @@ public static class StaticServiceManager
     private static ServiceManager AddMods(this ServiceManager services)
         => services.AddSingleton<TempModManager>()
             .AddSingleton<ModDataEditor>()
-            .AddSingleton<ModOptionEditor>()
             .AddSingleton<ModCreator>()
             .AddSingleton<ModManager>()
             .AddSingleton<ModExportManager>()

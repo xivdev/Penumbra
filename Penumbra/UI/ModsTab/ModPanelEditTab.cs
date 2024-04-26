@@ -15,6 +15,7 @@ using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -248,13 +249,13 @@ public class ModPanelEditTab(
 
             ImGui.SameLine();
 
-            var nameValid = ModOptionEditor.VerifyFileName(mod, null, _newGroupName, false);
+            var nameValid = ModGroupEditor.VerifyFileName(mod, null, _newGroupName, false);
             tt = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
             if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize,
                     tt, !nameValid, true))
                 return;
 
-            modManager.OptionEditor.AddModGroup(mod, GroupType.Single, _newGroupName);
+            modManager.OptionEditor.SingleEditor.AddModGroup(mod, _newGroupName);
             Reset();
         }
     }
@@ -364,9 +365,9 @@ public class ModPanelEditTab(
                         break;
                     case >= 0:
                         if (_newDescriptionOptionIdx < 0)
-                            modManager.OptionEditor.ChangeGroupDescription(_mod, _newDescriptionIdx, _newDescription);
+                            modManager.OptionEditor.ChangeGroupDescription(_mod.Groups[_newDescriptionIdx], _newDescription);
                         else
-                            modManager.OptionEditor.ChangeOptionDescription(_mod, _newDescriptionIdx, _newDescriptionOptionIdx,
+                            modManager.OptionEditor.ChangeOptionDescription(_mod.Groups[_newDescriptionIdx].Options[_newDescriptionOptionIdx],
                                 _newDescription);
 
                         break;
@@ -396,18 +397,18 @@ public class ModPanelEditTab(
             .Push(ImGuiStyleVar.ItemSpacing, _itemSpacing);
 
         if (Input.Text("##Name", groupIdx, Input.None, group.Name, out var newGroupName, 256, UiHelpers.InputTextWidth.X))
-            _modManager.OptionEditor.RenameModGroup(_mod, groupIdx, newGroupName);
+            _modManager.OptionEditor.RenameModGroup(group, newGroupName);
 
         ImGuiUtil.HoverTooltip("Group Name");
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize,
                 "Delete this option group.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true))
-            _delayedActions.Enqueue(() => _modManager.OptionEditor.DeleteModGroup(_mod, groupIdx));
+            _delayedActions.Enqueue(() => _modManager.OptionEditor.DeleteModGroup(group));
 
         ImGui.SameLine();
 
         if (Input.Priority("##Priority", groupIdx, Input.None, group.Priority, out var priority, 50 * UiHelpers.Scale))
-            _modManager.OptionEditor.ChangeGroupPriority(_mod, groupIdx, priority);
+            _modManager.OptionEditor.ChangeGroupPriority(group, priority);
 
         ImGuiUtil.HoverTooltip("Group Priority");
 
@@ -417,7 +418,7 @@ public class ModPanelEditTab(
         var tt = groupIdx == 0 ? "Can not move this group further upwards." : $"Move this group up to group {groupIdx}.";
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.ArrowUp.ToIconString(), UiHelpers.IconButtonSize,
                 tt, groupIdx == 0, true))
-            _delayedActions.Enqueue(() => _modManager.OptionEditor.MoveModGroup(_mod, groupIdx, groupIdx - 1));
+            _delayedActions.Enqueue(() => _modManager.OptionEditor.MoveModGroup(group, groupIdx - 1));
 
         ImGui.SameLine();
         tt = groupIdx == _mod.Groups.Count - 1
@@ -425,7 +426,7 @@ public class ModPanelEditTab(
             : $"Move this group down to group {groupIdx + 2}.";
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.ArrowDown.ToIconString(), UiHelpers.IconButtonSize,
                 tt, groupIdx == _mod.Groups.Count - 1, true))
-            _delayedActions.Enqueue(() => _modManager.OptionEditor.MoveModGroup(_mod, groupIdx, groupIdx + 1));
+            _delayedActions.Enqueue(() => _modManager.OptionEditor.MoveModGroup(group, groupIdx + 1));
 
         ImGui.SameLine();
 
@@ -452,17 +453,17 @@ public class ModPanelEditTab(
     {
         private const string DragDropLabel = "##DragOption";
 
-        private static int    _newOptionNameIdx  = -1;
-        private static string _newOptionName     = string.Empty;
-        private static int    _dragDropGroupIdx  = -1;
-        private static int    _dragDropOptionIdx = -1;
+        private static int         _newOptionNameIdx = -1;
+        private static string      _newOptionName    = string.Empty;
+        private static IModGroup?  _dragDropGroup;
+        private static IModOption? _dragDropOption;
 
         public static void Reset()
         {
-            _newOptionNameIdx  = -1;
-            _newOptionName     = string.Empty;
-            _dragDropGroupIdx  = -1;
-            _dragDropOptionIdx = -1;
+            _newOptionNameIdx = -1;
+            _newOptionName    = string.Empty;
+            _dragDropGroup    = null;
+            _dragDropOption   = null;
         }
 
         public static void Draw(ModPanelEditTab panel, int groupIdx)
@@ -482,7 +483,7 @@ public class ModPanelEditTab(
 
             switch (panel._mod.Groups[groupIdx])
             {
-                case SingleModGroup single: 
+                case SingleModGroup single:
                     for (var optionIdx = 0; optionIdx < single.OptionData.Count; ++optionIdx)
                         EditOption(panel, single, groupIdx, optionIdx);
                     break;
@@ -491,6 +492,7 @@ public class ModPanelEditTab(
                         EditOption(panel, multi, groupIdx, optionIdx);
                     break;
             }
+
             DrawNewOption(panel, groupIdx, UiHelpers.IconButtonSize);
         }
 
@@ -502,8 +504,8 @@ public class ModPanelEditTab(
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             ImGui.Selectable($"Option #{optionIdx + 1}");
-            Source(group, groupIdx, optionIdx);
-            Target(panel, group, groupIdx, optionIdx);
+            Source(option);
+            Target(panel, group, optionIdx);
 
             ImGui.TableNextColumn();
 
@@ -511,7 +513,7 @@ public class ModPanelEditTab(
             if (group.Type == GroupType.Single)
             {
                 if (ImGui.RadioButton("##default", group.DefaultSettings.AsIndex == optionIdx))
-                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, Setting.Single(optionIdx));
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(group, Setting.Single(optionIdx));
 
                 ImGuiUtil.HoverTooltip($"Set {option.Name} as the default choice for this group.");
             }
@@ -519,15 +521,14 @@ public class ModPanelEditTab(
             {
                 var isDefaultOption = group.DefaultSettings.HasFlag(optionIdx);
                 if (ImGui.Checkbox("##default", ref isDefaultOption))
-                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx,
-                        group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(group, group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
 
                 ImGuiUtil.HoverTooltip($"{(isDefaultOption ? "Disable" : "Enable")} {option.Name} per default in this group.");
             }
 
             ImGui.TableNextColumn();
             if (Input.Text("##Name", groupIdx, optionIdx, option.Name, out var newOptionName, 256, -1))
-                panel._modManager.OptionEditor.RenameOption(panel._mod, groupIdx, optionIdx, newOptionName);
+                panel._modManager.OptionEditor.RenameOption(option, newOptionName);
 
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Edit.ToIconString(), UiHelpers.IconButtonSize, "Edit option description.",
@@ -537,15 +538,15 @@ public class ModPanelEditTab(
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize,
                     "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true))
-                panel._delayedActions.Enqueue(() => panel._modManager.OptionEditor.DeleteOption(panel._mod, groupIdx, optionIdx));
+                panel._delayedActions.Enqueue(() => panel._modManager.OptionEditor.DeleteOption(option));
 
             ImGui.TableNextColumn();
-            if (group is not MultiModGroup multi)
+            if (option is not MultiSubMod multi)
                 return;
 
-            if (Input.Priority("##Priority", groupIdx, optionIdx, multi.OptionData[optionIdx].Priority, out var priority,
+            if (Input.Priority("##Priority", groupIdx, optionIdx, multi.Priority, out var priority,
                     50 * UiHelpers.Scale))
-                panel._modManager.OptionEditor.ChangeOptionPriority(panel._mod, groupIdx, optionIdx, priority);
+                panel._modManager.OptionEditor.MultiEditor.ChangeOptionPriority(multi, priority);
 
             ImGuiUtil.HoverTooltip("Option priority.");
         }
@@ -564,7 +565,7 @@ public class ModPanelEditTab(
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             ImGui.Selectable($"Option #{count + 1}");
-            Target(panel, group, groupIdx, count);
+            Target(panel, group, count);
             ImGui.TableNextColumn();
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
@@ -585,14 +586,14 @@ public class ModPanelEditTab(
                     tt, !(canAddGroup && validName), true))
                 return;
 
-            panel._modManager.OptionEditor.AddOption(mod, groupIdx, _newOptionName);
+            panel._modManager.OptionEditor.AddOption(group, _newOptionName);
             _newOptionName = string.Empty;
         }
 
         // Handle drag and drop to move options inside a group or into another group.
-        private static void Source(IModGroup group, int groupIdx, int optionIdx)
+        private static void Source(IModOption option)
         {
-            if (group is not ITexToolsGroup)
+            if (option.Group is not ITexToolsGroup)
                 return;
 
             using var source = ImRaii.DragDropSource();
@@ -601,14 +602,14 @@ public class ModPanelEditTab(
 
             if (ImGui.SetDragDropPayload(DragDropLabel, IntPtr.Zero, 0))
             {
-                _dragDropGroupIdx  = groupIdx;
-                _dragDropOptionIdx = optionIdx;
+                _dragDropGroup  = option.Group;
+                _dragDropOption = option;
             }
 
-            ImGui.TextUnformatted($"Dragging option {group.Options[optionIdx].Name} from group {group.Name}...");
+            ImGui.TextUnformatted($"Dragging option {option.Name} from group {option.Group.Name}...");
         }
 
-        private static void Target(ModPanelEditTab panel, IModGroup group, int groupIdx, int optionIdx)
+        private static void Target(ModPanelEditTab panel, IModGroup group, int optionIdx)
         {
             if (group is not ITexToolsGroup)
                 return;
@@ -617,39 +618,53 @@ public class ModPanelEditTab(
             if (!target.Success || !ImGuiUtil.IsDropping(DragDropLabel))
                 return;
 
-            if (_dragDropGroupIdx >= 0 && _dragDropOptionIdx >= 0)
+            if (_dragDropGroup != null && _dragDropOption != null)
             {
-                if (_dragDropGroupIdx == groupIdx)
+                if (_dragDropGroup == group)
                 {
-                    var sourceOption = _dragDropOptionIdx;
+                    var sourceOption = _dragDropOption;
                     panel._delayedActions.Enqueue(
-                        () => panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, sourceOption, optionIdx));
+                        () => panel._modManager.OptionEditor.MoveOption(sourceOption, optionIdx));
                 }
                 else
                 {
                     // Move from one group to another by deleting, then adding, then moving the option.
-                    var sourceGroupIdx = _dragDropGroupIdx;
-                    var sourceOption   = _dragDropOptionIdx;
-                    var sourceGroup    = panel._mod.Groups[sourceGroupIdx];
-                    var currentCount   = group.DataContainers.Count;
-                    var option         = ((ITexToolsGroup) sourceGroup).OptionData[_dragDropOptionIdx];
+                    var sourceOption = _dragDropOption;
                     panel._delayedActions.Enqueue(() =>
                     {
-                        panel._modManager.OptionEditor.DeleteOption(panel._mod, sourceGroupIdx, sourceOption);
-                        panel._modManager.OptionEditor.AddOption(panel._mod, groupIdx, option);
-                        panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, currentCount, optionIdx);
+                        panel._modManager.OptionEditor.DeleteOption(sourceOption);
+                        if (panel._modManager.OptionEditor.AddOption(group, sourceOption) is { } newOption)
+                            panel._modManager.OptionEditor.MoveOption(newOption, optionIdx);
                     });
                 }
             }
 
-            _dragDropGroupIdx  = -1;
-            _dragDropOptionIdx = -1;
+            _dragDropGroup  = null;
+            _dragDropOption = null;
         }
     }
 
     /// <summary> Draw a combo to select single or multi group and switch between them. </summary>
     private void DrawGroupCombo(IModGroup group, int groupIdx)
     {
+        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X - 2 * UiHelpers.IconButtonSize.X - 2 * ImGui.GetStyle().ItemSpacing.X);
+        using var combo = ImRaii.Combo("##GroupType", GroupTypeName(group.Type));
+        if (!combo)
+            return;
+
+        if (ImGui.Selectable(GroupTypeName(GroupType.Single), group.Type == GroupType.Single) && group is MultiModGroup m)
+            _modManager.OptionEditor.MultiEditor.ChangeToSingle(m);
+
+        var       canSwitchToMulti = group.Options.Count <= IModGroup.MaxMultiOptions;
+        using var style            = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f, !canSwitchToMulti);
+        if (ImGui.Selectable(GroupTypeName(GroupType.Multi), group.Type == GroupType.Multi) && canSwitchToMulti && group is SingleModGroup s)
+            _modManager.OptionEditor.SingleEditor.ChangeToMulti(s);
+
+        style.Pop();
+        if (!canSwitchToMulti)
+            ImGuiUtil.HoverTooltip($"Can not convert group to multi group since it has more than {IModGroup.MaxMultiOptions} options.");
+        return;
+
         static string GroupTypeName(GroupType type)
             => type switch
             {
@@ -657,23 +672,6 @@ public class ModPanelEditTab(
                 GroupType.Multi  => "Multi Group",
                 _                => "Unknown",
             };
-
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X - 2 * UiHelpers.IconButtonSize.X - 2 * ImGui.GetStyle().ItemSpacing.X);
-        using var combo = ImRaii.Combo("##GroupType", GroupTypeName(group.Type));
-        if (!combo)
-            return;
-
-        if (ImGui.Selectable(GroupTypeName(GroupType.Single), group.Type == GroupType.Single))
-            _modManager.OptionEditor.ChangeModGroupType(_mod, groupIdx, GroupType.Single);
-
-        var       canSwitchToMulti = group.Options.Count <= IModGroup.MaxMultiOptions;
-        using var style            = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f, !canSwitchToMulti);
-        if (ImGui.Selectable(GroupTypeName(GroupType.Multi), group.Type == GroupType.Multi) && canSwitchToMulti)
-            _modManager.OptionEditor.ChangeModGroupType(_mod, groupIdx, GroupType.Multi);
-
-        style.Pop();
-        if (!canSwitchToMulti)
-            ImGuiUtil.HoverTooltip($"Can not convert group to multi group since it has more than {IModGroup.MaxMultiOptions} options.");
     }
 
     /// <summary> Handles input text and integers in separate fields without buffers for every single one. </summary>

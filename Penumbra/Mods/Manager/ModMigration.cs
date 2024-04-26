@@ -83,8 +83,8 @@ public static partial class ModMigration
             mod.Default.FileSwaps.Add(gamePath, swapPath);
 
         creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true);
-        foreach (var (_, index) in mod.Groups.WithIndex())
-            saveService.ImmediateSave(new ModSaveGroup(mod, index, creator.Config.ReplaceNonAsciiOnImport));
+        foreach (var group in mod.Groups)
+            saveService.ImmediateSave(new ModSaveGroup(group, creator.Config.ReplaceNonAsciiOnImport));
 
         // Delete meta files.
         foreach (var file in seenMetaFiles.Where(f => f.Exists))
@@ -112,7 +112,7 @@ public static partial class ModMigration
             }
 
         fileVersion = 1;
-        saveService.ImmediateSave(new ModSaveGroup(mod, -1, creator.Config.ReplaceNonAsciiOnImport));
+        saveService.ImmediateSave(new ModSaveGroup(mod.ModPath, mod.Default, creator.Config.ReplaceNonAsciiOnImport));
 
         return true;
     }
@@ -176,7 +176,7 @@ public static partial class ModMigration
     private static SingleSubMod SubModFromOption(ModCreator creator, Mod mod, SingleModGroup group, OptionV0 option,
         HashSet<FullPath> seenMetaFiles)
     {
-        var subMod = new SingleSubMod(mod, group)
+        var subMod = new SingleSubMod(group)
         {
             Name        = option.OptionName,
             Description = option.OptionDesc,
@@ -189,7 +189,7 @@ public static partial class ModMigration
     private static MultiSubMod SubModFromOption(ModCreator creator, Mod mod, MultiModGroup group, OptionV0 option,
         ModPriority priority, HashSet<FullPath> seenMetaFiles)
     {
-        var subMod = new MultiSubMod(mod, group)
+        var subMod = new MultiSubMod(group)
         {
             Name        = option.OptionName,
             Description = option.OptionDesc,
@@ -219,7 +219,7 @@ public static partial class ModMigration
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public GroupType SelectionType = GroupType.Single;
 
-        public List<OptionV0> Options = new();
+        public List<OptionV0> Options = [];
 
         public OptionGroupV0()
         { }
@@ -236,12 +236,12 @@ public static partial class ModMigration
             var token = JToken.Load(reader);
 
             if (token.Type == JTokenType.Array)
-                return token.ToObject<HashSet<T>>() ?? new HashSet<T>();
+                return token.ToObject<HashSet<T>>() ?? [];
 
             var tmp = token.ToObject<T>();
             return tmp != null
                 ? new HashSet<T> { tmp }
-                : new HashSet<T>();
+                : [];
         }
 
         public override bool CanWrite

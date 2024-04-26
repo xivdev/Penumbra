@@ -1,4 +1,3 @@
-using System.Security.AccessControl;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
@@ -32,14 +31,14 @@ public sealed class ModManager : ModStorage, IDisposable
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
 
-    public readonly ModCreator      Creator;
-    public readonly ModDataEditor   DataEditor;
-    public readonly ModOptionEditor OptionEditor;
+    public readonly ModCreator     Creator;
+    public readonly ModDataEditor  DataEditor;
+    public readonly ModGroupEditor OptionEditor;
 
     public DirectoryInfo BasePath { get; private set; } = null!;
     public bool          Valid    { get; private set; }
 
-    public ModManager(Configuration config, CommunicatorService communicator, ModDataEditor dataEditor, ModOptionEditor optionEditor,
+    public ModManager(Configuration config, CommunicatorService communicator, ModDataEditor dataEditor, ModGroupEditor optionEditor,
         ModCreator creator)
     {
         _config       = config;

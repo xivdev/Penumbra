@@ -24,8 +24,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
                 num += dict.TryAdd(path.Item2, file.File) ? 0 : 1;
         }
 
-        var (groupIdx, dataIdx) = option.GetDataIndices();
-        modManager.OptionEditor.OptionSetFiles(mod, groupIdx, dataIdx, dict);
+        modManager.OptionEditor.SetFiles(option, dict);
         files.UpdatePaths(mod, option);
         Changes = false;
         return num;
@@ -40,15 +39,15 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
     /// <summary> Remove all path redirections where the pointed-to file does not exist. </summary>
     public void RemoveMissingPaths(Mod mod, IModDataContainer option)
     {
-        void HandleSubMod(IModDataContainer subMod, int groupIdx, int optionIdx)
+        void HandleSubMod(IModDataContainer subMod)
         {
             var newDict = subMod.Files.Where(kvp => CheckAgainstMissing(mod, subMod, kvp.Value, kvp.Key, subMod == option))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             if (newDict.Count != subMod.Files.Count)
-                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, newDict);
+                modManager.OptionEditor.SetFiles(subMod, newDict);
         }
 
-        ModEditor.ApplyToAllOptions(mod, HandleSubMod);
+        ModEditor.ApplyToAllContainers(mod, HandleSubMod);
         files.ClearMissingFiles();
     }
 

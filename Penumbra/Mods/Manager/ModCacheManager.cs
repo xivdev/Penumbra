@@ -2,6 +2,8 @@ using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
@@ -103,7 +105,7 @@ public class ModCacheManager : IDisposable
         }
     }
 
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container, int fromIdx)
     {
         switch (type)
         {

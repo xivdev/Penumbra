@@ -4,8 +4,10 @@ using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
@@ -290,7 +292,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     }
 
     /// <summary> Save all collections where the mod has settings and the change requires saving. </summary>
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container, int movedToIdx)
     {
         type.HandlingInfo(out var requiresSaving, out _, out _);
         if (!requiresSaving)
@@ -298,7 +300,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 
         foreach (var collection in this)
         {
-            if (collection.Settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
+            if (collection.Settings[mod.Index]?.HandleChanges(type, mod, group, option, movedToIdx) ?? false)
                 _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
         }
     }

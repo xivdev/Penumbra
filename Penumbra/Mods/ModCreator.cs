@@ -90,7 +90,7 @@ public partial class ModCreator(
         var changes = false;
         foreach (var file in _saveService.FileNames.GetOptionGroupFiles(mod))
         {
-            var group = LoadModGroup(mod, file, mod.Groups.Count);
+            var group = LoadModGroup(mod, file);
             if (group != null && mod.Groups.All(g => g.Name != group.Name))
             {
                 changes = changes
@@ -244,12 +244,12 @@ public partial class ModCreator(
         {
             case GroupType.Multi:
             {
-                var group = MultiModGroup.CreateForSaving(name);
+                var group = MultiModGroup.WithoutMod(name);
                 group.Description     = desc;
                 group.Priority        = priority;
                 group.DefaultSettings = defaultSettings;
-                group.OptionData.AddRange(subMods.Select(s => s.Clone(null!, group)));
-                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
+                group.OptionData.AddRange(subMods.Select(s => s.Clone(group)));
+                _saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
             case GroupType.Single:
@@ -258,8 +258,8 @@ public partial class ModCreator(
                 group.Description     = desc;
                 group.Priority        = priority;
                 group.DefaultSettings = defaultSettings;
-                group.OptionData.AddRange(subMods.Select(s => s.ConvertToSingle(null!, group)));
-                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
+                group.OptionData.AddRange(subMods.Select(s => s.ConvertToSingle(group)));
+                _saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
         }
@@ -272,7 +272,7 @@ public partial class ModCreator(
             .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath, true), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
-        var mod = MultiSubMod.CreateForSaving(option.Name, option.Description, priority);
+        var mod = MultiSubMod.WithoutGroup(option.Name, option.Description, priority);
         foreach (var (_, gamePath, file) in list)
             mod.Files.TryAdd(gamePath, file);
 
@@ -295,7 +295,7 @@ public partial class ModCreator(
         }
 
         IncorporateMetaChanges(mod.Default, directory, true);
-        _saveService.ImmediateSaveSync(new ModSaveGroup(mod, -1, Config.ReplaceNonAsciiOnImport));
+        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
@@ -422,7 +422,7 @@ public partial class ModCreator(
 
 
     /// <summary> Load an option group for a specific mod by its file and index. </summary>
-    private static IModGroup? LoadModGroup(Mod mod, FileInfo file, int groupIdx)
+    private static IModGroup? LoadModGroup(Mod mod, FileInfo file)
     {
         if (!File.Exists(file.FullName))
             return null;

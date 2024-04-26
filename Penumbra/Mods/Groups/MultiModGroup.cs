@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
@@ -18,11 +17,11 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupType Type
         => GroupType.Multi;
 
-    public Mod Mod { get; set; } = mod;
-    public string Name { get; set; } = "Group";
-    public string Description { get; set; } = "A non-exclusive group of settings.";
-    public ModPriority Priority { get; set; }
-    public Setting DefaultSettings { get; set; }
+    public          Mod               Mod             { get; }      = mod;
+    public          string            Name            { get; set; } = "Group";
+    public          string            Description     { get; set; } = "A non-exclusive group of settings.";
+    public          ModPriority       Priority        { get; set; }
+    public          Setting           DefaultSettings { get; set; }
     public readonly List<MultiSubMod> OptionData = [];
 
     public IReadOnlyList<IModOption> Options
@@ -39,28 +38,28 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
             .SelectWhere(o => (o.Files.TryGetValue(gamePath, out var file) || o.FileSwaps.TryGetValue(gamePath, out file), file))
             .FirstOrDefault();
 
-    public int AddOption(Mod mod, string name, string description = "")
+    public IModOption? AddOption(string name, string description = "")
     {
-        var groupIdx = mod.Groups.IndexOf(this);
+        var groupIdx = Mod.Groups.IndexOf(this);
         if (groupIdx < 0)
-            return -1;
+            return null;
 
-        var subMod = new MultiSubMod(mod, this)
+        var subMod = new MultiSubMod(this)
         {
-            Name = name,
+            Name        = name,
             Description = description,
         };
         OptionData.Add(subMod);
-        return OptionData.Count - 1;
+        return subMod;
     }
 
     public static MultiModGroup? Load(Mod mod, JObject json)
     {
         var ret = new MultiModGroup(mod)
         {
-            Name = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
-            Description = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Priority = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
+            Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
+            Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
+            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };
         if (ret.Name.Length == 0)
@@ -78,7 +77,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
                     break;
                 }
 
-                var subMod = new MultiSubMod(mod, ret, child);
+                var subMod = new MultiSubMod(ret, child);
                 ret.OptionData.Add(subMod);
             }
 
@@ -87,42 +86,21 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         return ret;
     }
 
-    public IModGroup Convert(GroupType type)
+    public SingleModGroup ConvertToSingle()
     {
-        switch (type)
+        var single = new SingleModGroup(Mod)
         {
-            case GroupType.Multi: return this;
-            case GroupType.Single:
-                var single = new SingleModGroup(Mod)
-                {
-                    Name = Name,
-                    Description = Description,
-                    Priority = Priority,
-                    DefaultSettings = DefaultSettings.TurnMulti(OptionData.Count),
-                };
-                single.OptionData.AddRange(OptionData.Select(o => o.ConvertToSingle(Mod, single)));
-                return single;
-            default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
-        }
-    }
-
-    public bool MoveOption(int optionIdxFrom, int optionIdxTo)
-    {
-        if (!OptionData.Move(optionIdxFrom, optionIdxTo))
-            return false;
-
-        DefaultSettings = DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);
-        return true;
+            Name            = Name,
+            Description     = Description,
+            Priority        = Priority,
+            DefaultSettings = DefaultSettings.TurnMulti(OptionData.Count),
+        };
+        single.OptionData.AddRange(OptionData.Select(o => o.ConvertToSingle(single)));
+        return single;
     }
 
     public int GetIndex()
-    {
-        var groupIndex = Mod.Groups.IndexOf(this);
-        if (groupIndex < 0)
-            throw new Exception($"Mod {Mod.Name} from Group {Name} does not contain this group.");
-
-        return groupIndex;
-    }
+        => ModGroup.GetIndex(this);
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
     {
@@ -156,15 +134,15 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => ModGroup.GetCountsBase(this);
 
     public Setting FixSetting(Setting setting)
-        => new(setting.Value & (1ul << OptionData.Count) - 1);
+        => new(setting.Value & ((1ul << OptionData.Count) - 1));
 
     /// <summary> Create a group without a mod only for saving it in the creator. </summary>
-    internal static MultiModGroup CreateForSaving(string name)
+    internal static MultiModGroup WithoutMod(string name)
         => new(null!)
         {
             Name = name,
         };
 
-    IReadOnlyList<IModDataOption> ITexToolsGroup.OptionData
+    IReadOnlyList<OptionSubMod> ITexToolsGroup.OptionData
         => OptionData;
 }

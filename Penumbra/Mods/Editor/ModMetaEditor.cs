@@ -145,12 +145,12 @@ public class ModMetaEditor(ModManager modManager)
         Split(currentOption.Manipulations);
     }
 
-    public void Apply(Mod mod, int groupIdx, int optionIdx)
+    public void Apply(IModDataContainer container)
     {
         if (!Changes)
             return;
 
-        modManager.OptionEditor.OptionSetManipulations(mod, groupIdx, optionIdx, Recombine().ToHashSet());
+        modManager.OptionEditor.SetManipulations(container, Recombine().ToHashSet());
         Changes = false;
     }
 

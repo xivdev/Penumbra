@@ -7,8 +7,10 @@ using Penumbra.Communication;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -257,7 +259,7 @@ public class CollectionCacheManager : IDisposable
     }
 
     /// <summary> Prepare Changes by removing mods from caches with collections or add or reload mods. </summary>
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container, int movedToIdx)
     {
         if (type is ModOptionChangeType.PrepareChange)
         {

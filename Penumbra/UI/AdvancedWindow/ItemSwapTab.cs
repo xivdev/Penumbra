@@ -17,6 +17,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
@@ -264,9 +265,10 @@ public class ItemSwapTab : IDisposable, ITab
             return;
 
         _modManager.AddMod(newDir);
-        if (!_swapData.WriteMod(_modManager, _modManager[^1],
+        var mod = _modManager[^1];
+        if (!_swapData.WriteMod(_modManager, mod, mod.Default,
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
-            _modManager.DeleteMod(_modManager[^1]);
+            _modManager.DeleteMod(mod);
     }
 
     private void CreateOption()
@@ -276,7 +278,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         var            groupCreated     = false;
         var            dirCreated       = false;
-        var            optionCreated    = -1;
+        IModOption?    createdOption    = null;
         DirectoryInfo? optionFolderName = null;
         try
         {
@@ -290,22 +292,22 @@ public class ItemSwapTab : IDisposable, ITab
             {
                 if (_selectedGroup == null)
                 {
-                    _modManager.OptionEditor.AddModGroup(_mod, GroupType.Multi, _newGroupName);
-                    _selectedGroup = _mod.Groups.Last();
+                    if (_modManager.OptionEditor.AddModGroup(_mod, GroupType.Multi, _newGroupName) is not { } group)
+                        throw new Exception($"Failure creating option group.");
+
+                    _selectedGroup = group;
                     groupCreated   = true;
                 }
 
-                var optionIdx = _modManager.OptionEditor.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
-                if (optionIdx < 0)
+                if (_modManager.OptionEditor.AddOption(_selectedGroup, _newOptionName) is not { } option)
                     throw new Exception($"Failure creating mod option.");
 
-                optionCreated    = optionIdx;
+                createdOption    = option;
                 optionFolderName = Directory.CreateDirectory(optionFolderName.FullName);
                 dirCreated       = true;
-                if (!_swapData.WriteMod(_modManager, _mod,
-                        _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps,
-                        optionFolderName,
-                        _mod.Groups.IndexOf(_selectedGroup), optionIdx))
+                // #TODO ModOption <> DataContainer
+                if (!_swapData.WriteMod(_modManager, _mod, (IModDataContainer)option,
+                        _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps, optionFolderName))
                     throw new Exception("Failure writing files for mod swap.");
             }
         }
@@ -314,12 +316,12 @@ public class ItemSwapTab : IDisposable, ITab
             Penumbra.Messager.NotificationMessage(e, "Could not create new Swap Option.", NotificationType.Error, false);
             try
             {
-                if (optionCreated >= 0 && _selectedGroup != null)
-                    _modManager.OptionEditor.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), optionCreated);
+                if (createdOption != null)
+                    _modManager.OptionEditor.DeleteOption(createdOption);
 
                 if (groupCreated)
                 {
-                    _modManager.OptionEditor.DeleteModGroup(_mod, _mod.Groups.IndexOf(_selectedGroup!));
+                    _modManager.OptionEditor.DeleteModGroup(_selectedGroup!);
                     _selectedGroup = null;
                 }
 
@@ -717,7 +719,8 @@ public class ItemSwapTab : IDisposable, ITab
         _dirty = true;
     }
 
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int a, int b, int c)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
+        int fromIdx)
     {
         if (type is ModOptionChangeType.PrepareChange or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded || mod != _mod)
             return;

@@ -24,6 +24,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Remove="Mods\Subclasses\**" />
+      <EmbeddedResource Remove="Mods\Subclasses\**" />
+      <None Remove="Mods\Subclasses\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Content Include="tsmLogo.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -91,10 +97,6 @@
         <None Update="Penumbra.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Mods\Subclasses\" />
     </ItemGroup>
 
     <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">

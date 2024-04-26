@@ -11,6 +11,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
@@ -254,7 +255,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting _1, int _2, bool inherited)
         => ModSettingChanged?.Invoke(type, collection.Id, mod?.ModPath.Name ?? string.Empty, inherited);
 
-    private void OnModOptionEdited(ModOptionChangeType type, Mod mod, int groupIndex, int optionIndex, int moveIndex)
+    private void OnModOptionEdited(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container, int moveIndex)
     {
         switch (type)
         {

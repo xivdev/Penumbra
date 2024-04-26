@@ -29,8 +29,8 @@ public class ModEditor(
     public int  GroupIdx { get; private set; }
     public int  DataIdx  { get; private set; }
 
-    public IModGroup?         Group          { get; private set; }
-    public IModDataContainer? Option         { get; private set; }
+    public IModGroup?         Group  { get; private set; }
+    public IModDataContainer? Option { get; private set; }
 
     public void LoadMod(Mod mod)
         => LoadMod(mod, -1, 0);
@@ -63,10 +63,10 @@ public class ModEditor(
         {
             if (groupIdx == -1 && dataIdx == 0)
             {
-                Group          = null;
-                Option         = Mod.Default;
-                GroupIdx       = groupIdx;
-                DataIdx        = dataIdx;
+                Group    = null;
+                Option   = Mod.Default;
+                GroupIdx = groupIdx;
+                DataIdx  = dataIdx;
                 return;
             }
 
@@ -75,18 +75,18 @@ public class ModEditor(
                 Group = Mod.Groups[groupIdx];
                 if (dataIdx >= 0 && dataIdx < Group.DataContainers.Count)
                 {
-                    Option         = Group.DataContainers[dataIdx];
-                    GroupIdx       = groupIdx;
-                    DataIdx        = dataIdx;
+                    Option   = Group.DataContainers[dataIdx];
+                    GroupIdx = groupIdx;
+                    DataIdx  = dataIdx;
                     return;
                 }
             }
         }
 
-        Group          = null;
-        Option         = Mod?.Default;
-        GroupIdx       = -1;
-        DataIdx        = 0;
+        Group    = null;
+        Option   = Mod?.Default;
+        GroupIdx = -1;
+        DataIdx  = 0;
         if (message)
             Penumbra.Log.Error($"Loading invalid option {groupIdx} {dataIdx} for Mod {Mod?.Name ?? "Unknown"}.");
     }
@@ -105,23 +105,11 @@ public class ModEditor(
         => Clear();
 
     /// <summary> Apply a option action to all available option in a mod, including the default option. </summary>
-    public static void ApplyToAllOptions(Mod mod, Action<IModDataContainer, int, int> action)
+    public static void ApplyToAllContainers(Mod mod, Action<IModDataContainer> action)
     {
-        action(mod.Default, -1, 0);
-        foreach (var (group, groupIdx) in mod.Groups.WithIndex())
-        {
-            switch (group)
-            {
-                case SingleModGroup single:
-                    for (var optionIdx = 0; optionIdx < single.OptionData.Count; ++optionIdx)
-                        action(single.OptionData[optionIdx], groupIdx, optionIdx);
-                    break;
-                case MultiModGroup multi:
-                    for (var optionIdx = 0; optionIdx < multi.OptionData.Count; ++optionIdx)
-                        action(multi.OptionData[optionIdx], groupIdx, optionIdx);
-                    break;
-            }
-        }
+        action(mod.Default);
+        foreach (var container in mod.Groups.SelectMany(g => g.DataContainers))
+            action(container);
     }
 
     // Does not delete the base directory itself even if it is completely empty at the end.

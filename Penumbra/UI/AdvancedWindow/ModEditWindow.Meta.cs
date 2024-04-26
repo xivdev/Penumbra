@@ -27,7 +27,7 @@ public partial class ModEditWindow
     private const string GenderTooltip          = "Gender";
     private const string ObjectTypeTooltip      = "Object Type";
     private const string SecondaryIdTooltip     = "Secondary ID";
-    private const string PrimaryIDTooltip       = "Primary ID";
+    private const string PrimaryIdTooltipShort  = "Primary ID";
     private const string VariantIdTooltip       = "Variant ID";
     private const string EstTypeTooltip         = "EST Type";
     private const string RacialTribeTooltip     = "Racial Tribe";
@@ -45,7 +45,7 @@ public partial class ModEditWindow
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
         ImGui.NewLine();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
-            _editor.MetaEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
+            _editor.MetaEditor.Apply(_editor.Option!);
 
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
@@ -477,7 +477,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
             ImGui.TextUnformatted(meta.PrimaryId.ToString());
-            ImGuiUtil.HoverTooltip(PrimaryIDTooltip);
+            ImGuiUtil.HoverTooltip(PrimaryIdTooltipShort);
 
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);

@@ -283,12 +283,12 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
             switch (group)
             {
                 case SingleModGroup single:
-                    foreach (var (_, optionIdx) in single.OptionData.WithIndex())
-                        _modManager.OptionEditor.OptionSetFiles(Mod, groupIdx, optionIdx, _redirections[groupIdx + 1][optionIdx]);
+                    foreach (var (option, optionIdx) in single.OptionData.WithIndex())
+                        _modManager.OptionEditor.SetFiles(option, _redirections[groupIdx + 1][optionIdx]);
                     break;
                 case MultiModGroup multi:
-                    foreach (var (_, optionIdx) in multi.OptionData.WithIndex())
-                        _modManager.OptionEditor.OptionSetFiles(Mod, groupIdx, optionIdx, _redirections[groupIdx + 1][optionIdx]);
+                    foreach (var (option, optionIdx) in multi.OptionData.WithIndex())
+                        _modManager.OptionEditor.SetFiles(option, _redirections[groupIdx + 1][optionIdx]);
                     break;
             }
         }

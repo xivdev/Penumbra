@@ -12,24 +12,20 @@ public readonly struct ModSaveGroup : ISavable
     private readonly DefaultSubMod? _defaultMod;
     private readonly bool           _onlyAscii;
 
-    public ModSaveGroup(Mod mod, int groupIdx, bool onlyAscii)
-    {
-        _basePath = mod.ModPath;
-        _groupIdx = groupIdx;
-        if (_groupIdx < 0)
-            _defaultMod = mod.Default;
-        else
-            _group = mod.Groups[_groupIdx];
-        _onlyAscii = onlyAscii;
-    }
-
-    public ModSaveGroup(DirectoryInfo basePath, IModGroup group, int groupIdx, bool onlyAscii)
+    private ModSaveGroup(DirectoryInfo basePath, IModGroup group, int groupIndex, bool onlyAscii)
     {
         _basePath  = basePath;
         _group     = group;
-        _groupIdx  = groupIdx;
+        _groupIdx  = groupIndex;
         _onlyAscii = onlyAscii;
     }
+
+    public static ModSaveGroup WithoutMod(DirectoryInfo basePath, IModGroup group, int groupIndex, bool onlyAscii)
+        => new(basePath, group, groupIndex, onlyAscii);
+
+    public ModSaveGroup(IModGroup group, bool onlyAscii)
+        : this(group.Mod.ModPath, group, group.GetIndex(), onlyAscii)
+    { }
 
     public ModSaveGroup(DirectoryInfo basePath, DefaultSubMod @default, bool onlyAscii)
     {
@@ -37,6 +33,33 @@ public readonly struct ModSaveGroup : ISavable
         _groupIdx   = -1;
         _defaultMod = @default;
         _onlyAscii  = onlyAscii;
+    }
+
+    public ModSaveGroup(DirectoryInfo basePath, IModDataContainer container, bool onlyAscii)
+    {
+        _basePath   = basePath;
+        _defaultMod = container as DefaultSubMod;
+        _onlyAscii  = onlyAscii;
+        if (_defaultMod == null)
+        {
+            _groupIdx = -1;
+            _group    = null;
+        }
+        else
+        {
+            _group    = container.Group!;
+            _groupIdx = _group.GetIndex();
+        }
+    }
+
+    public ModSaveGroup(IModDataContainer container, bool onlyAscii)
+    {
+        _basePath = (container.Mod as Mod)?.ModPath
+         ?? throw new Exception("Invalid save group from default data container without base path."); // Should not happen.
+        _defaultMod = null;
+        _onlyAscii  = onlyAscii;
+        _group      = container.Group!;
+        _groupIdx   = _group.GetIndex();
     }
 
     public string ToFilename(FilenameService fileNames)
@@ -59,7 +82,7 @@ public readonly struct ModSaveGroup : ISavable
     {
         jWriter.WriteStartObject();
         jWriter.WritePropertyName(nameof(group.Name));
-        jWriter.WriteValue(group!.Name);
+        jWriter.WriteValue(group.Name);
         jWriter.WritePropertyName(nameof(group.Description));
         jWriter.WriteValue(group.Description);
         jWriter.WritePropertyName(nameof(group.Priority));

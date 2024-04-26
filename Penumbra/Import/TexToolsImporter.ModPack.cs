@@ -205,7 +205,7 @@ public partial class TexToolsImporter
                         {
                             var option = group.OptionList[idx];
                             _currentOptionName = option.Name;
-                            options.Insert(idx, MultiSubMod.CreateForSaving(option.Name, option.Description, ModPriority.Default));
+                            options.Insert(idx, MultiSubMod.WithoutGroup(option.Name, option.Description, ModPriority.Default));
                             if (option.IsChecked)
                                 defaultSettings = Setting.Single(idx);
                         }

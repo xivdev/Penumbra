@@ -4,21 +4,21 @@ using Penumbra.Mods.Settings;
 
 namespace Penumbra.Mods.SubMods;
 
-public class MultiSubMod(Mod mod, MultiModGroup group) : OptionSubMod<MultiModGroup>(mod, group)
+public class MultiSubMod(MultiModGroup group) : OptionSubMod<MultiModGroup>(group)
 {
     public ModPriority Priority { get; set; } = ModPriority.Default;
 
-    public MultiSubMod(Mod mod, MultiModGroup group, JToken json)
-        : this(mod, group)
+    public MultiSubMod(MultiModGroup group, JToken json)
+        : this(group)
     {
         SubMod.LoadOptionData(json, this);
-        SubMod.LoadDataContainer(json, this, mod.ModPath);
+        SubMod.LoadDataContainer(json, this, group.Mod.ModPath);
         Priority = json[nameof(IModGroup.Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default;
     }
 
-    public MultiSubMod Clone(Mod mod, MultiModGroup group)
+    public MultiSubMod Clone(MultiModGroup group)
     {
-        var ret = new MultiSubMod(mod, group)
+        var ret = new MultiSubMod(group)
         {
             Name        = Name,
             Description = Description,
@@ -29,9 +29,9 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : OptionSubMod<MultiModGr
         return ret;
     }
 
-    public SingleSubMod ConvertToSingle(Mod mod, SingleModGroup group)
+    public SingleSubMod ConvertToSingle(SingleModGroup group)
     {
-        var ret = new SingleSubMod(mod, group)
+        var ret = new SingleSubMod(group)
         {
             Name        = Name,
             Description = Description,
@@ -40,8 +40,8 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : OptionSubMod<MultiModGr
         return ret;
     }
 
-    public static MultiSubMod CreateForSaving(string name, string description, ModPriority priority)
-        => new(null!, null!)
+    public static MultiSubMod WithoutGroup(string name, string description, ModPriority priority)
+        => new(null!)
         {
             Name        = name,
             Description = description,

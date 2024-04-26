@@ -34,8 +34,11 @@ public sealed class SaveService(Logger log, FrameworkManager framework, Filename
             }
         }
 
-        for (var i = 0; i < mod.Groups.Count - 1; ++i)
-            ImmediateSave(new ModSaveGroup(mod, i, onlyAscii));
-        ImmediateSaveSync(new ModSaveGroup(mod, mod.Groups.Count - 1, onlyAscii));
+        if (mod.Groups.Count > 0)
+        {
+            foreach (var group in mod.Groups.SkipLast(1))
+                ImmediateSave(new ModSaveGroup(group, onlyAscii));
+            ImmediateSaveSync(new ModSaveGroup(mod.Groups[^1], onlyAscii));
+        }
     }
 }

@@ -60,7 +60,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
     private void HandleDuplicate(Mod mod, FullPath duplicate, FullPath remaining, bool useModManager)
     {
-        ModEditor.ApplyToAllOptions(mod, HandleSubMod);
+        ModEditor.ApplyToAllContainers(mod, HandleSubMod);
 
         try
         {
@@ -73,7 +73,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
         return;
 
-        void HandleSubMod(IModDataContainer subMod, int groupIdx, int optionIdx)
+        void HandleSubMod(IModDataContainer subMod)
         {
             var changes = false;
             var dict = subMod.Files.ToDictionary(kvp => kvp.Key,
@@ -82,14 +82,9 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
                 return;
 
             if (useModManager)
-            {
-                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict, SaveType.ImmediateSync);
-            }
+                modManager.OptionEditor.SetFiles(subMod, dict, SaveType.ImmediateSync);
             else
-            {
-                subMod.Files = dict;
-                saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-            }
+                saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, subMod, config.ReplaceNonAsciiOnImport));
         }
     }
 
