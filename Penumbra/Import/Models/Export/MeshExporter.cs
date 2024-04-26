@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Lumina.Data.Parsing;
 using Lumina.Extensions;
 using OtterGui;
 using Penumbra.GameData.Files;

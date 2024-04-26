@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using ImGuiNET;
+using Lumina.Data.Parsing;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
@@ -8,7 +9,6 @@ using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
-using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
@@ -421,6 +421,14 @@ public partial class ModEditWindow
         var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
 
+        // Vertex elements
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted("Vertex Elements");
+
+        ImGui.TableNextColumn();
+        DrawVertexElementDetails(file.VertexDeclarations[meshIndex].VertexElements);
+
         // Mesh material
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
@@ -434,6 +442,40 @@ public partial class ModEditWindow
             ret |= DrawSubMeshAttributes(tab, meshIndex, subMeshOffset, disabled);
 
         return ret;
+    }
+
+    private static void DrawVertexElementDetails(MdlStructs.VertexElement[] vertexElements)
+    {
+        using var node = ImRaii.TreeNode($"Click to expand");
+        if (!node)
+            return;
+        
+        var flags = ImGuiTableFlags.SizingFixedFit
+            | ImGuiTableFlags.RowBg
+            | ImGuiTableFlags.Borders
+            | ImGuiTableFlags.NoHostExtendX;
+        using var table = ImRaii.Table(string.Empty, 4, flags);
+        if (!table)
+            return;
+
+        ImGui.TableSetupColumn("Usage");
+        ImGui.TableSetupColumn("Type");
+        ImGui.TableSetupColumn("Stream");
+        ImGui.TableSetupColumn("Offset");
+
+        ImGui.TableHeadersRow();
+
+        foreach (var element in vertexElements)
+        {
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{(MdlFile.VertexUsage)element.Usage}");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{(MdlFile.VertexType)element.Type}");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{element.Stream}");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{element.Offset}");
+        }
     }
 
     private static bool DrawMaterialCombo(MdlTab tab, int meshIndex, bool disabled)
