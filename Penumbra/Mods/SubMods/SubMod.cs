@@ -1,12 +1,29 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Groups;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.SubMods;
 
-public static class SubModHelpers
+public static class SubMod
 {
+    public static IModOption Create(IModGroup group, string name, string description = "")
+        => group switch
+        {
+            SingleModGroup single => new SingleSubMod(group.Mod, single)
+            {
+                Name        = name,
+                Description = description,
+            },
+            MultiModGroup multi => new MultiSubMod(group.Mod, multi)
+            {
+                Name        = name,
+                Description = description,
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(group)),
+        };
+
     /// <summary> Add all unique meta manipulations, file redirections and then file swaps from a ModDataContainer to the given sets. Skip any keys that are already contained. </summary>
     public static void AddContainerTo(IModDataContainer container, Dictionary<Utf8GamePath, FullPath> redirections,
         HashSet<MetaManipulation> manipulations)

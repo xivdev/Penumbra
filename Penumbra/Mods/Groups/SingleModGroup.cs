@@ -135,7 +135,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => OptionData.Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(OptionData.Count - 1)));
 
     public (int Redirections, int Swaps, int Manips) GetCounts()
-        => IModGroup.GetCountsBase(this);
+        => ModGroup.GetCountsBase(this);
 
     public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)
     {
@@ -145,8 +145,8 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         foreach (var option in OptionData)
         {
             jWriter.WriteStartObject();
-            SubModHelpers.WriteModOption(jWriter, option);
-            SubModHelpers.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
+            SubMod.WriteModOption(jWriter, option);
+            SubMod.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
             jWriter.WriteEndObject();
         }
 

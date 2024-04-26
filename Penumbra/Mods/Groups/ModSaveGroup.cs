@@ -51,7 +51,7 @@ public readonly struct ModSaveGroup : ISavable
         if (_groupIdx >= 0)
             _group!.WriteJson(j, serializer);
         else
-            SubModHelpers.WriteModContainer(j, serializer, _defaultMod!, _basePath);
+            SubMod.WriteModContainer(j, serializer, _defaultMod!, _basePath);
         j.WriteEndObject();
     }
 

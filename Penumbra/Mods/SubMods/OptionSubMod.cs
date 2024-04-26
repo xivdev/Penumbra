@@ -32,7 +32,7 @@ public abstract class OptionSubMod<T>(Mod mod, T group) : IModDataOption
     public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => SubModHelpers.AddContainerTo(this, redirections, manipulations);
+        => SubMod.AddContainerTo(this, redirections, manipulations);
 
     public string GetName()
         => Name;

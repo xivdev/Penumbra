@@ -9,8 +9,8 @@ public class SingleSubMod(Mod mod, SingleModGroup singleGroup) : OptionSubMod<Si
     public SingleSubMod(Mod mod, SingleModGroup singleGroup, JToken json)
         : this(mod, singleGroup)
     {
-        SubModHelpers.LoadOptionData(json, this);
-        SubModHelpers.LoadDataContainer(json, this, mod.ModPath);
+        SubMod.LoadOptionData(json, this);
+        SubMod.LoadDataContainer(json, this, mod.ModPath);
     }
 
     public SingleSubMod Clone(Mod mod, SingleModGroup group)
@@ -20,7 +20,7 @@ public class SingleSubMod(Mod mod, SingleModGroup singleGroup) : OptionSubMod<Si
             Name        = Name,
             Description = Description,
         };
-        SubModHelpers.Clone(this, ret);
+        SubMod.Clone(this, ret);
 
         return ret;
     }
@@ -33,7 +33,7 @@ public class SingleSubMod(Mod mod, SingleModGroup singleGroup) : OptionSubMod<Si
             Description = Description,
             Priority    = priority,
         };
-        SubModHelpers.Clone(this, ret);
+        SubMod.Clone(this, ret);
 
         return ret;
     }

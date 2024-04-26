@@ -11,8 +11,8 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : OptionSubMod<MultiModGr
     public MultiSubMod(Mod mod, MultiModGroup group, JToken json)
         : this(mod, group)
     {
-        SubModHelpers.LoadOptionData(json, this);
-        SubModHelpers.LoadDataContainer(json, this, mod.ModPath);
+        SubMod.LoadOptionData(json, this);
+        SubMod.LoadDataContainer(json, this, mod.ModPath);
         Priority = json[nameof(IModGroup.Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default;
     }
 
@@ -24,7 +24,7 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : OptionSubMod<MultiModGr
             Description = Description,
             Priority    = Priority,
         };
-        SubModHelpers.Clone(this, ret);
+        SubMod.Clone(this, ret);
 
         return ret;
     }
@@ -36,7 +36,7 @@ public class MultiSubMod(Mod mod, MultiModGroup group) : OptionSubMod<MultiModGr
             Name        = Name,
             Description = Description,
         };
-        SubModHelpers.Clone(this, ret);
+        SubMod.Clone(this, ret);
         return ret;
     }
 

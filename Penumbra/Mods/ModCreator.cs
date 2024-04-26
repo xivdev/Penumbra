@@ -115,7 +115,7 @@ public partial class ModCreator(
         try
         {
             var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
-            SubModHelpers.LoadDataContainer(jObject, mod.Default, mod.ModPath);
+            SubMod.LoadDataContainer(jObject, mod.Default, mod.ModPath);
         }
         catch (Exception e)
         {

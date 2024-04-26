@@ -22,7 +22,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
         => null;
 
     public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => SubModHelpers.AddContainerTo(this, redirections, manipulations);
+        => SubMod.AddContainerTo(this, redirections, manipulations);
 
     public string GetName()
         => FullName;

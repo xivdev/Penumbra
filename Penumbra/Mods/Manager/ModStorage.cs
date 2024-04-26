@@ -3,17 +3,13 @@ using OtterGui.Widgets;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCombo : FilterComboCache<Mod>
+public class ModCombo(Func<IReadOnlyList<Mod>> generator) : FilterComboCache<Mod>(generator, MouseWheelType.None, Penumbra.Log)
 {
     protected override bool IsVisible(int globalIndex, LowerString filter)
         => Items[globalIndex].Name.Contains(filter);
 
     protected override string ToString(Mod obj)
         => obj.Name.Text;
-
-    public ModCombo(Func<IReadOnlyList<Mod>> generator)
-        : base(generator, MouseWheelType.None, Penumbra.Log)
-    { }
 }
 
 public class ModStorage : IReadOnlyList<Mod>

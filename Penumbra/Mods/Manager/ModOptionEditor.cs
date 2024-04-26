@@ -68,7 +68,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
             return;
 
         saveService.ImmediateDelete(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
-        var _ = group switch
+        _ = group switch
         {
             SingleModGroup s => s.Name = newName,
             MultiModGroup m  => m.Name = newName,
@@ -85,21 +85,11 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         if (!VerifyFileName(mod, null, newName, true))
             return;
 
-        var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
-
-        mod.Groups.Add(type == GroupType.Multi
-            ? new MultiModGroup(mod)
-            {
-                Name     = newName,
-                Priority = maxPriority,
-            }
-            : new SingleModGroup(mod)
-            {
-                Name     = newName,
-                Priority = maxPriority,
-            });
-        saveService.Save(saveType, new ModSaveGroup(mod, mod.Groups.Count - 1, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, mod.Groups.Count - 1, -1, -1);
+        var idx   = mod.Groups.Count;
+        var group = ModGroup.Create(mod, type, newName);
+        mod.Groups.Add(group);
+        saveService.Save(saveType, new ModSaveGroup(mod, idx, config.ReplaceNonAsciiOnImport));
+        communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, idx, -1, -1);
     }
 
     /// <summary> Add a new mod, empty option group of the given type and name if it does not exist already. </summary>
@@ -142,12 +132,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
         if (group.Description == newDescription)
             return;
 
-        var _ = group switch
-        {
-            SingleModGroup s => s.Description = newDescription,
-            MultiModGroup m  => m.Description = newDescription,
-            _                => newDescription,
-        };
+        group.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, -1, -1);
     }
@@ -155,9 +140,11 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     /// <summary> Change the description of the given option. </summary>
     public void ChangeOptionDescription(Mod mod, int groupIdx, int optionIdx, string newDescription)
     {
-        if (!mod.Groups[groupIdx].ChangeOptionDescription(optionIdx, newDescription))
+        var option = mod.Groups[groupIdx].Options[optionIdx];
+        if (option.Description == newDescription)
             return;
 
+        option.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1);
     }
@@ -193,8 +180,11 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
     /// <summary> Rename the given option. </summary>
     public void RenameOption(Mod mod, int groupIdx, int optionIdx, string newName)
     {
-        if (!mod.Groups[groupIdx].ChangeOptionName(optionIdx, newName))
+        var option = mod.Groups[groupIdx].Options[optionIdx];
+        if (option.Name == newName)
             return;
+
+        option.Name = newName;
 
         saveService.QueueSave(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1);
@@ -251,7 +241,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                     Description = option.Description,
                 };
                 if (option is IModDataContainer data)
-                    SubModHelpers.Clone(data, newOption);
+                    SubMod.Clone(data, newOption);
                 s.OptionData.Add(newOption);
                 break;
             }
@@ -265,7 +255,7 @@ public class ModOptionEditor(CommunicatorService communicator, SaveService saveS
                     Priority    = option is MultiSubMod s ? s.Priority : ModPriority.Default,
                 };
                 if (option is IModDataContainer data)
-                    SubModHelpers.Clone(data, newOption);
+                    SubMod.Clone(data, newOption);
                 m.OptionData.Add(newOption);
                 break;
             }

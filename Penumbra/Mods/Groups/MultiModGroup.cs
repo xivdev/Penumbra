@@ -141,10 +141,10 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         foreach (var option in OptionData)
         {
             jWriter.WriteStartObject();
-            SubModHelpers.WriteModOption(jWriter, option);
+            SubMod.WriteModOption(jWriter, option);
             jWriter.WritePropertyName(nameof(option.Priority));
             jWriter.WriteValue(option.Priority.Value);
-            SubModHelpers.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
+            SubMod.WriteModContainer(jWriter, serializer, option, basePath ?? Mod.ModPath);
             jWriter.WriteEndObject();
         }
 
@@ -153,7 +153,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     }
 
     public (int Redirections, int Swaps, int Manips) GetCounts()
-        => IModGroup.GetCountsBase(this);
+        => ModGroup.GetCountsBase(this);
 
     public Setting FixSetting(Setting setting)
         => new(setting.Value & (1ul << OptionData.Count) - 1);
