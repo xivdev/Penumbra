@@ -18,6 +18,7 @@ public class ModPanelHeader : IDisposable
     private readonly IFontHandle _nameFont;
 
     private readonly CommunicatorService _communicator;
+    private          float               _lastPreSettingsHeight = 0;
 
     public ModPanelHeader(DalamudPluginInterface pi, CommunicatorService communicator)
     {
@@ -32,6 +33,11 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void Draw()
     {
+        var height     = ImGui.GetContentRegionAvail().Y;
+        var maxHeight = 3 * height / 4;
+        using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
+            ? ImRaii.Child("HeaderChild", new Vector2(ImGui.GetContentRegionAvail().X, maxHeight), false)
+            : null;
         using (ImRaii.Group())
         {
             var offset = DrawModName();
@@ -40,6 +46,7 @@ public class ModPanelHeader : IDisposable
         }
 
         _communicator.PreSettingsTabBarDraw.Invoke(_mod.Identifier, ImGui.GetItemRectSize().X, _nameWidth);
+        _lastPreSettingsHeight = ImGui.GetCursorPosY();
     }
 
     /// <summary>
@@ -48,6 +55,7 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void UpdateModData(Mod mod)
     {
+        _lastPreSettingsHeight = 0;
         _mod = mod;
         // Name
         var name = $" {mod.Name} ";
