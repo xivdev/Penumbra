@@ -10,6 +10,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;

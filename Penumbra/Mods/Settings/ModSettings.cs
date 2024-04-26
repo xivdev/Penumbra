@@ -3,7 +3,7 @@ using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
-using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Settings;

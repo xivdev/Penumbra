@@ -5,6 +5,7 @@ using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;

@@ -6,7 +6,7 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
     : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), IService
@@ -14,7 +14,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
     protected override ImcModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
         {
-            Name     = newName,
+            Name = newName,
             Priority = priority,
         };
 

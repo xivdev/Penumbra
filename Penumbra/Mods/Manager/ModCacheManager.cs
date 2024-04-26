@@ -3,6 +3,7 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 

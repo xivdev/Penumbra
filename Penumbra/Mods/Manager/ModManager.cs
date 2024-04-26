@@ -1,5 +1,6 @@
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;

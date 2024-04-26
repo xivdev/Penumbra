@@ -1,10 +1,8 @@
-using System.Text.RegularExpressions;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -12,9 +10,8 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
-using static FFXIVClientStructs.FFXIV.Client.UI.Misc.ConfigModule;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Mods.Manager.OptionEditor;
 
 public enum ModOptionChangeType
 {
@@ -91,7 +88,7 @@ public class ModGroupEditor(
     /// <summary> Move the index of a given option group. </summary>
     public void MoveModGroup(IModGroup group, int groupIdxTo)
     {
-        var mod     = group.Mod;
+        var mod = group.Mod;
         var idxFrom = group.GetIndex();
         if (!mod.Groups.Move(idxFrom, groupIdxTo))
             return;
@@ -230,45 +227,45 @@ public class ModGroupEditor(
         => group switch
         {
             SingleModGroup s => SingleEditor.AddOption(s, option),
-            MultiModGroup m  => MultiEditor.AddOption(m, option),
-            ImcModGroup i    => ImcEditor.AddOption(i, option),
-            _                => null,
+            MultiModGroup m => MultiEditor.AddOption(m, option),
+            ImcModGroup i => ImcEditor.AddOption(i, option),
+            _ => null,
         };
 
     public IModOption? AddOption(IModGroup group, string newName)
         => group switch
         {
             SingleModGroup s => SingleEditor.AddOption(s, newName),
-            MultiModGroup m  => MultiEditor.AddOption(m, newName),
-            ImcModGroup i    => ImcEditor.AddOption(i, newName),
-            _                => null,
+            MultiModGroup m => MultiEditor.AddOption(m, newName),
+            ImcModGroup i => ImcEditor.AddOption(i, newName),
+            _ => null,
         };
 
     public IModGroup? AddModGroup(Mod mod, GroupType type, string newName, SaveType saveType = SaveType.ImmediateSync)
         => type switch
         {
             GroupType.Single => SingleEditor.AddModGroup(mod, newName, saveType),
-            GroupType.Multi  => MultiEditor.AddModGroup(mod, newName, saveType),
-            GroupType.Imc    => ImcEditor.AddModGroup(mod, newName, saveType),
-            _                => null,
+            GroupType.Multi => MultiEditor.AddModGroup(mod, newName, saveType),
+            GroupType.Imc => ImcEditor.AddModGroup(mod, newName, saveType),
+            _ => null,
         };
 
     public (IModGroup?, int, bool) FindOrAddModGroup(Mod mod, GroupType type, string name, SaveType saveType = SaveType.ImmediateSync)
         => type switch
         {
             GroupType.Single => SingleEditor.FindOrAddModGroup(mod, name, saveType),
-            GroupType.Multi  => MultiEditor.FindOrAddModGroup(mod, name, saveType),
-            GroupType.Imc    => ImcEditor.FindOrAddModGroup(mod, name, saveType),
-            _                => (null, -1, false),
+            GroupType.Multi => MultiEditor.FindOrAddModGroup(mod, name, saveType),
+            GroupType.Imc => ImcEditor.FindOrAddModGroup(mod, name, saveType),
+            _ => (null, -1, false),
         };
 
     public (IModOption?, int, bool) FindOrAddOption(IModGroup group, string name, SaveType saveType = SaveType.ImmediateSync)
         => group switch
         {
             SingleModGroup s => SingleEditor.FindOrAddOption(s, name, saveType),
-            MultiModGroup m  => MultiEditor.FindOrAddOption(m, name, saveType),
-            ImcModGroup i    => ImcEditor.FindOrAddOption(i, name, saveType),
-            _                => (null, -1, false),
+            MultiModGroup m => MultiEditor.FindOrAddOption(m, name, saveType),
+            ImcModGroup i => ImcEditor.FindOrAddOption(i, name, saveType),
+            _ => (null, -1, false),
         };
 
     public void MoveOption(IModOption option, int toIdx)

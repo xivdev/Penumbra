@@ -6,14 +6,14 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
     : ModOptionEditor<SingleModGroup, SingleSubMod>(communicator, saveService, config), IService
 {
     public void ChangeToMulti(SingleModGroup group)
     {
-        var idx        = group.GetIndex();
+        var idx = group.GetIndex();
         var multiGroup = group.ConvertToMulti();
         group.Mod.Groups[idx] = multiGroup;
         SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
@@ -23,7 +23,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
     protected override SingleModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
         {
-            Name     = newName,
+            Name = newName,
             Priority = priority,
         };
 
@@ -31,7 +31,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
     {
         var newOption = new SingleSubMod(group)
         {
-            Name        = option.Name,
+            Name = option.Name,
             Description = option.Description,
         };
         if (option is IModDataContainer data)

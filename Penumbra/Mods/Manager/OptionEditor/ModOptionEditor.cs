@@ -5,7 +5,7 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Mods.Manager.OptionEditor;
 
 public abstract class ModOptionEditor<TGroup, TOption>(
     CommunicatorService communicator,
@@ -15,8 +15,8 @@ public abstract class ModOptionEditor<TGroup, TOption>(
     where TOption : class, IModOption
 {
     protected readonly CommunicatorService Communicator = communicator;
-    protected readonly SaveService         SaveService  = saveService;
-    protected readonly Configuration       Config       = config;
+    protected readonly SaveService SaveService = saveService;
+    protected readonly Configuration Config = config;
 
     /// <summary> Add a new, empty option group of the given type and name. </summary>
     public TGroup? AddModGroup(Mod mod, string newName, SaveType saveType = SaveType.ImmediateSync)
@@ -25,7 +25,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
             return null;
 
         var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
-        var group       = CreateGroup(mod, newName, maxPriority);
+        var group = CreateGroup(mod, newName, maxPriority);
         mod.Groups.Add(group);
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
         Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, group, null, null, -1);
@@ -92,8 +92,8 @@ public abstract class ModOptionEditor<TGroup, TOption>(
     /// <summary> Delete the given option from the given group. </summary>
     public void DeleteOption(TOption option)
     {
-        var mod       = option.Mod;
-        var group     = option.Group;
+        var mod = option.Mod;
+        var group = option.Group;
         var optionIdx = option.GetIndex();
         Communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, group, option, null, -1);
         RemoveOption((TGroup)group, optionIdx);
@@ -104,7 +104,7 @@ public abstract class ModOptionEditor<TGroup, TOption>(
     /// <summary> Move an option inside the given option group. </summary>
     public void MoveOption(TOption option, int optionIdxTo)
     {
-        var idx   = option.GetIndex();
+        var idx = option.GetIndex();
         var group = (TGroup)option.Group;
         if (!MoveOption(group, idx, optionIdxTo))
             return;
@@ -113,10 +113,10 @@ public abstract class ModOptionEditor<TGroup, TOption>(
         Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMoved, group.Mod, group, option, null, idx);
     }
 
-    protected abstract TGroup   CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync);
+    protected abstract TGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync);
     protected abstract TOption? CloneOption(TGroup group, IModOption option);
-    protected abstract void     RemoveOption(TGroup group, int optionIndex);
-    protected abstract bool     MoveOption(TGroup group, int optionIdxFrom, int optionIdxTo);
+    protected abstract void RemoveOption(TGroup group, int optionIndex);
+    protected abstract bool MoveOption(TGroup group, int optionIdxFrom, int optionIdxTo);
 }
 
 public static class ModOptionChangeTypeExtension
@@ -132,22 +132,22 @@ public static class ModOptionChangeTypeExtension
     {
         (requiresSaving, requiresReloading, wasPrepared) = type switch
         {
-            ModOptionChangeType.GroupRenamed         => (true, false, false),
-            ModOptionChangeType.GroupAdded           => (true, false, false),
-            ModOptionChangeType.GroupDeleted         => (true, true, false),
-            ModOptionChangeType.GroupMoved           => (true, false, false),
-            ModOptionChangeType.GroupTypeChanged     => (true, true, true),
-            ModOptionChangeType.PriorityChanged      => (true, true, true),
-            ModOptionChangeType.OptionAdded          => (true, true, true),
-            ModOptionChangeType.OptionDeleted        => (true, true, false),
-            ModOptionChangeType.OptionMoved          => (true, false, false),
-            ModOptionChangeType.OptionFilesChanged   => (false, true, false),
-            ModOptionChangeType.OptionFilesAdded     => (false, true, true),
-            ModOptionChangeType.OptionSwapsChanged   => (false, true, false),
-            ModOptionChangeType.OptionMetaChanged    => (false, true, false),
-            ModOptionChangeType.DisplayChange        => (false, false, false),
+            ModOptionChangeType.GroupRenamed => (true, false, false),
+            ModOptionChangeType.GroupAdded => (true, false, false),
+            ModOptionChangeType.GroupDeleted => (true, true, false),
+            ModOptionChangeType.GroupMoved => (true, false, false),
+            ModOptionChangeType.GroupTypeChanged => (true, true, true),
+            ModOptionChangeType.PriorityChanged => (true, true, true),
+            ModOptionChangeType.OptionAdded => (true, true, true),
+            ModOptionChangeType.OptionDeleted => (true, true, false),
+            ModOptionChangeType.OptionMoved => (true, false, false),
+            ModOptionChangeType.OptionFilesChanged => (false, true, false),
+            ModOptionChangeType.OptionFilesAdded => (false, true, true),
+            ModOptionChangeType.OptionSwapsChanged => (false, true, false),
+            ModOptionChangeType.OptionMetaChanged => (false, true, false),
+            ModOptionChangeType.DisplayChange => (false, false, false),
             ModOptionChangeType.DefaultOptionChanged => (true, false, false),
-            _                                        => (false, false, false),
+            _ => (false, false, false),
         };
     }
 }

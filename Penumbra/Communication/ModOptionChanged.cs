@@ -3,6 +3,7 @@ using Penumbra.Api.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using static Penumbra.Communication.ModOptionChanged;
 

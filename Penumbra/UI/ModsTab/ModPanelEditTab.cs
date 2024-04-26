@@ -16,6 +16,7 @@ using Penumbra.UI.AdvancedWindow;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
+using Penumbra.Mods.Manager.OptionEditor;
 
 namespace Penumbra.UI.ModsTab;
 

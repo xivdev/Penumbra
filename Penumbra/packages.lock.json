@@ -34,9 +34,14 @@
       },
       "SixLabors.ImageSharp": {
         "type": "Direct",
-        "requested": "[3.1.3, )",
-        "resolved": "3.1.3",
-        "contentHash": "wybtaqZQ1ZRZ4ZeU+9h+PaSeV14nyiGKIy7qRbDfSHzHq4ybqyOcjoifeaYbiKLO1u+PVxLBuy7MF/DMmwwbfg=="
+        "requested": "[3.1.4, )",
+        "resolved": "3.1.4",
+        "contentHash": "lFIdxgGDA5iYkUMRFOze7BGLcdpoLFbR+a20kc1W7NepvzU7ejtxtWOg9RvgG7kb9tBoJ3ONYOK6kLil/dgF1w=="
+      },
+      "JetBrains.Annotations": {
+        "type": "Transitive",
+        "resolved": "2023.3.0",
+        "contentHash": "PHfnvdBUdGaTVG9bR/GEfxgTwWM0Z97Y6X3710wiljELBISipSfF5okn/vz+C2gfO+ihoEyVPjaJwn8ZalVukA=="
       },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "Transitive",
@@ -75,6 +80,7 @@
       "ottergui": {
         "type": "Project",
         "dependencies": {
+          "JetBrains.Annotations": "[2023.3.0, )",
           "Microsoft.Extensions.DependencyInjection": "[8.0.0, )"
         }
       },
@@ -88,7 +94,7 @@
         "type": "Project",
         "dependencies": {
           "OtterGui": "[1.0.0, )",
-          "Penumbra.Api": "[1.0.15, )",
+          "Penumbra.Api": "[5.0.0, )",
           "Penumbra.String": "[1.0.4, )"
         }
       },
