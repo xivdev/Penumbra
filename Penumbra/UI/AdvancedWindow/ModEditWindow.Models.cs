@@ -293,7 +293,21 @@ public partial class ModEditWindow
 
     private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
     {
-        if (!ImGui.CollapsingHeader("Materials"))
+        var invalidMaterialCount = tab.Mdl.Materials.Count(material => !tab.ValidateMaterial(material));
+
+        var oldPos = ImGui.GetCursorPosY();
+        var header = ImGui.CollapsingHeader("Materials");
+        var newPos = ImGui.GetCursorPos();
+        if (invalidMaterialCount > 0)
+        {
+            var text = $"{invalidMaterialCount} invalid material{(invalidMaterialCount > 1 ? "s" : "")}";
+            var size = ImGui.CalcTextSize(text).X;
+            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+            ImGuiUtil.TextColored(0xFF0000FF, text);
+            ImGui.SetCursorPos(newPos);
+        }
+
+        if (!header)
             return false;
 
         using var table = ImRaii.Table(string.Empty, disabled ? 2 : 4, ImGuiTableFlags.SizingFixedFit);
@@ -382,7 +396,8 @@ public partial class ModEditWindow
             {
                 ImGuiComponents.HelpMarker(
                     "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
-                  + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\").",
+                  + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\"),\n"
+                  + "and must end in \".mtrl\".",
                   FontAwesomeIcon.TimesCircle);
             }
         
