@@ -21,6 +21,9 @@ public class ImcModGroup(Mod mod) : IModGroup
     public GroupType Type
         => GroupType.Imc;
 
+    public GroupDrawBehaviour Behaviour
+        => GroupDrawBehaviour.MultiSelection;
+
     public ModPriority Priority        { get; set; } = ModPriority.Default;
     public Setting     DefaultSettings { get; set; } = Setting.Zero;
 
@@ -150,7 +153,6 @@ public class ImcModGroup(Mod mod) : IModGroup
         }
 
         jWriter.WriteEndArray();
-        jWriter.WriteEndObject();
     }
 
     public (int Redirections, int Swaps, int Manips) GetCounts()

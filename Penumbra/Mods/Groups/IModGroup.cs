@@ -12,16 +12,23 @@ public interface ITexToolsGroup
     public IReadOnlyList<OptionSubMod> OptionData { get; }
 }
 
+public enum GroupDrawBehaviour
+{
+    SingleSelection,
+    MultiSelection,
+}
+
 public interface IModGroup
 {
     public const int MaxMultiOptions = 63;
 
-    public Mod         Mod             { get; }
-    public string      Name            { get; set; }
-    public string      Description     { get; set; }
-    public GroupType   Type            { get; }
-    public ModPriority Priority        { get; set; }
-    public Setting     DefaultSettings { get; set; }
+    public Mod                Mod             { get; }
+    public string             Name            { get; set; }
+    public string             Description     { get; set; }
+    public GroupType          Type            { get; }
+    public GroupDrawBehaviour Behaviour       { get; }
+    public ModPriority        Priority        { get; set; }
+    public Setting            DefaultSettings { get; set; }
 
     public FullPath?   FindBestMatch(Utf8GamePath gamePath);
     public IModOption? AddOption(string name, string description = "");

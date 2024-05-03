@@ -56,10 +56,10 @@ public readonly struct ModSaveGroup : ISavable
     {
         _basePath = (container.Mod as Mod)?.ModPath
          ?? throw new Exception("Invalid save group from default data container without base path."); // Should not happen.
-        _defaultMod = null;
+        _defaultMod = container as DefaultSubMod;
         _onlyAscii  = onlyAscii;
-        _group      = container.Group!;
-        _groupIdx   = _group.GetIndex();
+        _group      = container.Group;
+        _groupIdx   = _group?.GetIndex() ?? -1;
     }
 
     public string ToFilename(FilenameService fileNames)
@@ -80,7 +80,6 @@ public readonly struct ModSaveGroup : ISavable
 
     public static void WriteJsonBase(JsonTextWriter jWriter, IModGroup group)
     {
-        jWriter.WriteStartObject();
         jWriter.WritePropertyName(nameof(group.Name));
         jWriter.WriteValue(group.Name);
         jWriter.WritePropertyName(nameof(group.Description));

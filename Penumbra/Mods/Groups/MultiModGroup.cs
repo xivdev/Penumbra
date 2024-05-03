@@ -17,6 +17,9 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupType Type
         => GroupType.Multi;
 
+    public GroupDrawBehaviour Behaviour
+        => GroupDrawBehaviour.MultiSelection;
+
     public          Mod               Mod             { get; }      = mod;
     public          string            Name            { get; set; } = "Group";
     public          string            Description     { get; set; } = "A non-exclusive group of settings.";
@@ -127,7 +130,6 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         }
 
         jWriter.WriteEndArray();
-        jWriter.WriteEndObject();
     }
 
     public (int Redirections, int Swaps, int Manips) GetCounts()

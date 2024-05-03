@@ -106,7 +106,6 @@ public static class SubMod
         j.WriteEndObject();
         j.WritePropertyName(nameof(data.Manipulations));
         serializer.Serialize(j, data.Manipulations);
-        j.WriteEndObject();
     }
 
     /// <summary> Write the data for a selectable mod option on a JsonWriter. </summary>

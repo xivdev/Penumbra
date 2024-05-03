@@ -15,7 +15,10 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public GroupType Type
         => GroupType.Single;
 
-    public Mod         Mod             { get; } = mod;
+    public GroupDrawBehaviour Behaviour
+        => GroupDrawBehaviour.SingleSelection;
+
+    public Mod         Mod             { get; }      = mod;
     public string      Name            { get; set; } = "Option";
     public string      Description     { get; set; } = "A mutually exclusive group of settings.";
     public ModPriority Priority        { get; set; }
@@ -89,7 +92,12 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => ModGroup.GetIndex(this);
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
-        => OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);
+    {
+        if (!IsOption)
+            return;
+
+        OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);
+    }
 
     public Setting FixSetting(Setting setting)
         => OptionData.Count == 0 ? Setting.Zero : new Setting(Math.Min(setting.Value, (ulong)(OptionData.Count - 1)));
@@ -111,7 +119,6 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         }
 
         jWriter.WriteEndArray();
-        jWriter.WriteEndObject();
     }
 
     /// <summary> Create a group without a mod only for saving it in the creator. </summary>

@@ -16,8 +16,8 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
         var idx = group.GetIndex();
         var singleGroup = group.ConvertToSingle();
         group.Mod.Groups[idx] = singleGroup;
-        SaveService.QueueSave(new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupTypeChanged, group.Mod, group, null, null, -1);
+        SaveService.QueueSave(new ModSaveGroup(singleGroup, Config.ReplaceNonAsciiOnImport));
+        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, -1);
     }
 
     /// <summary> Change the internal priority of the given option. </summary>

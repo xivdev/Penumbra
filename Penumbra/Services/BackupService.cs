@@ -29,6 +29,7 @@ public class BackupService : IAsyncService
         list.Add(new FileInfo(fileNames.ConfigFile));
         list.Add(new FileInfo(fileNames.FilesystemFile));
         list.Add(new FileInfo(fileNames.ActiveCollectionsFile));
+        list.Add(new FileInfo(fileNames.PredefinedTagFile));
         return list;
     }
 

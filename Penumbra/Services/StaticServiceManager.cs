@@ -162,7 +162,6 @@ public static class StaticServiceManager
             .AddSingleton<CollectionSelectHeader>()
             .AddSingleton<ImportPopup>()
             .AddSingleton<ModPanelDescriptionTab>()
-            .AddSingleton<ModPanelSettingsTab>()
             .AddSingleton<ModPanelEditTab>()
             .AddSingleton<ModPanelChangedItemsTab>()
             .AddSingleton<ModPanelConflictsTab>()
