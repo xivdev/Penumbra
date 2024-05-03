@@ -290,10 +290,13 @@ public partial class ModEditWindow
         /// While materials can be relative (`/mt_...`) or absolute (`bg/...`),
         /// they invariably must contain at least one directory seperator.
         /// Missing this can lead to a crash.
+        /// 
+        /// They must also be at least one character (though this is enforced
+        /// by containing a `/`), and end with `.mtrl`.
         /// </remarks>
         public bool ValidateMaterial(string material)
         {
-            return material.Contains('/');
+            return material.Contains('/') && material.EndsWith(".mtrl");
         }
 
         /// <summary> Remove the material given by the index. </summary>
