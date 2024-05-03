@@ -337,7 +337,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##newMaterial", "Add new material...", ref _modelNewMaterial, Utf8GamePath.MaxGamePathLength, inputFlags);
-        var validName = _modelNewMaterial.Length > 0 && _modelNewMaterial[0] == '/';
+        var validName = tab.ValidateMaterial(_modelNewMaterial);
         ImGui.TableNextColumn();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, string.Empty, !validName, true))
         {
@@ -346,6 +346,8 @@ public partial class ModEditWindow
             _modelNewMaterial = string.Empty;
         }
         ImGui.TableNextColumn();
+        if (!validName && _modelNewMaterial.Length > 0)
+            DrawInvalidMaterialMarker();
 
         return ret;
     }
@@ -392,16 +394,20 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         // Add markers to invalid materials.
         if (!tab.ValidateMaterial(temp))
-            using (var colorHandle = ImRaii.PushColor(ImGuiCol.TextDisabled, 0xFF0000FF, true))
-            {
-                ImGuiComponents.HelpMarker(
-                    "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
-                  + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\"),\n"
-                  + "and must end in \".mtrl\".",
-                  FontAwesomeIcon.TimesCircle);
-            }
+            DrawInvalidMaterialMarker();
         
         return ret;
+    }
+
+    private void DrawInvalidMaterialMarker()
+    {
+        using var colorHandle = ImRaii.PushColor(ImGuiCol.TextDisabled, 0xFF0000FF, true);
+
+        ImGuiComponents.HelpMarker(
+            "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
+          + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\"),\n"
+          + "and must end in \".mtrl\".",
+          FontAwesomeIcon.TimesCircle);
     }
 
     private bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
