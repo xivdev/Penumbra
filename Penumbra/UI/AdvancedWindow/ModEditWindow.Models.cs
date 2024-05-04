@@ -401,13 +401,13 @@ public partial class ModEditWindow
 
     private void DrawInvalidMaterialMarker()
     {
-        using var colorHandle = ImRaii.PushColor(ImGuiCol.TextDisabled, 0xFF0000FF, true);
+        using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
 
-        ImGuiComponents.HelpMarker(
+        ImGuiUtil.HoverTooltip(
             "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
           + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\"),\n"
-          + "and must end in \".mtrl\".",
-          FontAwesomeIcon.TimesCircle);
+          + "and must end in \".mtrl\".");
     }
 
     private bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)

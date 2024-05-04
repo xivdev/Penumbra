@@ -138,7 +138,27 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => BuildNByte4(values[index])
+            index => {
+                // Blend weights are _very_ sensitive to float imprecision - a vertex sum being off
+                // by one, such as 256, is enough to cause a visible defect. To avoid this, we tweak
+                // the converted values to have the expected sum, preferencing values with minimal differences.
+                var originalValues = values[index];
+                var byteValues = BuildNByte4(originalValues);
+
+                var adjustment = 255 - byteValues.Select(value => (int)value).Sum();
+                while (adjustment != 0)
+                {
+                    var convertedValues = byteValues.Select(value => value * (1f / 255f)).ToArray();
+                    var closestIndex = Enumerable.Range(0, 4)
+                        .Select(index => (index, delta: Math.Abs(originalValues[index] - convertedValues[index])))
+                        .MinBy(x => x.delta)
+                        .index;
+                    byteValues[closestIndex] = (byte)(byteValues[closestIndex] + Math.CopySign(1, adjustment));
+                    adjustment = 255 - byteValues.Select(value => (int)value).Sum();
+                }
+                
+                return byteValues;
+            }
         );
     }
 
