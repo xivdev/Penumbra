@@ -22,7 +22,7 @@ namespace Penumbra.Services;
 /// Contains everything to migrate from older versions of the config to the current,
 /// including deprecated fields.
 /// </summary>
-public class ConfigMigrationService(SaveService saveService) : IService
+public class ConfigMigrationService(SaveService saveService, BackupService backupService) : IService
 {
     private Configuration _config = null!;
     private JObject       _data   = null!;
@@ -73,7 +73,21 @@ public class ConfigMigrationService(SaveService saveService) : IService
         Version5To6();
         Version6To7();
         Version7To8();
+        Version8To9();
         AddColors(config, true);
+    }
+
+    // Migrate to ephemeral config.
+    private void Version8To9()
+    {
+        if (_config.Version != 8)
+            return;
+
+        backupService.CreateMigrationBackup("pre_collection_identifiers");
+        _config.Version           = 9;
+        _config.Ephemeral.Version = 9;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     // Migrate to ephemeral config.
