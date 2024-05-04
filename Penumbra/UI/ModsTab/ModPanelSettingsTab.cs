@@ -2,7 +2,6 @@ using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Services;
-using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.UI.Classes;
@@ -70,7 +69,7 @@ public class ModPanelSettingsTab(
 
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
-        if (ImUtf8.Button($"These settings are inherited from {_collection.Name}.", width))
+        if (ImGui.Button($"These settings are inherited from {_collection.Name}.", width))
             collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selector.Selected!, false);
 
         ImGuiUtil.HoverTooltip("You can click this button to copy the current settings to the current selection.\n"
