@@ -213,7 +213,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
             Penumbra.Log.Debug("[GLTF Export] Saving...");
             var gltfModel = scene.ToGltf2();
-            gltfModel.SaveGLTF(outputPath);
+            gltfModel.Save(outputPath);
             Penumbra.Log.Debug("[GLTF Export] Done.");
         }
 

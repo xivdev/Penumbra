@@ -1,5 +1,7 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using ImGuiNET;
+using Lumina.Data.Parsing;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
@@ -7,7 +9,6 @@ using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
-using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
@@ -145,8 +146,8 @@ public partial class ModEditWindow
 
         if (ImGuiUtil.DrawDisabledButton("Export to glTF", Vector2.Zero, "Exports this mdl file to glTF, for use in 3D authoring applications.",
                 tab.PendingIo || gamePath.IsEmpty))
-            _fileDialog.OpenSavePicker("Save model as glTF.", ".gltf", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
-                ".gltf", (valid, path) =>
+            _fileDialog.OpenSavePicker("Save model as glTF.", ".glb", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
+                ".glb", (valid, path) =>
                 {
                     if (!valid)
                         return;
@@ -292,10 +293,24 @@ public partial class ModEditWindow
 
     private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
     {
-        if (!ImGui.CollapsingHeader("Materials"))
+        var invalidMaterialCount = tab.Mdl.Materials.Count(material => !tab.ValidateMaterial(material));
+
+        var oldPos = ImGui.GetCursorPosY();
+        var header = ImGui.CollapsingHeader("Materials");
+        var newPos = ImGui.GetCursorPos();
+        if (invalidMaterialCount > 0)
+        {
+            var text = $"{invalidMaterialCount} invalid material{(invalidMaterialCount > 1 ? "s" : "")}";
+            var size = ImGui.CalcTextSize(text).X;
+            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+            ImGuiUtil.TextColored(0xFF0000FF, text);
+            ImGui.SetCursorPos(newPos);
+        }
+
+        if (!header)
             return false;
 
-        using var table = ImRaii.Table(string.Empty, disabled ? 2 : 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = ImRaii.Table(string.Empty, disabled ? 2 : 4, ImGuiTableFlags.SizingFixedFit);
         if (!table)
             return false;
 
@@ -305,7 +320,10 @@ public partial class ModEditWindow
         ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed,   80 * UiHelpers.Scale);
         ImGui.TableSetupColumn("path",  ImGuiTableColumnFlags.WidthStretch, 1);
         if (!disabled)
+        {
             ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+            ImGui.TableSetupColumn("help", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+        }
 
         var inputFlags = disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None;
         for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
@@ -319,14 +337,19 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##newMaterial", "Add new material...", ref _modelNewMaterial, Utf8GamePath.MaxGamePathLength, inputFlags);
-        var validName = _modelNewMaterial.Length > 0 && _modelNewMaterial[0] == '/';
+        var validName = tab.ValidateMaterial(_modelNewMaterial);
         ImGui.TableNextColumn();
-        if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, string.Empty, !validName, true))
-            return ret;
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, string.Empty, !validName, true))
+        {
+            ret |= true;
+            tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
+            _modelNewMaterial = string.Empty;
+        }
+        ImGui.TableNextColumn();
+        if (!validName && _modelNewMaterial.Length > 0)
+            DrawInvalidMaterialMarker();
 
-        tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
-        _modelNewMaterial = string.Empty;
-        return true;
+        return ret;
     }
 
     private bool DrawMaterialRow(MdlTab tab, bool disabled, string[] materials, int materialIndex, ImGuiInputTextFlags inputFlags)
@@ -353,20 +376,38 @@ public partial class ModEditWindow
             return ret;
 
         ImGui.TableNextColumn();
-
         // Need to have at least one material.
-        if (materials.Length <= 1)
-            return ret;
+        if (materials.Length > 1)
+        {
+            var tt             = "Delete this material.\nAny meshes targeting this material will be updated to use material #1.";
+            var modifierActive = _config.DeleteModModifier.IsActive();
+            if (!modifierActive)
+                tt += $"\nHold {_config.DeleteModModifier} to delete.";
 
-        var tt             = "Delete this material.\nAny meshes targeting this material will be updated to use material #1.";
-        var modifierActive = _config.DeleteModModifier.IsActive();
-        if (!modifierActive)
-            tt += $"\nHold {_config.DeleteModModifier} to delete.";
-        if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, tt, !modifierActive, true))
-            return ret;
+            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, tt, !modifierActive, true))
+            {
+                tab.RemoveMaterial(materialIndex);
+                ret |= true;
+            }
+        }
 
-        tab.RemoveMaterial(materialIndex);
-        return true;
+        ImGui.TableNextColumn();
+        // Add markers to invalid materials.
+        if (!tab.ValidateMaterial(temp))
+            DrawInvalidMaterialMarker();
+        
+        return ret;
+    }
+
+    private void DrawInvalidMaterialMarker()
+    {
+        using var colorHandle = ImRaii.PushColor(ImGuiCol.TextDisabled, 0xFF0000FF, true);
+
+        ImGuiComponents.HelpMarker(
+            "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
+          + "or absolute (e.g. \"bg/full/path/to/filename.mtrl\"),\n"
+          + "and must end in \".mtrl\".",
+          FontAwesomeIcon.TimesCircle);
     }
 
     private bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
@@ -401,6 +442,14 @@ public partial class ModEditWindow
         var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
 
+        // Vertex elements
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted("Vertex Elements");
+
+        ImGui.TableNextColumn();
+        DrawVertexElementDetails(file.VertexDeclarations[meshIndex].VertexElements);
+
         // Mesh material
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
@@ -414,6 +463,40 @@ public partial class ModEditWindow
             ret |= DrawSubMeshAttributes(tab, meshIndex, subMeshOffset, disabled);
 
         return ret;
+    }
+
+    private static void DrawVertexElementDetails(MdlStructs.VertexElement[] vertexElements)
+    {
+        using var node = ImRaii.TreeNode($"Click to expand");
+        if (!node)
+            return;
+        
+        var flags = ImGuiTableFlags.SizingFixedFit
+            | ImGuiTableFlags.RowBg
+            | ImGuiTableFlags.Borders
+            | ImGuiTableFlags.NoHostExtendX;
+        using var table = ImRaii.Table(string.Empty, 4, flags);
+        if (!table)
+            return;
+
+        ImGui.TableSetupColumn("Usage");
+        ImGui.TableSetupColumn("Type");
+        ImGui.TableSetupColumn("Stream");
+        ImGui.TableSetupColumn("Offset");
+
+        ImGui.TableHeadersRow();
+
+        foreach (var element in vertexElements)
+        {
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{(MdlFile.VertexUsage)element.Usage}");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{(MdlFile.VertexType)element.Type}");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{element.Stream}");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"{element.Offset}");
+        }
     }
 
     private static bool DrawMaterialCombo(MdlTab tab, int meshIndex, bool disabled)

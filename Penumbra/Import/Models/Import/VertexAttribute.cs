@@ -144,10 +144,10 @@ public class VertexAttribute
 
     public static VertexAttribute? BlendIndex(Accessors accessors, IDictionary<ushort, ushort>? boneMap, IoNotifier notifier)
     {
-        if (!accessors.TryGetValue("JOINTS_0", out var accessor))
+        if (!accessors.TryGetValue("JOINTS_0", out var jointsAccessor))
             return null;
 
-        if (!accessors.ContainsKey("WEIGHTS_0"))
+        if (!accessors.TryGetValue("WEIGHTS_0", out var weightsAccessor))
             throw notifier.Exception("Mesh contained JOINTS_0 attribute but no corresponding WEIGHTS_0 attribute.");
 
         if (boneMap == null)
@@ -160,18 +160,21 @@ public class VertexAttribute
             Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
         };
 
-        var values = accessor.AsVector4Array();
+        var joints = jointsAccessor.AsVector4Array();
+        var weights = weightsAccessor.AsVector4Array();
 
         return new VertexAttribute(
             element,
             index =>
             {
-                var gltfIndices = values[index];
+                var gltfIndices = joints[index];
+                var gltfWeights = weights[index]; 
+
                 return BuildUByte4(new Vector4(
-                    boneMap[(ushort)gltfIndices.X],
-                    boneMap[(ushort)gltfIndices.Y],
-                    boneMap[(ushort)gltfIndices.Z],
-                    boneMap[(ushort)gltfIndices.W]
+                    gltfWeights.X == 0 ? 0 : boneMap[(ushort)gltfIndices.X],
+                    gltfWeights.Y == 0 ? 0 : boneMap[(ushort)gltfIndices.Y],
+                    gltfWeights.Z == 0 ? 0 : boneMap[(ushort)gltfIndices.Z],
+                    gltfWeights.W == 0 ? 0 : boneMap[(ushort)gltfIndices.W]
                 ));
             }
         );
