@@ -89,7 +89,7 @@ public class CollectionSelectHeader
         var collection = _resolver.PlayerCollection();
         return CheckCollection(collection) switch
         {
-            CollectionState.Empty => (collection, "None", "The base collection is configured to use no mods.", true),
+            CollectionState.Empty => (collection, "None", "The loaded player character is configured to use no mods.", true),
             CollectionState.Selected => (collection, collection.Name,
                 "The collection configured to apply to the loaded player character is already selected as the current collection.", true),
             CollectionState.Available => (collection, collection.Name,

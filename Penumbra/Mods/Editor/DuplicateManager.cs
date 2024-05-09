@@ -84,7 +84,10 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
             if (useModManager)
                 modManager.OptionEditor.SetFiles(subMod, dict, SaveType.ImmediateSync);
             else
+            {
+                subMod.Files = dict;
                 saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, subMod, config.ReplaceNonAsciiOnImport));
+            }
         }
     }
 

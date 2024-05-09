@@ -40,7 +40,7 @@ public readonly struct ModSaveGroup : ISavable
         _basePath   = basePath;
         _defaultMod = container as DefaultSubMod;
         _onlyAscii  = onlyAscii;
-        if (_defaultMod == null)
+        if (_defaultMod != null)
         {
             _groupIdx = -1;
             _group    = null;
