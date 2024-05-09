@@ -93,7 +93,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
     {
-        if (!IsOption)
+        if (OptionData.Count == 0)
             return;
 
         OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);

@@ -82,7 +82,9 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
                 return;
 
             if (useModManager)
+            {
                 modManager.OptionEditor.SetFiles(subMod, dict, SaveType.ImmediateSync);
+            }
             else
             {
                 subMod.Files = dict;
