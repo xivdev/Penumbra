@@ -36,7 +36,7 @@ public readonly struct ImcCache : IDisposable
 
     public bool ApplyMod(MetaFileManager manager, ModCollection collection, ImcManipulation manip)
     {
-        if (!manip.Validate())
+        if (!manip.Validate(true))
             return false;
 
         var idx = _imcManipulations.FindIndex(p => p.Item1.Equals(manip));
@@ -77,7 +77,7 @@ public readonly struct ImcCache : IDisposable
 
     public bool RevertMod(MetaFileManager manager, ModCollection collection, ImcManipulation m)
     {
-        if (!m.Validate())
+        if (!m.Validate(false))
             return false;
 
         var idx = _imcManipulations.FindIndex(p => p.Item1.Equals(m));

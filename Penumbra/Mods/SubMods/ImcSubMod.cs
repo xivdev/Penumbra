@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using Penumbra.Mods.Groups;
 
 namespace Penumbra.Mods.SubMods;
@@ -5,6 +6,12 @@ namespace Penumbra.Mods.SubMods;
 public class ImcSubMod(ImcModGroup group) : IModOption
 {
     public readonly ImcModGroup Group = group;
+
+    public ImcSubMod(ImcModGroup group, JToken json)
+        : this(group)
+    {
+        SubMod.LoadOptionData(json, this);
+    }
 
     public Mod Mod
         => Group.Mod;

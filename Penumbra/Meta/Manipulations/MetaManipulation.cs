@@ -98,7 +98,7 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
                     return;
                 case ImcManipulation m:
                     Imc              = m;
-                    ManipulationType = m.Validate() ? Type.Imc : Type.Unknown;
+                    ManipulationType = m.Validate(true) ? Type.Imc : Type.Unknown;
                     return;
             }
         }
@@ -108,7 +108,7 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     {
         return ManipulationType switch
         {
-            Type.Imc  => Imc.Validate(),
+            Type.Imc  => Imc.Validate(true),
             Type.Eqdp => Eqdp.Validate(),
             Type.Eqp  => Eqp.Validate(),
             Type.Est  => Est.Validate(),

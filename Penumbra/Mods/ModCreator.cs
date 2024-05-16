@@ -434,6 +434,7 @@ public partial class ModCreator(
             {
                 case GroupType.Multi:  return MultiModGroup.Load(mod, json);
                 case GroupType.Single: return SingleModGroup.Load(mod, json);
+                case GroupType.Imc:    return ImcModGroup.Load(mod, json);
             }
         }
         catch (Exception e)

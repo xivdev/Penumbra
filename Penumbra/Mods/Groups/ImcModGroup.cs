@@ -1,4 +1,7 @@
+using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -157,4 +160,44 @@ public class ImcModGroup(Mod mod) : IModGroup
 
     public (int Redirections, int Swaps, int Manips) GetCounts()
         => (0, 0, 1);
+
+    public static ImcModGroup? Load(Mod mod, JObject json)
+    {
+        var options = json["Options"];
+        var ret = new ImcModGroup(mod)
+        {
+            Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
+            Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
+            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
+            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
+            ObjectType      = json[nameof(ObjectType)]?.ToObject<ObjectType>() ?? ObjectType.Unknown,
+            BodySlot        = json[nameof(BodySlot)]?.ToObject<BodySlot>() ?? BodySlot.Unknown,
+            EquipSlot       = json[nameof(EquipSlot)]?.ToObject<EquipSlot>() ?? EquipSlot.Unknown,
+            PrimaryId       = new PrimaryId(json[nameof(PrimaryId)]?.ToObject<ushort>() ?? 0),
+            SecondaryId     = new SecondaryId(json[nameof(SecondaryId)]?.ToObject<ushort>() ?? 0),
+            Variant         = new Variant(json[nameof(Variant)]?.ToObject<byte>() ?? 0),
+            CanBeDisabled   = json[nameof(CanBeDisabled)]?.ToObject<bool>() ?? false,
+            DefaultEntry    = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
+        };
+        if (ret.Name.Length == 0)
+            return null;
+
+        if (options != null)
+            foreach (var child in options.Children())
+            {
+                var subMod = new ImcSubMod(ret, child);
+                ret.OptionData.Add(subMod);
+            }
+
+        if (!new ImcManipulation(ret.ObjectType, ret.BodySlot, ret.PrimaryId, ret.SecondaryId.Id, ret.Variant.Id, ret.EquipSlot,
+                ret.DefaultEntry).Validate(true))
+        {
+            Penumbra.Messager.NotificationMessage($"Could not add IMC group because the associated IMC Entry is invalid.",
+                NotificationType.Warning);
+            return null;
+        }
+
+        ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
+        return ret;
+    }
 }

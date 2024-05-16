@@ -10,6 +10,7 @@ using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
+using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -145,7 +146,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip(ModelSetIdTooltip);
 
             ImGui.TableNextColumn();
-            if (Combos.EqpEquipSlot("##eqpSlot", 100, _new.Slot, out var slot))
+            if (Combos.EqpEquipSlot("##eqpSlot", _new.Slot, out var slot))
                 _new = new EqpManipulation(ExpandedEqpFile.GetDefault(metaFileManager, setId), slot, _new.SetId);
 
             ImGuiUtil.HoverTooltip(EquipSlotTooltip);
@@ -351,90 +352,31 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if (Combos.ImcType("##imcType", _new.ObjectType, out var type))
-            {
-                var equipSlot = type switch
-                {
-                    ObjectType.Equipment => _new.EquipSlot.IsEquipment() ? _new.EquipSlot : EquipSlot.Head,
-                    ObjectType.DemiHuman => _new.EquipSlot.IsEquipment() ? _new.EquipSlot : EquipSlot.Head,
-                    ObjectType.Accessory => _new.EquipSlot.IsAccessory() ? _new.EquipSlot : EquipSlot.Ears,
-                    _                    => EquipSlot.Unknown,
-                };
-                _new = new ImcManipulation(type, _new.BodySlot, _new.PrimaryId, _new.SecondaryId == 0 ? (ushort)1 : _new.SecondaryId,
-                    _new.Variant.Id, equipSlot, _new.Entry);
-            }
-
-            ImGuiUtil.HoverTooltip(ObjectTypeTooltip);
+            var change = MetaManipulationDrawer.DrawObjectType(ref _new);
 
             ImGui.TableNextColumn();
-            if (IdInput("##imcId", IdWidth, _new.PrimaryId.Id, out var setId, 0, ushort.MaxValue, _new.PrimaryId <= 1))
-                _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, setId, _new.SecondaryId, _new.Variant.Id, _new.EquipSlot, _new.Entry)
-                    .Copy(GetDefault(metaFileManager, _new)
-                     ?? new ImcEntry());
-
-            ImGuiUtil.HoverTooltip(PrimaryIdTooltip);
-
+            change |= MetaManipulationDrawer.DrawPrimaryId(ref _new);
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
                 new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
 
             ImGui.TableNextColumn();
             // Equipment and accessories are slightly different imcs than other types.
-            if (_new.ObjectType is ObjectType.Equipment)
-            {
-                if (Combos.EqpEquipSlot("##imcSlot", 100, _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot,
-                            _new.Entry)
-                        .Copy(GetDefault(metaFileManager, _new)
-                         ?? new ImcEntry());
-
-                ImGuiUtil.HoverTooltip(EquipSlotTooltip);
-            }
-            else if (_new.ObjectType is ObjectType.Accessory)
-            {
-                if (Combos.AccessorySlot("##imcSlot", _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot,
-                            _new.Entry)
-                        .Copy(GetDefault(metaFileManager, _new)
-                         ?? new ImcEntry());
-
-                ImGuiUtil.HoverTooltip(EquipSlotTooltip);
-            }
+            if (_new.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
+                change |= MetaManipulationDrawer.DrawSlot(ref _new);
             else
-            {
-                if (IdInput("##imcId2", 100 * UiHelpers.Scale, _new.SecondaryId.Id, out var setId2, 0, ushort.MaxValue, false))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant.Id, _new.EquipSlot,
-                            _new.Entry)
-                        .Copy(GetDefault(metaFileManager, _new)
-                         ?? new ImcEntry());
-
-                ImGuiUtil.HoverTooltip(SecondaryIdTooltip);
-            }
+                change |= MetaManipulationDrawer.DrawSecondaryId(ref _new);
 
             ImGui.TableNextColumn();
-            if (IdInput("##imcVariant", SmallIdWidth, _new.Variant.Id, out var variant, 0, byte.MaxValue, false))
-                _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, variant, _new.EquipSlot,
-                    _new.Entry).Copy(GetDefault(metaFileManager, _new)
-                 ?? new ImcEntry());
-
-            ImGuiUtil.HoverTooltip(VariantIdTooltip);
+            change |= MetaManipulationDrawer.DrawVariant(ref _new);
 
             ImGui.TableNextColumn();
             if (_new.ObjectType is ObjectType.DemiHuman)
-            {
-                if (Combos.EqpEquipSlot("##imcSlot", 70, _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot,
-                            _new.Entry)
-                        .Copy(GetDefault(metaFileManager, _new)
-                         ?? new ImcEntry());
-
-                ImGuiUtil.HoverTooltip(EquipSlotTooltip);
-            }
+                change |= MetaManipulationDrawer.DrawSlot(ref _new, 70);
             else
-            {
                 ImGui.Dummy(new Vector2(70 * UiHelpers.Scale, 0));
-            }
 
-
+            if (change)
+                _new = _new.Copy(GetDefault(metaFileManager, _new) ?? new ImcEntry());
             // Values
             using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();

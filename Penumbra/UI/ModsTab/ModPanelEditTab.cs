@@ -28,7 +28,8 @@ public class ModPanelEditTab(
     Configuration config,
     PredefinedTagManager predefinedTagManager,
     ModGroupEditDrawer groupEditDrawer,
-    DescriptionEditPopup descriptionPopup)
+    DescriptionEditPopup descriptionPopup,
+    AddGroupDrawer addGroupDrawer)
     : ITab
 {
     private readonly TagButtons _modTags = new();
@@ -75,7 +76,7 @@ public class ModPanelEditTab(
                 selector.Selected!);
 
         UiHelpers.DefaultLineSpace();
-        AddOptionGroup.Draw(filenames, modManager, _mod, config.ReplaceNonAsciiOnImport);
+        addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
         UiHelpers.DefaultLineSpace();
 
         groupEditDrawer.Draw(_mod);
@@ -84,7 +85,6 @@ public class ModPanelEditTab(
 
     public void Reset()
     {
-        AddOptionGroup.Reset();
         MoveDirectory.Reset();
         Input.Reset();
     }
@@ -200,42 +200,6 @@ public class ModPanelEditTab(
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", UiHelpers.IconButtonSize, tt,
                 !fileExists, true))
             Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
-    }
-
-    /// <summary> Text input to add a new option group at the end of the current groups. </summary>
-    private static class AddOptionGroup
-    {
-        private static string _newGroupName = string.Empty;
-
-        public static void Reset()
-            => _newGroupName = string.Empty;
-
-        public static void Draw(FilenameService filenames, ModManager modManager, Mod mod, bool onlyAscii)
-        {
-            using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
-            ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
-            ImGui.InputTextWithHint("##newGroup", "Add new option group...", ref _newGroupName, 256);
-            ImGui.SameLine();
-            var defaultFile = filenames.OptionGroupFile(mod, -1, onlyAscii);
-            var fileExists  = File.Exists(defaultFile);
-            var tt = fileExists
-                ? "Open the default option json file in the text editor of your choice."
-                : "The default option json file does not exist.";
-            if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##defaultFile", UiHelpers.IconButtonSize, tt,
-                    !fileExists, true))
-                Process.Start(new ProcessStartInfo(defaultFile) { UseShellExecute = true });
-
-            ImGui.SameLine();
-
-            var nameValid = ModGroupEditor.VerifyFileName(mod, null, _newGroupName, false);
-            tt = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
-            if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize,
-                    tt, !nameValid, true))
-                return;
-
-            modManager.OptionEditor.SingleEditor.AddModGroup(mod, _newGroupName);
-            Reset();
-        }
     }
 
     /// <summary> A text input for the new directory name and a button to apply the move. </summary>

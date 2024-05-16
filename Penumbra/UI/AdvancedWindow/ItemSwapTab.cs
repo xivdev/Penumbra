@@ -639,11 +639,11 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.TextUnformatted(text);
 
         ImGui.TableNextColumn();
-        _dirty |= Combos.Gender("##Gender", InputWidth, _currentGender, out _currentGender);
+        _dirty |= Combos.Gender("##Gender", _currentGender, out _currentGender, InputWidth);
         if (drawRace == 1)
         {
             ImGui.SameLine();
-            _dirty |= Combos.Race("##Race", InputWidth, _currentRace, out _currentRace);
+            _dirty |= Combos.Race("##Race", _currentRace, out _currentRace, InputWidth);
         }
         else if (drawRace == 2)
         {

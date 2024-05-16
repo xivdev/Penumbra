@@ -146,7 +146,7 @@ public readonly struct ImcManipulation : IMetaManipulation<ImcManipulation>
     public bool Apply(ImcFile file)
         => file.SetEntry(ImcFile.PartIndex(EquipSlot), Variant.Id, Entry);
 
-    public bool Validate()
+    public bool Validate(bool withMaterial)
     {
         switch (ObjectType)
         {
@@ -178,7 +178,7 @@ public readonly struct ImcManipulation : IMetaManipulation<ImcManipulation>
                 break;
         }
 
-        if (Entry.MaterialId == 0)
+        if (withMaterial && Entry.MaterialId == 0)
             return false;
 
         return true;
