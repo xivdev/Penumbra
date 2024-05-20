@@ -1,15 +1,12 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Interface.Utility;
 using ImGuiNET;
-using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Text.EndObjects;
-using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -22,7 +19,6 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using ImcFile = Penumbra.Meta.Files.ImcFile;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -104,8 +100,10 @@ public static class MetaManipulationDrawer
         return ret;
     }
 
-    // A number input for ids with a optional max id of given width.
-    // Returns true if newId changed against currentId.
+    /// <summary>
+    /// A number input for ids with an optional max id of given width.
+    /// Returns true if newId changed against currentId.
+    /// </summary>
     private static bool IdInput(ReadOnlySpan<byte> label, float unscaledWidth, ushort currentId, out ushort newId, int minId, int maxId,
         bool border)
     {
@@ -121,142 +119,12 @@ public static class MetaManipulationDrawer
     }
 }
 
-public class AddGroupDrawer : IUiService
-{
-    private string _groupName      = string.Empty;
-    private bool   _groupNameValid = false;
-
-    private          ImcManipulation _imcManip = new(EquipSlot.Head, 1, 1, new ImcEntry());
-    private          ImcEntry        _defaultEntry;
-    private          bool            _imcFileExists;
-    private          bool            _entryExists;
-    private          bool            _entryInvalid;
-    private readonly MetaFileManager _metaManager;
-    private readonly ModManager      _modManager;
-
-    public AddGroupDrawer(MetaFileManager metaManager, ModManager modManager)
-    {
-        _metaManager = metaManager;
-        _modManager  = modManager;
-        UpdateEntry();
-    }
-
-    public void Draw(Mod mod, float width)
-    {
-        DrawBasicGroups(mod, width);
-        DrawImcData(mod, width);
-    }
-
-    private void UpdateEntry()
-    {
-        try
-        {
-            _defaultEntry = ImcFile.GetDefault(_metaManager, _imcManip.GamePath(), _imcManip.EquipSlot, _imcManip.Variant,
-                out _entryExists);
-            _imcFileExists = true;
-        }
-        catch (Exception)
-        {
-            _defaultEntry  = new ImcEntry();
-            _imcFileExists = false;
-            _entryExists   = false;
-        }
-
-        _imcManip     = _imcManip.Copy(_entryExists ? _defaultEntry : new ImcEntry());
-        _entryInvalid = !_imcManip.Validate(true);
-    }
-
-
-    private void DrawBasicGroups(Mod mod, float width)
-    {
-        ImGui.SetNextItemWidth(width);
-        if (ImUtf8.InputText("##name"u8, ref _groupName, "Enter New Name..."u8))
-            _groupNameValid = ModGroupEditor.VerifyFileName(mod, null, _groupName, false);
-
-        var buttonWidth = new Vector2((width - ImUtf8.ItemInnerSpacing.X) / 2, 0);
-        if (ImUtf8.ButtonEx("Add Single Group"u8, _groupNameValid
-                    ? "Add a new single selection option group to this mod."u8
-                    : "Can not add a new group of this name."u8,
-                buttonWidth, !_groupNameValid))
-        {
-            _modManager.OptionEditor.AddModGroup(mod, GroupType.Single, _groupName);
-            _groupName      = string.Empty;
-            _groupNameValid = false;
-        }
-
-        ImUtf8.SameLineInner();
-        if (ImUtf8.ButtonEx("Add Multi Group"u8, _groupNameValid
-                    ? "Add a new multi selection option group to this mod."u8
-                    : "Can not add a new group of this name."u8,
-                buttonWidth, !_groupNameValid))
-        {
-            _modManager.OptionEditor.AddModGroup(mod, GroupType.Multi, _groupName);
-            _groupName      = string.Empty;
-            _groupNameValid = false;
-        }
-    }
-
-    private void DrawImcData(Mod mod, float width)
-    {
-        var halfWidth = (width - ImUtf8.ItemInnerSpacing.X) / 2 / ImUtf8.GlobalScale;
-        var change    = MetaManipulationDrawer.DrawObjectType(ref _imcManip, halfWidth);
-        ImUtf8.SameLineInner();
-        change |= MetaManipulationDrawer.DrawPrimaryId(ref _imcManip, halfWidth);
-        if (_imcManip.ObjectType is ObjectType.Weapon or ObjectType.Monster)
-        {
-            change |= MetaManipulationDrawer.DrawSecondaryId(ref _imcManip, halfWidth);
-            ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawVariant(ref _imcManip, halfWidth);
-        }
-        else if (_imcManip.ObjectType is ObjectType.DemiHuman)
-        {
-            var quarterWidth = (halfWidth - ImUtf8.ItemInnerSpacing.X / ImUtf8.GlobalScale) / 2;
-            change |= MetaManipulationDrawer.DrawSecondaryId(ref _imcManip, halfWidth);
-            ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawSlot(ref _imcManip, quarterWidth);
-            ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawVariant(ref _imcManip, quarterWidth);
-        }
-        else
-        {
-            change |= MetaManipulationDrawer.DrawSlot(ref _imcManip, halfWidth);
-            ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawVariant(ref _imcManip, halfWidth);
-        }
-
-        if (change)
-            UpdateEntry();
-
-        var buttonWidth = new Vector2(halfWidth * ImUtf8.GlobalScale, 0);
-
-        if (ImUtf8.ButtonEx("Add IMC Group"u8, !_groupNameValid
-                    ? "Can not add a new group of this name."u8
-                    : _entryInvalid ?
-                        "The associated IMC entry is invalid."u8
-                        : "Add a new multi selection option group to this mod."u8,
-                buttonWidth, !_groupNameValid || _entryInvalid))
-        {
-            _modManager.OptionEditor.ImcEditor.AddModGroup(mod, _groupName, _imcManip);
-            _groupName      = string.Empty;
-            _groupNameValid = false;
-        }
-
-        if (_entryInvalid)
-        {
-            ImUtf8.SameLineInner();
-            var text = _imcFileExists
-                ? "IMC Entry Does Not Exist"
-                : "IMC File Does Not Exist";
-            ImGuiUtil.DrawTextButton(text, buttonWidth, Colors.PressEnterWarningBg);
-        }
-    }
-}
-
 public sealed class ModGroupEditDrawer(
     ModManager modManager,
     Configuration config,
     FilenameService filenames,
-    DescriptionEditPopup descriptionPopup) : IUiService
+    DescriptionEditPopup descriptionPopup,
+    MetaFileManager metaManager) : IUiService
 {
     private static ReadOnlySpan<byte> DragDropLabel
         => "##DragOption"u8;
@@ -501,7 +369,111 @@ public sealed class ModGroupEditDrawer(
     }
 
     private void DrawImcGroup(ImcModGroup group)
-    { }
+    {
+        using (ImUtf8.Group())
+        {
+            ImUtf8.Text("Object Type"u8);
+            if (group.ObjectType is ObjectType.Equipment or ObjectType.Accessory or ObjectType.DemiHuman)
+                ImUtf8.Text("Slot"u8);
+            ImUtf8.Text("Primary ID");
+            if (group.ObjectType is not ObjectType.Equipment and not ObjectType.Accessory)
+                ImUtf8.Text("Secondary ID");
+            ImUtf8.Text("Variant"u8);
+
+            ImUtf8.TextFrameAligned("Material ID"u8);
+            ImUtf8.TextFrameAligned("Material Animation ID"u8);
+            ImUtf8.TextFrameAligned("Decal ID"u8);
+            ImUtf8.TextFrameAligned("VFX ID"u8);
+            ImUtf8.TextFrameAligned("Sound ID"u8);
+            ImUtf8.TextFrameAligned("Can Be Disabled"u8);
+            ImUtf8.TextFrameAligned("Default Attributes"u8);
+        }
+
+        ImGui.SameLine();
+
+        var attributeCache = new ImcAttributeCache(group);
+
+        using (ImUtf8.Group())
+        {
+            ImUtf8.Text(group.ObjectType.ToName());
+            if (group.ObjectType is ObjectType.Equipment or ObjectType.Accessory or ObjectType.DemiHuman)
+                ImUtf8.Text(group.EquipSlot.ToName());
+            ImUtf8.Text($"{group.PrimaryId.Id}");
+            if (group.ObjectType is not ObjectType.Equipment and not ObjectType.Accessory)
+                ImUtf8.Text($"{group.SecondaryId.Id}");
+            ImUtf8.Text($"{group.Variant.Id}");
+
+            ImUtf8.TextFrameAligned($"{group.DefaultEntry.MaterialId}");
+            ImUtf8.TextFrameAligned($"{group.DefaultEntry.MaterialAnimationId}");
+            ImUtf8.TextFrameAligned($"{group.DefaultEntry.DecalId}");
+            ImUtf8.TextFrameAligned($"{group.DefaultEntry.VfxId}");
+            ImUtf8.TextFrameAligned($"{group.DefaultEntry.SoundId}");
+
+            var canBeDisabled = group.CanBeDisabled;
+            if (ImUtf8.Checkbox("##disabled"u8, ref canBeDisabled))
+                modManager.OptionEditor.ImcEditor.ChangeCanBeDisabled(group, canBeDisabled, SaveType.Queue);
+
+            var defaultDisabled = group.DefaultDisabled;
+            ImUtf8.SameLineInner();
+            if (ImUtf8.Checkbox("##defaultDisabled"u8, ref defaultDisabled))
+                modManager.OptionEditor.ChangeModGroupDefaultOption(group,
+                    group.DefaultSettings.SetBit(ImcModGroup.DisabledIndex, defaultDisabled));
+
+            DrawAttributes(modManager.OptionEditor.ImcEditor, attributeCache, group.DefaultEntry.AttributeMask, group);
+        }
+
+
+        foreach (var (option, optionIdx) in group.OptionData.WithIndex())
+        {
+            using var id = ImRaii.PushId(optionIdx);
+            DrawOptionPosition(group, option, optionIdx);
+
+            ImUtf8.SameLineInner();
+            DrawOptionDefaultMultiBehaviour(group, option, optionIdx);
+
+            ImUtf8.SameLineInner();
+            DrawOptionName(option);
+
+            ImUtf8.SameLineInner();
+            DrawOptionDescription(option);
+
+            ImUtf8.SameLineInner();
+            DrawOptionDelete(option);
+
+            ImUtf8.SameLineInner();
+            ImGui.Dummy(new Vector2(_priorityWidth, 0));
+
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + _optionIdxSelectable.X + ImUtf8.ItemInnerSpacing.X * 2 + ImUtf8.FrameHeight);
+            DrawAttributes(modManager.OptionEditor.ImcEditor, attributeCache, option.AttributeMask, option);
+        }
+
+        DrawNewOption(group, attributeCache);
+        return;
+
+        static void DrawAttributes(ImcModGroupEditor editor, in ImcAttributeCache cache, ushort mask, object data)
+        {
+            for (var i = 0; i < ImcEntry.NumAttributes; ++i)
+            {
+                using var id    = ImRaii.PushId(i);
+                var       value = (mask & (1 << i)) != 0;
+                using (ImRaii.Disabled(!cache.CanChange(i)))
+                {
+                    if (ImUtf8.Checkbox(TerminatedByteString.Empty, ref value))
+                    {
+                        if (data is ImcModGroup g)
+                            editor.ChangeDefaultAttribute(g, cache, i, value);
+                        else
+                            editor.ChangeOptionAttribute((ImcSubMod)data, cache, i, value);
+                    }
+                }
+
+                ImUtf8.HoverTooltip($"{(char)('A' + i)}");
+                if (i != 9)
+                    ImUtf8.SameLineInner();
+            }
+        }
+    }
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawOptionPosition(IModGroup group, IModOption option, int optionIdx)
@@ -575,14 +547,14 @@ public sealed class ModGroupEditDrawer(
         if (count >= int.MaxValue)
             return;
 
-        DrawNewOptionBase(group, count);
+        var name = DrawNewOptionBase(group, count);
 
-        var validName = _newOptionName?.Length > 0;
+        var validName = name.Length > 0;
         if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
                 ? "Add a new option to this group."u8
                 : "Please enter a name for the new option."u8, !validName))
         {
-            modManager.OptionEditor.SingleEditor.AddOption(group, _newOptionName!);
+            modManager.OptionEditor.SingleEditor.AddOption(group, name);
             _newOptionName = null;
         }
     }
@@ -593,25 +565,36 @@ public sealed class ModGroupEditDrawer(
         if (count >= IModGroup.MaxMultiOptions)
             return;
 
-        DrawNewOptionBase(group, count);
+        var name = DrawNewOptionBase(group, count);
 
-        var validName = _newOptionName?.Length > 0;
+        var validName = name.Length > 0;
         if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
                 ? "Add a new option to this group."u8
                 : "Please enter a name for the new option."u8, !validName))
         {
-            modManager.OptionEditor.MultiEditor.AddOption(group, _newOptionName!);
+            modManager.OptionEditor.MultiEditor.AddOption(group, name);
             _newOptionName = null;
         }
     }
 
-    private void DrawNewOption(ImcModGroup group)
+    private void DrawNewOption(ImcModGroup group, in ImcAttributeCache cache)
     {
-        // TODO
+        if (cache.LowestUnsetMask == 0)
+            return;
+
+        var name      = DrawNewOptionBase(group, group.Options.Count);
+        var validName = name.Length > 0;
+        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
+                ? "Add a new option to this group."u8
+                : "Please enter a name for the new option."u8, !validName))
+        {
+            modManager.OptionEditor.ImcEditor.AddOption(group, cache, name);
+            _newOptionName = null;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DrawNewOptionBase(IModGroup group, int count)
+    private string DrawNewOptionBase(IModGroup group, int count)
     {
         ImUtf8.Selectable($"Option #{count + 1}", false, size: _optionIdxSelectable);
         Target(group, count);
@@ -631,6 +614,7 @@ public sealed class ModGroupEditDrawer(
         }
 
         ImUtf8.SameLineInner();
+        return newName;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

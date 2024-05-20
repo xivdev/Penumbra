@@ -202,6 +202,9 @@ public class ModCacheManager : IDisposable
         foreach (var manip in mod.AllDataContainers.SelectMany(m => m.Manipulations))
             ComputeChangedItems(_identifier, changedItems, manip);
 
+        foreach(var imcGroup in mod.Groups.OfType<ImcModGroup>())
+            ComputeChangedItems(_identifier, changedItems, imcGroup.GetManip(0));
+
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
     }
 

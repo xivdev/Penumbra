@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
 
 namespace Penumbra.Mods.SubMods;
@@ -11,15 +12,13 @@ public class ImcSubMod(ImcModGroup group) : IModOption
         : this(group)
     {
         SubMod.LoadOptionData(json, this);
+        AttributeMask = (ushort)((json[nameof(AttributeMask)]?.ToObject<ushort>() ?? 0) & ImcEntry.AttributesMask);
     }
 
     public Mod Mod
         => Group.Mod;
 
-    public byte AttributeIndex;
-
-    public ushort Attribute
-        => (ushort)(1 << AttributeIndex);
+    public ushort AttributeMask;
 
     Mod IModOption.Mod
         => Mod;

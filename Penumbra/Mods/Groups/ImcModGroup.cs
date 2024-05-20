@@ -14,8 +14,7 @@ namespace Penumbra.Mods.Groups;
 
 public class ImcModGroup(Mod mod) : IModGroup
 {
-    public const int DisabledIndex = 30;
-    public const int NumAttributes = 10;
+    public const int DisabledIndex = 60;
 
     public Mod    Mod         { get; }      = mod;
     public string Name        { get; set; } = "Option";
@@ -55,23 +54,20 @@ public class ImcModGroup(Mod mod) : IModGroup
         }
     }
 
+    public bool DefaultDisabled
+        => _canBeDisabled && DefaultSettings.HasFlag(DisabledIndex);
+
     public IModOption? AddOption(string name, string description = "")
     {
-        uint fullMask   = GetFullMask();
-        var  firstUnset = (byte)BitOperations.TrailingZeroCount(~fullMask);
-        // All attributes handled.
-        if (firstUnset >= NumAttributes)
-            return null;
-
         var groupIdx = Mod.Groups.IndexOf(this);
         if (groupIdx < 0)
             return null;
 
         var subMod = new ImcSubMod(this)
         {
-            Name           = name,
-            Description    = description,
-            AttributeIndex = firstUnset,
+            Name          = name,
+            Description   = description,
+            AttributeMask = 0,
         };
         OptionData.Add(subMod);
         return subMod;
@@ -100,7 +96,7 @@ public class ImcModGroup(Mod mod) : IModGroup
                 continue;
 
             var option = OptionData[i];
-            mask |= option.Attribute;
+            mask |= option.AttributeMask;
         }
 
         return mask;
@@ -109,10 +105,9 @@ public class ImcModGroup(Mod mod) : IModGroup
     private ushort GetFullMask()
         => GetCurrentMask(Setting.AllBits(63));
 
-    private ImcManipulation GetManip(ushort mask)
+    public ImcManipulation GetManip(ushort mask)
         => new(ObjectType, BodySlot, PrimaryId, SecondaryId.Id, Variant.Id, EquipSlot,
             DefaultEntry with { AttributeMask = mask });
-
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
     {
@@ -150,8 +145,8 @@ public class ImcModGroup(Mod mod) : IModGroup
         {
             jWriter.WriteStartObject();
             SubMod.WriteModOption(jWriter, option);
-            jWriter.WritePropertyName(nameof(option.AttributeIndex));
-            jWriter.WriteValue(option.AttributeIndex);
+            jWriter.WritePropertyName(nameof(option.AttributeMask));
+            jWriter.WriteValue(option.AttributeMask);
             jWriter.WriteEndObject();
         }
 
