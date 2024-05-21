@@ -3,12 +3,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Mods.Groups;
 
@@ -118,6 +120,9 @@ public class ImcModGroup(Mod mod) : IModGroup
         var imc  = GetManip(mask);
         manipulations.Add(imc);
     }
+
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+        => identifier.MetaChangedItems(changedItems, GetManip(0));
 
     public Setting FixSetting(Setting setting)
         => new(setting.Value & (((1ul << OptionData.Count) - 1) | (CanBeDisabled ? 1ul << DisabledIndex : 0)));

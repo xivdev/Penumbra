@@ -123,8 +123,7 @@ public sealed class ModGroupEditDrawer(
     ModManager modManager,
     Configuration config,
     FilenameService filenames,
-    DescriptionEditPopup descriptionPopup,
-    MetaFileManager metaManager) : IUiService
+    DescriptionEditPopup descriptionPopup) : IUiService
 {
     private static ReadOnlySpan<byte> DragDropLabel
         => "##DragOption"u8;

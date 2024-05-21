@@ -62,8 +62,8 @@ public sealed class Mod : IMod
 
 
     // Options
-    public readonly DefaultSubMod Default;
-    public readonly List<IModGroup>   Groups = [];
+    public readonly DefaultSubMod   Default;
+    public readonly List<IModGroup> Groups = [];
 
     public AppliedModData GetData(ModSettings? settings = null)
     {
@@ -99,7 +99,7 @@ public sealed class Mod : IMod
     }
 
     // Cache
-    public readonly IReadOnlyDictionary<string, object?> ChangedItems = new SortedList<string, object?>();
+    public readonly SortedList<string, object?> ChangedItems = new();
 
     public string LowerChangedItemsString { get; internal set; } = string.Empty;
     public string AllTagsLower            { get; internal set; } = string.Empty;

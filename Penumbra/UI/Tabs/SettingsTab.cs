@@ -428,6 +428,14 @@ public class SettingsTab : ITab
                     _config.Ephemeral.Save();
                 }
             });
+        Checkbox("Omit Machinist Offhands in Changed Items",
+            "Omits all Aetherotransformers (machinist offhands) in the changed items tabs because any change on them changes all of them at the moment.\n\n"
+          + "Changing this triggers a rediscovery of your mods so all changed items can be updated.",
+            _config.HideMachinistOffhandFromChangedItems, v =>
+            {
+                _config.HideMachinistOffhandFromChangedItems = v;
+                _modManager.DiscoverMods();
+            });
         Checkbox("Hide Priority Numbers in Mod Selector",
             "Hides the bracketed non-zero priority numbers displayed in the mod selector when there is enough space for them.",
             _config.HidePrioritiesInSelector, v => _config.HidePrioritiesInSelector = v);

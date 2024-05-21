@@ -4,10 +4,12 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Mods.Groups;
 
@@ -112,6 +114,12 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
             if (setting.HasFlag(index))
                 option.AddDataTo(redirections, manipulations);
         }
+    }
+
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    {
+        foreach (var container in DataContainers)
+            identifier.AddChangedItems(container, changedItems);
     }
 
     public void WriteJson(JsonTextWriter jWriter, JsonSerializer serializer, DirectoryInfo? basePath = null)

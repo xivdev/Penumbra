@@ -41,18 +41,19 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool  HideUiWhenUiHidden             { get; set; } = false;
     public bool  UseDalamudUiTextureRedirection { get; set; } = true;
 
-    public bool        UseCharacterCollectionInMainWindow { get; set; } = true;
-    public bool        UseCharacterCollectionsInCards     { get; set; } = true;
-    public bool        UseCharacterCollectionInInspect    { get; set; } = true;
-    public bool        UseCharacterCollectionInTryOn      { get; set; } = true;
-    public bool        UseOwnerNameForCharacterCollection { get; set; } = true;
-    public bool        UseNoModsInInspect                 { get; set; } = false;
-    public bool        HideChangedItemFilters             { get; set; } = false;
-    public bool        ReplaceNonAsciiOnImport            { get; set; } = false;
-    public bool        HidePrioritiesInSelector           { get; set; } = false;
-    public bool        HideRedrawBar                      { get; set; } = false;
-    public RenameField ShowRename                         { get; set; } = RenameField.BothDataPrio;
-    public int         OptionGroupCollapsibleMin          { get; set; } = 5;
+    public bool        UseCharacterCollectionInMainWindow   { get; set; } = true;
+    public bool        UseCharacterCollectionsInCards       { get; set; } = true;
+    public bool        UseCharacterCollectionInInspect      { get; set; } = true;
+    public bool        UseCharacterCollectionInTryOn        { get; set; } = true;
+    public bool        UseOwnerNameForCharacterCollection   { get; set; } = true;
+    public bool        UseNoModsInInspect                   { get; set; } = false;
+    public bool        HideChangedItemFilters               { get; set; } = false;
+    public bool        ReplaceNonAsciiOnImport              { get; set; } = false;
+    public bool        HidePrioritiesInSelector             { get; set; } = false;
+    public bool        HideRedrawBar                        { get; set; } = false;
+    public bool        HideMachinistOffhandFromChangedItems { get; set; } = true;
+    public RenameField ShowRename                           { get; set; } = RenameField.BothDataPrio;
+    public int         OptionGroupCollapsibleMin            { get; set; } = 5;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 

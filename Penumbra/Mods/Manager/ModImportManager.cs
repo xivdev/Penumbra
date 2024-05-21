@@ -5,12 +5,8 @@ using Penumbra.Mods.Editor;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModImportManager : IDisposable
+public class ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor) : IDisposable
 {
-    private readonly ModManager    _modManager;
-    private readonly Configuration _config;
-    private readonly ModEditor     _modEditor;
-
     private readonly ConcurrentQueue<string[]> _modsToUnpack = new();
 
     /// <summary> Mods need to be added thread-safely outside of iteration. </summary>
@@ -25,13 +21,6 @@ public class ModImportManager : IDisposable
     internal IEnumerable<DirectoryInfo> AddableMods
         => _modsToAdd;
 
-
-    public ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor)
-    {
-        _modManager = modManager;
-        _config     = config;
-        _modEditor  = modEditor;
-    }
 
     public void TryUnpacking()
     {
@@ -51,7 +40,7 @@ public class ModImportManager : IDisposable
         if (files.Length == 0)
             return;
 
-        _import = new TexToolsImporter(files.Length, files, AddNewMod, _config, _modEditor, _modManager, _modEditor.Compactor);
+        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, modEditor, modManager, modEditor.Compactor);
     }
 
     public bool Importing
@@ -87,8 +76,8 @@ public class ModImportManager : IDisposable
             return false;
         }
 
-        _modManager.AddMod(directory);
-        mod = _modManager.LastOrDefault();
+        modManager.AddMod(directory);
+        mod = modManager.LastOrDefault();
         return mod != null && mod.ModPath == directory;
     }
 

@@ -2,10 +2,12 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Mods.Groups;
 
@@ -97,6 +99,12 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
             return;
 
         OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);
+    }
+
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    {
+        foreach (var container in DataContainers)
+            identifier.AddChangedItems(container, changedItems);
     }
 
     public Setting FixSetting(Setting setting)

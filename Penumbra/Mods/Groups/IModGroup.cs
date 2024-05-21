@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -40,6 +41,7 @@ public interface IModGroup
     public int GetIndex();
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations);
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems);
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);

@@ -6,6 +6,7 @@ using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
+using Penumbra.Util;
 
 namespace Penumbra.Collections.Cache;
 
@@ -252,8 +253,8 @@ public sealed class CollectionCache : IDisposable
             return mod.GetData();
 
         var settings = _collection[mod.Index].Settings;
-        return settings is not { Enabled: true } 
-            ? AppliedModData.Empty 
+        return settings is not { Enabled: true }
+            ? AppliedModData.Empty
             : mod.GetData(settings);
     }
 
@@ -439,9 +440,12 @@ public sealed class CollectionCache : IDisposable
 
             foreach (var (manip, mod) in Meta)
             {
-                ModCacheManager.ComputeChangedItems(identifier, items, manip);
+                identifier.MetaChangedItems(items, manip);
                 AddItems(mod);
             }
+
+            if (_manager.Config.HideMachinistOffhandFromChangedItems)
+                _changedItems.RemoveMachinistOffhands();
         }
         catch (Exception e)
         {
