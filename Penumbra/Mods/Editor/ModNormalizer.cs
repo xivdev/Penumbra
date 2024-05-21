@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
@@ -279,19 +278,8 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
     private void ApplyRedirections()
     {
         foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
-        {
-            switch (group)
-            {
-                case SingleModGroup single:
-                    foreach (var (option, optionIdx) in single.OptionData.WithIndex())
-                        _modManager.OptionEditor.SetFiles(option, _redirections[groupIdx + 1][optionIdx]);
-                    break;
-                case MultiModGroup multi:
-                    foreach (var (option, optionIdx) in multi.OptionData.WithIndex())
-                        _modManager.OptionEditor.SetFiles(option, _redirections[groupIdx + 1][optionIdx]);
-                    break;
-            }
-        }
+            foreach (var (container, containerIdx) in group.DataContainers.WithIndex())
+                _modManager.OptionEditor.SetFiles(container, _redirections[groupIdx + 1][containerIdx]);
 
         ++Step;
     }

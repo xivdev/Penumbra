@@ -13,6 +13,7 @@ using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI.ModsTab;
 

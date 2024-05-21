@@ -7,6 +7,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.UI.ModsTab.Groups;
 using Penumbra.Util;
 
 namespace Penumbra.Mods.Groups;
@@ -92,6 +93,9 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public int GetIndex()
         => ModGroup.GetIndex(this);
+
+    public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
+        => new SingleModGroupEditDrawer(editDrawer, this);
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
     {

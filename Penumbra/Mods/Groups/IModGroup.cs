@@ -5,6 +5,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.Mods.Groups;
 
@@ -39,6 +40,8 @@ public interface IModGroup
     public bool                             IsOption       { get; }
 
     public int GetIndex();
+
+    public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer);
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations);
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems);

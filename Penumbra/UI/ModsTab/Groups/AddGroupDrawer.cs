@@ -12,25 +12,25 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Groups;
 
 public class AddGroupDrawer : IUiService
 {
-    private string _groupName      = string.Empty;
-    private bool   _groupNameValid = false;
+    private string _groupName = string.Empty;
+    private bool _groupNameValid = false;
 
-    private          ImcManipulation _imcManip = new(EquipSlot.Head, 1, 1, new ImcEntry());
-    private          ImcEntry        _defaultEntry;
-    private          bool            _imcFileExists;
-    private          bool            _entryExists;
-    private          bool            _entryInvalid;
+    private ImcManipulation _imcManip = new(EquipSlot.Head, 1, 1, new ImcEntry());
+    private ImcEntry _defaultEntry;
+    private bool _imcFileExists;
+    private bool _entryExists;
+    private bool _entryInvalid;
     private readonly MetaFileManager _metaManager;
-    private readonly ModManager      _modManager;
+    private readonly ModManager _modManager;
 
     public AddGroupDrawer(MetaFileManager metaManager, ModManager modManager)
     {
         _metaManager = metaManager;
-        _modManager  = modManager;
+        _modManager = modManager;
         UpdateEntry();
     }
 
@@ -61,7 +61,7 @@ public class AddGroupDrawer : IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Single, _groupName);
-        _groupName      = string.Empty;
+        _groupName = string.Empty;
         _groupNameValid = false;
     }
 
@@ -74,7 +74,7 @@ public class AddGroupDrawer : IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Multi, _groupName);
-        _groupName      = string.Empty;
+        _groupName = string.Empty;
         _groupNameValid = false;
     }
 
@@ -126,7 +126,7 @@ public class AddGroupDrawer : IUiService
                 width, !_groupNameValid || _entryInvalid))
         {
             _modManager.OptionEditor.ImcEditor.AddModGroup(mod, _groupName, _imcManip);
-            _groupName      = string.Empty;
+            _groupName = string.Empty;
             _groupNameValid = false;
         }
 
@@ -150,12 +150,12 @@ public class AddGroupDrawer : IUiService
         }
         catch (Exception)
         {
-            _defaultEntry  = new ImcEntry();
+            _defaultEntry = new ImcEntry();
             _imcFileExists = false;
-            _entryExists   = false;
+            _entryExists = false;
         }
 
-        _imcManip     = _imcManip.Copy(_entryExists ? _defaultEntry : new ImcEntry());
+        _imcManip = _imcManip.Copy(_entryExists ? _defaultEntry : new ImcEntry());
         _entryInvalid = !_imcManip.Validate(true);
     }
 }

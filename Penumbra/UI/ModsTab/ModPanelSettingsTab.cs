@@ -9,6 +9,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Mods.Settings;
+using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI.ModsTab;
 

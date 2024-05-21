@@ -10,6 +10,8 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.UI.ModsTab;
+using Penumbra.UI.ModsTab.Groups;
 using Penumbra.Util;
 
 namespace Penumbra.Mods.Groups;
@@ -88,6 +90,9 @@ public class ImcModGroup(Mod mod) : IModGroup
 
     public int GetIndex()
         => ModGroup.GetIndex(this);
+
+    public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
+        => new ImcModGroupEditDrawer(editDrawer, this);
 
     private ushort GetCurrentMask(Setting setting)
     {

@@ -11,7 +11,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 
-namespace Penumbra.UI.ModsTab;
+namespace Penumbra.UI.ModsTab.Groups;
 
 public sealed class ModGroupDrawer(Configuration config, CollectionManager collectionManager) : IUiService
 {
@@ -63,8 +63,8 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawSingleGroupCombo(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id             = ImRaii.PushId(groupIdx);
-        var       selectedOption = setting.AsIndex;
+        using var id = ImRaii.PushId(groupIdx);
+        var selectedOption = setting.AsIndex;
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X * 3 / 4);
         var options = group.Options;
         using (var combo = ImRaii.Combo(string.Empty, options[selectedOption].Name))
@@ -97,10 +97,10 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawSingleGroupRadio(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id             = ImRaii.PushId(groupIdx);
-        var       selectedOption = setting.AsIndex;
-        var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
-        var       options        = group.Options;
+        using var id = ImRaii.PushId(groupIdx);
+        var selectedOption = setting.AsIndex;
+        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+        var options = group.Options;
         DrawCollapseHandling(options, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
@@ -110,8 +110,8 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         {
             for (var idx = 0; idx < group.Options.Count; ++idx)
             {
-                using var i      = ImRaii.PushId(idx);
-                var       option = options[idx];
+                using var i = ImRaii.PushId(idx);
+                var option = options[idx];
                 if (ImGui.RadioButton(option.Name, selectedOption == idx))
                     SetModSetting(group, groupIdx, Setting.Single(idx));
 
@@ -130,9 +130,9 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawMultiGroup(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id       = ImRaii.PushId(groupIdx);
-        var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
-        var       options  = group.Options;
+        using var id = ImRaii.PushId(groupIdx);
+        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+        var options = group.Options;
         DrawCollapseHandling(options, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
@@ -147,9 +147,9 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         {
             for (var idx = 0; idx < options.Count; ++idx)
             {
-                using var i       = ImRaii.PushId(idx);
-                var       option  = options[idx];
-                var       enabled = setting.HasFlag(idx);
+                using var i = ImRaii.PushId(idx);
+                var option = options[idx];
+                var enabled = setting.HasFlag(idx);
 
                 if (ImGui.Checkbox(option.Name, ref enabled))
                     SetModSetting(group, groupIdx, setting.SetBit(idx, enabled));
@@ -187,8 +187,8 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         }
         else
         {
-            var collapseId     = ImGui.GetID("Collapse");
-            var shown          = ImGui.GetStateStorage().GetBool(collapseId, true);
+            var collapseId = ImGui.GetID("Collapse");
+            var shown = ImGui.GetStateStorage().GetBool(collapseId, true);
             var buttonTextShow = $"Show {options.Count} Options";
             var buttonTextHide = $"Hide {options.Count} Options";
             var buttonWidth = Math.Max(ImGui.CalcTextSize(buttonTextShow).X, ImGui.CalcTextSize(buttonTextHide).X)
@@ -204,7 +204,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
                 }
 
 
-                var width  = Math.Max(ImGui.GetItemRectSize().X, minWidth);
+                var width = Math.Max(ImGui.GetItemRectSize().X, minWidth);
                 var endPos = ImGui.GetCursorPos();
                 ImGui.SetCursorPos(pos);
                 if (ImGui.Button(buttonTextHide, new Vector2(width, 0)))
