@@ -72,7 +72,7 @@ public readonly struct ModSaveGroup : ISavable
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };
         j.WriteStartObject();
         if (_groupIdx >= 0)
-            _group!.WriteJson(j, serializer);
+            _group!.WriteJson(j, serializer, _basePath);
         else
             SubMod.WriteModContainer(j, serializer, _defaultMod!, _basePath);
         j.WriteEndObject();
