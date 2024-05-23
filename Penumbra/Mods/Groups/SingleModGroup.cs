@@ -23,7 +23,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public Mod         Mod             { get; }      = mod;
     public string      Name            { get; set; } = "Option";
-    public string      Description     { get; set; } = "A mutually exclusive group of settings.";
+    public string      Description     { get; set; } = string.Empty;
     public ModPriority Priority        { get; set; }
     public Setting     DefaultSettings { get; set; }
 

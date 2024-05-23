@@ -25,7 +25,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public          Mod               Mod             { get; }      = mod;
     public          string            Name            { get; set; } = "Group";
-    public          string            Description     { get; set; } = "A non-exclusive group of settings.";
+    public          string            Description     { get; set; } = string.Empty;
     public          ModPriority       Priority        { get; set; }
     public          Setting           DefaultSettings { get; set; }
     public readonly List<MultiSubMod> OptionData = [];

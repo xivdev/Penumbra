@@ -22,7 +22,7 @@ public class ImcModGroup(Mod mod) : IModGroup
 
     public Mod    Mod         { get; }      = mod;
     public string Name        { get; set; } = "Option";
-    public string Description { get; set; } = "A single IMC manipulation.";
+    public string Description { get; set; } = string.Empty;
 
     public GroupType Type
         => GroupType.Imc;
