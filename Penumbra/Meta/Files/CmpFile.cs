@@ -19,8 +19,8 @@ public sealed unsafe class CmpFile : MetaBaseFile
 
     public float this[SubRace subRace, RspAttribute attribute]
     {
-        get => *(float*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspEntry.ByteSize + (int)attribute * 4);
-        set => *(float*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspEntry.ByteSize + (int)attribute * 4) = value;
+        get => *(float*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
+        set => *(float*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4) = value;
     }
 
     public override void Reset()
@@ -42,7 +42,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
     public static float GetDefault(MetaFileManager manager, SubRace subRace, RspAttribute attribute)
     {
         var data = (byte*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
-        return *(float*)(data + RacialScalingStart + ToRspIndex(subRace) * RspEntry.ByteSize + (int)attribute * 4);
+        return *(float*)(data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
     }
 
     private static int ToRspIndex(SubRace subRace)

@@ -57,9 +57,7 @@ public partial class TexToolsMeta
         if (data == null)
             return;
 
-        using var reader = new BinaryReader(new MemoryStream(data));
-        var       value  = (GmpEntry)reader.ReadUInt32();
-        value.UnknownTotal = reader.ReadByte();
+        var       value  = GmpEntry.FromTexToolsMeta(data.AsSpan(0, 5));
         var def = ExpandedGmpFile.GetDefault(_metaFileManager, metaFileInfo.PrimaryId);
         if (_keepDefault || value != def)
             MetaManipulations.Add(new GmpManipulation(value, metaFileInfo.PrimaryId));

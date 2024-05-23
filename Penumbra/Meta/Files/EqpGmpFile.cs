@@ -157,12 +157,12 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 
     public GmpEntry this[PrimaryId idx]
     {
-        get => (GmpEntry)GetInternal(idx);
-        set => SetInternal(idx, (ulong)value);
+        get => new() { Value = GetInternal(idx) };
+        set => SetInternal(idx, value.Value);
     }
 
     public static GmpEntry GetDefault(MetaFileManager manager, PrimaryId primaryIdx)
-        => (GmpEntry)GetDefaultInternal(manager, InternalIndex, primaryIdx, (ulong)GmpEntry.Default);
+        => new() { Value = GetDefaultInternal(manager, InternalIndex, primaryIdx, GmpEntry.Default.Value) };
 
     public void Reset(IEnumerable<PrimaryId> entries)
     {
