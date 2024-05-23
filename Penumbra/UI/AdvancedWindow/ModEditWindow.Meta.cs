@@ -352,26 +352,26 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            var change = MetaManipulationDrawer.DrawObjectType(ref _new);
+            var change = ImcManipulationDrawer.DrawObjectType(ref _new);
 
             ImGui.TableNextColumn();
-            change |= MetaManipulationDrawer.DrawPrimaryId(ref _new);
+            change |= ImcManipulationDrawer.DrawPrimaryId(ref _new);
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
                 new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
 
             ImGui.TableNextColumn();
             // Equipment and accessories are slightly different imcs than other types.
             if (_new.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
-                change |= MetaManipulationDrawer.DrawSlot(ref _new);
+                change |= ImcManipulationDrawer.DrawSlot(ref _new);
             else
-                change |= MetaManipulationDrawer.DrawSecondaryId(ref _new);
+                change |= ImcManipulationDrawer.DrawSecondaryId(ref _new);
 
             ImGui.TableNextColumn();
-            change |= MetaManipulationDrawer.DrawVariant(ref _new);
+            change |= ImcManipulationDrawer.DrawVariant(ref _new);
 
             ImGui.TableNextColumn();
             if (_new.ObjectType is ObjectType.DemiHuman)
-                change |= MetaManipulationDrawer.DrawSlot(ref _new, 70);
+                change |= ImcManipulationDrawer.DrawSlot(ref _new, 70);
             else
                 ImGui.Dummy(new Vector2(70 * UiHelpers.Scale, 0));
 
@@ -379,32 +379,20 @@ public partial class ModEditWindow
                 _new = _new.Copy(GetDefault(metaFileManager, _new) ?? new ImcEntry());
             // Values
             using var disabled = ImRaii.Disabled();
-            ImGui.TableNextColumn();
-            IntDragInput("##imcMaterialId", "Material ID", SmallIdWidth, defaultEntry.Value.MaterialId, defaultEntry.Value.MaterialId, out _,
-                1,                          byte.MaxValue, 0f);
-            ImGui.SameLine();
-            IntDragInput("##imcMaterialAnimId",         "Material Animation ID", SmallIdWidth, defaultEntry.Value.MaterialAnimationId,
-                defaultEntry.Value.MaterialAnimationId, out _,                   0,            byte.MaxValue, 0.01f);
-            ImGui.TableNextColumn();
-            IntDragInput("##imcDecalId", "Decal ID", SmallIdWidth, defaultEntry.Value.DecalId, defaultEntry.Value.DecalId, out _, 0,
-                byte.MaxValue,           0f);
-            ImGui.SameLine();
-            IntDragInput("##imcVfxId", "VFX ID", SmallIdWidth, defaultEntry.Value.VfxId, defaultEntry.Value.VfxId, out _, 0, byte.MaxValue,
-                0f);
-            ImGui.SameLine();
-            IntDragInput("##imcSoundId", "Sound ID", SmallIdWidth, defaultEntry.Value.SoundId, defaultEntry.Value.SoundId, out _, 0, 0b111111,
-                0f);
-            ImGui.TableNextColumn();
-            for (var i = 0; i < 10; ++i)
-            {
-                using var id   = ImRaii.PushId(i);
-                var       flag = 1 << i;
-                Checkmark("##attribute",                            $"{(char)('A' + i)}", (defaultEntry.Value.AttributeMask & flag) != 0,
-                    (defaultEntry.Value.AttributeMask & flag) != 0, out _);
-                ImGui.SameLine();
-            }
 
-            ImGui.NewLine();
+            var entry = defaultEntry.Value;
+            ImGui.TableNextColumn();
+            ImcManipulationDrawer.DrawMaterialId(entry, ref entry, false);
+            ImGui.SameLine();
+            ImcManipulationDrawer.DrawMaterialAnimationId(entry, ref entry, false);
+            ImGui.TableNextColumn();
+            ImcManipulationDrawer.DrawDecalId(entry, ref entry, false);
+            ImGui.SameLine();
+            ImcManipulationDrawer.DrawVfxId(entry, ref entry, false);
+            ImGui.SameLine();
+            ImcManipulationDrawer.DrawSoundId(entry, ref entry, false);
+            ImGui.TableNextColumn();
+            ImcManipulationDrawer.DrawAttributes(entry, ref entry);
         }
 
         public static void Draw(MetaFileManager metaFileManager, ImcManipulation meta, ModEditor editor, Vector2 iconSize)
@@ -452,46 +440,22 @@ public partial class ModEditWindow
                 new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
             ImGui.TableNextColumn();
             var defaultEntry = GetDefault(metaFileManager, meta) ?? new ImcEntry();
-            if (IntDragInput("##imcMaterialId", $"Material ID\nDefault Value: {defaultEntry.MaterialId}", SmallIdWidth, meta.Entry.MaterialId,
-                    defaultEntry.MaterialId,    out var materialId,                                       1,            byte.MaxValue, 0.01f))
-                editor.MetaEditor.Change(meta.Copy(meta.Entry with { MaterialId = (byte)materialId }));
+            var newEntry     = meta.Entry;
 
+            var changes = ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref newEntry, true);
             ImGui.SameLine();
-            if (IntDragInput("##imcMaterialAnimId", $"Material Animation ID\nDefault Value: {defaultEntry.MaterialAnimationId}", SmallIdWidth,
-                    meta.Entry.MaterialAnimationId, defaultEntry.MaterialAnimationId, out var materialAnimId, 0, byte.MaxValue, 0.01f))
-                editor.MetaEditor.Change(meta.Copy(meta.Entry with { MaterialAnimationId = (byte)materialAnimId }));
-
+            changes |= ImcManipulationDrawer.DrawMaterialAnimationId(defaultEntry, ref newEntry, true);
             ImGui.TableNextColumn();
-            if (IntDragInput("##imcDecalId", $"Decal ID\nDefault Value: {defaultEntry.DecalId}", SmallIdWidth, meta.Entry.DecalId,
-                    defaultEntry.DecalId,    out var decalId,                                    0,            byte.MaxValue, 0.01f))
-                editor.MetaEditor.Change(meta.Copy(meta.Entry with { DecalId = (byte)decalId }));
-
+            changes |= ImcManipulationDrawer.DrawDecalId(defaultEntry, ref newEntry, true);
             ImGui.SameLine();
-            if (IntDragInput("##imcVfxId", $"VFX ID\nDefault Value: {defaultEntry.VfxId}", SmallIdWidth,  meta.Entry.VfxId, defaultEntry.VfxId,
-                    out var vfxId,         0,                                              byte.MaxValue, 0.01f))
-                editor.MetaEditor.Change(meta.Copy(meta.Entry with { VfxId = (byte)vfxId }));
-
+            changes |= ImcManipulationDrawer.DrawVfxId(defaultEntry, ref newEntry, true);
             ImGui.SameLine();
-            if (IntDragInput("##imcSoundId", $"Sound ID\nDefault Value: {defaultEntry.SoundId}", SmallIdWidth, meta.Entry.SoundId,
-                    defaultEntry.SoundId,    out var soundId,                                    0,            0b111111, 0.01f))
-                editor.MetaEditor.Change(meta.Copy(meta.Entry with { SoundId = (byte)soundId }));
-
+            changes |= ImcManipulationDrawer.DrawSoundId(defaultEntry, ref newEntry, true);
             ImGui.TableNextColumn();
-            for (var i = 0; i < 10; ++i)
-            {
-                using var id   = ImRaii.PushId(i);
-                var       flag = 1 << i;
-                if (Checkmark("##attribute",                      $"{(char)('A' + i)}", (meta.Entry.AttributeMask & flag) != 0,
-                        (defaultEntry.AttributeMask & flag) != 0, out var val))
-                {
-                    var attributes = val ? meta.Entry.AttributeMask | flag : meta.Entry.AttributeMask & ~flag;
-                    editor.MetaEditor.Change(meta.Copy(meta.Entry with { AttributeMask = (ushort)attributes }));
-                }
+            changes |= ImcManipulationDrawer.DrawAttributes(defaultEntry, ref newEntry);
 
-                ImGui.SameLine();
-            }
-
-            ImGui.NewLine();
+            if (changes)
+                editor.MetaEditor.Change(meta.Copy(newEntry));
         }
     }
 

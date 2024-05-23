@@ -80,29 +80,29 @@ public class AddGroupDrawer : IUiService
 
     private void DrawImcInput(float width)
     {
-        var change = MetaManipulationDrawer.DrawObjectType(ref _imcManip, width);
+        var change = ImcManipulationDrawer.DrawObjectType(ref _imcManip, width);
         ImUtf8.SameLineInner();
-        change |= MetaManipulationDrawer.DrawPrimaryId(ref _imcManip, width);
+        change |= ImcManipulationDrawer.DrawPrimaryId(ref _imcManip, width);
         if (_imcManip.ObjectType is ObjectType.Weapon or ObjectType.Monster)
         {
-            change |= MetaManipulationDrawer.DrawSecondaryId(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcManip, width);
             ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawVariant(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawVariant(ref _imcManip, width);
         }
         else if (_imcManip.ObjectType is ObjectType.DemiHuman)
         {
             var quarterWidth = (width - ImUtf8.ItemInnerSpacing.X / ImUtf8.GlobalScale) / 2;
-            change |= MetaManipulationDrawer.DrawSecondaryId(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcManip, width);
             ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawSlot(ref _imcManip, quarterWidth);
+            change |= ImcManipulationDrawer.DrawSlot(ref _imcManip, quarterWidth);
             ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawVariant(ref _imcManip, quarterWidth);
+            change |= ImcManipulationDrawer.DrawVariant(ref _imcManip, quarterWidth);
         }
         else
         {
-            change |= MetaManipulationDrawer.DrawSlot(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawSlot(ref _imcManip, width);
             ImUtf8.SameLineInner();
-            change |= MetaManipulationDrawer.DrawVariant(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawVariant(ref _imcManip, width);
         }
 
         if (change)

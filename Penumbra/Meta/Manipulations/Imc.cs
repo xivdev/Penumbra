@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -177,11 +178,12 @@ public readonly record struct ImcIdentifier(
 
     public JObject AddToJson(JObject jObj)
     {
-        var (gender, race) = GenderRace.Split();
-        jObj["Gender"]     = gender.ToString();
-        jObj["Race"]       = race.ToString();
-        jObj["SetId"]      = SetId.Id.ToString();
-        jObj["Slot"]       = Slot.ToString();
+        jObj["ObjectType"] = ObjectType.ToString();
+        jObj["PrimaryId"]  = PrimaryId.Id;
+        jObj["PrimaryId"]  = SecondaryId.Id;
+        jObj["Variant"]    = Variant.Id;
+        jObj["EquipSlot"]  = EquipSlot.ToString();
+        jObj["BodySlot"]   = BodySlot.ToString();
         return jObj;
     }
 }
