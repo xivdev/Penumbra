@@ -35,8 +35,8 @@ public class ModPanelEditTab(
 {
     private readonly TagButtons _modTags = new();
 
-    private ModFileSystem.Leaf _leaf        = null!;
-    private Mod                _mod         = null!;
+    private ModFileSystem.Leaf _leaf = null!;
+    private Mod                _mod  = null!;
 
     public ReadOnlySpan<byte> Label
         => "Edit Mod"u8;
@@ -193,6 +193,7 @@ public class ModPanelEditTab(
         if (ImGui.Button("Edit Description", reducedSize))
             descriptionPopup.Open(_mod);
 
+
         ImGui.SameLine();
         var fileExists = File.Exists(filenames.ModMetaPath(_mod));
         var tt = fileExists
@@ -201,7 +202,21 @@ public class ModPanelEditTab(
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", UiHelpers.IconButtonSize, tt,
                 !fileExists, true))
             Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
+
+        DrawOpenDefaultMod();
     }
+
+    private void DrawOpenDefaultMod()
+    {
+        var file       = filenames.OptionGroupFile(_mod, -1, false);
+        var fileExists = File.Exists(file);
+        var tt = fileExists
+            ? "Open the default mod data file in the text editor of your choice."
+            : "The default mod data file does not exist.";
+        if (ImGuiUtil.DrawDisabledButton("Open Default Data", UiHelpers.InputTextWidth, tt, !fileExists))
+            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
+    }
+
 
     /// <summary> A text input for the new directory name and a button to apply the move. </summary>
     private static class MoveDirectory
