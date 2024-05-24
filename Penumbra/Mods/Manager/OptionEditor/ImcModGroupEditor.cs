@@ -7,7 +7,6 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using static FFXIVClientStructs.FFXIV.Client.UI.Misc.ConfigModule;
 
 namespace Penumbra.Mods.Manager.OptionEditor;
 
@@ -15,13 +14,13 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
     : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), IService
 {
     /// <summary> Add a new, empty imc group with the given manipulation data. </summary>
-    public ImcModGroup? AddModGroup(Mod mod, string newName, ImcManipulation manip, SaveType saveType = SaveType.ImmediateSync)
+    public ImcModGroup? AddModGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry, SaveType saveType = SaveType.ImmediateSync)
     {
         if (!ModGroupEditor.VerifyFileName(mod, null, newName, true))
             return null;
 
         var maxPriority = mod.Groups.Count == 0 ? ModPriority.Default : mod.Groups.Max(o => o.Priority) + 1;
-        var group       = CreateGroup(mod, newName, manip, maxPriority);
+        var group       = CreateGroup(mod, newName, identifier, defaultEntry, maxPriority);
         mod.Groups.Add(group);
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
         Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, group, null, null, -1);
@@ -97,19 +96,14 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         };
 
 
-    private static ImcModGroup CreateGroup(Mod mod, string newName, ImcManipulation manip, ModPriority priority,
+    private static ImcModGroup CreateGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry, ModPriority priority,
         SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
         {
             Name         = newName,
             Priority     = priority,
-            ObjectType   = manip.ObjectType,
-            EquipSlot    = manip.EquipSlot,
-            BodySlot     = manip.BodySlot,
-            PrimaryId    = manip.PrimaryId,
-            SecondaryId  = manip.SecondaryId.Id,
-            Variant      = manip.Variant,
-            DefaultEntry = manip.Entry,
+            Identifier   = identifier,
+            DefaultEntry = defaultEntry,
         };
 
     protected override ImcSubMod? CloneOption(ImcModGroup group, IModOption option)

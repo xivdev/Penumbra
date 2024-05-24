@@ -5,7 +5,6 @@ using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -17,20 +16,20 @@ namespace Penumbra.UI.ModsTab.Groups;
 public class AddGroupDrawer : IUiService
 {
     private string _groupName = string.Empty;
-    private bool _groupNameValid = false;
+    private bool   _groupNameValid;
 
-    private ImcManipulation _imcManip = new(EquipSlot.Head, 1, 1, new ImcEntry());
-    private ImcEntry _defaultEntry;
-    private bool _imcFileExists;
-    private bool _entryExists;
-    private bool _entryInvalid;
-    private readonly MetaFileManager _metaManager;
-    private readonly ModManager _modManager;
+    private          ImcIdentifier _imcIdentifier = ImcIdentifier.Default;
+    private          ImcEntry      _defaultEntry;
+    private          bool          _imcFileExists;
+    private          bool          _entryExists;
+    private          bool          _entryInvalid;
+    private readonly ImcChecker    _imcChecker;
+    private readonly ModManager    _modManager;
 
-    public AddGroupDrawer(MetaFileManager metaManager, ModManager modManager)
+    public AddGroupDrawer(ModManager modManager, ImcChecker imcChecker)
     {
-        _metaManager = metaManager;
         _modManager = modManager;
+        _imcChecker = imcChecker;
         UpdateEntry();
     }
 
@@ -61,7 +60,7 @@ public class AddGroupDrawer : IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Single, _groupName);
-        _groupName = string.Empty;
+        _groupName      = string.Empty;
         _groupNameValid = false;
     }
 
@@ -74,35 +73,35 @@ public class AddGroupDrawer : IUiService
             return;
 
         _modManager.OptionEditor.AddModGroup(mod, GroupType.Multi, _groupName);
-        _groupName = string.Empty;
+        _groupName      = string.Empty;
         _groupNameValid = false;
     }
 
     private void DrawImcInput(float width)
     {
-        var change = ImcManipulationDrawer.DrawObjectType(ref _imcManip, width);
+        var change = ImcManipulationDrawer.DrawObjectType(ref _imcIdentifier, width);
         ImUtf8.SameLineInner();
-        change |= ImcManipulationDrawer.DrawPrimaryId(ref _imcManip, width);
-        if (_imcManip.ObjectType is ObjectType.Weapon or ObjectType.Monster)
+        change |= ImcManipulationDrawer.DrawPrimaryId(ref _imcIdentifier, width);
+        if (_imcIdentifier.ObjectType is ObjectType.Weapon or ObjectType.Monster)
         {
-            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawVariant(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawVariant(ref _imcIdentifier, width);
         }
-        else if (_imcManip.ObjectType is ObjectType.DemiHuman)
+        else if (_imcIdentifier.ObjectType is ObjectType.DemiHuman)
         {
             var quarterWidth = (width - ImUtf8.ItemInnerSpacing.X / ImUtf8.GlobalScale) / 2;
-            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawSlot(ref _imcManip, quarterWidth);
+            change |= ImcManipulationDrawer.DrawSlot(ref _imcIdentifier, quarterWidth);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawVariant(ref _imcManip, quarterWidth);
+            change |= ImcManipulationDrawer.DrawVariant(ref _imcIdentifier, quarterWidth);
         }
         else
         {
-            change |= ImcManipulationDrawer.DrawSlot(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawSlot(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawVariant(ref _imcManip, width);
+            change |= ImcManipulationDrawer.DrawVariant(ref _imcIdentifier, width);
         }
 
         if (change)
@@ -125,8 +124,8 @@ public class AddGroupDrawer : IUiService
                         : "Add a new multi selection option group to this mod."u8,
                 width, !_groupNameValid || _entryInvalid))
         {
-            _modManager.OptionEditor.ImcEditor.AddModGroup(mod, _groupName, _imcManip);
-            _groupName = string.Empty;
+            _modManager.OptionEditor.ImcEditor.AddModGroup(mod, _groupName, _imcIdentifier, _defaultEntry);
+            _groupName      = string.Empty;
             _groupNameValid = false;
         }
 
@@ -142,20 +141,7 @@ public class AddGroupDrawer : IUiService
 
     private void UpdateEntry()
     {
-        try
-        {
-            _defaultEntry = ImcFile.GetDefault(_metaManager, _imcManip.GamePath(), _imcManip.EquipSlot, _imcManip.Variant,
-                out _entryExists);
-            _imcFileExists = true;
-        }
-        catch (Exception)
-        {
-            _defaultEntry = new ImcEntry();
-            _imcFileExists = false;
-            _entryExists = false;
-        }
-
-        _imcManip = _imcManip.Copy(_entryExists ? _defaultEntry : new ImcEntry());
-        _entryInvalid = !_imcManip.Validate(true);
+        (_defaultEntry, _imcFileExists, _entryExists) = _imcChecker.GetDefaultEntry(_imcIdentifier, false);
+        _entryInvalid                                 = !_imcIdentifier.Validate() || _defaultEntry.MaterialId == 0 || !_entryExists;
     }
 }

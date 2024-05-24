@@ -12,13 +12,23 @@ public class ImcSubMod(ImcModGroup group) : IModOption
         : this(group)
     {
         SubMod.LoadOptionData(json, this);
-        AttributeMask = (ushort)((json[nameof(AttributeMask)]?.ToObject<ushort>() ?? 0) & ImcEntry.AttributesMask);
+        AttributeMask   = (ushort)((json[nameof(AttributeMask)]?.ToObject<ushort>() ?? 0) & ImcEntry.AttributesMask);
+        IsDisableSubMod = json[nameof(IsDisableSubMod)]?.ToObject<bool>() ?? false;
     }
+
+    public static ImcSubMod DisableSubMod(ImcModGroup group)
+        => new(group)
+        {
+            Name            = "Disable",
+            AttributeMask   = 0,
+            IsDisableSubMod = true,
+        };
 
     public Mod Mod
         => Group.Mod;
 
     public ushort AttributeMask;
+    public bool   IsDisableSubMod { get; private init; }
 
     Mod IModOption.Mod
         => Mod;

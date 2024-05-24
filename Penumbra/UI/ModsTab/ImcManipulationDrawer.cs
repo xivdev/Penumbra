@@ -1,8 +1,6 @@
 using ImGuiNET;
-using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
-using OtterGui.Text.HelperObjects;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -12,79 +10,78 @@ namespace Penumbra.UI.ModsTab;
 
 public static class ImcManipulationDrawer
 {
-    public static bool DrawObjectType(ref ImcManipulation manip, float width = 110)
+    public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
-        var ret = Combos.ImcType("##imcType", manip.ObjectType, out var type, width);
+        var ret = Combos.ImcType("##imcType", identifier.ObjectType, out var type, width);
         ImUtf8.HoverTooltip("Object Type"u8);
 
         if (ret)
         {
             var equipSlot = type switch
             {
-                ObjectType.Equipment => manip.EquipSlot.IsEquipment() ? manip.EquipSlot : EquipSlot.Head,
-                ObjectType.DemiHuman => manip.EquipSlot.IsEquipment() ? manip.EquipSlot : EquipSlot.Head,
-                ObjectType.Accessory => manip.EquipSlot.IsAccessory() ? manip.EquipSlot : EquipSlot.Ears,
+                ObjectType.Equipment => identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head,
+                ObjectType.DemiHuman => identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head,
+                ObjectType.Accessory => identifier.EquipSlot.IsAccessory() ? identifier.EquipSlot : EquipSlot.Ears,
                 _                    => EquipSlot.Unknown,
             };
-            manip = new ImcManipulation(type, manip.BodySlot, manip.PrimaryId, manip.SecondaryId == 0 ? 1 : manip.SecondaryId,
-                manip.Variant.Id, equipSlot, manip.Entry);
+            identifier = identifier with
+            {
+                EquipSlot = equipSlot,
+                SecondaryId = identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId,
+            };
         }
 
         return ret;
     }
 
-    public static bool DrawPrimaryId(ref ImcManipulation manip, float unscaledWidth = 80)
+    public static bool DrawPrimaryId(ref ImcIdentifier identifier, float unscaledWidth = 80)
     {
-        var ret = IdInput("##imcPrimaryId"u8, unscaledWidth, manip.PrimaryId.Id, out var newId, 0, ushort.MaxValue,
-            manip.PrimaryId.Id <= 1);
+        var ret = IdInput("##imcPrimaryId"u8, unscaledWidth, identifier.PrimaryId.Id, out var newId, 0, ushort.MaxValue,
+            identifier.PrimaryId.Id <= 1);
         ImUtf8.HoverTooltip("Primary ID - You can usually find this as the 'x####' part of an item path.\n"u8
           + "This should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
-            manip = new ImcManipulation(manip.ObjectType, manip.BodySlot, newId, manip.SecondaryId, manip.Variant.Id, manip.EquipSlot,
-                manip.Entry);
+            identifier = identifier with { PrimaryId = newId };
         return ret;
     }
 
-    public static bool DrawSecondaryId(ref ImcManipulation manip, float unscaledWidth = 100)
+    public static bool DrawSecondaryId(ref ImcIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = IdInput("##imcSecondaryId"u8, unscaledWidth, manip.SecondaryId.Id, out var newId, 0, ushort.MaxValue, false);
+        var ret = IdInput("##imcSecondaryId"u8, unscaledWidth, identifier.SecondaryId.Id, out var newId, 0, ushort.MaxValue, false);
         ImUtf8.HoverTooltip("Secondary ID"u8);
         if (ret)
-            manip = new ImcManipulation(manip.ObjectType, manip.BodySlot, manip.PrimaryId, newId, manip.Variant.Id, manip.EquipSlot,
-                manip.Entry);
+            identifier = identifier with { SecondaryId = newId };
         return ret;
     }
 
-    public static bool DrawVariant(ref ImcManipulation manip, float unscaledWidth = 45)
+    public static bool DrawVariant(ref ImcIdentifier identifier, float unscaledWidth = 45)
     {
-        var ret = IdInput("##imcVariant"u8, unscaledWidth, manip.Variant.Id, out var newId, 0, byte.MaxValue, false);
+        var ret = IdInput("##imcVariant"u8, unscaledWidth, identifier.Variant.Id, out var newId, 0, byte.MaxValue, false);
         ImUtf8.HoverTooltip("Variant ID"u8);
         if (ret)
-            manip = new ImcManipulation(manip.ObjectType, manip.BodySlot, manip.PrimaryId, manip.SecondaryId, (byte)newId, manip.EquipSlot,
-                manip.Entry);
+            identifier = identifier with { Variant = (byte)newId };
         return ret;
     }
 
-    public static bool DrawSlot(ref ImcManipulation manip, float unscaledWidth = 100)
+    public static bool DrawSlot(ref ImcIdentifier identifier, float unscaledWidth = 100)
     {
         bool      ret;
         EquipSlot slot;
-        switch (manip.ObjectType)
+        switch (identifier.ObjectType)
         {
             case ObjectType.Equipment:
             case ObjectType.DemiHuman:
-                ret = Combos.EqpEquipSlot("##slot", manip.EquipSlot, out slot, unscaledWidth);
+                ret = Combos.EqpEquipSlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
                 break;
             case ObjectType.Accessory:
-                ret = Combos.AccessorySlot("##slot", manip.EquipSlot, out slot, unscaledWidth);
+                ret = Combos.AccessorySlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
                 break;
             default: return false;
         }
 
         ImUtf8.HoverTooltip("Equip Slot"u8);
         if (ret)
-            manip = new ImcManipulation(manip.ObjectType, manip.BodySlot, manip.PrimaryId, manip.SecondaryId, manip.Variant.Id, slot,
-                manip.Entry);
+            identifier = identifier with { EquipSlot = slot };
         return ret;
     }
 

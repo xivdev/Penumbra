@@ -15,6 +15,8 @@ public readonly record struct ImcIdentifier(
     EquipSlot EquipSlot,
     BodySlot BodySlot) : IMetaIdentifier, IComparable<ImcIdentifier>
 {
+    public static readonly ImcIdentifier Default = new(EquipSlot.Body, 1, (Variant)1);
+
     public ImcIdentifier(EquipSlot slot, PrimaryId primaryId, ushort variant)
         : this(primaryId, (Variant)Math.Clamp(variant, (ushort)0, byte.MaxValue),
             slot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment, 0, slot,
@@ -24,6 +26,9 @@ public readonly record struct ImcIdentifier(
     public ImcIdentifier(EquipSlot slot, PrimaryId primaryId, Variant variant)
         : this(primaryId, variant, slot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment, 0, slot, BodySlot.Unknown)
     { }
+
+    public ImcManipulation ToManipulation(ImcEntry entry)
+        => new(ObjectType, BodySlot, PrimaryId, SecondaryId.Id, Variant.Id, EquipSlot, entry);
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
     {
@@ -137,9 +142,12 @@ public readonly record struct ImcIdentifier(
         return b != 0 ? b : Variant.Id.CompareTo(other.Variant.Id);
     }
 
-    public static ImcIdentifier? FromJson(JObject jObj)
+    public static ImcIdentifier? FromJson(JObject? jObj)
     {
-        var objectType = jObj["PrimaryId"]?.ToObject<ObjectType>() ?? ObjectType.Unknown;
+        if (jObj == null)
+            return null;
+
+        var objectType = jObj["ObjectType"]?.ToObject<ObjectType>() ?? ObjectType.Unknown;
         var primaryId  = new PrimaryId(jObj["PrimaryId"]?.ToObject<ushort>() ?? 0);
         var variant    = jObj["Variant"]?.ToObject<ushort>() ?? 0;
         if (variant > byte.MaxValue)
@@ -178,12 +186,12 @@ public readonly record struct ImcIdentifier(
 
     public JObject AddToJson(JObject jObj)
     {
-        jObj["ObjectType"] = ObjectType.ToString();
-        jObj["PrimaryId"]  = PrimaryId.Id;
-        jObj["PrimaryId"]  = SecondaryId.Id;
-        jObj["Variant"]    = Variant.Id;
-        jObj["EquipSlot"]  = EquipSlot.ToString();
-        jObj["BodySlot"]   = BodySlot.ToString();
+        jObj["ObjectType"]  = ObjectType.ToString();
+        jObj["PrimaryId"]   = PrimaryId.Id;
+        jObj["SecondaryId"] = SecondaryId.Id;
+        jObj["Variant"]     = Variant.Id;
+        jObj["EquipSlot"]   = EquipSlot.ToString();
+        jObj["BodySlot"]    = BodySlot.ToString();
         return jObj;
     }
 }

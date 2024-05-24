@@ -19,9 +19,6 @@ public partial class ModEditWindow
     private const string ModelSetIdTooltip =
         "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that.";
 
-    private const string PrimaryIdTooltip =
-        "Primary ID - You can usually find this as the 'x####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that.";
-
     private const string ModelSetIdTooltipShort = "Model Set ID";
     private const string EquipSlotTooltip       = "Equip Slot";
     private const string ModelRaceTooltip       = "Model Race";
@@ -316,7 +313,7 @@ public partial class ModEditWindow
 
     private static class ImcRow
     {
-        private static ImcManipulation _new = new(EquipSlot.Head, 1, 1, new ImcEntry());
+        private static ImcIdentifier _newIdentifier = ImcIdentifier.Default;
 
         private static float IdWidth
             => 80 * UiHelpers.Scale;
@@ -324,75 +321,60 @@ public partial class ModEditWindow
         private static float SmallIdWidth
             => 45 * UiHelpers.Scale;
 
-        /// <summary> Convert throwing to null-return if the file does not exist. </summary>
-        private static ImcEntry? GetDefault(MetaFileManager metaFileManager, ImcManipulation imc)
-        {
-            try
-            {
-                return ImcFile.GetDefault(metaFileManager, imc.GamePath(), imc.EquipSlot, imc.Variant, out _);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current IMC manipulations to clipboard.", iconSize,
                 editor.MetaEditor.Imc.Select(m => (MetaManipulation)m));
             ImGui.TableNextColumn();
-            var defaultEntry = GetDefault(metaFileManager, _new);
-            var canAdd = defaultEntry != null && editor.MetaEditor.CanAdd(_new);
-            var tt = canAdd ? "Stage this edit." : defaultEntry == null ? "This IMC file does not exist." : "This entry is already edited.";
-            defaultEntry ??= new ImcEntry();
+            var (defaultEntry, fileExists, _) = metaFileManager.ImcChecker.GetDefaultEntry(_newIdentifier, true);
+            var manip  = (MetaManipulation)new ImcManipulation(_newIdentifier, defaultEntry);
+            var canAdd = fileExists && editor.MetaEditor.CanAdd(manip);
+            var tt     = canAdd ? "Stage this edit." : !fileExists ? "This IMC file does not exist." : "This entry is already edited.";
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
-                editor.MetaEditor.Add(_new.Copy(defaultEntry.Value));
+                editor.MetaEditor.Add(manip);
 
             // Identifier
             ImGui.TableNextColumn();
-            var change = ImcManipulationDrawer.DrawObjectType(ref _new);
+            var change = ImcManipulationDrawer.DrawObjectType(ref _newIdentifier);
 
             ImGui.TableNextColumn();
-            change |= ImcManipulationDrawer.DrawPrimaryId(ref _new);
+            change |= ImcManipulationDrawer.DrawPrimaryId(ref _newIdentifier);
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
                 new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
 
             ImGui.TableNextColumn();
             // Equipment and accessories are slightly different imcs than other types.
-            if (_new.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
-                change |= ImcManipulationDrawer.DrawSlot(ref _new);
+            if (_newIdentifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
+                change |= ImcManipulationDrawer.DrawSlot(ref _newIdentifier);
             else
-                change |= ImcManipulationDrawer.DrawSecondaryId(ref _new);
+                change |= ImcManipulationDrawer.DrawSecondaryId(ref _newIdentifier);
 
             ImGui.TableNextColumn();
-            change |= ImcManipulationDrawer.DrawVariant(ref _new);
+            change |= ImcManipulationDrawer.DrawVariant(ref _newIdentifier);
 
             ImGui.TableNextColumn();
-            if (_new.ObjectType is ObjectType.DemiHuman)
-                change |= ImcManipulationDrawer.DrawSlot(ref _new, 70);
+            if (_newIdentifier.ObjectType is ObjectType.DemiHuman)
+                change |= ImcManipulationDrawer.DrawSlot(ref _newIdentifier, 70);
             else
                 ImGui.Dummy(new Vector2(70 * UiHelpers.Scale, 0));
 
             if (change)
-                _new = _new.Copy(GetDefault(metaFileManager, _new) ?? new ImcEntry());
+                defaultEntry = metaFileManager.ImcChecker.GetDefaultEntry(_newIdentifier, true).Entry;
             // Values
             using var disabled = ImRaii.Disabled();
-
-            var entry = defaultEntry.Value;
             ImGui.TableNextColumn();
-            ImcManipulationDrawer.DrawMaterialId(entry, ref entry, false);
+            ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref defaultEntry, false);
             ImGui.SameLine();
-            ImcManipulationDrawer.DrawMaterialAnimationId(entry, ref entry, false);
+            ImcManipulationDrawer.DrawMaterialAnimationId(defaultEntry, ref defaultEntry, false);
             ImGui.TableNextColumn();
-            ImcManipulationDrawer.DrawDecalId(entry, ref entry, false);
+            ImcManipulationDrawer.DrawDecalId(defaultEntry, ref defaultEntry, false);
             ImGui.SameLine();
-            ImcManipulationDrawer.DrawVfxId(entry, ref entry, false);
+            ImcManipulationDrawer.DrawVfxId(defaultEntry, ref defaultEntry, false);
             ImGui.SameLine();
-            ImcManipulationDrawer.DrawSoundId(entry, ref entry, false);
+            ImcManipulationDrawer.DrawSoundId(defaultEntry, ref defaultEntry, false);
             ImGui.TableNextColumn();
-            ImcManipulationDrawer.DrawAttributes(entry, ref entry);
+            ImcManipulationDrawer.DrawAttributes(defaultEntry, ref defaultEntry);
         }
 
         public static void Draw(MetaFileManager metaFileManager, ImcManipulation meta, ModEditor editor, Vector2 iconSize)
@@ -439,10 +421,9 @@ public partial class ModEditWindow
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
                 new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
             ImGui.TableNextColumn();
-            var defaultEntry = GetDefault(metaFileManager, meta) ?? new ImcEntry();
+            var defaultEntry = metaFileManager.ImcChecker.GetDefaultEntry(meta.Identifier, true).Entry;
             var newEntry     = meta.Entry;
-
-            var changes = ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref newEntry, true);
+            var changes      = ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref newEntry, true);
             ImGui.SameLine();
             changes |= ImcManipulationDrawer.DrawMaterialAnimationId(defaultEntry, ref newEntry, true);
             ImGui.TableNextColumn();

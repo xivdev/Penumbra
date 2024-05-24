@@ -101,7 +101,8 @@ public static class StaticServiceManager
             .AddSingleton<CreateFileWHook>()
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
-            .AddSingleton<RedrawService>();
+            .AddSingleton<RedrawService>()
+            .AddSingleton(p => p.GetRequiredService<MetaFileManager>().ImcChecker);
 
     private static ServiceManager AddConfiguration(this ServiceManager services)
         => services.AddSingleton<Configuration>()

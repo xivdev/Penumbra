@@ -246,7 +246,7 @@ public class ModGroupEditor(
         {
             GroupType.Single => SingleEditor.AddModGroup(mod, newName, saveType),
             GroupType.Multi  => MultiEditor.AddModGroup(mod, newName, saveType),
-            GroupType.Imc    => ImcEditor.AddModGroup(mod, newName, default, saveType),
+            GroupType.Imc    => ImcEditor.AddModGroup(mod, newName, default, default, saveType),
             _                => null,
         };
 

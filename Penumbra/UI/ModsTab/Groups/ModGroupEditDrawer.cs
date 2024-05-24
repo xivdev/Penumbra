@@ -7,6 +7,7 @@ using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Text.EndObjects;
+using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
@@ -22,11 +23,16 @@ public sealed class ModGroupEditDrawer(
     ModManager modManager,
     Configuration config,
     FilenameService filenames,
-    DescriptionEditPopup descriptionPopup) : IUiService
+    DescriptionEditPopup descriptionPopup,
+    ImcChecker imcChecker) : IUiService
 {
-    private static ReadOnlySpan<byte> DragDropLabel
-        => "##DragOption"u8;
+    private static ReadOnlySpan<byte> AcrossGroupsLabel
+        => "##DragOptionAcross"u8;
 
+    private static ReadOnlySpan<byte> InsideGroupLabel
+        => "##DragOptionInside"u8;
+
+    internal readonly ImcChecker    ImcChecker  = imcChecker;
     internal readonly ModManager    ModManager  = modManager;
     internal readonly Queue<Action> ActionQueue = new();
 
@@ -50,6 +56,7 @@ public sealed class ModGroupEditDrawer(
 
     private IModGroup?  _dragDropGroup;
     private IModOption? _dragDropOption;
+    private bool        _draggingAcross;
 
     public void Draw(Mod mod)
     {
@@ -292,32 +299,30 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Source(IModOption option)
     {
-        if (option.Group is not ITexToolsGroup)
-            return;
-
         using var source = ImUtf8.DragDropSource();
         if (!source)
             return;
 
-        if (!DragDropSource.SetPayload(DragDropLabel))
+        var across = option.Group is ITexToolsGroup;
+
+        if (!DragDropSource.SetPayload(across ? AcrossGroupsLabel : InsideGroupLabel))
         {
             _dragDropGroup  = option.Group;
             _dragDropOption = option;
+            _draggingAcross = across;
         }
 
-        ImGui.TextUnformatted($"Dragging option {option.Name} from group {option.Group.Name}...");
+        ImUtf8.Text($"Dragging option {option.Name} from group {option.Group.Name}...");
     }
 
     private void Target(IModGroup group, int optionIdx)
     {
-        if (group is not ITexToolsGroup)
-            return;
-
-        if (_dragDropGroup != group && _dragDropGroup != null && group is MultiModGroup { Options.Count: >= IModGroup.MaxMultiOptions })
+        if (_dragDropGroup != group
+         && (!_draggingAcross || (_dragDropGroup != null && group is MultiModGroup { Options.Count: >= IModGroup.MaxMultiOptions })))
             return;
 
         using var target = ImRaii.DragDropTarget();
-        if (!target.Success || !DragDropTarget.CheckPayload(DragDropLabel))
+        if (!target.Success || !DragDropTarget.CheckPayload(_draggingAcross ? AcrossGroupsLabel : InsideGroupLabel))
             return;
 
         if (_dragDropGroup != null && _dragDropOption != null)
@@ -342,6 +347,7 @@ public sealed class ModGroupEditDrawer(
 
         _dragDropGroup  = null;
         _dragDropOption = null;
+        _draggingAcross = false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

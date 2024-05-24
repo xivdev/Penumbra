@@ -27,6 +27,7 @@ public unsafe class MetaFileManager
     internal readonly ValidityChecker         ValidityChecker;
     internal readonly ObjectIdentification    Identifier;
     internal readonly FileCompactor           Compactor;
+    internal readonly ImcChecker              ImcChecker;
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
         ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, ObjectIdentification identifier,
@@ -40,6 +41,7 @@ public unsafe class MetaFileManager
         ValidityChecker   = validityChecker;
         Identifier        = identifier;
         Compactor         = compactor;
+        ImcChecker        = new ImcChecker(this);
         interop.InitializeFromAttributes(this);
     }
 
