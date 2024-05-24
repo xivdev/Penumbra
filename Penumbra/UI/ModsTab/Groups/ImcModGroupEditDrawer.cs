@@ -76,8 +76,11 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         using (ImUtf8.Group())
         {
             DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, group.DefaultEntry.AttributeMask, group);
-            foreach (var option in group.OptionData.Where(o => !o.IsDisableSubMod))
+            foreach (var (option, idx) in group.OptionData.WithIndex().Where(o => !o.Value.IsDisableSubMod))
+            {
+                using var id = ImUtf8.PushId(idx);
                 DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, option.AttributeMask, option);
+            }
         }
     }
 
