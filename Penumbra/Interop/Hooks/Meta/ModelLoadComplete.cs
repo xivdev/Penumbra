@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
@@ -23,8 +24,9 @@ public sealed unsafe class ModelLoadComplete : FastHook<ModelLoadComplete.Delega
     {
         Penumbra.Log.Excessive($"[Model Load Complete] Invoked on {(nint)drawObject:X}.");
         var       collection = _collectionResolver.IdentifyCollection(drawObject, true);
-        using var eqp = _metaState.ResolveEqpData(collection.ModCollection);
         using var eqdp = _metaState.ResolveEqdpData(collection.ModCollection, MetaState.GetDrawObjectGenderRace((nint)drawObject), true, true);
+        _metaState.EqpCollection = collection;
         Task.Result.Original(drawObject);
+        _metaState.EqpCollection = ResolveData.Invalid;
     }
 }

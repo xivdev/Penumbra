@@ -46,6 +46,7 @@ public sealed unsafe class MetaState : IDisposable
     private readonly CreateCharacterBase _createCharacterBase;
 
     public ResolveData CustomizeChangeCollection = ResolveData.Invalid;
+    public ResolveData EqpCollection             = ResolveData.Invalid;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;

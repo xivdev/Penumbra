@@ -6,16 +6,16 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public sealed unsafe class GetEqpIndirect : FastHook<GetEqpIndirect.Delegate>
+public sealed unsafe class GetEqpIndirect2 : FastHook<GetEqpIndirect2.Delegate>
 {
     private readonly CollectionResolver _collectionResolver;
     private readonly MetaState          _metaState;
 
-    public GetEqpIndirect(HookManager hooks, CollectionResolver collectionResolver, MetaState metaState)
+    public GetEqpIndirect2(HookManager hooks, CollectionResolver collectionResolver, MetaState metaState)
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Get EQP Indirect", Sigs.GetEqpIndirect, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Get EQP Indirect 2", Sigs.GetEqpIndirect2, Detour, true);
     }
 
     public delegate void Delegate(DrawObject* drawObject);
@@ -25,10 +25,10 @@ public sealed unsafe class GetEqpIndirect : FastHook<GetEqpIndirect.Delegate>
     {
         // Shortcut because this is also called all the time.
         // Same thing is checked at the beginning of the original function.
-        if ((*(byte*)((nint)drawObject + Offsets.GetEqpIndirectSkip1) & 1) == 0 || *(ulong*)((nint)drawObject + Offsets.GetEqpIndirectSkip2) == 0)
+        if (((*(uint*)((nint)drawObject + Offsets.GetEqpIndirect2Skip) >> 0x12) & 1) == 0)
             return;
 
-        Penumbra.Log.Excessive($"[Get EQP Indirect] Invoked on {(nint)drawObject:X}.");
+        Penumbra.Log.Excessive($"[Get EQP Indirect 2] Invoked on {(nint)drawObject:X}.");
         _metaState.EqpCollection = _collectionResolver.IdentifyCollection(drawObject, true);
         Task.Result.Original(drawObject);
         _metaState.EqpCollection = ResolveData.Invalid;
