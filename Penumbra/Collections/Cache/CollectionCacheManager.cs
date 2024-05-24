@@ -274,17 +274,17 @@ public class CollectionCacheManager : IDisposable
             return;
         }
 
-        type.HandlingInfo(out _, out var recomputeList, out var reload);
+        type.HandlingInfo(out _, out var recomputeList, out var justAdd);
 
         if (!recomputeList)
             return;
 
         foreach (var collection in _storage.Where(collection => collection.HasCache && collection[mod.Index].Settings is { Enabled: true }))
         {
-            if (reload)
-                collection._cache!.ReloadMod(mod, true);
-            else
+            if (justAdd)
                 collection._cache!.AddMod(mod, true);
+            else
+                collection._cache!.ReloadMod(mod, true);
         }
     }
 
