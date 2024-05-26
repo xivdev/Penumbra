@@ -44,7 +44,7 @@ public partial class TexToolsMeta
             var headerStart = reader.ReadUInt32();
             reader.BaseStream.Seek(headerStart, SeekOrigin.Begin);
 
-            List<(MetaManipulation.Type type, uint offset, int size)> entries = new();
+            List<(MetaManipulation.Type type, uint offset, int size)> entries = [];
             for (var i = 0; i < numHeaders; ++i)
             {
                 var currentOffset = reader.BaseStream.Position;

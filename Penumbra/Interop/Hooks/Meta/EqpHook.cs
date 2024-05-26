@@ -23,6 +23,7 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>
         {
             using var eqp = _metaState.ResolveEqpData(_metaState.EqpCollection.ModCollection);
             Task.Result.Original(utility, flags, armor);
+            *flags = _metaState.EqpCollection.ModCollection.ApplyGlobalEqp(*flags, armor);
         }
         else
         {

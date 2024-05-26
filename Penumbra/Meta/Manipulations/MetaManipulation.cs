@@ -21,13 +21,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
 
     public enum Type : byte
     {
-        Unknown = 0,
-        Imc     = 1,
-        Eqdp    = 2,
-        Eqp     = 3,
-        Est     = 4,
-        Gmp     = 5,
-        Rsp     = 6,
+        Unknown   = 0,
+        Imc       = 1,
+        Eqdp      = 2,
+        Eqp       = 3,
+        Est       = 4,
+        Gmp       = 5,
+        Rsp       = 6,
+        GlobalEqp = 7,
     }
 
     [FieldOffset(0)]
@@ -54,6 +55,10 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     [JsonIgnore]
     public readonly ImcManipulation Imc = default;
 
+    [FieldOffset(0)]
+    [JsonIgnore]
+    public readonly GlobalEqpManipulation GlobalEqp = default;
+
     [FieldOffset(15)]
     [JsonConverter(typeof(StringEnumConverter))]
     [JsonProperty("Type")]
@@ -63,14 +68,15 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     {
         get => ManipulationType switch
         {
-            Type.Unknown => null,
-            Type.Imc     => Imc,
-            Type.Eqdp    => Eqdp,
-            Type.Eqp     => Eqp,
-            Type.Est     => Est,
-            Type.Gmp     => Gmp,
-            Type.Rsp     => Rsp,
-            _            => null,
+            Type.Unknown   => null,
+            Type.Imc       => Imc,
+            Type.Eqdp      => Eqdp,
+            Type.Eqp       => Eqp,
+            Type.Est       => Est,
+            Type.Gmp       => Gmp,
+            Type.Rsp       => Rsp,
+            Type.GlobalEqp => GlobalEqp,
+            _              => null,
         };
         init
         {
@@ -100,6 +106,10 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
                     Imc              = m;
                     ManipulationType = m.Validate(true) ? Type.Imc : Type.Unknown;
                     return;
+                case GlobalEqpManipulation m:
+                    GlobalEqp        = m;
+                    ManipulationType = m.Validate() ? Type.GlobalEqp : Type.Unknown;
+                    return;
             }
         }
     }
@@ -108,13 +118,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     {
         return ManipulationType switch
         {
-            Type.Imc  => Imc.Validate(true),
-            Type.Eqdp => Eqdp.Validate(),
-            Type.Eqp  => Eqp.Validate(),
-            Type.Est  => Est.Validate(),
-            Type.Gmp  => Gmp.Validate(),
-            Type.Rsp  => Rsp.Validate(),
-            _         => false,
+            Type.Imc       => Imc.Validate(true),
+            Type.Eqdp      => Eqdp.Validate(),
+            Type.Eqp       => Eqp.Validate(),
+            Type.Est       => Est.Validate(),
+            Type.Gmp       => Gmp.Validate(),
+            Type.Rsp       => Rsp.Validate(),
+            Type.GlobalEqp => GlobalEqp.Validate(),
+            _              => false,
         };
     }
 
@@ -154,6 +165,12 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
         ManipulationType = Type.Imc;
     }
 
+    public MetaManipulation(GlobalEqpManipulation eqp)
+    {
+        GlobalEqp        = eqp;
+        ManipulationType = Type.GlobalEqp;
+    }
+
     public static implicit operator MetaManipulation(EqpManipulation eqp)
         => new(eqp);
 
@@ -172,6 +189,9 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     public static implicit operator MetaManipulation(ImcManipulation imc)
         => new(imc);
 
+    public static implicit operator MetaManipulation(GlobalEqpManipulation eqp)
+        => new(eqp);
+
     public bool EntryEquals(MetaManipulation other)
     {
         if (ManipulationType != other.ManipulationType)
@@ -179,13 +199,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
 
         return ManipulationType switch
         {
-            Type.Eqp  => Eqp.Entry.Equals(other.Eqp.Entry),
-            Type.Gmp  => Gmp.Entry.Equals(other.Gmp.Entry),
-            Type.Eqdp => Eqdp.Entry.Equals(other.Eqdp.Entry),
-            Type.Est  => Est.Entry.Equals(other.Est.Entry),
-            Type.Rsp  => Rsp.Entry.Equals(other.Rsp.Entry),
-            Type.Imc  => Imc.Entry.Equals(other.Imc.Entry),
-            _         => throw new ArgumentOutOfRangeException(),
+            Type.Eqp       => Eqp.Entry.Equals(other.Eqp.Entry),
+            Type.Gmp       => Gmp.Entry.Equals(other.Gmp.Entry),
+            Type.Eqdp      => Eqdp.Entry.Equals(other.Eqdp.Entry),
+            Type.Est       => Est.Entry.Equals(other.Est.Entry),
+            Type.Rsp       => Rsp.Entry.Equals(other.Rsp.Entry),
+            Type.Imc       => Imc.Entry.Equals(other.Imc.Entry),
+            Type.GlobalEqp => true,
+            _              => throw new ArgumentOutOfRangeException(),
         };
     }
 
@@ -196,13 +217,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
 
         return ManipulationType switch
         {
-            Type.Eqp  => Eqp.Equals(other.Eqp),
-            Type.Gmp  => Gmp.Equals(other.Gmp),
-            Type.Eqdp => Eqdp.Equals(other.Eqdp),
-            Type.Est  => Est.Equals(other.Est),
-            Type.Rsp  => Rsp.Equals(other.Rsp),
-            Type.Imc  => Imc.Equals(other.Imc),
-            _         => false,
+            Type.Eqp       => Eqp.Equals(other.Eqp),
+            Type.Gmp       => Gmp.Equals(other.Gmp),
+            Type.Eqdp      => Eqdp.Equals(other.Eqdp),
+            Type.Est       => Est.Equals(other.Est),
+            Type.Rsp       => Rsp.Equals(other.Rsp),
+            Type.Imc       => Imc.Equals(other.Imc),
+            Type.GlobalEqp => GlobalEqp.Equals(other.GlobalEqp),
+            _              => false,
         };
     }
 
@@ -213,13 +235,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
 
         return ManipulationType switch
         {
-            Type.Eqp  => Eqp.Copy(other.Eqp.Entry),
-            Type.Gmp  => Gmp.Copy(other.Gmp.Entry),
-            Type.Eqdp => Eqdp.Copy(other.Eqdp),
-            Type.Est  => Est.Copy(other.Est.Entry),
-            Type.Rsp  => Rsp.Copy(other.Rsp.Entry),
-            Type.Imc  => Imc.Copy(other.Imc.Entry),
-            _         => throw new ArgumentOutOfRangeException(),
+            Type.Eqp       => Eqp.Copy(other.Eqp.Entry),
+            Type.Gmp       => Gmp.Copy(other.Gmp.Entry),
+            Type.Eqdp      => Eqdp.Copy(other.Eqdp),
+            Type.Est       => Est.Copy(other.Est.Entry),
+            Type.Rsp       => Rsp.Copy(other.Rsp.Entry),
+            Type.Imc       => Imc.Copy(other.Imc.Entry),
+            Type.GlobalEqp => GlobalEqp,
+            _              => throw new ArgumentOutOfRangeException(),
         };
     }
 
@@ -229,13 +252,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     public override int GetHashCode()
         => ManipulationType switch
         {
-            Type.Eqp  => Eqp.GetHashCode(),
-            Type.Gmp  => Gmp.GetHashCode(),
-            Type.Eqdp => Eqdp.GetHashCode(),
-            Type.Est  => Est.GetHashCode(),
-            Type.Rsp  => Rsp.GetHashCode(),
-            Type.Imc  => Imc.GetHashCode(),
-            _         => 0,
+            Type.Eqp       => Eqp.GetHashCode(),
+            Type.Gmp       => Gmp.GetHashCode(),
+            Type.Eqdp      => Eqdp.GetHashCode(),
+            Type.Est       => Est.GetHashCode(),
+            Type.Rsp       => Rsp.GetHashCode(),
+            Type.Imc       => Imc.GetHashCode(),
+            Type.GlobalEqp => GlobalEqp.GetHashCode(),
+            _              => 0,
         };
 
     public unsafe int CompareTo(MetaManipulation other)
@@ -249,13 +273,14 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     public override string ToString()
         => ManipulationType switch
         {
-            Type.Eqp  => Eqp.ToString(),
-            Type.Gmp  => Gmp.ToString(),
-            Type.Eqdp => Eqdp.ToString(),
-            Type.Est  => Est.ToString(),
-            Type.Rsp  => Rsp.ToString(),
-            Type.Imc  => Imc.ToString(),
-            _         => "Invalid",
+            Type.Eqp       => Eqp.ToString(),
+            Type.Gmp       => Gmp.ToString(),
+            Type.Eqdp      => Eqdp.ToString(),
+            Type.Est       => Est.ToString(),
+            Type.Rsp       => Rsp.ToString(),
+            Type.Imc       => Imc.ToString(),
+            Type.GlobalEqp => GlobalEqp.ToString(),
+            _              => "Invalid",
         };
 
     public string EntryToString()
@@ -263,12 +288,13 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
         {
             Type.Imc =>
                 $"{Imc.Entry.DecalId}-{Imc.Entry.MaterialId}-{Imc.Entry.VfxId}-{Imc.Entry.SoundId}-{Imc.Entry.MaterialAnimationId}-{Imc.Entry.AttributeMask}",
-            Type.Eqdp => $"{(ushort)Eqdp.Entry:X}",
-            Type.Eqp  => $"{(ulong)Eqp.Entry:X}",
-            Type.Est  => $"{Est.Entry}",
-            Type.Gmp  => $"{Gmp.Entry.Value}",
-            Type.Rsp  => $"{Rsp.Entry}",
-            _         => string.Empty,
+            Type.Eqdp      => $"{(ushort)Eqdp.Entry:X}",
+            Type.Eqp       => $"{(ulong)Eqp.Entry:X}",
+            Type.Est       => $"{Est.Entry}",
+            Type.Gmp       => $"{Gmp.Entry.Value}",
+            Type.Rsp       => $"{Rsp.Entry}",
+            Type.GlobalEqp => string.Empty,
+            _              => string.Empty,
         };
 
     public static bool operator ==(MetaManipulation left, MetaManipulation right)

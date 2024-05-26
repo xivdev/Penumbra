@@ -5,7 +5,6 @@ using Penumbra.Mods;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
-using Penumbra.Mods.Manager;
 using Penumbra.Util;
 
 namespace Penumbra.Collections.Cache;

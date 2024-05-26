@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
@@ -75,6 +76,8 @@ public partial class ModEditWindow
             _editor.MetaEditor.OtherGmpCount);
         DrawEditHeader(_editor.MetaEditor.Rsp, "Racial Scaling Edits (RSP)###RSP", 5, RspRow.Draw, RspRow.DrawNew,
             _editor.MetaEditor.OtherRspCount);
+        DrawEditHeader(_editor.MetaEditor.GlobalEqp, "Global Equipment Parameter Edits Edits (Global EQP)###GEQP", 4, GlobalEqpRow.Draw,
+            GlobalEqpRow.DrawNew,                    _editor.MetaEditor.OtherGlobalEqpCount);
     }
 
 
@@ -699,6 +702,69 @@ public partial class ModEditWindow
                 editor.MetaEditor.Change(meta.Copy(value));
 
             ImGuiUtil.HoverTooltip($"Default Value: {def:0.###}");
+        }
+    }
+
+    private static class GlobalEqpRow
+    {
+        private static GlobalEqpManipulation _new = new()
+        {
+            Type      = GlobalEqpType.DoNotHideEarrings,
+            Condition = 1,
+        };
+
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
+        {
+            ImGui.TableNextColumn();
+            CopyToClipboardButton("Copy all current global EQP manipulations to clipboard.", iconSize,
+                editor.MetaEditor.GlobalEqp.Select(m => (MetaManipulation)m));
+            ImGui.TableNextColumn();
+            var canAdd = editor.MetaEditor.CanAdd(_new);
+            var tt     = canAdd ? "Stage this edit." : "This entry is already manipulated.";
+            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
+                editor.MetaEditor.Add(_new);
+
+            // Identifier
+            ImGui.TableNextColumn();
+            ImGui.SetNextItemWidth(250 * ImUtf8.GlobalScale);
+            using (var combo = ImUtf8.Combo("##geqpType"u8, _new.Type.ToName()))
+            {
+                if (combo)
+                    foreach (var type in Enum.GetValues<GlobalEqpType>())
+                    {
+                        if (ImUtf8.Selectable(type.ToName(), type == _new.Type))
+                            _new = new GlobalEqpManipulation
+                            {
+                                Type      = type,
+                                Condition = type.HasCondition() ? _new.Type.HasCondition() ? _new.Condition : 1 : 0,
+                            };
+                        ImUtf8.HoverTooltip(type.ToDescription());
+                    }
+            }
+
+            ImUtf8.HoverTooltip(_new.Type.ToDescription());
+
+            ImGui.TableNextColumn();
+            if (!_new.Type.HasCondition())
+                return;
+
+            if (IdInput("##geqpCond", 100 * ImUtf8.GlobalScale, _new.Condition.Id, out var newId, 1, ushort.MaxValue, _new.Condition.Id <= 1))
+                _new = _new with { Condition = newId };
+        }
+
+        public static void Draw(MetaFileManager metaFileManager, GlobalEqpManipulation meta, ModEditor editor, Vector2 iconSize)
+        {
+            DrawMetaButtons(meta, editor, iconSize);
+            ImGui.TableNextColumn();
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+            ImUtf8.Text(meta.Type.ToName());
+            ImUtf8.HoverTooltip(meta.Type.ToDescription());
+            ImGui.TableNextColumn();
+            if (meta.Type.HasCondition())
+            {
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+                ImUtf8.Text($"{meta.Condition.Id}");
+            }
         }
     }
 

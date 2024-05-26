@@ -188,6 +188,9 @@ public partial class TexToolsMeta
                 }
 
                 break;
+            case MetaManipulation.Type.GlobalEqp:
+                // Not Supported
+                break;
         }
 
         var size = b.BaseStream.Position - offset;

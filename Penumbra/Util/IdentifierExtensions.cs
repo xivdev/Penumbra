@@ -76,6 +76,26 @@ public static class IdentifierExtensions
             case MetaManipulation.Type.Rsp:
                 changedItems.TryAdd($"{manip.Rsp.SubRace.ToName()} {manip.Rsp.Attribute.ToFullString()}", null);
                 break;
+            case MetaManipulation.Type.GlobalEqp:
+                var path = manip.GlobalEqp.Type switch
+                {
+                    GlobalEqpType.DoNotHideEarrings => GamePaths.Accessory.Mdl.Path(manip.GlobalEqp.Condition, GenderRace.MidlanderMale,
+                        EquipSlot.Ears),
+                    GlobalEqpType.DoNotHideNecklace => GamePaths.Accessory.Mdl.Path(manip.GlobalEqp.Condition, GenderRace.MidlanderMale,
+                        EquipSlot.Neck),
+                    GlobalEqpType.DoNotHideBracelets => GamePaths.Accessory.Mdl.Path(manip.GlobalEqp.Condition, GenderRace.MidlanderMale,
+                        EquipSlot.Wrists),
+                    GlobalEqpType.DoNotHideRingR => GamePaths.Accessory.Mdl.Path(manip.GlobalEqp.Condition, GenderRace.MidlanderMale,
+                        EquipSlot.RFinger),
+                    GlobalEqpType.DoNotHideRingL => GamePaths.Accessory.Mdl.Path(manip.GlobalEqp.Condition, GenderRace.MidlanderMale,
+                        EquipSlot.LFinger),
+                    GlobalEqpType.DoNotHideHrothgarHats => string.Empty,
+                    GlobalEqpType.DoNotHideVieraHats    => string.Empty,
+                    _                                         => string.Empty,
+                };
+                if (path.Length > 0)
+                    identifier.Identify(changedItems, path);
+                break;
         }
     }
 

@@ -4,7 +4,6 @@ using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
@@ -14,13 +13,14 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
 {
     private readonly MetaFileManager                    _manager;
     private readonly ModCollection                      _collection;
-    private readonly Dictionary<MetaManipulation, IMod> _manipulations = new();
-    private          EqpCache                           _eqpCache      = new();
-    private readonly EqdpCache                          _eqdpCache     = new();
-    private          EstCache                           _estCache      = new();
-    private          GmpCache                           _gmpCache      = new();
-    private          CmpCache                           _cmpCache      = new();
-    private readonly ImcCache                           _imcCache      = new();
+    private readonly Dictionary<MetaManipulation, IMod> _manipulations  = new();
+    private          EqpCache                           _eqpCache       = new();
+    private readonly EqdpCache                          _eqdpCache      = new();
+    private          EstCache                           _estCache       = new();
+    private          GmpCache                           _gmpCache       = new();
+    private          CmpCache                           _cmpCache       = new();
+    private readonly ImcCache                           _imcCache       = new();
+    private          GlobalEqpCache                     _globalEqpCache = new();
 
     public bool TryGetValue(MetaManipulation manip, [NotNullWhen(true)] out IMod? mod)
     {
@@ -69,6 +69,7 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
         _cmpCache.Reset();
         _imcCache.Reset(_collection);
         _manipulations.Clear();
+        _globalEqpCache.Clear();
     }
 
     public void Dispose()
@@ -96,6 +97,9 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
             _manipulations[manip] = mod;
         }
 
+        if (manip.ManipulationType is MetaManipulation.Type.GlobalEqp)
+            return _globalEqpCache.Add(manip.GlobalEqp);
+
         if (!_manager.CharacterUtility.Ready)
             return true;
 
@@ -119,6 +123,10 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
         lock (_manipulations)
         {
             var ret = _manipulations.Remove(manip, out mod);
+
+            if (manip.ManipulationType is MetaManipulation.Type.GlobalEqp)
+                return _globalEqpCache.Remove(manip.GlobalEqp);
+
             if (!_manager.CharacterUtility.Ready)
                 return ret;
         }
@@ -183,6 +191,9 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
         => _estCache.TemporarilySetFiles(_manager, type);
 
+    public unsafe EqpEntry ApplyGlobalEqp(EqpEntry baseEntry, CharacterArmor* armor)
+        => _globalEqpCache.Apply(baseEntry, armor);
+
 
     /// <summary> Try to obtain a manipulated IMC file. </summary>
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
@@ -193,8 +204,8 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
         var eqdpFile = _eqdpCache.EqdpFile(race, accessory);
         if (eqdpFile != null)
             return primaryId.Id < eqdpFile.Count ? eqdpFile[primaryId] : default;
-        else
-            return Meta.Files.ExpandedEqdpFile.GetDefault(_manager, race, accessory, primaryId);
+
+        return Meta.Files.ExpandedEqdpFile.GetDefault(_manager, race, accessory, primaryId);
     }
 
     internal ushort GetEstEntry(EstManipulation.EstType type, GenderRace genderRace, PrimaryId primaryId)
@@ -213,14 +224,15 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
             {
                 loaded += manip.ManipulationType switch
                 {
-                    MetaManipulation.Type.Eqp     => _eqpCache.ApplyMod(_manager, manip.Eqp),
-                    MetaManipulation.Type.Eqdp    => _eqdpCache.ApplyMod(_manager, manip.Eqdp),
-                    MetaManipulation.Type.Est     => _estCache.ApplyMod(_manager, manip.Est),
-                    MetaManipulation.Type.Gmp     => _gmpCache.ApplyMod(_manager, manip.Gmp),
-                    MetaManipulation.Type.Rsp     => _cmpCache.ApplyMod(_manager, manip.Rsp),
-                    MetaManipulation.Type.Imc     => _imcCache.ApplyMod(_manager, _collection, manip.Imc),
-                    MetaManipulation.Type.Unknown => false,
-                    _                             => false,
+                    MetaManipulation.Type.Eqp       => _eqpCache.ApplyMod(_manager, manip.Eqp),
+                    MetaManipulation.Type.Eqdp      => _eqdpCache.ApplyMod(_manager, manip.Eqdp),
+                    MetaManipulation.Type.Est       => _estCache.ApplyMod(_manager, manip.Est),
+                    MetaManipulation.Type.Gmp       => _gmpCache.ApplyMod(_manager, manip.Gmp),
+                    MetaManipulation.Type.Rsp       => _cmpCache.ApplyMod(_manager, manip.Rsp),
+                    MetaManipulation.Type.Imc       => _imcCache.ApplyMod(_manager, _collection, manip.Imc),
+                    MetaManipulation.Type.GlobalEqp => false,
+                    MetaManipulation.Type.Unknown   => false,
+                    _                               => false,
                 }
                     ? 1
                     : 0;
