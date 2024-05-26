@@ -76,7 +76,7 @@ public partial class ModEditWindow
             _editor.MetaEditor.OtherGmpCount);
         DrawEditHeader(_editor.MetaEditor.Rsp, "Racial Scaling Edits (RSP)###RSP", 5, RspRow.Draw, RspRow.DrawNew,
             _editor.MetaEditor.OtherRspCount);
-        DrawEditHeader(_editor.MetaEditor.GlobalEqp, "Global Equipment Parameter Edits Edits (Global EQP)###GEQP", 4, GlobalEqpRow.Draw,
+        DrawEditHeader(_editor.MetaEditor.GlobalEqp, "Global Equipment Parameter Edits (Global EQP)###GEQP", 4, GlobalEqpRow.Draw,
             GlobalEqpRow.DrawNew,                    _editor.MetaEditor.OtherGlobalEqpCount);
     }
 

@@ -30,13 +30,13 @@ public static class GlobalEqpExtensions
     public static ReadOnlySpan<byte> ToName(this GlobalEqpType type)
         => type switch
         {
-            GlobalEqpType.DoNotHideEarrings     => "Do Not Hide Earrings"u8,
-            GlobalEqpType.DoNotHideNecklace     => "Do Not Hide Necklaces"u8,
-            GlobalEqpType.DoNotHideBracelets    => "Do Not Hide Bracelets"u8,
-            GlobalEqpType.DoNotHideRingR        => "Do Not Hide Rings (Right Finger)"u8,
-            GlobalEqpType.DoNotHideRingL        => "Do Not Hide Rings (Left Finger)"u8,
-            GlobalEqpType.DoNotHideHrothgarHats => "Do Not Hide Hats for Hrothgar"u8,
-            GlobalEqpType.DoNotHideVieraHats    => "Do Not Hide Hats for Viera"u8,
+            GlobalEqpType.DoNotHideEarrings     => "Always Show Earrings"u8,
+            GlobalEqpType.DoNotHideNecklace     => "Always Show Necklaces"u8,
+            GlobalEqpType.DoNotHideBracelets    => "Always Show Bracelets"u8,
+            GlobalEqpType.DoNotHideRingR        => "Always Show Rings (Right Finger)"u8,
+            GlobalEqpType.DoNotHideRingL        => "Always Show Rings (Left Finger)"u8,
+            GlobalEqpType.DoNotHideHrothgarHats => "Always Show Hats for Hrothgar"u8,
+            GlobalEqpType.DoNotHideVieraHats    => "Always Show Hats for Viera"u8,
             _                                   => "\0"u8,
         };
 
