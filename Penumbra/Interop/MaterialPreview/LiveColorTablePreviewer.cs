@@ -8,7 +8,7 @@ namespace Penumbra.Interop.MaterialPreview;
 public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
 {
     public const int TextureWidth  = 4;
-    public const int TextureHeight = GameData.Files.MaterialStructs.ColorTable.NumUsedRows;
+    public const int TextureHeight = GameData.Files.MaterialStructs.LegacyColorTable.NumUsedRows;
     public const int TextureLength = TextureWidth * TextureHeight * 4;
 
     private readonly IFramework _framework;

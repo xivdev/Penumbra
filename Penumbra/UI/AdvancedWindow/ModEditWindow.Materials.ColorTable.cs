@@ -116,7 +116,7 @@ public partial class ModEditWindow
         {
             var ret = false;
             if (tab.Mtrl.HasDyeTable)
-                for (var i = 0; i < ColorTable.NumUsedRows; ++i)
+                for (var i = 0; i < LegacyColorTable.NumUsedRows; ++i)
                     ret |= tab.Mtrl.ApplyDyeTemplate(_stainService.StmFile, i, dyeId, 0);
 
             tab.UpdateColorTablePreview();
@@ -170,6 +170,7 @@ public partial class ModEditWindow
         }
     }
 
+    [SkipLocalsInit]
     private static unsafe void ColorTableCopyClipboardButton(ColorTable.Row row, ColorDyeTable.Row dye)
     {
         if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Clipboard.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
@@ -178,11 +179,11 @@ public partial class ModEditWindow
 
         try
         {
-            var data = new byte[ColorTable.Row.Size + 2];
+            Span<byte> data = stackalloc byte[ColorTable.Row.Size + ColorDyeTable.Row.Size];
             fixed (byte* ptr = data)
             {
-                MemoryUtility.MemCpyUnchecked(ptr,                                &row, ColorTable.Row.Size);
-                MemoryUtility.MemCpyUnchecked(ptr + ColorTable.Row.Size, &dye, 2);
+                MemoryUtility.MemCpyUnchecked(ptr,                       &row, ColorTable.Row.Size);
+                MemoryUtility.MemCpyUnchecked(ptr + ColorTable.Row.Size, &dye, ColorDyeTable.Row.Size);
             }
 
             var text = Convert.ToBase64String(data);
@@ -218,7 +219,7 @@ public partial class ModEditWindow
         {
             var text = ImGui.GetClipboardText();
             var data = Convert.FromBase64String(text);
-            if (data.Length != ColorTable.Row.Size + 2
+            if (data.Length != ColorTable.Row.Size + ColorDyeTable.Row.Size
              || !tab.Mtrl.HasTable)
                 return false;
 
@@ -349,7 +350,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.GlossStrength;
         ImGui.SetNextItemWidth(floatSize);
-        float glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
+        var glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
         if (ImGui.DragFloat("##GlossStrength", ref tmpFloat, Math.Max(0.1f, tmpFloat * 0.025f), glossStrengthMin, HalfMaxValue, "%.1f")
          && FixFloat(ref tmpFloat, row.GlossStrength))
         {

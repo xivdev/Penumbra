@@ -455,7 +455,8 @@ public partial class ModEditWindow
         {
             UnbindFromMaterialInstances();
 
-            var instances = MaterialInfo.FindMaterials(_edit._resourceTreeFactory.GetLocalPlayerRelatedCharacters().Select(ch => ch.Address), FilePath);
+            var instances = MaterialInfo.FindMaterials(_edit._resourceTreeFactory.GetLocalPlayerRelatedCharacters().Select(ch => ch.Address),
+                FilePath);
 
             var foundMaterials = new HashSet<nint>();
             foreach (var materialInfo in instances)
@@ -596,13 +597,13 @@ public partial class ModEditWindow
             if (!Mtrl.HasTable)
                 return;
 
-            var row = Mtrl.Table[rowIdx];
+            var row = new LegacyColorTable.Row(Mtrl.Table[rowIdx]);
             if (Mtrl.HasDyeTable)
             {
                 var stm = _edit._stainService.StmFile;
-                var dye = Mtrl.DyeTable[rowIdx];
+                var dye = new LegacyColorDyeTable.Row(Mtrl.DyeTable[rowIdx]);
                 if (stm.TryGetValue(dye.Template, _edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
-                    row.ApplyDyeTemplate(dye, dyes, default);
+                    row.ApplyDyeTemplate(dye, dyes);
             }
 
             if (HighlightedColorTableRow == rowIdx)
@@ -624,17 +625,18 @@ public partial class ModEditWindow
             if (!Mtrl.HasTable)
                 return;
 
-            var rows = Mtrl.Table;
+            var rows    = new LegacyColorTable(Mtrl.Table);
+            var dyeRows = new LegacyColorDyeTable(Mtrl.DyeTable);
             if (Mtrl.HasDyeTable)
             {
                 var stm     = _edit._stainService.StmFile;
                 var stainId = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
-                for (var i = 0; i < ColorTable.NumUsedRows; ++i)
+                for (var i = 0; i < LegacyColorTable.NumUsedRows; ++i)
                 {
                     ref var row = ref rows[i];
-                    var     dye = Mtrl.DyeTable[i];
+                    var     dye = dyeRows[i];
                     if (stm.TryGetValue(dye.Template, stainId, out var dyes))
-                        row.ApplyDyeTemplate(dye, dyes, default);
+                        row.ApplyDyeTemplate(dye, dyes);
                 }
             }
 
@@ -643,12 +645,13 @@ public partial class ModEditWindow
 
             foreach (var previewer in ColorTablePreviewers)
             {
+                // TODO: Dawntrail
                 rows.AsHalves().CopyTo(previewer.ColorTable);
                 previewer.ScheduleUpdate();
             }
         }
 
-        private static void ApplyHighlight(ref ColorTable.Row row, float time)
+        private static void ApplyHighlight(ref LegacyColorTable.Row row, float time)
         {
             var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
             var baseColor = ColorId.InGameHighlight.Value();
