@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using Penumbra.Api.Enums;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
@@ -40,9 +41,13 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         => OptionData.Count > 0;
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
-        => OptionData.OrderByDescending(o => o.Priority)
-            .SelectWhere(o => (o.Files.TryGetValue(gamePath, out var file) || o.FileSwaps.TryGetValue(gamePath, out file), file))
-            .FirstOrDefault();
+    {
+        foreach (var path in OptionData.OrderByDescending(o => o.Priority)
+                     .SelectWhere(o => (o.Files.TryGetValue(gamePath, out var file) || o.FileSwaps.TryGetValue(gamePath, out file), file)))
+            return path;
+
+        return null;
+    }
 
     public IModOption? AddOption(string name, string description = "")
     {

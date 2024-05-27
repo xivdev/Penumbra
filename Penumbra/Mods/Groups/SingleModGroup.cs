@@ -30,9 +30,13 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public readonly List<SingleSubMod> OptionData = [];
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
-        => OptionData
-            .SelectWhere(m => (m.Files.TryGetValue(gamePath, out var file) || m.FileSwaps.TryGetValue(gamePath, out file), file))
-            .FirstOrDefault();
+    {
+        foreach (var path in OptionData
+                     .SelectWhere(m => (m.Files.TryGetValue(gamePath, out var file) || m.FileSwaps.TryGetValue(gamePath, out file), file)))
+            return path;
+
+        return null;
+    }
 
     public IModOption AddOption(string name, string description = "")
     {
