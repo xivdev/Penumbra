@@ -26,6 +26,7 @@ public static class ImcManipulationDrawer
             };
             identifier = identifier with
             {
+                ObjectType = type,
                 EquipSlot = equipSlot,
                 SecondaryId = identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId,
             };

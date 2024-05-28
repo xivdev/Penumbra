@@ -204,7 +204,7 @@ public class FileEditor<T>(
 
     private void SaveButton()
     {
-        var canSave = _changed && _currentFile != null && _currentFile.Valid;
+        var canSave = _changed && _currentFile is { Valid: true };
         if (ImGuiUtil.DrawDisabledButton("Save to File", Vector2.Zero,
                 $"Save the selected {fileType} file with all changes applied. This is not revertible.", !canSave))
         {
