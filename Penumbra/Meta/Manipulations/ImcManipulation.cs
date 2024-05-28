@@ -64,10 +64,8 @@ public readonly struct ImcManipulation : IMetaManipulation<ImcManipulation>
         {
             ObjectType.Accessory or ObjectType.Equipment => new ImcIdentifier(primaryId, v, objectType, 0, equipSlot,
                 variant > byte.MaxValue ? BodySlot.Body : BodySlot.Unknown),
-            ObjectType.DemiHuman => new ImcIdentifier(primaryId, v, objectType, secondaryId,
-                equipSlot == EquipSlot.Unknown ? EquipSlot.Head : equipSlot, variant > byte.MaxValue ? BodySlot.Body : BodySlot.Unknown),
-            _ => new ImcIdentifier(primaryId, v, objectType, secondaryId, equipSlot == EquipSlot.Unknown ? EquipSlot.Head : equipSlot,
-                bodySlot),
+            ObjectType.DemiHuman => new ImcIdentifier(primaryId, v, objectType, secondaryId, equipSlot, variant > byte.MaxValue ? BodySlot.Body : BodySlot.Unknown),
+            _ => new ImcIdentifier(primaryId, v, objectType, secondaryId, equipSlot, bodySlot == BodySlot.Unknown ? BodySlot.Body : BodySlot.Unknown),
         };
     }
 
