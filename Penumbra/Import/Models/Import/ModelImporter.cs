@@ -104,6 +104,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             Radius            = 1,
             BoneBoundingBoxes = Enumerable.Repeat(MdlFile.EmptyBoundingBox, _bones.Count).ToArray(),
             RemainingData     = [.._vertexBuffer, ..indexBuffer],
+            Valid             = true,
         };
     }
 
