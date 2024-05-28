@@ -287,7 +287,7 @@ public sealed class CollectionPanel : IDisposable
                 _active.SetCollection(ModCollection.Empty, type, _active.Individuals.GetGroup(identifier));
         }
 
-        if (collection != null)
+        if (collection != null && type.CanBeRemoved())
         {
             using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
             if (ImGui.MenuItem("Remove this assignment."))
