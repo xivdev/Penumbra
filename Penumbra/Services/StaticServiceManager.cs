@@ -149,6 +149,7 @@ public static class StaticServiceManager
     private static ServiceManager AddInterface(this ServiceManager services)
         => services.AddSingleton<FileDialogService>()
             .AddSingleton<TutorialService>()
+            .AddSingleton<IncognitoService>()
             .AddSingleton<PenumbraChangelog>()
             .AddSingleton<LaunchButton>()
             .AddSingleton<ConfigWindow>()
@@ -181,6 +182,7 @@ public static class StaticServiceManager
             .AddSingleton<ItemSwapTab>()
             .AddSingleton<ModMergeTab>()
             .AddSingleton<ChangedItemDrawer>()
+            .AddSingleton<ResourceTreeViewerFactory>()
             .AddSingleton(p => new Diagnostics(p));
 
     private static ServiceManager AddModEditor(this ServiceManager services)

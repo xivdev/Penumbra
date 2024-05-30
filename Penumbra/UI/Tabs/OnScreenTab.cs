@@ -1,18 +1,15 @@
 using OtterGui.Widgets;
-using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.Tabs;
 
 public class OnScreenTab : ITab
 {
-    private readonly Configuration      _config;
     private readonly ResourceTreeViewer _viewer;
 
-    public OnScreenTab(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer)
+    public OnScreenTab(ResourceTreeViewerFactory resourceTreeViewerFactory)
     {
-        _config = config;
-        _viewer = new ResourceTreeViewer(_config, treeFactory, changedItemDrawer, 0, delegate { }, delegate { });
+        _viewer = resourceTreeViewerFactory.Create(0, delegate { }, delegate { });
     }
 
     public ReadOnlySpan<byte> Label

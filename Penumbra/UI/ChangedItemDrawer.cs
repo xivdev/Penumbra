@@ -212,7 +212,7 @@ public class ChangedItemDrawer : IDisposable
             return;
 
         var typeFilter = _config.Ephemeral.ChangedItemFilter;
-        if (DrawTypeFilter(ref typeFilter, 0.0f))
+        if (DrawTypeFilter(ref typeFilter))
         {
             _config.Ephemeral.ChangedItemFilter = typeFilter;
             _config.Ephemeral.Save();
@@ -220,7 +220,7 @@ public class ChangedItemDrawer : IDisposable
     }
 
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
-    public bool DrawTypeFilter(ref ChangedItemIcon typeFilter, float yOffset)
+    public bool DrawTypeFilter(ref ChangedItemIcon typeFilter)
     {
         var       ret   = false;
         using var _     = ImRaii.PushId("ChangedItemIconFilter");
@@ -233,7 +233,6 @@ public class ChangedItemDrawer : IDisposable
             var ret  = false;
             var icon = _icons[type];
             var flag = typeFilter.HasFlag(type);
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + yOffset);
             ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             {
@@ -267,7 +266,7 @@ public class ChangedItemDrawer : IDisposable
             ImGui.SameLine();
         }
 
-        ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionMax().X - size.X, ImGui.GetCursorPosY() + yOffset));
+        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
         ImGui.Image(_icons[AllFlags].ImGuiHandle, size, Vector2.Zero, Vector2.One,
             typeFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
             typeFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));

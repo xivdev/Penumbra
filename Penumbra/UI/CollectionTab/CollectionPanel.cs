@@ -31,6 +31,7 @@ public sealed class CollectionPanel : IDisposable
     private readonly InheritanceUi          _inheritanceUi;
     private readonly ModStorage             _mods;
     private readonly FilenameService        _fileNames;
+    private readonly IncognitoService       _incognito;
     private readonly IFontHandle            _nameFont;
 
     private static readonly IReadOnlyDictionary<CollectionType, (string Name, uint Border)> Buttons      = CreateButtons();
@@ -41,7 +42,8 @@ public sealed class CollectionPanel : IDisposable
     private int _draggedIndividualAssignment = -1;
 
     public CollectionPanel(DalamudPluginInterface pi, CommunicatorService communicator, CollectionManager manager,
-        CollectionSelector selector, ActorManager actors, ITargetManager targets, ModStorage mods, FilenameService fileNames)
+        CollectionSelector selector, ActorManager actors, ITargetManager targets, ModStorage mods, FilenameService fileNames,
+        IncognitoService incognito)
     {
         _collections            = manager.Storage;
         _active                 = manager.Active;
@@ -50,8 +52,9 @@ public sealed class CollectionPanel : IDisposable
         _targets                = targets;
         _mods                   = mods;
         _fileNames              = fileNames;
+        _incognito              = incognito;
         _individualAssignmentUi = new IndividualAssignmentUi(communicator, actors, manager);
-        _inheritanceUi          = new InheritanceUi(manager, _selector);
+        _inheritanceUi          = new InheritanceUi(manager, incognito);
         _nameFont               = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
     }
 
@@ -415,7 +418,7 @@ public sealed class CollectionPanel : IDisposable
 
     /// <summary> Respect incognito mode for names of identifiers. </summary>
     private string Name(ActorIdentifier id, string? name)
-        => _selector.IncognitoMode && id.Type is IdentifierType.Player or IdentifierType.Owned
+        => _incognito.IncognitoMode && id.Type is IdentifierType.Player or IdentifierType.Owned
             ? id.Incognito(name)
             : name ?? id.ToString();
 
@@ -423,7 +426,7 @@ public sealed class CollectionPanel : IDisposable
     private string Name(ModCollection? collection)
         => collection == null                 ? "Unassigned" :
             collection == ModCollection.Empty ? "Use No Mods" :
-            _selector.IncognitoMode           ? collection.AnonymizedName : collection.Name;
+            _incognito.IncognitoMode          ? collection.AnonymizedName : collection.Name;
 
     private void DrawIndividualButton(string intro, Vector2 width, string tooltip, char suffix, params ActorIdentifier[] identifiers)
     {

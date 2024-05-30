@@ -6,6 +6,7 @@ using OtterGui;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
 using Penumbra.String;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -17,6 +18,7 @@ public class ResourceTreeViewer
     private readonly Configuration                 _config;
     private readonly ResourceTreeFactory           _treeFactory;
     private readonly ChangedItemDrawer             _changedItemDrawer;
+    private readonly IncognitoService              _incognito;
     private readonly int                           _actionCapacity;
     private readonly Action                        _onRefresh;
     private readonly Action<ResourceNode, Vector2> _drawActions;
@@ -29,11 +31,12 @@ public class ResourceTreeViewer
     private Task<ResourceTree[]>? _task;
 
     public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer,
-        int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
+        IncognitoService incognito, int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
     {
         _config            = config;
         _treeFactory       = treeFactory;
         _changedItemDrawer = changedItemDrawer;
+        _incognito         = incognito;
         _actionCapacity    = actionCapacity;
         _onRefresh         = onRefresh;
         _drawActions       = drawActions;
@@ -75,7 +78,7 @@ public class ResourceTreeViewer
 
                 using (var c = ImRaii.PushColor(ImGuiCol.Text, CategoryColor(category).Value()))
                 {
-                    var isOpen = ImGui.CollapsingHeader($"{tree.Name}##{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
+                    var isOpen = ImGui.CollapsingHeader($"{(_incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
                     if (debugMode)
                     {
                         using var _ = ImRaii.PushFont(UiBuilder.MonoFont);
@@ -89,7 +92,7 @@ public class ResourceTreeViewer
 
                 using var id = ImRaii.PushId(index);
 
-                ImGui.TextUnformatted($"Collection: {tree.CollectionName}");
+                ImGui.TextUnformatted($"Collection: {(_incognito.IncognitoMode ? tree.AnonymizedCollectionName : tree.CollectionName)}");
 
                 using var table = ImRaii.Table("##ResourceTree", _actionCapacity > 0 ? 4 : 3,
                     ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
@@ -137,10 +140,14 @@ public class ResourceTreeViewer
 
         ImGui.SameLine(0, checkPadding);
 
-        _changedItemDrawer.DrawTypeFilter(ref _typeFilter, -yOffset);
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - yOffset);
+        using (ImRaii.Child("##typeFilter", new Vector2(ImGui.GetContentRegionAvail().X, ChangedItemDrawer.TypeFilterIconSize.Y)))
+            _changedItemDrawer.DrawTypeFilter(ref _typeFilter);
 
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - checkSpacing - ImGui.GetFrameHeightWithSpacing());
         ImGui.InputTextWithHint("##TreeNameFilter", "Filter by Character/Entity Name...", ref _nameFilter, 128);
+        ImGui.SameLine(0, checkSpacing);
+        _incognito.DrawToggle();
     }
 
     private Task<ResourceTree[]> RefreshCharacterList()

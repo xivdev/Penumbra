@@ -9,7 +9,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.CollectionTab;
 
-public class InheritanceUi(CollectionManager collectionManager, CollectionSelector selector) : IUiService
+public class InheritanceUi(CollectionManager collectionManager, IncognitoService incognito) : IUiService
 {
     private const int    InheritedCollectionHeight = 9;
     private const string InheritanceDragDropLabel  = "##InheritanceMove";
@@ -312,5 +312,5 @@ public class InheritanceUi(CollectionManager collectionManager, CollectionSelect
     }
 
     private string Name(ModCollection collection)
-        => selector.IncognitoMode ? collection.AnonymizedName : collection.Name;
+        => incognito.IncognitoMode ? collection.AnonymizedName : collection.Name;
 }
