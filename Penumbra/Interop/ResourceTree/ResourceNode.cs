@@ -10,7 +10,6 @@ public class ResourceNode : ICloneable
     public          string?            Name;
     public          string?            FallbackName;
     public          ChangedItemIcon    Icon;
-    public          ChangedItemIcon    DescendentIcons;
     public readonly ResourceType       Type;
     public readonly nint               ObjectAddress;
     public readonly nint               ResourceHandle;
@@ -53,7 +52,6 @@ public class ResourceNode : ICloneable
         Name              = other.Name;
         FallbackName      = other.FallbackName;
         Icon              = other.Icon;
-        DescendentIcons   = other.DescendentIcons;
         Type              = other.Type;
         ObjectAddress     = other.ObjectAddress;
         ResourceHandle    = other.ResourceHandle;
