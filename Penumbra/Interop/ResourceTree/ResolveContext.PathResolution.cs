@@ -155,7 +155,7 @@ internal partial record ResolveContext
         var imcFileData = imc->GetDataSpan();
         if (imcFileData.IsEmpty)
         {
-            Penumbra.Log.Warning($"IMC resource handle with path {GetResourceHandlePath(imc, false)} doesn't have a valid data span");
+            Penumbra.Log.Warning($"IMC resource handle with path {imc->FileName.AsByteString()} doesn't have a valid data span");
             return variant.Id;
         }
 

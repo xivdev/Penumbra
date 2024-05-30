@@ -3,8 +3,9 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.ResourceTree;
+using Penumbra.Interop.PathResolving;
 using Penumbra.String;
+using static Penumbra.Interop.Structs.StructExtensions;
 using Model = Penumbra.GameData.Interop.Model;
 
 namespace Penumbra.Interop.MaterialPreview;
@@ -78,8 +79,12 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
                             continue;
 
                         var mtrlHandle = material->MaterialResourceHandle;
-                        var path       = ResolveContext.GetResourceHandlePath(&mtrlHandle->ResourceHandle);
-                        if (path == needle)
+                        if (mtrlHandle == null)
+                            continue;
+
+                        PathDataHandler.Split(mtrlHandle->ResourceHandle.FileName.AsSpan(), out var path, out _);
+                        var fileName = ByteString.FromSpanUnsafe(path, true);
+                        if (fileName == needle)
                             result.Add(new MaterialInfo(index, type, i, j));
                     }
                 }

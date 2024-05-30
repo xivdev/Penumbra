@@ -1,4 +1,5 @@
 using Penumbra.Api.Enums;
+using Penumbra.String;
 using Penumbra.String.Classes;
 using ChangedItemIcon = Penumbra.UI.ChangedItemDrawer.ChangedItemIcon;
 
@@ -15,6 +16,7 @@ public class ResourceNode : ICloneable
     public readonly nint               ResourceHandle;
     public          Utf8GamePath[]     PossibleGamePaths;
     public          FullPath           FullPath;
+    public          ByteString         AdditionalData;
     public readonly ulong              Length;
     public readonly List<ResourceNode> Children;
     internal        ResolveContext?    ResolveContext;
@@ -40,6 +42,7 @@ public class ResourceNode : ICloneable
         ObjectAddress     = objectAddress;
         ResourceHandle    = resourceHandle;
         PossibleGamePaths = Array.Empty<Utf8GamePath>();
+        AdditionalData    = ByteString.Empty;
         Length            = length;
         Children          = new List<ResourceNode>();
         ResolveContext    = resolveContext;
@@ -56,6 +59,7 @@ public class ResourceNode : ICloneable
         ResourceHandle    = other.ResourceHandle;
         PossibleGamePaths = other.PossibleGamePaths;
         FullPath          = other.FullPath;
+        AdditionalData    = other.AdditionalData;
         Length            = other.Length;
         Children          = other.Children;
         ResolveContext    = other.ResolveContext;

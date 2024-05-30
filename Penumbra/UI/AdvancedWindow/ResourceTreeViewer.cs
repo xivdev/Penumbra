@@ -5,6 +5,7 @@ using OtterGui.Raii;
 using OtterGui;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
+using Penumbra.String;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -177,6 +178,9 @@ public class ResourceTreeViewer
             return NodeVisibility.Hidden;
         }
 
+        string GetAdditionalDataSuffix(ByteString data)
+            => !debugMode || data.IsEmpty ? string.Empty : $"\n\nAdditional Data: {data}";
+
         foreach (var (resourceNode, index) in resourceNodes.WithIndex())
         {
             var visibility = GetNodeVisibility(resourceNode);
@@ -260,13 +264,13 @@ public class ResourceTreeViewer
                 ImGui.Selectable(resourceNode.FullPath.ToPath(), false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
-                ImGuiUtil.HoverTooltip($"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.");
+                ImGuiUtil.HoverTooltip($"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
             else
             {
                 ImGui.Selectable("(unavailable)", false, ImGuiSelectableFlags.Disabled,
                     new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
-                ImGuiUtil.HoverTooltip("The actual path to this file is unavailable.\nIt may be managed by another plug-in.");
+                ImGuiUtil.HoverTooltip($"The actual path to this file is unavailable.\nIt may be managed by another plug-in.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
 
             mutedColor.Dispose();
