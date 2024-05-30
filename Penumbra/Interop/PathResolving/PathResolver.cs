@@ -13,11 +13,10 @@ namespace Penumbra.Interop.PathResolving;
 
 public class PathResolver : IDisposable
 {
-    private readonly PerformanceTracker    _performance;
-    private readonly Configuration         _config;
-    private readonly CollectionManager     _collectionManager;
-    private readonly TempCollectionManager _tempCollections;
-    private readonly ResourceLoader        _loader;
+    private readonly PerformanceTracker _performance;
+    private readonly Configuration      _config;
+    private readonly CollectionManager  _collectionManager;
+    private readonly ResourceLoader     _loader;
 
     private readonly SubfileHelper      _subfileHelper;
     private readonly PathState          _pathState;
@@ -25,14 +24,12 @@ public class PathResolver : IDisposable
     private readonly GameState          _gameState;
     private readonly CollectionResolver _collectionResolver;
 
-    public unsafe PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
-        TempCollectionManager tempCollections, ResourceLoader loader, SubfileHelper subfileHelper,
-        PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState)
+    public unsafe PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ResourceLoader loader,
+        SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState)
     {
         _performance        =  performance;
         _config             =  config;
         _collectionManager  =  collectionManager;
-        _tempCollections    =  tempCollections;
         _subfileHelper      =  subfileHelper;
         _pathState          =  pathState;
         _metaState          =  metaState;
@@ -43,9 +40,12 @@ public class PathResolver : IDisposable
         _loader.FileLoaded  += ImcLoadResource;
     }
 
-    /// <summary> Obtain a temporary or permanent collection by name. </summary>
-    public bool CollectionById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
-        => _tempCollections.CollectionById(id, out collection) || _collectionManager.Storage.ById(id, out collection);
+    /// <summary> Obtain a temporary or permanent collection by local ID. </summary>
+    public bool CollectionByLocalId(LocalCollectionId id, out ModCollection collection)
+    {
+        collection = _collectionManager.Storage.ByLocalId(id);
+        return collection != ModCollection.Empty;
+    }
 
     /// <summary> Try to resolve the given game path to the replaced path. </summary>
     public (FullPath?, ResolveData) ResolvePath(Utf8GamePath path, ResourceCategory category, ResourceType resourceType)
@@ -113,7 +113,7 @@ public class PathResolver : IDisposable
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path : resolved.Value.InternalName;
-        SubfileHelper.HandleCollection(resolveData, path, nonDefault, type, resolved, out var pair);
+        SubfileHelper.HandleCollection(resolveData, path, nonDefault, type, resolved, gamePath, out var pair);
         return pair;
     }
 
@@ -131,23 +131,21 @@ public class PathResolver : IDisposable
     }
 
     /// <summary> After loading an IMC file, replace its contents with the modded IMC file. </summary>
-    private unsafe void ImcLoadResource(ResourceHandle* resource, ByteString path, bool returnValue, bool custom, ByteString additionalData)
+    private unsafe void ImcLoadResource(ResourceHandle* resource, ByteString path, bool returnValue, bool custom,
+        ReadOnlySpan<byte> additionalData)
     {
-        if (resource->FileType != ResourceType.Imc)
+        if (resource->FileType != ResourceType.Imc
+         || !PathDataHandler.Read(additionalData, out var data)
+         || data.Discriminator != PathDataHandler.Discriminator
+         || !Utf8GamePath.FromByteString(path, out var gamePath)
+         || !CollectionByLocalId(data.Collection, out var collection)
+         || !collection.HasCache
+         || !collection.GetImcFile(gamePath, out var file))
             return;
 
-        var lastUnderscore = additionalData.LastIndexOf((byte)'_');
-        var idString       = lastUnderscore == -1 ? additionalData : additionalData.Substring(0, lastUnderscore);
-        if (Utf8GamePath.FromByteString(path, out var gamePath)
-         && GuidExtensions.FromOptimizedString(idString.Span, out var id)
-         && CollectionById(id, out var collection)
-         && collection.HasCache
-         && collection.GetImcFile(gamePath, out var file))
-        {
-            file.Replace(resource);
-            Penumbra.Log.Verbose(
-                $"[ResourceLoader] Loaded {gamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
-        }
+        file.Replace(resource);
+        Penumbra.Log.Verbose(
+            $"[ResourceLoader] Loaded {gamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
     }
 
     /// <summary> Resolve a path from the interface collection. </summary>

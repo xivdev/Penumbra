@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
@@ -10,8 +11,18 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
+using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.Collections.Manager;
+
+/// <summary> A contiguously incrementing ID managed by the CollectionCreator. </summary>
+public readonly record struct LocalCollectionId(int Id) : IAdditionOperators<LocalCollectionId, int, LocalCollectionId>
+{
+    public static readonly LocalCollectionId Zero = new(0);
+
+    public static LocalCollectionId operator +(LocalCollectionId left, int right)
+        => new(left.Id + right);
+}
 
 public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 {
@@ -19,13 +30,51 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     private readonly SaveService         _saveService;
     private readonly ModStorage          _modStorage;
 
+    public ModCollection Create(string name, int index, ModCollection? duplicate)
+    {
+        var newCollection = duplicate?.Duplicate(name, CurrentCollectionId, index)
+         ?? ModCollection.CreateEmpty(name, CurrentCollectionId, index, _modStorage.Count);
+        _collectionsByLocal[CurrentCollectionId] =  newCollection;
+        CurrentCollectionId                      += 1;
+        return newCollection;
+    }
+
+    public ModCollection CreateFromData(Guid id, string name, int version, Dictionary<string, ModSettings.SavedSettings> allSettings,
+        IReadOnlyList<string> inheritances)
+    {
+        var newCollection = ModCollection.CreateFromData(_saveService, _modStorage, id, name, CurrentCollectionId, version, Count, allSettings,
+            inheritances);
+        _collectionsByLocal[CurrentCollectionId] =  newCollection;
+        CurrentCollectionId                      += 1;
+        return newCollection;
+    }
+
+    public ModCollection CreateTemporary(string name, int index, int globalChangeCounter)
+    {
+        var newCollection = ModCollection.CreateTemporary(name, CurrentCollectionId, index, globalChangeCounter);
+        _collectionsByLocal[CurrentCollectionId] =  newCollection;
+        CurrentCollectionId                      += 1;
+        return newCollection;
+    }
+
+    public void Delete(ModCollection collection)
+        => _collectionsByLocal.Remove(collection.LocalId);
+
     /// <remarks> The empty collection is always available at Index 0. </remarks>
     private readonly List<ModCollection> _collections =
     [
         ModCollection.Empty,
     ];
 
+    /// <remarks> A list of all collections ever created still existing by their local id. </remarks>
+    private readonly Dictionary<LocalCollectionId, ModCollection>
+        _collectionsByLocal = new() { [LocalCollectionId.Zero] = ModCollection.Empty };
+
+
     public readonly ModCollection DefaultNamed;
+
+    /// <remarks> Incremented by 1 because the empty collection gets Zero. </remarks>
+    public LocalCollectionId CurrentCollectionId { get; private set; } = LocalCollectionId.Zero + 1;
 
     /// <summary> Default enumeration skips the empty collection. </summary>
     public IEnumerator<ModCollection> GetEnumerator()
@@ -69,6 +118,10 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         return ByName(identifier, out collection);
     }
 
+    /// <summary> Find a collection by its local ID if it still exists, otherwise returns the empty collection. </summary>
+    public ModCollection ByLocalId(LocalCollectionId localId)
+        => _collectionsByLocal.TryGetValue(localId, out var coll) ? coll : ModCollection.Empty;
+
     public CollectionStorage(CommunicatorService communicator, SaveService saveService, ModStorage modStorage)
     {
         _communicator = communicator;
@@ -100,10 +153,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// </summary>
     public bool AddCollection(string name, ModCollection? duplicate)
     {
-        var newCollection = duplicate?.Duplicate(name, _collections.Count)
-         ?? ModCollection.CreateEmpty(name, _collections.Count, _modStorage.Count);
-        _collections.Add(newCollection);
-
+        var newCollection = Create(name, _collections.Count, duplicate);
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
         Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
@@ -132,6 +182,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         // Update indices.
         for (var i = collection.Index; i < Count; ++i)
             _collections[i].Index = i;
+        _collectionsByLocal.Remove(collection.LocalId);
 
         Penumbra.Messager.NotificationMessage($"Deleted collection {collection.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
@@ -180,7 +231,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
                 continue;
             }
 
-            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, id, name, version, Count, settings, inheritance);
+            var collection  = CreateFromData(id, name, version, settings, inheritance);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
                 try
@@ -293,7 +344,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     }
 
     /// <summary> Save all collections where the mod has settings and the change requires saving. </summary>
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container, int movedToIdx)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
+        int movedToIdx)
     {
         type.HandlingInfo(out var requiresSaving, out _, out _);
         if (!requiresSaving)

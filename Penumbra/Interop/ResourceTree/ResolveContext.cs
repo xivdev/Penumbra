@@ -9,6 +9,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -373,14 +374,8 @@ internal unsafe partial record ResolveContext(
         if (name.IsEmpty)
             return ByteString.Empty;
 
-        if (stripPrefix && name[0] == (byte)'|')
-        {
-            var pos = name.IndexOf((byte)'|', 1);
-            if (pos < 0)
-                return ByteString.Empty;
-
-            name = name.Substring(pos + 1);
-        }
+        if (stripPrefix && PathDataHandler.Split(name.Span, out var path, out _))
+            name = ByteString.FromSpanUnsafe(path, name.IsNullTerminated, name.IsAsciiLowerCase, name.IsAscii);
 
         return name;
     }

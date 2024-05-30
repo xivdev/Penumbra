@@ -1,6 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -17,8 +18,7 @@ public unsafe class ResourceLoader : IDisposable
 
     private ResolveData _resolvedData = ResolveData.Invalid;
 
-    public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService,
-        CreateFileWHook _)
+    public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService)
     {
         _resources       = resources;
         _fileReadService = fileReadService;
@@ -54,7 +54,7 @@ public unsafe class ResourceLoader : IDisposable
 
     /// <summary> Reset the ResolvePath function to always return null. </summary>
     public void ResetResolvePath()
-        => ResolvePath = (_1, _2, _3) => (null, ResolveData.Invalid);
+        => ResolvePath = (_, _, _) => (null, ResolveData.Invalid);
 
     public delegate void ResourceLoadedDelegate(ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         ResolveData resolveData);
@@ -67,7 +67,7 @@ public unsafe class ResourceLoader : IDisposable
     public event ResourceLoadedDelegate? ResourceLoaded;
 
     public delegate void FileLoadedDelegate(ResourceHandle* resource, ByteString path, bool returnValue, bool custom,
-        ByteString additionalData);
+        ReadOnlySpan<byte> additionalData);
 
     /// <summary>
     /// Event fired whenever a resource is newly loaded.
@@ -132,19 +132,17 @@ public unsafe class ResourceLoader : IDisposable
 
         // Paths starting with a '|' are handled separately to allow for special treatment.
         // They are expected to also have a closing '|'.
-        if (gamePath.Path[0] != (byte)'|')
+        if (!PathDataHandler.Split(gamePath.Path.Span, out var actualPath, out var data))
         {
-            returnValue = DefaultLoadResource(gamePath.Path, fileDescriptor, priority, isSync, ByteString.Empty);
+            returnValue = DefaultLoadResource(gamePath.Path, fileDescriptor, priority, isSync, []);
             return;
         }
 
-        // Split the path into the special-treatment part (between the first and second '|')
-        // and the actual path.
-        var split = gamePath.Path.Split((byte)'|', 3, false);
-        fileDescriptor->ResourceHandle->FileNameData   = split[2].Path;
-        fileDescriptor->ResourceHandle->FileNameLength = split[2].Length;
+        var path = ByteString.FromSpanUnsafe(actualPath, gamePath.Path.IsNullTerminated, gamePath.Path.IsAsciiLowerCase, gamePath.Path.IsAscii);
+        fileDescriptor->ResourceHandle->FileNameData   = path.Path;
+        fileDescriptor->ResourceHandle->FileNameLength = path.Length;
         MtrlForceSync(fileDescriptor, ref isSync);
-        returnValue = DefaultLoadResource(split[2], fileDescriptor, priority, isSync, split[1]);
+        returnValue = DefaultLoadResource(path, fileDescriptor, priority, isSync, data);
         // Return original resource handle path so that they can be loaded separately.
         fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
@@ -153,7 +151,7 @@ public unsafe class ResourceLoader : IDisposable
 
     /// <summary> Load a resource by its path. If it is rooted, it will be loaded from the drive, otherwise from the SqPack. </summary>
     private byte DefaultLoadResource(ByteString gamePath, SeFileDescriptor* fileDescriptor, int priority,
-        bool isSync, ByteString additionalData)
+        bool isSync, ReadOnlySpan<byte> additionalData)
     {
         if (Utf8GamePath.IsRooted(gamePath))
         {

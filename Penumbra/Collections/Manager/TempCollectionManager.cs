@@ -52,7 +52,7 @@ public class TempCollectionManager : IDisposable
     {
         if (GlobalChangeCounter == int.MaxValue)
             GlobalChangeCounter = 0;
-        var collection = ModCollection.CreateTemporary(name, ~Count, GlobalChangeCounter++);
+        var collection = _storage.CreateTemporary(name, ~Count, GlobalChangeCounter++);
         Penumbra.Log.Debug($"Creating temporary collection {collection.Name} with {collection.Id}.");
         if (_customCollections.TryAdd(collection.Id, collection))
         {
@@ -72,6 +72,7 @@ public class TempCollectionManager : IDisposable
             return false;
         }
 
+        _storage.Delete(collection);
         Penumbra.Log.Debug($"Deleted temporary collection {collection.Id}.");
         GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
         for (var i = 0; i < Collections.Count; ++i)

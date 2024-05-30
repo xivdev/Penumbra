@@ -25,12 +25,14 @@ public partial class ModCollection
     /// Create the always available Empty Collection that will always sit at index 0,
     /// can not be deleted and does never create a cache.
     /// </summary>
-    public static readonly ModCollection Empty = new(Guid.Empty, EmptyCollectionName, 0, 0, CurrentVersion, [], [], []);
+    public static readonly ModCollection Empty = new(Guid.Empty, EmptyCollectionName, LocalCollectionId.Zero, 0, 0, CurrentVersion, [], [], []);
 
     /// <summary> The name of a collection. </summary>
     public string Name { get; set; }
 
     public Guid Id { get; }
+
+    public LocalCollectionId LocalId { get; }
 
     public string Identifier
         => Id.ToString();
@@ -117,19 +119,20 @@ public partial class ModCollection
     /// <summary>
     /// Constructor for duplication. Deep copies all settings and parent collections and adds the new collection to their children lists.
     /// </summary>
-    public ModCollection Duplicate(string name, int index)
+    public ModCollection Duplicate(string name, LocalCollectionId localId, int index)
     {
         Debug.Assert(index > 0, "Collection duplicated with non-positive index.");
-        return new ModCollection(Guid.NewGuid(), name, index, 0, CurrentVersion, Settings.Select(s => s?.DeepCopy()).ToList(),
+        return new ModCollection(Guid.NewGuid(), name, localId, index, 0, CurrentVersion, Settings.Select(s => s?.DeepCopy()).ToList(),
             [.. DirectlyInheritsFrom], UnusedSettings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DeepCopy()));
     }
 
     /// <summary> Constructor for reading from files. </summary>
-    public static ModCollection CreateFromData(SaveService saver, ModStorage mods, Guid id, string name, int version, int index,
+    public static ModCollection CreateFromData(SaveService saver, ModStorage mods, Guid id, string name, LocalCollectionId localId, int version,
+        int index,
         Dictionary<string, ModSettings.SavedSettings> allSettings, IReadOnlyList<string> inheritances)
     {
         Debug.Assert(index > 0, "Collection read with non-positive index.");
-        var ret = new ModCollection(id, name, index, 0, version, [], [], allSettings)
+        var ret = new ModCollection(id, name, localId, index, 0, version, [], [], allSettings)
         {
             InheritanceByName = inheritances,
         };
@@ -139,18 +142,19 @@ public partial class ModCollection
     }
 
     /// <summary> Constructor for temporary collections. </summary>
-    public static ModCollection CreateTemporary(string name, int index, int changeCounter)
+    public static ModCollection CreateTemporary(string name, LocalCollectionId localId, int index, int changeCounter)
     {
         Debug.Assert(index < 0, "Temporary collection created with non-negative index.");
-        var ret = new ModCollection(Guid.NewGuid(), name, index, changeCounter, CurrentVersion, [], [], []);
+        var ret = new ModCollection(Guid.NewGuid(), name, localId, index, changeCounter, CurrentVersion, [], [], []);
         return ret;
     }
 
     /// <summary> Constructor for empty collections. </summary>
-    public static ModCollection CreateEmpty(string name, int index, int modCount)
+    public static ModCollection CreateEmpty(string name, LocalCollectionId localId, int index, int modCount)
     {
         Debug.Assert(index >= 0, "Empty collection created with negative index.");
-        return new ModCollection(Guid.NewGuid(), name, index, 0, CurrentVersion, Enumerable.Repeat((ModSettings?)null, modCount).ToList(), [],
+        return new ModCollection(Guid.NewGuid(), name, localId, index, 0, CurrentVersion,
+            Enumerable.Repeat((ModSettings?)null, modCount).ToList(), [],
             []);
     }
 
@@ -199,11 +203,12 @@ public partial class ModCollection
             saver.ImmediateSave(new ModCollectionSave(mods, this));
     }
 
-    private ModCollection(Guid id, string name, int index, int changeCounter, int version, List<ModSettings?> appliedSettings,
-        List<ModCollection> inheritsFrom, Dictionary<string, ModSettings.SavedSettings> settings)
+    private ModCollection(Guid id, string name, LocalCollectionId localId, int index, int changeCounter, int version,
+        List<ModSettings?> appliedSettings, List<ModCollection> inheritsFrom, Dictionary<string, ModSettings.SavedSettings> settings)
     {
         Name                 = name;
         Id                   = id;
+        LocalId              = localId;
         Index                = index;
         ChangeCounter        = changeCounter;
         Settings             = appliedSettings;

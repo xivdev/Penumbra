@@ -1,3 +1,4 @@
+using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -7,8 +8,8 @@ namespace Penumbra.Collections.Cache;
 
 public readonly struct ImcCache : IDisposable
 {
-    private readonly Dictionary<Utf8GamePath, ImcFile> _imcFiles         = new();
-    private readonly List<(ImcManipulation, ImcFile)>  _imcManipulations = new();
+    private readonly Dictionary<Utf8GamePath, ImcFile> _imcFiles         = [];
+    private readonly List<(ImcManipulation, ImcFile)>  _imcManipulations = [];
 
     public ImcCache()
     { }
@@ -17,10 +18,10 @@ public readonly struct ImcCache : IDisposable
     {
         if (fromFullCompute)
             foreach (var path in _imcFiles.Keys)
-                collection._cache!.ForceFileSync(path, CreateImcPath(collection, path));
+                collection._cache!.ForceFileSync(path, PathDataHandler.CreateImc(path.Path, collection));
         else
             foreach (var path in _imcFiles.Keys)
-                collection._cache!.ForceFile(path, CreateImcPath(collection, path));
+                collection._cache!.ForceFile(path, PathDataHandler.CreateImc(path.Path, collection));
     }
 
     public void Reset(ModCollection collection)
@@ -57,7 +58,7 @@ public readonly struct ImcCache : IDisposable
                 return false;
 
             _imcFiles[path] = file;
-            var fullPath = CreateImcPath(collection, path);
+            var fullPath = PathDataHandler.CreateImc(file.Path.Path, collection);
             collection._cache!.ForceFile(path, fullPath);
 
             return true;
@@ -100,7 +101,7 @@ public readonly struct ImcCache : IDisposable
         if (!manip.Apply(file))
             return false;
 
-        var fullPath = CreateImcPath(collection, file.Path);
+        var fullPath = PathDataHandler.CreateImc(file.Path.Path, collection);
         collection._cache!.ForceFile(file.Path, fullPath);
 
         return true;
@@ -114,9 +115,6 @@ public readonly struct ImcCache : IDisposable
         _imcFiles.Clear();
         _imcManipulations.Clear();
     }
-
-    private static FullPath CreateImcPath(ModCollection collection, Utf8GamePath path)
-        => new($"|{collection.Id.OptimizedString()}_{collection.ChangeCounter}|{path}");
 
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
         => _imcFiles.TryGetValue(path, out file);

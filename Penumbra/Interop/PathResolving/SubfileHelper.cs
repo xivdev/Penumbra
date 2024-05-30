@@ -66,21 +66,18 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
         return false;
     }
 
-    /// <summary> Materials, TMB, and AVFX need to be set per collection so they can load their sub files independently from each other. </summary>
+    /// <summary> Materials, TMB, and AVFX need to be set per collection, so they can load their sub files independently of each other. </summary>
     public static void HandleCollection(ResolveData resolveData, ByteString path, bool nonDefault, ResourceType type, FullPath? resolved,
-        out (FullPath?, ResolveData) data)
+        Utf8GamePath originalPath, out (FullPath?, ResolveData) data)
     {
         if (nonDefault)
-            switch (type)
+            resolved = type switch
             {
-                case ResourceType.Mtrl:
-                case ResourceType.Avfx:
-                case ResourceType.Tmb:
-                    var fullPath = new FullPath($"|{resolveData.ModCollection.Id.OptimizedString()}_{resolveData.ModCollection.ChangeCounter}|{path}");
-                    data = (fullPath, resolveData);
-                    return;
-            }
-
+                ResourceType.Mtrl => PathDataHandler.CreateMtrl(path, resolveData.ModCollection, originalPath),
+                ResourceType.Avfx => PathDataHandler.CreateAvfx(path, resolveData.ModCollection),
+                ResourceType.Tmb  => PathDataHandler.CreateTmb(path, resolveData.ModCollection),
+                _                 => resolved,
+            };
         data = (resolved, resolveData);
     }
 

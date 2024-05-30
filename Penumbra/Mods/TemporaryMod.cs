@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
@@ -83,10 +84,8 @@ public class TemporaryMod : IMod
                 }
 
                 var targetPath = fullPath.Path.FullName;
-                if (fullPath.Path.Name.StartsWith('|'))
-                {
-                    targetPath = targetPath.Split('|', 3, StringSplitOptions.RemoveEmptyEntries).Last();
-                }
+                if (PathDataHandler.Split(fullPath.Path.FullName, out var actualPath, out _))
+                    targetPath = actualPath.ToString();
 
                 if (Path.IsPathRooted(targetPath))
                 {

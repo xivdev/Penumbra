@@ -236,7 +236,7 @@ public sealed class ResourceWatcher : IDisposable, ITab
             _newRecords.Enqueue(record);
     }
 
-    private unsafe void OnFileLoaded(ResourceHandle* resource, ByteString path, bool success, bool custom, ByteString _)
+    private unsafe void OnFileLoaded(ResourceHandle* resource, ByteString path, bool success, bool custom, ReadOnlySpan<byte> _)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
             Penumbra.Log.Information(

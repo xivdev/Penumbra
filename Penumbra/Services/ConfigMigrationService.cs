@@ -379,7 +379,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, Guid.NewGuid(), ModCollection.DefaultCollectionName, 0, 1, dict, []);
+            // Only used for saving and immediately discarded, so the local collection id here is irrelevant.
+            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, Guid.NewGuid(), ModCollection.DefaultCollectionName, LocalCollectionId.Zero, 0, 1, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)
