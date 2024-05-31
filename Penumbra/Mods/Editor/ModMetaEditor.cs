@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
@@ -14,13 +15,19 @@ public class ModMetaEditor(ModManager modManager)
     private readonly HashSet<RspManipulation>       _rsp       = [];
     private readonly HashSet<GlobalEqpManipulation> _globalEqp = [];
 
-    public int OtherImcCount       { get; private set; }
-    public int OtherEqpCount       { get; private set; }
-    public int OtherEqdpCount      { get; private set; }
-    public int OtherGmpCount       { get; private set; }
-    public int OtherEstCount       { get; private set; }
-    public int OtherRspCount       { get; private set; }
-    public int OtherGlobalEqpCount { get; private set; }
+    public sealed class OtherOptionData : List<string>
+    {
+        public int TotalCount;
+
+        public new void Clear()
+        {
+            TotalCount = 0;
+            base.Clear();
+        }
+    }
+
+    public readonly FrozenDictionary<MetaManipulation.Type, OtherOptionData> OtherData =
+        Enum.GetValues<MetaManipulation.Type>().ToFrozenDictionary(t => t, _ => new OtherOptionData());
 
     public bool Changes { get; private set; }
 
@@ -114,13 +121,9 @@ public class ModMetaEditor(ModManager modManager)
 
     public void Load(Mod mod, IModDataContainer currentOption)
     {
-        OtherImcCount       = 0;
-        OtherEqpCount       = 0;
-        OtherEqdpCount      = 0;
-        OtherGmpCount       = 0;
-        OtherEstCount       = 0;
-        OtherRspCount       = 0;
-        OtherGlobalEqpCount = 0;
+        foreach (var type in Enum.GetValues<MetaManipulation.Type>())
+            OtherData[type].Clear();
+
         foreach (var option in mod.AllDataContainers)
         {
             if (option == currentOption)
@@ -128,30 +131,9 @@ public class ModMetaEditor(ModManager modManager)
 
             foreach (var manip in option.Manipulations)
             {
-                switch (manip.ManipulationType)
-                {
-                    case MetaManipulation.Type.Imc:
-                        ++OtherImcCount;
-                        break;
-                    case MetaManipulation.Type.Eqdp:
-                        ++OtherEqdpCount;
-                        break;
-                    case MetaManipulation.Type.Eqp:
-                        ++OtherEqpCount;
-                        break;
-                    case MetaManipulation.Type.Est:
-                        ++OtherEstCount;
-                        break;
-                    case MetaManipulation.Type.Gmp:
-                        ++OtherGmpCount;
-                        break;
-                    case MetaManipulation.Type.Rsp:
-                        ++OtherRspCount;
-                        break;
-                    case MetaManipulation.Type.GlobalEqp:
-                        ++OtherGlobalEqpCount;
-                        break;
-                }
+                var data = OtherData[manip.ManipulationType];
+                ++data.TotalCount;
+                data.Add(option.GetFullName());
             }
         }
 
