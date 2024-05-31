@@ -321,8 +321,8 @@ public sealed class ModGroupEditDrawer(
          && (!_draggingAcross || (_dragDropGroup != null && group is MultiModGroup { Options.Count: >= IModGroup.MaxMultiOptions })))
             return;
 
-        using var target = ImRaii.DragDropTarget();
-        if (!target.Success || !DragDropTarget.CheckPayload(_draggingAcross ? AcrossGroupsLabel : InsideGroupLabel))
+        using var target = ImUtf8.DragDropTarget();
+        if (!target.IsDropping(_draggingAcross ? AcrossGroupsLabel : InsideGroupLabel))
             return;
 
         if (_dragDropGroup != null && _dragDropOption != null)
