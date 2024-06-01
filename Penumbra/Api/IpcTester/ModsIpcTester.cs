@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -13,16 +14,17 @@ public class ModsIpcTester : IUiService, IDisposable
 {
     private readonly DalamudPluginInterface _pi;
 
-    private string                     _modDirectory   = string.Empty;
-    private string                     _modName        = string.Empty;
-    private string                     _pathInput      = string.Empty;
-    private string                     _newInstallPath = string.Empty;
-    private PenumbraApiEc              _lastReloadEc;
-    private PenumbraApiEc              _lastAddEc;
-    private PenumbraApiEc              _lastDeleteEc;
-    private PenumbraApiEc              _lastSetPathEc;
-    private PenumbraApiEc              _lastInstallEc;
-    private Dictionary<string, string> _mods = [];
+    private string                      _modDirectory   = string.Empty;
+    private string                      _modName        = string.Empty;
+    private string                      _pathInput      = string.Empty;
+    private string                      _newInstallPath = string.Empty;
+    private PenumbraApiEc               _lastReloadEc;
+    private PenumbraApiEc               _lastAddEc;
+    private PenumbraApiEc               _lastDeleteEc;
+    private PenumbraApiEc               _lastSetPathEc;
+    private PenumbraApiEc               _lastInstallEc;
+    private Dictionary<string, string>  _mods         = [];
+    private Dictionary<string, object?> _changedItems = [];
 
     public readonly EventSubscriber<string>         DeleteSubscriber;
     public readonly EventSubscriber<string>         AddSubscriber;
@@ -120,6 +122,14 @@ public class ModsIpcTester : IUiService, IDisposable
         ImGui.SameLine();
         ImGui.TextUnformatted(_lastDeleteEc.ToString());
 
+        IpcTester.DrawIntro(GetChangedItems.Label, "Get Changed Items");
+        DrawChangedItemsPopup();
+        if (ImUtf8.Button("Get##ChangedItems"u8))
+        {
+            _changedItems = new GetChangedItems(_pi).Invoke(_modDirectory, _modName);
+            ImUtf8.OpenPopup("ChangedItems"u8);
+        }
+
         IpcTester.DrawIntro(GetModPath.Label, "Current Path");
         var (ec, path, def, nameDef) = new GetModPath(_pi).Invoke(_modDirectory, _modName);
         ImGui.TextUnformatted($"{path} ({(def ? "Custom" : "Default")} Path, {(nameDef ? "Custom" : "Default")} Name) [{ec}]");
@@ -155,6 +165,20 @@ public class ModsIpcTester : IUiService, IDisposable
             ImGui.TextUnformatted($"{modDir}: {modName}");
 
         if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
+            ImGui.CloseCurrentPopup();
+    }
+
+    private void DrawChangedItemsPopup()
+    {
+        ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
+        using var p = ImUtf8.Popup("ChangedItems"u8);
+        if (!p)
+            return;
+
+        foreach (var (name, data) in _changedItems)
+            ImUtf8.Text($"{name}: {data}");
+
+        if (ImUtf8.Button("Close"u8, -Vector2.UnitX) || !ImGui.IsWindowFocused())
             ImGui.CloseCurrentPopup();
     }
 }

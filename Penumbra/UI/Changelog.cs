@@ -47,19 +47,26 @@ public class PenumbraChangelog
         Add8_2_0(Changelog);
         Add8_3_0(Changelog);
         Add1_0_0_0(Changelog);
-        Add1_0_2_0(Changelog);
-        Add1_0_3_0(Changelog);
+        AddDummy(Changelog);
+        AddDummy(Changelog);
+        Add1_1_0_0(Changelog);
     }
 
     #region Changelogs
 
-    private static void Add1_0_3_0(Changelog log)
-        => log.NextVersion("Version 1.0.3.0")
+    private static void Add1_1_0_0(Changelog log)
+        => log.NextVersion("Version 1.1.0.0")
             .RegisterImportant(
                 "This update comes, again, with a lot of very heavy backend changes (collections and groups) and thus may introduce new issues.")
+            .RegisterEntry("Updated to .net8 and XIV 6.58, using some new framework facilities to improve performance and stability.")
+            .RegisterHighlight(
+                "Added an experimental crash handler that is supposed to write a Penumbra.log file when the game crashes, containing Penumbra-specific information.")
+            .RegisterEntry("This is disabled by default. It can be enabled in Advanced Settings.", 1)
             .RegisterHighlight("Collections now have associated GUIDs as identifiers instead of their names, so they can now be renamed.")
             .RegisterEntry("Migrating those collections may introduce issues, please let me know as soon as possible if you encounter any.", 1)
             .RegisterEntry("A permanent (non-rolling) backup should be created before the migration in case of any issues.",                 1)
+            .RegisterHighlight(
+                "Added predefined tags that can be setup in the Settings tab and can be more easily applied or removed from mods. (by DZD)")
             .RegisterHighlight(
                 "A total rework of how options and groups are handled internally, and introduction of the first new group type, the IMC Group.")
             .RegisterEntry(
@@ -75,9 +82,14 @@ public class PenumbraChangelog
             .RegisterEntry(
                 "This can be used if something like a jacket or a stole is put onto an accessory to prevent it from being hidden in general.",
                 1)
+            .RegisterEntry(
+                "The first empty option in a single-select option group imported from a TTMP will now keep its location instead of being moved to the first option.")
+            .RegisterEntry("Further empty options are still removed.", 1)
             .RegisterHighlight(
                 "Added a field to rename mods directly from the mod selector context menu, instead of moving them in the filesystem.")
             .RegisterEntry("You can choose which rename field (none, either one or both) to display in the settings.", 1)
+            .RegisterEntry("Added the characterglass.shpk shader file to special shader treatment to fix issues when replacing it. (By Ny)")
+            .RegisterEntry("Made it more obvious if a user has not set their root directory yet.")
             .RegisterEntry(
                 "You can now paste your current clipboard text into the mod selector filter with a simple right-click as long as it is not focused.")
             .RegisterHighlight(
@@ -88,29 +100,17 @@ public class PenumbraChangelog
             .RegisterEntry("Removed the auto-generated descriptions for newly created groups in Penumbra.")
             .RegisterEntry(
                 "Made some improvements to the Advanced Editing window, for example a much better and more performant Hex Viewer for unstructured data was added.")
-            .RegisterEntry("Made a lot of further improvements on Model import/export (by ackwell).")
+            .RegisterEntry("Various improvements to model import/export by ackwell (throughout all patches).")
+            .RegisterEntry("Hovering over meta manipulations in other options in the advanced editing window now shows a list of those options.")
             .RegisterEntry("Reworked the API and IPC structure heavily.")
+            .RegisterImportant("This means some plugins interacting with Penumbra may not work correctly until they update.", 1)
             .RegisterEntry("Worked around the UI IPC possibly displacing all settings when the drawn additions became too big.")
+            .RegisterEntry("Fixed an issue where reloading a mod did not ensure settings for that mod being correct afterwards.")
+            .RegisterEntry("Fixed some issues with the file sizes of compressed files.")
             .RegisterEntry("Fixed an issue with merging and deduplicating mods.")
             .RegisterEntry("Fixed a crash when scanning for mods without access rights to the folder.")
             .RegisterEntry(
-                "Made plugin conform to Dalamud requirements by adding a punchline and another button to open the menu from the installer.");
-
-    private static void Add1_0_2_0(Changelog log)
-        => log.NextVersion("Version 1.0.2.0")
-            .RegisterEntry("Updated to .net8 and XIV 6.58, using some new framework facilities to improve performance and stability.")
-            .RegisterHighlight(
-                "Added an experimental crash handler that is supposed to write a Penumbra.log file when the game crashes, containing Penumbra-specific information.")
-            .RegisterEntry("Various improvements to model import/export by ackwell (throughout all patches).")
-            .RegisterHighlight(
-                "Added predefined tags that can be setup in the Settings tab and can be more easily applied or removed from mods. (by DZD)")
-            .RegisterEntry(
-                "The first empty option in a single-select option group imported from a TTMP will now keep its location instead of being moved to the first option.")
-            .RegisterEntry("Further empty options are still removed.", 1)
-            .RegisterEntry("Made it more obvious if a user has not set their root directory yet.")
-            .RegisterEntry("Added the characterglass.shpk shader file to special shader treatment to fix issues when replacing it. (By Ny)")
-            .RegisterEntry("Fixed some issues with the file sizes of compressed files.")
-            .RegisterEntry("Fixed an issue where reloading a mod did not ensure settings for that mod being correct afterwards.")
+                "Made plugin conform to Dalamud requirements by adding a punchline and another button to open the menu from the installer.")
             .RegisterEntry("Added an option to automatically redraw the player character when saving files. (1.0.0.8)")
             .RegisterEntry("Fixed issue with manipulating mods not triggering some events.  (1.0.0.7)")
             .RegisterEntry("Fixed issue with temporary mods not triggering some events.  (1.0.0.6)")
@@ -761,6 +761,9 @@ public class PenumbraChangelog
             .RegisterEntry("Added some additional functionality for Mare Synchronos.");
 
     #endregion
+
+    private static void AddDummy(Changelog log)
+        => log.NextVersion(string.Empty);
 
     private (int, ChangeLogDisplayType) ConfigData()
         => (_config.Ephemeral.LastSeenVersion, _config.ChangeLogDisplayType);

@@ -37,7 +37,7 @@ public class ModMerger : IDisposable
 
     public readonly HashSet<IModDataContainer> SelectedOptions = [];
 
-    public readonly IReadOnlyList<string> Warnings = [];
+    public readonly IReadOnlyList<string> Warnings = new List<string>();
     public          Exception?            Error { get; private set; }
 
     public ModMerger(ModManager mods, ModGroupEditor editor, ModFileSystemSelector selector, DuplicateManager duplicates,

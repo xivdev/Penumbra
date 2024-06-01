@@ -106,8 +106,8 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
         var fullPath      = leaf.FullName();
         var isDefault     = ModFileSystem.ModHasDefaultPath(mod, fullPath);
-        var isNameDefault = isDefault || ModFileSystem.ModHasDefaultPath(mod,                      leaf.Name);
-        return (PenumbraApiEc.Success, fullPath, !isDefault, !isNameDefault );
+        var isNameDefault = isDefault || ModFileSystem.ModHasDefaultPath(mod, leaf.Name);
+        return (PenumbraApiEc.Success, fullPath, !isDefault, !isNameDefault);
     }
 
     public PenumbraApiEc SetModPath(string modDirectory, string modName, string newPath)
@@ -129,4 +129,9 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
             return PenumbraApiEc.PathRenameFailed;
         }
     }
+
+    public Dictionary<string, object?> GetChangedItems(string modDirectory, string modName)
+        => _modManager.TryGetMod(modDirectory, modName, out var mod)
+            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+            : [];
 }

@@ -66,37 +66,45 @@ public partial class ModEditWindow
             return;
 
         DrawEditHeader(_editor.MetaEditor.Eqp, "Equipment Parameter Edits (EQP)###EQP", 5, EqpRow.Draw, EqpRow.DrawNew,
-            _editor.MetaEditor.OtherEqpCount);
+            _editor.MetaEditor.OtherData[MetaManipulation.Type.Eqp]);
         DrawEditHeader(_editor.MetaEditor.Eqdp, "Racial Model Edits (EQDP)###EQDP", 7, EqdpRow.Draw, EqdpRow.DrawNew,
-            _editor.MetaEditor.OtherEqdpCount);
-        DrawEditHeader(_editor.MetaEditor.Imc, "Variant Edits (IMC)###IMC", 10, ImcRow.Draw, ImcRow.DrawNew, _editor.MetaEditor.OtherImcCount);
+            _editor.MetaEditor.OtherData[MetaManipulation.Type.Eqdp]);
+        DrawEditHeader(_editor.MetaEditor.Imc, "Variant Edits (IMC)###IMC", 10, ImcRow.Draw, ImcRow.DrawNew,
+            _editor.MetaEditor.OtherData[MetaManipulation.Type.Imc]);
         DrawEditHeader(_editor.MetaEditor.Est, "Extra Skeleton Parameters (EST)###EST", 7, EstRow.Draw, EstRow.DrawNew,
-            _editor.MetaEditor.OtherEstCount);
+            _editor.MetaEditor.OtherData[MetaManipulation.Type.Est]);
         DrawEditHeader(_editor.MetaEditor.Gmp, "Visor/Gimmick Edits (GMP)###GMP", 7, GmpRow.Draw, GmpRow.DrawNew,
-            _editor.MetaEditor.OtherGmpCount);
+            _editor.MetaEditor.OtherData[MetaManipulation.Type.Gmp]);
         DrawEditHeader(_editor.MetaEditor.Rsp, "Racial Scaling Edits (RSP)###RSP", 5, RspRow.Draw, RspRow.DrawNew,
-            _editor.MetaEditor.OtherRspCount);
+            _editor.MetaEditor.OtherData[MetaManipulation.Type.Rsp]);
         DrawEditHeader(_editor.MetaEditor.GlobalEqp, "Global Equipment Parameter Edits (Global EQP)###GEQP", 4, GlobalEqpRow.Draw,
-            GlobalEqpRow.DrawNew,                    _editor.MetaEditor.OtherGlobalEqpCount);
+            GlobalEqpRow.DrawNew,                    _editor.MetaEditor.OtherData[MetaManipulation.Type.GlobalEqp]);
     }
 
 
     /// <summary> The headers for the different meta changes all have basically the same structure for different types.</summary>
     private void DrawEditHeader<T>(IReadOnlyCollection<T> items, string label, int numColumns,
-        Action<MetaFileManager, T, ModEditor, Vector2> draw,
-        Action<MetaFileManager, ModEditor, Vector2> drawNew, int otherCount)
+        Action<MetaFileManager, T, ModEditor, Vector2> draw, Action<MetaFileManager, ModEditor, Vector2> drawNew,
+        ModMetaEditor.OtherOptionData otherOptionData)
     {
         const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
 
         var oldPos = ImGui.GetCursorPosY();
         var header = ImGui.CollapsingHeader($"{items.Count} {label}");
         var newPos = ImGui.GetCursorPos();
-        if (otherCount > 0)
+        if (otherOptionData.TotalCount > 0)
         {
-            var text = $"{otherCount} Edits in other Options";
+            var text = $"{otherOptionData.TotalCount} Edits in other Options";
             var size = ImGui.CalcTextSize(text).X;
             ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
             ImGuiUtil.TextColored(ColorId.RedundantAssignment.Value() | 0xFF000000, text);
+            if (ImGui.IsItemHovered())
+            {
+                using var tt = ImUtf8.Tooltip();
+                foreach (var name in otherOptionData)
+                    ImUtf8.Text(name);
+            }
+
             ImGui.SetCursorPos(newPos);
         }
 

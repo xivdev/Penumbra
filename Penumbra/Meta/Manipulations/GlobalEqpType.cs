@@ -1,5 +1,9 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
 namespace Penumbra.Meta.Manipulations;
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum GlobalEqpType
 {
     DoNotHideEarrings,
