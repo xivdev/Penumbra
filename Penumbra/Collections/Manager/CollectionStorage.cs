@@ -153,6 +153,9 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// </summary>
     public bool AddCollection(string name, ModCollection? duplicate)
     {
+        if (name.Length == 0)
+            return false;
+
         var newCollection = Create(name, _collections.Count, duplicate);
         _collections.Add(newCollection);
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));

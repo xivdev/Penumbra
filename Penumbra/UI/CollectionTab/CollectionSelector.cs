@@ -109,7 +109,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     }
 
     private string Name(ModCollection collection)
-        => IncognitoMode ? collection.AnonymizedName : collection.Name;
+        => IncognitoMode || collection.Name.Length == 0 ? collection.AnonymizedName : collection.Name;
 
     private void OnCollectionChange(CollectionType type, ModCollection? old, ModCollection? @new, string _3)
     {
