@@ -158,7 +158,7 @@ public class ResourceTreeViewer
         ImGui.SetNextItemWidth(fieldWidth);
         filterChanged |= ImGui.InputTextWithHint("##NodeFilter", "Filter by Item/Part Name or Path...", ref _nodeFilter, 128);
         ImGui.SameLine(0, checkSpacing);
-        _incognito.DrawToggle();
+        _incognito.DrawToggle(ImGui.GetFrameHeightWithSpacing());
 
         if (filterChanged)
             _filterCache.Clear();
