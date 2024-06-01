@@ -154,6 +154,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     public bool AddCollection(string name, ModCollection? duplicate)
     {
         var newCollection = Create(name, _collections.Count, duplicate);
+        _collections.Add(newCollection);
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
         Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
