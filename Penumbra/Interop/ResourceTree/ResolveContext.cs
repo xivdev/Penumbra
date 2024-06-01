@@ -111,12 +111,18 @@ internal unsafe partial record ResolveContext(
         if (resourceHandle == null)
             throw new ArgumentNullException(nameof(resourceHandle));
 
-        var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(resourceHandle), out var p) ? new FullPath(p) : FullPath.Empty;
+        var fileName       = resourceHandle->FileName.AsSpan();
+        var additionalData = ByteString.Empty;
+        if (PathDataHandler.Split(fileName, out fileName, out var data))
+            additionalData = ByteString.FromSpanUnsafe(data, false).Clone();
+
+        var fullPath = Utf8GamePath.FromSpan(fileName, out var p) ? new FullPath(p.Clone()) : FullPath.Empty;
 
         var node = new ResourceNode(type, objectAddress, (nint)resourceHandle, GetResourceHandleLength(resourceHandle), this)
         {
-            GamePath = gamePath,
-            FullPath = fullPath,
+            GamePath       = gamePath,
+            FullPath       = fullPath,
+            AdditionalData = additionalData,
         };
         if (autoAdd)
             Global.Nodes.Add((gamePath, (nint)resourceHandle), node);
@@ -363,21 +369,6 @@ internal unsafe partial record ResolveContext(
     {
         var i = index.GetOffset(array.Length);
         return i >= 0 && i < array.Length ? array[i] : null;
-    }
-
-    internal static ByteString GetResourceHandlePath(ResourceHandle* handle, bool stripPrefix = true)
-    {
-        if (handle == null)
-            return ByteString.Empty;
-
-        var name = handle->FileName.AsByteString();
-        if (name.IsEmpty)
-            return ByteString.Empty;
-
-        if (stripPrefix && PathDataHandler.Split(name.Span, out var path, out _))
-            name = ByteString.FromSpanUnsafe(path, name.IsNullTerminated, name.IsAsciiLowerCase, name.IsAscii);
-
-        return name;
     }
 
     private static ulong GetResourceHandleLength(ResourceHandle* handle)

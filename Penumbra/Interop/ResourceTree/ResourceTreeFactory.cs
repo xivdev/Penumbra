@@ -72,10 +72,10 @@ public class ResourceTreeFactory(
             return null;
 
         var localPlayerRelated = cache.IsLocalPlayerRelated(character);
-        var (name, related) = GetCharacterName(character, cache);
+        var (name, anonymizedName, related) = GetCharacterName(character);
         var networked = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
-        var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
-            networked, collectionResolveData.ModCollection.Name);
+        var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
+            networked, collectionResolveData.ModCollection.Name, collectionResolveData.ModCollection.AnonymizedName);
         var globalContext = new GlobalResolveContext(identifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
         using (var _ = pathState.EnterInternalResolve())
@@ -116,9 +116,6 @@ public class ResourceTreeFactory(
         {
             if (node.Name == parent?.Name)
                 node.Name = null;
-
-            if (parent != null)
-                parent.DescendentIcons |= node.Icon | node.DescendentIcons;
         });
     }
 
@@ -157,26 +154,29 @@ public class ResourceTreeFactory(
         }
     }
 
-    private unsafe (string Name, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character,
-        TreeBuildCache cache)
+    private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character)
     {
         var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
-        switch (identifier.Type)
-        {
-            case IdentifierType.Player: return (identifier.PlayerName.ToString(), true);
-            case IdentifierType.Owned:
-                var ownerChara = objects.Objects.CreateObjectReference(owner) as Dalamud.Game.ClientState.Objects.Types.Character;
-                if (ownerChara != null)
-                {
-                    var ownerName = GetCharacterName(ownerChara, cache);
-                    return ($"[{ownerName.Name}] {character.Name} ({identifier.Kind.ToName()})", ownerName.PlayerRelated);
-                }
-
-                break;
-        }
-
-        return ($"{character.Name} ({identifier.Kind.ToName()})", false);
+        var identifierStr = identifier.ToString();
+        return (identifierStr, identifier.Incognito(identifierStr), IsPlayerRelated(identifier, owner));
     }
+
+    private unsafe bool IsPlayerRelated(Dalamud.Game.ClientState.Objects.Types.Character? character)
+    {
+        if (character == null)
+            return false;
+
+        var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
+        return IsPlayerRelated(identifier, owner);
+    }
+
+    private bool IsPlayerRelated(ActorIdentifier identifier, Actor owner)
+        => identifier.Type switch
+        {
+            IdentifierType.Player => true,
+            IdentifierType.Owned  => IsPlayerRelated(objects.Objects.CreateObjectReference(owner) as Dalamud.Game.ClientState.Objects.Types.Character),
+            _                     => false,
+        };
 
     [Flags]
     public enum Flags

@@ -118,7 +118,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             : validName
                 ? "Add a new option to this group."u8
                 : "Please enter a name for the new option."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, !validName || dis))
+        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, default, !validName || dis))
         {
             editor.ModManager.OptionEditor.ImcEditor.AddOption(group, cache, name);
             editor.NewOptionName = null;

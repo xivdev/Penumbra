@@ -59,7 +59,7 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
         var validName = name.Length > 0;
         if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
                 ? "Add a new option to this group."u8
-                : "Please enter a name for the new option."u8, !validName))
+                : "Please enter a name for the new option."u8, default, !validName))
         {
             editor.ModManager.OptionEditor.SingleEditor.AddOption(group, name);
             editor.NewOptionName = null;

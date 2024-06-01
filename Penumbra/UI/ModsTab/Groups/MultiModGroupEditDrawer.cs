@@ -54,7 +54,7 @@ public readonly struct MultiModGroupEditDrawer(ModGroupEditDrawer editor, MultiM
         var validName = name.Length > 0;
         if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
                 ? "Add a new option to this group."u8
-                : "Please enter a name for the new option."u8, !validName))
+                : "Please enter a name for the new option."u8, default, !validName))
         {
             editor.ModManager.OptionEditor.MultiEditor.AddOption(group, name);
             editor.NewOptionName = null;

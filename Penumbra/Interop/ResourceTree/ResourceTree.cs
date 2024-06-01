@@ -15,6 +15,7 @@ namespace Penumbra.Interop.ResourceTree;
 public class ResourceTree
 {
     public readonly string                Name;
+    public readonly string                AnonymizedName;
     public readonly int                   GameObjectIndex;
     public readonly nint                  GameObjectAddress;
     public readonly nint                  DrawObjectAddress;
@@ -22,6 +23,7 @@ public class ResourceTree
     public readonly bool                  PlayerRelated;
     public readonly bool                  Networked;
     public readonly string                CollectionName;
+    public readonly string                AnonymizedCollectionName;
     public readonly List<ResourceNode>    Nodes;
     public readonly HashSet<ResourceNode> FlatNodes;
 
@@ -29,18 +31,20 @@ public class ResourceTree
     public CustomizeData CustomizeData;
     public GenderRace    RaceCode;
 
-    public ResourceTree(string name, int gameObjectIndex, nint gameObjectAddress, nint drawObjectAddress, bool localPlayerRelated, bool playerRelated, bool networked, string collectionName)
+    public ResourceTree(string name, string anonymizedName, int gameObjectIndex, nint gameObjectAddress, nint drawObjectAddress, bool localPlayerRelated, bool playerRelated, bool networked, string collectionName, string anonymizedCollectionName)
     {
-        Name               = name;
-        GameObjectIndex    = gameObjectIndex;
-        GameObjectAddress  = gameObjectAddress;
-        DrawObjectAddress  = drawObjectAddress;
-        LocalPlayerRelated = localPlayerRelated;
-        Networked          = networked;
-        PlayerRelated      = playerRelated;
-        CollectionName     = collectionName;
-        Nodes              = new List<ResourceNode>();
-        FlatNodes          = new HashSet<ResourceNode>();
+        Name                     = name;
+        AnonymizedName           = anonymizedName;
+        GameObjectIndex          = gameObjectIndex;
+        GameObjectAddress        = gameObjectAddress;
+        DrawObjectAddress        = drawObjectAddress;
+        LocalPlayerRelated       = localPlayerRelated;
+        Networked                = networked;
+        PlayerRelated            = playerRelated;
+        CollectionName           = collectionName;
+        AnonymizedCollectionName = anonymizedCollectionName;
+        Nodes                    = new List<ResourceNode>();
+        FlatNodes                = new HashSet<ResourceNode>();
     }
 
     public void ProcessPostfix(Action<ResourceNode, ResourceNode?> action)

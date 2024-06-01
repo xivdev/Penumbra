@@ -585,7 +585,8 @@ public partial class ModEditWindow : Window, IDisposable
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
-        ChangedItemDrawer changedItemDrawer, ObjectManager objects, IFramework framework, CharacterBaseDestructor characterBaseDestructor)
+        ResourceTreeViewerFactory resourceTreeViewerFactory, ObjectManager objects, IFramework framework,
+        CharacterBaseDestructor characterBaseDestructor)
         : base(WindowBaseLabel)
     {
         _performance             = performance;
@@ -618,8 +619,7 @@ public partial class ModEditWindow : Window, IDisposable
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;
-        _quickImportViewer =
-            new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
+        _quickImportViewer   = resourceTreeViewerFactory.Create(2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
         IsOpen = _config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true };
     }
