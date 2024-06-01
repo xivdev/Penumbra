@@ -15,7 +15,7 @@ public class ModMetaEditor(ModManager modManager)
     private readonly HashSet<RspManipulation>       _rsp       = [];
     private readonly HashSet<GlobalEqpManipulation> _globalEqp = [];
 
-    public sealed class OtherOptionData : List<string>
+    public sealed class OtherOptionData : HashSet<string>
     {
         public int TotalCount;
 
