@@ -44,10 +44,10 @@ public struct GlobalEqpCache : IService
         if (_doNotHideBracelets.Contains(armor[7].Set))
             original |= EqpEntry.BodyShowBracelet | EqpEntry.HandShowBracelet;
 
-        if (_doNotHideBracelets.Contains(armor[8].Set))
+        if (_doNotHideRingR.Contains(armor[8].Set))
             original |= EqpEntry.HandShowRingR;
 
-        if (_doNotHideBracelets.Contains(armor[9].Set))
+        if (_doNotHideRingL.Contains(armor[9].Set))
             original |= EqpEntry.HandShowRingL;
         return original;
     }
