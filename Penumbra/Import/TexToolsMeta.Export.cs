@@ -133,7 +133,7 @@ public partial class TexToolsMeta
         {
             case MetaManipulation.Type.Imc:
                 var allManips = manips.ToList();
-                var baseFile  = new ImcFile(manager, allManips[0].Imc);
+                var baseFile  = new ImcFile(manager, allManips[0].Imc.Identifier);
                 foreach (var manip in allManips)
                     manip.Imc.Apply(baseFile);
 

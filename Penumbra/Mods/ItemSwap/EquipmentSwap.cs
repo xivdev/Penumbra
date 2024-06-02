@@ -51,7 +51,7 @@ public static class EquipmentSwap
 
         var (imcFileFrom, variants, affectedItems) = GetVariants(manager, identifier, slotFrom, idFrom, idTo, variantFrom);
         var imcManip      = new ImcManipulation(slotTo, variantTo.Id, idTo.Id, default);
-        var imcFileTo     = new ImcFile(manager, imcManip);
+        var imcFileTo     = new ImcFile(manager, imcManip.Identifier);
         var skipFemale    = false;
         var skipMale      = false;
         var mtrlVariantTo = manips(imcManip.Copy(imcFileTo.GetEntry(ImcFile.PartIndex(slotTo), variantTo.Id))).Imc.Entry.MaterialId;
@@ -121,7 +121,7 @@ public static class EquipmentSwap
         {
             (var imcFileFrom, var variants, affectedItems) = GetVariants(manager, identifier, slot, idFrom, idTo, variantFrom);
             var imcManip  = new ImcManipulation(slot, variantTo.Id, idTo, default);
-            var imcFileTo = new ImcFile(manager, imcManip);
+            var imcFileTo = new ImcFile(manager, imcManip.Identifier);
 
             var isAccessory = slot.IsAccessory();
             var estType = slot switch
@@ -250,7 +250,7 @@ public static class EquipmentSwap
         PrimaryId idFrom, PrimaryId idTo, Variant variantFrom)
     {
         var         entry = new ImcManipulation(slotFrom, variantFrom.Id, idFrom, default);
-        var         imc   = new ImcFile(manager, entry);
+        var         imc   = new ImcFile(manager, entry.Identifier);
         EquipItem[] items;
         Variant[]   variants;
         if (idFrom == idTo)

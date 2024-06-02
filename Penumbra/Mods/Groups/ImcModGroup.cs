@@ -6,6 +6,7 @@ using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -31,6 +32,8 @@ public class ImcModGroup(Mod mod) : IModGroup
 
     public ImcIdentifier Identifier;
     public ImcEntry      DefaultEntry;
+    public bool          AllVariants;
+
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
         => null;
@@ -39,7 +42,7 @@ public class ImcModGroup(Mod mod) : IModGroup
 
     public bool CanBeDisabled
     {
-        get => OptionData.Any(m => m.IsDisableSubMod);
+        get => _canBeDisabled;
         set
         {
             _canBeDisabled = value;
@@ -92,8 +95,8 @@ public class ImcModGroup(Mod mod) : IModGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new ImcModGroupEditDrawer(editDrawer, this);
 
-    public ImcManipulation GetManip(ushort mask)
-        => new(Identifier.ObjectType, Identifier.BodySlot, Identifier.PrimaryId, Identifier.SecondaryId.Id, Identifier.Variant.Id,
+    public ImcManipulation GetManip(ushort mask, Variant variant)
+        => new(Identifier.ObjectType, Identifier.BodySlot, Identifier.PrimaryId, Identifier.SecondaryId.Id, variant.Id,
             Identifier.EquipSlot, DefaultEntry with { AttributeMask = mask });
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
@@ -102,12 +105,23 @@ public class ImcModGroup(Mod mod) : IModGroup
             return;
 
         var mask = GetCurrentMask(setting);
-        var imc  = GetManip(mask);
-        manipulations.Add(imc);
+        if (AllVariants)
+        {
+            var count = ImcChecker.GetVariantCount(Identifier);
+            if (count == 0)
+                manipulations.Add(GetManip(mask, Identifier.Variant));
+            else
+                for (var i = 0; i <= count; ++i)
+                    manipulations.Add(GetManip(mask, (Variant)i));
+        }
+        else
+        {
+            manipulations.Add(GetManip(mask, Identifier.Variant));
+        }
     }
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
-        => Identifier.AddChangedItems(identifier, changedItems);
+        => Identifier.AddChangedItems(identifier, changedItems, AllVariants);
 
     public Setting FixSetting(Setting setting)
         => new(setting.Value & ((1ul << OptionData.Count) - 1));
@@ -120,6 +134,8 @@ public class ImcModGroup(Mod mod) : IModGroup
         jObj.WriteTo(jWriter);
         jWriter.WritePropertyName(nameof(DefaultEntry));
         serializer.Serialize(jWriter, DefaultEntry);
+        jWriter.WritePropertyName(nameof(AllVariants));
+        jWriter.WriteValue(AllVariants);
         jWriter.WritePropertyName("Options");
         jWriter.WriteStartArray();
         foreach (var option in OptionData)
@@ -156,6 +172,7 @@ public class ImcModGroup(Mod mod) : IModGroup
             Description  = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
             Priority     = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultEntry = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
+            AllVariants  = json[nameof(AllVariants)]?.ToObject<bool>() ?? false,
         };
         if (ret.Name.Length == 0)
             return null;
@@ -210,7 +227,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         if (idx >= 0)
             return setting.HasFlag(idx);
 
-        Penumbra.Log.Warning($"A IMC Group should be able to be disabled, but does not contain a disable option.");
+        Penumbra.Log.Warning("A IMC Group should be able to be disabled, but does not contain a disable option.");
         return false;
     }
 

@@ -110,7 +110,7 @@ public partial class TexToolsMeta
             var manip = new ImcManipulation(metaFileInfo.PrimaryType, metaFileInfo.SecondaryType, metaFileInfo.PrimaryId,
                 metaFileInfo.SecondaryId, i, metaFileInfo.EquipSlot,
                 new ImcEntry());
-            var def     = new ImcFile(_metaFileManager, manip);
+            var def     = new ImcFile(_metaFileManager, manip.Identifier);
             var partIdx = ImcFile.PartIndex(manip.EquipSlot); // Gets turned to unknown for things without equip, and unknown turns to 0.
             foreach (var value in values)
             {

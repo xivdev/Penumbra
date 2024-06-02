@@ -9,20 +9,20 @@ namespace Penumbra.Meta.Files;
 
 public class ImcException : Exception
 {
-    public readonly ImcManipulation Manipulation;
-    public readonly string          GamePath;
+    public readonly ImcIdentifier Identifier;
+    public readonly string        GamePath;
 
-    public ImcException(ImcManipulation manip, Utf8GamePath path)
+    public ImcException(ImcIdentifier identifier, Utf8GamePath path)
     {
-        Manipulation = manip;
-        GamePath     = path.ToString();
+        Identifier = identifier;
+        GamePath   = path.ToString();
     }
 
     public override string Message
         => "Could not obtain default Imc File.\n"
           + "        Either the default file does not exist (possibly for offhand files from TexTools) or the installation is corrupted.\n"
           + $"        Game Path:  {GamePath}\n"
-          + $"        Manipulation: {Manipulation}";
+          + $"        Manipulation: {Identifier}";
 }
 
 public unsafe class ImcFile : MetaBaseFile
@@ -142,13 +142,14 @@ public unsafe class ImcFile : MetaBaseFile
         }
     }
 
-    public ImcFile(MetaFileManager manager, ImcManipulation manip)
+    public ImcFile(MetaFileManager manager, ImcIdentifier identifier)
         : base(manager, 0)
     {
-        Path = manip.GamePath();
-        var file = manager.GameData.GetFile(Path.ToString());
+        var path = identifier.GamePathString();
+        Path = Utf8GamePath.FromString(path, out var p) ? p : Utf8GamePath.Empty;
+        var file = manager.GameData.GetFile(path);
         if (file == null)
-            throw new ImcException(manip, Path);
+            throw new ImcException(identifier, Path);
 
         fixed (byte* ptr = file.Data)
         {

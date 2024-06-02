@@ -31,12 +31,16 @@ public readonly record struct ImcIdentifier(
         => new(ObjectType, BodySlot, PrimaryId, SecondaryId.Id, Variant.Id, EquipSlot, entry);
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+        => AddChangedItems(identifier, changedItems, false);
+
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems, bool allVariants)
     {
         var path = ObjectType switch
         {
-            ObjectType.Equipment or ObjectType.Accessory => GamePaths.Equipment.Mtrl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot,
-                Variant,
-                "a"),
+            ObjectType.Equipment when allVariants => GamePaths.Equipment.Mdl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
+            ObjectType.Equipment => GamePaths.Equipment.Mtrl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
+            ObjectType.Accessory when allVariants => GamePaths.Accessory.Mdl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
+            ObjectType.Accessory => GamePaths.Accessory.Mtrl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
             ObjectType.Weapon => GamePaths.Weapon.Mtrl.Path(PrimaryId, SecondaryId.Id, Variant, "a"),
             ObjectType.DemiHuman => GamePaths.DemiHuman.Mtrl.Path(PrimaryId, SecondaryId.Id, EquipSlot, Variant,
                 "a"),
@@ -49,24 +53,19 @@ public readonly record struct ImcIdentifier(
         identifier.Identify(changedItems, path);
     }
 
-    public Utf8GamePath GamePath()
-    {
-        return ObjectType switch
+    public string GamePathString()
+        => ObjectType switch
         {
-            ObjectType.Accessory => Utf8GamePath.FromString(GamePaths.Accessory.Imc.Path(PrimaryId), out var p) ? p : Utf8GamePath.Empty,
-            ObjectType.Equipment => Utf8GamePath.FromString(GamePaths.Equipment.Imc.Path(PrimaryId), out var p) ? p : Utf8GamePath.Empty,
-            ObjectType.DemiHuman => Utf8GamePath.FromString(GamePaths.DemiHuman.Imc.Path(PrimaryId, SecondaryId.Id), out var p)
-                ? p
-                : Utf8GamePath.Empty,
-            ObjectType.Monster => Utf8GamePath.FromString(GamePaths.Monster.Imc.Path(PrimaryId, SecondaryId.Id), out var p)
-                ? p
-                : Utf8GamePath.Empty,
-            ObjectType.Weapon => Utf8GamePath.FromString(GamePaths.Weapon.Imc.Path(PrimaryId, SecondaryId.Id), out var p)
-                ? p
-                : Utf8GamePath.Empty,
-            _ => throw new NotImplementedException(),
+            ObjectType.Accessory => GamePaths.Accessory.Imc.Path(PrimaryId),
+            ObjectType.Equipment => GamePaths.Equipment.Imc.Path(PrimaryId),
+            ObjectType.DemiHuman => GamePaths.DemiHuman.Imc.Path(PrimaryId, SecondaryId.Id),
+            ObjectType.Monster   => GamePaths.Monster.Imc.Path(PrimaryId, SecondaryId.Id),
+            ObjectType.Weapon    => GamePaths.Weapon.Imc.Path(PrimaryId, SecondaryId.Id),
+            _                    => string.Empty,
         };
-    }
+
+    public Utf8GamePath GamePath()
+        => Utf8GamePath.FromString(GamePathString(), out var p) ? p : Utf8GamePath.Empty;
 
     public MetaIndex FileIndex()
         => (MetaIndex)(-1);

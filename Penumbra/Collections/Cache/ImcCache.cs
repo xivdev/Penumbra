@@ -51,7 +51,7 @@ public readonly struct ImcCache : IDisposable
         try
         {
             if (!_imcFiles.TryGetValue(path, out var file))
-                file = new ImcFile(manager, manip);
+                file = new ImcFile(manager, manip.Identifier);
 
             _imcManipulations[idx] = (manip, file);
             if (!manip.Apply(file))
