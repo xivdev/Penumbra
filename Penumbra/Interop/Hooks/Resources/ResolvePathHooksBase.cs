@@ -182,7 +182,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
     {
-        if (slotIndex <= 4)
+        if (slotIndex is <= 4 or >= 10)
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
         var changedEquipData = ((Human*)drawObject)->ChangedEquipData;
