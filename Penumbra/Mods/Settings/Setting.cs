@@ -85,6 +85,24 @@ public readonly record struct Setting(ulong Value)
 
         public override Setting ReadJson(JsonReader reader, Type objectType, Setting existingValue, bool hasExistingValue,
             JsonSerializer serializer)
-            => new(serializer.Deserialize<ulong>(reader));
+        {
+            try
+            {
+                return new Setting(serializer.Deserialize<ulong>(reader));
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Warning($"Could not deserialize setting {reader.Value} to unsigned long:\n{e}");
+                try
+                {
+                    return new Setting((ulong)serializer.Deserialize<long>(reader));
+                }
+                catch
+                {
+                    Penumbra.Log.Warning($"Could not deserialize setting {reader.Value} to long:\n{e}");
+                    return Zero;
+                }
+            }
+        }
     }
 }
