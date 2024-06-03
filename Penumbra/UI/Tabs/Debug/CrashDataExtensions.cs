@@ -96,7 +96,7 @@ public static class CrashDataExtensions
         if (!table)
             return;
 
-        ImGuiClip.ClippedDraw(data.LastVfxFuncsInvoked, vfx =>
+        ImGuiClip.ClippedDraw(data.LastVFXFuncsInvoked, vfx =>
         {
             ImGuiUtil.DrawTableColumn(vfx.Age.ToString(CultureInfo.InvariantCulture));
             ImGuiUtil.DrawTableColumn(vfx.ThreadId.ToString());

@@ -287,7 +287,7 @@ public sealed class CrashHandlerService : IDisposable, IService
 
         try
         {
-            if (PathDataHandler.Split(manipulatedPath.Value.FullName, out var actualPath, out _) && Path.IsPathRooted(actualPath))
+            if (PathDataHandler.Split(manipulatedPath.Value.FullName, out var actualPath, out _) && !Path.IsPathRooted(actualPath))
                 return;
 
             var name = GetActorName(resolveData.AssociatedGameObject);

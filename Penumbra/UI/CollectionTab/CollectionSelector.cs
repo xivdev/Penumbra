@@ -44,7 +44,9 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         if (idx < 0 || idx >= Items.Count)
             return false;
 
-        return _storage.RemoveCollection(Items[idx]);
+        // Always return false since we handle the selection update ourselves.
+        _storage.RemoveCollection(Items[idx]);
+        return false;
     }
 
     protected override bool DeleteButtonEnabled()
@@ -111,6 +113,15 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     private string Name(ModCollection collection)
         => _incognito.IncognitoMode || collection.Name.Length == 0 ? collection.AnonymizedName : collection.Name;
 
+    public void RestoreCollections()
+    {
+        Items.Clear();
+        foreach (var c in _storage.OrderBy(c => c.Name))
+            Items.Add(c);
+        SetFilterDirty();
+        SetCurrent(_active.Current);
+    }
+
     private void OnCollectionChange(CollectionType type, ModCollection? old, ModCollection? @new, string _3)
     {
         switch (type)
@@ -122,14 +133,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
                 SetFilterDirty();
                 return;
             case CollectionType.Inactive:
-                Items.Clear();
-                foreach (var c in _storage.OrderBy(c => c.Name))
-                    Items.Add(c);
-
-                if (old == Current)
-                    ClearCurrentSelection();
-                else
-                    TryRestoreCurrent();
+                RestoreCollections();
                 SetFilterDirty();
                 return;
             default:

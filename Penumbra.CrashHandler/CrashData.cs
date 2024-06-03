@@ -55,7 +55,7 @@ public class CrashData
 
     /// <summary> The last vfx function invoked before this crash data was generated. </summary>
     public VfxFuncInvokedEntry? LastVfxFuncInvoked
-        => LastVfxFuncsInvoked.Count == 0 ? default : LastVfxFuncsInvoked[0];
+        => LastVFXFuncsInvoked.Count == 0 ? default : LastVFXFuncsInvoked[0];
 
     /// <summary> A collection of the last few characters loaded before this crash data was generated. </summary>
     public List<CharacterLoadedEntry> LastCharactersLoaded { get; set; } = [];
@@ -64,5 +64,5 @@ public class CrashData
     public List<ModdedFileLoadedEntry> LastModdedFilesLoaded { get; set; } = [];
 
     /// <summary> A collection of the last few vfx functions invoked before this crash data was generated. </summary>
-    public List<VfxFuncInvokedEntry> LastVfxFuncsInvoked { get; set; } = [];
+    public List<VfxFuncInvokedEntry> LastVFXFuncsInvoked { get; set; } = [];
 }

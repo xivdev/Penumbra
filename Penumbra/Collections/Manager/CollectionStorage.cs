@@ -181,6 +181,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             return false;
         }
 
+        Delete(collection);
         _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
         _collections.RemoveAt(collection.Index);
         // Update indices.

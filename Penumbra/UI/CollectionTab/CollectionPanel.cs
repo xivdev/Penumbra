@@ -20,19 +20,23 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.CollectionTab;
 
-public sealed class CollectionPanel : IDisposable
+public sealed class CollectionPanel(
+    DalamudPluginInterface pi,
+    CommunicatorService communicator,
+    CollectionManager manager,
+    CollectionSelector selector,
+    ActorManager actors,
+    ITargetManager targets,
+    ModStorage mods,
+    SaveService saveService,
+    IncognitoService incognito)
+    : IDisposable
 {
-    private readonly CollectionStorage      _collections;
-    private readonly ActiveCollections      _active;
-    private readonly CollectionSelector     _selector;
-    private readonly ActorManager           _actors;
-    private readonly ITargetManager         _targets;
-    private readonly IndividualAssignmentUi _individualAssignmentUi;
-    private readonly InheritanceUi          _inheritanceUi;
-    private readonly ModStorage             _mods;
-    private readonly FilenameService        _fileNames;
-    private readonly IncognitoService       _incognito;
-    private readonly IFontHandle            _nameFont;
+    private readonly CollectionStorage _collections = manager.Storage;
+    private readonly ActiveCollections _active = manager.Active;
+    private readonly IndividualAssignmentUi _individualAssignmentUi = new(communicator, actors, manager);
+    private readonly InheritanceUi _inheritanceUi = new(manager, incognito);
+    private readonly IFontHandle _nameFont = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
 
     private static readonly IReadOnlyDictionary<CollectionType, (string Name, uint Border)> Buttons      = CreateButtons();
     private static readonly IReadOnlyList<(CollectionType, bool, bool, string, uint)>       AdvancedTree = CreateTree();
@@ -40,23 +44,6 @@ public sealed class CollectionPanel : IDisposable
     private                 string?                                                         _newName;
 
     private int _draggedIndividualAssignment = -1;
-
-    public CollectionPanel(DalamudPluginInterface pi, CommunicatorService communicator, CollectionManager manager,
-        CollectionSelector selector, ActorManager actors, ITargetManager targets, ModStorage mods, FilenameService fileNames,
-        IncognitoService incognito)
-    {
-        _collections            = manager.Storage;
-        _active                 = manager.Active;
-        _selector               = selector;
-        _actors                 = actors;
-        _targets                = targets;
-        _mods                   = mods;
-        _fileNames              = fileNames;
-        _incognito              = incognito;
-        _individualAssignmentUi = new IndividualAssignmentUi(communicator, actors, manager);
-        _inheritanceUi          = new InheritanceUi(manager, incognito);
-        _nameFont               = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
-    }
 
     public void Dispose()
     {
@@ -237,17 +224,22 @@ public sealed class CollectionPanel : IDisposable
         var       name       = _newName ?? collection.Name;
         var       identifier = collection.Identifier;
         var       width      = ImGui.GetContentRegionAvail().X;
-        var       fileName   = _fileNames.CollectionFile(collection);
+        var       fileName   = saveService.FileNames.CollectionFile(collection);
         ImGui.SetNextItemWidth(width);
         if (ImGui.InputText("##name", ref name, 128))
             _newName = name;
-        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null)
+        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Name)
         {
             collection.Name = _newName;
-            _newName        = null;
+            saveService.QueueSave(new ModCollectionSave(mods, collection));
+            selector.RestoreCollections();
+            _newName = null;
         }
         else if (ImGui.IsItemDeactivated())
+        {
             _newName = null;
+        }
+
         using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
             if (ImGui.Button(collection.Identifier, new Vector2(width, 0)))
@@ -329,7 +321,7 @@ public sealed class CollectionPanel : IDisposable
         DrawIndividualDragTarget(text, id);
         if (!invalid)
         {
-            _selector.DragTargetAssignment(type, id);
+            selector.DragTargetAssignment(type, id);
             var name    = Name(collection);
             var size    = ImGui.CalcTextSize(name);
             var textPos = ImGui.GetItemRectMax() - size - ImGui.GetStyle().FramePadding;
@@ -418,7 +410,7 @@ public sealed class CollectionPanel : IDisposable
 
     /// <summary> Respect incognito mode for names of identifiers. </summary>
     private string Name(ActorIdentifier id, string? name)
-        => _incognito.IncognitoMode && id.Type is IdentifierType.Player or IdentifierType.Owned
+        => incognito.IncognitoMode && id.Type is IdentifierType.Player or IdentifierType.Owned
             ? id.Incognito(name)
             : name ?? id.ToString();
 
@@ -426,7 +418,7 @@ public sealed class CollectionPanel : IDisposable
     private string Name(ModCollection? collection)
         => collection == null                 ? "Unassigned" :
             collection == ModCollection.Empty ? "Use No Mods" :
-            _incognito.IncognitoMode          ? collection.AnonymizedName : collection.Name;
+            incognito.IncognitoMode           ? collection.AnonymizedName : collection.Name;
 
     private void DrawIndividualButton(string intro, Vector2 width, string tooltip, char suffix, params ActorIdentifier[] identifiers)
     {
@@ -445,11 +437,11 @@ public sealed class CollectionPanel : IDisposable
     }
 
     private void DrawCurrentCharacter(Vector2 width)
-        => DrawIndividualButton("Current Character", width, string.Empty, 'c', _actors.GetCurrentPlayer());
+        => DrawIndividualButton("Current Character", width, string.Empty, 'c', actors.GetCurrentPlayer());
 
     private void DrawCurrentTarget(Vector2 width)
         => DrawIndividualButton("Current Target", width, string.Empty, 't',
-            _actors.FromObject(_targets.Target, false, true, true));
+            actors.FromObject(targets.Target, false, true, true));
 
     private void DrawNewPlayer(Vector2 width)
         => DrawIndividualButton("New Player", width, _individualAssignmentUi.PlayerTooltip, 'p',
@@ -610,7 +602,7 @@ public sealed class CollectionPanel : IDisposable
         ImGui.TableSetupColumn("State",          ImGuiTableColumnFlags.WidthFixed, 1.75f * ImGui.GetFrameHeight());
         ImGui.TableSetupColumn("Priority",       ImGuiTableColumnFlags.WidthFixed, 2.5f * ImGui.GetFrameHeight());
         ImGui.TableHeadersRow();
-        foreach (var (mod, (settings, parent)) in _mods.Select(m => (m, collection[m.Index]))
+        foreach (var (mod, (settings, parent)) in mods.Select(m => (m, collection[m.Index]))
                      .Where(t => t.Item2.Settings != null)
                      .OrderBy(t => t.m.Name))
         {

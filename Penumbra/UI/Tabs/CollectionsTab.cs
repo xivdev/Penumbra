@@ -1,16 +1,12 @@
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using ImGuiNET;
-using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.UI.Classes;
 using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
@@ -42,13 +38,13 @@ public sealed class CollectionsTab : IDisposable, ITab
     }
 
     public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
-        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, FilenameService fileNames)
+        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, SaveService saveService)
     {
         _config    = configuration.Ephemeral;
         _tutorial  = tutorial;
         _incognito = incognito;
         _selector  = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial, incognito);
-        _panel     = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage, fileNames, incognito);
+        _panel     = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage, saveService, incognito);
     }
 
     public void Dispose()

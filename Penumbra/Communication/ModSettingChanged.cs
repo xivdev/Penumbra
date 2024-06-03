@@ -24,7 +24,7 @@ public sealed class ModSettingChanged()
 {
     public enum Priority
     {
-        /// <seealso cref="PenumbraApi.OnModSettingChange"/>
+        /// <seealso cref="ModSettingsApi.OnModSettingChange"/>
         Api = int.MinValue,
 
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModSettingChange"/>
