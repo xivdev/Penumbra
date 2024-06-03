@@ -758,6 +758,7 @@ public partial class ModEditWindow
 
             if (IdInput("##geqpCond", 100 * ImUtf8.GlobalScale, _new.Condition.Id, out var newId, 1, ushort.MaxValue, _new.Condition.Id <= 1))
                 _new = _new with { Condition = newId };
+            ImUtf8.HoverTooltip("The Model ID for the item that should not be hidden."u8);
         }
 
         public static void Draw(MetaFileManager metaFileManager, GlobalEqpManipulation meta, ModEditor editor, Vector2 iconSize)
