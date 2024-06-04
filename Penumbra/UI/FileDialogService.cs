@@ -101,7 +101,7 @@ public class FileDialogService : IDisposable
 
     private static string HandleRoot(string path)
     {
-        if (path.Length == 2 && path[1] == ':')
+        if (path is [_, ':'])
             return path + '\\';
 
         return path;
