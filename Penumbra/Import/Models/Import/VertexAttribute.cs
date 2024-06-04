@@ -150,6 +150,12 @@ public class VertexAttribute
                 {
                     var convertedValues = byteValues.Select(value => value * (1f / 255f)).ToArray();
                     var closestIndex = Enumerable.Range(0, 4)
+                        .Where(index => {
+                            var byteValue = byteValues[index];
+                            if (adjustment < 0) return byteValue > 0;
+                            if (adjustment > 0) return byteValue < 255;
+                            return true;
+                        })
                         .Select(index => (index, delta: Math.Abs(originalValues[index] - convertedValues[index])))
                         .MinBy(x => x.delta)
                         .index;
