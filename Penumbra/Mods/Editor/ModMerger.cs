@@ -105,7 +105,7 @@ public class ModMerger : IDisposable
                 throw new Exception(
                     $"The merged group {originalGroup.Name} already existed, but had a different type than the original group of type {originalGroup.Type}.");
 
-            foreach (var originalOption in group.DataContainers)
+            foreach (var originalOption in originalGroup.DataContainers)
             {
                 var (option, _, optionCreated) = _editor.FindOrAddOption(group, originalOption.GetName());
                 if (optionCreated)
