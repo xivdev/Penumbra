@@ -640,7 +640,7 @@ public partial class ModEditWindow
             ImGui.SameLine();
             if (IntDragInput("##gmpUnkB",  $"Animation Type B?\nDefault Value: {defaultEntry.UnknownB}", UnkWidth, meta.Entry.UnknownB,
                     defaultEntry.UnknownB, out var unkB,                                                 0,        15, 0.01f))
-                editor.MetaEditor.Change(meta.Copy(meta.Entry with { UnknownA = (byte)unkB }));
+                editor.MetaEditor.Change(meta.Copy(meta.Entry with { UnknownB = (byte)unkB }));
         }
     }
 
