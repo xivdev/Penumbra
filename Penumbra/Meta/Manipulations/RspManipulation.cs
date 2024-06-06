@@ -9,25 +9,25 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct RspManipulation : IMetaManipulation<RspManipulation>
 {
-    public const float MinValue = 0.01f;
-    public const float MaxValue = 512f;
-    public       float Entry { get; private init; }
+    public RspIdentifier Identifier { get; private init; }
+    public RspEntry      Entry      { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public SubRace SubRace { get; private init; }
+    public SubRace SubRace
+        => Identifier.SubRace;
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public RspAttribute Attribute { get; private init; }
+    public RspAttribute Attribute
+        => Identifier.Attribute;
 
     [JsonConstructor]
-    public RspManipulation(SubRace subRace, RspAttribute attribute, float entry)
+    public RspManipulation(SubRace subRace, RspAttribute attribute, RspEntry entry)
     {
-        Entry     = entry;
-        SubRace   = subRace;
-        Attribute = attribute;
+        Entry      = entry;
+        Identifier = new RspIdentifier(subRace, attribute);
     }
 
-    public RspManipulation Copy(float entry)
+    public RspManipulation Copy(RspEntry entry)
         => new(SubRace, Attribute, entry);
 
     public override string ToString()
@@ -68,7 +68,7 @@ public readonly struct RspManipulation : IMetaManipulation<RspManipulation>
             return false;
         if (!Enum.IsDefined(Attribute))
             return false;
-        if (Entry is < MinValue or > MaxValue)
+        if (Entry.Value is < RspEntry.MinValue or > RspEntry.MaxValue)
             return false;
 
         return true;

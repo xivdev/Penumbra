@@ -188,7 +188,7 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public MetaList.MetaReverter TemporarilySetCmpFile()
         => _cmpCache.TemporarilySetFiles(_manager);
 
-    public MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
+    public MetaList.MetaReverter TemporarilySetEstFile(EstType type)
         => _estCache.TemporarilySetFiles(_manager, type);
 
     public unsafe EqpEntry ApplyGlobalEqp(EqpEntry baseEntry, CharacterArmor* armor)
@@ -208,7 +208,7 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
         return Meta.Files.ExpandedEqdpFile.GetDefault(_manager, race, accessory, primaryId);
     }
 
-    internal ushort GetEstEntry(EstManipulation.EstType type, GenderRace genderRace, PrimaryId primaryId)
+    internal EstEntry GetEstEntry(EstType type, GenderRace genderRace, PrimaryId primaryId)
         => _estCache.GetEstEntry(_manager, type, genderRace, primaryId);
 
     /// <summary> Use this when CharacterUtility becomes ready. </summary>

@@ -250,30 +250,30 @@ internal partial record ResolveContext
                         _                       => 0,
                     };
                 }
-                return ResolveHumanExtraSkeletonData(characterRaceCode, EstManipulation.EstType.Face, faceId);
+                return ResolveHumanExtraSkeletonData(characterRaceCode, EstType.Face, faceId);
             case 2:
-                return ResolveHumanExtraSkeletonData(characterRaceCode, EstManipulation.EstType.Hair, human->HairId);
+                return ResolveHumanExtraSkeletonData(characterRaceCode, EstType.Hair, human->HairId);
             case 3:
-                return ResolveHumanEquipmentSkeletonData(EquipSlot.Head, EstManipulation.EstType.Head);
+                return ResolveHumanEquipmentSkeletonData(EquipSlot.Head, EstType.Head);
             case 4:
-                return ResolveHumanEquipmentSkeletonData(EquipSlot.Body, EstManipulation.EstType.Body);
+                return ResolveHumanEquipmentSkeletonData(EquipSlot.Body, EstType.Body);
             default:
                 return (0, string.Empty, 0);
         }
     }
 
-    private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanEquipmentSkeletonData(EquipSlot slot, EstManipulation.EstType type)
+    private unsafe (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanEquipmentSkeletonData(EquipSlot slot, EstType type)
     {
         var human     = (Human*)CharacterBase;
         var equipment = ((CharacterArmor*)&human->Head)[slot.ToIndex()];
         return ResolveHumanExtraSkeletonData(ResolveEqdpRaceCode(slot, equipment.Set), type, equipment.Set);
     }
 
-    private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstManipulation.EstType type, PrimaryId primary)
+    private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstType type, PrimaryId primary)
     {
         var metaCache   = Global.Collection.MetaCache;
         var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary) ?? default;
-        return (raceCode, EstManipulation.ToName(type), skeletonSet);
+        return (raceCode, EstManipulation.ToName(type), skeletonSet.AsId);
     }
 
     private unsafe Utf8GamePath ResolveSkeletonPathNative(uint partialSkeletonIndex)

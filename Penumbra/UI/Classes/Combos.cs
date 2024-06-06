@@ -33,7 +33,7 @@ public static class Combos
         => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * UiHelpers.Scale, current, out attribute,
             RspAttributeExtensions.ToFullString, 0, 1);
 
-    public static bool EstSlot(string label, EstManipulation.EstType current, out EstManipulation.EstType attribute, float unscaledWidth = 200)
+    public static bool EstSlot(string label, EstType current, out EstType attribute, float unscaledWidth = 200)
         => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * UiHelpers.Scale, current, out attribute);
 
     public static bool ImcType(string label, ObjectType current, out ObjectType type, float unscaledWidth = 110)

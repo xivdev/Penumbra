@@ -133,23 +133,23 @@ public static class ItemSwap
     }
 
 
-    public static FileSwap CreatePhyb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstManipulation.EstType type,
-        GenderRace race, ushort estEntry)
+    public static FileSwap CreatePhyb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
+        GenderRace race, EstEntry estEntry)
     {
-        var phybPath = GamePaths.Skeleton.Phyb.Path(race, EstManipulation.ToName(type), estEntry);
+        var phybPath = GamePaths.Skeleton.Phyb.Path(race, EstManipulation.ToName(type), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Phyb, redirections, phybPath, phybPath);
     }
 
-    public static FileSwap CreateSklb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstManipulation.EstType type,
-        GenderRace race, ushort estEntry)
+    public static FileSwap CreateSklb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
+        GenderRace race, EstEntry estEntry)
     {
-        var sklbPath = GamePaths.Skeleton.Sklb.Path(race, EstManipulation.ToName(type), estEntry);
+        var sklbPath = GamePaths.Skeleton.Sklb.Path(race, EstManipulation.ToName(type), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Sklb, redirections, sklbPath, sklbPath);
     }
 
     /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
     public static MetaSwap? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
-        Func<MetaManipulation, MetaManipulation> manips, EstManipulation.EstType type,
+        Func<MetaManipulation, MetaManipulation> manips, EstType type,
         GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
     {
         if (type == 0)
@@ -160,7 +160,7 @@ public static class ItemSwap
         var toDefault   = new EstManipulation(gender, race, type, idTo,   EstFile.GetDefault(manager, type, genderRace, idTo));
         var est         = new MetaSwap(manips, fromDefault, toDefault);
 
-        if (ownMdl && est.SwapApplied.Est.Entry >= 2)
+        if (ownMdl && est.SwapApplied.Est.Entry.Value >= 2)
         {
             var phyb = CreatePhyb(manager, redirections, type, genderRace, est.SwapApplied.Est.Entry);
             est.ChildSwaps.Add(phyb);

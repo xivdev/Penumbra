@@ -51,18 +51,18 @@ public static class IdentifierExtensions
             case MetaManipulation.Type.Est:
                 switch (manip.Est.Slot)
                 {
-                    case EstManipulation.EstType.Hair:
+                    case EstType.Hair:
                         changedItems.TryAdd($"Customization: {manip.Est.Race} {manip.Est.Gender} Hair (Hair) {manip.Est.SetId}", null);
                         break;
-                    case EstManipulation.EstType.Face:
+                    case EstType.Face:
                         changedItems.TryAdd($"Customization: {manip.Est.Race} {manip.Est.Gender} Face (Face) {manip.Est.SetId}", null);
                         break;
-                    case EstManipulation.EstType.Body:
+                    case EstType.Body:
                         identifier.Identify(changedItems,
                             GamePaths.Equipment.Mdl.Path(manip.Est.SetId, Names.CombinedRace(manip.Est.Gender, manip.Est.Race),
                                 EquipSlot.Body));
                         break;
-                    case EstManipulation.EstType.Head:
+                    case EstType.Head:
                         identifier.Identify(changedItems,
                             GamePaths.Equipment.Mdl.Path(manip.Est.SetId, Names.CombinedRace(manip.Est.Gender, manip.Est.Race),
                                 EquipSlot.Head));

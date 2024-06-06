@@ -2,6 +2,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Interop.Services;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
@@ -17,10 +18,10 @@ public sealed unsafe class CmpFile : MetaBaseFile
 
     private const int RacialScalingStart = 0x2A800;
 
-    public float this[SubRace subRace, RspAttribute attribute]
+    public RspEntry this[SubRace subRace, RspAttribute attribute]
     {
-        get => *(float*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
-        set => *(float*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4) = value;
+        get => *(RspEntry*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
+        set => *(RspEntry*)(Data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4) = value;
     }
 
     public override void Reset()
@@ -39,10 +40,10 @@ public sealed unsafe class CmpFile : MetaBaseFile
         Reset();
     }
 
-    public static float GetDefault(MetaFileManager manager, SubRace subRace, RspAttribute attribute)
+    public static RspEntry GetDefault(MetaFileManager manager, SubRace subRace, RspAttribute attribute)
     {
         var data = (byte*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
-        return *(float*)(data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
+        return *(RspEntry*)(data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
     }
 
     private static int ToRspIndex(SubRace subRace)

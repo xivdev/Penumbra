@@ -63,16 +63,16 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return info.ObjectType switch
         {
             ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Body
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Body, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Body, info, estManipulations)],
             ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Head
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Head, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Head, info, estManipulations)],
             ObjectType.Equipment                                                      => [baseSkeleton],
             ObjectType.Accessory                                                      => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Hair, info, estManipulations)],
             ObjectType.Character when info.BodySlot is BodySlot.Face or BodySlot.Ear
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Face, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Face, info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
             ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
             ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
@@ -81,7 +81,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         };
     }
 
-    private string[] ResolveEstSkeleton(EstManipulation.EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
+    private string[] ResolveEstSkeleton(EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
     {
         // Try to find an EST entry from the manipulations provided.
         var (gender, race) = info.GenderRace.Split();
@@ -96,13 +96,13 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         // Try to use an entry from provided manipulations, falling back to the current collection.
         var targetId = modEst?.Entry
          ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
-         ?? 0;
+         ?? EstEntry.Zero;
 
         // If there's no entries, we can assume that there's no additional skeleton.
-        if (targetId == 0)
+        if (targetId == EstEntry.Zero)
             return [];
 
-        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId)];
+        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId.AsId)];
     }
 
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>

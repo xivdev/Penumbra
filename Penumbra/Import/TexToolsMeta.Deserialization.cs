@@ -75,14 +75,14 @@ public partial class TexToolsMeta
         {
             var gr    = (GenderRace)reader.ReadUInt16();
             var id    = reader.ReadUInt16();
-            var value = reader.ReadUInt16();
+            var value = new EstEntry(reader.ReadUInt16());
             var type = (metaFileInfo.SecondaryType, metaFileInfo.EquipSlot) switch
             {
-                (BodySlot.Face, _)  => EstManipulation.EstType.Face,
-                (BodySlot.Hair, _)  => EstManipulation.EstType.Hair,
-                (_, EquipSlot.Head) => EstManipulation.EstType.Head,
-                (_, EquipSlot.Body) => EstManipulation.EstType.Body,
-                _                   => (EstManipulation.EstType)0,
+                (BodySlot.Face, _)  => EstType.Face,
+                (BodySlot.Hair, _)  => EstType.Hair,
+                (_, EquipSlot.Head) => EstType.Head,
+                (_, EquipSlot.Body) => EstType.Body,
+                _                   => (EstType)0,
             };
             if (!gr.IsValid() || type == 0)
                 continue;

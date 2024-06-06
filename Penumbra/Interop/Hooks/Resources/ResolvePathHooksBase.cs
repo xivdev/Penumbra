@@ -212,10 +212,10 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         if (_parent.InInternalResolve)
             return DisposableContainer.Empty;
 
-        return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstManipulation.EstType.Face),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Body),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Hair),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Head));
+        return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstType.Face),
+            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstType.Body),
+            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstType.Hair),
+            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstType.Head));
     }
 
 

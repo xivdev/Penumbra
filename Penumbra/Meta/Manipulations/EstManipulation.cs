@@ -10,14 +10,6 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
 {
-    public enum EstType : byte
-    {
-        Hair = MetaIndex.HairEst,
-        Face = MetaIndex.FaceEst,
-        Body = MetaIndex.BodyEst,
-        Head = MetaIndex.HeadEst,
-    }
-
     public static string ToName(EstType type)
         => type switch
         {
@@ -28,31 +20,33 @@ public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
             _            => "unk",
         };
 
-    public ushort Entry { get; private init; } // SkeletonIdx.
+    public EstIdentifier Identifier { get; private init; }
+    public EstEntry      Entry      { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public Gender Gender { get; private init; }
+    public Gender Gender
+        => Identifier.Gender;
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public ModelRace Race { get; private init; }
+    public ModelRace Race
+        => Identifier.Race;
 
-    public PrimaryId SetId { get; private init; }
+    public PrimaryId SetId 
+        => Identifier.SetId;
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public EstType Slot { get; private init; }
+    public EstType Slot 
+        => Identifier.Slot;
 
 
     [JsonConstructor]
-    public EstManipulation(Gender gender, ModelRace race, EstType slot, PrimaryId setId, ushort entry)
+    public EstManipulation(Gender gender, ModelRace race, EstType slot, PrimaryId setId, EstEntry entry)
     {
-        Entry  = entry;
-        Gender = gender;
-        Race   = race;
-        SetId  = setId;
-        Slot   = slot;
+        Entry      = entry;
+        Identifier = new EstIdentifier(setId, slot, Names.CombinedRace(gender, race));
     }
 
-    public EstManipulation Copy(ushort entry)
+    public EstManipulation Copy(EstEntry entry)
         => new(Gender, Race, Slot, SetId, entry);
 
 
@@ -111,3 +105,5 @@ public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
         return true;
     }
 }
+
+

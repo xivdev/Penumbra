@@ -152,9 +152,9 @@ public class ItemSwapContainer
         var mdl          = CustomizationSwap.CreateMdl(manager, pathResolver, slot, race, from, to);
         var type = slot switch
         {
-            BodySlot.Hair => EstManipulation.EstType.Hair,
-            BodySlot.Face => EstManipulation.EstType.Face,
-            _             => (EstManipulation.EstType)0,
+            BodySlot.Hair => EstType.Hair,
+            BodySlot.Face => EstType.Face,
+            _             => (EstType)0,
         };
 
         var metaResolver = MetaResolver(collection);

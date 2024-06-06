@@ -8,14 +8,18 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct GmpManipulation : IMetaManipulation<GmpManipulation>
 {
-    public GmpEntry  Entry { get; private init; }
-    public PrimaryId SetId { get; private init; }
+    public GmpIdentifier Identifier { get; private init; }
+
+    public GmpEntry Entry { get; private init; }
+
+    public PrimaryId SetId
+        => Identifier.SetId;
 
     [JsonConstructor]
     public GmpManipulation(GmpEntry entry, PrimaryId setId)
     {
-        Entry = entry;
-        SetId = setId;
+        Entry      = entry;
+        Identifier = new GmpIdentifier(setId);
     }
 
     public GmpManipulation Copy(GmpEntry entry)

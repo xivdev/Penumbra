@@ -126,9 +126,9 @@ public static class EquipmentSwap
             var isAccessory = slot.IsAccessory();
             var estType = slot switch
             {
-                EquipSlot.Head => EstManipulation.EstType.Head,
-                EquipSlot.Body => EstManipulation.EstType.Body,
-                _              => (EstManipulation.EstType)0,
+                EquipSlot.Head => EstType.Head,
+                EquipSlot.Body => EstType.Body,
+                _              => (EstType)0,
             };
 
             var skipFemale    = false;

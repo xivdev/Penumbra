@@ -5,7 +5,6 @@ using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Util;
-using SharpCompress.Common;
 
 namespace Penumbra.Meta.Manipulations;
 
@@ -15,17 +14,20 @@ public readonly struct EqpManipulation : IMetaManipulation<EqpManipulation>
     [JsonConverter(typeof(ForceNumericFlagEnumConverter))]
     public EqpEntry Entry { get; private init; }
 
-    public PrimaryId SetId { get; private init; }
+    public EqpIdentifier Identifier { get; private init; }
+
+    public PrimaryId SetId
+        => Identifier.SetId;
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public EquipSlot Slot { get; private init; }
+    public EquipSlot Slot
+        => Identifier.Slot;
 
     [JsonConstructor]
     public EqpManipulation(EqpEntry entry, EquipSlot slot, PrimaryId setId)
     {
-        Slot  = slot;
-        SetId = setId;
-        Entry = Eqp.Mask(slot) & entry;
+        Identifier = new EqpIdentifier(setId, slot);
+        Entry      = Eqp.Mask(slot) & entry;
     }
 
     public EqpManipulation Copy(EqpEntry entry)

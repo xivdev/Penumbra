@@ -46,8 +46,8 @@ public partial class TexToolsMeta
         void Add(RspAttribute attribute, float value)
         {
             var def = CmpFile.GetDefault(manager, subRace, attribute);
-            if (keepDefault || value != def)
-                ret.MetaManipulations.Add(new RspManipulation(subRace, attribute, value));
+            if (keepDefault || value != def.Value)
+                ret.MetaManipulations.Add(new RspManipulation(subRace, attribute, new RspEntry(value)));
         }
 
         if (gender == 1)

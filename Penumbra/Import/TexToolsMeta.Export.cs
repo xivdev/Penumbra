@@ -66,7 +66,7 @@ public partial class TexToolsMeta
             foreach (var attribute in attributes)
             {
                 var value = list.TryGetValue(attribute, out var tmp) ? tmp.Entry : CmpFile.GetDefault(manager, race, attribute);
-                b.Write(value);
+                b.Write(value.Value);
             }
         }
 
@@ -176,7 +176,7 @@ public partial class TexToolsMeta
                 {
                     b.Write((ushort)Names.CombinedRace(manip.Est.Gender, manip.Est.Race));
                     b.Write(manip.Est.SetId.Id);
-                    b.Write(manip.Est.Entry);
+                    b.Write(manip.Est.Entry.Value);
                 }
 
                 break;
@@ -239,10 +239,10 @@ public partial class TexToolsMeta
         var raceCode = Names.CombinedRace(manip.Gender, manip.Race).ToRaceCode();
         return manip.Slot switch
         {
-            EstManipulation.EstType.Hair => $"chara/human/c{raceCode}/obj/hair/h{manip.SetId:D4}/c{raceCode}h{manip.SetId:D4}_hir.meta",
-            EstManipulation.EstType.Face => $"chara/human/c{raceCode}/obj/face/h{manip.SetId:D4}/c{raceCode}f{manip.SetId:D4}_fac.meta",
-            EstManipulation.EstType.Body => $"chara/equipment/e{manip.SetId:D4}/e{manip.SetId:D4}_{EquipSlot.Body.ToSuffix()}.meta",
-            EstManipulation.EstType.Head => $"chara/equipment/e{manip.SetId:D4}/e{manip.SetId:D4}_{EquipSlot.Head.ToSuffix()}.meta",
+            EstType.Hair => $"chara/human/c{raceCode}/obj/hair/h{manip.SetId:D4}/c{raceCode}h{manip.SetId:D4}_hir.meta",
+            EstType.Face => $"chara/human/c{raceCode}/obj/face/h{manip.SetId:D4}/c{raceCode}f{manip.SetId:D4}_fac.meta",
+            EstType.Body => $"chara/equipment/e{manip.SetId:D4}/e{manip.SetId:D4}_{EquipSlot.Body.ToSuffix()}.meta",
+            EstType.Head => $"chara/equipment/e{manip.SetId:D4}/e{manip.SetId:D4}_{EquipSlot.Head.ToSuffix()}.meta",
             _                            => throw new ArgumentOutOfRangeException(),
         };
     }

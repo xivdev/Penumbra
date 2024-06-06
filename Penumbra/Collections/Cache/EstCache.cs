@@ -48,33 +48,33 @@ public struct EstCache : IDisposable
         }
     }
 
-    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, EstManipulation.EstType type)
+    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, EstType type)
     {
         var (file, idx) = type switch
         {
-            EstManipulation.EstType.Face => (_estFaceFile, MetaIndex.FaceEst),
-            EstManipulation.EstType.Hair => (_estHairFile, MetaIndex.HairEst),
-            EstManipulation.EstType.Body => (_estBodyFile, MetaIndex.BodyEst),
-            EstManipulation.EstType.Head => (_estHeadFile, MetaIndex.HeadEst),
+            EstType.Face => (_estFaceFile, MetaIndex.FaceEst),
+            EstType.Hair => (_estHairFile, MetaIndex.HairEst),
+            EstType.Body => (_estBodyFile, MetaIndex.BodyEst),
+            EstType.Head => (_estHeadFile, MetaIndex.HeadEst),
             _                            => (null, 0),
         };
 
         return manager.TemporarilySetFile(file, idx);
     }
 
-    private readonly EstFile? GetEstFile(EstManipulation.EstType type)
+    private readonly EstFile? GetEstFile(EstType type)
     {
         return type switch
         {
-            EstManipulation.EstType.Face => _estFaceFile,
-            EstManipulation.EstType.Hair => _estHairFile,
-            EstManipulation.EstType.Body => _estBodyFile,
-            EstManipulation.EstType.Head => _estHeadFile,
+            EstType.Face => _estFaceFile,
+            EstType.Hair => _estHairFile,
+            EstType.Body => _estBodyFile,
+            EstType.Head => _estHeadFile,
             _                            => null,
         };
     }
 
-    internal ushort GetEstEntry(MetaFileManager manager, EstManipulation.EstType type, GenderRace genderRace, PrimaryId primaryId)
+    internal EstEntry GetEstEntry(MetaFileManager manager, EstType type, GenderRace genderRace, PrimaryId primaryId)
     {
         var file = GetEstFile(type);
         return file != null
@@ -96,10 +96,10 @@ public struct EstCache : IDisposable
         _estManipulations.AddOrReplace(m);
         var file = m.Slot switch
         {
-            EstManipulation.EstType.Hair => _estHairFile ??= new EstFile(manager, EstManipulation.EstType.Hair),
-            EstManipulation.EstType.Face => _estFaceFile ??= new EstFile(manager, EstManipulation.EstType.Face),
-            EstManipulation.EstType.Body => _estBodyFile ??= new EstFile(manager, EstManipulation.EstType.Body),
-            EstManipulation.EstType.Head => _estHeadFile ??= new EstFile(manager, EstManipulation.EstType.Head),
+            EstType.Hair => _estHairFile ??= new EstFile(manager, EstType.Hair),
+            EstType.Face => _estFaceFile ??= new EstFile(manager, EstType.Face),
+            EstType.Body => _estBodyFile ??= new EstFile(manager, EstType.Body),
+            EstType.Head => _estHeadFile ??= new EstFile(manager, EstType.Head),
             _                            => throw new ArgumentOutOfRangeException(),
         };
         return m.Apply(file);
@@ -114,10 +114,10 @@ public struct EstCache : IDisposable
         var manip = new EstManipulation(m.Gender, m.Race, m.Slot, m.SetId, def);
         var file = m.Slot switch
         {
-            EstManipulation.EstType.Hair => _estHairFile!,
-            EstManipulation.EstType.Face => _estFaceFile!,
-            EstManipulation.EstType.Body => _estBodyFile!,
-            EstManipulation.EstType.Head => _estHeadFile!,
+            EstType.Hair => _estHairFile!,
+            EstType.Face => _estFaceFile!,
+            EstType.Body => _estBodyFile!,
+            EstType.Head => _estHeadFile!,
             _                            => throw new ArgumentOutOfRangeException(),
         };
         return manip.Apply(file);

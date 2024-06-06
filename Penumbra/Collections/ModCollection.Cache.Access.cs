@@ -112,7 +112,7 @@ public partial class ModCollection
         => _cache?.Meta.TemporarilySetCmpFile()
          ?? utility.TemporarilyResetResource(MetaIndex.HumanCmp);
 
-    public MetaList.MetaReverter TemporarilySetEstFile(CharacterUtility utility, EstManipulation.EstType type)
+    public MetaList.MetaReverter TemporarilySetEstFile(CharacterUtility utility, EstType type)
         => _cache?.Meta.TemporarilySetEstFile(type)
          ?? utility.TemporarilyResetResource((MetaIndex)type);
 
