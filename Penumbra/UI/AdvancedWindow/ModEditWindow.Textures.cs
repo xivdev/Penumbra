@@ -160,6 +160,40 @@ public partial class ModEditWindow
                 InvokeChange(Mod, _left.Path);
                 AddReloadTask(_left.Path, false);
             }
+            string eyeMapResources = _config.ModDirectory + @"\LooseTextureCompilerDLC\";
+            if (Directory.Exists(eyeMapResources))
+            {
+                if (ImGui.Button("Image To Eye Maps", -Vector2.UnitX))
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(_right.Path.Length > 0 ? _right.Path : _left.Path);
+                    _fileDialog.OpenSavePicker("Save Texture as PNG...", ".png", fileName, ".png", (a, b) =>
+                    {
+                        if (a)
+                            _center.ImageToEyeMaps(b, eyeMapResources);
+                    }, Mod!.ModPath.FullName, _forceTextureStartPath);
+                    _forceTextureStartPath = false;
+                }
+                if (ImGui.Button("Eye Multi To Grayscale", -Vector2.UnitX))
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(_right.Path.Length > 0 ? _right.Path : _left.Path);
+                    _fileDialog.OpenSavePicker("Save Texture as PNG...", ".png", fileName, ".png", (a, b) =>
+                    {
+                        if (a)
+                            _center.EyeMultiToGrayscale(b);
+                    }, Mod!.ModPath.FullName, _forceTextureStartPath);
+                    _forceTextureStartPath = false;
+                }
+            }
+            if (ImGui.Button("Seperate Glow Information From Diffuse", -Vector2.UnitX))
+            {
+                var fileName = Path.GetFileNameWithoutExtension(_right.Path.Length > 0 ? _right.Path : _left.Path);
+                _fileDialog.OpenSavePicker("Save Texture as PNG...", ".png", fileName, ".png", (a, b) =>
+                {
+                    if (a)
+                        _center.AtramentumLuminisDiffuseToGlowMap(b);
+                }, Mod!.ModPath.FullName, _forceTextureStartPath);
+                _forceTextureStartPath = false;
+            }
 
             ImGui.SameLine();
             if (ImGuiUtil.DrawDisabledButton("Convert to BC3", buttonSize3,
@@ -255,7 +289,7 @@ public partial class ModEditWindow
                 return;
 
             _framework.RunOnFrameworkThread(() => tex.Reload(_textures));
-        }, TaskScheduler.Default);
+        });
     }
 
     private Vector2 GetChildWidth()

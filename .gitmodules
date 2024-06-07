@@ -10,6 +10,9 @@
 	path = Penumbra.String
 	url = https://github.com/Ottermandias/Penumbra.String.git
 	branch = main
+[submodule "LooseTextureCompilerCore"]
+	path = LooseTextureCompilerCore
+	url = https://github.com/Sebane1/LooseTextureCompilerCore.git
 [submodule "Penumbra.GameData"]
 	path = Penumbra.GameData
 	url = https://github.com/Ottermandias/Penumbra.GameData.git

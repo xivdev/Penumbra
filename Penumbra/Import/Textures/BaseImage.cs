@@ -1,5 +1,6 @@
 using Lumina.Data.Files;
 using OtterTex;
+using Penumbra.Api.Enums;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -103,7 +104,7 @@ public readonly struct BaseImage : IDisposable
         {
             null           => 0,
             ScratchImage s => s.Meta.MipLevels,
-            TexFile t      => t.Header.MipLevelsCount,
+            TexFile t      => t.Header.MipLevels,
             _              => 1,
         };
 }
