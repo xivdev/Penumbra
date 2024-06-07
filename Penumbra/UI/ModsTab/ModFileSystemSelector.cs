@@ -569,8 +569,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private const StringComparison                  IgnoreCase   = StringComparison.OrdinalIgnoreCase;
-    private       LowerString                       _modFilter   = LowerString.Empty;
-    private       int                               _filterType  = -1;
+    //private       LowerString                       _modFilter   = LowerString.Empty;
+    //private       int                               _filterType  = -1;
+    private       List<(LowerString, int)>          _modFilters = new System.Collections.Generic.List<(LowerString, int)>();
     private       ModFilter                         _stateFilter = ModFilterExtensions.UnfilteredStateMods;
     private       ChangedItemDrawer.ChangedItemIcon _slotFilter  = 0;
 
@@ -588,35 +589,44 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     /// <summary> Appropriately identify and set the string filter and its type. </summary>
     protected override bool ChangeFilter(string filterValue)
     {
-        (_modFilter, _filterType) = filterValue.Length switch
+        string regexPattern = "([ctnas][:]\\s?((['\"`][^'\"`]+(['\"`]|$))|(\\S+)))|((['\"`][^'\"`]+(['\"`]|$))|\\S+)";
+        RegexOptions regexOptions = RegexOptions.IgnoreCase;
+        MatchCollection filterMatches = Regex.Matches(filterValue, regexPattern, regexOptions);
+        _modFilters.Clear();
+        
+        foreach (Match match in filterMatches)
         {
-            0 => (LowerString.Empty, -1),
-            > 1 when filterValue[1] == ':' =>
-                filterValue[0] switch
-                {
-                    'n' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 1),
-                    'N' => filterValue.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(filterValue[2..]), 1),
-                    'a' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 2),
-                    'A' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 2),
-                    'c' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 3),
-                    'C' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 3),
-                    't' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 4),
-                    'T' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 4),
-                    's' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 5),
-                    'S' => filterValue.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(filterValue, 5),
-                    _   => (new LowerString(filterValue), 0),
-                },
-            _ => (new LowerString(filterValue), 0),
-        };
-
+            string subfilter = match.ToString().Trim();
+            _modFilters.Add(subfilter.Length switch
+            {
+                0 => (LowerString.Empty, -1),
+                > 1 when subfilter[1] == ':' =>
+                    subfilter[0] switch
+                    {
+                        'n' => subfilter.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(subfilter[2..].Trim(['"', '`', '\''])), 1),
+                        'N' => subfilter.Length == 2 ? (LowerString.Empty, -1) : (new LowerString(subfilter[2..].Trim(['"', '`', '\''])), 1),
+                        'a' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 2),
+                        'A' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 2),
+                        'c' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 3),
+                        'C' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 3),
+                        't' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 4),
+                        'T' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 4),
+                        's' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 5),
+                        'S' => subfilter.Length == 2 ? (LowerString.Empty, -1) : ParseFilter(subfilter, 5),
+                        _ => (new LowerString(subfilter.Trim(['"', '`', '\''])), 0),
+                    },
+                _ => (new LowerString(subfilter.Trim(['"', '`', '\''])), 0),
+            }
+            );
+        }
         return true;
     }
-
+    
     private const int EmptyOffset = 128;
 
     private (LowerString, int) ParseFilter(string value, int id)
     {
-        value = value[2..];
+        value = value[2..].Trim(['"', '`', '\'']);
         var lower = new LowerString(value);
         if (id == 5 && !ChangedItemDrawer.TryParsePartial(lower.Lower, out _slotFilter))
             _slotFilter = 0;
@@ -662,21 +672,28 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     /// <summary> Apply the string filters. </summary>
     private bool ApplyStringFilters(ModFileSystem.Leaf leaf, Mod mod)
     {
-        return _filterType switch
-        {
-            -1              => false,
-            0               => !(leaf.FullName().Contains(_modFilter.Lower, IgnoreCase) || mod.Name.Contains(_modFilter)),
-            1               => !mod.Name.Contains(_modFilter),
-            2               => !mod.Author.Contains(_modFilter),
-            3               => !mod.LowerChangedItemsString.Contains(_modFilter.Lower),
-            4               => !mod.AllTagsLower.Contains(_modFilter.Lower),
-            5               => mod.ChangedItems.All(p => (ChangedItemDrawer.GetCategoryIcon(p.Key, p.Value) & _slotFilter) == 0),
-            2 + EmptyOffset => !mod.Author.IsEmpty,
-            3 + EmptyOffset => mod.LowerChangedItemsString.Length > 0,
-            4 + EmptyOffset => mod.AllTagsLower.Length > 0,
-            5 + EmptyOffset => mod.ChangedItems.Count == 0,
-            _               => false, // Should never happen
-        };
+        bool filterType = false;
+
+        foreach((LowerString, int) filter in _modFilters)
+       {
+            filterType = filter.Item2 switch
+            {
+                -1 => false,
+                0 => !(leaf.FullName().Contains(filter.Item1.Lower, IgnoreCase) || mod.Name.Contains(filter.Item1)),
+                1 => !mod.Name.Contains(filter.Item1),
+                2 => !mod.Author.Contains(filter.Item1),
+                3 => !mod.LowerChangedItemsString.Contains(filter.Item1.Lower),
+                4 => !mod.AllTagsLower.Contains(filter.Item1.Lower),
+                5 => mod.ChangedItems.All(p => (ChangedItemDrawer.GetCategoryIcon(p.Key, p.Value) & _slotFilter) == 0),
+                2 + EmptyOffset => !mod.Author.IsEmpty,
+                3 + EmptyOffset => mod.LowerChangedItemsString.Length > 0,
+                4 + EmptyOffset => mod.AllTagsLower.Length > 0,
+                5 + EmptyOffset => mod.ChangedItems.Count == 0,
+                _ => false, // Should never happen
+            };
+            if(filterType == true) { return true; }
+        }
+        return false;
     }
 
     /// <summary> Only get the text color for a mod if no filters are set. </summary>
