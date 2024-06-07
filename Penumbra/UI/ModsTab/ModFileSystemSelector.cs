@@ -569,8 +569,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private const StringComparison                  IgnoreCase   = StringComparison.OrdinalIgnoreCase;
-    //private       LowerString                       _modFilter   = LowerString.Empty;
-    //private       int                               _filterType  = -1;
     private       List<(LowerString, int)>          _modFilters = new System.Collections.Generic.List<(LowerString, int)>();
     private       ModFilter                         _stateFilter = ModFilterExtensions.UnfilteredStateMods;
     private       ChangedItemDrawer.ChangedItemIcon _slotFilter  = 0;
