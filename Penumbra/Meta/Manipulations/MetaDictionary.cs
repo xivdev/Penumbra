@@ -124,28 +124,28 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
         return true;
     }
 
-    public bool Remove(MetaManipulation manip)
+    public void UnionWith(MetaDictionary manips)
     {
-        var ret = manip.ManipulationType switch
-        {
-            MetaManipulation.Type.Imc       => _imc.Remove(manip.Imc.Identifier),
-            MetaManipulation.Type.Eqdp      => _eqdp.Remove(manip.Eqdp.Identifier),
-            MetaManipulation.Type.Eqp       => _eqp.Remove(manip.Eqp.Identifier),
-            MetaManipulation.Type.Est       => _est.Remove(manip.Est.Identifier),
-            MetaManipulation.Type.Gmp       => _gmp.Remove(manip.Gmp.Identifier),
-            MetaManipulation.Type.Rsp       => _rsp.Remove(manip.Rsp.Identifier),
-            MetaManipulation.Type.GlobalEqp => _globalEqp.Remove(manip.GlobalEqp),
-            _                               => false,
-        };
-        if (ret)
-            --Count;
-        return ret;
-    }
+        foreach (var (identifier, entry) in manips._imc)
+            TryAdd(identifier, entry);
 
-    public void UnionWith(IEnumerable<MetaManipulation> manips)
-    {
-        foreach (var manip in manips)
-            Add(manip);
+        foreach (var (identifier, entry) in manips._eqp)
+            TryAdd(identifier, entry);
+
+        foreach (var (identifier, entry) in manips._eqdp)
+            TryAdd(identifier, entry);
+
+        foreach (var (identifier, entry) in manips._gmp)
+            TryAdd(identifier, entry);
+
+        foreach (var (identifier, entry) in manips._rsp)
+            TryAdd(identifier, entry);
+
+        foreach (var (identifier, entry) in manips._est)
+            TryAdd(identifier, entry);
+
+        foreach (var identifier in manips._globalEqp)
+            TryAdd(identifier);
     }
 
     public bool TryGetValue(MetaManipulation identifier, out MetaManipulation oldValue)

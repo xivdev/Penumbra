@@ -144,8 +144,7 @@ public class ModGroupEditor(
     /// <summary> Set the meta manipulations for a given option. Replaces existing manipulations. </summary>
     public void SetManipulations(IModDataContainer subMod, MetaDictionary manipulations, SaveType saveType = SaveType.Queue)
     {
-        if (subMod.Manipulations.Count == manipulations.Count
-         && subMod.Manipulations.All(m => manipulations.TryGetValue(m, out var old) && old.EntryEquals(m)))
+        if (subMod.Manipulations.Equals(manipulations))
             return;
 
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
