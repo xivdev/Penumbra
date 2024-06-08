@@ -21,7 +21,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
     IModGroup? IModDataContainer.Group
         => null;
 
-    public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
         => SubMod.AddContainerTo(this, redirections, manipulations);
 
     public string GetName()

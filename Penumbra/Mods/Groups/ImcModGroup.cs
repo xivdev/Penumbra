@@ -99,7 +99,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         => new(Identifier.ObjectType, Identifier.BodySlot, Identifier.PrimaryId, Identifier.SecondaryId.Id, variant.Id,
             Identifier.EquipSlot, DefaultEntry with { AttributeMask = mask });
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
         if (IsDisabled(setting))
             return;

@@ -158,7 +158,7 @@ public class ModMerger : IDisposable
     {
         var redirections = option.Files.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         var swaps        = option.FileSwaps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        var manips       = option.Manipulations.ToHashSet();
+        var manips       = option.Manipulations.Clone();
 
         foreach (var originalOption in mergeOptions)
         {

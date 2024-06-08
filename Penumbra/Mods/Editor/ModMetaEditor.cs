@@ -145,7 +145,7 @@ public class ModMetaEditor(ModManager modManager)
         if (!Changes)
             return;
 
-        modManager.OptionEditor.SetManipulations(container, Recombine().ToHashSet());
+        modManager.OptionEditor.SetManipulations(container, [..Recombine()]);
         Changes = false;
     }
 

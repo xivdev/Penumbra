@@ -21,7 +21,7 @@ public static class SubMod
     /// <summary> Add all unique meta manipulations, file redirections and then file swaps from a ModDataContainer to the given sets. Skip any keys that are already contained. </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void AddContainerTo(IModDataContainer container, Dictionary<Utf8GamePath, FullPath> redirections,
-        HashSet<MetaManipulation> manipulations)
+        MetaDictionary manipulations)
     {
         foreach (var (path, file) in container.Files)
             redirections.TryAdd(path, file);

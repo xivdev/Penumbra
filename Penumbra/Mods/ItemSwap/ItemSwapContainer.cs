@@ -23,7 +23,7 @@ public class ItemSwapContainer
     public IReadOnlyDictionary<Utf8GamePath, FullPath> ModRedirections
         => _appliedModData.FileRedirections;
 
-    public IReadOnlySet<MetaManipulation> ModManipulations
+    public MetaDictionary ModManipulations
         => _appliedModData.Manipulations;
 
     public readonly List<Swap> Swaps = [];
@@ -42,9 +42,10 @@ public class ItemSwapContainer
         NoSwaps,
     }
 
-    public bool WriteMod(ModManager manager, Mod mod, IModDataContainer container, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null)
+    public bool WriteMod(ModManager manager, Mod mod, IModDataContainer container, WriteType writeType = WriteType.NoSwaps,
+        DirectoryInfo? directory = null)
     {
-        var convertedManips = new HashSet<MetaManipulation>(Swaps.Count);
+        var convertedManips = new MetaDictionary();
         var convertedFiles  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
         var convertedSwaps  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
         directory ??= mod.ModPath;
@@ -98,13 +99,9 @@ public class ItemSwapContainer
     {
         Clear();
         if (mod == null || mod.Index < 0)
-        {
-            _appliedModData  = AppliedModData.Empty;
-        }
+            _appliedModData = AppliedModData.Empty;
         else
-        {
             _appliedModData = ModSettings.GetResolveData(mod, settings);
-        }
     }
 
     public ItemSwapContainer(MetaFileManager manager, ObjectIdentification identifier)
@@ -121,7 +118,13 @@ public class ItemSwapContainer
 
     private Func<MetaManipulation, MetaManipulation> MetaResolver(ModCollection? collection)
     {
-        var set = collection?.MetaCache?.Manipulations.ToHashSet() ?? _appliedModData.Manipulations;
+        if (collection?.MetaCache?.Manipulations is { } cache)
+        {
+            MetaDictionary dict = [.. cache];
+            return m => dict.TryGetValue(m, out var a) ? a : m;
+        }
+
+        var set = _appliedModData.Manipulations;
         return m => set.TryGetValue(m, out var a) ? a : m;
     }
 

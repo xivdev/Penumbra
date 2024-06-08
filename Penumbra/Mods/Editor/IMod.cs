@@ -8,7 +8,7 @@ namespace Penumbra.Mods.Editor;
 
 public record struct AppliedModData(
     Dictionary<Utf8GamePath, FullPath> FileRedirections,
-    HashSet<MetaManipulation> Manipulations)
+    MetaDictionary Manipulations)
 {
     public static readonly AppliedModData Empty = new([], []);
 }

@@ -101,7 +101,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new SingleModGroupEditDrawer(editDrawer, this);
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
         if (OptionData.Count == 0)
             return;

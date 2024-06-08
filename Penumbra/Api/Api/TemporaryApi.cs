@@ -174,8 +174,8 @@ public class TemporaryApi(
             return false;
         }
 
-        manips = new MetaDictionary(manipArray!.Length);
-        foreach (var manip in manipArray.Where(m => m.Validate()))
+        manips = [];
+        foreach (var manip in manipArray!.Where(m => m.Validate()))
         {
             if (manips.Add(manip))
                 continue;

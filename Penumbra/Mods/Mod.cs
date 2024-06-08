@@ -71,7 +71,7 @@ public sealed class Mod : IMod
             return AppliedModData.Empty;
 
         var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
-        var setManips        = new HashSet<MetaManipulation>(TotalManipulations);
+        var setManips        = new MetaDictionary();
         foreach (var (group, groupIndex) in Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
         {
             var config = settings.Settings[groupIndex];
