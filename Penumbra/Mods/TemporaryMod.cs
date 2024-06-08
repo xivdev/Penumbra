@@ -51,12 +51,6 @@ public class TemporaryMod : IMod
     public TemporaryMod()
         => Default = new DefaultSubMod(this);
 
-    public void SetFile(Utf8GamePath gamePath, FullPath fullPath)
-        => Default.Files[gamePath] = fullPath;
-
-    public bool SetManipulation(MetaManipulation manip)
-        => Default.Manipulations.Remove(manip) | Default.Manipulations.Add(manip);
-
     public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, MetaDictionary manips)
     {
         Default.Files         = dict;
