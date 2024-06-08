@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -7,6 +8,8 @@ using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
+using Penumbra.GameData.Structs;
+using Penumbra.String;
 using Penumbra.Util;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
@@ -94,14 +97,8 @@ public sealed unsafe class CollectionResolver(
     public bool IsModelHuman(uint modelCharaId)
         => humanModels.IsHuman(modelCharaId);
 
-    /// <summary> Return whether the given character has a human model. </summary>
-    public bool IsModelHuman(Character* character)
-        => character != null && IsModelHuman((uint)character->CharacterData.ModelCharaId);
-
     /// <summary>
-    /// Used if on the Login screen. Names are populated after actors are drawn,
-    /// so it is not possible to fetch names from the ui list.
-    /// Actors are also not named. So use Yourself > Players > Racial > Default.
+    /// Used if on the Login screen.
     /// </summary>
     private bool LoginScreen(GameObject* gameObject, out ResolveData ret)
     {
@@ -114,6 +111,27 @@ public sealed unsafe class CollectionResolver(
         }
 
         var notYetReady = false;
+        var lobby       = AgentLobby.Instance();
+        if (lobby != null)
+        {
+            var span = lobby->LobbyData.CharaSelectEntries.Span;
+            // The lobby uses the first 8 cutscene actors.
+            var idx = gameObject->ObjectIndex - ObjectIndex.CutsceneStart.Index;
+            if (idx >= 0 && idx < span.Length && span[idx].Value != null)
+            {
+                var item       = span[idx].Value;
+                var identifier = actors.CreatePlayer(new ByteString(item->Name), item->HomeWorldId);
+                Penumbra.Log.Verbose(
+                    $"Identified {identifier.Incognito(null)} in cutscene for actor {idx + 200} at 0x{(ulong)gameObject:X} of race {(gameObject->IsCharacter() ? ((Character*)gameObject)->DrawData.CustomizeData.Race.ToString() : "Unknown")}.");
+                if (identifier.IsValid && CollectionByIdentifier(identifier) is { } coll)
+                {
+                    // Do not add this to caches because game objects are reused for different draw objects.
+                    ret = coll.ToResolveData(gameObject);
+                    return true;
+                }
+            }
+        }
+
         var collection = collectionManager.Active.ByType(CollectionType.Yourself)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? collectionManager.Active.Default;
@@ -189,7 +207,7 @@ public sealed unsafe class CollectionResolver(
             return null;
 
         // Only handle human models.
-        
+
         if (!IsModelHuman((uint)actor.AsCharacter->CharacterData.ModelCharaId))
             return null;
 
