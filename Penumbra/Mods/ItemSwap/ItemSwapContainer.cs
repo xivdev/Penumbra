@@ -53,32 +53,38 @@ public class ItemSwapContainer
         {
             foreach (var swap in Swaps.SelectMany(s => s.WithChildren()))
             {
-                switch (swap)
+                if (swap is FileSwap file)
                 {
-                    case FileSwap file:
-                        // Skip, nothing to do
-                        if (file.SwapToModdedEqualsOriginal)
-                            continue;
+                    // Skip, nothing to do
+                    if (file.SwapToModdedEqualsOriginal)
+                        continue;
 
-                        if (writeType == WriteType.UseSwaps && file.SwapToModdedExistsInGame && !file.DataWasChanged)
-                        {
-                            convertedSwaps.TryAdd(file.SwapFromRequestPath, file.SwapToModded);
-                        }
-                        else
-                        {
-                            var path  = file.GetNewPath(directory.FullName);
-                            var bytes = file.FileData.Write();
-                            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                            _manager.Compactor.WriteAllBytes(path, bytes);
-                            convertedFiles.TryAdd(file.SwapFromRequestPath, new FullPath(path));
-                        }
-
-                        break;
-                    case IMetaSwap meta:
-                        if (!meta.SwapAppliedIsDefault)
-                            convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry);
-
-                        break;
+                    if (writeType == WriteType.UseSwaps && file.SwapToModdedExistsInGame && !file.DataWasChanged)
+                    {
+                        convertedSwaps.TryAdd(file.SwapFromRequestPath, file.SwapToModded);
+                    }
+                    else
+                    {
+                        var path  = file.GetNewPath(directory.FullName);
+                        var bytes = file.FileData.Write();
+                        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                        _manager.Compactor.WriteAllBytes(path, bytes);
+                        convertedFiles.TryAdd(file.SwapFromRequestPath, new FullPath(path));
+                    }
+                }
+                else if (swap is IMetaSwap { SwapAppliedIsDefault: false })
+                {
+                    // @formatter:off
+                    _ = swap switch
+                    {
+                        MetaSwap<EstIdentifier, EstEntry> meta           => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EqpIdentifier, EqpEntryInternal> meta   => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EqdpIdentifier, EqdpEntryInternal> meta => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<ImcIdentifier, ImcEntry>meta            => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<GmpIdentifier, GmpEntry>meta            => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        _ => false,
+                    };
+                    // @formatter:on
                 }
             }
 

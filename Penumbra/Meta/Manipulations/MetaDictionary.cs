@@ -52,38 +52,6 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    public bool TryAdd(IMetaIdentifier identifier, object entry)
-        => identifier switch
-        {
-            EqdpIdentifier eqdpIdentifier               => entry is EqdpEntryInternal e && TryAdd(eqdpIdentifier, e),
-            EqpIdentifier eqpIdentifier                 => entry is EqpEntryInternal e && TryAdd(eqpIdentifier,   e),
-            EstIdentifier estIdentifier                 => entry is EstEntry e && TryAdd(estIdentifier,           e),
-            GlobalEqpManipulation globalEqpManipulation => TryAdd(globalEqpManipulation),
-            GmpIdentifier gmpIdentifier                 => entry is GmpEntry e && TryAdd(gmpIdentifier, e),
-            ImcIdentifier imcIdentifier                 => entry is ImcEntry e && TryAdd(imcIdentifier, e),
-            RspIdentifier rspIdentifier                 => entry is RspEntry e && TryAdd(rspIdentifier, e),
-            _                                           => false,
-        };
-
-    public bool Add(MetaManipulation manip)
-    {
-        var ret = manip.ManipulationType switch
-        {
-            MetaManipulation.Type.Imc       => _imc.TryAdd(manip.Imc.Identifier, manip.Imc.Entry),
-            MetaManipulation.Type.Eqdp      => _eqdp.TryAdd(manip.Eqdp.Identifier, new EqdpEntryInternal(manip.Eqdp.Entry, manip.Eqdp.Slot)),
-            MetaManipulation.Type.Eqp       => _eqp.TryAdd(manip.Eqp.Identifier, new EqpEntryInternal(manip.Eqp.Entry, manip.Eqp.Slot)),
-            MetaManipulation.Type.Est       => _est.TryAdd(manip.Est.Identifier, manip.Est.Entry),
-            MetaManipulation.Type.Gmp       => _gmp.TryAdd(manip.Gmp.Identifier, manip.Gmp.Entry),
-            MetaManipulation.Type.Rsp       => _rsp.TryAdd(manip.Rsp.Identifier, manip.Rsp.Entry),
-            MetaManipulation.Type.GlobalEqp => _globalEqp.Add(manip.GlobalEqp),
-            _                               => false,
-        };
-
-        if (ret)
-            ++Count;
-        return ret;
-    }
-
     public bool TryAdd(ImcIdentifier identifier, ImcEntry entry)
     {
         if (!_imc.TryAdd(identifier, entry))
@@ -93,8 +61,28 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
         return true;
     }
 
+
+    public bool TryAdd(EqpIdentifier identifier, EqpEntryInternal entry)
+    {
+        if (!_eqp.TryAdd(identifier, entry))
+            return false;
+
+        ++Count;
+        return true;
+    }
+
     public bool TryAdd(EqpIdentifier identifier, EqpEntry entry)
         => TryAdd(identifier, new EqpEntryInternal(entry, identifier.Slot));
+
+
+    public bool TryAdd(EqdpIdentifier identifier, EqdpEntryInternal entry)
+    {
+        if (!_eqdp.TryAdd(identifier, entry))
+            return false;
+
+        ++Count;
+        return true;
+    }
 
     public bool TryAdd(EqdpIdentifier identifier, EqdpEntry entry)
         => TryAdd(identifier, new EqdpEntryInternal(entry, identifier.Slot));
@@ -157,6 +145,73 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
 
         foreach (var identifier in manips._globalEqp)
             TryAdd(identifier);
+    }
+
+    /// <summary> Try to merge all manipulations from manips into this, and return the first failure, if any. </summary>
+    public bool MergeForced(MetaDictionary manips, out IMetaIdentifier failedIdentifier)
+    {
+        foreach (var (identifier, entry) in manips._imc)
+        {
+            if (!TryAdd(identifier, entry))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
+
+        foreach (var (identifier, entry) in manips._eqp)
+        {
+            if (!TryAdd(identifier, entry))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
+
+        foreach (var (identifier, entry) in manips._eqdp)
+        {
+            if (!TryAdd(identifier, entry))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
+
+        foreach (var (identifier, entry) in manips._gmp)
+        {
+            if (!TryAdd(identifier, entry))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
+
+        foreach (var (identifier, entry) in manips._rsp)
+        {
+            if (!TryAdd(identifier, entry))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
+
+        foreach (var (identifier, entry) in manips._est)
+        {
+            if (!TryAdd(identifier, entry))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
+
+        foreach (var identifier in manips._globalEqp)
+        {
+            if (!TryAdd(identifier))
+            {
+                failedIdentifier = identifier;
+                return false;
+            }
+        }
     }
 
     public bool TryGetValue(EstIdentifier identifier, out EstEntry value)
@@ -317,23 +372,5 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
 
             return dict;
         }
-    }
-
-    private bool TryAdd(EqpIdentifier identifier, EqpEntryInternal entry)
-    {
-        if (!_eqp.TryAdd(identifier, entry))
-            return false;
-
-        ++Count;
-        return true;
-    }
-
-    private bool TryAdd(EqdpIdentifier identifier, EqdpEntryInternal entry)
-    {
-        if (!_eqdp.TryAdd(identifier, entry))
-            return false;
-
-        ++Count;
-        return true;
     }
 }
