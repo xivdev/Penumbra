@@ -50,7 +50,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         var save = true;
         if (File.Exists(dataFile))
         {
-            save = false;
             try
             {
                 var text = File.ReadAllText(dataFile);
@@ -60,6 +59,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
                 favorite   = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
                 note       = json[nameof(Mod.Note)]?.Value<string>() ?? note;
                 localTags  = json[nameof(Mod.LocalTags)]?.Values<string>().OfType<string>() ?? localTags;
+                save       = false;
             }
             catch (Exception e)
             {
@@ -239,7 +239,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Favorite = state;
         saveService.QueueSave(new ModLocalData(mod));
-        ;
         communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
 
@@ -250,7 +249,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Note = newNote;
         saveService.QueueSave(new ModLocalData(mod));
-        ;
         communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
 
@@ -260,7 +258,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         if (tagIdx < 0 || tagIdx > which.Count)
             return;
 
-        ModDataChangeType flags = 0;
+        ModDataChangeType flags;
         if (tagIdx == which.Count)
         {
             flags = ModLocalData.UpdateTags(mod, local ? null : which.Append(newTag), local ? which.Append(newTag) : null);

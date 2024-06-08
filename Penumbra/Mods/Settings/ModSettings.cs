@@ -185,10 +185,10 @@ public class ModSettings
 
             switch (mod.Groups[idx])
             {
-                case SingleModGroup single when setting.Value < (ulong)single.Options.Count:
+                case { Behaviour: GroupDrawBehaviour.SingleSelection } single when setting.Value < (ulong)single.Options.Count:
                     dict.Add(single.Name, [single.Options[setting.AsIndex].Name]);
                     break;
-                case MultiModGroup multi:
+                case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
                     var list = multi.Options.WithIndex().Where(p => setting.HasFlag(p.Index)).Select(p => p.Value.Name).ToList();
                     dict.Add(multi.Name, list);
                     break;

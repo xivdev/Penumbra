@@ -77,10 +77,10 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         if (!_collectionManager.Storage.ById(collectionId, out var collection))
             return (PenumbraApiEc.CollectionMissing, null);
 
-        var settings = collection.Id == Guid.Empty 
-            ? null 
-            : ignoreInheritance 
-                ? collection.Settings[mod.Index] 
+        var settings = collection.Id == Guid.Empty
+            ? null
+            : ignoreInheritance
+                ? collection.Settings[mod.Index]
                 : collection[mod.Index].Settings;
         if (settings == null)
             return (PenumbraApiEc.Success, null);
@@ -160,11 +160,11 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         if (optionIdx < 0)
             return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 
-        var setting = mod.Groups[groupIdx] switch
+        var setting = mod.Groups[groupIdx].Behaviour switch
         {
-            MultiModGroup  => Setting.Multi(optionIdx),
-            SingleModGroup => Setting.Single(optionIdx),
-            _              => Setting.Zero,
+            GroupDrawBehaviour.MultiSelection  => Setting.Multi(optionIdx),
+            GroupDrawBehaviour.SingleSelection => Setting.Single(optionIdx),
+            _                                  => Setting.Zero,
         };
         var ret = _collectionEditor.SetModSetting(collection, mod, groupIdx, setting)
             ? PenumbraApiEc.Success
@@ -191,20 +191,20 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         var setting = Setting.Zero;
         switch (mod.Groups[groupIdx])
         {
-            case SingleModGroup single:
+            case { Behaviour: GroupDrawBehaviour.SingleSelection } single:
             {
-                var optionIdx = optionNames.Count == 0 ? -1 : single.OptionData.IndexOf(o => o.Name == optionNames[^1]);
+                var optionIdx = optionNames.Count == 0 ? -1 : single.Options.IndexOf(o => o.Name == optionNames[^1]);
                 if (optionIdx < 0)
                     return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 
                 setting = Setting.Single(optionIdx);
                 break;
             }
-            case MultiModGroup multi:
+            case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
             {
                 foreach (var name in optionNames)
                 {
-                    var optionIdx = multi.OptionData.IndexOf(o => o.Mod.Name == name);
+                    var optionIdx = multi.Options.IndexOf(o => o.Name == name);
                     if (optionIdx < 0)
                         return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
 
@@ -256,7 +256,8 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting _1, int _2, bool inherited)
         => ModSettingChanged?.Invoke(type, collection.Id, mod?.ModPath.Name ?? string.Empty, inherited);
 
-    private void OnModOptionEdited(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container, int moveIndex)
+    private void OnModOptionEdited(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
+        int moveIndex)
     {
         switch (type)
         {
