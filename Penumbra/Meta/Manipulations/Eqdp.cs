@@ -71,7 +71,7 @@ public readonly record struct EqdpIdentifier(PrimaryId SetId, EquipSlot Slot, Ge
     }
 }
 
-public readonly record struct EqdpEntryInternal(bool Model, bool Material)
+public readonly record struct EqdpEntryInternal(bool Material, bool Model)
 {
     private EqdpEntryInternal((bool, bool) val)
         : this(val.Item1, val.Item2)
@@ -81,7 +81,6 @@ public readonly record struct EqdpEntryInternal(bool Model, bool Material)
         : this(entry.ToBits(slot))
     { }
 
-
     public EqdpEntry ToEntry(EquipSlot slot)
-        => Eqdp.FromSlotAndBits(slot, Model, Material);
+        => Eqdp.FromSlotAndBits(slot, Material, Model);
 }

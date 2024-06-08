@@ -147,24 +147,23 @@ public static class ItemSwap
         return FileSwap.CreateSwap(manager, ResourceType.Sklb, redirections, sklbPath, sklbPath);
     }
 
-    /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
-    public static MetaSwap? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
-        Func<MetaManipulation, MetaManipulation> manips, EstType type,
-        GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
+    public static MetaSwap<EstIdentifier, EstEntry>? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
+        MetaDictionary manips, EstType type, GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
     {
         if (type == 0)
             return null;
 
-        var (gender, race) = genderRace.Split();
-        var fromDefault = new EstManipulation(gender, race, type, idFrom, EstFile.GetDefault(manager, type, genderRace, idFrom));
-        var toDefault   = new EstManipulation(gender, race, type, idTo,   EstFile.GetDefault(manager, type, genderRace, idTo));
-        var est         = new MetaSwap(manips, fromDefault, toDefault);
+        var manipFromIdentifier = new EstIdentifier(idFrom, type, genderRace);
+        var manipToIdentifier = new EstIdentifier(idTo, type, genderRace);
+        var manipFromDefault = EstFile.GetDefault(manager, manipFromIdentifier);
+        var manipToDefault = EstFile.GetDefault(manager, manipToIdentifier);
+        var est = new MetaSwap<EstIdentifier, EstEntry>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier, manipFromDefault, manipToIdentifier, manipToDefault);
 
-        if (ownMdl && est.SwapApplied.Est.Entry.Value >= 2)
+        if (ownMdl && est.SwapToModdedEntry.Value >= 2)
         {
-            var phyb = CreatePhyb(manager, redirections, type, genderRace, est.SwapApplied.Est.Entry);
+            var phyb = CreatePhyb(manager, redirections, type, genderRace, est.SwapToModdedEntry);
             est.ChildSwaps.Add(phyb);
-            var sklb = CreateSklb(manager, redirections, type, genderRace, est.SwapApplied.Est.Entry);
+            var sklb = CreateSklb(manager, redirections, type, genderRace, est.SwapToModdedEntry);
             est.ChildSwaps.Add(sklb);
         }
         else if (est.SwapAppliedIsDefault)

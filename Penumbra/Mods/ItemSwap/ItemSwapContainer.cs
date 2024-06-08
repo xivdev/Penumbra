@@ -74,9 +74,9 @@ public class ItemSwapContainer
                         }
 
                         break;
-                    case MetaSwap meta:
+                    case IMetaSwap meta:
                         if (!meta.SwapAppliedIsDefault)
-                            convertedManips.Add(meta.SwapApplied);
+                            convertedManips.Add(meta.SwapFromIdentifier, meta.SwapToModdedEntry);
 
                         break;
                 }
@@ -116,17 +116,10 @@ public class ItemSwapContainer
             ? p => collection.ResolvePath(p) ?? new FullPath(p)
             : p => ModRedirections.TryGetValue(p, out var path) ? path : new FullPath(p);
 
-    private Func<MetaManipulation, MetaManipulation> MetaResolver(ModCollection? collection)
-    {
-        if (collection?.MetaCache?.Manipulations is { } cache)
-        {
-            MetaDictionary dict = [.. cache];
-            return m => dict.TryGetValue(m, out var a) ? a : m;
-        }
-
-        var set = _appliedModData.Manipulations;
-        return m => set.TryGetValue(m, out var a) ? a : m;
-    }
+    private MetaDictionary MetaResolver(ModCollection? collection)
+        => collection?.MetaCache?.Manipulations is { } cache
+            ? [.. cache]
+            : _appliedModData.Manipulations;
 
     public EquipItem[] LoadEquipment(EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true,
         bool useLeftRing = true)
@@ -161,8 +154,8 @@ public class ItemSwapContainer
             _             => (EstType)0,
         };
 
-        var metaResolver = MetaResolver(collection);
-        var est          = ItemSwap.CreateEst(manager, pathResolver, metaResolver, type, race, from, to, true);
+        var estResolver = MetaResolver(collection);
+        var est         = ItemSwap.CreateEst(manager, pathResolver, estResolver, type, race, from, to, true);
 
         Swaps.Add(mdl);
         if (est != null)

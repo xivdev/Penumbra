@@ -52,6 +52,19 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
+    public bool Add(IMetaIdentifier identifier, object entry)
+        => identifier switch
+        {
+            EqdpIdentifier eqdpIdentifier               => entry is EqdpEntryInternal e && Add(eqdpIdentifier, e),
+            EqpIdentifier eqpIdentifier                 => entry is EqpEntryInternal e && Add(eqpIdentifier,   e),
+            EstIdentifier estIdentifier                 => entry is EstEntry e && Add(estIdentifier,           e),
+            GlobalEqpManipulation globalEqpManipulation => Add(globalEqpManipulation),
+            GmpIdentifier gmpIdentifier                 => entry is GmpEntry e && Add(gmpIdentifier, e),
+            ImcIdentifier imcIdentifier                 => entry is ImcEntry e && Add(imcIdentifier, e),
+            RspIdentifier rspIdentifier                 => entry is RspEntry e && Add(rspIdentifier, e),
+            _                                           => false,
+        };
+
     public bool Add(MetaManipulation manip)
     {
         var ret = manip.ManipulationType switch
@@ -146,71 +159,23 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
             TryAdd(identifier);
     }
 
-    public bool TryGetValue(MetaManipulation identifier, out MetaManipulation oldValue)
-    {
-        switch (identifier.ManipulationType)
-        {
-            case MetaManipulation.Type.Imc:
-                if (_imc.TryGetValue(identifier.Imc.Identifier, out var oldImc))
-                {
-                    oldValue = new MetaManipulation(new ImcManipulation(identifier.Imc.Identifier, oldImc));
-                    return true;
-                }
+    public bool TryGetValue(EstIdentifier identifier, out EstEntry value)
+        => _est.TryGetValue(identifier, out value);
 
-                break;
-            case MetaManipulation.Type.Eqdp:
-                if (_eqp.TryGetValue(identifier.Eqp.Identifier, out var oldEqdp))
-                {
-                    oldValue = new MetaManipulation(new EqpManipulation(identifier.Eqp.Identifier, oldEqdp.ToEntry(identifier.Eqp.Slot)));
-                    return true;
-                }
+    public bool TryGetValue(EqpIdentifier identifier, out EqpEntryInternal value)
+        => _eqp.TryGetValue(identifier, out value);
 
-                break;
-            case MetaManipulation.Type.Eqp:
-                if (_eqdp.TryGetValue(identifier.Eqdp.Identifier, out var oldEqp))
-                {
-                    oldValue = new MetaManipulation(new EqdpManipulation(identifier.Eqdp.Identifier, oldEqp.ToEntry(identifier.Eqdp.Slot)));
-                    return true;
-                }
+    public bool TryGetValue(EqdpIdentifier identifier, out EqdpEntryInternal value)
+        => _eqdp.TryGetValue(identifier, out value);
 
-                break;
-            case MetaManipulation.Type.Est:
-                if (_est.TryGetValue(identifier.Est.Identifier, out var oldEst))
-                {
-                    oldValue = new MetaManipulation(new EstManipulation(identifier.Est.Identifier, oldEst));
-                    return true;
-                }
+    public bool TryGetValue(GmpIdentifier identifier, out GmpEntry value)
+        => _gmp.TryGetValue(identifier, out value);
 
-                break;
-            case MetaManipulation.Type.Gmp:
-                if (_gmp.TryGetValue(identifier.Gmp.Identifier, out var oldGmp))
-                {
-                    oldValue = new MetaManipulation(new GmpManipulation(identifier.Gmp.Identifier, oldGmp));
-                    return true;
-                }
+    public bool TryGetValue(RspIdentifier identifier, out RspEntry value)
+        => _rsp.TryGetValue(identifier, out value);
 
-                break;
-            case MetaManipulation.Type.Rsp:
-                if (_rsp.TryGetValue(identifier.Rsp.Identifier, out var oldRsp))
-                {
-                    oldValue = new MetaManipulation(new RspManipulation(identifier.Rsp.Identifier, oldRsp));
-                    return true;
-                }
-
-                break;
-            case MetaManipulation.Type.GlobalEqp:
-                if (_globalEqp.TryGetValue(identifier.GlobalEqp, out var oldGlobalEqp))
-                {
-                    oldValue = new MetaManipulation(oldGlobalEqp);
-                    return true;
-                }
-
-                break;
-        }
-
-        oldValue = default;
-        return false;
-    }
+    public bool TryGetValue(ImcIdentifier identifier, out ImcEntry value)
+        => _imc.TryGetValue(identifier, out value);
 
     public void SetTo(MetaDictionary other)
     {

@@ -1,6 +1,7 @@
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
@@ -163,6 +164,9 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 
     public static GmpEntry GetDefault(MetaFileManager manager, PrimaryId primaryIdx)
         => new() { Value = GetDefaultInternal(manager, InternalIndex, primaryIdx, GmpEntry.Default.Value) };
+
+    public static GmpEntry GetDefault(MetaFileManager manager, GmpIdentifier identifier)
+        => new() { Value = GetDefaultInternal(manager, InternalIndex, identifier.SetId, GmpEntry.Default.Value) };
 
     public void Reset(IEnumerable<PrimaryId> entries)
     {
