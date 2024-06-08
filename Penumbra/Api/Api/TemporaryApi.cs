@@ -160,7 +160,7 @@ public class TemporaryApi(
     /// Only returns true if all conversions are successful and distinct. 
     /// </summary>
     private static bool ConvertManips(string manipString,
-        [NotNullWhen(true)] out HashSet<MetaManipulation>? manips)
+        [NotNullWhen(true)] out MetaDictionary? manips)
     {
         if (manipString.Length == 0)
         {
@@ -174,7 +174,7 @@ public class TemporaryApi(
             return false;
         }
 
-        manips = new HashSet<MetaManipulation>(manipArray!.Length);
+        manips = new MetaDictionary(manipArray!.Length);
         foreach (var manip in manipArray.Where(m => m.Validate()))
         {
             if (manips.Add(manip))

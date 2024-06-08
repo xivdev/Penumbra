@@ -9,12 +9,13 @@ using Penumbra.Util;
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct EqpManipulation : IMetaManipulation<EqpManipulation>
+public readonly struct EqpManipulation(EqpIdentifier identifier, EqpEntry entry) : IMetaManipulation<EqpManipulation>
 {
-    [JsonConverter(typeof(ForceNumericFlagEnumConverter))]
-    public EqpEntry Entry { get; private init; }
+    [JsonIgnore]
+    public EqpIdentifier Identifier { get; } = identifier;
 
-    public EqpIdentifier Identifier { get; private init; }
+    [JsonConverter(typeof(ForceNumericFlagEnumConverter))]
+    public EqpEntry Entry { get; } = entry;
 
     public PrimaryId SetId
         => Identifier.SetId;
@@ -25,13 +26,11 @@ public readonly struct EqpManipulation : IMetaManipulation<EqpManipulation>
 
     [JsonConstructor]
     public EqpManipulation(EqpEntry entry, EquipSlot slot, PrimaryId setId)
-    {
-        Identifier = new EqpIdentifier(setId, slot);
-        Entry      = Eqp.Mask(slot) & entry;
-    }
+        : this(new EqpIdentifier(setId, slot), Eqp.Mask(slot) & entry)
+    { }
 
     public EqpManipulation Copy(EqpEntry entry)
-        => new(entry, Slot, SetId);
+        => new(Identifier, entry);
 
     public override string ToString()
         => $"Eqp - {SetId} - {Slot}";

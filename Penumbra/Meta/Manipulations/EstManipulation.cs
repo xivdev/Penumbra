@@ -8,7 +8,7 @@ using Penumbra.Meta.Files;
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
+public readonly struct EstManipulation(EstIdentifier identifier, EstEntry entry) : IMetaManipulation<EstManipulation>
 {
     public static string ToName(EstType type)
         => type switch
@@ -20,8 +20,9 @@ public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
             _            => "unk",
         };
 
-    public EstIdentifier Identifier { get; private init; }
-    public EstEntry      Entry      { get; private init; }
+    [JsonIgnore]
+    public EstIdentifier Identifier { get; } = identifier;
+    public EstEntry      Entry      { get; } = entry;
 
     [JsonConverter(typeof(StringEnumConverter))]
     public Gender Gender
@@ -41,13 +42,11 @@ public readonly struct EstManipulation : IMetaManipulation<EstManipulation>
 
     [JsonConstructor]
     public EstManipulation(Gender gender, ModelRace race, EstType slot, PrimaryId setId, EstEntry entry)
-    {
-        Entry      = entry;
-        Identifier = new EstIdentifier(setId, slot, Names.CombinedRace(gender, race));
-    }
+        : this(new EstIdentifier(setId, slot, Names.CombinedRace(gender, race)), entry)
+    { }
 
     public EstManipulation Copy(EstEntry entry)
-        => new(Gender, Race, Slot, SetId, entry);
+        => new(Identifier, entry);
 
 
     public override string ToString()

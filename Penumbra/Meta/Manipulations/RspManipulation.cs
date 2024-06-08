@@ -7,10 +7,12 @@ using Penumbra.Meta.Files;
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct RspManipulation : IMetaManipulation<RspManipulation>
+public readonly struct RspManipulation(RspIdentifier identifier, RspEntry entry) : IMetaManipulation<RspManipulation>
 {
-    public RspIdentifier Identifier { get; private init; }
-    public RspEntry      Entry      { get; private init; }
+    [JsonIgnore]
+    public RspIdentifier Identifier { get; } = identifier;
+
+    public RspEntry Entry { get; } = entry;
 
     [JsonConverter(typeof(StringEnumConverter))]
     public SubRace SubRace
@@ -22,13 +24,11 @@ public readonly struct RspManipulation : IMetaManipulation<RspManipulation>
 
     [JsonConstructor]
     public RspManipulation(SubRace subRace, RspAttribute attribute, RspEntry entry)
-    {
-        Entry      = entry;
-        Identifier = new RspIdentifier(subRace, attribute);
-    }
+        : this(new RspIdentifier(subRace, attribute), entry)
+    { }
 
     public RspManipulation Copy(RspEntry entry)
-        => new(SubRace, Attribute, entry);
+        => new(Identifier, entry);
 
     public override string ToString()
         => $"Rsp - {SubRace.ToName()} - {Attribute.ToFullString()}";
@@ -63,14 +63,5 @@ public readonly struct RspManipulation : IMetaManipulation<RspManipulation>
     }
 
     public bool Validate()
-    {
-        if (SubRace is SubRace.Unknown || !Enum.IsDefined(SubRace))
-            return false;
-        if (!Enum.IsDefined(Attribute))
-            return false;
-        if (Entry.Value is < RspEntry.MinValue or > RspEntry.MaxValue)
-            return false;
-
-        return true;
-    }
+        => Identifier.Validate() && Entry.Validate();
 }

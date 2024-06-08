@@ -57,7 +57,7 @@ public class TemporaryMod : IMod
     public bool SetManipulation(MetaManipulation manip)
         => Default.Manipulations.Remove(manip) | Default.Manipulations.Add(manip);
 
-    public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, HashSet<MetaManipulation> manips)
+    public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, MetaDictionary manips)
     {
         Default.Files         = dict;
         Default.Manipulations = manips;

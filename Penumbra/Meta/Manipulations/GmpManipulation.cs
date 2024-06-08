@@ -6,24 +6,23 @@ using Penumbra.Meta.Files;
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct GmpManipulation : IMetaManipulation<GmpManipulation>
+public readonly struct GmpManipulation(GmpIdentifier identifier, GmpEntry entry) : IMetaManipulation<GmpManipulation>
 {
-    public GmpIdentifier Identifier { get; private init; }
+    [JsonIgnore]
+    public GmpIdentifier Identifier { get; } = identifier;
 
-    public GmpEntry Entry { get; private init; }
+    public GmpEntry Entry { get; } = entry;
 
     public PrimaryId SetId
         => Identifier.SetId;
 
     [JsonConstructor]
     public GmpManipulation(GmpEntry entry, PrimaryId setId)
-    {
-        Entry      = entry;
-        Identifier = new GmpIdentifier(setId);
-    }
+        : this(new GmpIdentifier(setId), entry)
+    { }
 
     public GmpManipulation Copy(GmpEntry entry)
-        => new(entry, SetId);
+        => new(Identifier, entry);
 
     public override string ToString()
         => $"Gmp - {SetId}";

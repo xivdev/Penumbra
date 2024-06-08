@@ -33,7 +33,7 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
-    public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
+    public MetaDictionary                     Manipulations { get; set; } = [];
 
     public void AddDataTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
         => SubMod.AddContainerTo(this, redirections, manipulations);

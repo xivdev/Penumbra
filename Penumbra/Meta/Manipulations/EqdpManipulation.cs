@@ -8,11 +8,12 @@ using Penumbra.Meta.Files;
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct EqdpManipulation : IMetaManipulation<EqdpManipulation>
+public readonly struct EqdpManipulation(EqdpIdentifier identifier, EqdpEntry entry) : IMetaManipulation<EqdpManipulation>
 {
     [JsonIgnore]
-    public EqdpIdentifier Identifier { get; private init; }
-    public EqdpEntry      Entry      { get; private init; }
+    public EqdpIdentifier Identifier { get; } = identifier;
+
+    public EqdpEntry Entry { get; } = entry;
 
     [JsonConverter(typeof(StringEnumConverter))]
     public Gender Gender
@@ -31,20 +32,18 @@ public readonly struct EqdpManipulation : IMetaManipulation<EqdpManipulation>
 
     [JsonConstructor]
     public EqdpManipulation(EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, PrimaryId setId)
-    {
-        Identifier = new EqdpIdentifier(setId, slot, Names.CombinedRace(gender, race));
-        Entry      = Eqdp.Mask(Slot) & entry;
-    }
+        : this(new EqdpIdentifier(setId, slot, Names.CombinedRace(gender, race)), Eqdp.Mask(slot) & entry)
+    { }
 
     public EqdpManipulation Copy(EqdpManipulation entry)
     {
         if (entry.Slot != Slot)
         {
             var (bit1, bit2) = entry.Entry.ToBits(entry.Slot);
-            return new EqdpManipulation(Eqdp.FromSlotAndBits(Slot, bit1, bit2), Slot, Gender, Race, SetId);
+            return new EqdpManipulation(Identifier, Eqdp.FromSlotAndBits(Slot, bit1, bit2));
         }
 
-        return new EqdpManipulation(entry.Entry, Slot, Gender, Race, SetId);
+        return new EqdpManipulation(Identifier, entry.Entry);
     }
 
     public EqdpManipulation Copy(EqdpEntry entry)
