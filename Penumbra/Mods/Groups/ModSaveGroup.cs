@@ -6,6 +6,8 @@ namespace Penumbra.Mods.Groups;
 
 public readonly struct ModSaveGroup : ISavable
 {
+    public const int CurrentVersion = 0;
+
     private readonly DirectoryInfo  _basePath;
     private readonly IModGroup?     _group;
     private readonly int            _groupIdx;
@@ -71,6 +73,8 @@ public readonly struct ModSaveGroup : ISavable
         j.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };
         j.WriteStartObject();
+        j.WritePropertyName("Version");
+        j.WriteValue(CurrentVersion);
         if (_groupIdx >= 0)
             _group!.WriteJson(j, serializer, _basePath);
         else
