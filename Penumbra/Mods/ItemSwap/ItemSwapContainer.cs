@@ -76,7 +76,7 @@ public class ItemSwapContainer
                         break;
                     case IMetaSwap meta:
                         if (!meta.SwapAppliedIsDefault)
-                            convertedManips.Add(meta.SwapFromIdentifier, meta.SwapToModdedEntry);
+                            convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry);
 
                         break;
                 }

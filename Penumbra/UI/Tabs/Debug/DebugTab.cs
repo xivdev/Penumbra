@@ -432,7 +432,7 @@ public class DebugTab : Window, ITab
 
         foreach (var obj in _objects)
         {
-            ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
+            ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
             ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
                 ? string.Empty

@@ -52,16 +52,16 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    public bool Add(IMetaIdentifier identifier, object entry)
+    public bool TryAdd(IMetaIdentifier identifier, object entry)
         => identifier switch
         {
-            EqdpIdentifier eqdpIdentifier               => entry is EqdpEntryInternal e && Add(eqdpIdentifier, e),
-            EqpIdentifier eqpIdentifier                 => entry is EqpEntryInternal e && Add(eqpIdentifier,   e),
-            EstIdentifier estIdentifier                 => entry is EstEntry e && Add(estIdentifier,           e),
-            GlobalEqpManipulation globalEqpManipulation => Add(globalEqpManipulation),
-            GmpIdentifier gmpIdentifier                 => entry is GmpEntry e && Add(gmpIdentifier, e),
-            ImcIdentifier imcIdentifier                 => entry is ImcEntry e && Add(imcIdentifier, e),
-            RspIdentifier rspIdentifier                 => entry is RspEntry e && Add(rspIdentifier, e),
+            EqdpIdentifier eqdpIdentifier               => entry is EqdpEntryInternal e && TryAdd(eqdpIdentifier, e),
+            EqpIdentifier eqpIdentifier                 => entry is EqpEntryInternal e && TryAdd(eqpIdentifier,   e),
+            EstIdentifier estIdentifier                 => entry is EstEntry e && TryAdd(estIdentifier,           e),
+            GlobalEqpManipulation globalEqpManipulation => TryAdd(globalEqpManipulation),
+            GmpIdentifier gmpIdentifier                 => entry is GmpEntry e && TryAdd(gmpIdentifier, e),
+            ImcIdentifier imcIdentifier                 => entry is ImcEntry e && TryAdd(imcIdentifier, e),
+            RspIdentifier rspIdentifier                 => entry is RspEntry e && TryAdd(rspIdentifier, e),
             _                                           => false,
         };
 

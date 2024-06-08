@@ -4,6 +4,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Collections.Manager;
@@ -49,7 +50,7 @@ public class TemporaryIpcTester(
         ImGui.InputTextWithHint("##tempMod",   "Temporary Mod Name...",         ref _tempModName,      32);
         ImGui.InputTextWithHint("##tempGame",  "Game Path...",                  ref _tempGamePath,     256);
         ImGui.InputTextWithHint("##tempFile",  "File Path...",                  ref _tempFilePath,     256);
-        ImGui.InputTextWithHint("##tempManip", "Manipulation Base64 String...", ref _tempManipulation, 256);
+        ImUtf8.InputText("##tempManip"u8, ref _tempManipulation, "Manipulation Base64 String..."u8);
         ImGui.Checkbox("Force Character Collection Overwrite", ref _forceOverwrite);
 
         using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
