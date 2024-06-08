@@ -9,13 +9,13 @@ namespace Penumbra.Meta.Manipulations;
 [JsonConverter(typeof(Converter))]
 public sealed class MetaDictionary : IEnumerable<MetaManipulation>
 {
-    private readonly Dictionary<ImcIdentifier, ImcEntry>   _imc       = [];
-    private readonly Dictionary<EqpIdentifier, EqpEntry>   _eqp       = [];
-    private readonly Dictionary<EqdpIdentifier, EqdpEntry> _eqdp      = [];
-    private readonly Dictionary<EstIdentifier, EstEntry>   _est       = [];
-    private readonly Dictionary<RspIdentifier, RspEntry>   _rsp       = [];
-    private readonly Dictionary<GmpIdentifier, GmpEntry>   _gmp       = [];
-    private readonly HashSet<GlobalEqpManipulation>        _globalEqp = [];
+    private readonly Dictionary<ImcIdentifier, ImcEntry>           _imc       = [];
+    private readonly Dictionary<EqpIdentifier, EqpEntryInternal>   _eqp       = [];
+    private readonly Dictionary<EqdpIdentifier, EqdpEntryInternal> _eqdp      = [];
+    private readonly Dictionary<EstIdentifier, EstEntry>           _est       = [];
+    private readonly Dictionary<RspIdentifier, RspEntry>           _rsp       = [];
+    private readonly Dictionary<GmpIdentifier, GmpEntry>           _gmp       = [];
+    private readonly HashSet<GlobalEqpManipulation>                _globalEqp = [];
 
     public int Count { get; private set; }
 
@@ -30,10 +30,20 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
         _globalEqp.Clear();
     }
 
+    public bool Equals(MetaDictionary other)
+        => Count == other.Count
+         && _imc.SetEquals(other._imc)
+         && _eqp.SetEquals(other._eqp)
+         && _eqdp.SetEquals(other._eqdp)
+         && _est.SetEquals(other._est)
+         && _rsp.SetEquals(other._rsp)
+         && _gmp.SetEquals(other._gmp)
+         && _globalEqp.SetEquals(other._globalEqp);
+
     public IEnumerator<MetaManipulation> GetEnumerator()
         => _imc.Select(kvp => new MetaManipulation(new ImcManipulation(kvp.Key, kvp.Value)))
-            .Concat(_eqp.Select(kvp => new MetaManipulation(new EqpManipulation(kvp.Key, kvp.Value))))
-            .Concat(_eqdp.Select(kvp => new MetaManipulation(new EqdpManipulation(kvp.Key, kvp.Value))))
+            .Concat(_eqp.Select(kvp => new MetaManipulation(new EqpManipulation(kvp.Key, kvp.Value.ToEntry(kvp.Key.Slot)))))
+            .Concat(_eqdp.Select(kvp => new MetaManipulation(new EqdpManipulation(kvp.Key, kvp.Value.ToEntry(kvp.Key.Slot)))))
             .Concat(_est.Select(kvp => new MetaManipulation(new EstManipulation(kvp.Key, kvp.Value))))
             .Concat(_rsp.Select(kvp => new MetaManipulation(new RspManipulation(kvp.Key, kvp.Value))))
             .Concat(_gmp.Select(kvp => new MetaManipulation(new GmpManipulation(kvp.Key, kvp.Value))))
@@ -47,8 +57,8 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
         var ret = manip.ManipulationType switch
         {
             MetaManipulation.Type.Imc       => _imc.TryAdd(manip.Imc.Identifier, manip.Imc.Entry),
-            MetaManipulation.Type.Eqdp      => _eqdp.TryAdd(manip.Eqdp.Identifier, manip.Eqdp.Entry),
-            MetaManipulation.Type.Eqp       => _eqp.TryAdd(manip.Eqp.Identifier, manip.Eqp.Entry),
+            MetaManipulation.Type.Eqdp      => _eqdp.TryAdd(manip.Eqdp.Identifier, new EqdpEntryInternal(manip.Eqdp.Entry, manip.Eqdp.Slot)),
+            MetaManipulation.Type.Eqp       => _eqp.TryAdd(manip.Eqp.Identifier, new EqpEntryInternal(manip.Eqp.Entry, manip.Eqp.Slot)),
             MetaManipulation.Type.Est       => _est.TryAdd(manip.Est.Identifier, manip.Est.Entry),
             MetaManipulation.Type.Gmp       => _gmp.TryAdd(manip.Gmp.Identifier, manip.Gmp.Entry),
             MetaManipulation.Type.Rsp       => _rsp.TryAdd(manip.Rsp.Identifier, manip.Rsp.Entry),
@@ -71,22 +81,10 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
     }
 
     public bool TryAdd(EqpIdentifier identifier, EqpEntry entry)
-    {
-        if (!_eqp.TryAdd(identifier, entry))
-            return false;
-
-        ++Count;
-        return true;
-    }
+        => TryAdd(identifier, new EqpEntryInternal(entry, identifier.Slot));
 
     public bool TryAdd(EqdpIdentifier identifier, EqdpEntry entry)
-    {
-        if (!_eqdp.TryAdd(identifier, entry))
-            return false;
-
-        ++Count;
-        return true;
-    }
+        => TryAdd(identifier, new EqdpEntryInternal(entry, identifier.Slot));
 
     public bool TryAdd(EstIdentifier identifier, EstEntry entry)
     {
@@ -163,7 +161,7 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
             case MetaManipulation.Type.Eqdp:
                 if (_eqp.TryGetValue(identifier.Eqp.Identifier, out var oldEqdp))
                 {
-                    oldValue = new MetaManipulation(new EqpManipulation(identifier.Eqp.Identifier, oldEqdp));
+                    oldValue = new MetaManipulation(new EqpManipulation(identifier.Eqp.Identifier, oldEqdp.ToEntry(identifier.Eqp.Slot)));
                     return true;
                 }
 
@@ -171,7 +169,7 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
             case MetaManipulation.Type.Eqp:
                 if (_eqdp.TryGetValue(identifier.Eqdp.Identifier, out var oldEqp))
                 {
-                    oldValue = new MetaManipulation(new EqdpManipulation(identifier.Eqdp.Identifier, oldEqp));
+                    oldValue = new MetaManipulation(new EqdpManipulation(identifier.Eqdp.Identifier, oldEqp.ToEntry(identifier.Eqdp.Slot)));
                     return true;
                 }
 
@@ -354,5 +352,23 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
 
             return dict;
         }
+    }
+
+    private bool TryAdd(EqpIdentifier identifier, EqpEntryInternal entry)
+    {
+        if (!_eqp.TryAdd(identifier, entry))
+            return false;
+
+        ++Count;
+        return true;
+    }
+
+    private bool TryAdd(EqdpIdentifier identifier, EqdpEntryInternal entry)
+    {
+        if (!_eqdp.TryAdd(identifier, entry))
+            return false;
+
+        ++Count;
+        return true;
     }
 }

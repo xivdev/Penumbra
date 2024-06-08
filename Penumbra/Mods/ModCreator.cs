@@ -198,7 +198,7 @@ public partial class ModCreator(
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
-                    option.Manipulations.UnionWith(meta.MetaManipulations);
+                    option.Manipulations.UnionWith([.. meta.MetaManipulations]);
                 }
                 else if (ext1 == ".rgsp" || ext2 == ".rgsp")
                 {
@@ -212,7 +212,7 @@ public partial class ModCreator(
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
 
-                    option.Manipulations.UnionWith(rgsp.MetaManipulations);
+                    option.Manipulations.UnionWith([.. rgsp.MetaManipulations]);
                 }
             }
             catch (Exception e)
