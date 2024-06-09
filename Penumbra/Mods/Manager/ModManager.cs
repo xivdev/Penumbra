@@ -266,7 +266,7 @@ public sealed class ModManager : ModStorage, IDisposable
     /// </summary>
     private void SetBaseDirectory(string newPath, bool firstTime)
     {
-        if (!firstTime && string.Equals(newPath, _config.ModDirectory, StringComparison.OrdinalIgnoreCase))
+        if (!firstTime && string.Equals(newPath, _config.ModDirectory, StringComparison.Ordinal))
             return;
 
         if (newPath.Length == 0)
