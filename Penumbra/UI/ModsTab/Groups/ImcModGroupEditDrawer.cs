@@ -148,7 +148,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
                 }
             }
 
-            ImUtf8.HoverTooltip("ABCDEFGHIJ"u8.Slice(i, 1));
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "ABCDEFGHIJ"u8.Slice(i, 1));
             if (i != 9)
                 ImUtf8.SameLineInner();
         }
