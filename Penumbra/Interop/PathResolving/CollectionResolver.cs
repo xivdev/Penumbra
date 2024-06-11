@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using Microsoft.VisualBasic;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -110,6 +111,12 @@ public sealed unsafe class CollectionResolver(
             return false;
         }
 
+        if (!config.ShowModsInLobby)
+        {
+            ret = ModCollection.Empty.ToResolveData(gameObject);
+            return true;
+        }
+
         var notYetReady = false;
         var lobby       = AgentLobby.Instance();
         if (lobby != null)
@@ -146,6 +153,12 @@ public sealed unsafe class CollectionResolver(
         {
             ret = ResolveData.Invalid;
             return false;
+        }
+
+        if (!config.ShowModsInLobby)
+        {
+            ret = ModCollection.Empty.ToResolveData(gameObject);
+            return true;
         }
 
         var player      = actors.GetCurrentPlayer();

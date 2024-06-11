@@ -449,6 +449,9 @@ public class SettingsTab : ITab
         Checkbox("Use Interface Collection for other Plugin UIs",
             "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud.",
             _dalamudSubstitutionProvider.Enabled, _dalamudSubstitutionProvider.Set);
+        Checkbox($"Use {TutorialService.AssignedCollections} in Lobby",
+            "If this is disabled, no mods are applied to characters in the lobby or at the aesthetician.",
+            _config.ShowModsInLobby, v => _config.ShowModsInLobby = v);
         Checkbox($"Use {TutorialService.AssignedCollections} in Character Window",
             "Use the individual collection for your characters name or the Your Character collection in your main character window, if it is set.",
             _config.UseCharacterCollectionInMainWindow, v => _config.UseCharacterCollectionInMainWindow = v);

@@ -41,6 +41,7 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool  HideUiWhenUiHidden             { get; set; } = false;
     public bool  UseDalamudUiTextureRedirection { get; set; } = true;
 
+    public bool        ShowModsInLobby                      { get; set; } = true;
     public bool        UseCharacterCollectionInMainWindow   { get; set; } = true;
     public bool        UseCharacterCollectionsInCards       { get; set; } = true;
     public bool        UseCharacterCollectionInInspect      { get; set; } = true;
