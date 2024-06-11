@@ -50,9 +50,38 @@ public class PenumbraChangelog
         AddDummy(Changelog);
         AddDummy(Changelog);
         Add1_1_0_0(Changelog);
+        Add1_1_1_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_1_1_0(Changelog log)
+        => log.NextVersion("Version 1.1.1.0")
+            .RegisterHighlight("Filtering for mods is now tokenized and can filter for multiple things at once, or exclude specific things.")
+            .RegisterEntry("Hover over the filter to see the new available options in the tooltip.", 1)
+            .RegisterEntry("Be aware that the tokenization changed the prior behavior slightly.", 1)
+            .RegisterEntry("This is open to improvements, if you have any ideas, let me know!", 1)
+            .RegisterHighlight("Added initial identification of characters in the login-screen by name.")
+            .RegisterEntry("Those characters can not be redrawn and re-use some things, so this may not always behave as expected, but should work in general. Let me know if you encounter edge cases!", 1)
+            .RegisterEntry("Added functionality for IMC groups to apply to all variants for a model instead of a specific one.")
+            .RegisterEntry("Improved the resource tree view with filters and incognito mode. (by Ny)")
+            .RegisterEntry("Added a tooltip to the global EQP condition.")
+            .RegisterEntry("Fixed the new worlds not being identified correctly because Square Enix could not be bothered to turn them public.")
+            .RegisterEntry("Fixed model import getting stuck when doing weight adjustments. (by ackwell)")
+            .RegisterEntry("Fixed an issue with dye previews in the material editor not applying.")
+            .RegisterEntry("Fixed an issue with collections not saving on renames.")
+            .RegisterEntry("Fixed an issue parsing collections with settings set to negative values, which should now be set to 0.")
+            .RegisterEntry("Fixed an issue with the accessory VFX addition.")
+            .RegisterEntry("Fixed an issue with GMP animation type entries.")
+            .RegisterEntry("Fixed another issue with the mod merger.")
+            .RegisterEntry("Fixed an issue with IMC groups and IPC.")
+            .RegisterEntry("Fixed some issues with the capitalization of the root directory.")
+            .RegisterEntry("Fixed IMC attribute tooltips not appearing for disabled checkboxes.")
+            .RegisterEntry("Added GetChangedItems IPC for single mods. (1.1.0.2)")
+            .RegisterEntry("Fixed an issue with creating unnamed collections. (1.1.0.2)")
+            .RegisterEntry("Fixed an issue with the mod merger. (1.1.0.2)")
+            .RegisterEntry("Fixed the global EQP entry for rings checking for bracelets instead of rings. (1.1.0.2)")
+            .RegisterEntry("Fixed an issue with newly created collections not being added to the collection list. (1.1.0.1)");
 
     private static void Add1_1_0_0(Changelog log)
         => log.NextVersion("Version 1.1.0.0")

@@ -20,7 +20,6 @@ using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using OtterGui.Tasks;
 using Penumbra.GameData.Enums;
 using Penumbra.UI;
-using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
