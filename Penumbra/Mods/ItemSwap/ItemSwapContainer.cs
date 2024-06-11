@@ -124,7 +124,7 @@ public class ItemSwapContainer
 
     private MetaDictionary MetaResolver(ModCollection? collection)
         => collection?.MetaCache?.Manipulations is { } cache
-            ? [.. cache]
+            ? [] // [.. cache] TODO
             : _appliedModData.Manipulations;
 
     public EquipItem[] LoadEquipment(EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true,

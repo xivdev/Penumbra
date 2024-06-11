@@ -188,7 +188,6 @@ public static class StaticServiceManager
             .AddSingleton<DuplicateManager>()
             .AddSingleton<MdlMaterialEditor>()
             .AddSingleton<ModFileEditor>()
-            .AddSingleton<ModMetaEditor>()
             .AddSingleton<ModSwapEditor>()
             .AddSingleton<ModNormalizer>()
             .AddSingleton<ModMerger>()

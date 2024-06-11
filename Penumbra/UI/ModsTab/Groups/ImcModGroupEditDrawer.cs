@@ -7,6 +7,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
+using Penumbra.UI.AdvancedWindow.Meta;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
@@ -37,9 +38,9 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         ImGui.SameLine();
         using (ImUtf8.Group())
         {
-            changes |= ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref entry, true);
-            changes |= ImcManipulationDrawer.DrawVfxId(defaultEntry, ref entry, true);
-            changes |= ImcManipulationDrawer.DrawDecalId(defaultEntry, ref entry, true);
+            changes |= ImcMetaDrawer.DrawMaterialId(defaultEntry, ref entry, true);
+            changes |= ImcMetaDrawer.DrawVfxId(defaultEntry, ref entry, true);
+            changes |= ImcMetaDrawer.DrawDecalId(defaultEntry, ref entry, true);
         }
 
         ImGui.SameLine(0, editor.PriorityWidth);
@@ -54,8 +55,8 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
 
         using (ImUtf8.Group())
         {
-            changes |= ImcManipulationDrawer.DrawMaterialAnimationId(defaultEntry, ref entry, true);
-            changes |= ImcManipulationDrawer.DrawSoundId(defaultEntry, ref entry, true);
+            changes |= ImcMetaDrawer.DrawMaterialAnimationId(defaultEntry, ref entry, true);
+            changes |= ImcMetaDrawer.DrawSoundId(defaultEntry, ref entry, true);
             var canBeDisabled = group.CanBeDisabled;
             if (ImUtf8.Checkbox("##disabled"u8, ref canBeDisabled))
                 editor.ModManager.OptionEditor.ImcEditor.ChangeCanBeDisabled(group, canBeDisabled);

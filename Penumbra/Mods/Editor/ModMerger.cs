@@ -162,12 +162,9 @@ public class ModMerger : IDisposable
 
         foreach (var originalOption in mergeOptions)
         {
-            foreach (var manip in originalOption.Manipulations)
-            {
-                if (!manips.Add(manip))
-                    throw new Exception(
-                        $"Could not add meta manipulation {manip} from {originalOption.GetFullName()} to {option.GetFullName()} because another manipulation of the same data already exists in this option.");
-            }
+            if (!manips.MergeForced(originalOption.Manipulations, out var failed))
+                throw new Exception(
+                    $"Could not add meta manipulation {failed} from {originalOption.GetFullName()} to {option.GetFullName()} because another manipulation of the same data already exists in this option.");
 
             foreach (var (swapA, swapB) in originalOption.FileSwaps)
             {

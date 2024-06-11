@@ -7,7 +7,7 @@ using ImcEntry = Penumbra.GameData.Structs.ImcEntry;
 namespace Penumbra.Meta.Manipulations;
 
 [JsonConverter(typeof(Converter))]
-public sealed class MetaDictionary : IEnumerable<MetaManipulation>
+public class MetaDictionary : IEnumerable<MetaManipulation>
 {
     private readonly Dictionary<ImcIdentifier, ImcEntry>           _imc       = [];
     private readonly Dictionary<EqpIdentifier, EqpEntryInternal>   _eqp       = [];
@@ -17,7 +17,36 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
     private readonly Dictionary<GmpIdentifier, GmpEntry>           _gmp       = [];
     private readonly HashSet<GlobalEqpManipulation>                _globalEqp = [];
 
+    public IReadOnlyDictionary<ImcIdentifier, ImcEntry> Imc
+        => _imc;
+
     public int Count { get; private set; }
+
+    public int GetCount(MetaManipulation.Type type)
+        => type switch
+        {
+            MetaManipulation.Type.Imc       => _imc.Count,
+            MetaManipulation.Type.Eqdp      => _eqdp.Count,
+            MetaManipulation.Type.Eqp       => _eqp.Count,
+            MetaManipulation.Type.Est       => _est.Count,
+            MetaManipulation.Type.Gmp       => _gmp.Count,
+            MetaManipulation.Type.Rsp       => _rsp.Count,
+            MetaManipulation.Type.GlobalEqp => _globalEqp.Count,
+            _                               => 0,
+        };
+
+    public bool CanAdd(IMetaIdentifier identifier)
+        => identifier switch
+        {
+            EqdpIdentifier eqdpIdentifier               => !_eqdp.ContainsKey(eqdpIdentifier),
+            EqpIdentifier eqpIdentifier                 => !_eqp.ContainsKey(eqpIdentifier),
+            EstIdentifier estIdentifier                 => !_est.ContainsKey(estIdentifier),
+            GlobalEqpManipulation globalEqpManipulation => !_globalEqp.Contains(globalEqpManipulation),
+            GmpIdentifier gmpIdentifier                 => !_gmp.ContainsKey(gmpIdentifier),
+            ImcIdentifier imcIdentifier                 => !_imc.ContainsKey(imcIdentifier),
+            RspIdentifier rspIdentifier                 => !_rsp.ContainsKey(rspIdentifier),
+            _                                           => false,
+        };
 
     public void Clear()
     {
@@ -123,6 +152,68 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
         return true;
     }
 
+    public bool Update(ImcIdentifier identifier, ImcEntry entry)
+    {
+        if (!_imc.ContainsKey(identifier))
+            return false;
+
+        _imc[identifier] = entry;
+        return true;
+    }
+
+
+    public bool Update(EqpIdentifier identifier, EqpEntryInternal entry)
+    {
+        if (!_eqp.ContainsKey(identifier))
+            return false;
+
+        _eqp[identifier] = entry;
+        return true;
+    }
+
+    public bool Update(EqpIdentifier identifier, EqpEntry entry)
+        => Update(identifier, new EqpEntryInternal(entry, identifier.Slot));
+
+
+    public bool Update(EqdpIdentifier identifier, EqdpEntryInternal entry)
+    {
+        if (!_eqdp.ContainsKey(identifier))
+            return false;
+
+        _eqdp[identifier] = entry;
+        return true;
+    }
+
+    public bool Update(EqdpIdentifier identifier, EqdpEntry entry)
+        => Update(identifier, new EqdpEntryInternal(entry, identifier.Slot));
+
+    public bool Update(EstIdentifier identifier, EstEntry entry)
+    {
+        if (!_est.ContainsKey(identifier))
+            return false;
+
+        _est[identifier] = entry;
+        return true;
+    }
+
+    public bool Update(GmpIdentifier identifier, GmpEntry entry)
+    {
+        if (!_gmp.ContainsKey(identifier))
+            return false;
+
+        _gmp[identifier] = entry;
+        return true;
+    }
+
+    public bool Update(RspIdentifier identifier, RspEntry entry)
+    {
+        if (!_rsp.ContainsKey(identifier))
+            return false;
+
+        _rsp[identifier] = entry;
+        return true;
+    }
+
     public void UnionWith(MetaDictionary manips)
     {
         foreach (var (identifier, entry) in manips._imc)
@@ -148,70 +239,52 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
     }
 
     /// <summary> Try to merge all manipulations from manips into this, and return the first failure, if any. </summary>
-    public bool MergeForced(MetaDictionary manips, out IMetaIdentifier failedIdentifier)
+    public bool MergeForced(MetaDictionary manips, out IMetaIdentifier? failedIdentifier)
     {
-        foreach (var (identifier, entry) in manips._imc)
+        foreach (var (identifier, _) in manips._imc.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
-            if (!TryAdd(identifier, entry))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
 
-        foreach (var (identifier, entry) in manips._eqp)
+        foreach (var (identifier, _) in manips._eqp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
-            if (!TryAdd(identifier, entry))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
 
-        foreach (var (identifier, entry) in manips._eqdp)
+        foreach (var (identifier, _) in manips._eqdp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
-            if (!TryAdd(identifier, entry))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
 
-        foreach (var (identifier, entry) in manips._gmp)
+        foreach (var (identifier, _) in manips._gmp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
-            if (!TryAdd(identifier, entry))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
 
-        foreach (var (identifier, entry) in manips._rsp)
+        foreach (var (identifier, _) in manips._rsp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
-            if (!TryAdd(identifier, entry))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
 
-        foreach (var (identifier, entry) in manips._est)
+        foreach (var (identifier, _) in manips._est.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
-            if (!TryAdd(identifier, entry))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
 
-        foreach (var identifier in manips._globalEqp)
+        foreach (var identifier in manips._globalEqp.Where(identifier => !TryAdd(identifier)))
         {
-            if (!TryAdd(identifier))
-            {
-                failedIdentifier = identifier;
-                return false;
-            }
+            failedIdentifier = identifier;
+            return false;
         }
+
+        failedIdentifier = default;
+        return false;
     }
 
     public bool TryGetValue(EstIdentifier identifier, out EstEntry value)
@@ -244,11 +317,48 @@ public sealed class MetaDictionary : IEnumerable<MetaManipulation>
         Count = _imc.Count + _eqp.Count + _eqdp.Count + _est.Count + _rsp.Count + _gmp.Count + _globalEqp.Count;
     }
 
+    public void UpdateTo(MetaDictionary other)
+    {
+        _imc.UpdateTo(other._imc);
+        _eqp.UpdateTo(other._eqp);
+        _eqdp.UpdateTo(other._eqdp);
+        _est.UpdateTo(other._est);
+        _rsp.UpdateTo(other._rsp);
+        _gmp.UpdateTo(other._gmp);
+        _globalEqp.UnionWith(other._globalEqp);
+        Count = _imc.Count + _eqp.Count + _eqdp.Count + _est.Count + _rsp.Count + _gmp.Count + _globalEqp.Count;
+    }
+
     public MetaDictionary Clone()
     {
         var ret = new MetaDictionary();
         ret.SetTo(this);
         return ret;
+    }
+
+    private static void WriteJson(JsonWriter writer, JsonSerializer serializer, IMetaIdentifier identifier, object entry)
+    {
+        var type = identifier switch
+        {
+            ImcIdentifier         => "Imc",
+            EqdpIdentifier        => "Eqdp",
+            EqpIdentifier         => "Eqp",
+            EstIdentifier         => "Est",
+            GmpIdentifier         => "Gmp",
+            RspIdentifier         => "Rsp",
+            GlobalEqpManipulation => "GlobalEqp",
+            _                     => string.Empty,
+        };
+
+        if (type.Length == 0)
+            return;
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("Type");
+        writer.WriteValue(type);
+        writer.WritePropertyName("Manipulation");
+
+        writer.WriteEndObject();
     }
 
     private class Converter : JsonConverter<MetaDictionary>

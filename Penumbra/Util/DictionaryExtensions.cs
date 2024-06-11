@@ -45,6 +45,18 @@ public static class DictionaryExtensions
             lhs.Add(key, value);
     }
 
+    /// <summary> Set all entries in the right-hand dictionary to the same values in the left-hand dictionary, ensuring capacity beforehand. </summary>
+    public static void UpdateTo<TKey, TValue>(this Dictionary<TKey, TValue> lhs, IReadOnlyDictionary<TKey, TValue> rhs)
+        where TKey : notnull
+    {
+        if (ReferenceEquals(lhs, rhs))
+            return;
+
+        lhs.EnsureCapacity(rhs.Count);
+        foreach (var (key, value) in rhs)
+            lhs[key] = value;
+    }
+
     /// <summary> Set one set to the other, deleting previous entries and ensuring capacity beforehand. </summary>
     public static void SetTo<T>(this HashSet<T> lhs, IReadOnlySet<T> rhs)
     {

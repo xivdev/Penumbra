@@ -1,9 +1,148 @@
+using Dalamud.Interface;
+using ImGuiNET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using OtterGui;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.Mods.Editor;
 using Penumbra.String.Functions;
+using Penumbra.UI;
+using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Meta.Manipulations;
+
+#if false
+private static class ImcRow
+{
+    private static ImcIdentifier _newIdentifier = ImcIdentifier.Default;
+
+    private static float IdWidth
+        => 80 * UiHelpers.Scale;
+
+    private static float SmallIdWidth
+        => 45 * UiHelpers.Scale;
+
+    public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
+    {
+        ImGui.TableNextColumn();
+        CopyToClipboardButton("Copy all current IMC manipulations to clipboard.", iconSize,
+            editor.MetaEditor.Imc.Select(m => (MetaManipulation)m));
+        ImGui.TableNextColumn();
+        var (defaultEntry, fileExists, _) = metaFileManager.ImcChecker.GetDefaultEntry(_newIdentifier, true);
+        var manip = (MetaManipulation)new ImcManipulation(_newIdentifier, defaultEntry);
+        var canAdd = fileExists && editor.MetaEditor.CanAdd(manip);
+        var tt = canAdd ? "Stage this edit." : !fileExists ? "This IMC file does not exist." : "This entry is already edited.";
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
+            editor.MetaEditor.Add(manip);
+
+        // Identifier
+        ImGui.TableNextColumn();
+        var change = ImcManipulationDrawer.DrawObjectType(ref _newIdentifier);
+
+        ImGui.TableNextColumn();
+        change |= ImcManipulationDrawer.DrawPrimaryId(ref _newIdentifier);
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
+            new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
+
+        ImGui.TableNextColumn();
+        // Equipment and accessories are slightly different imcs than other types.
+        if (_newIdentifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
+            change |= ImcManipulationDrawer.DrawSlot(ref _newIdentifier);
+        else
+            change |= ImcManipulationDrawer.DrawSecondaryId(ref _newIdentifier);
+
+        ImGui.TableNextColumn();
+        change |= ImcManipulationDrawer.DrawVariant(ref _newIdentifier);
+
+        ImGui.TableNextColumn();
+        if (_newIdentifier.ObjectType is ObjectType.DemiHuman)
+            change |= ImcManipulationDrawer.DrawSlot(ref _newIdentifier, 70);
+        else
+            ImUtf8.ScaledDummy(new Vector2(70 * UiHelpers.Scale, 0));
+
+        if (change)
+            defaultEntry = metaFileManager.ImcChecker.GetDefaultEntry(_newIdentifier, true).Entry;
+        // Values
+        using var disabled = ImRaii.Disabled();
+        ImGui.TableNextColumn();
+        ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref defaultEntry, false);
+        ImGui.SameLine();
+        ImcManipulationDrawer.DrawMaterialAnimationId(defaultEntry, ref defaultEntry, false);
+        ImGui.TableNextColumn();
+        ImcManipulationDrawer.DrawDecalId(defaultEntry, ref defaultEntry, false);
+        ImGui.SameLine();
+        ImcManipulationDrawer.DrawVfxId(defaultEntry, ref defaultEntry, false);
+        ImGui.SameLine();
+        ImcManipulationDrawer.DrawSoundId(defaultEntry, ref defaultEntry, false);
+        ImGui.TableNextColumn();
+        ImcManipulationDrawer.DrawAttributes(defaultEntry, ref defaultEntry);
+    }
+
+    public static void Draw(MetaFileManager metaFileManager, ImcManipulation meta, ModEditor editor, Vector2 iconSize)
+    {
+        DrawMetaButtons(meta, editor, iconSize);
+
+        // Identifier
+        ImGui.TableNextColumn();
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+        ImGui.TextUnformatted(meta.ObjectType.ToName());
+        ImGuiUtil.HoverTooltip(ObjectTypeTooltip);
+        ImGui.TableNextColumn();
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+        ImGui.TextUnformatted(meta.PrimaryId.ToString());
+        ImGuiUtil.HoverTooltip(PrimaryIdTooltipShort);
+
+        ImGui.TableNextColumn();
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+        if (meta.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
+        {
+            ImGui.TextUnformatted(meta.EquipSlot.ToName());
+            ImGuiUtil.HoverTooltip(EquipSlotTooltip);
+        }
+        else
+        {
+            ImGui.TextUnformatted(meta.SecondaryId.ToString());
+            ImGuiUtil.HoverTooltip(SecondaryIdTooltip);
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+        ImGui.TextUnformatted(meta.Variant.ToString());
+        ImGuiUtil.HoverTooltip(VariantIdTooltip);
+
+        ImGui.TableNextColumn();
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
+        if (meta.ObjectType is ObjectType.DemiHuman)
+        {
+            ImGui.TextUnformatted(meta.EquipSlot.ToName());
+            ImGuiUtil.HoverTooltip(EquipSlotTooltip);
+        }
+
+        // Values
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
+            new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
+        ImGui.TableNextColumn();
+        var defaultEntry = metaFileManager.ImcChecker.GetDefaultEntry(meta.Identifier, true).Entry;
+        var newEntry = meta.Entry;
+        var changes = ImcManipulationDrawer.DrawMaterialId(defaultEntry, ref newEntry, true);
+        ImGui.SameLine();
+        changes |= ImcManipulationDrawer.DrawMaterialAnimationId(defaultEntry, ref newEntry, true);
+        ImGui.TableNextColumn();
+        changes |= ImcManipulationDrawer.DrawDecalId(defaultEntry, ref newEntry, true);
+        ImGui.SameLine();
+        changes |= ImcManipulationDrawer.DrawVfxId(defaultEntry, ref newEntry, true);
+        ImGui.SameLine();
+        changes |= ImcManipulationDrawer.DrawSoundId(defaultEntry, ref newEntry, true);
+        ImGui.TableNextColumn();
+        changes |= ImcManipulationDrawer.DrawAttributes(defaultEntry, ref newEntry);
+
+        if (changes)
+            editor.MetaEditor.Change(meta.Copy(newEntry));
+    }
+}
+
+#endif
 
 public interface IMetaManipulation
 {
@@ -315,3 +454,4 @@ public readonly struct MetaManipulation : IEquatable<MetaManipulation>, ICompara
     public static bool operator >=(MetaManipulation left, MetaManipulation right)
         => left.CompareTo(right) >= 0;
 }
+

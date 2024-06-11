@@ -9,6 +9,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Groups;
@@ -79,29 +80,29 @@ public class AddGroupDrawer : IUiService
 
     private void DrawImcInput(float width)
     {
-        var change = ImcManipulationDrawer.DrawObjectType(ref _imcIdentifier, width);
+        var change = ImcMetaDrawer.DrawObjectType(ref _imcIdentifier, width);
         ImUtf8.SameLineInner();
-        change |= ImcManipulationDrawer.DrawPrimaryId(ref _imcIdentifier, width);
+        change |= ImcMetaDrawer.DrawPrimaryId(ref _imcIdentifier, width);
         if (_imcIdentifier.ObjectType is ObjectType.Weapon or ObjectType.Monster)
         {
-            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcIdentifier, width);
+            change |= ImcMetaDrawer.DrawSecondaryId(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawVariant(ref _imcIdentifier, width);
+            change |= ImcMetaDrawer.DrawVariant(ref _imcIdentifier, width);
         }
         else if (_imcIdentifier.ObjectType is ObjectType.DemiHuman)
         {
             var quarterWidth = (width - ImUtf8.ItemInnerSpacing.X / ImUtf8.GlobalScale) / 2;
-            change |= ImcManipulationDrawer.DrawSecondaryId(ref _imcIdentifier, width);
+            change |= ImcMetaDrawer.DrawSecondaryId(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawSlot(ref _imcIdentifier, quarterWidth);
+            change |= ImcMetaDrawer.DrawSlot(ref _imcIdentifier, quarterWidth);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawVariant(ref _imcIdentifier, quarterWidth);
+            change |= ImcMetaDrawer.DrawVariant(ref _imcIdentifier, quarterWidth);
         }
         else
         {
-            change |= ImcManipulationDrawer.DrawSlot(ref _imcIdentifier, width);
+            change |= ImcMetaDrawer.DrawSlot(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
-            change |= ImcManipulationDrawer.DrawVariant(ref _imcIdentifier, width);
+            change |= ImcMetaDrawer.DrawVariant(ref _imcIdentifier, width);
         }
 
         if (change)

@@ -37,7 +37,7 @@ public static class SubMod
     {
         to.Files         = new Dictionary<Utf8GamePath, FullPath>(from.Files);
         to.FileSwaps     = new Dictionary<Utf8GamePath, FullPath>(from.FileSwaps);
-        to.Manipulations = [.. from.Manipulations];
+        to.Manipulations = from.Manipulations.Clone();
     }
 
     /// <summary> Load all file redirections, file swaps and meta manipulations from a JToken of that option into a data container. </summary>
