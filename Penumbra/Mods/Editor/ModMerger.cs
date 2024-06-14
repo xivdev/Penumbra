@@ -196,7 +196,7 @@ public class ModMerger : IDisposable
         {
             if (fromFileToFile)
             {
-                if (!_fileToFile.TryGetValue(input.FullName, out var s))
+                if (!_fileToFile.TryGetValue(input.FullName.ToLowerInvariant(), out var s))
                 {
                     ret = input;
                     return false;
@@ -238,7 +238,7 @@ public class ModMerger : IDisposable
             Directory.CreateDirectory(finalDir);
             file.CopyTo(path);
             Penumbra.Log.Verbose($"[Merger] Copied file {file.FullName} to {path}.");
-            _fileToFile.Add(file.FullName, path);
+            _fileToFile.Add(file.FullName.ToLowerInvariant(), path);
         }
     }
 
