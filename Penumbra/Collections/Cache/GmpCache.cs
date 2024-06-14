@@ -1,4 +1,4 @@
-using OtterGui.Filesystem;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
@@ -7,50 +7,76 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
 
-public struct GmpCache : IDisposable
+public sealed class GmpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<GmpIdentifier, GmpEntry>(manager, collection)
 {
-    private          ExpandedGmpFile?      _gmpFile          = null;
-    private readonly List<GmpManipulation> _gmpManipulations = new();
+    private ExpandedGmpFile? _gmpFile;
 
-    public GmpCache()
-    { }
+    public override void SetFiles()
+        => Manager.SetFile(_gmpFile, MetaIndex.Gmp);
 
-    public void SetFiles(MetaFileManager manager)
-        => manager.SetFile(_gmpFile, MetaIndex.Gmp);
+    public override void ResetFiles()
+        => Manager.SetFile(null, MetaIndex.Gmp);
 
-    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
-        => manager.TemporarilySetFile(_gmpFile, MetaIndex.Gmp);
+    protected override void IncorporateChangesInternal()
+    {
+        if (GetFile() is not { } file)
+            return;
 
-    public void Reset()
+        foreach (var (identifier, (_, entry)) in this)
+            Apply(file, identifier, entry);
+
+        Penumbra.Log.Verbose($"{Collection.AnonymizedName}: Loaded {Count} delayed GMP manipulations.");
+    }
+
+    public MetaList.MetaReverter TemporarilySetFile()
+        => Manager.TemporarilySetFile(_gmpFile, MetaIndex.Gmp);
+
+    public override void Reset()
     {
         if (_gmpFile == null)
             return;
 
-        _gmpFile.Reset(_gmpManipulations.Select(m => m.SetId));
-        _gmpManipulations.Clear();
+        _gmpFile.Reset(Keys.Select(identifier => identifier.SetId));
+        Clear();
     }
 
-    public bool ApplyMod(MetaFileManager manager, GmpManipulation manip)
+    protected override void ApplyModInternal(GmpIdentifier identifier, GmpEntry entry)
     {
-        _gmpManipulations.AddOrReplace(manip);
-        _gmpFile ??= new ExpandedGmpFile(manager);
-        return manip.Apply(_gmpFile);
+        if (GetFile() is { } file)
+            Apply(file, identifier, entry);
     }
 
-    public bool RevertMod(MetaFileManager manager, GmpManipulation manip)
+    protected override void RevertModInternal(GmpIdentifier identifier)
     {
-        if (!_gmpManipulations.Remove(manip))
+        if (GetFile() is { } file)
+            Apply(file, identifier, ExpandedGmpFile.GetDefault(Manager, identifier.SetId));
+    }
+
+    public static bool Apply(ExpandedGmpFile file, GmpIdentifier identifier, GmpEntry entry)
+    {
+        var origEntry = file[identifier.SetId];
+        if (entry == origEntry)
             return false;
 
-        var def = ExpandedGmpFile.GetDefault(manager, manip.SetId);
-        manip = new GmpManipulation(def, manip.SetId);
-        return manip.Apply(_gmpFile!);
+        file[identifier.SetId] = entry;
+        return true;
     }
 
-    public void Dispose()
+    protected override void Dispose(bool _)
     {
         _gmpFile?.Dispose();
         _gmpFile = null;
-        _gmpManipulations.Clear();
+        Clear();
+    }
+
+    private ExpandedGmpFile? GetFile()
+    {
+        if (_gmpFile != null)
+            return _gmpFile;
+
+        if (!Manager.CharacterUtility.Ready)
+            return null;
+
+        return _gmpFile = new ExpandedGmpFile(Manager);
     }
 }

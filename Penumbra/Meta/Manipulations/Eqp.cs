@@ -50,6 +50,9 @@ public readonly record struct EqpIdentifier(PrimaryId SetId, EquipSlot Slot) : I
         jObj["Slot"]  = Slot.ToString();
         return jObj;
     }
+
+    public MetaManipulationType Type
+        => MetaManipulationType.Eqp;
 }
 
 public readonly record struct EqpEntryInternal(uint Value)

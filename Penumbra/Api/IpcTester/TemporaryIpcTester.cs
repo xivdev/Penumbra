@@ -5,6 +5,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
+using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Collections.Manager;
@@ -102,8 +103,7 @@ public class TemporaryIpcTester(
          && copyCollection is { HasCache: true })
         {
             var files = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
-            var manips = Functions.ToCompressedBase64(copyCollection.MetaCache?.Manipulations.ToArray() ?? Array.Empty<MetaManipulation>(),
-                MetaManipulation.CurrentVersion);
+            var manips = MetaApi.CompressMetaManipulations(copyCollection);
             _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid, files, manips, 999);
         }
 
@@ -188,8 +188,8 @@ public class TemporaryIpcTester(
                 if (ImGui.IsItemHovered())
                 {
                     using var tt = ImRaii.Tooltip();
-                    foreach (var manip in mod.Default.Manipulations)
-                        ImGui.TextUnformatted(manip.ToString());
+                    foreach (var identifier in mod.Default.Manipulations.Identifiers)
+                        ImGui.TextUnformatted(identifier.ToString());
                 }
             }
         }

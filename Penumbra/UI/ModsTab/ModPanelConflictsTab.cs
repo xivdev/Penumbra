@@ -120,9 +120,9 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
             {
                 var _ = data switch
                 {
-                    Utf8GamePath p     => ImGuiNative.igSelectable_Bool(p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero) > 0,
-                    MetaManipulation m => ImGui.Selectable(m.Manipulation?.ToString() ?? string.Empty),
-                    _                  => false,
+                    Utf8GamePath p    => ImGuiNative.igSelectable_Bool(p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero) > 0,
+                    IMetaIdentifier m => ImGui.Selectable(m.ToString()),
+                    _                 => false,
                 };
             }
         }

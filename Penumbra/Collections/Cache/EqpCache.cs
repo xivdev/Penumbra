@@ -1,4 +1,4 @@
-using OtterGui.Filesystem;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
@@ -7,54 +7,77 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
 
-public struct EqpCache : IDisposable
+public sealed class EqpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<EqpIdentifier, EqpEntry>(manager, collection)
 {
-    private          ExpandedEqpFile?      _eqpFile          = null;
-    private readonly List<EqpManipulation> _eqpManipulations = new();
+    private ExpandedEqpFile? _eqpFile;
 
-    public EqpCache()
-    { }
+    public override void SetFiles()
+        => Manager.SetFile(_eqpFile, MetaIndex.Eqp);
 
-    public void SetFiles(MetaFileManager manager)
-        => manager.SetFile(_eqpFile, MetaIndex.Eqp);
+    public override void ResetFiles()
+        => Manager.SetFile(null, MetaIndex.Eqp);
 
-    public static void ResetFiles(MetaFileManager manager)
-        => manager.SetFile(null, MetaIndex.Eqp);
+    protected override void IncorporateChangesInternal()
+    {
+        if (GetFile() is not { } file)
+            return;
 
-    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
-        => manager.TemporarilySetFile(_eqpFile, MetaIndex.Eqp);
+        foreach (var (identifier, (_, entry)) in this)
+            Apply(file, identifier, entry);
 
-    public void Reset()
+        Penumbra.Log.Verbose($"{Collection.AnonymizedName}: Loaded {Count} delayed EQP manipulations.");
+    }
+
+    public MetaList.MetaReverter TemporarilySetFile()
+        => Manager.TemporarilySetFile(_eqpFile, MetaIndex.Eqp);
+
+    public override void Reset()
     {
         if (_eqpFile == null)
             return;
 
-        _eqpFile.Reset(_eqpManipulations.Select(m => m.SetId));
-        _eqpManipulations.Clear();
+        _eqpFile.Reset(Keys.Select(identifier => identifier.SetId));
+        Clear();
     }
 
-    public bool ApplyMod(MetaFileManager manager, EqpManipulation manip)
+    protected override void ApplyModInternal(EqpIdentifier identifier, EqpEntry entry)
     {
-        _eqpManipulations.AddOrReplace(manip);
-        _eqpFile ??= new ExpandedEqpFile(manager);
-        return manip.Apply(_eqpFile);
+        if (GetFile() is { } file)
+            Apply(file, identifier, entry);
     }
 
-    public bool RevertMod(MetaFileManager manager, EqpManipulation manip)
+    protected override void RevertModInternal(EqpIdentifier identifier)
     {
-        var idx = _eqpManipulations.FindIndex(manip.Equals);
-        if (idx < 0)
+        if (GetFile() is { } file)
+            Apply(file, identifier, ExpandedEqpFile.GetDefault(Manager, identifier.SetId));
+    }
+
+    public static bool Apply(ExpandedEqpFile file, EqpIdentifier identifier, EqpEntry entry)
+    {
+        var origEntry = file[identifier.SetId];
+        var mask      = Eqp.Mask(identifier.Slot);
+        if ((origEntry & mask) == entry)
             return false;
 
-        var def = ExpandedEqpFile.GetDefault(manager, manip.SetId);
-        manip = new EqpManipulation(def, manip.Slot, manip.SetId);
-        return manip.Apply(_eqpFile!);
+        file[identifier.SetId] = (origEntry & ~mask) | entry;
+        return true;
     }
 
-    public void Dispose()
+    protected override void Dispose(bool _)
     {
         _eqpFile?.Dispose();
         _eqpFile = null;
-        _eqpManipulations.Clear();
+        Clear();
+    }
+
+    private ExpandedEqpFile? GetFile()
+    {
+        if (_eqpFile != null)
+            return _eqpFile;
+
+        if (!Manager.CharacterUtility.Ready)
+            return null;
+
+        return _eqpFile = new ExpandedEqpFile(Manager);
     }
 }

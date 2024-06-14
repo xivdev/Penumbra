@@ -12,22 +12,16 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
-public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
+public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
     : MetaDrawer<ImcIdentifier, ImcEntry>(editor, metaFiles), IService
 {
-    private bool _fileExists;
+    public override ReadOnlySpan<byte> Label
+        => "Variant Edits (IMC)###IMC"u8;
 
-    private const string ModelSetIdTooltipShort = "Model Set ID";
-    private const string EquipSlotTooltip       = "Equip Slot";
-    private const string ModelRaceTooltip       = "Model Race";
-    private const string GenderTooltip          = "Gender";
-    private const string ObjectTypeTooltip      = "Object Type";
-    private const string SecondaryIdTooltip     = "Secondary ID";
-    private const string PrimaryIdTooltipShort  = "Primary ID";
-    private const string VariantIdTooltip       = "Variant ID";
-    private const string EstTypeTooltip         = "EST Type";
-    private const string RacialTribeTooltip     = "Racial Tribe";
-    private const string ScalingTypeTooltip     = "Scaling Type";
+    public override int NumColumns
+        => 10;
+
+    private bool _fileExists;
 
     protected override void Initialize()
     {
@@ -41,14 +35,14 @@ public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        // Copy To Clipboard
+        CopyToClipboardButton("Copy all current IMC manipulations to clipboard."u8, MetaDictionary.SerializeTo([], Editor.Imc));
         ImGui.TableNextColumn();
-        var canAdd = _fileExists && Editor.MetaEditor.CanAdd(Identifier);
+        var canAdd = _fileExists && !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : !_fileExists ? "This IMC file does not exist."u8 : "This entry is already edited."u8;
         if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
-            Editor.MetaEditor.TryAdd(Identifier, Entry);
+            Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
-        if (DrawIdentifier(ref Identifier))
+        if (DrawIdentifierInput(ref Identifier))
             UpdateEntry();
 
         using var disabled = ImRaii.Disabled();
@@ -57,46 +51,15 @@ public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
 
     protected override void DrawEntry(ImcIdentifier identifier, ImcEntry entry)
     {
-        const uint frameColor = 0;
-        // Meta Buttons
-
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.ObjectType.ToName(), frameColor);
-        ImUtf8.HoverTooltip("Object Type"u8);
-
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.PrimaryId.Id}", frameColor);
-        ImUtf8.HoverTooltip("Primary ID");
-
-        ImGui.TableNextColumn();
-        if (identifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
-        {
-            ImUtf8.TextFramed(identifier.EquipSlot.ToName(), frameColor);
-            ImUtf8.HoverTooltip("Equip Slot"u8);
-        }
-        else
-        {
-            ImUtf8.TextFramed($"{identifier.SecondaryId.Id}", frameColor);
-            ImUtf8.HoverTooltip("Secondary ID"u8);
-        }
-
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.Variant.Id}", frameColor);
-        ImUtf8.HoverTooltip("Variant"u8);
-
-        ImGui.TableNextColumn();
-        if (identifier.ObjectType is ObjectType.DemiHuman)
-        {
-            ImUtf8.TextFramed(identifier.EquipSlot.ToName(), frameColor);
-            ImUtf8.HoverTooltip("Equip Slot"u8);
-        }
+        DrawMetaButtons(identifier, entry);
+        DrawIdentifier(identifier);
 
         var defaultEntry = MetaFiles.ImcChecker.GetDefaultEntry(identifier, true).Entry;
         if (DrawEntry(defaultEntry, ref entry, true))
-            Editor.MetaEditor.Update(identifier, entry);
+            Editor.Changes |= Editor.Update(identifier, entry);
     }
 
-    private static bool DrawIdentifier(ref ImcIdentifier identifier)
+    private static bool DrawIdentifierInput(ref ImcIdentifier identifier)
     {
         ImGui.TableNextColumn();
         var change = DrawObjectType(ref identifier);
@@ -121,6 +84,41 @@ public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
         return change;
     }
 
+    private static void DrawIdentifier(ImcIdentifier identifier)
+    {
+        ImGui.TableNextColumn();
+        ImUtf8.TextFramed(identifier.ObjectType.ToName(), FrameColor);
+        ImUtf8.HoverTooltip("Object Type"u8);
+
+        ImGui.TableNextColumn();
+        ImUtf8.TextFramed($"{identifier.PrimaryId.Id}", FrameColor);
+        ImUtf8.HoverTooltip("Primary ID");
+
+        ImGui.TableNextColumn();
+        if (identifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
+        {
+            ImUtf8.TextFramed(identifier.EquipSlot.ToName(), FrameColor);
+            ImUtf8.HoverTooltip("Equip Slot"u8);
+        }
+        else
+        {
+            ImUtf8.TextFramed($"{identifier.SecondaryId.Id}", FrameColor);
+            ImUtf8.HoverTooltip("Secondary ID"u8);
+        }
+
+        ImGui.TableNextColumn();
+        ImUtf8.TextFramed($"{identifier.Variant.Id}", FrameColor);
+        ImUtf8.HoverTooltip("Variant"u8);
+
+        ImGui.TableNextColumn();
+        if (identifier.ObjectType is ObjectType.DemiHuman)
+        {
+            ImUtf8.TextFramed(identifier.EquipSlot.ToName(), FrameColor);
+            ImUtf8.HoverTooltip("Equip Slot"u8);
+        }
+
+    }
+
     private static bool DrawEntry(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault)
     {
         ImGui.TableNextColumn();
@@ -142,7 +140,7 @@ public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
 
 
     protected override IEnumerable<(ImcIdentifier, ImcEntry)> Enumerate()
-        => Editor.MetaEditor.Imc.Select(kvp => (kvp.Key, kvp.Value));
+        => Editor.Imc.Select(kvp => (kvp.Key, kvp.Value));
 
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
@@ -270,7 +268,7 @@ public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
         return true;
     }
 
-    public static bool DrawAttributes(ImcEntry defaultEntry, ref ImcEntry entry)
+    private static bool DrawAttributes(ImcEntry defaultEntry, ref ImcEntry entry)
     {
         var changes = false;
         for (var i = 0; i < ImcEntry.NumAttributes; ++i)
@@ -291,63 +289,5 @@ public sealed class ImcMetaDrawer(ModEditor editor, MetaFileManager metaFiles)
         }
 
         return changes;
-    }
-
-
-    /// <summary>
-    /// A number input for ids with an optional max id of given width.
-    /// Returns true if newId changed against currentId.
-    /// </summary>
-    private static bool IdInput(ReadOnlySpan<byte> label, float unscaledWidth, ushort currentId, out ushort newId, int minId, int maxId,
-        bool border)
-    {
-        int tmp = currentId;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, UiHelpers.Scale, border);
-        using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.RegexWarningBorder, border);
-        if (ImUtf8.InputScalar(label, ref tmp))
-            tmp = Math.Clamp(tmp, minId, maxId);
-
-        newId = (ushort)tmp;
-        return newId != currentId;
-    }
-
-    /// <summary>
-    /// A dragging int input of given width that compares against a default value, shows a tooltip and clamps against min and max.
-    /// Returns true if newValue changed against currentValue.
-    /// </summary>
-    private static bool DragInput<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, float width, T currentValue, T defaultValue,
-        out T newValue, T minValue, T maxValue, float speed, bool addDefault) where T : unmanaged, INumber<T>
-    {
-        newValue = currentValue;
-        using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
-            defaultValue != currentValue);
-        ImGui.SetNextItemWidth(width);
-        if (ImUtf8.DragScalar(label, ref newValue, minValue, maxValue, speed))
-            newValue = newValue <= minValue ? minValue : newValue >= maxValue ? maxValue : newValue;
-
-        if (addDefault)
-            ImUtf8.HoverTooltip($"{tooltip}\nDefault Value: {defaultValue}");
-        else
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
-
-        return newValue != currentValue;
-    }
-
-    /// <summary>
-    /// A checkmark that compares against a default value and shows a tooltip.
-    /// Returns true if newValue is changed against currentValue.
-    /// </summary>
-    private static bool Checkmark(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, bool currentValue, bool defaultValue,
-        out bool newValue)
-    {
-        using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
-            defaultValue != currentValue);
-        newValue = currentValue;
-        ImUtf8.Checkbox(label, ref newValue);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
-        return newValue != currentValue;
     }
 }

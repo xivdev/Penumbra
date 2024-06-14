@@ -93,8 +93,7 @@ public class TemporaryMod : IMod
                 }
             }
 
-            // TODO
-            MetaDictionary manips = []; // [.. collection.MetaCache?.Manipulations ?? []];
+            var manips = new MetaDictionary(collection.MetaCache);
             defaultMod.Manipulations.UnionWith(manips);
 
             saveService.ImmediateSave(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));

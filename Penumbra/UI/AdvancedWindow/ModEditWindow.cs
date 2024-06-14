@@ -25,6 +25,7 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
@@ -586,7 +587,7 @@ public partial class ModEditWindow : Window, IDisposable
         StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, ObjectManager objects, IFramework framework,
-        CharacterBaseDestructor characterBaseDestructor)
+        CharacterBaseDestructor characterBaseDestructor, MetaDrawers metaDrawers)
         : base(WindowBaseLabel)
     {
         _performance             = performance;
@@ -606,6 +607,7 @@ public partial class ModEditWindow : Window, IDisposable
         _objects                 = objects;
         _framework               = framework;
         _characterBaseDestructor = characterBaseDestructor;
+        _metaDrawers             = metaDrawers;
         _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));

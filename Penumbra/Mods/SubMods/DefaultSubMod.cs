@@ -13,7 +13,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
-    public MetaDictionary                     Manipulations { get; set; } = [];
+    public MetaDictionary                     Manipulations { get; set; } = new();
 
     IMod IModDataContainer.Mod
         => Mod;

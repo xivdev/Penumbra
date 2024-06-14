@@ -10,7 +10,7 @@ public record struct AppliedModData(
     Dictionary<Utf8GamePath, FullPath> FileRedirections,
     MetaDictionary Manipulations)
 {
-    public static readonly AppliedModData Empty = new([], []);
+    public static readonly AppliedModData Empty = new([], new MetaDictionary());
 }
 
 public interface IMod

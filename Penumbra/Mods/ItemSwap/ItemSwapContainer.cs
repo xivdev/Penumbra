@@ -123,8 +123,8 @@ public class ItemSwapContainer
             : p => ModRedirections.TryGetValue(p, out var path) ? path : new FullPath(p);
 
     private MetaDictionary MetaResolver(ModCollection? collection)
-        => collection?.MetaCache?.Manipulations is { } cache
-            ? [] // [.. cache] TODO
+        => collection?.MetaCache is { } cache
+            ? new MetaDictionary(cache)
             : _appliedModData.Manipulations;
 
     public EquipItem[] LoadEquipment(EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true,

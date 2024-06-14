@@ -136,14 +136,14 @@ public static class ItemSwap
     public static FileSwap CreatePhyb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
         GenderRace race, EstEntry estEntry)
     {
-        var phybPath = GamePaths.Skeleton.Phyb.Path(race, EstManipulation.ToName(type), estEntry.AsId);
+        var phybPath = GamePaths.Skeleton.Phyb.Path(race, type.ToName(), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Phyb, redirections, phybPath, phybPath);
     }
 
     public static FileSwap CreateSklb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
         GenderRace race, EstEntry estEntry)
     {
-        var sklbPath = GamePaths.Skeleton.Sklb.Path(race, EstManipulation.ToName(type), estEntry.AsId);
+        var sklbPath = GamePaths.Skeleton.Sklb.Path(race, type.ToName(), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Sklb, redirections, sklbPath, sklbPath);
     }
 
@@ -154,10 +154,11 @@ public static class ItemSwap
             return null;
 
         var manipFromIdentifier = new EstIdentifier(idFrom, type, genderRace);
-        var manipToIdentifier = new EstIdentifier(idTo, type, genderRace);
-        var manipFromDefault = EstFile.GetDefault(manager, manipFromIdentifier);
-        var manipToDefault = EstFile.GetDefault(manager, manipToIdentifier);
-        var est = new MetaSwap<EstIdentifier, EstEntry>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier, manipFromDefault, manipToIdentifier, manipToDefault);
+        var manipToIdentifier   = new EstIdentifier(idTo,   type, genderRace);
+        var manipFromDefault    = EstFile.GetDefault(manager, manipFromIdentifier);
+        var manipToDefault      = EstFile.GetDefault(manager, manipToIdentifier);
+        var est = new MetaSwap<EstIdentifier, EstEntry>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier, manipFromDefault,
+            manipToIdentifier, manipToDefault);
 
         if (ownMdl && est.SwapToModdedEntry.Value >= 2)
         {
@@ -214,6 +215,22 @@ public static class ItemSwap
         => condition
             ? path.Replace($"_{from.ToSuffix()}_", $"_{to.ToSuffix()}_")
             : path;
+
+    public static string ReplaceType(string path, EquipSlot from, EquipSlot to, PrimaryId idFrom)
+    {
+        var isAccessoryFrom = from.IsAccessory();
+        if (isAccessoryFrom == to.IsAccessory())
+            return path;
+
+        if (isAccessoryFrom)
+        {
+            path = path.Replace("accessory/a", "equipment/e");
+            return path.Replace($"a{idFrom.Id:D4}", $"e{idFrom.Id:D4}");
+        }
+
+        path = path.Replace("equipment/e", "accessory/a");
+        return path.Replace($"e{idFrom.Id:D4}", $"a{idFrom.Id:D4}");
+    }
 
     public static string ReplaceRace(string path, GenderRace from, GenderRace to, bool condition = true)
         => ReplaceId(path, 'c', (ushort)from, (ushort)to, condition);

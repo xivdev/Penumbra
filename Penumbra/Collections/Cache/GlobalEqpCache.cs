@@ -1,9 +1,11 @@
 using OtterGui.Services;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Editor;
 
-namespace Penumbra.Meta.Manipulations;
+namespace Penumbra.Collections.Cache;
 
-public struct GlobalEqpCache : IService
+public class GlobalEqpCache : Dictionary<GlobalEqpManipulation, IMod>, IService
 {
     private readonly HashSet<PrimaryId> _doNotHideEarrings  = [];
     private readonly HashSet<PrimaryId> _doNotHideNecklace  = [];
@@ -13,11 +15,9 @@ public struct GlobalEqpCache : IService
     private          bool               _doNotHideVieraHats;
     private          bool               _doNotHideHrothgarHats;
 
-    public GlobalEqpCache()
-    { }
-
-    public void Clear()
+    public new void Clear()
     {
+        base.Clear();
         _doNotHideEarrings.Clear();
         _doNotHideNecklace.Clear();
         _doNotHideBracelets.Clear();
@@ -29,6 +29,9 @@ public struct GlobalEqpCache : IService
 
     public unsafe EqpEntry Apply(EqpEntry original, CharacterArmor* armor)
     {
+        if (Count == 0)
+            return original;
+
         if (_doNotHideVieraHats)
             original |= EqpEntry.HeadShowVieraHat;
 
@@ -52,8 +55,13 @@ public struct GlobalEqpCache : IService
         return original;
     }
 
-    public bool Add(GlobalEqpManipulation manipulation)
-        => manipulation.Type switch
+    public bool ApplyMod(IMod mod, GlobalEqpManipulation manipulation)
+    {
+        if (Remove(manipulation, out var oldMod) && oldMod == mod)
+            return false;
+
+        this[manipulation] = mod;
+        _ = manipulation.Type switch
         {
             GlobalEqpType.DoNotHideEarrings     => _doNotHideEarrings.Add(manipulation.Condition),
             GlobalEqpType.DoNotHideNecklace     => _doNotHideNecklace.Add(manipulation.Condition),
@@ -61,12 +69,18 @@ public struct GlobalEqpCache : IService
             GlobalEqpType.DoNotHideRingR        => _doNotHideRingR.Add(manipulation.Condition),
             GlobalEqpType.DoNotHideRingL        => _doNotHideRingL.Add(manipulation.Condition),
             GlobalEqpType.DoNotHideHrothgarHats => !_doNotHideHrothgarHats && (_doNotHideHrothgarHats = true),
-            GlobalEqpType.DoNotHideVieraHats    => !_doNotHideVieraHats && (_doNotHideVieraHats = true),
-            _                                         => false,
+            GlobalEqpType.DoNotHideVieraHats    => !_doNotHideVieraHats && (_doNotHideVieraHats       = true),
+            _                                   => false,
         };
+        return true;
+    }
 
-    public bool Remove(GlobalEqpManipulation manipulation)
-        => manipulation.Type switch
+    public bool RevertMod(GlobalEqpManipulation manipulation, [NotNullWhen(true)] out IMod? mod)
+    {
+        if (!Remove(manipulation, out mod))
+            return false;
+
+        _ = manipulation.Type switch
         {
             GlobalEqpType.DoNotHideEarrings     => _doNotHideEarrings.Remove(manipulation.Condition),
             GlobalEqpType.DoNotHideNecklace     => _doNotHideNecklace.Remove(manipulation.Condition),
@@ -74,7 +88,9 @@ public struct GlobalEqpCache : IService
             GlobalEqpType.DoNotHideRingR        => _doNotHideRingR.Remove(manipulation.Condition),
             GlobalEqpType.DoNotHideRingL        => _doNotHideRingL.Remove(manipulation.Condition),
             GlobalEqpType.DoNotHideHrothgarHats => _doNotHideHrothgarHats && !(_doNotHideHrothgarHats = false),
-            GlobalEqpType.DoNotHideVieraHats    => _doNotHideVieraHats && !(_doNotHideVieraHats = false),
-            _                                         => false,
+            GlobalEqpType.DoNotHideVieraHats    => _doNotHideVieraHats && !(_doNotHideVieraHats       = false),
+            _                                   => false,
         };
+        return true;
+    }
 }

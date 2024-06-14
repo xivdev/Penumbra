@@ -95,7 +95,7 @@ public partial class ModEditWindow
             task.ContinueWith(t => { GamePaths = FinalizeIo(t); }, TaskScheduler.Default);
         }
 
-        private EstManipulation[] GetCurrentEstManipulations()
+        private KeyValuePair<EstIdentifier, EstEntry>[] GetCurrentEstManipulations()
         {
             var mod    = _edit._editor.Mod;
             var option = _edit._editor.Option;
@@ -106,9 +106,7 @@ public partial class ModEditWindow
             return mod.AllDataContainers
                 .Where(subMod => subMod != option)
                 .Prepend(option)
-                .SelectMany(subMod => subMod.Manipulations)
-                .Where(manipulation => manipulation.ManipulationType is MetaManipulation.Type.Est)
-                .Select(manipulation => manipulation.Est)
+                .SelectMany(subMod => subMod.Manipulations.Est)
                 .ToArray();
         }
 

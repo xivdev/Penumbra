@@ -1,11 +1,12 @@
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly struct GlobalEqpManipulation : IMetaManipulation<GlobalEqpManipulation>, IMetaIdentifier
+public readonly struct GlobalEqpManipulation : IMetaIdentifier
 {
     public GlobalEqpType Type      { get; init; }
     public PrimaryId     Condition { get; init; }
@@ -70,8 +71,29 @@ public readonly struct GlobalEqpManipulation : IMetaManipulation<GlobalEqpManipu
         => $"Global EQP - {Type}{(Condition != 0 ? $" - {Condition.Id}" : string.Empty)}";
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
-    { }
+    {
+        var path = Type switch
+        {
+            GlobalEqpType.DoNotHideEarrings     => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.Ears),
+            GlobalEqpType.DoNotHideNecklace     => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.Neck),
+            GlobalEqpType.DoNotHideBracelets    => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.Wrists),
+            GlobalEqpType.DoNotHideRingR        => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.RFinger),
+            GlobalEqpType.DoNotHideRingL        => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.LFinger),
+            GlobalEqpType.DoNotHideHrothgarHats => string.Empty,
+            GlobalEqpType.DoNotHideVieraHats    => string.Empty,
+            _                                   => string.Empty,
+        };
+        if (path.Length > 0)
+            identifier.Identify(changedItems, path);
+        else if (Type is GlobalEqpType.DoNotHideVieraHats)
+            changedItems["All Hats for Viera"] = null;
+        else if (Type is GlobalEqpType.DoNotHideHrothgarHats)
+            changedItems["All Hats for Hrothgar"] = null;
+    }
 
     public MetaIndex FileIndex()
         => MetaIndex.Eqp;
+
+    MetaManipulationType IMetaIdentifier.Type
+        => MetaManipulationType.GlobalEqp;
 }

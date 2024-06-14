@@ -38,6 +38,9 @@ public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attrib
         var ret       = new RspIdentifier(subRace, attribute);
         return ret.Validate() ? ret : null;
     }
+
+    public MetaManipulationType Type
+        => MetaManipulationType.Rsp;
 }
 
 [JsonConverter(typeof(Converter))]

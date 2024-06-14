@@ -1,5 +1,5 @@
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using OtterGui;
-using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
@@ -10,28 +10,38 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
 
-public readonly struct EqdpCache : IDisposable
+public sealed class EqdpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<EqdpIdentifier, EqdpEntry>(manager, collection)
 {
-    private readonly ExpandedEqdpFile?[]    _eqdpFiles = new ExpandedEqdpFile[CharacterUtilityData.EqdpIndices.Length]; // TODO: female Hrothgar
-    private readonly List<EqdpManipulation> _eqdpManipulations = new();
+    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile[CharacterUtilityData.EqdpIndices.Length]; // TODO: female Hrothgar
 
-    public EqdpCache()
-    { }
-
-    public void SetFiles(MetaFileManager manager)
+    public override void SetFiles()
     {
         for (var i = 0; i < CharacterUtilityData.EqdpIndices.Length; ++i)
-            manager.SetFile(_eqdpFiles[i], CharacterUtilityData.EqdpIndices[i]);
+            Manager.SetFile(_eqdpFiles[i], CharacterUtilityData.EqdpIndices[i]);
     }
 
-    public void SetFile(MetaFileManager manager, MetaIndex index)
+    public void SetFile(MetaIndex index)
     {
         var i = CharacterUtilityData.EqdpIndices.IndexOf(index);
         if (i != -1)
-            manager.SetFile(_eqdpFiles[i], index);
+            Manager.SetFile(_eqdpFiles[i], index);
     }
 
-    public MetaList.MetaReverter? TemporarilySetFiles(MetaFileManager manager, GenderRace genderRace, bool accessory)
+    public override void ResetFiles()
+        => Manager.SetFile(null, MetaIndex.Eqp);
+
+    protected override void IncorporateChangesInternal()
+    {
+        foreach (var (identifier, (_, entry)) in this)
+            Apply(GetFile(identifier)!, identifier, entry);
+
+        Penumbra.Log.Verbose($"{Collection.AnonymizedName}: Loaded {Count} delayed EQDP manipulations.");
+    }
+
+    public ExpandedEqdpFile? EqdpFile(GenderRace race, bool accessory)
+        => _eqdpFiles[Array.IndexOf(CharacterUtilityData.EqdpIndices, CharacterUtilityData.EqdpIdx(race, accessory))]; // TODO: female Hrothgar
+
+    public MetaList.MetaReverter? TemporarilySetFile(GenderRace genderRace, bool accessory)
     {
         var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
         if (idx < 0)
@@ -47,44 +57,44 @@ public readonly struct EqdpCache : IDisposable
             return null;
         }
 
-        return manager.TemporarilySetFile(_eqdpFiles[i], idx);
+        return Manager.TemporarilySetFile(_eqdpFiles[i], idx);
     }
 
-    public void Reset()
+    public override void Reset()
     {
         foreach (var file in _eqdpFiles.OfType<ExpandedEqdpFile>())
         {
             var relevant = CharacterUtility.RelevantIndices[file.Index.Value];
-            file.Reset(_eqdpManipulations.Where(m => m.FileIndex() == relevant).Select(m => (PrimaryId)m.SetId));
+            file.Reset(Keys.Where(m => m.FileIndex() == relevant).Select(m => m.SetId));
         }
 
-        _eqdpManipulations.Clear();
+        Clear();
     }
 
-    public bool ApplyMod(MetaFileManager manager, EqdpManipulation manip)
+    protected override void ApplyModInternal(EqdpIdentifier identifier, EqdpEntry entry)
     {
-        _eqdpManipulations.AddOrReplace(manip);
-        var file = _eqdpFiles[Array.IndexOf(CharacterUtilityData.EqdpIndices, manip.FileIndex())] ??=
-            new ExpandedEqdpFile(manager, Names.CombinedRace(manip.Gender, manip.Race), manip.Slot.IsAccessory()); // TODO: female Hrothgar
-        return manip.Apply(file);
+        if (GetFile(identifier) is { } file)
+            Apply(file, identifier, entry);
     }
 
-    public bool RevertMod(MetaFileManager manager, EqdpManipulation manip)
+    protected override void RevertModInternal(EqdpIdentifier identifier)
     {
-        if (!_eqdpManipulations.Remove(manip))
+        if (GetFile(identifier) is { } file)
+            Apply(file, identifier, ExpandedEqdpFile.GetDefault(Manager, identifier));
+    }
+
+    public static bool Apply(ExpandedEqdpFile file, EqdpIdentifier identifier, EqdpEntry entry)
+    {
+        var origEntry = file[identifier.SetId];
+        var mask      = Eqdp.Mask(identifier.Slot);
+        if ((origEntry & mask) == entry)
             return false;
 
-        var def  = ExpandedEqdpFile.GetDefault(manager, Names.CombinedRace(manip.Gender, manip.Race), manip.Slot.IsAccessory(), manip.SetId);
-        var file = _eqdpFiles[Array.IndexOf(CharacterUtilityData.EqdpIndices, manip.FileIndex())]!;
-        manip = new EqdpManipulation(def, manip.Slot, manip.Gender, manip.Race, manip.SetId);
-        return manip.Apply(file);
+        file[identifier.SetId] = (entry & ~mask) | origEntry;
+        return true;
     }
 
-    public ExpandedEqdpFile? EqdpFile(GenderRace race, bool accessory)
-        => _eqdpFiles
-            [Array.IndexOf(CharacterUtilityData.EqdpIndices, CharacterUtilityData.EqdpIdx(race, accessory))]; // TODO: female Hrothgar
-
-    public void Dispose()
+    protected override void Dispose(bool _)
     {
         for (var i = 0; i < _eqdpFiles.Length; ++i)
         {
@@ -92,6 +102,15 @@ public readonly struct EqdpCache : IDisposable
             _eqdpFiles[i] = null;
         }
 
-        _eqdpManipulations.Clear();
+        Clear();
+    }
+
+    private ExpandedEqdpFile? GetFile(EqdpIdentifier identifier)
+    {
+        if (!Manager.CharacterUtility.Ready)
+            return null;
+
+        var index = Array.IndexOf(CharacterUtilityData.EqdpIndices, identifier.FileIndex());
+        return _eqdpFiles[index] ??= new ExpandedEqdpFile(Manager, identifier.GenderRace, identifier.Slot.IsAccessory());
     }
 }

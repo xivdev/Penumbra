@@ -26,20 +26,20 @@ public class ModMetaEditor(ModManager modManager) : MetaDictionary, IService
         }
     }
 
-    public readonly FrozenDictionary<MetaManipulation.Type, OtherOptionData> OtherData =
-        Enum.GetValues<MetaManipulation.Type>().ToFrozenDictionary(t => t, _ => new OtherOptionData());
+    public readonly FrozenDictionary<MetaManipulationType, OtherOptionData> OtherData =
+        Enum.GetValues<MetaManipulationType>().ToFrozenDictionary(t => t, _ => new OtherOptionData());
 
-    public bool Changes { get; private set; }
+    public bool Changes { get; set; }
 
     public new void Clear()
     {
+        Changes = Count > 0;
         base.Clear();
-        Changes = true;
     }
 
     public void Load(Mod mod, IModDataContainer currentOption)
     {
-        foreach (var type in Enum.GetValues<MetaManipulation.Type>())
+        foreach (var type in Enum.GetValues<MetaManipulationType>())
             OtherData[type].Clear();
 
         foreach (var option in mod.AllDataContainers)
@@ -48,13 +48,13 @@ public class ModMetaEditor(ModManager modManager) : MetaDictionary, IService
                 continue;
 
             var name = option.GetFullName();
-            OtherData[MetaManipulation.Type.Imc].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.Imc));
-            OtherData[MetaManipulation.Type.Eqp].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.Eqp));
-            OtherData[MetaManipulation.Type.Eqdp].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.Eqdp));
-            OtherData[MetaManipulation.Type.Gmp].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.Gmp));
-            OtherData[MetaManipulation.Type.Est].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.Est));
-            OtherData[MetaManipulation.Type.Rsp].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.Rsp));
-            OtherData[MetaManipulation.Type.GlobalEqp].Add(name, option.Manipulations.GetCount(MetaManipulation.Type.GlobalEqp));
+            OtherData[MetaManipulationType.Imc].Add(name, option.Manipulations.GetCount(MetaManipulationType.Imc));
+            OtherData[MetaManipulationType.Eqp].Add(name, option.Manipulations.GetCount(MetaManipulationType.Eqp));
+            OtherData[MetaManipulationType.Eqdp].Add(name, option.Manipulations.GetCount(MetaManipulationType.Eqdp));
+            OtherData[MetaManipulationType.Gmp].Add(name, option.Manipulations.GetCount(MetaManipulationType.Gmp));
+            OtherData[MetaManipulationType.Est].Add(name, option.Manipulations.GetCount(MetaManipulationType.Est));
+            OtherData[MetaManipulationType.Rsp].Add(name, option.Manipulations.GetCount(MetaManipulationType.Rsp));
+            OtherData[MetaManipulationType.GlobalEqp].Add(name, option.Manipulations.GetCount(MetaManipulationType.GlobalEqp));
         }
 
         Clear();

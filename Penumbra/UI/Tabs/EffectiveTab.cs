@@ -98,7 +98,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
             // Filters mean we can not use the known counts.
             if (hasFilters)
             {
-                var it2 = m.Select(p => (p.Key.ToString(), p.Value.Name));
+                var it2 = m.IdentifierSources.Select(p => (p.Item1.ToString(), p.Item2.Name));
                 if (stop >= 0)
                 {
                     ImGuiClip.DrawEndDummy(stop + it2.Count(CheckFilters), height);
@@ -117,7 +117,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
                 }
                 else
                 {
-                    stop = ImGuiClip.ClippedDraw(m, skips, DrawLine, m.Count, ~stop);
+                    stop = ImGuiClip.ClippedDraw(m.IdentifierSources, skips, DrawLine, m.Count, ~stop);
                     ImGuiClip.DrawEndDummy(stop, height);
                 }
             }
@@ -152,11 +152,11 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        ImGuiUtil.CopyOnClickSelectable(name);
+        ImGuiUtil.CopyOnClickSelectable(name.Text);
     }
 
     /// <summary> Draw a line for a unfiltered/unconverted manipulation and mod-index pair. </summary>
-    private static void DrawLine(KeyValuePair<MetaManipulation, IMod> pair)
+    private static void DrawLine((IMetaIdentifier, IMod) pair)
     {
         var (manipulation, mod) = pair;
         ImGui.TableNextColumn();
@@ -165,7 +165,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        ImGuiUtil.CopyOnClickSelectable(mod.Name);
+        ImGuiUtil.CopyOnClickSelectable(mod.Name.Text);
     }
 
     /// <summary> Check filters for file replacements. </summary>

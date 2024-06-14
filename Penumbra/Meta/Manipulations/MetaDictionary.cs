@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Penumbra.Collections.Cache;
 using Penumbra.GameData.Structs;
 using Penumbra.Util;
 using ImcEntry = Penumbra.GameData.Structs.ImcEntry;
@@ -7,7 +8,7 @@ using ImcEntry = Penumbra.GameData.Structs.ImcEntry;
 namespace Penumbra.Meta.Manipulations;
 
 [JsonConverter(typeof(Converter))]
-public class MetaDictionary : IEnumerable<MetaManipulation>
+public class MetaDictionary
 {
     private readonly Dictionary<ImcIdentifier, ImcEntry>           _imc       = [];
     private readonly Dictionary<EqpIdentifier, EqpEntryInternal>   _eqp       = [];
@@ -20,32 +21,50 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
     public IReadOnlyDictionary<ImcIdentifier, ImcEntry> Imc
         => _imc;
 
+    public IReadOnlyDictionary<EqpIdentifier, EqpEntryInternal> Eqp
+        => _eqp;
+
+    public IReadOnlyDictionary<EqdpIdentifier, EqdpEntryInternal> Eqdp
+        => _eqdp;
+
+    public IReadOnlyDictionary<EstIdentifier, EstEntry> Est
+        => _est;
+
+    public IReadOnlyDictionary<GmpIdentifier, GmpEntry> Gmp
+        => _gmp;
+
+    public IReadOnlyDictionary<RspIdentifier, RspEntry> Rsp
+        => _rsp;
+
+    public IReadOnlySet<GlobalEqpManipulation> GlobalEqp
+        => _globalEqp;
+
     public int Count { get; private set; }
 
-    public int GetCount(MetaManipulation.Type type)
+    public int GetCount(MetaManipulationType type)
         => type switch
         {
-            MetaManipulation.Type.Imc       => _imc.Count,
-            MetaManipulation.Type.Eqdp      => _eqdp.Count,
-            MetaManipulation.Type.Eqp       => _eqp.Count,
-            MetaManipulation.Type.Est       => _est.Count,
-            MetaManipulation.Type.Gmp       => _gmp.Count,
-            MetaManipulation.Type.Rsp       => _rsp.Count,
-            MetaManipulation.Type.GlobalEqp => _globalEqp.Count,
-            _                               => 0,
+            MetaManipulationType.Imc       => _imc.Count,
+            MetaManipulationType.Eqdp      => _eqdp.Count,
+            MetaManipulationType.Eqp       => _eqp.Count,
+            MetaManipulationType.Est       => _est.Count,
+            MetaManipulationType.Gmp       => _gmp.Count,
+            MetaManipulationType.Rsp       => _rsp.Count,
+            MetaManipulationType.GlobalEqp => _globalEqp.Count,
+            _                              => 0,
         };
 
-    public bool CanAdd(IMetaIdentifier identifier)
+    public bool Contains(IMetaIdentifier identifier)
         => identifier switch
         {
-            EqdpIdentifier eqdpIdentifier               => !_eqdp.ContainsKey(eqdpIdentifier),
-            EqpIdentifier eqpIdentifier                 => !_eqp.ContainsKey(eqpIdentifier),
-            EstIdentifier estIdentifier                 => !_est.ContainsKey(estIdentifier),
-            GlobalEqpManipulation globalEqpManipulation => !_globalEqp.Contains(globalEqpManipulation),
-            GmpIdentifier gmpIdentifier                 => !_gmp.ContainsKey(gmpIdentifier),
-            ImcIdentifier imcIdentifier                 => !_imc.ContainsKey(imcIdentifier),
-            RspIdentifier rspIdentifier                 => !_rsp.ContainsKey(rspIdentifier),
-            _                                           => false,
+            EqdpIdentifier i        => _eqdp.ContainsKey(i),
+            EqpIdentifier i         => _eqp.ContainsKey(i),
+            EstIdentifier i         => _est.ContainsKey(i),
+            GlobalEqpManipulation i => _globalEqp.Contains(i),
+            GmpIdentifier i         => _gmp.ContainsKey(i),
+            ImcIdentifier i         => _imc.ContainsKey(i),
+            RspIdentifier i         => _rsp.ContainsKey(i),
+            _                       => false,
         };
 
     public void Clear()
@@ -69,17 +88,16 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
          && _gmp.SetEquals(other._gmp)
          && _globalEqp.SetEquals(other._globalEqp);
 
-    public IEnumerator<MetaManipulation> GetEnumerator()
-        => _imc.Select(kvp => new MetaManipulation(new ImcManipulation(kvp.Key, kvp.Value)))
-            .Concat(_eqp.Select(kvp => new MetaManipulation(new EqpManipulation(kvp.Key, kvp.Value.ToEntry(kvp.Key.Slot)))))
-            .Concat(_eqdp.Select(kvp => new MetaManipulation(new EqdpManipulation(kvp.Key, kvp.Value.ToEntry(kvp.Key.Slot)))))
-            .Concat(_est.Select(kvp => new MetaManipulation(new EstManipulation(kvp.Key, kvp.Value))))
-            .Concat(_rsp.Select(kvp => new MetaManipulation(new RspManipulation(kvp.Key, kvp.Value))))
-            .Concat(_gmp.Select(kvp => new MetaManipulation(new GmpManipulation(kvp.Key, kvp.Value))))
-            .Concat(_globalEqp.Select(manip => new MetaManipulation(manip))).GetEnumerator();
+    public IEnumerable<IMetaIdentifier> Identifiers
+        => _imc.Keys.Cast<IMetaIdentifier>()
+            .Concat(_eqdp.Keys.Cast<IMetaIdentifier>())
+            .Concat(_eqp.Keys.Cast<IMetaIdentifier>())
+            .Concat(_est.Keys.Cast<IMetaIdentifier>())
+            .Concat(_gmp.Keys.Cast<IMetaIdentifier>())
+            .Concat(_rsp.Keys.Cast<IMetaIdentifier>())
+            .Concat(_globalEqp.Cast<IMetaIdentifier>());
 
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
+    #region TryAdd
 
     public bool TryAdd(ImcIdentifier identifier, ImcEntry entry)
     {
@@ -89,7 +107,6 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         ++Count;
         return true;
     }
-
 
     public bool TryAdd(EqpIdentifier identifier, EqpEntryInternal entry)
     {
@@ -102,7 +119,6 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
 
     public bool TryAdd(EqpIdentifier identifier, EqpEntry entry)
         => TryAdd(identifier, new EqpEntryInternal(entry, identifier.Slot));
-
 
     public bool TryAdd(EqdpIdentifier identifier, EqdpEntryInternal entry)
     {
@@ -152,6 +168,10 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         return true;
     }
 
+    #endregion
+
+    #region Update
+
     public bool Update(ImcIdentifier identifier, ImcEntry entry)
     {
         if (!_imc.ContainsKey(identifier))
@@ -160,7 +180,6 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         _imc[identifier] = entry;
         return true;
     }
-
 
     public bool Update(EqpIdentifier identifier, EqpEntryInternal entry)
     {
@@ -173,7 +192,6 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
 
     public bool Update(EqpIdentifier identifier, EqpEntry entry)
         => Update(identifier, new EqpEntryInternal(entry, identifier.Slot));
-
 
     public bool Update(EqdpIdentifier identifier, EqdpEntryInternal entry)
     {
@@ -213,6 +231,50 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         _rsp[identifier] = entry;
         return true;
     }
+
+    #endregion
+
+    #region TryGetValue
+
+    public bool TryGetValue(EstIdentifier identifier, out EstEntry value)
+        => _est.TryGetValue(identifier, out value);
+
+    public bool TryGetValue(EqpIdentifier identifier, out EqpEntryInternal value)
+        => _eqp.TryGetValue(identifier, out value);
+
+    public bool TryGetValue(EqdpIdentifier identifier, out EqdpEntryInternal value)
+        => _eqdp.TryGetValue(identifier, out value);
+
+    public bool TryGetValue(GmpIdentifier identifier, out GmpEntry value)
+        => _gmp.TryGetValue(identifier, out value);
+
+    public bool TryGetValue(RspIdentifier identifier, out RspEntry value)
+        => _rsp.TryGetValue(identifier, out value);
+
+    public bool TryGetValue(ImcIdentifier identifier, out ImcEntry value)
+        => _imc.TryGetValue(identifier, out value);
+
+    #endregion
+
+    public bool Remove(IMetaIdentifier identifier)
+    {
+        var ret = identifier switch
+        {
+            EqdpIdentifier i        => _eqdp.Remove(i),
+            EqpIdentifier i         => _eqp.Remove(i),
+            EstIdentifier i         => _est.Remove(i),
+            GlobalEqpManipulation i => _globalEqp.Remove(i),
+            GmpIdentifier i         => _gmp.Remove(i),
+            ImcIdentifier i         => _imc.Remove(i),
+            RspIdentifier i         => _rsp.Remove(i),
+            _                       => false,
+        };
+        if (ret)
+            --Count;
+        return ret;
+    }
+
+    #region Merging
 
     public void UnionWith(MetaDictionary manips)
     {
@@ -287,24 +349,6 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         return false;
     }
 
-    public bool TryGetValue(EstIdentifier identifier, out EstEntry value)
-        => _est.TryGetValue(identifier, out value);
-
-    public bool TryGetValue(EqpIdentifier identifier, out EqpEntryInternal value)
-        => _eqp.TryGetValue(identifier, out value);
-
-    public bool TryGetValue(EqdpIdentifier identifier, out EqdpEntryInternal value)
-        => _eqdp.TryGetValue(identifier, out value);
-
-    public bool TryGetValue(GmpIdentifier identifier, out GmpEntry value)
-        => _gmp.TryGetValue(identifier, out value);
-
-    public bool TryGetValue(RspIdentifier identifier, out RspEntry value)
-        => _rsp.TryGetValue(identifier, out value);
-
-    public bool TryGetValue(ImcIdentifier identifier, out ImcEntry value)
-        => _imc.TryGetValue(identifier, out value);
-
     public void SetTo(MetaDictionary other)
     {
         _imc.SetTo(other._imc);
@@ -329,6 +373,8 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         Count = _imc.Count + _eqp.Count + _eqdp.Count + _est.Count + _rsp.Count + _gmp.Count + _globalEqp.Count;
     }
 
+    #endregion
+
     public MetaDictionary Clone()
     {
         var ret = new MetaDictionary();
@@ -336,29 +382,124 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
         return ret;
     }
 
-    private static void WriteJson(JsonWriter writer, JsonSerializer serializer, IMetaIdentifier identifier, object entry)
-    {
-        var type = identifier switch
+    public static JObject Serialize(EqpIdentifier identifier, EqpEntryInternal entry)
+        => Serialize(identifier, entry.ToEntry(identifier.Slot));
+
+    public static JObject Serialize(EqpIdentifier identifier, EqpEntry entry)
+        => new()
         {
-            ImcIdentifier         => "Imc",
-            EqdpIdentifier        => "Eqdp",
-            EqpIdentifier         => "Eqp",
-            EstIdentifier         => "Est",
-            GmpIdentifier         => "Gmp",
-            RspIdentifier         => "Rsp",
-            GlobalEqpManipulation => "GlobalEqp",
-            _                     => string.Empty,
+            ["Type"] = MetaManipulationType.Eqp.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = (ulong)entry,
+            }),
         };
 
-        if (type.Length == 0)
-            return;
+    public static JObject Serialize(EqdpIdentifier identifier, EqdpEntryInternal entry)
+        => Serialize(identifier, entry.ToEntry(identifier.Slot));
 
-        writer.WriteStartObject();
-        writer.WritePropertyName("Type");
-        writer.WriteValue(type);
-        writer.WritePropertyName("Manipulation");
+    public static JObject Serialize(EqdpIdentifier identifier, EqdpEntry entry)
+        => new()
+        {
+            ["Type"] = MetaManipulationType.Eqdp.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = (ushort)entry,
+            }),
+        };
 
-        writer.WriteEndObject();
+    public static JObject Serialize(EstIdentifier identifier, EstEntry entry)
+        => new()
+        {
+            ["Type"] = MetaManipulationType.Est.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = entry.Value,
+            }),
+        };
+
+    public static JObject Serialize(GmpIdentifier identifier, GmpEntry entry)
+        => new()
+        {
+            ["Type"] = MetaManipulationType.Gmp.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = JObject.FromObject(entry),
+            }),
+        };
+
+    public static JObject Serialize(ImcIdentifier identifier, ImcEntry entry)
+        => new()
+        {
+            ["Type"] = MetaManipulationType.Imc.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = JObject.FromObject(entry),
+            }),
+        };
+
+    public static JObject Serialize(RspIdentifier identifier, RspEntry entry)
+        => new()
+        {
+            ["Type"] = MetaManipulationType.Rsp.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = entry.Value,
+            }),
+        };
+
+    public static JObject Serialize(GlobalEqpManipulation identifier)
+        => new()
+        {
+            ["Type"]         = MetaManipulationType.GlobalEqp.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject()),
+        };
+
+    public static JObject? Serialize<TIdentifier, TEntry>(TIdentifier identifier, TEntry entry)
+        where TIdentifier : unmanaged, IMetaIdentifier
+        where TEntry : unmanaged
+    {
+        if (typeof(TIdentifier) == typeof(EqpIdentifier) && typeof(TEntry) == typeof(EqpEntryInternal))
+            return Serialize(Unsafe.As<TIdentifier, EqpIdentifier>(ref identifier), Unsafe.As<TEntry, EqpEntryInternal>(ref entry));
+        if (typeof(TIdentifier) == typeof(EqpIdentifier) && typeof(TEntry) == typeof(EqpEntry))
+            return Serialize(Unsafe.As<TIdentifier, EqpIdentifier>(ref identifier), Unsafe.As<TEntry, EqpEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(EqdpIdentifier) && typeof(TEntry) == typeof(EqdpEntryInternal))
+            return Serialize(Unsafe.As<TIdentifier, EqdpIdentifier>(ref identifier), Unsafe.As<TEntry, EqdpEntryInternal>(ref entry));
+        if (typeof(TIdentifier) == typeof(EqdpIdentifier) && typeof(TEntry) == typeof(EqdpEntry))
+            return Serialize(Unsafe.As<TIdentifier, EqdpIdentifier>(ref identifier), Unsafe.As<TEntry, EqdpEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(EstIdentifier) && typeof(TEntry) == typeof(EstEntry))
+            return Serialize(Unsafe.As<TIdentifier, EstIdentifier>(ref identifier), Unsafe.As<TEntry, EstEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(GmpIdentifier) && typeof(TEntry) == typeof(GmpEntry))
+            return Serialize(Unsafe.As<TIdentifier, GmpIdentifier>(ref identifier), Unsafe.As<TEntry, GmpEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(RspIdentifier) && typeof(TEntry) == typeof(RspEntry))
+            return Serialize(Unsafe.As<TIdentifier, RspIdentifier>(ref identifier), Unsafe.As<TEntry, RspEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(ImcIdentifier) && typeof(TEntry) == typeof(ImcEntry))
+            return Serialize(Unsafe.As<TIdentifier, ImcIdentifier>(ref identifier), Unsafe.As<TEntry, ImcEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(GlobalEqpManipulation))
+            return Serialize(Unsafe.As<TIdentifier, GlobalEqpManipulation>(ref identifier));
+
+        return null;
+    }
+
+    public static JArray SerializeTo<TIdentifier, TEntry>(JArray array, IEnumerable<KeyValuePair<TIdentifier, TEntry>> manipulations)
+        where TIdentifier : unmanaged, IMetaIdentifier
+        where TEntry : unmanaged
+    {
+        foreach (var (identifier, entry) in manipulations)
+        {
+            if (Serialize(identifier, entry) is { } jObj)
+                array.Add(jObj);
+        }
+
+        return array;
+    }
+
+    public static JArray SerializeTo(JArray array, IEnumerable<GlobalEqpManipulation> manipulations)
+    {
+        foreach (var manip in manipulations)
+            array.Add(Serialize(manip));
+
+        return array;
     }
 
     private class Converter : JsonConverter<MetaDictionary>
@@ -371,30 +512,27 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                 return;
             }
 
-            writer.WriteStartArray();
-            foreach (var item in value)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName("Type");
-                writer.WriteValue(item.ManipulationType.ToString());
-                writer.WritePropertyName("Manipulation");
-                serializer.Serialize(writer, item.Manipulation);
-                writer.WriteEndObject();
-            }
-
-            writer.WriteEndArray();
+            var array = new JArray();
+            SerializeTo(array, value._imc);
+            SerializeTo(array, value._eqp);
+            SerializeTo(array, value._eqdp);
+            SerializeTo(array, value._est);
+            SerializeTo(array, value._rsp);
+            SerializeTo(array, value._gmp);
+            SerializeTo(array, value._globalEqp);
+            array.WriteTo(writer);
         }
 
         public override MetaDictionary ReadJson(JsonReader reader, Type objectType, MetaDictionary? existingValue, bool hasExistingValue,
             JsonSerializer serializer)
         {
-            var dict = existingValue ?? [];
+            var dict = existingValue ?? new MetaDictionary();
             dict.Clear();
             var jObj = JArray.Load(reader);
             foreach (var item in jObj)
             {
-                var type = item["Type"]?.ToObject<MetaManipulation.Type>() ?? MetaManipulation.Type.Unknown;
-                if (type is MetaManipulation.Type.Unknown)
+                var type = item["Type"]?.ToObject<MetaManipulationType>() ?? MetaManipulationType.Unknown;
+                if (type is MetaManipulationType.Unknown)
                 {
                     Penumbra.Log.Warning($"Invalid Meta Manipulation Type {type} encountered.");
                     continue;
@@ -408,7 +546,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
 
                 switch (type)
                 {
-                    case MetaManipulation.Type.Imc:
+                    case MetaManipulationType.Imc:
                     {
                         var identifier = ImcIdentifier.FromJson(manip);
                         var entry      = manip["Entry"]?.ToObject<ImcEntry>();
@@ -418,7 +556,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                             Penumbra.Log.Warning("Invalid IMC Manipulation encountered.");
                         break;
                     }
-                    case MetaManipulation.Type.Eqdp:
+                    case MetaManipulationType.Eqdp:
                     {
                         var identifier = EqdpIdentifier.FromJson(manip);
                         var entry      = (EqdpEntry?)manip["Entry"]?.ToObject<ushort>();
@@ -428,7 +566,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                             Penumbra.Log.Warning("Invalid EQDP Manipulation encountered.");
                         break;
                     }
-                    case MetaManipulation.Type.Eqp:
+                    case MetaManipulationType.Eqp:
                     {
                         var identifier = EqpIdentifier.FromJson(manip);
                         var entry      = (EqpEntry?)manip["Entry"]?.ToObject<ulong>();
@@ -438,7 +576,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                             Penumbra.Log.Warning("Invalid EQP Manipulation encountered.");
                         break;
                     }
-                    case MetaManipulation.Type.Est:
+                    case MetaManipulationType.Est:
                     {
                         var identifier = EstIdentifier.FromJson(manip);
                         var entry      = manip["Entry"]?.ToObject<EstEntry>();
@@ -448,7 +586,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                             Penumbra.Log.Warning("Invalid EST Manipulation encountered.");
                         break;
                     }
-                    case MetaManipulation.Type.Gmp:
+                    case MetaManipulationType.Gmp:
                     {
                         var identifier = GmpIdentifier.FromJson(manip);
                         var entry      = manip["Entry"]?.ToObject<GmpEntry>();
@@ -458,7 +596,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                             Penumbra.Log.Warning("Invalid GMP Manipulation encountered.");
                         break;
                     }
-                    case MetaManipulation.Type.Rsp:
+                    case MetaManipulationType.Rsp:
                     {
                         var identifier = RspIdentifier.FromJson(manip);
                         var entry      = manip["Entry"]?.ToObject<RspEntry>();
@@ -468,7 +606,7 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
                             Penumbra.Log.Warning("Invalid RSP Manipulation encountered.");
                         break;
                     }
-                    case MetaManipulation.Type.GlobalEqp:
+                    case MetaManipulationType.GlobalEqp:
                     {
                         var identifier = GlobalEqpManipulation.FromJson(manip);
                         if (identifier.HasValue)
@@ -482,5 +620,23 @@ public class MetaDictionary : IEnumerable<MetaManipulation>
 
             return dict;
         }
+    }
+
+    public MetaDictionary()
+    { }
+
+    public MetaDictionary(MetaCache? cache)
+    {
+        if (cache == null)
+            return;
+
+        _imc       = cache.Imc.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+        _eqp       = cache.Eqp.ToDictionary(kvp => kvp.Key, kvp => new EqpEntryInternal(kvp.Value.Entry, kvp.Key.Slot));
+        _eqdp      = cache.Eqdp.ToDictionary(kvp => kvp.Key, kvp => new EqdpEntryInternal(kvp.Value.Entry, kvp.Key.Slot));
+        _est       = cache.Est.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+        _gmp       = cache.Gmp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+        _rsp       = cache.Rsp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+        _globalEqp = cache.GlobalEqp.Select(kvp => kvp.Key).ToHashSet();
+        Count      = cache.Count;
     }
 }

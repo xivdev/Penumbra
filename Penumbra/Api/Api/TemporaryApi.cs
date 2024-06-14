@@ -163,11 +163,11 @@ public class TemporaryApi(
     {
         if (manipString.Length == 0)
         {
-            manips = [];
+            manips = new MetaDictionary();
             return true;
         }
 
-        if (Functions.FromCompressedBase64(manipString, out manips!) == MetaManipulation.CurrentVersion)
+        if (Functions.FromCompressedBase64(manipString, out manips!) == MetaApi.CurrentVersion)
             return true;
 
         manips = null;
