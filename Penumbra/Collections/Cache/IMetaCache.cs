@@ -4,21 +4,12 @@ using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
-public interface IMetaCache : IDisposable
-{
-    public void SetFiles();
-    public void Reset();
-    public void ResetFiles();
-
-    public int Count { get; }
-}
-
 public abstract class MetaCacheBase<TIdentifier, TEntry>
-    : Dictionary<TIdentifier, (IMod Source, TEntry Entry)>, IMetaCache
+    : Dictionary<TIdentifier, (IMod Source, TEntry Entry)>
     where TIdentifier : unmanaged, IMetaIdentifier
     where TEntry : unmanaged
 {
-    public MetaCacheBase(MetaFileManager manager, ModCollection collection)
+    protected MetaCacheBase(MetaFileManager manager, ModCollection collection)
     {
         Manager    = manager;
         Collection = collection;
@@ -76,6 +67,7 @@ public abstract class MetaCacheBase<TIdentifier, TEntry>
         {
             IncorporateChangesInternal();
         }
+
         if (Manager.ActiveCollections.Default == Collection && Manager.Config.EnableMods)
             SetFiles();
     }

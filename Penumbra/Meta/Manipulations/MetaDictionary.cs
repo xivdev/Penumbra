@@ -346,7 +346,7 @@ public class MetaDictionary
         }
 
         failedIdentifier = default;
-        return false;
+        return true;
     }
 
     public void SetTo(MetaDictionary other)
