@@ -166,6 +166,10 @@ public class ModGroupEditor(
         communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
     }
 
+    /// <summary> Forces a file save of the given container's group. </summary>
+    public void ForceSave(IModDataContainer subMod, SaveType saveType = SaveType.Queue)
+        => saveService.Save(saveType, new ModSaveGroup(subMod, Config.ReplaceNonAsciiOnImport));
+
     /// <summary> Add additional file redirections to a given option, keeping already existing ones. Only fires an event if anything is actually added.</summary>
     public void AddFiles(IModDataContainer subMod, IReadOnlyDictionary<Utf8GamePath, FullPath> additions)
     {

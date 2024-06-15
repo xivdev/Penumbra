@@ -189,7 +189,8 @@ public class ModMerger : IDisposable
 
         _editor.SetFiles(option, redirections, SaveType.None);
         _editor.SetFileSwaps(option, swaps, SaveType.None);
-        _editor.SetManipulations(option, manips, SaveType.ImmediateSync);
+        _editor.SetManipulations(option, manips, SaveType.None);
+        _editor.ForceSave(option, SaveType.ImmediateSync);
         return;
 
         bool GetFullPath(FullPath input, out FullPath ret)
@@ -263,9 +264,10 @@ public class ModMerger : IDisposable
             if (mods.Count == 1)
             {
                 var files = CopySubModFiles(mods[0], dir);
-                _editor.SetFiles(result.Default, files);
-                _editor.SetFileSwaps(result.Default, mods[0].FileSwaps);
-                _editor.SetManipulations(result.Default, mods[0].Manipulations);
+                _editor.SetFiles(result.Default, files, SaveType.None);
+                _editor.SetFileSwaps(result.Default, mods[0].FileSwaps, SaveType.None);
+                _editor.SetManipulations(result.Default, mods[0].Manipulations, SaveType.None);
+                _editor.ForceSave(result.Default);
             }
             else
             {
@@ -277,6 +279,7 @@ public class ModMerger : IDisposable
                         _editor.SetFiles(result.Default, files);
                         _editor.SetFileSwaps(result.Default, mods[0].FileSwaps);
                         _editor.SetManipulations(result.Default, mods[0].Manipulations);
+                        _editor.ForceSave(result.Default);
                     }
                     else
                     {
@@ -285,9 +288,10 @@ public class ModMerger : IDisposable
                         var (option, _, _) = _editor.FindOrAddOption(group!, originalOption.GetName());
                         var folder = Path.Combine(dir.FullName, group!.Name, option!.Name);
                         var files  = CopySubModFiles(originalOption, new DirectoryInfo(folder));
-                        _editor.SetFiles((IModDataContainer)option, files);
-                        _editor.SetFileSwaps((IModDataContainer)option, originalOption.FileSwaps);
-                        _editor.SetManipulations((IModDataContainer)option, originalOption.Manipulations);
+                        _editor.SetFiles((IModDataContainer)option, files, SaveType.None);
+                        _editor.SetFileSwaps((IModDataContainer)option, originalOption.FileSwaps, SaveType.None);
+                        _editor.SetManipulations((IModDataContainer)option, originalOption.Manipulations, SaveType.None);
+                        _editor.ForceSave((IModDataContainer)option);
                     }
                 }
             }

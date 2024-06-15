@@ -83,7 +83,8 @@ public class ItemSwapContainer
 
             manager.OptionEditor.SetFiles(container, convertedFiles, SaveType.None);
             manager.OptionEditor.SetFileSwaps(container, convertedSwaps, SaveType.None);
-            manager.OptionEditor.SetManipulations(container, convertedManips, SaveType.ImmediateSync);
+            manager.OptionEditor.SetManipulations(container, convertedManips, SaveType.None);
+            manager.OptionEditor.ForceSave(container, SaveType.ImmediateSync);
             return true;
         }
         catch (Exception e)
