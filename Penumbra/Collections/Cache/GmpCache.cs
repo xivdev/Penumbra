@@ -1,6 +1,5 @@
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
@@ -21,16 +20,6 @@ public sealed class GmpCache(MetaFileManager manager, ModCollection collection) 
 
     protected override void RevertModInternal(GmpIdentifier identifier)
     { }
-
-    public static bool Apply(ExpandedGmpFile file, GmpIdentifier identifier, GmpEntry entry)
-    {
-        var origEntry = file[identifier.SetId];
-        if (entry == origEntry)
-            return false;
-
-        file[identifier.SetId] = entry;
-        return true;
-    }
 
     protected override void Dispose(bool _)
         => Clear();

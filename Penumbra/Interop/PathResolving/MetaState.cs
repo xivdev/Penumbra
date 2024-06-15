@@ -18,7 +18,7 @@ namespace Penumbra.Interop.PathResolving;
 // GetSlotEqpData seems to be the only function using the EQP table.
 // It is only called by CheckSlotsForUnload (called by UpdateModels),
 // SetupModelAttributes (called by UpdateModels and OnModelLoadComplete)
-// and a unnamed function called by UpdateRender.
+// and an unnamed function called by UpdateRender.
 // It seems to be enough to change the EQP entries for UpdateModels.
 
 // GetEqdpDataFor[Adults|Children|Other] seem to be the only functions using the EQDP tables.
@@ -35,7 +35,7 @@ namespace Penumbra.Interop.PathResolving;
 // they all are called by many functions, but the most relevant seem to be Human.SetupFromCharacterData, which is only called by CharacterBase.Create,
 // ChangeCustomize and RspSetupCharacter, which is hooked here, as well as Character.CalculateHeight.
 
-// GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which has a DrawObject as its first parameter.
+// GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which is SetupVisor.
 public sealed unsafe class MetaState : IDisposable
 {
     private readonly Configuration       _config;
@@ -48,6 +48,7 @@ public sealed unsafe class MetaState : IDisposable
     public ResolveData CustomizeChangeCollection = ResolveData.Invalid;
     public ResolveData EqpCollection             = ResolveData.Invalid;
     public ResolveData GmpCollection             = ResolveData.Invalid;
+    public ResolveData EstCollection             = ResolveData.Invalid;
     public PrimaryId   UndividedGmpId            = 0;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;

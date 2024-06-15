@@ -121,10 +121,8 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
         switch (metaIndex)
         {
             case MetaIndex.Eqp:
-                Eqp.SetFiles();
                 break;
             case MetaIndex.Gmp:
-                Gmp.SetFiles();
                 break;
             case MetaIndex.HumanCmp:
                 Rsp.SetFiles();
@@ -133,7 +131,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
             case MetaIndex.HairEst:
             case MetaIndex.HeadEst:
             case MetaIndex.BodyEst:
-                Est.SetFile(metaIndex);
                 break;
             default:
                 Eqdp.SetFile(metaIndex);
@@ -150,9 +147,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
 
     public MetaList.MetaReverter TemporarilySetCmpFile()
         => Rsp.TemporarilySetFile();
-
-    public MetaList.MetaReverter TemporarilySetEstFile(EstType type)
-        => Est.TemporarilySetFiles(type);
 
     /// <summary> Try to obtain a manipulated IMC file. </summary>
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)

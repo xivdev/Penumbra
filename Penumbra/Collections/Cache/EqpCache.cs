@@ -34,17 +34,6 @@ public sealed class EqpCache(MetaFileManager manager, ModCollection collection) 
     protected override void RevertModInternal(EqpIdentifier identifier)
     { }
 
-    public static bool Apply(ExpandedEqpFile file, EqpIdentifier identifier, EqpEntry entry)
-    {
-        var origEntry = file[identifier.SetId];
-        var mask      = Eqp.Mask(identifier.Slot);
-        if ((origEntry & mask) == entry)
-            return false;
-
-        file[identifier.SetId] = (origEntry & ~mask) | entry;
-        return true;
-    }
-
     protected override void Dispose(bool _)
         => Clear();
 }

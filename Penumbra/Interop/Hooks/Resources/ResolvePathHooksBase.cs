@@ -158,26 +158,26 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     private nint ResolvePapHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        return ResolvePath(_parent.MetaState.EstCollection, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
     }
 
     private nint ResolvePhybHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        return ResolvePath(_parent.MetaState.EstCollection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
     }
 
     private nint ResolveSklbHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        return ResolvePath(_parent.MetaState.EstCollection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
     }
 
     private nint ResolveSkpHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        return ResolvePath(_parent.MetaState.EstCollection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
     }
 
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
@@ -205,19 +205,6 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         *(ulong*)unkOutParam = 4;
         return ResolvePath(drawObject, pathBuffer);
     }
-
-    private DisposableContainer GetEstChanges(nint drawObject, out ResolveData data)
-    {
-        data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        if (_parent.InInternalResolve)
-            return DisposableContainer.Empty;
-
-        return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstType.Face),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstType.Body),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstType.Hair),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstType.Head));
-    }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static Hook<T> Create<T>(string name, HookManager hooks, nint address, Type type, T other, T human) where T : Delegate
