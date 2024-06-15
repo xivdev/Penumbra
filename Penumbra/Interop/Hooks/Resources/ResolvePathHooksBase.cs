@@ -159,25 +159,33 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     private nint ResolvePapHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
     {
         _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        return ResolvePath(_parent.MetaState.EstCollection, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        return ret;
     }
 
     private nint ResolvePhybHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
         _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        return ResolvePath(_parent.MetaState.EstCollection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        return ret;
     }
 
     private nint ResolveSklbHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
         _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        return ResolvePath(_parent.MetaState.EstCollection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        return ret;
     }
 
     private nint ResolveSkpHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
         _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        return ResolvePath(_parent.MetaState.EstCollection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        return ret;
     }
 
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)

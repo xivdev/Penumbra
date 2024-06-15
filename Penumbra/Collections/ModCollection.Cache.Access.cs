@@ -99,8 +99,4 @@ public partial class ModCollection
         var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
         return idx >= 0 ? utility.TemporarilyResetResource(idx) : null;
     }
-
-    public MetaList.MetaReverter TemporarilySetCmpFile(CharacterUtility utility)
-        => _cache?.Meta.TemporarilySetCmpFile()
-         ?? utility.TemporarilyResetResource(MetaIndex.HumanCmp);
 }

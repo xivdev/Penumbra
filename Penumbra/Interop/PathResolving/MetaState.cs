@@ -49,6 +49,7 @@ public sealed unsafe class MetaState : IDisposable
     public ResolveData EqpCollection             = ResolveData.Invalid;
     public ResolveData GmpCollection             = ResolveData.Invalid;
     public ResolveData EstCollection             = ResolveData.Invalid;
+    public ResolveData RspCollection             = ResolveData.Invalid;
     public PrimaryId   UndividedGmpId            = 0;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
@@ -96,9 +97,6 @@ public sealed unsafe class MetaState : IDisposable
             _ => DisposableContainer.Empty,
         };
 
-    public MetaList.MetaReverter ResolveRspData(ModCollection collection)
-        => collection.TemporarilySetCmpFile(_characterUtility);
-
     public DecalReverter ResolveDecal(ResolveData resolve, bool which)
         => new(_config, _characterUtility, _resources, resolve, which);
 
@@ -132,9 +130,9 @@ public sealed unsafe class MetaState : IDisposable
 
         var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
             UsesDecal(*(uint*)modelCharaId, (nint)customize));
-        var cmp = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
+        RspCollection = _lastCreatedCollection;
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
-        _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
+        _characterBaseCreateMetaChanges = new DisposableContainer(decal);
     }
 
     private void OnCharacterBaseCreated(ModelCharaId _1, CustomizeArray* _2, CharacterArmor* _3, CharacterBase* drawObject)
@@ -144,6 +142,7 @@ public sealed unsafe class MetaState : IDisposable
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != null)
             _communicator.CreatedCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection, (nint)drawObject);
+        RspCollection          = ResolveData.Invalid;
         _lastCreatedCollection = ResolveData.Invalid;
     }
 

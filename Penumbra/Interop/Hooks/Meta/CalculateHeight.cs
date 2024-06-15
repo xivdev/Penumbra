@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
+using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
@@ -22,10 +23,10 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private ulong Detour(Character* character)
     {
-        var       collection = _collectionResolver.IdentifyCollection((GameObject*)character, true);
-        using var cmp        = _metaState.ResolveRspData(collection.ModCollection);
-        var       ret        = Task.Result.Original.Invoke(character);
+        _metaState.RspCollection = _collectionResolver.IdentifyCollection((GameObject*)character, true);
+        var ret = Task.Result.Original.Invoke(character);
         Penumbra.Log.Excessive($"[Calculate Height] Invoked on {(nint)character:X} -> {ret}.");
+        _metaState.RspCollection = ResolveData.Invalid;
         return ret;
     }
 }

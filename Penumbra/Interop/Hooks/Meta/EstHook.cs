@@ -27,7 +27,7 @@ public class EstHook : FastHook<EstHook.Delegate>
         else
             ret = Task.Result.Original(genderRace, estType, id);
 
-        Penumbra.Log.Information($"[GetEstEntry] Invoked with {genderRace}, {estType}, {id}, returned {ret.Value}.");
+        Penumbra.Log.Excessive($"[GetEstEntry] Invoked with {genderRace}, {estType}, {id}, returned {ret.Value}.");
         return ret;
     }
 

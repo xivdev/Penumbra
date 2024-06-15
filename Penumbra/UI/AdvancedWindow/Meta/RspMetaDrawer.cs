@@ -85,7 +85,7 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         using var dis = ImRaii.Disabled(disabled);
         ImGui.TableNextColumn();
-        var ret = DragInput("##rspValue"u8, [],                ImUtf8.GlobalScale * 150, defaultEntry.Value, entry.Value, out var newValue,
+        var ret = DragInput("##rspValue"u8, [],                ImUtf8.GlobalScale * 150, entry.Value, defaultEntry.Value, out var newValue,
             RspEntry.MinValue,              RspEntry.MaxValue, 0.001f,                   !disabled);
         if (ret)
             entry = new RspEntry(newValue);

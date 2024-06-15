@@ -145,9 +145,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     public MetaList.MetaReverter? TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => Eqdp.TemporarilySetFile(genderRace, accessory);
 
-    public MetaList.MetaReverter TemporarilySetCmpFile()
-        => Rsp.TemporarilySetFile();
-
     /// <summary> Try to obtain a manipulated IMC file. </summary>
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
         => Imc.GetFile(path, out file);

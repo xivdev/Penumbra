@@ -25,12 +25,13 @@ public sealed unsafe class ChangeCustomize : FastHook<ChangeCustomize.Delegate>
     private bool Detour(Human* human, CustomizeArray* data, byte skipEquipment)
     {
         _metaState.CustomizeChangeCollection = _collectionResolver.IdentifyCollection((DrawObject*)human, true);
-        using var cmp    = _metaState.ResolveRspData(_metaState.CustomizeChangeCollection.ModCollection);
+        _metaState.RspCollection             = _metaState.CustomizeChangeCollection;
         using var decal1 = _metaState.ResolveDecal(_metaState.CustomizeChangeCollection, true);
         using var decal2 = _metaState.ResolveDecal(_metaState.CustomizeChangeCollection, false);
         var       ret    = Task.Result.Original.Invoke(human, data, skipEquipment);
         Penumbra.Log.Excessive($"[Change Customize] Invoked on {(nint)human:X} with {(nint)data:X}, {skipEquipment} -> {ret}.");
         _metaState.CustomizeChangeCollection = ResolveData.Invalid;
+        _metaState.RspCollection = ResolveData.Invalid;
         return ret;
     }
 }
