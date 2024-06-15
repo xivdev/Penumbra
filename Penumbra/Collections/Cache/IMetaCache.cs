@@ -27,8 +27,6 @@ public abstract class MetaCacheBase<TIdentifier, TEntry>
     }
 
     public abstract void SetFiles();
-    public abstract void Reset();
-    public abstract void ResetFiles();
 
     public bool ApplyMod(IMod source, TIdentifier identifier, TEntry entry)
     {

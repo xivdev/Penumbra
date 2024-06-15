@@ -13,9 +13,6 @@ public sealed class RspCache(MetaFileManager manager, ModCollection collection) 
     public override void SetFiles()
         => Manager.SetFile(_cmpFile, MetaIndex.HumanCmp);
 
-    public override void ResetFiles()
-        => Manager.SetFile(null, MetaIndex.HumanCmp);
-
     protected override void IncorporateChangesInternal()
     {
         if (GetFile() is not { } file)
@@ -30,7 +27,7 @@ public sealed class RspCache(MetaFileManager manager, ModCollection collection) 
     public MetaList.MetaReverter TemporarilySetFile()
         => Manager.TemporarilySetFile(_cmpFile, MetaIndex.HumanCmp);
 
-    public override void Reset()
+    public void Reset()
     {
         if (_cmpFile == null)
             return;

@@ -26,7 +26,7 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
             Manager.SetFile(_eqdpFiles[i], index);
     }
 
-    public override void ResetFiles()
+    public void ResetFiles()
     {
         foreach (var t in CharacterUtilityData.EqdpIndices)
             Manager.SetFile(null, t);
@@ -62,7 +62,7 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
         return Manager.TemporarilySetFile(_eqdpFiles[i], idx);
     }
 
-    public override void Reset()
+    public void Reset()
     {
         foreach (var file in _eqdpFiles.OfType<ExpandedEqdpFile>())
         {

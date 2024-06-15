@@ -95,9 +95,6 @@ public sealed unsafe class MetaState : IDisposable
             _ => DisposableContainer.Empty,
         };
 
-    public MetaList.MetaReverter ResolveGmpData(ModCollection collection)
-        => collection.TemporarilySetGmpFile(_characterUtility);
-
     public MetaList.MetaReverter ResolveRspData(ModCollection collection)
         => collection.TemporarilySetCmpFile(_characterUtility);
 

@@ -15,10 +15,10 @@ namespace Penumbra.Meta.Files;
 /// </summary>
 public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 {
-    protected const int BlockSize = 160;
-    protected const int NumBlocks = 64;
-    protected const int EntrySize = 8;
-    protected const int MaxSize   = BlockSize * NumBlocks * EntrySize;
+    public const int BlockSize = 160;
+    public const int NumBlocks = 64;
+    public const int EntrySize = 8;
+    public const int MaxSize   = BlockSize * NumBlocks * EntrySize;
 
     public const int Count = BlockSize * NumBlocks;
 

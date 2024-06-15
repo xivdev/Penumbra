@@ -100,10 +100,6 @@ public partial class ModCollection
         return idx >= 0 ? utility.TemporarilyResetResource(idx) : null;
     }
 
-    public MetaList.MetaReverter TemporarilySetGmpFile(CharacterUtility utility)
-        => _cache?.Meta.TemporarilySetGmpFile()
-         ?? utility.TemporarilyResetResource(MetaIndex.Gmp);
-
     public MetaList.MetaReverter TemporarilySetCmpFile(CharacterUtility utility)
         => _cache?.Meta.TemporarilySetCmpFile()
          ?? utility.TemporarilyResetResource(MetaIndex.HumanCmp);

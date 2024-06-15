@@ -148,9 +148,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     public MetaList.MetaReverter? TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => Eqdp.TemporarilySetFile(genderRace, accessory);
 
-    public MetaList.MetaReverter TemporarilySetGmpFile()
-        => Gmp.TemporarilySetFile();
-
     public MetaList.MetaReverter TemporarilySetCmpFile()
         => Rsp.TemporarilySetFile();
 

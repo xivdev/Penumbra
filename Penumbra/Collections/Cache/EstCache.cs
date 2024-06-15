@@ -54,7 +54,7 @@ public sealed class EstCache(MetaFileManager manager, ModCollection collection) 
         return Manager.TemporarilySetFile(file, idx);
     }
 
-    public override void ResetFiles()
+    public void ResetFiles()
     {
         Manager.SetFile(null, MetaIndex.FaceEst);
         Manager.SetFile(null, MetaIndex.HairEst);
@@ -80,7 +80,7 @@ public sealed class EstCache(MetaFileManager manager, ModCollection collection) 
             : EstFile.GetDefault(Manager, identifier);
     }
 
-    public override void Reset()
+    public void Reset()
     {
         _estFaceFile?.Reset();
         _estHairFile?.Reset();

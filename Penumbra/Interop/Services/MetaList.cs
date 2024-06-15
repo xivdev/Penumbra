@@ -102,30 +102,19 @@ public unsafe class MetaList : IDisposable
         ResetResourceInternal();
     }
 
-    public sealed class MetaReverter : IDisposable
+    public sealed class MetaReverter(MetaList metaList, nint data, int length) : IDisposable
     {
         public static readonly MetaReverter Disabled = new(null!) { Disposed = true };
 
-        public readonly MetaList MetaList;
-        public readonly nint     Data;
-        public readonly int      Length;
+        public readonly MetaList MetaList = metaList;
+        public readonly nint     Data     = data;
+        public readonly int      Length   = length;
         public readonly bool     Resetter;
         public          bool     Disposed;
 
-        public MetaReverter(MetaList metaList, nint data, int length)
-        {
-            MetaList = metaList;
-            Data     = data;
-            Length   = length;
-        }
-
         public MetaReverter(MetaList metaList)
-        {
-            MetaList = metaList;
-            Data     = nint.Zero;
-            Length   = 0;
-            Resetter = true;
-        }
+            : this(metaList, nint.Zero, 0)
+            => Resetter = true;
 
         public void Dispose()
         {

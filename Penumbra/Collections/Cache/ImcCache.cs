@@ -38,7 +38,7 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
                 Collection._cache!.ForceFile(path, PathDataHandler.CreateImc(path.Path, Collection));
     }
 
-    public override void ResetFiles()
+    public void ResetFiles()
     {
         foreach (var (path, _) in _imcFiles)
             Collection._cache!.ForceFile(path, FullPath.Empty);
@@ -56,7 +56,7 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
     }
 
 
-    public override void Reset()
+    public void Reset()
     {
         foreach (var (path, (file, set)) in _imcFiles)
         {
