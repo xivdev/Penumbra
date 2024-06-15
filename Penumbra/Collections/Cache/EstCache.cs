@@ -74,7 +74,7 @@ public sealed class EstCache(MetaFileManager manager, ModCollection collection) 
 
     public EstEntry GetEstEntry(EstIdentifier identifier)
     {
-        var file = GetFile(identifier);
+        var file = GetCurrentFile(identifier);
         return file != null
             ? file[identifier.GenderRace, identifier.SetId]
             : EstFile.GetDefault(Manager, identifier);
@@ -124,9 +124,19 @@ public sealed class EstCache(MetaFileManager manager, ModCollection collection) 
         Clear();
     }
 
+    private EstFile? GetCurrentFile(EstIdentifier identifier)
+        => identifier.Slot switch
+        {
+            EstType.Hair => _estHairFile,
+            EstType.Face => _estFaceFile,
+            EstType.Body => _estBodyFile,
+            EstType.Head => _estHeadFile,
+            _            => null,
+        };
+
     private EstFile? GetFile(EstIdentifier identifier)
     {
-        if (Manager.CharacterUtility.Ready)
+        if (!Manager.CharacterUtility.Ready)
             return null;
 
         return identifier.Slot switch
