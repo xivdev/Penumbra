@@ -144,7 +144,6 @@ public class Penumbra : IDalamudPlugin
         {
             if (_characterUtility.Ready)
             {
-                _collectionManager.Active.Default.SetFiles(_characterUtility);
                 _residentResources.Reload();
                 _redrawService.RedrawAll(RedrawType.Redraw);
             }
@@ -153,7 +152,6 @@ public class Penumbra : IDalamudPlugin
         {
             if (_characterUtility.Ready)
             {
-                _characterUtility.ResetAll();
                 _residentResources.Reload();
                 _redrawService.RedrawAll(RedrawType.Redraw);
             }

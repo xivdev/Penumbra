@@ -87,7 +87,7 @@ public unsafe class MetaList : IDisposable
         => SetResourceInternal(_defaultResourceData, _defaultResourceSize);
 
     private void SetResourceToDefaultCollection()
-        => _utility.Active.Default.SetMetaFile(_utility, GlobalMetaIndex);
+    {}
 
     public void Dispose()
     {

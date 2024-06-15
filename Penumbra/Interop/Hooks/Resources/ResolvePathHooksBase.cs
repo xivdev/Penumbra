@@ -1,11 +1,9 @@
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
@@ -149,42 +147,51 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     private nint ResolveMdlHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
     {
-        var data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var eqdp = slotIndex > 9 || _parent.InInternalResolve
-            ? DisposableContainer.Empty
-            : _parent.MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace(drawObject), slotIndex < 5, slotIndex > 4);
-        return ResolvePath(data, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        if (slotIndex < 10)
+            _parent.MetaState.EqdpCollection.Push(collection);
+
+        var ret = ResolvePath(collection, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        if (slotIndex < 10)
+            _parent.MetaState.EqdpCollection.Pop();
+
+        return ret;
     }
 
     private nint ResolvePapHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
     {
-        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
-        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection,
+            _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        _parent.MetaState.EstCollection.Pop();
         return ret;
     }
 
     private nint ResolvePhybHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
-        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
         return ret;
     }
 
     private nint ResolveSklbHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
-        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
         return ret;
     }
 
     private nint ResolveSkpHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        _parent.MetaState.EstCollection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        var ret = ResolvePath(_parent.MetaState.EstCollection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
-        _parent.MetaState.EstCollection = ResolveData.Invalid;
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
         return ret;
     }
 

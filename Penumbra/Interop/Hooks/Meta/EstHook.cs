@@ -21,7 +21,7 @@ public class EstHook : FastHook<EstHook.Delegate>
     private EstEntry Detour(uint genderRace, int estType, uint id)
     {
         EstEntry ret;
-        if (_metaState.EstCollection is { Valid: true, ModCollection.MetaCache: { } cache }
+        if (_metaState.EstCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache }
          && cache.Est.TryGetValue(Convert(genderRace, estType, id), out var entry))
             ret = entry.Entry;
         else

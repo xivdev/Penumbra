@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
@@ -24,7 +25,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>
     private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte height)
     {
         float scale;
-        if (bodyType < 2 && _metaState.RspCollection is { Valid: true, ModCollection.MetaCache: { } cache })
+        if (bodyType < 2 && _metaState.RspCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
             var clan = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
             var (minIdent, maxIdent) = gender == 0

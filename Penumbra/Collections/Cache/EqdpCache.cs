@@ -1,8 +1,5 @@
-using OtterGui;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Services;
-using Penumbra.Interop.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -11,108 +8,60 @@ namespace Penumbra.Collections.Cache;
 
 public sealed class EqdpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<EqdpIdentifier, EqdpEntry>(manager, collection)
 {
-    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile[CharacterUtilityData.EqdpIndices.Length]; // TODO: female Hrothgar
+    private readonly Dictionary<(PrimaryId Id, GenderRace GenderRace, bool Accessory), EqdpEntry> _fullEntries = [];
 
     public override void SetFiles()
-    {
-        for (var i = 0; i < CharacterUtilityData.EqdpIndices.Length; ++i)
-            Manager.SetFile(_eqdpFiles[i], CharacterUtilityData.EqdpIndices[i]);
-    }
+    { }
 
-    public void SetFile(MetaIndex index)
-    {
-        var i = CharacterUtilityData.EqdpIndices.IndexOf(index);
-        if (i != -1)
-            Manager.SetFile(_eqdpFiles[i], index);
-    }
-
-    public void ResetFiles()
-    {
-        foreach (var t in CharacterUtilityData.EqdpIndices)
-            Manager.SetFile(null, t);
-    }
+    public bool TryGetFullEntry(PrimaryId id, GenderRace genderRace, bool accessory, out EqdpEntry entry)
+        => _fullEntries.TryGetValue((id, genderRace, accessory), out entry);
 
     protected override void IncorporateChangesInternal()
-    {
-        foreach (var (identifier, (_, entry)) in this)
-            Apply(GetFile(identifier)!, identifier, entry);
-
-        Penumbra.Log.Verbose($"{Collection.AnonymizedName}: Loaded {Count} delayed EQDP manipulations.");
-    }
-
-    public ExpandedEqdpFile? EqdpFile(GenderRace race, bool accessory)
-        => _eqdpFiles[Array.IndexOf(CharacterUtilityData.EqdpIndices, CharacterUtilityData.EqdpIdx(race, accessory))]; // TODO: female Hrothgar
-
-    public MetaList.MetaReverter? TemporarilySetFile(GenderRace genderRace, bool accessory)
-    {
-        var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
-        if (idx < 0)
-        {
-            Penumbra.Log.Warning($"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
-            return null;
-        }
-
-        var i = CharacterUtilityData.EqdpIndices.IndexOf(idx);
-        if (i < 0)
-        {
-            Penumbra.Log.Warning($"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
-            return null;
-        }
-
-        return Manager.TemporarilySetFile(_eqdpFiles[i], idx);
-    }
+    { }
 
     public void Reset()
     {
-        foreach (var file in _eqdpFiles.OfType<ExpandedEqdpFile>())
-        {
-            var relevant = CharacterUtility.RelevantIndices[file.Index.Value];
-            file.Reset(Keys.Where(m => m.FileIndex() == relevant).Select(m => m.SetId));
-        }
-
         Clear();
+        _fullEntries.Clear();
     }
 
     protected override void ApplyModInternal(EqdpIdentifier identifier, EqdpEntry entry)
     {
-        if (GetFile(identifier) is { } file)
-            Apply(file, identifier, entry);
+        var tuple = (identifier.SetId, identifier.GenderRace, identifier.Slot.IsAccessory());
+        var mask  = Eqdp.Mask(identifier.Slot);
+        if (!_fullEntries.TryGetValue(tuple, out var currentEntry))
+            currentEntry = ExpandedEqdpFile.GetDefault(Manager, identifier);
+
+        _fullEntries[tuple] = (currentEntry & ~mask) | (entry & mask);
     }
 
     protected override void RevertModInternal(EqdpIdentifier identifier)
     {
-        if (GetFile(identifier) is { } file)
-            Apply(file, identifier, ExpandedEqdpFile.GetDefault(Manager, identifier));
-    }
+        var tuple = (identifier.SetId, identifier.GenderRace, identifier.Slot.IsAccessory());
+        var mask  = Eqdp.Mask(identifier.Slot);
 
-    public static bool Apply(ExpandedEqdpFile file, EqdpIdentifier identifier, EqdpEntry entry)
-    {
-        var origEntry = file[identifier.SetId];
-        var mask      = Eqdp.Mask(identifier.Slot);
-        if ((origEntry & mask) == entry)
-            return false;
-        
-        file[identifier.SetId] = (origEntry & ~mask) | entry;
-        return true;
+        if (_fullEntries.TryGetValue(tuple, out var currentEntry))
+        {
+            var def      = ExpandedEqdpFile.GetDefault(Manager, identifier);
+            var newEntry = (currentEntry & ~mask) | (def & mask);
+            if (currentEntry != newEntry)
+            {
+                _fullEntries[tuple] = newEntry;
+            }
+            else
+            {
+                var slots = tuple.Item3 ? EquipSlotExtensions.AccessorySlots : EquipSlotExtensions.EquipmentSlots;
+                if (slots.All(s => !ContainsKey(identifier with { Slot = s })))
+                    _fullEntries.Remove(tuple);
+                else
+                    _fullEntries[tuple] = newEntry;
+            }
+        }
     }
 
     protected override void Dispose(bool _)
     {
-        for (var i = 0; i < _eqdpFiles.Length; ++i)
-        {
-            _eqdpFiles[i]?.Dispose();
-            _eqdpFiles[i] = null;
-        }
-
         Clear();
-    }
-
-    private ExpandedEqdpFile? GetFile(EqdpIdentifier identifier)
-    {
-        if (!Manager.CharacterUtility.Ready)
-            return null;
-
-        var index = Array.IndexOf(CharacterUtilityData.EqdpIndices, identifier.FileIndex());
-        return _eqdpFiles[index] ??= new ExpandedEqdpFile(Manager, identifier.GenderRace, identifier.Slot.IsAccessory());
+        _fullEntries.Clear();
     }
 }

@@ -27,11 +27,11 @@ public sealed unsafe class SetupVisor : FastHook<SetupVisor.Delegate>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private byte Detour(DrawObject* drawObject, ushort modelId, byte visorState)
     {
-        _metaState.GmpCollection  = _collectionResolver.IdentifyCollection(drawObject, true);
-        _metaState.UndividedGmpId = modelId;
+        var collection = _collectionResolver.IdentifyCollection(drawObject, true);
+        _metaState.GmpCollection.Push((collection, modelId));
         var ret = Task.Result.Original.Invoke(drawObject, modelId, visorState);
         Penumbra.Log.Excessive($"[Setup Visor] Invoked on {(nint)drawObject:X} with {modelId}, {visorState} -> {ret}.");
-        _metaState.GmpCollection = ResolveData.Invalid;
+        _metaState.GmpCollection.Pop();
         return ret;
     }
 }

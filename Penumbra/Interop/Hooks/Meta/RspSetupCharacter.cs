@@ -31,8 +31,9 @@ public sealed unsafe class RspSetupCharacter : FastHook<RspSetupCharacter.Delega
             return;
         }
 
-        _metaState.RspCollection = _collectionResolver.IdentifyCollection(drawObject, true);
+        var collection = _collectionResolver.IdentifyCollection(drawObject, true);
+        _metaState.RspCollection.Push(collection);
         Task.Result.Original.Invoke(drawObject, unk2, unk3, unk4, unk5);
-        _metaState.RspCollection = ResolveData.Invalid;
+        _metaState.RspCollection.Pop();
     }
 }

@@ -1,14 +1,9 @@
 using OtterGui.Classes;
-using Penumbra.GameData.Enums;
 using Penumbra.Mods;
-using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
-using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Cache;
-using Penumbra.Interop.Services;
 using Penumbra.Mods.Editor;
-using Penumbra.GameData.Structs;
 
 namespace Penumbra.Collections;
 
@@ -68,35 +63,4 @@ public partial class ModCollection
 
     internal SingleArray<ModConflicts> Conflicts(Mod mod)
         => _cache?.Conflicts(mod) ?? new SingleArray<ModConflicts>();
-
-    public void SetFiles(CharacterUtility utility)
-    {
-        if (_cache == null)
-        {
-            utility.ResetAll();
-        }
-        else
-        {
-            _cache.Meta.SetFiles();
-            Penumbra.Log.Debug($"Set CharacterUtility resources for collection {Identifier}.");
-        }
-    }
-
-    public void SetMetaFile(CharacterUtility utility, MetaIndex idx)
-    {
-        if (_cache == null)
-            utility.ResetResource(idx);
-        else
-            _cache.Meta.SetFile(idx);
-    }
-
-    // Used for short periods of changed files.
-    public MetaList.MetaReverter? TemporarilySetEqdpFile(CharacterUtility utility, GenderRace genderRace, bool accessory)
-    {
-        if (_cache != null)
-            return _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory);
-
-        var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
-        return idx >= 0 ? utility.TemporarilyResetResource(idx) : null;
-    }
 }

@@ -23,10 +23,11 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private ulong Detour(Character* character)
     {
-        _metaState.RspCollection = _collectionResolver.IdentifyCollection((GameObject*)character, true);
+        var collection = _collectionResolver.IdentifyCollection((GameObject*)character, true);
+        _metaState.RspCollection.Push(collection);
         var ret = Task.Result.Original.Invoke(character);
         Penumbra.Log.Excessive($"[Calculate Height] Invoked on {(nint)character:X} -> {ret}.");
-        _metaState.RspCollection = ResolveData.Invalid;
+        _metaState.RspCollection.Pop();
         return ret;
     }
 }

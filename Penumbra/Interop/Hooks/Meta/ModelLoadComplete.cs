@@ -23,10 +23,11 @@ public sealed unsafe class ModelLoadComplete : FastHook<ModelLoadComplete.Delega
     private void Detour(DrawObject* drawObject)
     {
         Penumbra.Log.Excessive($"[Model Load Complete] Invoked on {(nint)drawObject:X}.");
-        var       collection = _collectionResolver.IdentifyCollection(drawObject, true);
-        using var eqdp = _metaState.ResolveEqdpData(collection.ModCollection, MetaState.GetDrawObjectGenderRace((nint)drawObject), true, true);
-        _metaState.EqpCollection = collection;
+        var collection = _collectionResolver.IdentifyCollection(drawObject, true);
+        _metaState.EqpCollection.Push(collection);
+        _metaState.EqdpCollection.Push(collection);
         Task.Result.Original(drawObject);
-        _metaState.EqpCollection = ResolveData.Invalid;
+        _metaState.EqpCollection.Pop();
+        _metaState.EqdpCollection.Pop();
     }
 }

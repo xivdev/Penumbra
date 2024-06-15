@@ -45,12 +45,14 @@ public sealed unsafe class MetaState : IDisposable
     private readonly CharacterUtility    _characterUtility;
     private readonly CreateCharacterBase _createCharacterBase;
 
-    public ResolveData CustomizeChangeCollection = ResolveData.Invalid;
-    public ResolveData EqpCollection             = ResolveData.Invalid;
-    public ResolveData GmpCollection             = ResolveData.Invalid;
-    public ResolveData EstCollection             = ResolveData.Invalid;
-    public ResolveData RspCollection             = ResolveData.Invalid;
-    public PrimaryId   UndividedGmpId            = 0;
+    public          ResolveData        CustomizeChangeCollection = ResolveData.Invalid;
+    public readonly Stack<ResolveData> EqpCollection             = [];
+    public readonly Stack<ResolveData> EqdpCollection            = [];
+    public readonly Stack<ResolveData> EstCollection             = [];
+    public readonly Stack<ResolveData> RspCollection             = [];
+
+    public readonly Stack<(ResolveData Collection, PrimaryId Id)> GmpCollection = [];
+
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
@@ -81,21 +83,6 @@ public sealed unsafe class MetaState : IDisposable
         resolveData = ResolveData.Invalid;
         return false;
     }
-
-    public DisposableContainer ResolveEqdpData(ModCollection collection, GenderRace race, bool equipment, bool accessory)
-        => (equipment, accessory) switch
-        {
-            (true, true) => new DisposableContainer(race.Dependencies().SelectMany(r => new[]
-            {
-                collection.TemporarilySetEqdpFile(_characterUtility, r, false),
-                collection.TemporarilySetEqdpFile(_characterUtility, r, true),
-            })),
-            (true, false) => new DisposableContainer(race.Dependencies()
-                .Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, false))),
-            (false, true) => new DisposableContainer(race.Dependencies()
-                .Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, true))),
-            _ => DisposableContainer.Empty,
-        };
 
     public DecalReverter ResolveDecal(ResolveData resolve, bool which)
         => new(_config, _characterUtility, _resources, resolve, which);
@@ -130,7 +117,7 @@ public sealed unsafe class MetaState : IDisposable
 
         var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
             UsesDecal(*(uint*)modelCharaId, (nint)customize));
-        RspCollection = _lastCreatedCollection;
+        RspCollection.Push(_lastCreatedCollection);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal);
     }
@@ -142,7 +129,7 @@ public sealed unsafe class MetaState : IDisposable
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != null)
             _communicator.CreatedCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection, (nint)drawObject);
-        RspCollection          = ResolveData.Invalid;
+        RspCollection.Pop();
         _lastCreatedCollection = ResolveData.Invalid;
     }
 

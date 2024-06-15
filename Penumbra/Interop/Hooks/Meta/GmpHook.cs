@@ -27,15 +27,15 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>
     private nint Detour(nint gmpResource, uint dividedHeadId)
     {
         nint ret;
-        if (_metaState.GmpCollection is { Valid: true, ModCollection.MetaCache: { } cache }
-         && cache.Gmp.TryGetValue(new GmpIdentifier(_metaState.UndividedGmpId), out var entry))
+        if (_metaState.GmpCollection.TryPeek(out var collection) && collection.Collection is { Valid: true, ModCollection.MetaCache: { } cache }
+         && cache.Gmp.TryGetValue(new GmpIdentifier(collection.Id), out var entry))
         {
             if (entry.Entry.Enabled)
             {
                 *StablePointer.Pointer = entry.Entry.Value;
                 // This function already gets the original ID divided by the block size, so we can compute the modulo with a single multiplication and addition.
                 // We then go backwards from our pointer because this gets added by the calling functions.
-                ret = (nint)(StablePointer.Pointer - (_metaState.UndividedGmpId.Id - dividedHeadId * ExpandedEqpGmpBase.BlockSize));
+                ret = (nint)(StablePointer.Pointer - (collection.Id.Id - dividedHeadId * ExpandedEqpGmpBase.BlockSize));
             }
             else
             {

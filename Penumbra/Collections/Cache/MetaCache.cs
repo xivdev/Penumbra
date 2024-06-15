@@ -1,7 +1,5 @@
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Services;
-using Penumbra.Interop.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -115,48 +113,18 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     ~MetaCache()
         => Dispose();
 
-    /// <summary> Set a single file. </summary>
-    public void SetFile(MetaIndex metaIndex)
-    {
-        switch (metaIndex)
-        {
-            case MetaIndex.Eqp:
-                break;
-            case MetaIndex.Gmp:
-                break;
-            case MetaIndex.HumanCmp:
-                Rsp.SetFiles();
-                break;
-            case MetaIndex.FaceEst:
-            case MetaIndex.HairEst:
-            case MetaIndex.HeadEst:
-            case MetaIndex.BodyEst:
-                break;
-            default:
-                Eqdp.SetFile(metaIndex);
-                break;
-        }
-    }
-
     /// <summary> Set the currently relevant IMC files for the collection cache. </summary>
     public void SetImcFiles(bool fromFullCompute)
         => Imc.SetFiles(fromFullCompute);
-
-    public MetaList.MetaReverter? TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
-        => Eqdp.TemporarilySetFile(genderRace, accessory);
 
     /// <summary> Try to obtain a manipulated IMC file. </summary>
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
         => Imc.GetFile(path, out file);
 
     internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, PrimaryId primaryId)
-    {
-        var eqdpFile = Eqdp.EqdpFile(race, accessory);
-        if (eqdpFile != null)
-            return primaryId.Id < eqdpFile.Count ? eqdpFile[primaryId] : default;
-
-        return Meta.Files.ExpandedEqdpFile.GetDefault(manager, race, accessory, primaryId);
-    }
+        => Eqdp.TryGetFullEntry(primaryId, race, accessory, out var entry)
+            ? entry
+            : Meta.Files.ExpandedEqdpFile.GetDefault(manager, race, accessory, primaryId);
 
     internal EstEntry GetEstEntry(EstType type, GenderRace genderRace, PrimaryId primaryId)
         => Est.GetEstEntry(new EstIdentifier(primaryId, type, genderRace));

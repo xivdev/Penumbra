@@ -1,0 +1,33 @@
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using OtterGui.Services;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
+using Penumbra.Interop.PathResolving;
+using Penumbra.Meta.Manipulations;
+
+namespace Penumbra.Interop.Hooks.Meta;
+
+public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>
+{
+    public delegate void Delegate(CharacterUtility* utility, EqdpEntry* entry, uint id, uint raceCode);
+
+    private readonly MetaState _metaState;
+
+    public EqdpAccessoryHook(HookManager hooks, MetaState metaState)
+    {
+        _metaState = metaState;
+        Task       = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", "E8 ?? ?? ?? ?? 41 BF ?? ?? ?? ?? 83 FB", Detour, true);
+    }
+
+    private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
+    {
+        if (_metaState.EqdpCollection.TryPeek(out var collection)
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache }
+         && cache.Eqdp.TryGetFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, true, out var newEntry))
+            *entry = newEntry;
+        else
+            Task.Result.Original(utility, entry, setId, raceCode);
+        Penumbra.Log.Information(
+            $"[GetEqdpAccessoryEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
+    }
+}

@@ -33,7 +33,7 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
         }
 
         var ret = storage;
-        if (bodyType < 2 && _metaState.RspCollection is { Valid: true, ModCollection.MetaCache: { } cache })
+        if (bodyType < 2 && _metaState.RspCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
             var bustScale = bustSize / 100f;
             var clan      = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
