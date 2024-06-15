@@ -4,6 +4,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -144,7 +145,7 @@ public sealed class ConfigWindow : Window
         using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
         ImGui.NewLine();
         ImGui.NewLine();
-        ImGuiUtil.TextWrapped(text);
+        ImUtf8.TextWrapped(text);
         color.Pop();
 
         ImGui.NewLine();

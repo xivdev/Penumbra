@@ -47,6 +47,8 @@ public sealed unsafe class MetaState : IDisposable
 
     public ResolveData CustomizeChangeCollection = ResolveData.Invalid;
     public ResolveData EqpCollection             = ResolveData.Invalid;
+    public ResolveData GmpCollection             = ResolveData.Invalid;
+    public PrimaryId   UndividedGmpId            = 0;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
@@ -92,9 +94,6 @@ public sealed unsafe class MetaState : IDisposable
                 .Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, true))),
             _ => DisposableContainer.Empty,
         };
-
-    public MetaList.MetaReverter ResolveEqpData(ModCollection collection)
-        => collection.TemporarilySetEqpFile(_characterUtility);
 
     public MetaList.MetaReverter ResolveGmpData(ModCollection collection)
         => collection.TemporarilySetGmpFile(_characterUtility);

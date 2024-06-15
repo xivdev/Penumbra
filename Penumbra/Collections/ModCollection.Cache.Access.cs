@@ -100,10 +100,6 @@ public partial class ModCollection
         return idx >= 0 ? utility.TemporarilyResetResource(idx) : null;
     }
 
-    public MetaList.MetaReverter TemporarilySetEqpFile(CharacterUtility utility)
-        => _cache?.Meta.TemporarilySetEqpFile()
-         ?? utility.TemporarilyResetResource(MetaIndex.Eqp);
-
     public MetaList.MetaReverter TemporarilySetGmpFile(CharacterUtility utility)
         => _cache?.Meta.TemporarilySetGmpFile()
          ?? utility.TemporarilyResetResource(MetaIndex.Gmp);
@@ -115,7 +111,4 @@ public partial class ModCollection
     public MetaList.MetaReverter TemporarilySetEstFile(CharacterUtility utility, EstType type)
         => _cache?.Meta.TemporarilySetEstFile(type)
          ?? utility.TemporarilyResetResource((MetaIndex)type);
-
-    public unsafe EqpEntry ApplyGlobalEqp(EqpEntry baseEntry, CharacterArmor* armor)
-        => _cache?.Meta.ApplyGlobalEqp(baseEntry, armor) ?? baseEntry;
 }

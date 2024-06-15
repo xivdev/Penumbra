@@ -1,4 +1,3 @@
-using System.IO.Pipes;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
@@ -146,9 +145,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     public void SetImcFiles(bool fromFullCompute)
         => Imc.SetFiles(fromFullCompute);
 
-    public MetaList.MetaReverter TemporarilySetEqpFile()
-        => Eqp.TemporarilySetFile();
-
     public MetaList.MetaReverter? TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => Eqdp.TemporarilySetFile(genderRace, accessory);
 
@@ -160,10 +156,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
 
     public MetaList.MetaReverter TemporarilySetEstFile(EstType type)
         => Est.TemporarilySetFiles(type);
-
-    public unsafe EqpEntry ApplyGlobalEqp(EqpEntry baseEntry, CharacterArmor* armor)
-        => GlobalEqp.Apply(baseEntry, armor);
-
 
     /// <summary> Try to obtain a manipulated IMC file. </summary>
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)

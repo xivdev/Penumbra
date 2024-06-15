@@ -19,11 +19,10 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>
 
     private void Detour(CharacterUtility* utility, EqpEntry* flags, CharacterArmor* armor)
     {
-        if (_metaState.EqpCollection.Valid)
+        if (_metaState.EqpCollection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
-            using var eqp = _metaState.ResolveEqpData(_metaState.EqpCollection.ModCollection);
-            Task.Result.Original(utility, flags, armor);
-            *flags = _metaState.EqpCollection.ModCollection.ApplyGlobalEqp(*flags, armor);
+            *flags = cache.Eqp.GetValues(armor);
+            *flags = cache.GlobalEqp.Apply(*flags, armor);
         }
         else
         {

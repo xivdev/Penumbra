@@ -1,3 +1,4 @@
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
@@ -27,6 +28,17 @@ public sealed class EqpCache(MetaFileManager manager, ModCollection collection) 
 
         Penumbra.Log.Verbose($"{Collection.AnonymizedName}: Loaded {Count} delayed EQP manipulations.");
     }
+
+    public unsafe EqpEntry GetValues(CharacterArmor* armor)
+        => GetSingleValue(armor[0].Set,  EquipSlot.Head)
+          | GetSingleValue(armor[1].Set, EquipSlot.Body)
+          | GetSingleValue(armor[2].Set, EquipSlot.Hands)
+          | GetSingleValue(armor[3].Set, EquipSlot.Legs)
+          | GetSingleValue(armor[4].Set, EquipSlot.Feet);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private EqpEntry GetSingleValue(PrimaryId id, EquipSlot slot)
+        => TryGetValue(new EqpIdentifier(id, slot), out var pair) ? pair.Entry : ExpandedEqpFile.GetDefault(manager, id) & Eqp.Mask(slot);
 
     public MetaList.MetaReverter TemporarilySetFile()
         => Manager.TemporarilySetFile(_eqpFile, MetaIndex.Eqp);
