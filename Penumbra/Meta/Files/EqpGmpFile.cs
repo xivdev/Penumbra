@@ -104,14 +104,10 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 }
 
-public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
+public sealed class ExpandedEqpFile(MetaFileManager manager) : ExpandedEqpGmpBase(manager, false), IEnumerable<EqpEntry>
 {
     public static readonly CharacterUtility.InternalIndex InternalIndex =
         CharacterUtility.ReverseIndices[(int)MetaIndex.Eqp];
-
-    public ExpandedEqpFile(MetaFileManager manager)
-        : base(manager, false)
-    { }
 
     public EqpEntry this[PrimaryId idx]
     {
@@ -147,14 +143,10 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
         => GetEnumerator();
 }
 
-public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
+public sealed class ExpandedGmpFile(MetaFileManager manager) : ExpandedEqpGmpBase(manager, true), IEnumerable<GmpEntry>
 {
     public static readonly CharacterUtility.InternalIndex InternalIndex =
         CharacterUtility.ReverseIndices[(int)MetaIndex.Gmp];
-
-    public ExpandedGmpFile(MetaFileManager manager)
-        : base(manager, true)
-    { }
 
     public GmpEntry this[PrimaryId idx]
     {

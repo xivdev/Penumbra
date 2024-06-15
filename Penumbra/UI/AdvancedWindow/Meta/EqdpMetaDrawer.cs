@@ -112,7 +112,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
         ImGui.SameLine();
         if (Checkmark("Model##eqdp"u8, "\0"u8, entry.Model, defaultEntry.Model, out var newModel))
         {
-            entry   = entry with { Material = newModel };
+            entry   = entry with { Model = newModel };
             changes = true;
         }
 

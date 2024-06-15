@@ -38,7 +38,7 @@ public sealed class EqpCache(MetaFileManager manager, ModCollection collection) 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private EqpEntry GetSingleValue(PrimaryId id, EquipSlot slot)
-        => TryGetValue(new EqpIdentifier(id, slot), out var pair) ? pair.Entry : ExpandedEqpFile.GetDefault(manager, id) & Eqp.Mask(slot);
+        => TryGetValue(new EqpIdentifier(id, slot), out var pair) ? pair.Entry : ExpandedEqpFile.GetDefault(Manager, id) & Eqp.Mask(slot);
 
     public MetaList.MetaReverter TemporarilySetFile()
         => Manager.TemporarilySetFile(_eqpFile, MetaIndex.Eqp);
