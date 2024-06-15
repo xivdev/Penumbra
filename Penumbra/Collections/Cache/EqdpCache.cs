@@ -1,4 +1,3 @@
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using OtterGui;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -28,7 +27,10 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
     }
 
     public override void ResetFiles()
-        => Manager.SetFile(null, MetaIndex.Eqp);
+    {
+        foreach (var t in CharacterUtilityData.EqdpIndices)
+            Manager.SetFile(null, t);
+    }
 
     protected override void IncorporateChangesInternal()
     {
@@ -89,8 +91,8 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
         var mask      = Eqdp.Mask(identifier.Slot);
         if ((origEntry & mask) == entry)
             return false;
-
-        file[identifier.SetId] = (entry & ~mask) | origEntry;
+        
+        file[identifier.SetId] = (origEntry & ~mask) | entry;
         return true;
     }
 

@@ -55,7 +55,12 @@ public sealed class EstCache(MetaFileManager manager, ModCollection collection) 
     }
 
     public override void ResetFiles()
-        => Manager.SetFile(null, MetaIndex.Eqp);
+    {
+        Manager.SetFile(null, MetaIndex.FaceEst);
+        Manager.SetFile(null, MetaIndex.HairEst);
+        Manager.SetFile(null, MetaIndex.BodyEst);
+        Manager.SetFile(null, MetaIndex.HeadEst);
+    }
 
     protected override void IncorporateChangesInternal()
     {
