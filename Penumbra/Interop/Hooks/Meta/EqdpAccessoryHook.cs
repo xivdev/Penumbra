@@ -3,7 +3,6 @@ using OtterGui.Services;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
@@ -21,12 +20,10 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
     {
+        Task.Result.Original(utility, entry, setId, raceCode);
         if (_metaState.EqdpCollection.TryPeek(out var collection)
-         && collection is { Valid: true, ModCollection.MetaCache: { } cache }
-         && cache.Eqdp.TryGetFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, true, out var newEntry))
-            *entry = newEntry;
-        else
-            Task.Result.Original(utility, entry, setId, raceCode);
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache })
+            *entry = cache.Eqdp.ApplyFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, true, *entry);
         Penumbra.Log.Information(
             $"[GetEqdpAccessoryEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
     }

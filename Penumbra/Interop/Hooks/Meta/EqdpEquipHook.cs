@@ -20,12 +20,10 @@ public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
     {
+        Task.Result.Original(utility, entry, setId, raceCode);
         if (_metaState.EqdpCollection.TryPeek(out var collection)
-         && collection is { Valid: true, ModCollection.MetaCache: { } cache }
-         && cache.Eqdp.TryGetFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, false, out var newEntry))
-            *entry = newEntry;
-        else
-            Task.Result.Original(utility, entry, setId, raceCode);
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache })
+            *entry = cache.Eqdp.ApplyFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, false, *entry);
         Penumbra.Log.Information(
             $"[GetEqdpEquipEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
     }

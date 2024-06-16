@@ -2,13 +2,11 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using Penumbra.Interop.Hooks.Objects;
 
@@ -86,21 +84,6 @@ public sealed unsafe class MetaState : IDisposable
 
     public DecalReverter ResolveDecal(ResolveData resolve, bool which)
         => new(_config, _characterUtility, _resources, resolve, which);
-
-    public static GenderRace GetHumanGenderRace(nint human)
-        => (GenderRace)((Human*)human)->RaceSexId;
-
-    public static GenderRace GetDrawObjectGenderRace(nint drawObject)
-    {
-        var draw = (DrawObject*)drawObject;
-        if (draw->Object.GetObjectType() != ObjectType.CharacterBase)
-            return GenderRace.Unknown;
-
-        var c = (CharacterBase*)drawObject;
-        return c->GetModelType() == CharacterBase.ModelType.Human
-            ? GetHumanGenderRace(drawObject)
-            : GenderRace.Unknown;
-    }
 
     public void Dispose()
     {

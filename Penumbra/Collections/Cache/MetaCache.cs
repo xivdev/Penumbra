@@ -122,9 +122,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
         => Imc.GetFile(path, out file);
 
     internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, PrimaryId primaryId)
-        => Eqdp.TryGetFullEntry(primaryId, race, accessory, out var entry)
-            ? entry
-            : Meta.Files.ExpandedEqdpFile.GetDefault(manager, race, accessory, primaryId);
+        => Eqdp.ApplyFullEntry(primaryId, race, accessory, Meta.Files.ExpandedEqdpFile.GetDefault(manager, race, accessory, primaryId));
 
     internal EstEntry GetEstEntry(EstType type, GenderRace genderRace, PrimaryId primaryId)
         => Est.GetEstEntry(new EstIdentifier(primaryId, type, genderRace));

@@ -139,9 +139,9 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
         // Performance considerations:
         // - This function is called from several threads simultaneously, hence the need for synchronization in the swapping path ;
-        // - Function is called each frame for each material on screen, after culling, i. e. up to thousands of times a frame in crowded areas ;
+        // - Function is called each frame for each material on screen, after culling, i.e. up to thousands of times a frame in crowded areas ;
         // - Swapping path is taken up to hundreds of times a frame.
-        // At the time of writing, the lock doesn't seem to have a noticeable impact in either framerate or CPU usage, but the swapping path shall still be avoided as much as possible.
+        // At the time of writing, the lock doesn't seem to have a noticeable impact in either frame rate or CPU usage, but the swapping path shall still be avoided as much as possible.
         lock (_skinLock)
         {
             try
