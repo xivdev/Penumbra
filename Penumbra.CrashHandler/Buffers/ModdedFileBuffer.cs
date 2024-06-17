@@ -44,12 +44,16 @@ internal sealed class ModdedFileBuffer : MemoryMappedBuffer, IModdedFileBufferWr
             accessor.Write(12, characterAddress);
             var span = GetSpan(accessor, 20, 16);
             collectionId.TryWriteBytes(span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
             span = GetSpan(accessor, 36, 80);
             WriteSpan(characterName, span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
             span = GetSpan(accessor, 116, 260);
             WriteSpan(requestedFileName, span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
             span = GetSpan(accessor, 376);
             WriteSpan(actualFileName, span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
         }
     }
 

@@ -55,8 +55,10 @@ internal sealed class AnimationInvocationBuffer : MemoryMappedBuffer, IAnimation
             accessor.Write(16, characterAddress);
             var span = GetSpan(accessor, 24, 16);
             collectionId.TryWriteBytes(span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
             span = GetSpan(accessor, 40);
             WriteSpan(characterName, span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
         }
     }
 

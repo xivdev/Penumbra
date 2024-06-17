@@ -38,8 +38,10 @@ internal sealed class CharacterBaseBuffer : MemoryMappedBuffer, ICharacterBaseBu
             accessor.Write(12, characterAddress);
             var span = GetSpan(accessor, 20, 16);
             collectionId.TryWriteBytes(span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
             span = GetSpan(accessor, 36);
             WriteSpan(characterName, span);
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
         }
     }
 
