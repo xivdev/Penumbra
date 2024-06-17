@@ -56,6 +56,8 @@ public partial class ModCollection
     /// </summary>
     public int ChangeCounter { get; private set; }
 
+    public uint ImcChangeCounter { get; set; }
+
     /// <summary> Increment the number of changes in the effective file list. </summary>
     public int IncrementCounter()
         => ++ChangeCounter;
