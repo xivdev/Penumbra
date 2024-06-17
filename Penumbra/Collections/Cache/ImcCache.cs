@@ -1,5 +1,3 @@
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
-using Penumbra.Collections.Manager;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;

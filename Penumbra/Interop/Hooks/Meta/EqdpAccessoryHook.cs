@@ -24,7 +24,7 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>
         if (_metaState.EqdpCollection.TryPeek(out var collection)
          && collection is { Valid: true, ModCollection.MetaCache: { } cache })
             *entry = cache.Eqdp.ApplyFullEntry(new PrimaryId((ushort)setId), (GenderRace)raceCode, true, *entry);
-        Penumbra.Log.Information(
+        Penumbra.Log.Excessive(
             $"[GetEqdpAccessoryEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
     }
 }

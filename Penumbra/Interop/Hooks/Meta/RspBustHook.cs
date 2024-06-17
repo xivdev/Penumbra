@@ -59,7 +59,7 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
             ret = Task.Result.Original(cmpResource, storage, race, gender, isSecondSubRace, bodyType, bustSize);
         }
 
-        Penumbra.Log.Information(
+        Penumbra.Log.Excessive(
             $"[GetRspBust] Invoked on 0x{cmpResource:X} with {race}, {(Gender)(gender + 1)}, {isSecondSubRace == 1}, {bodyType}, {bustSize}, returned {storage[0]}, {storage[1]}, {storage[2]}.");
         return ret;
     }
