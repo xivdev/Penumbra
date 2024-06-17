@@ -75,7 +75,9 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         if (!dir.Exists)
             return ApiHelpers.Return(PenumbraApiEc.FileMissing, args);
 
-        if (dir.Parent == null || Path.GetFullPath(_modManager.BasePath.FullName) != Path.GetFullPath(dir.Parent.FullName))
+        if (dir.Parent == null
+         || Path.TrimEndingDirectorySeparator(Path.GetFullPath(_modManager.BasePath.FullName))
+         != Path.TrimEndingDirectorySeparator(Path.GetFullPath(dir.Parent.FullName)))
             return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
 
         _modManager.AddMod(dir);

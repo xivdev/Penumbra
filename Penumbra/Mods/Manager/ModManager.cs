@@ -47,15 +47,15 @@ public sealed class ModManager : ModStorage, IDisposable
         DataEditor    = dataEditor;
         OptionEditor  = optionEditor;
         Creator       = creator;
-        SetBaseDirectory(config.ModDirectory, true);
+        SetBaseDirectory(config.ModDirectory, true, out _);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModManager);
         DiscoverMods();
     }
 
     /// <summary> Change the mod base directory and discover available mods. </summary>
-    public void DiscoverMods(string newDir)
+    public void DiscoverMods(string newDir, out string resultNewDir)
     {
-        SetBaseDirectory(newDir, false);
+        SetBaseDirectory(newDir, false, out resultNewDir);
         DiscoverMods();
     }
 
@@ -264,8 +264,9 @@ public sealed class ModManager : ModStorage, IDisposable
     /// If its not the first time, check if it is the same directory as before.
     /// Also checks if the directory is available and tries to create it if it is not.
     /// </summary>
-    private void SetBaseDirectory(string newPath, bool firstTime)
+    private void SetBaseDirectory(string newPath, bool firstTime, out string resultNewDir)
     {
+        resultNewDir = newPath;
         if (!firstTime && string.Equals(newPath, _config.ModDirectory, StringComparison.Ordinal))
             return;
 
@@ -278,7 +279,7 @@ public sealed class ModManager : ModStorage, IDisposable
         }
         else
         {
-            var newDir = new DirectoryInfo(newPath);
+            var newDir = new DirectoryInfo(Path.TrimEndingDirectorySeparator(newPath));
             if (!newDir.Exists)
                 try
                 {
@@ -290,8 +291,9 @@ public sealed class ModManager : ModStorage, IDisposable
                     Penumbra.Log.Error($"Could not create specified mod directory {newDir.FullName}:\n{e}");
                 }
 
-            BasePath = newDir;
-            Valid    = Directory.Exists(newDir.FullName);
+            BasePath     = newDir;
+            Valid        = Directory.Exists(newDir.FullName);
+            resultNewDir = BasePath.FullName;
             if (!firstTime && _config.ModDirectory != BasePath.FullName)
                 TriggerModDirectoryChange(BasePath.FullName, Valid);
         }

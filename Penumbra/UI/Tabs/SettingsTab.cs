@@ -269,7 +269,7 @@ public class SettingsTab : ITab
         if (_config.ModDirectory != _newModDirectory
          && _newModDirectory.Length != 0
          && DrawPressEnterWarning(_newModDirectory, _config.ModDirectory, pos, save, selected))
-            _modManager.DiscoverMods(_newModDirectory);
+            _modManager.DiscoverMods(_newModDirectory, out _newModDirectory);
     }
 
     /// <summary> Draw the Open Directory and Rediscovery buttons.</summary>
