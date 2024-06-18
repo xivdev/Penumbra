@@ -179,8 +179,6 @@ public class DebugTab : Window, ITab
         ImGui.NewLine();
         DrawData();
         ImGui.NewLine();
-        DrawDebugTabMetaLists();
-        ImGui.NewLine();
         DrawResourceProblems();
         ImGui.NewLine();
         DrawPlayerModelInfo();
@@ -785,23 +783,6 @@ public class DebugTab : Window, ITab
             {
                 ImGui.TableNextColumn();
             }
-        }
-    }
-
-    private void DrawDebugTabMetaLists()
-    {
-        if (!ImGui.CollapsingHeader("Metadata Changes"))
-            return;
-
-        using var table = Table("##DebugMetaTable", 3, ImGuiTableFlags.SizingFixedFit);
-        if (!table)
-            return;
-
-        foreach (var list in _characterUtility.Lists)
-        {
-            ImGuiUtil.DrawTableColumn(list.GlobalMetaIndex.ToString());
-            ImGuiUtil.DrawTableColumn(list.Entries.Count.ToString());
-            ImGuiUtil.DrawTableColumn(string.Join(", ", list.Entries.Select(e => $"0x{e.Data:X}")));
         }
     }
 

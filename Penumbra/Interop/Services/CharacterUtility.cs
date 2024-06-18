@@ -46,9 +46,6 @@ public unsafe class CharacterUtility : IDisposable
 
     private readonly MetaList[] _lists;
 
-    public IReadOnlyList<MetaList> Lists
-        => _lists;
-
     public (nint Address, int Size) DefaultResource(InternalIndex idx)
         => _lists[idx.Value].DefaultResource;
 
@@ -58,7 +55,7 @@ public unsafe class CharacterUtility : IDisposable
     {
         interop.InitializeFromAttributes(this);
         _lists = Enumerable.Range(0, RelevantIndices.Length)
-            .Select(idx => new MetaList(this, new InternalIndex(idx)))
+            .Select(idx => new MetaList(new InternalIndex(idx)))
             .ToArray();
         _framework      =  framework;
         LoadingFinished += () => Penumbra.Log.Debug("Loading of CharacterUtility finished.");
@@ -123,9 +120,6 @@ public unsafe class CharacterUtility : IDisposable
     {
         if (!Ready)
             return;
-
-        foreach (var list in _lists)
-            list.Dispose();
 
         Address->HumanPbdResource       = (ResourceHandle*)DefaultHumanPbdResource;
         Address->TransparentTexResource = (TextureResourceHandle*)DefaultTransparentResource;

@@ -2,6 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Interop.Processing;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -15,14 +16,16 @@ public class PathResolver : IDisposable
     private readonly CollectionManager  _collectionManager;
     private readonly ResourceLoader     _loader;
 
-    private readonly SubfileHelper      _subfileHelper;
-    private readonly PathState          _pathState;
-    private readonly MetaState          _metaState;
-    private readonly GameState          _gameState;
-    private readonly CollectionResolver _collectionResolver;
+    private readonly SubfileHelper             _subfileHelper;
+    private readonly PathState                 _pathState;
+    private readonly MetaState                 _metaState;
+    private readonly GameState                 _gameState;
+    private readonly CollectionResolver        _collectionResolver;
+    private readonly GamePathPreProcessService _preprocessor;
 
-    public unsafe PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ResourceLoader loader,
-        SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState)
+    public PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ResourceLoader loader,
+        SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,
+        GamePathPreProcessService preprocessor)
     {
         _performance        = performance;
         _config             = config;
@@ -31,6 +34,7 @@ public class PathResolver : IDisposable
         _pathState          = pathState;
         _metaState          = metaState;
         _gameState          = gameState;
+        _preprocessor       = preprocessor;
         _collectionResolver = collectionResolver;
         _loader             = loader;
         _loader.ResolvePath = ResolvePath;
@@ -102,11 +106,10 @@ public class PathResolver : IDisposable
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path : resolved.Value.InternalName;
-        SubfileHelper.HandleCollection(resolveData, path, nonDefault, type, resolved, gamePath, out var pair);
-        return pair;
+        return _preprocessor.PreProcess(resolveData, path, nonDefault, type, resolved, gamePath);
     }
 
-    public unsafe void Dispose()
+    public void Dispose()
     {
         _loader.ResetResolvePath();
     }
