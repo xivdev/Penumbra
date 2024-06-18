@@ -4,6 +4,8 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
+using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Collections.Manager;
@@ -49,7 +51,7 @@ public class TemporaryIpcTester(
         ImGui.InputTextWithHint("##tempMod",   "Temporary Mod Name...",         ref _tempModName,      32);
         ImGui.InputTextWithHint("##tempGame",  "Game Path...",                  ref _tempGamePath,     256);
         ImGui.InputTextWithHint("##tempFile",  "File Path...",                  ref _tempFilePath,     256);
-        ImGui.InputTextWithHint("##tempManip", "Manipulation Base64 String...", ref _tempManipulation, 256);
+        ImUtf8.InputText("##tempManip"u8, ref _tempManipulation, "Manipulation Base64 String..."u8);
         ImGui.Checkbox("Force Character Collection Overwrite", ref _forceOverwrite);
 
         using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
@@ -101,8 +103,7 @@ public class TemporaryIpcTester(
          && copyCollection is { HasCache: true })
         {
             var files = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
-            var manips = Functions.ToCompressedBase64(copyCollection.MetaCache?.Manipulations.ToArray() ?? Array.Empty<MetaManipulation>(),
-                MetaManipulation.CurrentVersion);
+            var manips = MetaApi.CompressMetaManipulations(copyCollection);
             _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid, files, manips, 999);
         }
 
@@ -187,8 +188,8 @@ public class TemporaryIpcTester(
                 if (ImGui.IsItemHovered())
                 {
                     using var tt = ImRaii.Tooltip();
-                    foreach (var manip in mod.Default.Manipulations)
-                        ImGui.TextUnformatted(manip.ToString());
+                    foreach (var identifier in mod.Default.Manipulations.Identifiers)
+                        ImGui.TextUnformatted(identifier.ToString());
                 }
             }
         }

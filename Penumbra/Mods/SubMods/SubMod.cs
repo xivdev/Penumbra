@@ -21,7 +21,7 @@ public static class SubMod
     /// <summary> Add all unique meta manipulations, file redirections and then file swaps from a ModDataContainer to the given sets. Skip any keys that are already contained. </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void AddContainerTo(IModDataContainer container, Dictionary<Utf8GamePath, FullPath> redirections,
-        HashSet<MetaManipulation> manipulations)
+        MetaDictionary manipulations)
     {
         foreach (var (path, file) in container.Files)
             redirections.TryAdd(path, file);
@@ -37,7 +37,7 @@ public static class SubMod
     {
         to.Files         = new Dictionary<Utf8GamePath, FullPath>(from.Files);
         to.FileSwaps     = new Dictionary<Utf8GamePath, FullPath>(from.FileSwaps);
-        to.Manipulations = [.. from.Manipulations];
+        to.Manipulations = from.Manipulations.Clone();
     }
 
     /// <summary> Load all file redirections, file swaps and meta manipulations from a JToken of that option into a data container. </summary>
@@ -64,11 +64,9 @@ public static class SubMod
                     data.FileSwaps.TryAdd(p, new FullPath(property.Value.ToObject<string>()!));
             }
 
-        var manips = json[nameof(data.Manipulations)];
+        var manips = json[nameof(data.Manipulations)]?.ToObject<MetaDictionary>();
         if (manips != null)
-            foreach (var s in manips.Children().Select(c => c.ToObject<MetaManipulation>())
-                         .Where(m => m.Validate()))
-                data.Manipulations.Add(s);
+            data.Manipulations.UnionWith(manips);
     }
 
     /// <summary> Load the relevant data for a selectable option from a JToken of that option. </summary>

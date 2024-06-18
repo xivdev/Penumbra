@@ -1,7 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using Microsoft.VisualBasic;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;

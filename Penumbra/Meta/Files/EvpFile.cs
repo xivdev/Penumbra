@@ -12,7 +12,7 @@ namespace Penumbra.Meta.Files;
 /// Containing Flags in each byte, 0x01 set for Body, 0x02 set for Helmet.
 /// Each flag corresponds to a mount row from the Mounts table and determines whether the mount disables the effect.
 /// </summary>
-public unsafe class EvpFile : MetaBaseFile
+public unsafe class EvpFile(MetaFileManager manager) : MetaBaseFile(manager, manager.MarshalAllocator, (MetaIndex)1)
 {
     public const int FlagArraySize = 512;
 
@@ -57,8 +57,4 @@ public unsafe class EvpFile : MetaBaseFile
 
         return EvpFlag.None;
     }
-
-    public EvpFile(MetaFileManager manager)
-        : base(manager, (MetaIndex)1) // TODO: Name
-    { }
 }

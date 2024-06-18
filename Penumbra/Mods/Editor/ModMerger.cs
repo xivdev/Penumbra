@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
@@ -13,7 +14,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModMerger : IDisposable
+public class ModMerger : IDisposable, IService
 {
     private readonly Configuration         _config;
     private readonly CommunicatorService   _communicator;
@@ -158,16 +159,13 @@ public class ModMerger : IDisposable
     {
         var redirections = option.Files.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         var swaps        = option.FileSwaps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        var manips       = option.Manipulations.ToHashSet();
+        var manips       = option.Manipulations.Clone();
 
         foreach (var originalOption in mergeOptions)
         {
-            foreach (var manip in originalOption.Manipulations)
-            {
-                if (!manips.Add(manip))
-                    throw new Exception(
-                        $"Could not add meta manipulation {manip} from {originalOption.GetFullName()} to {option.GetFullName()} because another manipulation of the same data already exists in this option.");
-            }
+            if (!manips.MergeForced(originalOption.Manipulations, out var failed))
+                throw new Exception(
+                    $"Could not add meta manipulation {failed} from {originalOption.GetFullName()} to {option.GetFullName()} because another manipulation of the same data already exists in this option.");
 
             foreach (var (swapA, swapB) in originalOption.FileSwaps)
             {

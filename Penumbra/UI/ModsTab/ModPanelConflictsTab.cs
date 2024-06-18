@@ -3,6 +3,8 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
@@ -15,7 +17,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab
+public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab, IUiService
 {
     private int? _currentPriority;
 
@@ -116,15 +118,12 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         using var indent = ImRaii.PushIndent(30f);
         foreach (var data in conflict.Conflicts)
         {
-            unsafe
+            _ = data switch
             {
-                var _ = data switch
-                {
-                    Utf8GamePath p     => ImGuiNative.igSelectable_Bool(p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero) > 0,
-                    MetaManipulation m => ImGui.Selectable(m.Manipulation?.ToString() ?? string.Empty),
-                    _                  => false,
-                };
-            }
+                Utf8GamePath p    => ImUtf8.Selectable(p.Path.Span,  false),
+                IMetaIdentifier m => ImUtf8.Selectable(m.ToString(), false),
+                _                 => false,
+            };
         }
 
         return true;

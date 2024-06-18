@@ -1,14 +1,13 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using Penumbra.Interop.Hooks.Objects;
 
@@ -18,7 +17,7 @@ namespace Penumbra.Interop.PathResolving;
 // GetSlotEqpData seems to be the only function using the EQP table.
 // It is only called by CheckSlotsForUnload (called by UpdateModels),
 // SetupModelAttributes (called by UpdateModels and OnModelLoadComplete)
-// and a unnamed function called by UpdateRender.
+// and an unnamed function called by UpdateRender.
 // It seems to be enough to change the EQP entries for UpdateModels.
 
 // GetEqdpDataFor[Adults|Children|Other] seem to be the only functions using the EQDP tables.
@@ -35,8 +34,8 @@ namespace Penumbra.Interop.PathResolving;
 // they all are called by many functions, but the most relevant seem to be Human.SetupFromCharacterData, which is only called by CharacterBase.Create,
 // ChangeCustomize and RspSetupCharacter, which is hooked here, as well as Character.CalculateHeight.
 
-// GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which has a DrawObject as its first parameter.
-public sealed unsafe class MetaState : IDisposable
+// GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which is SetupVisor.
+public sealed unsafe class MetaState : IDisposable, IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -45,8 +44,14 @@ public sealed unsafe class MetaState : IDisposable
     private readonly CharacterUtility    _characterUtility;
     private readonly CreateCharacterBase _createCharacterBase;
 
-    public ResolveData CustomizeChangeCollection = ResolveData.Invalid;
-    public ResolveData EqpCollection             = ResolveData.Invalid;
+    public          ResolveData        CustomizeChangeCollection = ResolveData.Invalid;
+    public readonly Stack<ResolveData> EqpCollection             = [];
+    public readonly Stack<ResolveData> EqdpCollection            = [];
+    public readonly Stack<ResolveData> EstCollection             = [];
+    public readonly Stack<ResolveData> RspCollection             = [];
+
+    public readonly Stack<(ResolveData Collection, PrimaryId Id)> GmpCollection = [];
+
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
@@ -78,47 +83,8 @@ public sealed unsafe class MetaState : IDisposable
         return false;
     }
 
-    public DisposableContainer ResolveEqdpData(ModCollection collection, GenderRace race, bool equipment, bool accessory)
-        => (equipment, accessory) switch
-        {
-            (true, true) => new DisposableContainer(race.Dependencies().SelectMany(r => new[]
-            {
-                collection.TemporarilySetEqdpFile(_characterUtility, r, false),
-                collection.TemporarilySetEqdpFile(_characterUtility, r, true),
-            })),
-            (true, false) => new DisposableContainer(race.Dependencies()
-                .Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, false))),
-            (false, true) => new DisposableContainer(race.Dependencies()
-                .Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, true))),
-            _ => DisposableContainer.Empty,
-        };
-
-    public MetaList.MetaReverter ResolveEqpData(ModCollection collection)
-        => collection.TemporarilySetEqpFile(_characterUtility);
-
-    public MetaList.MetaReverter ResolveGmpData(ModCollection collection)
-        => collection.TemporarilySetGmpFile(_characterUtility);
-
-    public MetaList.MetaReverter ResolveRspData(ModCollection collection)
-        => collection.TemporarilySetCmpFile(_characterUtility);
-
     public DecalReverter ResolveDecal(ResolveData resolve, bool which)
         => new(_config, _characterUtility, _resources, resolve, which);
-
-    public static GenderRace GetHumanGenderRace(nint human)
-        => (GenderRace)((Human*)human)->RaceSexId;
-
-    public static GenderRace GetDrawObjectGenderRace(nint drawObject)
-    {
-        var draw = (DrawObject*)drawObject;
-        if (draw->Object.GetObjectType() != ObjectType.CharacterBase)
-            return GenderRace.Unknown;
-
-        var c = (CharacterBase*)drawObject;
-        return c->GetModelType() == CharacterBase.ModelType.Human
-            ? GetHumanGenderRace(drawObject)
-            : GenderRace.Unknown;
-    }
 
     public void Dispose()
     {
@@ -135,9 +101,9 @@ public sealed unsafe class MetaState : IDisposable
 
         var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
             UsesDecal(*(uint*)modelCharaId, (nint)customize));
-        var cmp = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
+        RspCollection.Push(_lastCreatedCollection);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
-        _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
+        _characterBaseCreateMetaChanges = new DisposableContainer(decal);
     }
 
     private void OnCharacterBaseCreated(ModelCharaId _1, CustomizeArray* _2, CharacterArmor* _3, CharacterBase* drawObject)
@@ -147,6 +113,7 @@ public sealed unsafe class MetaState : IDisposable
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != null)
             _communicator.CreatedCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection, (nint)drawObject);
+        RspCollection.Pop();
         _lastCreatedCollection = ResolveData.Invalid;
     }
 

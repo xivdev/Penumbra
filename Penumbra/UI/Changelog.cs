@@ -1,8 +1,9 @@
+using OtterGui.Services;
 using OtterGui.Widgets;
 
 namespace Penumbra.UI;
 
-public class PenumbraChangelog
+public class PenumbraChangelog : IUiService
 {
     public const int LastChangelogVersion = 0;
 

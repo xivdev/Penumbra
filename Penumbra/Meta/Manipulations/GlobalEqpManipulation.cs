@@ -1,9 +1,12 @@
+using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly struct GlobalEqpManipulation : IMetaManipulation<GlobalEqpManipulation>
+public readonly struct GlobalEqpManipulation : IMetaIdentifier
 {
     public GlobalEqpType Type      { get; init; }
     public PrimaryId     Condition { get; init; }
@@ -17,6 +20,28 @@ public readonly struct GlobalEqpManipulation : IMetaManipulation<GlobalEqpManipu
             return Condition == 0;
 
         return Condition != 0;
+    }
+
+    public JObject AddToJson(JObject jObj)
+    {
+        jObj[nameof(Type)]      = Type.ToString();
+        jObj[nameof(Condition)] = Condition.Id;
+        return jObj;
+    }
+
+    public static GlobalEqpManipulation? FromJson(JObject? jObj)
+    {
+        if (jObj == null)
+            return null;
+
+        var type      = jObj[nameof(Type)]?.ToObject<GlobalEqpType>() ?? (GlobalEqpType)100;
+        var condition = jObj[nameof(Condition)]?.ToObject<PrimaryId>() ?? 0;
+        var ret = new GlobalEqpManipulation
+        {
+            Type      = type,
+            Condition = condition,
+        };
+        return ret.Validate() ? ret : null;
     }
 
 
@@ -45,6 +70,30 @@ public readonly struct GlobalEqpManipulation : IMetaManipulation<GlobalEqpManipu
     public override string ToString()
         => $"Global EQP - {Type}{(Condition != 0 ? $" - {Condition.Id}" : string.Empty)}";
 
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    {
+        var path = Type switch
+        {
+            GlobalEqpType.DoNotHideEarrings     => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.Ears),
+            GlobalEqpType.DoNotHideNecklace     => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.Neck),
+            GlobalEqpType.DoNotHideBracelets    => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.Wrists),
+            GlobalEqpType.DoNotHideRingR        => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.RFinger),
+            GlobalEqpType.DoNotHideRingL        => GamePaths.Accessory.Mdl.Path(Condition, GenderRace.MidlanderMale, EquipSlot.LFinger),
+            GlobalEqpType.DoNotHideHrothgarHats => string.Empty,
+            GlobalEqpType.DoNotHideVieraHats    => string.Empty,
+            _                                   => string.Empty,
+        };
+        if (path.Length > 0)
+            identifier.Identify(changedItems, path);
+        else if (Type is GlobalEqpType.DoNotHideVieraHats)
+            changedItems["All Hats for Viera"] = null;
+        else if (Type is GlobalEqpType.DoNotHideHrothgarHats)
+            changedItems["All Hats for Hrothgar"] = null;
+    }
+
     public MetaIndex FileIndex()
-        => (MetaIndex)(-1);
+        => MetaIndex.Eqp;
+
+    MetaManipulationType IMetaIdentifier.Type
+        => MetaManipulationType.GlobalEqp;
 }

@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
@@ -10,7 +11,7 @@ using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.ResourceLoading;
 
-public unsafe class ResourceLoader : IDisposable
+public unsafe class ResourceLoader : IDisposable, IService
 {
     private readonly ResourceService _resources;
     private readonly FileReadService _fileReadService;
@@ -212,7 +213,7 @@ public unsafe class ResourceLoader : IDisposable
     /// <summary>
     /// Catch weird errors with invalid decrements of the reference count.
     /// </summary>
-    private void DecRefProtection(ResourceHandle* handle, ref byte? returnValue)
+    private static void DecRefProtection(ResourceHandle* handle, ref byte? returnValue)
     {
         if (handle->RefCount != 0)
             return;

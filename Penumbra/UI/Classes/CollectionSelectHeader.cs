@@ -1,6 +1,7 @@
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -9,7 +10,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Classes;
 
-public class CollectionSelectHeader
+public class CollectionSelectHeader : IUiService
 {
     private readonly CollectionCombo       _collectionCombo;
     private readonly ActiveCollections     _activeCollections;

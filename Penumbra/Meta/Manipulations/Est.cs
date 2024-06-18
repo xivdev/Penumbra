@@ -91,6 +91,9 @@ public readonly record struct EstIdentifier(PrimaryId SetId, EstType Slot, Gende
         jObj["Slot"]       = Slot.ToString();
         return jObj;
     }
+
+    public MetaManipulationType Type
+        => MetaManipulationType.Est;
 }
 
 [JsonConverter(typeof(Converter))]
@@ -110,4 +113,17 @@ public readonly record struct EstEntry(ushort Value)
             JsonSerializer serializer)
             => new(serializer.Deserialize<ushort>(reader));
     }
+}
+
+public static class EstTypeExtension
+{
+    public static string ToName(this EstType type)
+        => type switch
+        {
+            EstType.Hair => "hair",
+            EstType.Face => "face",
+            EstType.Body => "top",
+            EstType.Head => "met",
+            _            => "unk",
+        };
 }

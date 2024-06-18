@@ -1,9 +1,10 @@
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs;
 
-public class MessagesTab(MessageService messages) : ITab
+public class MessagesTab(MessageService messages) : ITab, IUiService
 {
     public ReadOnlySpan<byte> Label
         => "Messages"u8;

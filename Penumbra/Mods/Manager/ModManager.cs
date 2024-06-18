@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager.OptionEditor;
@@ -27,7 +28,7 @@ public enum ModPathChangeType
     StartingReload,
 }
 
-public sealed class ModManager : ModStorage, IDisposable
+public sealed class ModManager : ModStorage, IDisposable, IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -261,7 +262,7 @@ public sealed class ModManager : ModStorage, IDisposable
 
     /// <summary>
     /// Set the mod base directory.
-    /// If its not the first time, check if it is the same directory as before.
+    /// If it's not the first time, check if it is the same directory as before.
     /// Also checks if the directory is available and tries to create it if it is not.
     /// </summary>
     private void SetBaseDirectory(string newPath, bool firstTime, out string resultNewDir)

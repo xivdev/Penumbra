@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
@@ -18,7 +19,7 @@ public enum RedirectResult
     FilteredGamePath        = 3,
 }
 
-public class TempModManager : IDisposable
+public class TempModManager : IDisposable, IService
 {
     private readonly CommunicatorService _communicator;
 
@@ -43,7 +44,7 @@ public class TempModManager : IDisposable
         => _modsForAllCollections;
 
     public RedirectResult Register(string tag, ModCollection? collection, Dictionary<Utf8GamePath, FullPath> dict,
-        HashSet<MetaManipulation> manips, ModPriority priority)
+        MetaDictionary manips, ModPriority priority)
     {
         var mod = GetOrCreateMod(tag, collection, priority, out var created);
         Penumbra.Log.Verbose($"{(created ? "Created" : "Changed")} temporary Mod {mod.Name}.");

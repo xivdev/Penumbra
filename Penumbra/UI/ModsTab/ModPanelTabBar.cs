@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -9,7 +10,7 @@ using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelTabBar
+public class ModPanelTabBar : IUiService
 {
     private enum ModPanelTabType
     {
@@ -33,7 +34,7 @@ public class ModPanelTabBar
 
     public readonly ITab[]          Tabs;
     private         ModPanelTabType _preferredTab = ModPanelTabType.Settings;
-    private         Mod?            _lastMod      = null;
+    private         Mod?            _lastMod;
 
     public ModPanelTabBar(ModEditWindow modEditWindow, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
         ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
@@ -49,15 +50,15 @@ public class ModPanelTabBar
         _tutorial      = tutorial;
         Collections    = collections;
 
-        Tabs = new ITab[]
-        {
+        Tabs =
+        [
             Settings,
             Description,
             Conflicts,
             ChangedItems,
             Collections,
             Edit,
-        };
+        ];
     }
 
     public void Draw(Mod mod)

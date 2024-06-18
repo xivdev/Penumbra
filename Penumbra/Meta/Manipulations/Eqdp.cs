@@ -69,19 +69,27 @@ public readonly record struct EqdpIdentifier(PrimaryId SetId, EquipSlot Slot, Ge
         jObj["Slot"]       = Slot.ToString();
         return jObj;
     }
+
+    public MetaManipulationType Type
+        => MetaManipulationType.Eqdp;
 }
 
-public readonly record struct InternalEqdpEntry(bool Model, bool Material)
+public readonly record struct EqdpEntryInternal(bool Material, bool Model)
 {
-    private InternalEqdpEntry((bool, bool) val)
+    public byte AsByte
+        => (byte)(Material ? Model ? 3 : 1 : Model ? 2 : 0);
+
+    private EqdpEntryInternal((bool, bool) val)
         : this(val.Item1, val.Item2)
     { }
 
-    public InternalEqdpEntry(EqdpEntry entry, EquipSlot slot)
+    public EqdpEntryInternal(EqdpEntry entry, EquipSlot slot)
         : this(entry.ToBits(slot))
     { }
 
-
     public EqdpEntry ToEntry(EquipSlot slot)
-        => Eqdp.FromSlotAndBits(slot, Model, Material);
+        => Eqdp.FromSlotAndBits(slot, Material, Model);
+
+    public override string ToString()
+        => $"Material: {Material}, Model: {Model}";
 }

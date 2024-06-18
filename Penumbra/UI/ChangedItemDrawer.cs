@@ -10,6 +10,7 @@ using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -19,7 +20,7 @@ using ApiChangedItemIcon = Penumbra.Api.Enums.ChangedItemIcon;
 
 namespace Penumbra.UI;
 
-public class ChangedItemDrawer : IDisposable
+public class ChangedItemDrawer : IDisposable, IUiService
 {
     [Flags]
     public enum ChangedItemIcon : uint
@@ -99,8 +100,10 @@ public class ChangedItemDrawer : IDisposable
 
         slot = 0;
         foreach (var (item, flag) in LowerNames.Zip(Order))
+        {
             if (item.Contains(lowerInput, StringComparison.Ordinal))
                 slot |= flag;
+        }
 
         return slot != 0;
     }

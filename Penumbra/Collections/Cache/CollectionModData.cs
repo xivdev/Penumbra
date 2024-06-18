@@ -9,12 +9,12 @@ namespace Penumbra.Collections.Cache;
 /// </summary>
 public class CollectionModData
 {
-    private readonly Dictionary<IMod, (HashSet<Utf8GamePath>, HashSet<MetaManipulation>)> _data = new();
+    private readonly Dictionary<IMod, (HashSet<Utf8GamePath>, HashSet<IMetaIdentifier>)> _data = new();
 
-    public IEnumerable<(IMod, IReadOnlySet<Utf8GamePath>, IReadOnlySet<MetaManipulation>)> Data
-        => _data.Select(kvp => (kvp.Key, (IReadOnlySet<Utf8GamePath>)kvp.Value.Item1, (IReadOnlySet<MetaManipulation>)kvp.Value.Item2));
+    public IEnumerable<(IMod, IReadOnlySet<Utf8GamePath>, IReadOnlySet<IMetaIdentifier>)> Data
+        => _data.Select(kvp => (kvp.Key, (IReadOnlySet<Utf8GamePath>)kvp.Value.Item1, (IReadOnlySet<IMetaIdentifier>)kvp.Value.Item2));
 
-    public (IReadOnlyCollection<Utf8GamePath> Paths, IReadOnlyCollection<MetaManipulation> Manipulations) RemoveMod(IMod mod)
+    public (IReadOnlyCollection<Utf8GamePath> Paths, IReadOnlyCollection<IMetaIdentifier> Manipulations) RemoveMod(IMod mod)
     {
         if (_data.Remove(mod, out var data))
             return data;
@@ -35,7 +35,7 @@ public class CollectionModData
         }
     }
 
-    public void AddManip(IMod mod, MetaManipulation manipulation)
+    public void AddManip(IMod mod, IMetaIdentifier manipulation)
     {
         if (_data.TryGetValue(mod, out var data))
         {
@@ -54,7 +54,7 @@ public class CollectionModData
             _data.Remove(mod);
     }
 
-    public void RemoveManip(IMod mod, MetaManipulation manip)
+    public void RemoveManip(IMod mod, IMetaIdentifier manip)
     {
         if (_data.TryGetValue(mod, out var data) && data.Item2.Remove(manip) && data.Item1.Count == 0 && data.Item2.Count == 0)
             _data.Remove(mod);

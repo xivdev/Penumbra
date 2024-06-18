@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -21,7 +22,7 @@ using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI.ModsTab;
 
-public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>
+public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>, IUiService
 {
     private readonly CommunicatorService     _communicator;
     private readonly MessageService          _messager;
@@ -33,9 +34,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private readonly ModImportManager        _modImportManager;
     private readonly IDragDropManager        _dragDrop;
     private readonly ModSearchStringSplitter Filter = new();
-	
-    public           ModSettings             SelectedSettings          { get; private set; } = ModSettings.Empty;
-    public           ModCollection           SelectedSettingCollection { get; private set; } = ModCollection.Empty;
+
+    public ModSettings   SelectedSettings          { get; private set; } = ModSettings.Empty;
+    public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
 
     public ModFileSystemSelector(IKeyState keyState, CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,

@@ -6,6 +6,7 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.String.Classes;
@@ -13,7 +14,7 @@ using Penumbra.String.Classes;
 namespace Penumbra.UI.Tabs;
 
 public class ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
-    : ITab
+    : ITab, IUiService
 {
     public ReadOnlySpan<byte> Label
         => "Resource Manager"u8;

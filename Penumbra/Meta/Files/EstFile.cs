@@ -157,7 +157,7 @@ public sealed unsafe class EstFile : MetaBaseFile
     }
 
     public EstFile(MetaFileManager manager, EstType estType)
-        : base(manager, (MetaIndex)estType)
+        : base(manager, manager.MarshalAllocator, (MetaIndex)estType)
     {
         var length = DefaultData.Length;
         AllocateData(length + IncreaseSize);
@@ -184,4 +184,7 @@ public sealed unsafe class EstFile : MetaBaseFile
 
     public static EstEntry GetDefault(MetaFileManager manager, EstType estType, GenderRace genderRace, PrimaryId primaryId)
         => GetDefault(manager, (MetaIndex)estType, genderRace, primaryId);
+
+    public static EstEntry GetDefault(MetaFileManager manager, EstIdentifier identifier)
+        => GetDefault(manager, identifier.FileIndex(), identifier.GenderRace, identifier.SetId);
 }

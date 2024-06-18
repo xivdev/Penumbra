@@ -1,10 +1,11 @@
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModExportManager : IDisposable
+public class ModExportManager : IDisposable, IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

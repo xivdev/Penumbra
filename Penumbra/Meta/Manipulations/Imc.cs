@@ -27,9 +27,6 @@ public readonly record struct ImcIdentifier(
         : this(primaryId, variant, slot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment, 0, slot, BodySlot.Unknown)
     { }
 
-    public ImcManipulation ToManipulation(ImcEntry entry)
-        => new(ObjectType, BodySlot, PrimaryId, SecondaryId.Id, Variant.Id, EquipSlot, entry);
-
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
         => AddChangedItems(identifier, changedItems, false);
 
@@ -193,4 +190,7 @@ public readonly record struct ImcIdentifier(
         jObj["BodySlot"]    = BodySlot.ToString();
         return jObj;
     }
+
+    public MetaManipulationType Type
+        => MetaManipulationType.Imc;
 }

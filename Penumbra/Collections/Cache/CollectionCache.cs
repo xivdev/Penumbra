@@ -125,12 +125,6 @@ public sealed class CollectionCache : IDisposable
         return ret;
     }
 
-    public void ForceFile(Utf8GamePath path, FullPath fullPath)
-        => _manager.AddChange(ChangeData.ForcedFile(this, path, fullPath));
-
-    public void RemovePath(Utf8GamePath path)
-        => _manager.AddChange(ChangeData.ForcedFile(this, path, FullPath.Empty));
-
     public void ReloadMod(IMod mod, bool addMetaChanges)
         => _manager.AddChange(ChangeData.ModReload(this, mod, addMetaChanges));
 
@@ -233,15 +227,24 @@ public sealed class CollectionCache : IDisposable
         foreach (var (path, file) in files.FileRedirections)
             AddFile(path, file, mod);
 
-        foreach (var manip in files.Manipulations)
-            AddManipulation(manip, mod);
+        foreach (var (identifier, entry) in files.Manipulations.Eqp)
+            AddManipulation(mod, identifier, entry);
+        foreach (var (identifier, entry) in files.Manipulations.Eqdp)
+            AddManipulation(mod, identifier, entry);
+        foreach (var (identifier, entry) in files.Manipulations.Est)
+            AddManipulation(mod, identifier, entry);
+        foreach (var (identifier, entry) in files.Manipulations.Gmp)
+            AddManipulation(mod, identifier, entry);
+        foreach (var (identifier, entry) in files.Manipulations.Rsp)
+            AddManipulation(mod, identifier, entry);
+        foreach (var (identifier, entry) in files.Manipulations.Imc)
+            AddManipulation(mod, identifier, entry);
+        foreach (var identifier in files.Manipulations.GlobalEqp)
+            AddManipulation(mod, identifier, null!);
 
         if (addMetaChanges)
         {
             _collection.IncrementCounter();
-            if (mod.TotalManipulations > 0)
-                AddMetaFiles(false);
-
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
     }
@@ -342,7 +345,7 @@ public sealed class CollectionCache : IDisposable
             foreach (var conflict in tmpConflicts)
             {
                 if (data is Utf8GamePath path && conflict.Conflicts.RemoveAll(p => p is Utf8GamePath x && x.Equals(path)) > 0
-                 || data is MetaManipulation meta && conflict.Conflicts.RemoveAll(m => m is MetaManipulation x && x.Equals(meta)) > 0)
+                 || data is IMetaIdentifier meta && conflict.Conflicts.RemoveAll(m => m.Equals(meta)) > 0)
                     AddConflict(data, addedMod, conflict.Mod2);
             }
 
@@ -374,12 +377,12 @@ public sealed class CollectionCache : IDisposable
     // For different mods, higher mod priority takes precedence before option group priority,
     // which takes precedence before option priority, which takes precedence before ordering.
     // Inside the same mod, conflicts are not recorded.
-    private void AddManipulation(MetaManipulation manip, IMod mod)
+    private void AddManipulation(IMod mod, IMetaIdentifier identifier, object entry)
     {
-        if (!Meta.TryGetValue(manip, out var existingMod))
+        if (!Meta.TryGetMod(identifier, out var existingMod))
         {
-            Meta.ApplyMod(manip, mod);
-            ModData.AddManip(mod, manip);
+            Meta.ApplyMod(mod, identifier, entry);
+            ModData.AddManip(mod, identifier);
             return;
         }
 
@@ -387,18 +390,13 @@ public sealed class CollectionCache : IDisposable
         if (mod == existingMod)
             return;
 
-        if (AddConflict(manip, mod, existingMod))
+        if (AddConflict(identifier, mod, existingMod))
         {
-            ModData.RemoveManip(existingMod, manip);
-            Meta.ApplyMod(manip, mod);
-            ModData.AddManip(mod, manip);
+            ModData.RemoveManip(existingMod, identifier);
+            Meta.ApplyMod(mod, identifier, entry);
+            ModData.AddManip(mod, identifier);
         }
     }
-
-
-    // Add all necessary meta file redirects.
-    public void AddMetaFiles(bool fromFullCompute)
-        => Meta.SetImcFiles(fromFullCompute);
 
 
     // Identify and record all manipulated objects for this entire collection.
@@ -437,9 +435,9 @@ public sealed class CollectionCache : IDisposable
                 AddItems(modPath.Mod);
             }
 
-            foreach (var (manip, mod) in Meta)
+            foreach (var (manip, mod) in Meta.IdentifierSources)
             {
-                identifier.MetaChangedItems(items, manip);
+                manip.AddChangedItems(identifier, items);
                 AddItems(mod);
             }
 

@@ -1,6 +1,7 @@
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
@@ -14,10 +15,10 @@ namespace Penumbra.Meta.Files;
 /// </summary>
 public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 {
-    protected const int BlockSize = 160;
-    protected const int NumBlocks = 64;
-    protected const int EntrySize = 8;
-    protected const int MaxSize   = BlockSize * NumBlocks * EntrySize;
+    public const int BlockSize = 160;
+    public const int NumBlocks = 64;
+    public const int EntrySize = 8;
+    public const int MaxSize   = BlockSize * NumBlocks * EntrySize;
 
     public const int Count = BlockSize * NumBlocks;
 
@@ -75,7 +76,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 
     public ExpandedEqpGmpBase(MetaFileManager manager, bool gmp)
-        : base(manager, gmp ? MetaIndex.Gmp : MetaIndex.Eqp)
+        : base(manager, manager.MarshalAllocator, gmp ? MetaIndex.Gmp : MetaIndex.Eqp)
     {
         AllocateData(MaxSize);
         Reset();
@@ -103,14 +104,10 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 }
 
-public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
+public sealed class ExpandedEqpFile(MetaFileManager manager) : ExpandedEqpGmpBase(manager, false), IEnumerable<EqpEntry>
 {
     public static readonly CharacterUtility.InternalIndex InternalIndex =
         CharacterUtility.ReverseIndices[(int)MetaIndex.Eqp];
-
-    public ExpandedEqpFile(MetaFileManager manager)
-        : base(manager, false)
-    { }
 
     public EqpEntry this[PrimaryId idx]
     {
@@ -146,14 +143,10 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
         => GetEnumerator();
 }
 
-public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
+public sealed class ExpandedGmpFile(MetaFileManager manager) : ExpandedEqpGmpBase(manager, true), IEnumerable<GmpEntry>
 {
     public static readonly CharacterUtility.InternalIndex InternalIndex =
         CharacterUtility.ReverseIndices[(int)MetaIndex.Gmp];
-
-    public ExpandedGmpFile(MetaFileManager manager)
-        : base(manager, true)
-    { }
 
     public GmpEntry this[PrimaryId idx]
     {
@@ -163,6 +156,9 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 
     public static GmpEntry GetDefault(MetaFileManager manager, PrimaryId primaryIdx)
         => new() { Value = GetDefaultInternal(manager, InternalIndex, primaryIdx, GmpEntry.Default.Value) };
+
+    public static GmpEntry GetDefault(MetaFileManager manager, GmpIdentifier identifier)
+        => new() { Value = GetDefaultInternal(manager, InternalIndex, identifier.SetId, GmpEntry.Default.Value) };
 
     public void Reset(IEnumerable<PrimaryId> entries)
     {

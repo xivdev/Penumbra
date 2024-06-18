@@ -6,6 +6,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Housing;
 using FFXIVClientStructs.Interop;
+using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
@@ -20,7 +21,7 @@ using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe partial class RedrawService
+public unsafe partial class RedrawService : IService
 {
     public const int GPosePlayerIdx = 201;
     public const int GPoseSlots     = 42;
@@ -171,7 +172,8 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             DisableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
+        if (actor is PlayerCharacter
+         && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
             *ActorDrawState(mountOrOrnament) |= DrawState.Invisibility;
             if (gPose)
@@ -190,7 +192,8 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             EnableDraw(actor!);
 
-        if (actor is PlayerCharacter && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
+        if (actor is PlayerCharacter
+         && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
             *ActorDrawState(mountOrOrnament) &= ~DrawState.Invisibility;
             if (gPose)
@@ -380,7 +383,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (!ret && lowerName.Length > 1 && lowerName[0] == '#' && ushort.TryParse(lowerName[1..], out var objectIndex))
         {
             ret   = true;
-            actor = _objects.GetDalamudObject((int) objectIndex);
+            actor = _objects.GetDalamudObject((int)objectIndex);
         }
 
         return ret;

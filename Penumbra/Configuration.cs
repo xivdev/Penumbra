@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
@@ -18,7 +19,7 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 namespace Penumbra;
 
 [Serializable]
-public class Configuration : IPluginConfiguration, ISavable
+public class Configuration : IPluginConfiguration, ISavable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;

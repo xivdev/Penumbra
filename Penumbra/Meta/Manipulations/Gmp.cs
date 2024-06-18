@@ -36,4 +36,7 @@ public readonly record struct GmpIdentifier(PrimaryId SetId) : IMetaIdentifier, 
         jObj["SetId"] = SetId.Id.ToString();
         return jObj;
     }
+
+    public MetaManipulationType Type
+        => MetaManipulationType.Gmp;
 }

@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
 using OtterGui;
+using OtterGui.Services;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
@@ -21,7 +22,8 @@ namespace Penumbra.Import.Models;
 using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
-public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
+public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser)
+    : SingleTaskQueue, IDisposable, IService
 {
     private readonly IFramework _framework = framework;
 
@@ -37,7 +39,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task<IoNotifier> ExportToGltf(in ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
+    public Task<IoNotifier> ExportToGltf(in ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read,
+        string outputPath)
         => EnqueueWithResult(
             new ExportToGltfAction(this, config, mdl, sklbPaths, read, outputPath),
             action => action.Notifier
@@ -52,7 +55,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
     /// <param name="estManipulations"> Modified extra skeleton template parameters. </param>
-    public string[] ResolveSklbsForMdl(string mdlPath, EstManipulation[] estManipulations)
+    public string[] ResolveSklbsForMdl(string mdlPath, KeyValuePair<EstIdentifier, EstEntry>[] estManipulations)
     {
         var info = parser.GetFileInfo(mdlPath);
         if (info.FileType is not FileType.Model)
@@ -81,20 +84,18 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         };
     }
 
-    private string[] ResolveEstSkeleton(EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
+    private string[] ResolveEstSkeleton(EstType type, GameObjectInfo info, KeyValuePair<EstIdentifier, EstEntry>[] estManipulations)
     {
         // Try to find an EST entry from the manipulations provided.
-        var (gender, race) = info.GenderRace.Split();
         var modEst = estManipulations
-            .FirstOrNull(est =>
-                est.Gender == gender
-             && est.Race == race
-             && est.Slot == type
-             && est.SetId == info.PrimaryId
+            .FirstOrNull(
+                est => est.Key.GenderRace == info.GenderRace
+                 && est.Key.Slot == type
+                 && est.Key.SetId == info.PrimaryId
             );
 
         // Try to use an entry from provided manipulations, falling back to the current collection.
-        var targetId = modEst?.Entry
+        var targetId = modEst?.Value
          ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
          ?? EstEntry.Zero;
 
@@ -102,7 +103,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         if (targetId == EstEntry.Zero)
             return [];
 
-        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId.AsId)];
+        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, type.ToName(), targetId.AsId)];
     }
 
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
@@ -250,9 +251,11 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             var path = manager.ResolveMtrlPath(relativePath, notifier);
             if (path == null)
                 return null;
+
             var bytes = read(path);
             if (bytes == null)
                 return null;
+
             var mtrl = new MtrlFile(bytes);
 
             return new MaterialExporter.Material

@@ -1,10 +1,11 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using OtterGui.Services;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ModelRenderer : IDisposable
+public unsafe class ModelRenderer : IDisposable, IRequiredService
 {
     public bool Ready { get; private set; }
 
@@ -37,14 +38,14 @@ public unsafe class ModelRenderer : IDisposable
 
         if (DefaultCharacterGlassShaderPackage == null)
         {
-            DefaultCharacterGlassShaderPackage = *CharacterGlassShaderPackage;
-            anyMissing |= DefaultCharacterGlassShaderPackage == null;
+            DefaultCharacterGlassShaderPackage =  *CharacterGlassShaderPackage;
+            anyMissing                         |= DefaultCharacterGlassShaderPackage == null;
         }
 
         if (anyMissing)
             return;
 
-        Ready = true;
+        Ready             =  true;
         _framework.Update -= LoadDefaultResources;
     }
 

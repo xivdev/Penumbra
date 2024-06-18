@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
@@ -11,7 +12,7 @@ using Penumbra.UI;
 
 namespace Penumbra.Collections.Manager;
 
-public class ActiveCollectionData
+public class ActiveCollectionData : IService
 {
     public ModCollection Current   { get; internal set; } = ModCollection.Empty;
     public ModCollection Default   { get; internal set; } = ModCollection.Empty;
@@ -20,7 +21,7 @@ public class ActiveCollectionData
     public readonly ModCollection?[] SpecialCollections = new ModCollection?[Enum.GetValues<Api.Enums.ApiCollectionType>().Length - 3];
 }
 
-public class ActiveCollections : ISavable, IDisposable
+public class ActiveCollections : ISavable, IDisposable, IService
 {
     public const int Version = 2;
 

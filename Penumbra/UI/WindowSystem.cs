@@ -1,12 +1,13 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
+using OtterGui.Services;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Tabs.Debug;
 
 namespace Penumbra.UI;
 
-public class PenumbraWindowSystem : IDisposable
+public class PenumbraWindowSystem : IDisposable, IUiService
 {
     private readonly UiBuilder         _uiBuilder;
     private readonly WindowSystem      _windowSystem;

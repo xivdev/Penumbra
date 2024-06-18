@@ -7,16 +7,10 @@ using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
-public class ImcException : Exception
+public class ImcException(ImcIdentifier identifier, Utf8GamePath path) : Exception
 {
-    public readonly ImcIdentifier Identifier;
-    public readonly string        GamePath;
-
-    public ImcException(ImcIdentifier identifier, Utf8GamePath path)
-    {
-        Identifier = identifier;
-        GamePath   = path.ToString();
-    }
+    public readonly ImcIdentifier Identifier = identifier;
+    public readonly string        GamePath   = path.ToString();
 
     public override string Message
         => "Could not obtain default Imc File.\n"
@@ -64,6 +58,9 @@ public unsafe class ImcFile : MetaBaseFile
         var ptr = VariantPtr(Data, partIdx, variantIdx);
         return ptr == null ? new ImcEntry() : *ptr;
     }
+
+    public ImcEntry GetEntry(EquipSlot slot, Variant variantIdx)
+        => GetEntry(PartIndex(slot), variantIdx);
 
     public ImcEntry GetEntry(int partIdx, Variant variantIdx, out bool exists)
     {
@@ -143,7 +140,11 @@ public unsafe class ImcFile : MetaBaseFile
     }
 
     public ImcFile(MetaFileManager manager, ImcIdentifier identifier)
-        : base(manager, 0)
+        : this(manager, manager.MarshalAllocator, identifier)
+    { }
+
+    public ImcFile(MetaFileManager manager, IFileAllocator alloc, ImcIdentifier identifier)
+        : base(manager, alloc, 0)
     {
         var path = identifier.GamePathString();
         Path = Utf8GamePath.FromString(path, out var p) ? p : Utf8GamePath.Empty;
@@ -191,7 +192,13 @@ public unsafe class ImcFile : MetaBaseFile
     public void Replace(ResourceHandle* resource)
     {
         var (data, length) = resource->GetData();
-        var newData = Manager.AllocateDefaultMemory(ActualLength, 8);
+        if (length == ActualLength)
+        {
+            MemoryUtility.MemCpyUnchecked((byte*)data, Data, ActualLength);
+            return;
+        }
+
+        var newData = Manager.XivAllocator.Allocate(ActualLength, 8);
         if (newData == null)
         {
             Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong)resource:X}, allocation failed.");
@@ -200,7 +207,7 @@ public unsafe class ImcFile : MetaBaseFile
 
         MemoryUtility.MemCpyUnchecked(newData, Data, ActualLength);
 
-        Manager.Free(data, length);
-        resource->SetData((IntPtr)newData, ActualLength);
+        Manager.XivAllocator.Release((void*)data, length);
+        resource->SetData((nint)newData, ActualLength);
     }
 }

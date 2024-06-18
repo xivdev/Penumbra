@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -24,7 +25,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ItemSwapTab : IDisposable, ITab
+public class ItemSwapTab : IDisposable, ITab, IUiService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -240,7 +241,7 @@ public class ItemSwapTab : IDisposable, ITab
     {
         return swap switch
         {
-            MetaSwap meta => $"{meta.SwapFrom}: {meta.SwapFrom.EntryToString()} -> {meta.SwapApplied.EntryToString()}",
+            IMetaSwap meta => $"{meta.SwapFromIdentifier}: {meta.SwapFromDefaultEntry} -> {meta.SwapToModdedEntry}",
             FileSwap file =>
                 $"{file.Type}: {file.SwapFromRequestPath} -> {file.SwapToModded.FullName}{(file.DataWasChanged ? " (EDITED)" : string.Empty)}",
             _ => string.Empty,
@@ -410,7 +411,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     private ImRaii.IEndObject DrawTab(SwapType newTab)
     {
-        using var tab = ImRaii.TabItem(newTab is SwapType.BetweenSlots ? "Between Slots" : newTab.ToString());
+        var tab = ImRaii.TabItem(newTab is SwapType.BetweenSlots ? "Between Slots" : newTab.ToString());
         if (tab)
         {
             _dirty   |= _lastTab != newTab;

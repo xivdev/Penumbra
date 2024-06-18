@@ -1,10 +1,10 @@
-using Penumbra.Mods;
+using OtterGui.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-public class ModSwapEditor(ModManager modManager)
+public class ModSwapEditor(ModManager modManager) : IService
 {
     private readonly Dictionary<Utf8GamePath, FullPath> _swaps = [];
 

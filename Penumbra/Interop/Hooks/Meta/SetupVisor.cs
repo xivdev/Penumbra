@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 
@@ -26,10 +27,11 @@ public sealed unsafe class SetupVisor : FastHook<SetupVisor.Delegate>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private byte Detour(DrawObject* drawObject, ushort modelId, byte visorState)
     {
-        var       collection = _collectionResolver.IdentifyCollection(drawObject, true);
-        using var gmp        = _metaState.ResolveGmpData(collection.ModCollection);
-        var       ret        = Task.Result.Original.Invoke(drawObject, modelId, visorState);
+        var collection = _collectionResolver.IdentifyCollection(drawObject, true);
+        _metaState.GmpCollection.Push((collection, modelId));
+        var ret = Task.Result.Original.Invoke(drawObject, modelId, visorState);
         Penumbra.Log.Excessive($"[Setup Visor] Invoked on {(nint)drawObject:X} with {modelId}, {visorState} -> {ret}.");
+        _metaState.GmpCollection.Pop();
         return ret;
     }
 }

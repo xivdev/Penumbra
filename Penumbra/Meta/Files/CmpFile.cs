@@ -34,7 +34,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
     }
 
     public CmpFile(MetaFileManager manager)
-        : base(manager, MetaIndex.HumanCmp)
+        : base(manager, manager.MarshalAllocator, MetaIndex.HumanCmp)
     {
         AllocateData(DefaultData.Length);
         Reset();
@@ -44,6 +44,14 @@ public sealed unsafe class CmpFile : MetaBaseFile
     {
         var data = (byte*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
         return *(RspEntry*)(data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
+    }
+
+    public static RspEntry* GetDefaults(MetaFileManager manager, SubRace subRace, RspAttribute attribute)
+    {
+        {
+            var data = (byte*)manager.CharacterUtility.DefaultResource(InternalIndex).Address;
+            return (RspEntry*)(data + RacialScalingStart + ToRspIndex(subRace) * RspData.ByteSize + (int)attribute * 4);
+        }
     }
 
     private static int ToRspIndex(SubRace subRace)

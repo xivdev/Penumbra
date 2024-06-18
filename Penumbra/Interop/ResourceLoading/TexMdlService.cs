@@ -2,13 +2,14 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceLoading;
 
-public unsafe class TexMdlService : IDisposable
+public unsafe class TexMdlService : IDisposable, IRequiredService
 {
     /// <summary>  Custom ulong flag to signal our files as opposed to SE files. </summary>
     public static readonly IntPtr CustomFileFlag = new(0xDEADBEEF);

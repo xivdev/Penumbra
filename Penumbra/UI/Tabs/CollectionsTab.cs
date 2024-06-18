@@ -2,6 +2,7 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
@@ -11,7 +12,7 @@ using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
-public sealed class CollectionsTab : IDisposable, ITab
+public sealed class CollectionsTab : IDisposable, ITab, IUiService
 {
     private readonly EphemeralConfig    _config;
     private readonly CollectionSelector _selector;

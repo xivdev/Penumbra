@@ -13,7 +13,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
 
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
-    public HashSet<MetaManipulation>          Manipulations { get; set; } = [];
+    public MetaDictionary                     Manipulations { get; set; } = new();
 
     IMod IModDataContainer.Mod
         => Mod;
@@ -21,7 +21,7 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
     IModGroup? IModDataContainer.Group
         => null;
 
-    public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public void AddTo(Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
         => SubMod.AddContainerTo(this, redirections, manipulations);
 
     public string GetName()

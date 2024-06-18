@@ -51,13 +51,7 @@ public class TemporaryMod : IMod
     public TemporaryMod()
         => Default = new DefaultSubMod(this);
 
-    public void SetFile(Utf8GamePath gamePath, FullPath fullPath)
-        => Default.Files[gamePath] = fullPath;
-
-    public bool SetManipulation(MetaManipulation manip)
-        => Default.Manipulations.Remove(manip) | Default.Manipulations.Add(manip);
-
-    public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, HashSet<MetaManipulation> manips)
+    public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, MetaDictionary manips)
     {
         Default.Files         = dict;
         Default.Manipulations = manips;
@@ -99,8 +93,8 @@ public class TemporaryMod : IMod
                 }
             }
 
-            foreach (var manip in collection.MetaCache?.Manipulations ?? Array.Empty<MetaManipulation>())
-                defaultMod.Manipulations.Add(manip);
+            var manips = new MetaDictionary(collection.MetaCache);
+            defaultMod.Manipulations.UnionWith(manips);
 
             saveService.ImmediateSave(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
             modManager.AddMod(dir);

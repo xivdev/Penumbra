@@ -273,7 +273,7 @@ internal partial record ResolveContext
     {
         var metaCache   = Global.Collection.MetaCache;
         var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary) ?? default;
-        return (raceCode, EstManipulation.ToName(type), skeletonSet.AsId);
+        return (raceCode, type.ToName(), skeletonSet.AsId);
     }
 
     private unsafe Utf8GamePath ResolveSkeletonPathNative(uint partialSkeletonIndex)

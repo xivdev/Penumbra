@@ -6,13 +6,13 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.Mods.Settings;
-using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.UI.ModsTab.Groups;
 
 namespace Penumbra.UI.ModsTab;
@@ -31,7 +31,7 @@ public class ModPanelEditTab(
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
     AddGroupDrawer addGroupDrawer)
-    : ITab
+    : ITab, IUiService
 {
     private readonly TagButtons _modTags = new();
 

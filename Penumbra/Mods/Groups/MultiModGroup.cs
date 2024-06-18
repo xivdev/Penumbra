@@ -116,7 +116,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new MultiModGroupEditDrawer(editDrawer, this);
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
         foreach (var (option, index) in OptionData.WithIndex().OrderByDescending(o => o.Value.Priority))
         {

@@ -1,5 +1,4 @@
 using OtterGui.Classes;
-using Penumbra.Api;
 using Penumbra.Api.Api;
 using Penumbra.Services;
 
@@ -19,7 +18,7 @@ public sealed class CreatingCharacterBase()
 {
     public enum Priority
     {
-        /// <seealso cref="PenumbraApi.CreatingCharacterBase"/>
+        /// <seealso cref="GameStateApi.CreatingCharacterBase"/>
         Api = 0,
 
         /// <seealso cref="CrashHandlerService.OnCreatingCharacterBase"/>

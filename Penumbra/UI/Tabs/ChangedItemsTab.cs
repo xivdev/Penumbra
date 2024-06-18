@@ -2,6 +2,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
@@ -17,7 +18,7 @@ public class ChangedItemsTab(
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
     CommunicatorService communicator)
-    : ITab
+    : ITab, IUiService
 {
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;

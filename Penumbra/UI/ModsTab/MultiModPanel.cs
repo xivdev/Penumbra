@@ -3,12 +3,13 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
 
-public class MultiModPanel(ModFileSystemSelector _selector, ModDataEditor _editor)
+public class MultiModPanel(ModFileSystemSelector _selector, ModDataEditor _editor) : IUiService
 {
     public void Draw()
     {
@@ -65,8 +66,8 @@ public class MultiModPanel(ModFileSystemSelector _selector, ModDataEditor _edito
     }
 
     private          string           _tag        = string.Empty;
-    private readonly List<Mod>        _addMods    =  [];
-    private readonly List<(Mod, int)> _removeMods =  [];
+    private readonly List<Mod>        _addMods    = [];
+    private readonly List<(Mod, int)> _removeMods = [];
 
     private void DrawMultiTagger()
     {

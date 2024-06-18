@@ -1,4 +1,3 @@
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
@@ -22,10 +21,10 @@ public partial class TexToolsMeta
     public static readonly TexToolsMeta Invalid = new(null!, string.Empty, 0);
 
     // The info class determines the files or table locations the changes need to apply to from the filename.
-    public readonly  uint                   Version;
-    public readonly  string                 FilePath;
-    public readonly  List<MetaManipulation> MetaManipulations = new();
-    private readonly bool                   _keepDefault      = false;
+    public readonly  uint           Version;
+    public readonly  string         FilePath;
+    public readonly  MetaDictionary MetaManipulations = new();
+    private readonly bool           _keepDefault;
 
     private readonly MetaFileManager _metaFileManager;
 
@@ -44,18 +43,18 @@ public partial class TexToolsMeta
             var headerStart = reader.ReadUInt32();
             reader.BaseStream.Seek(headerStart, SeekOrigin.Begin);
 
-            List<(MetaManipulation.Type type, uint offset, int size)> entries = [];
+            List<(MetaManipulationType type, uint offset, int size)> entries = [];
             for (var i = 0; i < numHeaders; ++i)
             {
                 var currentOffset = reader.BaseStream.Position;
-                var type          = (MetaManipulation.Type)reader.ReadUInt32();
+                var type          = (MetaManipulationType)reader.ReadUInt32();
                 var offset        = reader.ReadUInt32();
                 var size          = reader.ReadInt32();
                 entries.Add((type, offset, size));
                 reader.BaseStream.Seek(currentOffset + headerSize, SeekOrigin.Begin);
             }
 
-            byte[]? ReadEntry(MetaManipulation.Type type)
+            byte[]? ReadEntry(MetaManipulationType type)
             {
                 var idx = entries.FindIndex(t => t.type == type);
                 if (idx < 0)
@@ -65,11 +64,11 @@ public partial class TexToolsMeta
                 return reader.ReadBytes(entries[idx].size);
             }
 
-            DeserializeEqpEntry(metaInfo, ReadEntry(MetaManipulation.Type.Eqp));
-            DeserializeGmpEntry(metaInfo, ReadEntry(MetaManipulation.Type.Gmp));
-            DeserializeEqdpEntries(metaInfo, ReadEntry(MetaManipulation.Type.Eqdp));
-            DeserializeEstEntries(metaInfo, ReadEntry(MetaManipulation.Type.Est));
-            DeserializeImcEntries(metaInfo, ReadEntry(MetaManipulation.Type.Imc));
+            DeserializeEqpEntry(metaInfo, ReadEntry(MetaManipulationType.Eqp));
+            DeserializeGmpEntry(metaInfo, ReadEntry(MetaManipulationType.Gmp));
+            DeserializeEqdpEntries(metaInfo, ReadEntry(MetaManipulationType.Eqdp));
+            DeserializeEstEntries(metaInfo, ReadEntry(MetaManipulationType.Est));
+            DeserializeImcEntries(metaInfo, ReadEntry(MetaManipulationType.Imc));
         }
         catch (Exception e)
         {

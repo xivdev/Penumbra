@@ -44,7 +44,7 @@ using Penumbra.Api.IpcTester;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class Diagnostics(IServiceProvider provider)
+public class Diagnostics(ServiceManager provider) : IUiService
 {
     public void DrawDiagnostics()
     {
@@ -55,7 +55,7 @@ public class Diagnostics(IServiceProvider provider)
         foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
-            var container = (IAsyncDataContainer)provider.GetRequiredService(type);
+            var container = (IAsyncDataContainer)provider.Provider!.GetRequiredService(type);
             ImGuiUtil.DrawTableColumn(container.Name);
             ImGuiUtil.DrawTableColumn(container.Time.ToString());
             ImGuiUtil.DrawTableColumn(Functions.HumanReadableSize(container.Memory));
@@ -64,7 +64,7 @@ public class Diagnostics(IServiceProvider provider)
     }
 }
 
-public class DebugTab : Window, ITab
+public class DebugTab : Window, ITab, IUiService
 {
     private readonly PerformanceTracker        _performance;
     private readonly Configuration             _config;
@@ -178,8 +178,6 @@ public class DebugTab : Window, ITab
         DrawDebugCharacterUtility();
         ImGui.NewLine();
         DrawData();
-        ImGui.NewLine();
-        DrawDebugTabMetaLists();
         ImGui.NewLine();
         DrawResourceProblems();
         ImGui.NewLine();
@@ -432,7 +430,7 @@ public class DebugTab : Window, ITab
 
         foreach (var obj in _objects)
         {
-            ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
+            ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
             ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
                 ? string.Empty
@@ -785,23 +783,6 @@ public class DebugTab : Window, ITab
             {
                 ImGui.TableNextColumn();
             }
-        }
-    }
-
-    private void DrawDebugTabMetaLists()
-    {
-        if (!ImGui.CollapsingHeader("Metadata Changes"))
-            return;
-
-        using var table = Table("##DebugMetaTable", 3, ImGuiTableFlags.SizingFixedFit);
-        if (!table)
-            return;
-
-        foreach (var list in _characterUtility.Lists)
-        {
-            ImGuiUtil.DrawTableColumn(list.GlobalMetaIndex.ToString());
-            ImGuiUtil.DrawTableColumn(list.Entries.Count.ToString());
-            ImGuiUtil.DrawTableColumn(string.Join(", ", list.Entries.Select(e => $"0x{e.Data:X}")));
         }
     }
 

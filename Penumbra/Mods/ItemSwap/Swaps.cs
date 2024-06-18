@@ -4,55 +4,88 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.Meta;
 using static Penumbra.Mods.ItemSwap.ItemSwap;
-using Penumbra.Services;
 
 namespace Penumbra.Mods.ItemSwap;
 
 public class Swap
 {
     /// <summary> Any further swaps belonging specifically to this tree of changes. </summary>
-    public readonly List<Swap> ChildSwaps = new();
+    public readonly List<Swap> ChildSwaps = [];
 
     public IEnumerable<Swap> WithChildren()
         => ChildSwaps.SelectMany(c => c.WithChildren()).Prepend(this);
 }
 
-public sealed class MetaSwap : Swap
+public interface IMetaSwap
 {
+    public IMetaIdentifier SwapFromIdentifier { get; }
+    public IMetaIdentifier SwapToIdentifier   { get; }
+
+    public object SwapFromDefaultEntry { get; }
+    public object SwapToDefaultEntry   { get; }
+    public object SwapToModdedEntry    { get; }
+
+    public bool SwapToIsDefault      { get; }
+    public bool SwapAppliedIsDefault { get; }
+}
+
+public sealed class MetaSwap<TIdentifier, TEntry> : Swap, IMetaSwap
+    where TIdentifier : unmanaged, IMetaIdentifier
+    where TEntry : unmanaged, IEquatable<TEntry>
+{
+    public TIdentifier SwapFromIdentifier;
+    public TIdentifier SwapToIdentifier;
+
     /// <summary> The default value of a specific meta manipulation that needs to be redirected. </summary>
-    public MetaManipulation SwapFrom;
+    public TEntry SwapFromDefaultEntry;
 
     /// <summary> The default value of the same Meta entry of the redirected item. </summary>
-    public MetaManipulation SwapToDefault;
+    public TEntry SwapToDefaultEntry;
 
     /// <summary> The modded value of the same Meta entry of the redirected item, or the same as SwapToDefault if unmodded. </summary>
-    public MetaManipulation SwapToModded;
+    public TEntry SwapToModdedEntry;
 
-    /// <summary> The modded value applied to the specific meta manipulation target before redirection. </summary>
-    public MetaManipulation SwapApplied;
-
-    /// <summary> Whether SwapToModded equals SwapToDefault. </summary>
-    public bool SwapToIsDefault;
+    /// <summary> Whether SwapToModdedEntry equals SwapToDefaultEntry. </summary>
+    public bool SwapToIsDefault { get; }
 
     /// <summary> Whether the applied meta manipulation does not change anything against the default. </summary>
-    public bool SwapAppliedIsDefault;
+    public bool SwapAppliedIsDefault { get; }
 
     /// <summary>
     /// Create a new MetaSwap from the original meta identifier and the target meta identifier.
     /// </summary>
-    /// <param name="manipulations">A function that converts the given manipulation to the modded one.</param>
-    /// <param name="manipFrom">The original meta identifier with its default value.</param>
-    /// <param name="manipTo">The target meta identifier with its default value.</param>
-    public MetaSwap(Func<MetaManipulation, MetaManipulation> manipulations, MetaManipulation manipFrom, MetaManipulation manipTo)
+    /// <param name="manipulations">A function that obtains a modded meta entry if it exists. </param>
+    /// <param name="manipFromIdentifier"> The original meta identifier. </param>
+    /// <param name="manipFromEntry"> The default value for the original meta identifier. </param>
+    /// <param name="manipToIdentifier"> The target meta identifier. </param>
+    /// <param name="manipToEntry"> The default value for the target meta identifier. </param>
+    public MetaSwap(Func<TIdentifier, TEntry?> manipulations, TIdentifier manipFromIdentifier, TEntry manipFromEntry,
+        TIdentifier manipToIdentifier, TEntry manipToEntry)
     {
-        SwapFrom      = manipFrom;
-        SwapToDefault = manipTo;
+        SwapFromIdentifier   = manipFromIdentifier;
+        SwapToIdentifier     = manipToIdentifier;
+        SwapFromDefaultEntry = manipFromEntry;
+        SwapToDefaultEntry   = manipToEntry;
 
-        SwapToModded         = manipulations(manipTo);
-        SwapToIsDefault      = manipTo.EntryEquals(SwapToModded);
-        SwapApplied          = SwapFrom.WithEntryOf(SwapToModded);
-        SwapAppliedIsDefault = SwapApplied.EntryEquals(SwapFrom);
+        SwapToModdedEntry    = manipulations(SwapToIdentifier) ?? SwapToDefaultEntry;
+        SwapToIsDefault      = SwapToModdedEntry.Equals(SwapToDefaultEntry);
+        SwapAppliedIsDefault = SwapToModdedEntry.Equals(SwapFromDefaultEntry);
     }
+
+    IMetaIdentifier IMetaSwap.SwapFromIdentifier
+        => SwapFromIdentifier;
+
+    IMetaIdentifier IMetaSwap.SwapToIdentifier
+        => SwapToIdentifier;
+
+    object IMetaSwap.SwapFromDefaultEntry
+        => SwapFromDefaultEntry;
+
+    object IMetaSwap.SwapToDefaultEntry
+        => SwapToDefaultEntry;
+
+    object IMetaSwap.SwapToModdedEntry
+        => SwapToModdedEntry;
 }
 
 public sealed class FileSwap : Swap
@@ -113,8 +146,7 @@ public sealed class FileSwap : Swap
     /// <param name="swap">A full swap container with the actual file in memory.</param>
     /// <returns>True if everything could be read correctly, false otherwise.</returns>
     public static FileSwap CreateSwap(MetaFileManager manager, ResourceType type, Func<Utf8GamePath, FullPath> redirections,
-        string swapFromRequest, string swapToRequest,
-        string? swapFromPreChange = null)
+        string swapFromRequest, string swapToRequest, string? swapFromPreChange = null)
     {
         var swap = new FileSwap
         {

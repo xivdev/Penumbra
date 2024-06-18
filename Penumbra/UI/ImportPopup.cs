@@ -1,13 +1,14 @@
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI;
 
 /// <summary> Draw the progress information for import. </summary>
-public sealed class ImportPopup : Window
+public sealed class ImportPopup : Window, IUiService
 {
     public const string WindowLabel = "Penumbra Import Status";
 

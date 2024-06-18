@@ -2,6 +2,7 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
@@ -9,7 +10,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ModMergeTab(ModMerger modMerger)
+public class ModMergeTab(ModMerger modMerger) : IUiService
 {
     private readonly ModCombo _modCombo   = new(() => modMerger.ModsWithoutCurrent.ToList());
     private          string   _newModName = string.Empty;
@@ -183,7 +184,7 @@ public class ModMergeTab(ModMerger modMerger)
             else
             {
                 ImGuiUtil.DrawTableColumn(option.GetName());
-                
+
                 ImGui.TableNextColumn();
                 ImGui.Selectable(group.Name, false);
                 if (ImGui.BeginPopupContextItem("##groupContext"))

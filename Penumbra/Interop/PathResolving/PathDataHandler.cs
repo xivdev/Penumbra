@@ -32,7 +32,7 @@ public static class PathDataHandler
     /// <summary> Create the encoding path for an IMC file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static FullPath CreateImc(ByteString path, ModCollection collection)
-        => CreateBase(path, collection);
+        => new($"|{collection.LocalId.Id}_{collection.ImcChangeCounter}_{DiscriminatorString}|{path}");
 
     /// <summary> Create the encoding path for a TMB file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

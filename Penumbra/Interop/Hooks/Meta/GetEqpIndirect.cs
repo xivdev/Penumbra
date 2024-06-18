@@ -29,8 +29,9 @@ public sealed unsafe class GetEqpIndirect : FastHook<GetEqpIndirect.Delegate>
             return;
 
         Penumbra.Log.Excessive($"[Get EQP Indirect] Invoked on {(nint)drawObject:X}.");
-        _metaState.EqpCollection = _collectionResolver.IdentifyCollection(drawObject, true);
+        var collection = _collectionResolver.IdentifyCollection(drawObject, true);
+        _metaState.EqpCollection.Push(collection);
         Task.Result.Original(drawObject);
-        _metaState.EqpCollection = ResolveData.Invalid;
+        _metaState.EqpCollection.Pop();
     }
 }

@@ -2,6 +2,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
@@ -86,7 +87,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     }
 
     public ExpandedEqdpFile(MetaFileManager manager, GenderRace raceCode, bool accessory)
-        : base(manager, CharacterUtilityData.EqdpIdx(raceCode, accessory))
+        : base(manager, manager.MarshalAllocator, CharacterUtilityData.EqdpIdx(raceCode, accessory))
     {
         var def             = (byte*)DefaultData.Data;
         var blockSize       = *(ushort*)(def + IdentifierSize);
@@ -126,4 +127,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
 
     public static EqdpEntry GetDefault(MetaFileManager manager, GenderRace raceCode, bool accessory, PrimaryId primaryId)
         => GetDefault(manager, CharacterUtility.ReverseIndices[(int)CharacterUtilityData.EqdpIdx(raceCode, accessory)], primaryId);
+
+    public static EqdpEntry GetDefault(MetaFileManager manager, EqdpIdentifier identifier)
+        => GetDefault(manager, CharacterUtility.ReverseIndices[(int)identifier.FileIndex()], identifier.SetId);
 }

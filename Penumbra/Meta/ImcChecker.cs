@@ -51,10 +51,6 @@ public class ImcChecker
         return entry;
     }
 
-    public CachedEntry GetDefaultEntry(ImcManipulation imcManip, bool storeCache)
-        => GetDefaultEntry(new ImcIdentifier(imcManip.PrimaryId, imcManip.Variant, imcManip.ObjectType, imcManip.SecondaryId.Id,
-            imcManip.EquipSlot, imcManip.BodySlot), storeCache);
-
     private static ImcFile? GetFile(ImcIdentifier identifier)
     {
         if (_dataManager == null)

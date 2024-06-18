@@ -3,12 +3,13 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.UI;
 
-public class FileDialogService : IDisposable
+public class FileDialogService : IDisposable, IUiService
 {
     private readonly CommunicatorService                  _communicator;
     private readonly FileDialogManager                    _manager;

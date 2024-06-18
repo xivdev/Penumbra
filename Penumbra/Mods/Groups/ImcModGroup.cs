@@ -95,28 +95,28 @@ public class ImcModGroup(Mod mod) : IModGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new ImcModGroupEditDrawer(editDrawer, this);
 
-    public ImcManipulation GetManip(ushort mask, Variant variant)
-        => new(Identifier.ObjectType, Identifier.BodySlot, Identifier.PrimaryId, Identifier.SecondaryId.Id, variant.Id,
-            Identifier.EquipSlot, DefaultEntry with { AttributeMask = mask });
+    public ImcEntry GetEntry(ushort mask)
+        => DefaultEntry with { AttributeMask = mask };
 
-    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, HashSet<MetaManipulation> manipulations)
+    public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
         if (IsDisabled(setting))
             return;
 
-        var mask = GetCurrentMask(setting);
+        var mask  = GetCurrentMask(setting);
+        var entry = GetEntry(mask);
         if (AllVariants)
         {
             var count = ImcChecker.GetVariantCount(Identifier);
             if (count == 0)
-                manipulations.Add(GetManip(mask, Identifier.Variant));
+                manipulations.TryAdd(Identifier, entry);
             else
                 for (var i = 0; i <= count; ++i)
-                    manipulations.Add(GetManip(mask, (Variant)i));
+                    manipulations.TryAdd(Identifier with { Variant = (Variant)i }, entry);
         }
         else
         {
-            manipulations.Add(GetManip(mask, Identifier.Variant));
+            manipulations.TryAdd(Identifier, entry);
         }
     }
 

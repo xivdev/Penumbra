@@ -1,4 +1,5 @@
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
@@ -7,7 +8,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config)
+public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config) : IService
 {
     private readonly SHA256                                           _hasher     = SHA256.Create();
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = [];

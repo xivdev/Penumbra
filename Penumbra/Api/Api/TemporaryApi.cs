@@ -159,32 +159,18 @@ public class TemporaryApi(
     /// The empty string is treated as an empty set.
     /// Only returns true if all conversions are successful and distinct. 
     /// </summary>
-    private static bool ConvertManips(string manipString,
-        [NotNullWhen(true)] out HashSet<MetaManipulation>? manips)
+    private static bool ConvertManips(string manipString, [NotNullWhen(true)] out MetaDictionary? manips)
     {
         if (manipString.Length == 0)
         {
-            manips = [];
+            manips = new MetaDictionary();
             return true;
         }
 
-        if (Functions.FromCompressedBase64<MetaManipulation[]>(manipString, out var manipArray) != MetaManipulation.CurrentVersion)
-        {
-            manips = null;
-            return false;
-        }
+        if (Functions.FromCompressedBase64(manipString, out manips!) == MetaApi.CurrentVersion)
+            return true;
 
-        manips = new HashSet<MetaManipulation>(manipArray!.Length);
-        foreach (var manip in manipArray.Where(m => m.Validate()))
-        {
-            if (manips.Add(manip))
-                continue;
-
-            Penumbra.Log.Warning($"Manipulation {manip} {manip.EntryToString()} is invalid and was skipped.");
-            manips = null;
-            return false;
-        }
-
-        return true;
+        manips = null;
+        return false;
     }
 }
