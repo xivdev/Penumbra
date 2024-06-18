@@ -36,7 +36,7 @@ public sealed class CollectionCache : IDisposable
         => ConflictDict.Values;
 
     public SingleArray<ModConflicts> Conflicts(IMod mod)
-        => ConflictDict.TryGetValue(mod, out SingleArray<ModConflicts> c) ? c : new SingleArray<ModConflicts>();
+        => ConflictDict.TryGetValue(mod, out var c) ? c : new SingleArray<ModConflicts>();
 
     private int _changedItemsSaveCounter = -1;
 
@@ -124,12 +124,6 @@ public sealed class CollectionCache : IDisposable
 
         return ret;
     }
-
-    public void ForceFile(Utf8GamePath path, FullPath fullPath)
-        => _manager.AddChange(ChangeData.ForcedFile(this, path, fullPath));
-
-    public void RemovePath(Utf8GamePath path)
-        => _manager.AddChange(ChangeData.ForcedFile(this, path, FullPath.Empty));
 
     public void ReloadMod(IMod mod, bool addMetaChanges)
         => _manager.AddChange(ChangeData.ModReload(this, mod, addMetaChanges));
@@ -251,9 +245,6 @@ public sealed class CollectionCache : IDisposable
         if (addMetaChanges)
         {
             _collection.IncrementCounter();
-            if (mod.TotalManipulations > 0)
-                AddMetaFiles(false);
-
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
     }
@@ -406,11 +397,6 @@ public sealed class CollectionCache : IDisposable
             ModData.AddManip(mod, identifier);
         }
     }
-
-
-    // Add all necessary meta file redirects.
-    public void AddMetaFiles(bool fromFullCompute)
-        => Meta.SetImcFiles(fromFullCompute);
 
 
     // Identify and record all manipulated objects for this entire collection.

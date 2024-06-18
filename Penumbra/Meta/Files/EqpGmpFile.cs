@@ -76,7 +76,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 
     public ExpandedEqpGmpBase(MetaFileManager manager, bool gmp)
-        : base(manager, gmp ? MetaIndex.Gmp : MetaIndex.Eqp)
+        : base(manager, manager.MarshalAllocator, gmp ? MetaIndex.Gmp : MetaIndex.Eqp)
     {
         AllocateData(MaxSize);
         Reset();

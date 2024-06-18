@@ -1,6 +1,5 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
@@ -53,17 +52,15 @@ public unsafe class CharacterUtility : IDisposable
     public (nint Address, int Size) DefaultResource(InternalIndex idx)
         => _lists[idx.Value].DefaultResource;
 
-    private readonly IFramework           _framework;
-    public readonly  ActiveCollectionData Active;
+    private readonly IFramework _framework;
 
-    public CharacterUtility(IFramework framework, IGameInteropProvider interop, ActiveCollectionData active)
+    public CharacterUtility(IFramework framework, IGameInteropProvider interop)
     {
         interop.InitializeFromAttributes(this);
         _lists = Enumerable.Range(0, RelevantIndices.Length)
             .Select(idx => new MetaList(this, new InternalIndex(idx)))
             .ToArray();
         _framework      =  framework;
-        Active          =  active;
         LoadingFinished += () => Penumbra.Log.Debug("Loading of CharacterUtility finished.");
         LoadDefaultResources(null!);
         if (!Ready)
@@ -119,34 +116,6 @@ public unsafe class CharacterUtility : IDisposable
         Ready             =  true;
         _framework.Update -= LoadDefaultResources;
         LoadingFinished.Invoke();
-    }
-
-    public void SetResource(MetaIndex resourceIdx, nint data, int length)
-    {
-        var idx  = ReverseIndices[(int)resourceIdx];
-        var list = _lists[idx.Value];
-        list.SetResource(data, length);
-    }
-
-    public void ResetResource(MetaIndex resourceIdx)
-    {
-        var idx  = ReverseIndices[(int)resourceIdx];
-        var list = _lists[idx.Value];
-        list.ResetResource();
-    }
-
-    public MetaList.MetaReverter TemporarilySetResource(MetaIndex resourceIdx, nint data, int length)
-    {
-        var idx  = ReverseIndices[(int)resourceIdx];
-        var list = _lists[idx.Value];
-        return list.TemporarilySetResource(data, length);
-    }
-
-    public MetaList.MetaReverter TemporarilyResetResource(MetaIndex resourceIdx)
-    {
-        var idx  = ReverseIndices[(int)resourceIdx];
-        var list = _lists[idx.Value];
-        return list.TemporarilyResetResource();
     }
 
     /// <summary> Return all relevant resources to the default resource. </summary>

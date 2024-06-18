@@ -180,8 +180,6 @@ public class CollectionCacheManager : IDisposable
             foreach (var mod in _modStorage)
                 cache.AddModSync(mod, false);
 
-            cache.AddMetaFiles(true);
-
             collection.IncrementCounter();
 
             MetaFileManager.ApplyDefaultFiles(collection);

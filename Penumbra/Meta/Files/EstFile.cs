@@ -157,7 +157,7 @@ public sealed unsafe class EstFile : MetaBaseFile
     }
 
     public EstFile(MetaFileManager manager, EstType estType)
-        : base(manager, (MetaIndex)estType)
+        : base(manager, manager.MarshalAllocator, (MetaIndex)estType)
     {
         var length = DefaultData.Length;
         AllocateData(length + IncreaseSize);

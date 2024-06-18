@@ -70,14 +70,15 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
     public static void HandleCollection(ResolveData resolveData, ByteString path, bool nonDefault, ResourceType type, FullPath? resolved,
         Utf8GamePath originalPath, out (FullPath?, ResolveData) data)
     {
-        if (nonDefault)
-            resolved = type switch
-            {
-                ResourceType.Mtrl => PathDataHandler.CreateMtrl(path, resolveData.ModCollection, originalPath),
-                ResourceType.Avfx => PathDataHandler.CreateAvfx(path, resolveData.ModCollection),
-                ResourceType.Tmb  => PathDataHandler.CreateTmb(path, resolveData.ModCollection),
-                _                 => resolved,
-            };
+        resolved = type switch
+        {
+            ResourceType.Mtrl when nonDefault => PathDataHandler.CreateMtrl(path, resolveData.ModCollection, originalPath),
+            ResourceType.Avfx when nonDefault => PathDataHandler.CreateAvfx(path, resolveData.ModCollection),
+            ResourceType.Tmb when nonDefault  => PathDataHandler.CreateTmb(path, resolveData.ModCollection),
+            ResourceType.Imc when resolveData.ModCollection.MetaCache?.Imc.HasFile(path) ?? false => PathDataHandler.CreateImc(path,
+                resolveData.ModCollection),
+            _ => resolved,
+        };
         data = (resolved, resolveData);
     }
 

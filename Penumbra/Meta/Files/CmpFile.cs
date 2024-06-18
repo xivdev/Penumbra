@@ -34,7 +34,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
     }
 
     public CmpFile(MetaFileManager manager)
-        : base(manager, MetaIndex.HumanCmp)
+        : base(manager, manager.MarshalAllocator, MetaIndex.HumanCmp)
     {
         AllocateData(DefaultData.Length);
         Reset();

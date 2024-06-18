@@ -87,7 +87,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     }
 
     public ExpandedEqdpFile(MetaFileManager manager, GenderRace raceCode, bool accessory)
-        : base(manager, CharacterUtilityData.EqdpIdx(raceCode, accessory))
+        : base(manager, manager.MarshalAllocator, CharacterUtilityData.EqdpIdx(raceCode, accessory))
     {
         var def             = (byte*)DefaultData.Data;
         var blockSize       = *(ushort*)(def + IdentifierSize);

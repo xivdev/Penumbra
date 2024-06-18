@@ -1,6 +1,9 @@
+using System.Collections.Frozen;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
@@ -9,6 +12,72 @@ using Penumbra.String.Classes;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.ResourceLoading;
+
+public interface IFilePostProcessor : IService
+{
+    public        ResourceType Type { get; }
+    public unsafe void         PostProcess(ResourceHandle* resource, ByteString originalGamePath, ReadOnlySpan<byte> additionalData);
+}
+
+public sealed class MaterialFilePostProcessor : IFilePostProcessor
+{
+    public ResourceType Type
+        => ResourceType.Mtrl;
+
+    public unsafe void PostProcess(ResourceHandle* resource, ByteString originalGamePath, ReadOnlySpan<byte> additionalData)
+    {
+        if (!PathDataHandler.ReadMtrl(additionalData, out var data))
+            return;
+    }
+}
+
+public sealed class ImcFilePostProcessor(CollectionStorage collections) : IFilePostProcessor
+{
+    public ResourceType Type
+        => ResourceType.Imc;
+
+    public unsafe void PostProcess(ResourceHandle* resource, ByteString originalGamePath, ReadOnlySpan<byte> additionalData)
+    {
+        if (!PathDataHandler.Read(additionalData, out var data) || data.Discriminator != PathDataHandler.Discriminator)
+            return;
+
+        var collection = collections.ByLocalId(data.Collection);
+        if (collection.MetaCache is not { } cache)
+            return;
+
+        if (!cache.Imc.GetFile(originalGamePath, out var file))
+            return;
+
+        file.Replace(resource);
+        Penumbra.Log.Information(
+            $"[ResourceLoader] Loaded {originalGamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
+    }
+}
+
+public unsafe class FilePostProcessService : IRequiredService, IDisposable
+{
+    private readonly ResourceLoader                                     _resourceLoader;
+    private readonly FrozenDictionary<ResourceType, IFilePostProcessor> _processors;
+
+    public FilePostProcessService(ResourceLoader resourceLoader, ServiceManager services)
+    {
+        _resourceLoader            =  resourceLoader;
+        _processors                =  services.GetServicesImplementing<IFilePostProcessor>().ToFrozenDictionary(s => s.Type, s => s);
+        _resourceLoader.FileLoaded += OnFileLoaded;
+    }
+
+    public void Dispose()
+    {
+        _resourceLoader.FileLoaded -= OnFileLoaded;
+    }
+
+    private void OnFileLoaded(ResourceHandle* resource, ByteString path, bool returnValue, bool custom,
+        ReadOnlySpan<byte> additionalData)
+    {
+        if (_processors.TryGetValue(resource->FileType, out var processor))
+            processor.PostProcess(resource, path, additionalData);
+    }
+}
 
 public unsafe class ResourceLoader : IDisposable
 {

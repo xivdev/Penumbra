@@ -1,11 +1,8 @@
-using System.Runtime;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.ResourceLoading;
-using Penumbra.Interop.Structs;
-using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
@@ -27,24 +24,16 @@ public class PathResolver : IDisposable
     public unsafe PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState)
     {
-        _performance        =  performance;
-        _config             =  config;
-        _collectionManager  =  collectionManager;
-        _subfileHelper      =  subfileHelper;
-        _pathState          =  pathState;
-        _metaState          =  metaState;
-        _gameState          =  gameState;
-        _collectionResolver =  collectionResolver;
-        _loader             =  loader;
-        _loader.ResolvePath =  ResolvePath;
-        _loader.FileLoaded  += ImcLoadResource;
-    }
-
-    /// <summary> Obtain a temporary or permanent collection by local ID. </summary>
-    public bool CollectionByLocalId(LocalCollectionId id, out ModCollection collection)
-    {
-        collection = _collectionManager.Storage.ByLocalId(id);
-        return collection != ModCollection.Empty;
+        _performance        = performance;
+        _config             = config;
+        _collectionManager  = collectionManager;
+        _subfileHelper      = subfileHelper;
+        _pathState          = pathState;
+        _metaState          = metaState;
+        _gameState          = gameState;
+        _collectionResolver = collectionResolver;
+        _loader             = loader;
+        _loader.ResolvePath = ResolvePath;
     }
 
     /// <summary> Try to resolve the given game path to the replaced path. </summary>
@@ -120,7 +109,6 @@ public class PathResolver : IDisposable
     public unsafe void Dispose()
     {
         _loader.ResetResolvePath();
-        _loader.FileLoaded -= ImcLoadResource;
     }
 
     /// <summary> Use the default method of path replacement. </summary>
@@ -128,24 +116,6 @@ public class PathResolver : IDisposable
     {
         var resolved = _collectionManager.Active.Default.ResolvePath(path);
         return (resolved, _collectionManager.Active.Default.ToResolveData());
-    }
-
-    /// <summary> After loading an IMC file, replace its contents with the modded IMC file. </summary>
-    private unsafe void ImcLoadResource(ResourceHandle* resource, ByteString path, bool returnValue, bool custom,
-        ReadOnlySpan<byte> additionalData)
-    {
-        if (resource->FileType != ResourceType.Imc
-         || !PathDataHandler.Read(additionalData, out var data)
-         || data.Discriminator != PathDataHandler.Discriminator
-         || !Utf8GamePath.FromByteString(path, out var gamePath)
-         || !CollectionByLocalId(data.Collection, out var collection)
-         || !collection.HasCache
-         || !collection.GetImcFile(gamePath, out var file))
-            return;
-
-        file.Replace(resource);
-        Penumbra.Log.Verbose(
-            $"[ResourceLoader] Loaded {gamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
     }
 
     /// <summary> Resolve a path from the interface collection. </summary>
