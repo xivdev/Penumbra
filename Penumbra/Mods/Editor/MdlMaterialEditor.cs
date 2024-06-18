@@ -1,11 +1,12 @@
 using OtterGui;
 using OtterGui.Compression;
+using OtterGui.Services;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 
 namespace Penumbra.Mods.Editor;
 
-public partial class MdlMaterialEditor(ModFileCollection files)
+public partial class MdlMaterialEditor(ModFileCollection files) : IService
 {
     [GeneratedRegex(@"/mt_c(?'RaceCode'\d{4})b0001_(?'Suffix'.*?)\.mtrl", RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking)]
     private static partial Regex MaterialRegex();

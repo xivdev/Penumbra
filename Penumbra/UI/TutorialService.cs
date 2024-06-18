@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -40,7 +41,7 @@ public enum BasicTutorialSteps
 }
 
 /// <summary> Service for the in-game tutorial. </summary>
-public class TutorialService
+public class TutorialService : IUiService
 {
     public const string SelectedCollection  = "Selected Collection";
     public const string DefaultCollection   = "Base Collection";

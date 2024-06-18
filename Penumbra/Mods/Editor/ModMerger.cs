@@ -2,6 +2,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
@@ -13,7 +14,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModMerger : IDisposable
+public class ModMerger : IDisposable, IService
 {
     private readonly Configuration         _config;
     private readonly CommunicatorService   _communicator;

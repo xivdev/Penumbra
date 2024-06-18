@@ -1,15 +1,15 @@
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using OtterGui.Tasks;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModNormalizer(ModManager _modManager, Configuration _config)
+public class ModNormalizer(ModManager _modManager, Configuration _config) : IService
 {
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = [];
 

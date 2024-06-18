@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -10,7 +11,8 @@ using Penumbra.Services;
 
 namespace Penumbra.Interop.PathResolving;
 
-public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>
+public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>,
+    IService
 {
     private readonly CommunicatorService                                _communicator;
     private readonly CharacterDestructor                                _characterDestructor;

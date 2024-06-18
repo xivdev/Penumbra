@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Groups;
@@ -8,7 +9,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable
+public class ModCacheManager : IDisposable, IService
 {
     private readonly Configuration        _config;
     private readonly CommunicatorService  _communicator;

@@ -2,6 +2,7 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -10,25 +11,16 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelCollectionsTab : ITab
+public class ModPanelCollectionsTab(CollectionStorage storage, ModFileSystemSelector selector) : ITab, IUiService
 {
-    private readonly ModFileSystemSelector _selector;
-    private readonly CollectionStorage     _collections;
-
-    private readonly List<(ModCollection, ModCollection, uint, string)> _cache = new();
-
-    public ModPanelCollectionsTab(CollectionStorage storage, ModFileSystemSelector selector)
-    {
-        _collections = storage;
-        _selector    = selector;
-    }
+    private readonly List<(ModCollection, ModCollection, uint, string)> _cache = [];
 
     public ReadOnlySpan<byte> Label
         => "Collections"u8;
 
     public void DrawContent()
     {
-        var (direct, inherited) = CountUsage(_selector.Selected!);
+        var (direct, inherited) = CountUsage(selector.Selected!);
         ImGui.NewLine();
         if (direct == 1)
             ImGui.TextUnformatted("This Mod is directly configured in 1 collection.");
@@ -80,7 +72,7 @@ public class ModPanelCollectionsTab : ITab
         var disInherited   = ColorId.InheritedDisabledMod.Value();
         var directCount    = 0;
         var inheritedCount = 0;
-        foreach (var collection in _collections)
+        foreach (var collection in storage)
         {
             var (settings, parent) = collection[mod.Index];
             var (color, text) = settings == null

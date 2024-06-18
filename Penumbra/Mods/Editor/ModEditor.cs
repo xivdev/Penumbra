@@ -1,5 +1,5 @@
-using OtterGui;
 using OtterGui.Compression;
+using OtterGui.Services;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
 
@@ -14,7 +14,7 @@ public class ModEditor(
     ModSwapEditor swapEditor,
     MdlMaterialEditor mdlMaterialEditor,
     FileCompactor compactor)
-    : IDisposable
+    : IDisposable, IService
 {
     public readonly ModNormalizer     ModNormalizer     = modNormalizer;
     public readonly ModMetaEditor     MetaEditor        = metaEditor;

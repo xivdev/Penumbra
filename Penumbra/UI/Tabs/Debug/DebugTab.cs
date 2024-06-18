@@ -44,7 +44,7 @@ using Penumbra.Api.IpcTester;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class Diagnostics(IServiceProvider provider)
+public class Diagnostics(ServiceManager provider) : IUiService
 {
     public void DrawDiagnostics()
     {
@@ -55,7 +55,7 @@ public class Diagnostics(IServiceProvider provider)
         foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
-            var container = (IAsyncDataContainer)provider.GetRequiredService(type);
+            var container = (IAsyncDataContainer)provider.Provider!.GetRequiredService(type);
             ImGuiUtil.DrawTableColumn(container.Name);
             ImGuiUtil.DrawTableColumn(container.Time.ToString());
             ImGuiUtil.DrawTableColumn(Functions.HumanReadableSize(container.Memory));
@@ -64,7 +64,7 @@ public class Diagnostics(IServiceProvider provider)
     }
 }
 
-public class DebugTab : Window, ITab
+public class DebugTab : Window, ITab, IUiService
 {
     private readonly PerformanceTracker        _performance;
     private readonly Configuration             _config;

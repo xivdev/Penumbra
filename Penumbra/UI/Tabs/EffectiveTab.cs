@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
@@ -15,7 +16,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.Tabs;
 
 public class EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
-    : ITab
+    : ITab, IUiService
 {
     public ReadOnlySpan<byte> Label
         => "Effective Changes"u8;

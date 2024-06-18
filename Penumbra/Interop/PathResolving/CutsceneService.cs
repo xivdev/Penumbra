@@ -1,6 +1,5 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
@@ -9,7 +8,7 @@ using Penumbra.String;
 
 namespace Penumbra.Interop.PathResolving;
 
-public sealed class CutsceneService : IService, IDisposable
+public sealed class CutsceneService : IRequiredService, IDisposable
 {
     public const int CutsceneStartIdx = (int)ScreenActor.CutsceneStart;
     public const int CutsceneEndIdx   = (int)ScreenActor.CutsceneEnd;

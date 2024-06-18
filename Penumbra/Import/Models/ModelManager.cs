@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
 using OtterGui;
+using OtterGui.Services;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
@@ -21,7 +22,8 @@ namespace Penumbra.Import.Models;
 using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
-public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
+public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser)
+    : SingleTaskQueue, IDisposable, IService
 {
     private readonly IFramework _framework = framework;
 

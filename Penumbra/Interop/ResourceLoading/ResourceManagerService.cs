@@ -4,12 +4,13 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.ResourceLoading;
 
-public unsafe class ResourceManagerService
+public unsafe class ResourceManagerService : IRequiredService
 {
     public ResourceManagerService(IGameInteropProvider interop)
         => interop.InitializeFromAttributes(this);

@@ -2,11 +2,10 @@ using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.UI.CollectionTab;
-using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
 
@@ -15,7 +14,7 @@ namespace Penumbra.Collections.Manager;
 /// This is transitive, so a collection A inheriting from B also inherits from everything B inherits.
 /// Circular dependencies are resolved by distinctness.
 /// </summary>
-public class InheritanceManager : IDisposable
+public class InheritanceManager : IDisposable, IService
 {
     public enum ValidInheritance
     {
@@ -144,7 +143,8 @@ public class InheritanceManager : IDisposable
                         continue;
 
                     changes = true;
-                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", NotificationType.Warning);
+                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.",
+                        NotificationType.Warning);
                 }
                 else if (_storage.ByName(subCollectionName, out subCollection))
                 {
@@ -153,12 +153,14 @@ public class InheritanceManager : IDisposable
                     if (AddInheritance(collection, subCollection, false))
                         continue;
 
-                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", NotificationType.Warning);
+                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.",
+                        NotificationType.Warning);
                 }
                 else
                 {
                     Penumbra.Messager.NotificationMessage(
-                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", NotificationType.Warning);
+                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.",
+                        NotificationType.Warning);
                     changes = true;
                 }
             }

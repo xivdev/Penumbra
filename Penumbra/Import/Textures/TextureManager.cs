@@ -3,6 +3,7 @@ using Dalamud.Interface.Internal;
 using Dalamud.Plugin.Services;
 using Lumina.Data.Files;
 using OtterGui.Log;
+using OtterGui.Services;
 using OtterGui.Tasks;
 using OtterTex;
 using SixLabors.ImageSharp;
@@ -12,21 +13,13 @@ using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
-public sealed class TextureManager : SingleTaskQueue, IDisposable
+public sealed class TextureManager(UiBuilder uiBuilder, IDataManager gameData, Logger logger)
+    : SingleTaskQueue, IDisposable, IService
 {
-    private readonly Logger       _logger;
-    private readonly UiBuilder    _uiBuilder;
-    private readonly IDataManager _gameData;
+    private readonly Logger _logger = logger;
 
-    private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks    = new();
+    private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
     private          bool                                                           _disposed;
-
-    public TextureManager(UiBuilder uiBuilder, IDataManager gameData, Logger logger)
-    {
-        _uiBuilder = uiBuilder;
-        _gameData  = gameData;
-        _logger    = logger;
-    }
 
     public IReadOnlyDictionary<IAction, (Task, CancellationTokenSource)> Tasks
         => _tasks;
@@ -64,7 +57,8 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
             {
                 var token = new CancellationTokenSource();
                 var task  = Enqueue(a, token.Token);
-                task.ContinueWith(_ => _tasks.TryRemove(a, out var unused), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                task.ContinueWith(_ => _tasks.TryRemove(a, out var unused), CancellationToken.None, TaskContinuationOptions.None,
+                    TaskScheduler.Default);
                 return (task, token);
             }).Item1;
         }
@@ -217,7 +211,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
 
     /// <summary> Load a texture wrap for a given image. </summary>
     public IDalamudTextureWrap LoadTextureWrap(byte[] rgba, int width, int height)
-        => _uiBuilder.LoadImageRaw(rgba, width, height, 4);
+        => uiBuilder.LoadImageRaw(rgba, width, height, 4);
 
     /// <summary> Load any supported file from game data or drive depending on extension and if the path is rooted. </summary>
     public (BaseImage, TextureType) Load(string path)
@@ -326,7 +320,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
     }
 
     public bool GameFileExists(string path)
-        => _gameData.FileExists(path);
+        => gameData.FileExists(path);
 
     /// <summary> Add up to 13 mip maps to the input if mip maps is true, otherwise return input. </summary>
     public static ScratchImage AddMipMaps(ScratchImage input, bool mipMaps)
@@ -382,7 +376,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
         if (Path.IsPathRooted(path))
             return File.OpenRead(path);
 
-        var file = _gameData.GetFile(path);
+        var file = gameData.GetFile(path);
         return file != null ? new MemoryStream(file.Data) : throw new Exception($"Unable to obtain \"{path}\" from game files.");
     }
 

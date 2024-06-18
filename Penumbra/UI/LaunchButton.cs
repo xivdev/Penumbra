@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Internal;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using OtterGui.Services;
 
 namespace Penumbra.UI;
 
@@ -9,7 +10,7 @@ namespace Penumbra.UI;
 /// A Launch Button used in the title screen of the game,
 /// using the Dalamud-provided collapsible submenu.
 /// </summary>
-public class LaunchButton : IDisposable
+public class LaunchButton : IDisposable, IUiService
 {
     private readonly ConfigWindow     _configWindow;
     private readonly UiBuilder        _uiBuilder;

@@ -4,6 +4,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Services;
@@ -13,7 +14,7 @@ using Penumbra.Util;
 
 namespace Penumbra.UI;
 
-public sealed class ConfigWindow : Window
+public sealed class ConfigWindow : Window, IUiService
 {
     private readonly DalamudPluginInterface _pluginInterface;
     private readonly Configuration          _config;

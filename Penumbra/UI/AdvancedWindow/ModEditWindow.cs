@@ -7,6 +7,7 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -32,7 +33,7 @@ using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public partial class ModEditWindow : Window, IDisposable
+public partial class ModEditWindow : Window, IDisposable, IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
 

@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -9,7 +10,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Interop.PathResolving;
 
-public class PathResolver : IDisposable
+public class PathResolver : IDisposable, IService
 {
     private readonly PerformanceTracker _performance;
     private readonly Configuration      _config;

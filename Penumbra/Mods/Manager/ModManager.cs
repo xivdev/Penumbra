@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager.OptionEditor;
@@ -27,7 +28,7 @@ public enum ModPathChangeType
     StartingReload,
 }
 
-public sealed class ModManager : ModStorage, IDisposable
+public sealed class ModManager : ModStorage, IDisposable, IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

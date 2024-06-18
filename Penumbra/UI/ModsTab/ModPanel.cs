@@ -1,13 +1,14 @@
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
 using ImGuiNET;
+using OtterGui.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanel : IDisposable
+public class ModPanel : IDisposable, IUiService
 {
     private readonly MultiModPanel         _multiModPanel;
     private readonly ModFileSystemSelector _selector;

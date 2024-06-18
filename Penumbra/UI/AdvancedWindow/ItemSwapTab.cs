@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -24,7 +25,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ItemSwapTab : IDisposable, ITab
+public class ItemSwapTab : IDisposable, ITab, IUiService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

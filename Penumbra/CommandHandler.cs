@@ -3,6 +3,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -10,12 +11,11 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI;
 
 namespace Penumbra;
 
-public class CommandHandler : IDisposable
+public class CommandHandler : IDisposable, IApiService
 {
     private const string CommandName = "/penumbra";
 

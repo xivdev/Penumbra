@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
@@ -23,7 +24,7 @@ public partial class ModCreator(
     Configuration config,
     ModDataEditor _dataEditor,
     MetaFileManager _metaFileManager,
-    GamePathParser _gamePathParser)
+    GamePathParser _gamePathParser) : IService
 {
     public readonly Configuration Config = config;
 

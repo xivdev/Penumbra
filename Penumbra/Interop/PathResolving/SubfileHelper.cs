@@ -1,9 +1,9 @@
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
-using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.PathResolving;
@@ -13,7 +13,7 @@ namespace Penumbra.Interop.PathResolving;
 /// Those are loaded synchronously.
 /// Thus, we need to ensure the correct files are loaded when a material is loaded.
 /// </summary>
-public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>
+public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>, IService
 {
     private readonly GameState                _gameState;
     private readonly ResourceLoader           _loader;

@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
@@ -17,7 +18,7 @@ public class ResourceTreeFactory(
     ObjectIdentification identifier,
     Configuration config,
     ActorManager actors,
-    PathState pathState)
+    PathState pathState) : IService
 {
     private TreeBuildCache CreateTreeBuildCache()
         => new(objects, gameData, actors);

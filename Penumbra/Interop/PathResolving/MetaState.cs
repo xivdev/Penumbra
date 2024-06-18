@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Structs;
@@ -34,7 +35,7 @@ namespace Penumbra.Interop.PathResolving;
 // ChangeCustomize and RspSetupCharacter, which is hooked here, as well as Character.CalculateHeight.
 
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which is SetupVisor.
-public sealed unsafe class MetaState : IDisposable
+public sealed unsafe class MetaState : IDisposable, IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

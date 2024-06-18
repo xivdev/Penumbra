@@ -1,12 +1,11 @@
-using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
+public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, IService
 {
     private readonly ModManager          _modManager;
     private readonly CommunicatorService _communicator;

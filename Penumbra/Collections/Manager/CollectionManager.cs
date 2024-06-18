@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Collections.Cache;
 
 namespace Penumbra.Collections.Manager;
@@ -8,7 +9,7 @@ public class CollectionManager(
     InheritanceManager inheritances,
     CollectionCacheManager caches,
     TempCollectionManager temp,
-    CollectionEditor editor)
+    CollectionEditor editor) : IService
 {
     public readonly CollectionStorage      Storage      = storage;
     public readonly ActiveCollections      Active       = active;

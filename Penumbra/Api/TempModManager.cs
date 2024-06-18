@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
@@ -18,7 +19,7 @@ public enum RedirectResult
     FilteredGamePath        = 3,
 }
 
-public class TempModManager : IDisposable
+public class TempModManager : IDisposable, IService
 {
     private readonly CommunicatorService _communicator;
 

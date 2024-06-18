@@ -1,7 +1,7 @@
-using System;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -11,7 +11,6 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.Collections.Manager;
 
@@ -24,7 +23,7 @@ public readonly record struct LocalCollectionId(int Id) : IAdditionOperators<Loc
         => new(left.Id + right);
 }
 
-public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
+public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, IService
 {
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;

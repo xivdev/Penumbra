@@ -1,6 +1,7 @@
 using Dalamud.Utility;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
@@ -23,7 +24,7 @@ public enum ModDataChangeType : ushort
     Note        = 0x0800,
 }
 
-public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService)
+public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService) : IService
 {
     /// <summary> Create the file containing the meta information about a mod from scratch. </summary>
     public void CreateMeta(DirectoryInfo directory, string? name, string? author, string? description, string? version,
@@ -49,7 +50,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         var save = true;
         if (File.Exists(dataFile))
-        {
             try
             {
                 var text = File.ReadAllText(dataFile);
@@ -65,7 +65,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             {
                 Penumbra.Log.Error($"Could not load local mod data:\n{e}");
             }
-        }
 
         if (importDate == 0)
             importDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
