@@ -10,16 +10,10 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
     private readonly Dictionary<(PrimaryId Id, GenderRace GenderRace, bool Accessory), (EqdpEntry Entry, EqdpEntry InverseMask)> _fullEntries =
         [];
 
-    public override void SetFiles()
-    { }
-
     public EqdpEntry ApplyFullEntry(PrimaryId id, GenderRace genderRace, bool accessory, EqdpEntry originalEntry)
         => _fullEntries.TryGetValue((id, genderRace, accessory), out var pair)
             ? (originalEntry & pair.InverseMask) | pair.Entry
             : originalEntry;
-
-    protected override void IncorporateChangesInternal()
-    { }
 
     public void Reset()
     {
@@ -46,8 +40,8 @@ public sealed class EqdpCache(MetaFileManager manager, ModCollection collection)
         if (!_fullEntries.Remove(tuple, out var pair))
             return;
 
-        var mask        = Eqdp.Mask(identifier.Slot);
-        var newMask     = pair.InverseMask | mask;
+        var mask    = Eqdp.Mask(identifier.Slot);
+        var newMask = pair.InverseMask | mask;
         if (newMask is not EqdpEntry.FullMask)
             _fullEntries[tuple] = (pair.Entry & ~mask, newMask);
     }

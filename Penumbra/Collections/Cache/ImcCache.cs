@@ -10,9 +10,6 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
 {
     private readonly Dictionary<ByteString, (ImcFile, HashSet<ImcIdentifier>)> _imcFiles = [];
 
-    public override void SetFiles()
-    { }
-
     public bool HasFile(ByteString path)
         => _imcFiles.ContainsKey(path);
 
@@ -27,10 +24,6 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
         file = p.Item1;
         return true;
     }
-
-    protected override void IncorporateChangesInternal()
-    { }
-
 
     public void Reset()
     {

@@ -8,12 +8,6 @@ namespace Penumbra.Collections.Cache;
 
 public sealed class EqpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<EqpIdentifier, EqpEntry>(manager, collection)
 {
-    public override void SetFiles()
-    { }
-
-    protected override void IncorporateChangesInternal()
-    { }
-
     public unsafe EqpEntry GetValues(CharacterArmor* armor)
         => GetSingleValue(armor[0].Set,  EquipSlot.Head)
           | GetSingleValue(armor[1].Set, EquipSlot.Body)
@@ -27,12 +21,6 @@ public sealed class EqpCache(MetaFileManager manager, ModCollection collection) 
 
     public void Reset()
         => Clear();
-
-    protected override void ApplyModInternal(EqpIdentifier identifier, EqpEntry entry)
-    { }
-
-    protected override void RevertModInternal(EqpIdentifier identifier)
-    { }
 
     protected override void Dispose(bool _)
         => Clear();

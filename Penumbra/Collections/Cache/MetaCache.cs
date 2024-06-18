@@ -29,16 +29,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
             .Concat(Imc.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value.Source)))
             .Concat(GlobalEqp.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value)));
 
-    public void SetFiles()
-    {
-        Eqp.SetFiles();
-        Eqdp.SetFiles();
-        Est.SetFiles();
-        Gmp.SetFiles();
-        Rsp.SetFiles();
-        Imc.SetFiles();
-    }
-
     public void Reset()
     {
         Eqp.Reset();

@@ -4,29 +4,18 @@ using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
-public abstract class MetaCacheBase<TIdentifier, TEntry>
+public abstract class MetaCacheBase<TIdentifier, TEntry>(MetaFileManager manager, ModCollection collection)
     : Dictionary<TIdentifier, (IMod Source, TEntry Entry)>
     where TIdentifier : unmanaged, IMetaIdentifier
     where TEntry : unmanaged
 {
-    protected MetaCacheBase(MetaFileManager manager, ModCollection collection)
-    {
-        Manager    = manager;
-        Collection = collection;
-        if (!Manager.CharacterUtility.Ready)
-            Manager.CharacterUtility.LoadingFinished += IncorporateChanges;
-    }
-
-    protected readonly MetaFileManager Manager;
-    protected readonly ModCollection   Collection;
+    protected readonly MetaFileManager Manager    = manager;
+    protected readonly ModCollection   Collection = collection;
 
     public void Dispose()
     {
-        Manager.CharacterUtility.LoadingFinished -= IncorporateChanges;
         Dispose(true);
     }
-
-    public abstract void SetFiles();
 
     public bool ApplyMod(IMod source, TIdentifier identifier, TEntry entry)
     {
@@ -59,20 +48,12 @@ public abstract class MetaCacheBase<TIdentifier, TEntry>
         return true;
     }
 
-    private void IncorporateChanges()
-    {
-        lock (this)
-        {
-            IncorporateChangesInternal();
-        }
 
-        if (Manager.ActiveCollections.Default == Collection && Manager.Config.EnableMods)
-            SetFiles();
-    }
+    protected virtual void ApplyModInternal(TIdentifier identifier, TEntry entry)
+    { }
 
-    protected abstract void ApplyModInternal(TIdentifier identifier, TEntry entry);
-    protected abstract void RevertModInternal(TIdentifier identifier);
-    protected abstract void IncorporateChangesInternal();
+    protected virtual void RevertModInternal(TIdentifier identifier)
+    { }
 
     protected virtual void Dispose(bool _)
     { }
