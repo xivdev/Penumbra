@@ -6,7 +6,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public class EstHook : FastHook<EstHook.Delegate>
+public class EstHook : FastHook<EstHook.Delegate>, IDisposable
 {
     public delegate EstEntry Delegate(uint id, int estType, uint genderRace);
 
@@ -14,14 +14,16 @@ public class EstHook : FastHook<EstHook.Delegate>
 
     public EstHook(HookManager hooks, MetaState metaState)
     {
-        _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetEstEntry", "44 8B C9 83 EA ?? 74", Detour, true);
+        _metaState                    =  metaState;
+        Task                          =  hooks.CreateHook<Delegate>("GetEstEntry", "44 8B C9 83 EA ?? 74", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     private EstEntry Detour(uint genderRace, int estType, uint id)
     {
         EstEntry ret;
-        if (_metaState.EstCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache }
+        if (_metaState.EstCollection.TryPeek(out var collection)
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache }
          && cache.Est.TryGetValue(Convert(genderRace, estType, id), out var entry))
             ret = entry.Entry;
         else
@@ -46,4 +48,7 @@ public class EstHook : FastHook<EstHook.Delegate>
         };
         return new EstIdentifier(i, type, gr);
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }

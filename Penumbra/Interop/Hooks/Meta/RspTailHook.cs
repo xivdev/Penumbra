@@ -7,7 +7,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public class RspTailHook : FastHook<RspTailHook.Delegate>
+public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
 {
     public delegate float Delegate(nint cmpResource, Race clan, byte gender, byte isSecondSubRace, byte bodyType, byte height);
 
@@ -18,7 +18,8 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspTail", "E8 ?? ?? ?? ?? 0F 28 F0 48 8B 05", Detour, true);
+        Task             = hooks.CreateHook<Delegate>("GetRspTail", "E8 ?? ?? ?? ?? 0F 28 F0 48 8B 05", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte tailLength)
@@ -65,4 +66,7 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>
             $"[GetRspTail] Invoked on 0x{cmpResource:X} with {race}, {(Gender)(gender + 1)}, {isSecondSubRace == 1}, {bodyType}, {tailLength}, returned {scale}.");
         return scale;
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }

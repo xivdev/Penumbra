@@ -1,4 +1,3 @@
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
@@ -8,7 +7,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public class RspHeightHook : FastHook<RspHeightHook.Delegate>
+public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
 {
     public delegate float Delegate(nint cmpResource, Race clan, byte gender, byte isSecondSubRace, byte bodyType, byte height);
 
@@ -17,15 +16,18 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>
 
     public RspHeightHook(HookManager hooks, MetaState metaState, MetaFileManager metaFileManager)
     {
-        _metaState       = metaState;
+        _metaState = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspHeight", "E8 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 44 8B CF", Detour, true);
+        Task = hooks.CreateHook<Delegate>("GetRspHeight", "E8 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 44 8B CF", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte height)
     {
         float scale;
-        if (bodyType < 2 && _metaState.RspCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache })
+        if (bodyType < 2
+         && _metaState.RspCollection.TryPeek(out var collection)
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
             var clan = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
             var (minIdent, maxIdent) = gender == 0
@@ -66,4 +68,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>
             $"[GetRspHeight] Invoked on 0x{cmpResource:X} with {race}, {(Gender)(gender + 1)}, {isSecondSubRace == 1}, {bodyType}, {height}, returned {scale}.");
         return scale;
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }

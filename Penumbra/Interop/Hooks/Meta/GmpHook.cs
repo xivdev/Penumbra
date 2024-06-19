@@ -5,7 +5,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class GmpHook : FastHook<GmpHook.Delegate>
+public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
 {
     public delegate nint Delegate(nint gmpResource, uint dividedHeadId);
 
@@ -16,7 +16,8 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>
     public GmpHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetGmpEntry", "E8 ?? ?? ?? ?? 48 85 C0 74 ?? 43 8D 0C", Detour, true);
+        Task = hooks.CreateHook<Delegate>("GetGmpEntry", "E8 ?? ?? ?? ?? 48 85 C0 74 ?? 43 8D 0C", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     /// <remarks>
@@ -27,7 +28,8 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>
     private nint Detour(nint gmpResource, uint dividedHeadId)
     {
         nint ret;
-        if (_metaState.GmpCollection.TryPeek(out var collection) && collection.Collection is { Valid: true, ModCollection.MetaCache: { } cache }
+        if (_metaState.GmpCollection.TryPeek(out var collection)
+         && collection.Collection is { Valid: true, ModCollection.MetaCache: { } cache }
          && cache.Gmp.TryGetValue(new GmpIdentifier(collection.Id), out var entry))
         {
             if (entry.Entry.Enabled)
@@ -61,4 +63,7 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>
             Marshal.FreeHGlobal((nint)Pointer);
         }
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }

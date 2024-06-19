@@ -31,7 +31,21 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 
     public ChangeLogDisplayType ChangeLogDisplayType { get; set; } = ChangeLogDisplayType.New;
 
-    public bool   EnableMods      { get; set; } = true;
+    public event Action<bool>? ModsEnabled;
+
+    [JsonIgnore]
+    private bool _enableMods = true;
+
+    public bool EnableMods
+    {
+        get => _enableMods;
+        set
+        {
+            _enableMods = value;
+            ModsEnabled?.Invoke(value);
+        }
+    }
+
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
 

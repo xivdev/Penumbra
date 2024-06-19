@@ -37,7 +37,7 @@ namespace Penumbra.Interop.PathResolving;
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which is SetupVisor.
 public sealed unsafe class MetaState : IDisposable, IService
 {
-    private readonly Configuration       _config;
+    public readonly  Configuration       Config;
     private readonly CommunicatorService _communicator;
     private readonly CollectionResolver  _collectionResolver;
     private readonly ResourceLoader      _resources;
@@ -64,7 +64,7 @@ public sealed unsafe class MetaState : IDisposable, IService
         _resources           = resources;
         _createCharacterBase = createCharacterBase;
         _characterUtility    = characterUtility;
-        _config              = config;
+        Config               = config;
         _createCharacterBase.Subscribe(OnCreatingCharacterBase, CreateCharacterBase.Priority.MetaState);
         _createCharacterBase.Subscribe(OnCharacterBaseCreated,  CreateCharacterBase.PostEvent.Priority.MetaState);
     }
@@ -84,7 +84,7 @@ public sealed unsafe class MetaState : IDisposable, IService
     }
 
     public DecalReverter ResolveDecal(ResolveData resolve, bool which)
-        => new(_config, _characterUtility, _resources, resolve, which);
+        => new(Config, _characterUtility, _resources, resolve, which);
 
     public void Dispose()
     {
@@ -99,7 +99,7 @@ public sealed unsafe class MetaState : IDisposable, IService
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection.Id, (nint)modelCharaId, (nint)customize, (nint)equipData);
 
-        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
+        var decal = new DecalReverter(Config, _characterUtility, _resources, _lastCreatedCollection,
             UsesDecal(*(uint*)modelCharaId, (nint)customize));
         RspCollection.Push(_lastCreatedCollection);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.

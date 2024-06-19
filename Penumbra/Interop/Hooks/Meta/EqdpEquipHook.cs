@@ -6,7 +6,7 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>
+public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>, IDisposable
 {
     public delegate void Delegate(CharacterUtility* utility, EqdpEntry* entry, uint id, uint raceCode);
 
@@ -15,7 +15,8 @@ public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>
     public EqdpEquipHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetEqdpEquipEntry", "E8 ?? ?? ?? ?? 85 DB 75 ?? F6 45", Detour, true);
+        Task       = hooks.CreateHook<Delegate>("GetEqdpEquipEntry", "E8 ?? ?? ?? ?? 85 DB 75 ?? F6 45", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
@@ -27,4 +28,7 @@ public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>
         Penumbra.Log.Excessive(
             $"[GetEqdpEquipEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }

@@ -7,7 +7,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
+public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
 {
     public delegate float* Delegate(nint cmpResource, float* storage, Race race, byte gender, byte isSecondSubRace, byte bodyType,
         byte bustSize);
@@ -19,7 +19,8 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspBust", "E8 ?? ?? ?? ?? F2 0F 10 44 24 ?? 8B 44 24", Detour, true);
+        Task             = hooks.CreateHook<Delegate>("GetRspBust", "E8 ?? ?? ?? ?? F2 0F 10 44 24 ?? 8B 44 24", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     private float* Detour(nint cmpResource, float* storage, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte bustSize)
@@ -63,4 +64,7 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
             $"[GetRspBust] Invoked on 0x{cmpResource:X} with {race}, {(Gender)(gender + 1)}, {isSecondSubRace == 1}, {bodyType}, {bustSize}, returned {storage[0]}, {storage[1]}, {storage[2]}.");
         return ret;
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }

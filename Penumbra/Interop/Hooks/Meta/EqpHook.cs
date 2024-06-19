@@ -5,7 +5,7 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class EqpHook : FastHook<EqpHook.Delegate>
+public unsafe class EqpHook : FastHook<EqpHook.Delegate>, IDisposable
 {
     public delegate void Delegate(CharacterUtility* utility, EqpEntry* flags, CharacterArmor* armor);
 
@@ -14,7 +14,8 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>
     public EqpHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetEqpFlags", "E8 ?? ?? ?? ?? 0F B6 44 24 ?? C0 E8", Detour, true);
+        Task = hooks.CreateHook<Delegate>("GetEqpFlags", "E8 ?? ?? ?? ?? 0F B6 44 24 ?? C0 E8", Detour, metaState.Config.EnableMods);
+        _metaState.Config.ModsEnabled += Toggle;
     }
 
     private void Detour(CharacterUtility* utility, EqpEntry* flags, CharacterArmor* armor)
@@ -31,4 +32,7 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>
 
         Penumbra.Log.Excessive($"[GetEqpFlags] Invoked on 0x{(nint)utility:X} with 0x{(ulong)armor:X}, returned 0x{(ulong)*flags:X16}.");
     }
+
+    public void Dispose()
+        => _metaState.Config.ModsEnabled -= Toggle;
 }
