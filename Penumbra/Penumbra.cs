@@ -21,6 +21,7 @@ using OtterGui.Tasks;
 using Penumbra.GameData.Enums;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
+using System.Xml.Linq;
 
 namespace Penumbra;
 
@@ -175,6 +176,26 @@ public class Penumbra : IDalamudPlugin
         _disposed = true;
     }
 
+    private void GatherRelevantPlugins(StringBuilder sb)
+    {
+        ReadOnlySpan<string> relevantPlugins =
+        [
+            "Glamourer", "MareSynchronos", "CustomizePlus", "SimpleHeels", "VfxEditor", "heliosphere-plugin", "Ktisis", "Brio", "DynamicBridge",
+        ];
+        var plugins = _services.GetService<DalamudPluginInterface>().InstalledPlugins
+            .GroupBy(p => p.InternalName)
+            .ToDictionary(g => g.Key, g =>
+            {
+                var item = g.OrderByDescending(p => p.IsLoaded).ThenByDescending(p => p.Version).First();
+                return (item.IsLoaded, item.Version, item.Name);
+            });
+        foreach (var plugin in relevantPlugins)
+        {
+            if (plugins.TryGetValue(plugin, out var data))
+                sb.Append($"> **`{data.Name + ':',-29}`** {data.Version}{(data.IsLoaded ? string.Empty : " (Disabled)")}\n");
+        }
+    }
+
     public string GatherSupportInformation()
     {
         var sb     = new StringBuilder(10240);
@@ -198,6 +219,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Ephemeral.EnableResourceLogging}, Watcher: {_config.Ephemeral.EnableResourceWatcher} ({_config.MaxResourceWatcherRecords})\n");
         sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
+        GatherRelevantPlugins(sb);
         sb.AppendLine("**Mods**");
         sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");
         sb.Append($"> **`Mods with Config:            `** {_modManager.Count(m => m.HasOptions)}\n");
@@ -212,27 +234,25 @@ public class Penumbra : IDalamudPlugin
             $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
 
         void PrintCollection(ModCollection c, CollectionCache _)
-            => sb.Append($"**Collection {c.AnonymizedName}**\n"
-              + $"> **`Inheritances:                 `** {c.DirectlyInheritsFrom.Count}\n"
-              + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count(s => s is { Enabled: true })}\n"
-              + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority && x.Solved ? x.Conflicts.Count : 0)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0)}\n");
+            => sb.Append(
+                $"> **`Collection {c.AnonymizedName + ':',-18}`** Inheritances: `{c.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
 
         sb.AppendLine("**Collections**");
-        sb.Append($"> **`#Collections:                 `** {_collectionManager.Storage.Count - 1}\n");
-        sb.Append($"> **`#Temp Collections:            `** {_tempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:           `** {_collectionManager.Caches.Count}\n");
-        sb.Append($"> **`Base Collection:              `** {_collectionManager.Active.Default.AnonymizedName}\n");
-        sb.Append($"> **`Interface Collection:         `** {_collectionManager.Active.Interface.AnonymizedName}\n");
-        sb.Append($"> **`Selected Collection:          `** {_collectionManager.Active.Current.AnonymizedName}\n");
+        sb.Append($"> **`#Collections:                `** {_collectionManager.Storage.Count - 1}\n");
+        sb.Append($"> **`#Temp Collections:           `** {_tempCollections.Count}\n");
+        sb.Append($"> **`Active Collections:          `** {_collectionManager.Caches.Count}\n");
+        sb.Append($"> **`Base Collection:             `** {_collectionManager.Active.Default.AnonymizedName}\n");
+        sb.Append($"> **`Interface Collection:        `** {_collectionManager.Active.Interface.AnonymizedName}\n");
+        sb.Append($"> **`Selected Collection:         `** {_collectionManager.Active.Current.AnonymizedName}\n");
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
             var collection = _collectionManager.Active.ByType(type);
             if (collection != null)
-                sb.Append($"> **`{name,-30}`** {collection.AnonymizedName}\n");
+                sb.Append($"> **`{name,-29}`** {collection.AnonymizedName}\n");
         }
 
         foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
-            sb.Append($"> **`{id[0].Incognito(name) + ':',-30}`** {collection.AnonymizedName}\n");
+            sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.AnonymizedName}\n");
 
         foreach (var collection in _collectionManager.Caches.Active)
             PrintCollection(collection, collection._cache!);
