@@ -29,6 +29,12 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
          && _metaState.RspCollection.TryPeek(out var collection)
          && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
+            // Special cases.
+            if (height == 0xFF)
+                return 1.0f;
+            if (height > 100)
+                height = 0;
+
             var clan = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
             var (minIdent, maxIdent) = gender == 0
                 ? (new RspIdentifier(clan, RspAttribute.MaleMinSize), new RspIdentifier(clan,   RspAttribute.MaleMaxSize))
