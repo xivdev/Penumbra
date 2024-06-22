@@ -26,7 +26,6 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         interop.InitializeFromAttributes(this);
         _getResourceSyncHook.Enable();
         _getResourceAsyncHook.Enable();
-        _resourceHandleDestructorHook.Enable();
         _incRefHook = interop.HookFromAddress<ResourceHandlePrototype>(
             (nint)CSResourceHandle.MemberFunctionPointers.IncRef,
             ResourceHandleIncRefDetour);
@@ -51,7 +50,6 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     {
         _getResourceSyncHook.Dispose();
         _getResourceAsyncHook.Dispose();
-        _resourceHandleDestructorHook.Dispose();
         _incRefHook.Dispose();
         _decRefHook.Dispose();
     }
@@ -67,8 +65,7 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     /// <param name="sync">Whether to request the resource synchronously or asynchronously.</param>
     /// <param name="returnValue">The returned resource handle. If this is not null, calling original will be skipped. </param>
     public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
-        Utf8GamePath original,
-        GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue);
+        Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue);
 
     /// <summary> <inheritdoc cref="GetResourcePreDelegate"/> <para/>
     /// Subscribers should be exception-safe.</summary>
@@ -189,29 +186,6 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         byte? ret = null;
         ResourceHandleDecRef?.Invoke(handle, ref ret);
         return ret ?? _decRefHook.OriginalDisposeSafe(handle);
-    }
-
-    #endregion
-
-    #region Destructor
-
-    /// <summary> Invoked before a resource handle is destructed. </summary>
-    /// <param name="handle">The resource handle.</param>
-    public delegate void ResourceHandleDtorDelegate(ResourceHandle* handle);
-
-    /// <summary>
-    /// <inheritdoc cref="ResourceHandleDtorDelegate"/> <para/>
-    /// Subscribers should be exception-safe.
-    /// </summary>
-    public event ResourceHandleDtorDelegate? ResourceHandleDestructor;
-
-    [Signature(Sigs.ResourceHandleDestructor, DetourName = nameof(ResourceHandleDestructorDetour))]
-    private readonly Hook<ResourceHandlePrototype> _resourceHandleDestructorHook = null!;
-
-    private nint ResourceHandleDestructorDetour(ResourceHandle* handle)
-    {
-        ResourceHandleDestructor?.Invoke(handle);
-        return _resourceHandleDestructorHook.OriginalDisposeSafe(handle);
     }
 
     #endregion

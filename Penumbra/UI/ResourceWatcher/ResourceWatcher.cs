@@ -8,8 +8,10 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
@@ -21,28 +23,30 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
     public const int        DefaultMaxEntries = 1024;
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
 
-    private readonly Configuration           _config;
-    private readonly EphemeralConfig         _ephemeral;
-    private readonly ResourceService         _resources;
-    private readonly ResourceLoader          _loader;
-    private readonly ActorManager            _actors;
-    private readonly List<Record>            _records    = [];
-    private readonly ConcurrentQueue<Record> _newRecords = [];
-    private readonly ResourceWatcherTable    _table;
-    private          string                  _logFilter = string.Empty;
-    private          Regex?                  _logRegex;
-    private          int                     _newMaxEntries;
+    private readonly Configuration            _config;
+    private readonly EphemeralConfig          _ephemeral;
+    private readonly ResourceService          _resources;
+    private readonly ResourceLoader           _loader;
+    private readonly ResourceHandleDestructor _destructor;
+    private readonly ActorManager             _actors;
+    private readonly List<Record>             _records    = [];
+    private readonly ConcurrentQueue<Record>  _newRecords = [];
+    private readonly ResourceWatcherTable     _table;
+    private          string                   _logFilter = string.Empty;
+    private          Regex?                   _logRegex;
+    private          int                      _newMaxEntries;
 
-    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader)
+    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader, ResourceHandleDestructor destructor)
     {
         _actors                             =  actors;
         _config                             =  config;
         _ephemeral                          =  config.Ephemeral;
         _resources                          =  resources;
+        _destructor                         =  destructor;
         _loader                             =  loader;
         _table                              =  new ResourceWatcherTable(config.Ephemeral, _records);
         _resources.ResourceRequested        += OnResourceRequested;
-        _resources.ResourceHandleDestructor += OnResourceDestroyed;
+        _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
         _loader.ResourceLoaded              += OnResourceLoaded;
         _loader.FileLoaded                  += OnFileLoaded;
         UpdateFilter(_ephemeral.ResourceLoggingFilter, false);
@@ -54,7 +58,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         Clear();
         _records.TrimExcess();
         _resources.ResourceRequested        -= OnResourceRequested;
-        _resources.ResourceHandleDestructor -= OnResourceDestroyed;
+        _destructor.Unsubscribe(OnResourceDestroyed);
         _loader.ResourceLoaded              -= OnResourceLoaded;
         _loader.FileLoaded                  -= OnFileLoaded;
     }

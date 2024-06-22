@@ -3,6 +3,7 @@ using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
+using Penumbra.UI.ResourceWatcher;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
@@ -15,6 +16,9 @@ public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHa
 
         /// <seealso cref="ShaderReplacementFixer"/>
         ShaderReplacementFixer,
+
+        /// <seealso cref="ResourceWatcher.OnResourceDestroyed"/>
+        ResourceWatcher,
     }
 
     public ResourceHandleDestructor(HookManager hooks)
