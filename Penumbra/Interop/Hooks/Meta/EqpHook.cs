@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 
@@ -14,7 +15,7 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>, IDisposable
     public EqpHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("GetEqpFlags", "E8 ?? ?? ?? ?? 0F B6 44 24 ?? C0 E8", Detour, metaState.Config.EnableMods);
+        Task = hooks.CreateHook<Delegate>("GetEqpFlags", Sigs.GetEqpEntry, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

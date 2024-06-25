@@ -1,4 +1,5 @@
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -16,7 +17,7 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
     public GmpHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("GetGmpEntry", "E8 ?? ?? ?? ?? 48 85 C0 74 ?? 43 8D 0C", Detour, metaState.Config.EnableMods);
+        Task = hooks.CreateHook<Delegate>("GetGmpEntry", Sigs.GetGmpEntry, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

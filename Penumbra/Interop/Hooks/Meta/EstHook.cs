@@ -1,4 +1,5 @@
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
@@ -15,7 +16,7 @@ public class EstHook : FastHook<EstHook.Delegate>, IDisposable
     public EstHook(HookManager hooks, MetaState metaState)
     {
         _metaState                    =  metaState;
-        Task                          =  hooks.CreateHook<Delegate>("GetEstEntry", "44 8B C9 83 EA ?? 74", Detour, metaState.Config.EnableMods);
+        Task                          =  hooks.CreateHook<Delegate>("GetEstEntry", Sigs.GetEstEntry, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

@@ -1,4 +1,5 @@
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
@@ -19,7 +20,7 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspBust", "E8 ?? ?? ?? ?? F2 0F 10 44 24 ?? 8B 44 24", Detour, metaState.Config.EnableMods);
+        Task             = hooks.CreateHook<Delegate>("GetRspBust", Sigs.GetRspBust, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

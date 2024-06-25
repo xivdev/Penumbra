@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
@@ -15,7 +16,7 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>, ID
     public EqdpAccessoryHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", "E8 ?? ?? ?? ?? 41 BF ?? ?? ?? ?? 83 FB", Detour, metaState.Config.EnableMods);
+        Task       = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", Sigs.GetEqdpAccessoryEntry, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

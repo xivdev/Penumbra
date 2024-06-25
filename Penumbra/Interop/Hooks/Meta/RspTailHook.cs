@@ -1,4 +1,5 @@
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
@@ -18,7 +19,7 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspTail", "E8 ?? ?? ?? ?? 0F 28 F0 48 8B 05", Detour, metaState.Config.EnableMods);
+        Task             = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

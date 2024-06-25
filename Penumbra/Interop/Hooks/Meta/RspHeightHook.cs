@@ -1,4 +1,5 @@
 using OtterGui.Services;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
@@ -18,7 +19,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
     {
         _metaState = metaState;
         _metaFileManager = metaFileManager;
-        Task = hooks.CreateHook<Delegate>("GetRspHeight", "E8 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 44 8B CF", Detour, metaState.Config.EnableMods);
+        Task = hooks.CreateHook<Delegate>("GetRspHeight", Sigs.GetRspHeight, Detour, metaState.Config.EnableMods);
         _metaState.Config.ModsEnabled += Toggle;
     }
 
