@@ -9,13 +9,13 @@ namespace Penumbra.UI;
 
 public class PenumbraWindowSystem : IDisposable, IUiService
 {
-    private readonly UiBuilder         _uiBuilder;
+    private readonly IUiBuilder        _uiBuilder;
     private readonly WindowSystem      _windowSystem;
     private readonly FileDialogService _fileDialog;
     public readonly  ConfigWindow      Window;
     public readonly  PenumbraChangelog Changelog;
 
-    public PenumbraWindowSystem(DalamudPluginInterface pi, Configuration config, PenumbraChangelog changelog, ConfigWindow window,
+    public PenumbraWindowSystem(IDalamudPluginInterface pi, Configuration config, PenumbraChangelog changelog, ConfigWindow window,
         LaunchButton _, ModEditWindow editWindow, FileDialogService fileDialog, ImportPopup importPopup, DebugTab debugTab)
     {
         _uiBuilder    = pi.UiBuilder;

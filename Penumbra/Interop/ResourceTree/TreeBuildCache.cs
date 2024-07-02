@@ -13,7 +13,7 @@ internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager data
 {
     private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = [];
 
-    public unsafe bool IsLocalPlayerRelated(Character character)
+    public unsafe bool IsLocalPlayerRelated(ICharacter character)
     {
         var player = objects.GetDalamudObject(0);
         if (player == null)
@@ -25,36 +25,36 @@ internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager data
         return actualIndex switch
         {
             < 2                              => true,
-            < (int)ScreenActor.CutsceneStart => gameObject->OwnerID == player.ObjectId,
+            < (int)ScreenActor.CutsceneStart => gameObject->OwnerId == player.EntityId,
             _                                => false,
         };
     }
 
-    public IEnumerable<Character> GetCharacters()
-        => objects.Objects.OfType<Character>();
+    public IEnumerable<ICharacter> GetCharacters()
+        => objects.Objects.OfType<ICharacter>();
 
-    public IEnumerable<Character> GetLocalPlayerRelatedCharacters()
+    public IEnumerable<ICharacter> GetLocalPlayerRelatedCharacters()
     {
         var player = objects.GetDalamudObject(0);
         if (player == null)
             yield break;
 
-        yield return (Character)player;
+        yield return (ICharacter)player;
 
         var minion = objects.GetDalamudObject(1);
         if (minion != null)
-            yield return (Character)minion;
+            yield return (ICharacter)minion;
 
-        var playerId = player.ObjectId;
+        var playerId = player.EntityId;
         for (var i = 2; i < ObjectIndex.CutsceneStart.Index; i += 2)
         {
-            if (objects.GetDalamudObject(i) is Character owned && owned.OwnerId == playerId)
+            if (objects.GetDalamudObject(i) is ICharacter owned && owned.OwnerId == playerId)
                 yield return owned;
         }
 
         for (var i = ObjectIndex.CutsceneStart.Index; i < ObjectIndex.CharacterScreen.Index; ++i)
         {
-            var character = objects.GetDalamudObject((int) i) as Character;
+            var character = objects.GetDalamudObject((int) i) as ICharacter;
             if (character == null)
                 continue;
 

@@ -12,7 +12,7 @@ namespace Penumbra.Api.IpcTester;
 
 public class GameStateIpcTester : IUiService, IDisposable
 {
-    private readonly DalamudPluginInterface                        _pi;
+    private readonly IDalamudPluginInterface                        _pi;
     public readonly  EventSubscriber<nint, Guid, nint, nint, nint> CharacterBaseCreating;
     public readonly  EventSubscriber<nint, Guid, nint>             CharacterBaseCreated;
     public readonly  EventSubscriber<nint, string, string>         GameObjectResourcePathResolved;
@@ -30,7 +30,7 @@ public class GameStateIpcTester : IUiService, IDisposable
     private int            _currentCutsceneParent;
     private PenumbraApiEc  _cutsceneError = PenumbraApiEc.Success;
 
-    public GameStateIpcTester(DalamudPluginInterface pi)
+    public GameStateIpcTester(IDalamudPluginInterface pi)
     {
         _pi                            = pi;
         CharacterBaseCreating          = IpcSubscribers.CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
@@ -134,7 +134,6 @@ public class GameStateIpcTester : IUiService, IDisposable
     private static unsafe string GetObjectName(nint gameObject)
     {
         var obj  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)gameObject;
-        var name = obj != null ? obj->Name : null;
-        return name != null && *name != 0 ? new ByteString(name).ToString() : "Unknown";
+        return obj != null && obj->Name[0] != 0 ? new ByteString(obj->Name).ToString() : "Unknown";
     }
 }

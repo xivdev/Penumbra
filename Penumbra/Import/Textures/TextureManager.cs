@@ -1,5 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Lumina.Data.Files;
 using OtterGui.Log;
@@ -13,7 +13,7 @@ using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
-public sealed class TextureManager(UiBuilder uiBuilder, IDataManager gameData, Logger logger)
+public sealed class TextureManager(IDataManager gameData, Logger logger, ITextureProvider textureProvider)
     : SingleTaskQueue, IDisposable, IService
 {
     private readonly Logger _logger = logger;
@@ -211,7 +211,7 @@ public sealed class TextureManager(UiBuilder uiBuilder, IDataManager gameData, L
 
     /// <summary> Load a texture wrap for a given image. </summary>
     public IDalamudTextureWrap LoadTextureWrap(byte[] rgba, int width, int height)
-        => uiBuilder.LoadImageRaw(rgba, width, height, 4);
+        => textureProvider.CreateFromRaw(RawImageSpecification.Rgba32(width, height), rgba, "Penumbra.Texture");
 
     /// <summary> Load any supported file from game data or drive depending on extension and if the path is rooted. </summary>
     public (BaseImage, TextureType) Load(string path)

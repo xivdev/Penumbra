@@ -6,7 +6,7 @@ using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class MetaIpcTester(DalamudPluginInterface pi) : IUiService
+public class MetaIpcTester(IDalamudPluginInterface pi) : IUiService
 {
     private int _gameObjectIndex;
 

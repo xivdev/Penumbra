@@ -15,7 +15,7 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ResourceTreeIpcTester(DalamudPluginInterface pi, ObjectManager objects) : IUiService
+public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager objects) : IUiService
 {
     private readonly Stopwatch _stopwatch = new();
 

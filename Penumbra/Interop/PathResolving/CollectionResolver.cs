@@ -120,7 +120,7 @@ public sealed unsafe class CollectionResolver(
         var lobby       = AgentLobby.Instance();
         if (lobby != null)
         {
-            var span = lobby->LobbyData.CharaSelectEntries.Span;
+            var span = lobby->LobbyData.CharaSelectEntries.AsSpan();
             // The lobby uses the first 8 cutscene actors.
             var idx = gameObject->ObjectIndex - ObjectIndex.CutsceneStart.Index;
             if (idx >= 0 && idx < span.Length && span[idx].Value != null)
@@ -148,7 +148,7 @@ public sealed unsafe class CollectionResolver(
     /// <summary> Used if at the aesthetician. The relevant actor is yourself, so use player collection when possible. </summary>
     private bool Aesthetician(GameObject* gameObject, out ResolveData ret)
     {
-        if (gameGui.GetAddonByName("ScreenLog") != IntPtr.Zero)
+        if (gameGui.GetAddonByName("ScreenLog") != nint.Zero)
         {
             ret = ResolveData.Invalid;
             return false;

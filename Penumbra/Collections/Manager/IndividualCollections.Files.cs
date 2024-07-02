@@ -1,5 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using Penumbra.GameData.Actors;

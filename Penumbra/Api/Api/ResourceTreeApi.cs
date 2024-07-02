@@ -12,7 +12,7 @@ public class ResourceTreeApi(ResourceTreeFactory resourceTreeFactory, ObjectMana
 {
     public Dictionary<string, HashSet<string>>?[] GetGameObjectResourcePaths(params ushort[] gameObjects)
     {
-        var characters       = gameObjects.Select(index => objects.GetDalamudObject((int)index)).OfType<Character>();
+        var characters       = gameObjects.Select(index => objects.GetDalamudObject((int)index)).OfType<ICharacter>();
         var resourceTrees    = resourceTreeFactory.FromCharacters(characters, 0);
         var pathDictionaries = ResourceTreeApiHelper.GetResourcePathDictionaries(resourceTrees);
 
@@ -28,7 +28,7 @@ public class ResourceTreeApi(ResourceTreeFactory resourceTreeFactory, ObjectMana
     public GameResourceDict?[] GetGameObjectResourcesOfType(ResourceType type, bool withUiData,
         params ushort[] gameObjects)
     {
-        var characters      = gameObjects.Select(index => objects.GetDalamudObject((int)index)).OfType<Character>();
+        var characters      = gameObjects.Select(index => objects.GetDalamudObject((int)index)).OfType<ICharacter>();
         var resourceTrees   = resourceTreeFactory.FromCharacters(characters, withUiData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionaries = ResourceTreeApiHelper.GetResourcesOfType(resourceTrees, type);
 
@@ -45,7 +45,7 @@ public class ResourceTreeApi(ResourceTreeFactory resourceTreeFactory, ObjectMana
 
     public JObject?[] GetGameObjectResourceTrees(bool withUiData, params ushort[] gameObjects)
     {
-        var characters    = gameObjects.Select(index => objects.GetDalamudObject((int)index)).OfType<Character>();
+        var characters    = gameObjects.Select(index => objects.GetDalamudObject((int)index)).OfType<ICharacter>();
         var resourceTrees = resourceTreeFactory.FromCharacters(characters, withUiData ? ResourceTreeFactory.Flags.WithUiData : 0);
         var resDictionary = ResourceTreeApiHelper.EncapsulateResourceTrees(resourceTrees);
 

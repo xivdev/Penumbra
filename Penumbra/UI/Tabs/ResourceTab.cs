@@ -121,7 +121,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
     }
 
     /// <summary> Obtain a label for an extension node. </summary>
-    private static string GetNodeLabel(uint label, uint type, ulong count)
+    private static string GetNodeLabel(uint label, uint type, int count)
     {
         var (lowest, mid1, mid2, highest) = Functions.SplitBytes(type);
         return highest == 0

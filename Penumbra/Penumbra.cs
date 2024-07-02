@@ -48,7 +48,7 @@ public class Penumbra : IDalamudPlugin
 
     private readonly ServiceManager _services;
 
-    public Penumbra(DalamudPluginInterface pluginInterface)
+    public Penumbra(IDalamudPluginInterface pluginInterface)
     {
         try
         {
@@ -182,7 +182,7 @@ public class Penumbra : IDalamudPlugin
         [
             "Glamourer", "MareSynchronos", "CustomizePlus", "SimpleHeels", "VfxEditor", "heliosphere-plugin", "Ktisis", "Brio", "DynamicBridge",
         ];
-        var plugins = _services.GetService<DalamudPluginInterface>().InstalledPlugins
+        var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)
             .ToDictionary(g => g.Key, g =>
             {

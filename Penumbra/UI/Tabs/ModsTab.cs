@@ -5,7 +5,7 @@ using OtterGui.Raii;
 using Penumbra.UI.Classes;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Housing;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;

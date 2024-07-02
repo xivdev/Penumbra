@@ -12,7 +12,7 @@ namespace Penumbra.Api.IpcTester;
 
 public class ModSettingsIpcTester : IUiService, IDisposable
 {
-    private readonly DalamudPluginInterface                                _pi;
+    private readonly IDalamudPluginInterface                                _pi;
     public readonly  EventSubscriber<ModSettingChange, Guid, string, bool> SettingChanged;
 
     private PenumbraApiEc    _lastSettingsError = PenumbraApiEc.Success;
@@ -33,7 +33,7 @@ public class ModSettingsIpcTester : IUiService, IDisposable
     private IReadOnlyDictionary<string, (string[], GroupType)>? _availableSettings;
     private Dictionary<string, List<string>>?                   _currentSettings;
 
-    public ModSettingsIpcTester(DalamudPluginInterface pi)
+    public ModSettingsIpcTester(IDalamudPluginInterface pi)
     {
         _pi            = pi;
         SettingChanged = ModSettingChanged.Subscriber(pi, UpdateLastModSetting);

@@ -71,7 +71,7 @@ public unsafe class MetaBaseFile(MetaFileManager manager, IFileAllocator alloc, 
     public int                            Length { get; private set; }
     public CharacterUtility.InternalIndex Index  { get; } = CharacterUtility.ReverseIndices[(int)idx];
 
-    protected (IntPtr Data, int Length) DefaultData
+    protected (nint Data, int Length) DefaultData
         => Manager.CharacterUtility.DefaultResource(Index);
 
     /// <summary> Reset to default values. </summary>

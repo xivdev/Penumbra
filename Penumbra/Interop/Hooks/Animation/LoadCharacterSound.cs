@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.CrashHandler.Buffers;
@@ -15,12 +16,10 @@ public sealed unsafe class LoadCharacterSound : FastHook<LoadCharacterSound.Dele
 
     public LoadCharacterSound(HookManager hooks, GameState state, CollectionResolver collectionResolver, CrashHandlerService crashHandler)
     {
-        _state              = state;
+        _state = state;
         _collectionResolver = collectionResolver;
-        _crashHandler       = crashHandler;
-        Task = hooks.CreateHook<Delegate>("Load Character Sound",
-            (nint)FFXIVClientStructs.FFXIV.Client.Game.Character.Character.VfxContainer.MemberFunctionPointers.LoadCharacterSound, Detour,
-            true);
+        _crashHandler = crashHandler;
+        Task = hooks.CreateHook<Delegate>("Load Character Sound", (nint)VfxContainer.MemberFunctionPointers.LoadCharacterSound, Detour, HookSettings.VfxIdentificationHooks);
     }
 
     public delegate nint Delegate(nint container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7);

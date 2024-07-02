@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
@@ -23,13 +24,13 @@ public class ResourceTreeFactory(
     private TreeBuildCache CreateTreeBuildCache()
         => new(objects, gameData, actors);
 
-    public IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> GetLocalPlayerRelatedCharacters()
+    public IEnumerable<ICharacter> GetLocalPlayerRelatedCharacters()
     {
         var cache = CreateTreeBuildCache();
         return cache.GetLocalPlayerRelatedCharacters();
     }
 
-    public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromObjectTable(
+    public IEnumerable<(ICharacter Character, ResourceTree ResourceTree)> FromObjectTable(
         Flags flags)
     {
         var cache      = CreateTreeBuildCache();
@@ -43,8 +44,8 @@ public class ResourceTreeFactory(
         }
     }
 
-    public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromCharacters(
-        IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters, Flags flags)
+    public IEnumerable<(ICharacter Character, ResourceTree ResourceTree)> FromCharacters(
+        IEnumerable<ICharacter> characters, Flags flags)
     {
         var cache = CreateTreeBuildCache();
         foreach (var character in characters)
@@ -55,10 +56,10 @@ public class ResourceTreeFactory(
         }
     }
 
-    public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, Flags flags)
+    public ResourceTree? FromCharacter(ICharacter character, Flags flags)
         => FromCharacter(character, CreateTreeBuildCache(), flags);
 
-    private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache, Flags flags)
+    private unsafe ResourceTree? FromCharacter(ICharacter character, TreeBuildCache cache, Flags flags)
     {
         if (!character.IsValid())
             return null;
@@ -74,7 +75,7 @@ public class ResourceTreeFactory(
 
         var localPlayerRelated = cache.IsLocalPlayerRelated(character);
         var (name, anonymizedName, related) = GetCharacterName(character);
-        var networked = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
+        var networked = character.EntityId != 0xE0000000;
         var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
             networked, collectionResolveData.ModCollection.Name, collectionResolveData.ModCollection.AnonymizedName);
         var globalContext = new GlobalResolveContext(identifier, collectionResolveData.ModCollection,
@@ -155,14 +156,14 @@ public class ResourceTreeFactory(
         }
     }
 
-    private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character)
+    private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(ICharacter character)
     {
         var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
         var identifierStr = identifier.ToString();
         return (identifierStr, identifier.Incognito(identifierStr), IsPlayerRelated(identifier, owner));
     }
 
-    private unsafe bool IsPlayerRelated(Dalamud.Game.ClientState.Objects.Types.Character? character)
+    private unsafe bool IsPlayerRelated(ICharacter? character)
     {
         if (character == null)
             return false;
@@ -175,7 +176,7 @@ public class ResourceTreeFactory(
         => identifier.Type switch
         {
             IdentifierType.Player => true,
-            IdentifierType.Owned  => IsPlayerRelated(objects.Objects.CreateObjectReference(owner) as Dalamud.Game.ClientState.Objects.Types.Character),
+            IdentifierType.Owned  => IsPlayerRelated(objects.Objects.CreateObjectReference(owner) as ICharacter),
             _                     => false,
         };
 

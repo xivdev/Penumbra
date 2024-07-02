@@ -10,7 +10,7 @@ namespace Penumbra.Interop.ResourceTree;
 internal static class ResourceTreeApiHelper
 {
     public static Dictionary<ushort, Dictionary<string, HashSet<string>>> GetResourcePathDictionaries(
-        IEnumerable<(Character, ResourceTree)> resourceTrees)
+        IEnumerable<(ICharacter, ResourceTree)> resourceTrees)
     {
         var pathDictionaries = new Dictionary<ushort, Dictionary<string, HashSet<string>>>(4);
 
@@ -47,7 +47,7 @@ internal static class ResourceTreeApiHelper
         }
     }
 
-    public static Dictionary<ushort, GameResourceDict> GetResourcesOfType(IEnumerable<(Character, ResourceTree)> resourceTrees,
+    public static Dictionary<ushort, GameResourceDict> GetResourcesOfType(IEnumerable<(ICharacter, ResourceTree)> resourceTrees,
         ResourceType type)
     {
         var resDictionaries = new Dictionary<ushort, GameResourceDict>(4);
@@ -74,7 +74,7 @@ internal static class ResourceTreeApiHelper
         return resDictionaries;
     }
 
-    public static Dictionary<ushort, JObject> EncapsulateResourceTrees(IEnumerable<(Character, ResourceTree)> resourceTrees)
+    public static Dictionary<ushort, JObject> EncapsulateResourceTrees(IEnumerable<(ICharacter, ResourceTree)> resourceTrees)
     {
         var resDictionary = new Dictionary<ushort, JObject>(4);
         foreach (var (gameObject, resourceTree) in resourceTrees)

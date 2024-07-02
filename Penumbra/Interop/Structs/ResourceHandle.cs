@@ -83,12 +83,12 @@ public unsafe struct ResourceHandle
     [FieldOffset(0xB8)]
     public uint DataLength;
 
-    public (IntPtr Data, int Length) GetData()
+    public (nint Data, int Length) GetData()
         => Data != null
-            ? ((IntPtr)Data->DataPtr, (int)Data->DataLength)
-            : (IntPtr.Zero, 0);
+            ? ((nint)Data->DataPtr, (int)Data->DataLength)
+            : (nint.Zero, 0);
 
-    public bool SetData(IntPtr data, int length)
+    public bool SetData(nint data, int length)
     {
         if (Data == null)
             return false;

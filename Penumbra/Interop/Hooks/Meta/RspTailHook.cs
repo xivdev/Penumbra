@@ -19,7 +19,7 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour, metaState.Config.EnableMods);
+        Task             = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

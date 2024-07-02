@@ -20,7 +20,7 @@ public sealed unsafe class LoadAreaVfx : FastHook<LoadAreaVfx.Delegate>
         _state              = state;
         _collectionResolver = collectionResolver;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Load Area VFX", Sigs.LoadAreaVfx, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Load Area VFX", Sigs.LoadAreaVfx, Detour, HookSettings.VfxIdentificationHooks);
     }
 
     public delegate nint Delegate(uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3);

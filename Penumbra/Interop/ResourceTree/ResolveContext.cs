@@ -111,7 +111,7 @@ internal unsafe partial record ResolveContext(
         if (resourceHandle == null)
             throw new ArgumentNullException(nameof(resourceHandle));
 
-        var fileName       = resourceHandle->FileName.AsSpan();
+        var fileName       = (ReadOnlySpan<byte>) resourceHandle->FileName.AsSpan();
         var additionalData = ByteString.Empty;
         if (PathDataHandler.Split(fileName, out fileName, out var data))
             additionalData = ByteString.FromSpanUnsafe(data, false).Clone();

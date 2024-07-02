@@ -4,8 +4,8 @@ namespace Penumbra.Interop.Structs;
 public unsafe struct ClipScheduler
 {
     [FieldOffset(0)]
-    public IntPtr* VTable;
+    public nint* VTable;
 
     [FieldOffset(0x38)]
-    public IntPtr SchedulerTimeline;
+    public nint SchedulerTimeline;
 }

@@ -16,7 +16,7 @@ public class EstHook : FastHook<EstHook.Delegate>, IDisposable
     public EstHook(HookManager hooks, MetaState metaState)
     {
         _metaState                    =  metaState;
-        Task                          =  hooks.CreateHook<Delegate>("GetEstEntry", Sigs.GetEstEntry, Detour, metaState.Config.EnableMods);
+        Task                          =  hooks.CreateHook<Delegate>("GetEstEntry", Sigs.GetEstEntry, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

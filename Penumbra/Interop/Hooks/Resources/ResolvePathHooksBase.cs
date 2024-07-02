@@ -44,18 +44,20 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         _parent = parent;
         // @formatter:off
-        _resolveDecalPathHook = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveDecal)}", hooks, vTable[83], ResolveDecal);
-        _resolveEidPathHook   = Create<SingleResolveDelegate>( $"{name}.{nameof(ResolveEid)}",   hooks, vTable[85], ResolveEid);
-        _resolveImcPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveImc)}",   hooks, vTable[81], ResolveImc);
-        _resolveMPapPathHook  = Create<MPapResolveDelegate>(   $"{name}.{nameof(ResolveMPap)}",  hooks, vTable[79], ResolveMPap);
-        _resolveMdlPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveMdl)}",   hooks, vTable[73], type, ResolveMdl, ResolveMdlHuman);
-        _resolveMtrlPathHook  = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolveMtrl)}",  hooks, vTable[82], ResolveMtrl);
-        _resolvePapPathHook   = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolvePap)}",   hooks, vTable[76], type, ResolvePap, ResolvePapHuman);
-        _resolvePhybPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolvePhyb)}",  hooks, vTable[75], type, ResolvePhyb, ResolvePhybHuman);
-        _resolveSklbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSklb)}",  hooks, vTable[72], type, ResolveSklb, ResolveSklbHuman);
-        _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[74], type, ResolveSkp, ResolveSkpHuman);
-        _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[77], ResolveTmb);
-        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], type, ResolveVfx, ResolveVfxHuman);
+        _resolveSklbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSklb)}",  hooks, vTable[76], type, ResolveSklb, ResolveSklbHuman);
+        _resolveMdlPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveMdl)}",   hooks, vTable[77], type, ResolveMdl, ResolveMdlHuman);
+        _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[78], type, ResolveSkp, ResolveSkpHuman);
+        _resolvePhybPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolvePhyb)}",  hooks, vTable[79], type, ResolvePhyb, ResolvePhybHuman);
+
+
+        _resolvePapPathHook   = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolvePap)}",   hooks, vTable[84], type, ResolvePap, ResolvePapHuman);
+        _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[85], ResolveTmb);
+        _resolveMPapPathHook  = Create<MPapResolveDelegate>(   $"{name}.{nameof(ResolveMPap)}",  hooks, vTable[87], ResolveMPap);
+        _resolveImcPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveImc)}",   hooks, vTable[89], ResolveImc);
+        _resolveMtrlPathHook  = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolveMtrl)}",  hooks, vTable[90], ResolveMtrl);
+        _resolveDecalPathHook = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveDecal)}", hooks, vTable[92], ResolveDecal);
+        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[93], type, ResolveVfx, ResolveVfxHuman);
+        _resolveEidPathHook   = Create<SingleResolveDelegate>( $"{name}.{nameof(ResolveEid)}",   hooks, vTable[94], ResolveEid);
         // @formatter:on
         Enable();
     }

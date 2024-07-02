@@ -41,7 +41,7 @@ public class SettingsTab : ITab, IUiService
     private readonly DalamudSubstitutionProvider _dalamudSubstitutionProvider;
     private readonly FileCompactor               _compactor;
     private readonly DalamudConfigService        _dalamudConfig;
-    private readonly DalamudPluginInterface      _pluginInterface;
+    private readonly IDalamudPluginInterface      _pluginInterface;
     private readonly IDataManager                _gameData;
     private readonly PredefinedTagManager        _predefinedTagManager;
     private readonly CrashHandlerService         _crashService;
@@ -51,7 +51,7 @@ public class SettingsTab : ITab, IUiService
 
     private readonly TagButtons _sharedTags = new();
 
-    public SettingsTab(DalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
+    public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,

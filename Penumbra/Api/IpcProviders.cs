@@ -12,7 +12,7 @@ public sealed class IpcProviders : IDisposable, IApiService
     private readonly EventProvider _disposedProvider;
     private readonly EventProvider _initializedProvider;
 
-    public IpcProviders(DalamudPluginInterface pi, IPenumbraApi api)
+    public IpcProviders(IDalamudPluginInterface pi, IPenumbraApi api)
     {
         _disposedProvider    = IpcSubscribers.Disposed.Provider(pi);
         _initializedProvider = IpcSubscribers.Initialized.Provider(pi);

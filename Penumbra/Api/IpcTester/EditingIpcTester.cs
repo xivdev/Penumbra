@@ -8,7 +8,7 @@ using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class EditingIpcTester(DalamudPluginInterface pi) : IUiService
+public class EditingIpcTester(IDalamudPluginInterface pi) : IUiService
 {
     private string _inputPath   = string.Empty;
     private string _inputPath2  = string.Empty;

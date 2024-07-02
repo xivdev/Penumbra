@@ -1,4 +1,4 @@
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using OtterGui.Classes;
 using OtterGui.Services;

@@ -12,7 +12,7 @@ namespace Penumbra.Api.IpcTester;
 
 public class ModsIpcTester : IUiService, IDisposable
 {
-    private readonly DalamudPluginInterface _pi;
+    private readonly IDalamudPluginInterface _pi;
 
     private string                      _modDirectory   = string.Empty;
     private string                      _modName        = string.Empty;
@@ -38,7 +38,7 @@ public class ModsIpcTester : IUiService, IDisposable
     private string         _lastMovedModFrom   = string.Empty;
     private string         _lastMovedModTo     = string.Empty;
 
-    public ModsIpcTester(DalamudPluginInterface pi)
+    public ModsIpcTester(IDalamudPluginInterface pi)
     {
         _pi = pi;
         DeleteSubscriber = ModDeleted.Subscriber(pi, s =>

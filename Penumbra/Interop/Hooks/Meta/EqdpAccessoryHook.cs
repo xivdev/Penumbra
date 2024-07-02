@@ -16,7 +16,7 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>, ID
     public EqdpAccessoryHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", Sigs.GetEqdpAccessoryEntry, Detour, metaState.Config.EnableMods);
+        Task       = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", Sigs.GetEqdpAccessoryEntry, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

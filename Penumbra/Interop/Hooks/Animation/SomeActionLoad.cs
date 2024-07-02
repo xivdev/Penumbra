@@ -1,4 +1,4 @@
-using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.CrashHandler.Buffers;
@@ -20,15 +20,15 @@ public sealed unsafe class SomeActionLoad : FastHook<SomeActionLoad.Delegate>
         _state              = state;
         _collectionResolver = collectionResolver;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Some Action Load", Sigs.LoadSomeAction, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Some Action Load", Sigs.LoadSomeAction, Detour, HookSettings.VfxIdentificationHooks);
     }
 
-    public delegate void Delegate(ActionTimelineManager* timelineManager);
+    public delegate void Delegate(TimelineContainer* timelineManager);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void Detour(ActionTimelineManager* timelineManager)
+    private void Detour(TimelineContainer* timelineManager)
     {
-        var newData = _collectionResolver.IdentifyCollection((GameObject*)timelineManager->Parent, true);
+        var newData = _collectionResolver.IdentifyCollection((GameObject*)timelineManager->OwnerObject, true);
         var last    = _state.SetAnimationData(newData);
         Penumbra.Log.Excessive($"[Some Action Load] Invoked on 0x{(nint)timelineManager:X}.");
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.ActionLoad);

@@ -271,7 +271,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
 
     public unsafe string Name(ResolveData resolve, string none = "")
     {
-        if (resolve.AssociatedGameObject == IntPtr.Zero || !_actors.Awaiter.IsCompletedSuccessfully)
+        if (resolve.AssociatedGameObject == nint.Zero || !_actors.Awaiter.IsCompletedSuccessfully)
             return none;
 
         try

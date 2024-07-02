@@ -4,8 +4,8 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Housing;
-using FFXIVClientStructs.Interop;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
@@ -37,11 +37,11 @@ public unsafe partial class RedrawService : IService
         => _clientState.IsGPosing;
 
     // VFuncs that disable and enable draw, used only for GPose actors.
-    private static void DisableDraw(GameObject actor)
-        => ((delegate* unmanaged< IntPtr, void >**)actor.Address)[0][Offsets.DisableDrawVfunc](actor.Address);
+    private static void DisableDraw(IGameObject actor)
+        => ((delegate* unmanaged<nint, void >**)actor.Address)[0][Offsets.DisableDrawVfunc](actor.Address);
 
-    private static void EnableDraw(GameObject actor)
-        => ((delegate* unmanaged< IntPtr, void >**)actor.Address)[0][Offsets.EnableDrawVfunc](actor.Address);
+    private static void EnableDraw(IGameObject actor)
+        => ((delegate* unmanaged<nint, void >**)actor.Address)[0][Offsets.EnableDrawVfunc](actor.Address);
 
     // Check whether we currently are in GPose.
     // Also clear the name list.
@@ -57,7 +57,7 @@ public unsafe partial class RedrawService : IService
     // obj will be the object itself (or null) and false will be returned.
     // If we are in GPose and a game object with the same name as the original actor is found,
     // this will be in obj and true will be returned.
-    private bool FindCorrectActor(int idx, out GameObject? obj)
+    private bool FindCorrectActor(int idx, out IGameObject? obj)
     {
         obj = _objects.GetDalamudObject(idx);
         if (!InGPose || obj == null || IsGPoseActor(idx))
@@ -91,11 +91,11 @@ public unsafe partial class RedrawService : IService
             }
         }
 
-        return obj;
+        return false;
     }
 
     // Do not ever redraw any of the five UI Window actors.
-    private static bool BadRedrawIndices(GameObject? actor, out int tableIndex)
+    private static bool BadRedrawIndices(IGameObject? actor, out int tableIndex)
     {
         if (actor == null)
         {
@@ -155,13 +155,13 @@ public sealed unsafe partial class RedrawService : IDisposable
         _communicator.ModFileChanged.Unsubscribe(OnModFileChanged);
     }
 
-    public static DrawState* ActorDrawState(GameObject actor)
+    public static DrawState* ActorDrawState(IGameObject actor)
         => (DrawState*)(&((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)actor.Address)->RenderFlags);
 
-    private static int ObjectTableIndex(GameObject actor)
+    private static int ObjectTableIndex(IGameObject actor)
         => ((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)actor.Address)->ObjectIndex;
 
-    private void WriteInvisible(GameObject? actor)
+    private void WriteInvisible(IGameObject? actor)
     {
         if (BadRedrawIndices(actor, out var tableIndex))
             return;
@@ -172,7 +172,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             DisableDraw(actor!);
 
-        if (actor is PlayerCharacter
+        if (actor is IPlayerCharacter
          && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
             *ActorDrawState(mountOrOrnament) |= DrawState.Invisibility;
@@ -181,7 +181,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         }
     }
 
-    private void WriteVisible(GameObject? actor)
+    private void WriteVisible(IGameObject? actor)
     {
         if (BadRedrawIndices(actor, out var tableIndex))
             return;
@@ -192,7 +192,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (gPose)
             EnableDraw(actor!);
 
-        if (actor is PlayerCharacter
+        if (actor is IPlayerCharacter
          && _objects.GetDalamudObject(tableIndex + 1) is { ObjectKind: ObjectKind.MountType or ObjectKind.Ornament } mountOrOrnament)
         {
             *ActorDrawState(mountOrOrnament) &= ~DrawState.Invisibility;
@@ -203,7 +203,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         GameObjectRedrawn?.Invoke(actor!.Address, tableIndex);
     }
 
-    private void ReloadActor(GameObject? actor)
+    private void ReloadActor(IGameObject? actor)
     {
         if (BadRedrawIndices(actor, out var tableIndex))
             return;
@@ -214,7 +214,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         _queue.Add(~tableIndex);
     }
 
-    private void ReloadActorAfterGPose(GameObject? actor)
+    private void ReloadActorAfterGPose(IGameObject? actor)
     {
         if (_objects[GPosePlayerIdx].Valid)
         {
@@ -284,21 +284,21 @@ public sealed unsafe partial class RedrawService : IDisposable
         _queue.RemoveRange(numKept, _queue.Count - numKept);
     }
 
-    private static uint GetCurrentAnimationId(GameObject obj)
+    private static uint GetCurrentAnimationId(IGameObject obj)
     {
         var gameObj = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)obj.Address;
         if (gameObj == null || !gameObj->IsCharacter())
             return 0;
 
         var chara = (Character*)gameObj;
-        var ptr   = (byte*)&chara->ActionTimelineManager + 0xF0;
+        var ptr   = (byte*)&chara->Timeline + 0xF0;
         return *(uint*)ptr;
     }
 
-    private static bool DelayRedraw(GameObject obj)
+    private static bool DelayRedraw(IGameObject obj)
         => ((Character*)obj.Address)->Mode switch
         {
-            (Character.CharacterModes)6 => // fishing
+            (CharacterModes)6 => // fishing
                 GetCurrentAnimationId(obj) switch
                 {
                     278 => true, // line out.
@@ -345,7 +345,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         HandleTarget();
     }
 
-    public void RedrawObject(GameObject? actor, RedrawType settings)
+    public void RedrawObject(IGameObject? actor, RedrawType settings)
     {
         switch (settings)
         {
@@ -359,13 +359,13 @@ public sealed unsafe partial class RedrawService : IDisposable
         }
     }
 
-    private GameObject? GetLocalPlayer()
+    private IGameObject? GetLocalPlayer()
     {
         var gPosePlayer = _objects.GetDalamudObject(GPosePlayerIdx);
         return gPosePlayer ?? _objects.GetDalamudObject(0);
     }
 
-    public bool GetName(string lowerName, out GameObject? actor)
+    public bool GetName(string lowerName, out IGameObject? actor)
     {
         (actor, var ret) = lowerName switch
         {
@@ -419,15 +419,14 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (housingManager == null)
             return;
 
-        var currentTerritory = housingManager->CurrentTerritory;
-        if (currentTerritory == null)
-            return;
-        if (!housingManager->IsInside())
+        var currentTerritory = (OutdoorTerritory*) housingManager->CurrentTerritory;
+        if (currentTerritory == null || currentTerritory->GetTerritoryType() is not HousingTerritoryType.Outdoor)
             return;
 
-        foreach (var f in currentTerritory->FurnitureSpan.PointerEnumerator())
+
+        foreach (ref var f in currentTerritory->Furniture)
         {
-            var gameObject = f->Index >= 0 ? currentTerritory->HousingObjectManager.ObjectsSpan[f->Index].Value : null;
+            var gameObject = f.Index >= 0 ? currentTerritory->HousingObjectManager.Objects[f.Index].Value : null;
             if (gameObject == null)
                 continue;
 

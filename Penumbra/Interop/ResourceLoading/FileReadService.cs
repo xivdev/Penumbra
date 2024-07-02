@@ -63,7 +63,7 @@ public unsafe class FileReadService : IDisposable, IRequiredService
         byte?     ret         = null;
         _lastFileThreadResourceManager.Value = resourceManager;
         ReadSqPack?.Invoke(fileDescriptor, ref priority, ref isSync, ref ret);
-        _lastFileThreadResourceManager.Value = IntPtr.Zero;
+        _lastFileThreadResourceManager.Value = nint.Zero;
         return ret ?? _readSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
     }
 
@@ -82,7 +82,7 @@ public unsafe class FileReadService : IDisposable, IRequiredService
     /// So we keep track of them per thread and use them.
     /// </summary>
     private nint GetResourceManager()
-        => !_lastFileThreadResourceManager.IsValueCreated || _lastFileThreadResourceManager.Value == IntPtr.Zero
+        => !_lastFileThreadResourceManager.IsValueCreated || _lastFileThreadResourceManager.Value == nint.Zero
             ? (nint)_resourceManager.ResourceManager
             : _lastFileThreadResourceManager.Value;
 }

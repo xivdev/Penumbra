@@ -39,7 +39,7 @@ public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Cha
 
     private void Detour(DrawDataContainer* drawData, uint slot, ulong weapon, byte d, byte e, byte f, byte g)
     {
-        var gameObject = drawData->Parent;
+        var gameObject = drawData->OwnerObject;
         Penumbra.Log.Verbose($"[{Name}] Triggered with drawData: 0x{(nint)drawData:X}, {slot}, {weapon}, {d}, {e}, {f}, {g}.");
         Invoke(drawData, gameObject, (CharacterWeapon*)(&weapon));
         _task.Result.Original(drawData, slot, weapon, d, e, f, g);

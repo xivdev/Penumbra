@@ -17,7 +17,7 @@ public class ModPanel : IDisposable, IUiService
     private readonly ModPanelTabBar        _tabs;
     private          bool                  _resetCursor;
 
-    public ModPanel(DalamudPluginInterface pi, ModFileSystemSelector selector, ModEditWindow editWindow, ModPanelTabBar tabs,
+    public ModPanel(IDalamudPluginInterface pi, ModFileSystemSelector selector, ModEditWindow editWindow, ModPanelTabBar tabs,
         MultiModPanel multiModPanel, CommunicatorService communicator)
     {
         _selector                  =  selector;

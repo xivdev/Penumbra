@@ -25,8 +25,8 @@ public unsafe class ResourceManagerService : IRequiredService
         ref var manager = ref *ResourceManager;
         var     catIdx  = (uint)cat >> 0x18;
         cat = (ResourceCategory)(ushort)cat;
-        ref var category = ref manager.ResourceGraph->ContainerArraySpan[(int)cat];
-        var     extMap   = FindInMap(category.CategoryMapsSpan[(int)catIdx].Value, (uint)ext);
+        ref var category = ref manager.ResourceGraph->Containers[(int)cat];
+        var     extMap   = FindInMap(category.CategoryMaps[(int)catIdx].Value, (uint)ext);
         if (extMap == null)
             return null;
 
@@ -44,10 +44,10 @@ public unsafe class ResourceManagerService : IRequiredService
         ref var manager = ref *ResourceManager;
         foreach (var resourceType in Enum.GetValues<ResourceCategory>().SkipLast(1))
         {
-            ref var graph = ref manager.ResourceGraph->ContainerArraySpan[(int)resourceType];
+            ref var graph = ref manager.ResourceGraph->Containers[(int)resourceType];
             for (var i = 0; i < 20; ++i)
             {
-                var map = graph.CategoryMapsSpan[i];
+                var map = graph.CategoryMaps[i];
                 if (map.Value != null)
                     action(resourceType, map, i);
             }
@@ -79,25 +79,10 @@ public unsafe class ResourceManagerService : IRequiredService
         where TKey : unmanaged, IComparable<TKey>
         where TValue : unmanaged
     {
-        if (map == null || map->Count == 0)
+        if (map == null)
             return null;
 
-        var node = map->Head->Parent;
-        while (!node->IsNil)
-        {
-            switch (key.CompareTo(node->KeyValuePair.Item1))
-            {
-                case 0: return &node->KeyValuePair.Item2;
-                case < 0:
-                    node = node->Left;
-                    break;
-                default:
-                    node = node->Right;
-                    break;
-            }
-        }
-
-        return null;
+        return map->TryGetValuePointer(key, out var val) ? val : null;
     }
 
     // Iterate in tree-order through a map, applying action to each KeyValuePair.
@@ -105,10 +90,10 @@ public unsafe class ResourceManagerService : IRequiredService
         where TKey : unmanaged
         where TValue : unmanaged
     {
-        if (map == null || map->Count == 0)
+        if (map == null)
             return;
 
-        for (var node = map->SmallestValue; !node->IsNil; node = node->Next())
-            action(node->KeyValuePair.Item1, node->KeyValuePair.Item2);
+        foreach (var (key, value) in *map)
+            action(key, value);
     }
 }

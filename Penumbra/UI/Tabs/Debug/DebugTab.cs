@@ -37,7 +37,6 @@ using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
-using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
@@ -437,8 +436,8 @@ public class DebugTab : Window, ITab, IUiService
                 : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
             var identifier = _actors.FromObject(obj, out _, false, true, false);
             ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
-            var id = obj.AsObject->ObjectKind == (byte)ObjectKind.BattleNpc
-                ? $"{identifier.DataId} | {obj.AsObject->DataID}"
+            var id = obj.AsObject->ObjectKind is ObjectKind.BattleNpc
+                ? $"{identifier.DataId} | {obj.AsObject->BaseId}"
                 : identifier.DataId.ToString();
             ImGuiUtil.DrawTableColumn(id);
         }
@@ -587,11 +586,11 @@ public class DebugTab : Window, ITab, IUiService
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("Group Members");
-                    ImGuiUtil.DrawTableColumn(GroupManager.Instance()->MemberCount.ToString());
+                    ImGuiUtil.DrawTableColumn(GroupManager.Instance()->MainGroup.MemberCount.ToString());
                     for (var i = 0; i < 8; ++i)
                     {
                         ImGuiUtil.DrawTableColumn($"Member #{i}");
-                        var member = GroupManager.Instance()->GetPartyMemberByIndex(i);
+                        var member = GroupManager.Instance()->MainGroup.GetPartyMemberByIndex(i);
                         ImGuiUtil.DrawTableColumn(member == null ? "NULL" : new ByteString(member->Name).ToString());
                     }
                 }
@@ -612,7 +611,7 @@ public class DebugTab : Window, ITab, IUiService
                     if (table)
                         for (var i = 0; i < 8; ++i)
                         {
-                            ref var c = ref agent->Data->CharacterArraySpan[i];
+                            ref var c = ref agent->Data->Characters[i];
                             ImGuiUtil.DrawTableColumn($"Character {i}");
                             var name = c.Name1.ToString();
                             ImGuiUtil.DrawTableColumn(name.Length == 0 ? "NULL" : $"{name} ({c.WorldId})");

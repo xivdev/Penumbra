@@ -17,7 +17,7 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
     public GmpHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("GetGmpEntry", Sigs.GetGmpEntry, Detour, metaState.Config.EnableMods);
+        Task = hooks.CreateHook<Delegate>("GetGmpEntry", Sigs.GetGmpEntry, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

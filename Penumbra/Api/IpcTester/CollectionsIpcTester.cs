@@ -13,7 +13,7 @@ using ImGuiClip = OtterGui.ImGuiClip;
 
 namespace Penumbra.Api.IpcTester;
 
-public class CollectionsIpcTester(DalamudPluginInterface pi) : IUiService
+public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
 {
     private int               _objectIdx;
     private string            _collectionIdString = string.Empty;

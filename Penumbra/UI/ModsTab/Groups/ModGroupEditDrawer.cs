@@ -1,5 +1,5 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;

@@ -12,7 +12,7 @@ namespace Penumbra.Api.IpcTester;
 
 public class PluginStateIpcTester : IUiService, IDisposable
 {
-    private readonly DalamudPluginInterface        _pi;
+    private readonly IDalamudPluginInterface        _pi;
     public readonly  EventSubscriber<string, bool> ModDirectoryChanged;
     public readonly  EventSubscriber               Initialized;
     public readonly  EventSubscriber               Disposed;
@@ -29,7 +29,7 @@ public class PluginStateIpcTester : IUiService, IDisposable
     private DateTimeOffset _lastEnabledChange = DateTimeOffset.UnixEpoch;
     private bool?          _lastEnabledValue;
 
-    public PluginStateIpcTester(DalamudPluginInterface pi)
+    public PluginStateIpcTester(IDalamudPluginInterface pi)
     {
         _pi                 = pi;
         ModDirectoryChanged = IpcSubscribers.ModDirectoryChanged.Subscriber(pi, UpdateModDirectoryChanged);

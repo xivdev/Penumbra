@@ -1,5 +1,6 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
@@ -121,7 +122,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
     public static Vector2 TypeFilterIconSize
         => new(2 * ImGui.GetTextLineHeight());
 
-    public ChangedItemDrawer(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator,
+    public ChangedItemDrawer(IUiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator,
         Configuration config)
     {
         _items = gameData.GetExcelSheet<Item>()!;
@@ -417,7 +418,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
         };
 
     /// <summary> Initialize the icons. </summary>
-    private bool CreateEquipSlotIcons(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider)
+    private bool CreateEquipSlotIcons(IUiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider)
     {
         using var equipTypeIcons = uiBuilder.LoadUld("ui/uld/ArmouryBoard.uld");
 
@@ -441,20 +442,20 @@ public class ChangedItemDrawer : IDisposable, IUiService
         Add(ChangedItemIcon.Neck,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 9));
         Add(ChangedItemIcon.Wrists,        equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 10));
         Add(ChangedItemIcon.Finger,        equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 11));
-        Add(ChangedItemIcon.Monster,       textureProvider.GetTextureFromGame("ui/icon/062000/062042_hr1.tex", true));
-        Add(ChangedItemIcon.Demihuman,     textureProvider.GetTextureFromGame("ui/icon/062000/062041_hr1.tex", true));
-        Add(ChangedItemIcon.Customization, textureProvider.GetTextureFromGame("ui/icon/062000/062043_hr1.tex", true));
-        Add(ChangedItemIcon.Action,        textureProvider.GetTextureFromGame("ui/icon/062000/062001_hr1.tex", true));
-        Add(ChangedItemIcon.Emote,         LoadEmoteTexture(gameData, uiBuilder));
-        Add(ChangedItemIcon.Unknown,       LoadUnknownTexture(gameData, uiBuilder));
-        Add(AllFlags,                      textureProvider.GetTextureFromGame("ui/icon/114000/114052_hr1.tex", true));
+        Add(ChangedItemIcon.Monster,       textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062042_hr1.tex")!));
+        Add(ChangedItemIcon.Demihuman,     textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062041_hr1.tex")!));
+        Add(ChangedItemIcon.Customization, textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062043_hr1.tex")!));
+        Add(ChangedItemIcon.Action,        textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/062000/062001_hr1.tex")!));
+        Add(ChangedItemIcon.Emote,         LoadEmoteTexture(gameData, textureProvider));
+        Add(ChangedItemIcon.Unknown,       LoadUnknownTexture(gameData, textureProvider));
+        Add(AllFlags,                      textureProvider.CreateFromTexFile(gameData.GetFile<TexFile>("ui/icon/114000/114052_hr1.tex")!));
 
         _smallestIconWidth = _icons.Values.Min(i => i.Width);
 
         return true;
     }
 
-    private static unsafe IDalamudTextureWrap? LoadUnknownTexture(IDataManager gameData, UiBuilder uiBuilder)
+    private static unsafe IDalamudTextureWrap? LoadUnknownTexture(IDataManager gameData, ITextureProvider textureProvider)
     {
         var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
         if (unk == null)
@@ -466,10 +467,10 @@ public class ChangedItemDrawer : IDisposable, IUiService
         for (var y = 0; y < unk.Header.Height; ++y)
             image.AsSpan(4 * y * unk.Header.Width, 4 * unk.Header.Width).CopyTo(bytes.AsSpan(4 * y * unk.Header.Height + diff));
 
-        return uiBuilder.LoadImageRaw(bytes, unk.Header.Height, unk.Header.Height, 4);
+        return textureProvider.CreateFromRaw(RawImageSpecification.Rgba32(unk.Header.Height, unk.Header.Height), bytes, "Penumbra.UnkItemIcon");
     }
 
-    private static unsafe IDalamudTextureWrap? LoadEmoteTexture(IDataManager gameData, UiBuilder uiBuilder)
+    private static unsafe IDalamudTextureWrap? LoadEmoteTexture(IDataManager gameData, ITextureProvider textureProvider)
     {
         var emote = gameData.GetFile<TexFile>("ui/icon/000000/000019_hr1.tex");
         if (emote == null)
@@ -486,6 +487,6 @@ public class ChangedItemDrawer : IDisposable, IUiService
             }
         }
 
-        return uiBuilder.LoadImageRaw(image2, emote.Header.Width, emote.Header.Height, 4);
+        return textureProvider.CreateFromRaw(RawImageSpecification.Rgba32(emote.Header.Width, emote.Header.Height), image2, "Penumbra.EmoteItemIcon");
     }
 }

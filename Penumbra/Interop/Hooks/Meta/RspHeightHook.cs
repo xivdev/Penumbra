@@ -19,7 +19,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
     {
         _metaState = metaState;
         _metaFileManager = metaFileManager;
-        Task = hooks.CreateHook<Delegate>("GetRspHeight", Sigs.GetRspHeight, Detour, metaState.Config.EnableMods);
+        Task = hooks.CreateHook<Delegate>("GetRspHeight", Sigs.GetRspHeight, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
         _metaState.Config.ModsEnabled += Toggle;
     }
 

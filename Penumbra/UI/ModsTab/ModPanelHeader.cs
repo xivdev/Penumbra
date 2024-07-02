@@ -20,7 +20,7 @@ public class ModPanelHeader : IDisposable
     private readonly CommunicatorService _communicator;
     private          float               _lastPreSettingsHeight = 0;
 
-    public ModPanelHeader(DalamudPluginInterface pi, CommunicatorService communicator)
+    public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator)
     {
         _communicator = communicator;
         _nameFont     = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));

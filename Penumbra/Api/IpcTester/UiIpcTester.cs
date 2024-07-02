@@ -10,7 +10,7 @@ namespace Penumbra.Api.IpcTester;
 
 public class UiIpcTester : IUiService, IDisposable
 {
-    private readonly DalamudPluginInterface                              _pi;
+    private readonly IDalamudPluginInterface                              _pi;
     public readonly  EventSubscriber<string, float, float>               PreSettingsTabBar;
     public readonly  EventSubscriber<string>                             PreSettingsPanel;
     public readonly  EventSubscriber<string>                             PostEnabled;
@@ -28,7 +28,7 @@ public class UiIpcTester : IUiService, IDisposable
     private string         _modName     = string.Empty;
     private PenumbraApiEc  _ec          = PenumbraApiEc.Success;
 
-    public UiIpcTester(DalamudPluginInterface pi)
+    public UiIpcTester(IDalamudPluginInterface pi)
     {
         _pi                   = pi;
         PreSettingsTabBar     = IpcSubscribers.PreSettingsTabBarDraw.Subscriber(pi, UpdateLastDrawnMod);

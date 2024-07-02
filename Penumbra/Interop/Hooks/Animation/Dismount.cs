@@ -15,7 +15,7 @@ public sealed unsafe class Dismount : FastHook<Dismount.Delegate>
     {
         _state              = state;
         _collectionResolver = collectionResolver;
-        Task                = hooks.CreateHook<Delegate>("Dismount", Sigs.Dismount, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Dismount", Sigs.Dismount, Detour, HookSettings.VfxIdentificationHooks);
     }
 
     public delegate void Delegate(nint a1, nint a2);

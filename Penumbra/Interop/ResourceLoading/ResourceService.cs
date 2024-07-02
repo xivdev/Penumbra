@@ -127,7 +127,7 @@ public unsafe class ResourceService : IDisposable, IRequiredService
 
     #endregion
 
-    private delegate IntPtr ResourceHandlePrototype(ResourceHandle* handle);
+    private delegate nint ResourceHandlePrototype(ResourceHandle* handle);
 
     #region IncRef
 

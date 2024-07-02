@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
-using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
@@ -15,7 +14,7 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("Calculate Height", (nint)Character.MemberFunctionPointers.CalculateHeight, Detour, true);
+        Task = hooks.CreateHook<Delegate>("Calculate Height", (nint)Character.MemberFunctionPointers.CalculateHeight, Detour, HookSettings.MetaParentHooks);
     }
 
     public delegate ulong Delegate(Character* character);

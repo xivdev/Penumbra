@@ -287,7 +287,7 @@ public partial class ModEditWindow
         {
             fixed (ushort* v2 = &v)
             {
-                return ImGui.InputScalar(label, ImGuiDataType.U16, (nint)v2, IntPtr.Zero, IntPtr.Zero, "%04X", flags);
+                return ImGui.InputScalar(label, ImGuiDataType.U16, (nint)v2, nint.Zero, nint.Zero, "%04X", flags);
             }
         }
 

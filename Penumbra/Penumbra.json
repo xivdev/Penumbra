@@ -8,7 +8,7 @@
     "RepoUrl": "https://github.com/xivdev/Penumbra",
     "ApplicableVersion": "any",
     "Tags": [ "modding" ],
-    "DalamudApiLevel": 9,
+    "DalamudApiLevel": 10,
     "LoadPriority": 69420,
     "LoadState": 2,
     "LoadSync": true,

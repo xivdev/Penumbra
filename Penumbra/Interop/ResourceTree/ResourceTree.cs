@@ -62,7 +62,7 @@ public class ResourceTree
         var equipment = modelType switch
         {
             CharacterBase.ModelType.Human     => new ReadOnlySpan<CharacterArmor>(&human->Head, 10),
-            CharacterBase.ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10),
+            CharacterBase.ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(Unsafe.AsPointer(ref character->DrawData.EquipmentModelIds[0]), 10),
             _                                 => ReadOnlySpan<CharacterArmor>.Empty,
         };
         ModelId       = character->CharacterData.ModelCharaId;

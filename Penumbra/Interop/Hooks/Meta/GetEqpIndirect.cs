@@ -15,7 +15,7 @@ public sealed unsafe class GetEqpIndirect : FastHook<GetEqpIndirect.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Get EQP Indirect", Sigs.GetEqpIndirect, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Get EQP Indirect", Sigs.GetEqpIndirect, Detour, HookSettings.MetaParentHooks);
     }
 
     public delegate void Delegate(DrawObject* drawObject);

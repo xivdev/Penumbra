@@ -7,7 +7,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ResolveIpcTester(DalamudPluginInterface pi) : IUiService
+public class ResolveIpcTester(IDalamudPluginInterface pi) : IUiService
 {
     private string                       _currentResolvePath = string.Empty;
     private string                       _currentReversePath = string.Empty;

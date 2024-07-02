@@ -34,7 +34,7 @@ public unsafe class FontReloader : IService
             if (framework == null)
                 return;
 
-            var uiModule = framework->GetUiModule();
+            var uiModule = framework->GetUIModule();
             if (uiModule == null)
                 return;
 
@@ -43,7 +43,7 @@ public unsafe class FontReloader : IService
                 return;
 
             _atkModule       = &atkModule->AtkModule;
-            _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->vtbl)[Offsets.ReloadFontsVfunc];
+            _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->VirtualTable)[Offsets.ReloadFontsVfunc];
         });
     }
 }

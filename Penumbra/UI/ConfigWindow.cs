@@ -16,7 +16,7 @@ namespace Penumbra.UI;
 
 public sealed class ConfigWindow : Window, IUiService
 {
-    private readonly DalamudPluginInterface _pluginInterface;
+    private readonly IDalamudPluginInterface _pluginInterface;
     private readonly Configuration          _config;
     private readonly PerformanceTracker     _tracker;
     private readonly ValidityChecker        _validityChecker;
@@ -24,7 +24,7 @@ public sealed class ConfigWindow : Window, IUiService
     private          ConfigTabBar           _configTabs = null!;
     private          string?                _lastException;
 
-    public ConfigWindow(PerformanceTracker tracker, DalamudPluginInterface pi, Configuration config, ValidityChecker checker,
+    public ConfigWindow(PerformanceTracker tracker, IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial)
         : base(GetLabel(checker))
     {

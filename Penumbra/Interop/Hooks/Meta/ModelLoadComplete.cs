@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
-using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
@@ -14,7 +13,7 @@ public sealed unsafe class ModelLoadComplete : FastHook<ModelLoadComplete.Delega
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Model Load Complete", vtables.HumanVTable[58], Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Model Load Complete", vtables.HumanVTable[58], Detour, HookSettings.MetaParentHooks);
     }
 
     public delegate void Delegate(DrawObject* drawObject);

@@ -13,14 +13,14 @@ namespace Penumbra.Api.IpcTester;
 
 public class RedrawingIpcTester : IUiService, IDisposable
 {
-    private readonly DalamudPluginInterface     _pi;
+    private readonly IDalamudPluginInterface     _pi;
     private readonly ObjectManager              _objects;
     public readonly  EventSubscriber<nint, int> Redrawn;
 
     private int    _redrawIndex;
     private string _lastRedrawnString = "None";
 
-    public RedrawingIpcTester(DalamudPluginInterface pi, ObjectManager objects)
+    public RedrawingIpcTester(IDalamudPluginInterface pi, ObjectManager objects)
     {
         _pi      = pi;
         _objects = objects;

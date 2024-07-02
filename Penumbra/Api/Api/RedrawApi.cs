@@ -13,7 +13,7 @@ public class RedrawApi(RedrawService redrawService) : IPenumbraApiRedraw, IApiSe
     public void RedrawObject(string name, RedrawType setting)
         => redrawService.RedrawObject(name, setting);
 
-    public void RedrawObject(GameObject? gameObject, RedrawType setting)
+    public void RedrawObject(IGameObject? gameObject, RedrawType setting)
         => redrawService.RedrawObject(gameObject, setting);
 
     public void RedrawAll(RedrawType setting)

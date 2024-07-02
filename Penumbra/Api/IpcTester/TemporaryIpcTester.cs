@@ -17,7 +17,7 @@ using Penumbra.Services;
 namespace Penumbra.Api.IpcTester;
 
 public class TemporaryIpcTester(
-    DalamudPluginInterface pi,
+    IDalamudPluginInterface pi,
     ModManager modManager,
     CollectionManager collections,
     TempModManager tempMods,

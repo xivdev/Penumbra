@@ -38,7 +38,7 @@ public sealed class CollectionsTab : IDisposable, ITab, IUiService
         }
     }
 
-    public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
+    public CollectionsTab(IDalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
         CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, SaveService saveService)
     {
         _config    = configuration.Ephemeral;

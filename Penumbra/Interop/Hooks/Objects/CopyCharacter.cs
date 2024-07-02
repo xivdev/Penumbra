@@ -20,7 +20,7 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
     private readonly Task<Hook<Delegate>> _task;
 
     public nint Address
-        => (nint)CharacterSetup.MemberFunctionPointers.CopyFromCharacter;
+        => (nint)CharacterSetupContainer.MemberFunctionPointers.CopyFromCharacter;
 
     public void Enable()
         => _task.Result.Enable();
@@ -34,9 +34,9 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
     public bool Finished
         => _task.IsCompletedSuccessfully;
 
-    private delegate ulong Delegate(CharacterSetup* target, Character* source, uint unk);
+    private delegate ulong Delegate(CharacterSetupContainer* target, Character* source, uint unk);
 
-    private ulong Detour(CharacterSetup* target, Character* source, uint unk)
+    private ulong Detour(CharacterSetupContainer* target, Character* source, uint unk)
     {
         // TODO: update when CS updated.
         var character = ((Character**)target)[1];

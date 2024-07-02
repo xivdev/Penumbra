@@ -1,5 +1,5 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using OtterGui.Services;
@@ -13,23 +13,25 @@ namespace Penumbra.UI;
 public class LaunchButton : IDisposable, IUiService
 {
     private readonly ConfigWindow     _configWindow;
-    private readonly UiBuilder        _uiBuilder;
+    private readonly IUiBuilder       _uiBuilder;
     private readonly ITitleScreenMenu _title;
     private readonly string           _fileName;
+    private readonly ITextureProvider _textureProvider;
 
-    private IDalamudTextureWrap?  _icon;
-    private TitleScreenMenuEntry? _entry;
+    private IDalamudTextureWrap?           _icon;
+    private IReadOnlyTitleScreenMenuEntry? _entry;
 
     /// <summary>
     /// Register the launch button to be created on the next draw event.
     /// </summary>
-    public LaunchButton(DalamudPluginInterface pi, ITitleScreenMenu title, ConfigWindow ui)
+    public LaunchButton(IDalamudPluginInterface pi, ITitleScreenMenu title, ConfigWindow ui, ITextureProvider textureProvider)
     {
-        _uiBuilder    = pi.UiBuilder;
-        _configWindow = ui;
-        _title        = title;
-        _icon         = null;
-        _entry        = null;
+        _uiBuilder       = pi.UiBuilder;
+        _configWindow    = ui;
+        _textureProvider = textureProvider;
+        _title           = title;
+        _icon            = null;
+        _entry           = null;
 
         _fileName       =  Path.Combine(pi.AssemblyLocation.DirectoryName!, "tsmLogo.png");
         _uiBuilder.Draw += CreateEntry;
@@ -49,7 +51,8 @@ public class LaunchButton : IDisposable, IUiService
     {
         try
         {
-            _icon = _uiBuilder.LoadImage(_fileName);
+            // TODO: update when API updated.
+            _icon = _textureProvider.GetFromFile(_fileName).RentAsync().Result;
             if (_icon != null)
                 _entry = _title.AddEntry("Manage Penumbra", _icon, OnTriggered);
 

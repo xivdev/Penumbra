@@ -14,7 +14,7 @@ public sealed unsafe class PlayFootstep : FastHook<PlayFootstep.Delegate>
     {
         _state              = state;
         _collectionResolver = collectionResolver;
-        Task                = hooks.CreateHook<Delegate>("Play Footstep", Sigs.FootStepSound, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Play Footstep", Sigs.FootStepSound, Detour, HookSettings.VfxIdentificationHooks);
     }
 
     public delegate void Delegate(GameObject* gameObject, int id, int unk);

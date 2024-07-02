@@ -2,7 +2,7 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.GameFonts;
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
@@ -21,7 +21,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.CollectionTab;
 
 public sealed class CollectionPanel(
-    DalamudPluginInterface pi,
+    IDalamudPluginInterface pi,
     CommunicatorService communicator,
     CollectionManager manager,
     CollectionSelector selector,
@@ -318,7 +318,7 @@ public sealed class CollectionPanel(
         var       button   = ImGui.Button(text, width) || ImGui.IsItemClicked(ImGuiMouseButton.Right);
         var       hovered  = redundancy.Length > 0 && ImGui.IsItemHovered();
         DrawIndividualDragSource(text, id);
-        DrawIndividualDragTarget(text, id);
+        DrawIndividualDragTarget(id);
         if (!invalid)
         {
             selector.DragTargetAssignment(type, id);
@@ -349,7 +349,7 @@ public sealed class CollectionPanel(
         _draggedIndividualAssignment = _active.Individuals.Index(id);
     }
 
-    private void DrawIndividualDragTarget(string text, ActorIdentifier id)
+    private void DrawIndividualDragTarget(ActorIdentifier id)
     {
         if (!id.IsValid)
             return;
