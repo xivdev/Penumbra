@@ -8,7 +8,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Widgets;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Tabs;

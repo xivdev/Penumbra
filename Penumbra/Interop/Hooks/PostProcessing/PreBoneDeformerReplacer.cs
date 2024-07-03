@@ -4,12 +4,13 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.SafeHandles;
 using Penumbra.String.Classes;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
-namespace Penumbra.Interop.Services;
+namespace Penumbra.Interop.Hooks.PostProcessing;
 
 public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredService
 {
@@ -29,17 +30,16 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     private readonly IFramework         _framework;
 
     public PreBoneDeformerReplacer(CharacterUtility utility, CollectionResolver collectionResolver, ResourceLoader resourceLoader,
-        IGameInteropProvider interop, IFramework framework, CharacterBaseVTables vTables)
+        HookManager hooks, IFramework framework, CharacterBaseVTables vTables)
     {
-        interop.InitializeFromAttributes(this);
-        _utility                 = utility;
-        _collectionResolver      = collectionResolver;
-        _resourceLoader          = resourceLoader;
-        _framework               = framework;
-        _humanSetupScalingHook   = interop.HookFromAddress<CharacterBaseSetupScalingDelegate>(vTables.HumanVTable[57], SetupScaling);
-        _humanCreateDeformerHook = interop.HookFromAddress<CharacterBaseCreateDeformerDelegate>(vTables.HumanVTable[91], CreateDeformer);
-        _humanSetupScalingHook.Enable();
-        _humanCreateDeformerHook.Enable();
+        _utility            = utility;
+        _collectionResolver = collectionResolver;
+        _resourceLoader     = resourceLoader;
+        _framework          = framework;
+        _humanSetupScalingHook = hooks.CreateHook<CharacterBaseSetupScalingDelegate>("HumanSetupScaling", vTables.HumanVTable[58], SetupScaling,
+            HookSettings.PostProcessingHooks).Result;
+        _humanCreateDeformerHook = hooks.CreateHook<CharacterBaseCreateDeformerDelegate>("HumanCreateDeformer", vTables.HumanVTable[101],
+            CreateDeformer, HookSettings.PostProcessingHooks).Result;
     }
 
     public void Dispose()

@@ -5,7 +5,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
-namespace Penumbra.Interop.ResourceLoading;
+namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 /// <summary>
 /// To allow XIV to load files of arbitrary path length,
@@ -19,7 +19,8 @@ public unsafe class CreateFileWHook : IDisposable, IRequiredService
     public CreateFileWHook(IGameInteropProvider interop)
     {
         _createFileWHook = interop.HookFromImport<CreateFileWDelegate>(null, "KERNEL32.dll", "CreateFileW", 0, CreateFileWDetour);
-        _createFileWHook.Enable();
+        if (HookSettings.ReplacementHooks)
+            _createFileWHook.Enable();
     }
 
     /// <summary>

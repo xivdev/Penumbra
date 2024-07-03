@@ -1,7 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Services;

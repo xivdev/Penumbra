@@ -1,6 +1,4 @@
 using Dalamud.Hooking;
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
@@ -10,9 +8,11 @@ using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Services;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using CSModelRenderer = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRenderer;
+using ModelRenderer = Penumbra.Interop.Services.ModelRenderer;
 
-namespace Penumbra.Interop.Services;
+namespace Penumbra.Interop.Hooks.PostProcessing;
 
 public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredService
 {
@@ -29,8 +29,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     private readonly Hook<CharacterBaseOnRenderMaterialDelegate> _humanOnRenderMaterialHook;
 
-    [Signature(Sigs.ModelRendererOnRenderMaterial, DetourName = nameof(ModelRendererOnRenderMaterialDetour))]
-    private readonly Hook<ModelRendererOnRenderMaterialDelegate> _modelRendererOnRenderMaterialHook = null!;
+    private readonly Hook<ModelRendererOnRenderMaterialDelegate> _modelRendererOnRenderMaterialHook;
 
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
     private readonly CommunicatorService      _communicator;
@@ -59,19 +58,18 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => _moddedCharacterGlassShpkCount;
 
     public ShaderReplacementFixer(ResourceHandleDestructor resourceHandleDestructor, CharacterUtility utility, ModelRenderer modelRenderer,
-        CommunicatorService communicator, IGameInteropProvider interop, CharacterBaseVTables vTables)
+        CommunicatorService communicator, HookManager hooks, CharacterBaseVTables vTables)
     {
-        interop.InitializeFromAttributes(this);
         _resourceHandleDestructor = resourceHandleDestructor;
         _utility                  = utility;
         _modelRenderer            = modelRenderer;
         _communicator             = communicator;
-        _humanOnRenderMaterialHook =
-            interop.HookFromAddress<CharacterBaseOnRenderMaterialDelegate>(vTables.HumanVTable[62], OnRenderHumanMaterial);
+        _humanOnRenderMaterialHook = hooks.CreateHook<CharacterBaseOnRenderMaterialDelegate>("Human.OnRenderMaterial", vTables.HumanVTable[62],
+            OnRenderHumanMaterial, HookSettings.PostProcessingHooks).Result;
+        _modelRendererOnRenderMaterialHook = hooks.CreateHook<ModelRendererOnRenderMaterialDelegate>("ModelRenderer.OnRenderMaterial",
+            Sigs.ModelRendererOnRenderMaterial, ModelRendererOnRenderMaterialDetour, HookSettings.PostProcessingHooks).Result;
         _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.ShaderReplacementFixer);
         _resourceHandleDestructor.Subscribe(OnResourceHandleDestructor, ResourceHandleDestructor.Priority.ShaderReplacementFixer);
-        _humanOnRenderMaterialHook.Enable();
-        _modelRendererOnRenderMaterialHook.Enable();
     }
 
     public void Dispose()

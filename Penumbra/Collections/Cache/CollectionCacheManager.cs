@@ -5,7 +5,7 @@ using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;

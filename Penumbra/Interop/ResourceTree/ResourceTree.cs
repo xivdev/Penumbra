@@ -5,7 +5,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.Services;
+using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
@@ -31,7 +31,8 @@ public class ResourceTree
     public CustomizeData CustomizeData;
     public GenderRace    RaceCode;
 
-    public ResourceTree(string name, string anonymizedName, int gameObjectIndex, nint gameObjectAddress, nint drawObjectAddress, bool localPlayerRelated, bool playerRelated, bool networked, string collectionName, string anonymizedCollectionName)
+    public ResourceTree(string name, string anonymizedName, int gameObjectIndex, nint gameObjectAddress, nint drawObjectAddress,
+        bool localPlayerRelated, bool playerRelated, bool networked, string collectionName, string anonymizedCollectionName)
     {
         Name                     = name;
         AnonymizedName           = anonymizedName;
@@ -61,9 +62,10 @@ public class ResourceTree
         var human     = modelType == CharacterBase.ModelType.Human ? (Human*)model : null;
         var equipment = modelType switch
         {
-            CharacterBase.ModelType.Human     => new ReadOnlySpan<CharacterArmor>(&human->Head, 10),
-            CharacterBase.ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(Unsafe.AsPointer(ref character->DrawData.EquipmentModelIds[0]), 10),
-            _                                 => ReadOnlySpan<CharacterArmor>.Empty,
+            CharacterBase.ModelType.Human => new ReadOnlySpan<CharacterArmor>(&human->Head, 10),
+            CharacterBase.ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(
+                Unsafe.AsPointer(ref character->DrawData.EquipmentModelIds[0]), 10),
+            _ => ReadOnlySpan<CharacterArmor>.Empty,
         };
         ModelId       = character->CharacterData.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
@@ -112,15 +114,17 @@ public class ResourceTree
         {
             if (baseSubObject->GetObjectType() != FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType.CharacterBase)
                 continue;
+
             var subObject = (CharacterBase*)baseSubObject;
 
             if (subObject->GetModelType() != CharacterBase.ModelType.Weapon)
                 continue;
-            var weapon  = (Weapon*)subObject;
+
+            var weapon = (Weapon*)subObject;
 
             // This way to tell apart MainHand and OffHand is not always accurate, but seems good enough for what we're doing with it.
             var slot       = weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand;
-            var equipment  = new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, (byte)weapon->ModelUnknown);
+            var equipment  = new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, new StainIds(weapon->Stain1, weapon->Stain2));
             var weaponType = weapon->SecondaryId;
 
             var genericContext = globalContext.CreateContext(subObject, 0xFFFFFFFFu, slot, equipment, weaponType);
@@ -152,6 +156,7 @@ public class ResourceTree
 
             ++weaponIndex;
         }
+
         Nodes.InsertRange(0, weaponNodes);
     }
 
@@ -167,10 +172,11 @@ public class ResourceTree
             {
                 if (globalContext.WithUiData)
                 {
-                    pbdNode = pbdNode.Clone();
+                    pbdNode              = pbdNode.Clone();
                     pbdNode.FallbackName = "Racial Deformer";
-                    pbdNode.Icon = ChangedItemDrawer.ChangedItemIcon.Customization;
+                    pbdNode.Icon         = ChangedItemDrawer.ChangedItemIcon.Customization;
                 }
+
                 Nodes.Add(pbdNode);
             }
         }
@@ -184,10 +190,11 @@ public class ResourceTree
         {
             if (globalContext.WithUiData)
             {
-                decalNode = decalNode.Clone();
+                decalNode              = decalNode.Clone();
                 decalNode.FallbackName = "Face Decal";
                 decalNode.Icon         = ChangedItemDrawer.ChangedItemIcon.Customization;
             }
+
             Nodes.Add(decalNode);
         }
 
@@ -200,10 +207,11 @@ public class ResourceTree
         {
             if (globalContext.WithUiData)
             {
-                legacyDecalNode = legacyDecalNode.Clone();
+                legacyDecalNode              = legacyDecalNode.Clone();
                 legacyDecalNode.FallbackName = "Legacy Body Decal";
                 legacyDecalNode.Icon         = ChangedItemDrawer.ChangedItemIcon.Customization;
             }
+
             Nodes.Add(legacyDecalNode);
         }
     }

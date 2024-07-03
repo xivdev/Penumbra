@@ -12,7 +12,7 @@ using Penumbra.String.Classes;
 using Penumbra.Util;
 using CSResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
-namespace Penumbra.Interop.ResourceLoading;
+namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public unsafe class ResourceService : IDisposable, IRequiredService
 {
@@ -24,16 +24,19 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         _performance     = performance;
         _resourceManager = resourceManager;
         interop.InitializeFromAttributes(this);
-        _getResourceSyncHook.Enable();
-        _getResourceAsyncHook.Enable();
         _incRefHook = interop.HookFromAddress<ResourceHandlePrototype>(
             (nint)CSResourceHandle.MemberFunctionPointers.IncRef,
             ResourceHandleIncRefDetour);
-        _incRefHook.Enable();
         _decRefHook = interop.HookFromAddress<ResourceHandleDecRefPrototype>(
             (nint)CSResourceHandle.MemberFunctionPointers.DecRef,
             ResourceHandleDecRefDetour);
-        _decRefHook.Enable();
+        if (HookSettings.ReplacementHooks)
+        {
+            _getResourceSyncHook.Enable();
+            _getResourceAsyncHook.Enable();
+            _incRefHook.Enable();
+            _decRefHook.Enable();
+        }
     }
 
     public ResourceHandle* GetResource(ResourceCategory category, ResourceType type, ByteString path)

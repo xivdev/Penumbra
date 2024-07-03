@@ -3,8 +3,8 @@ using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Processing;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 

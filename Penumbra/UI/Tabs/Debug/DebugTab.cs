@@ -25,7 +25,6 @@ using Penumbra.GameData.Interop;
 using Penumbra.Import.Structs;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Mods;
@@ -40,6 +39,8 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
+using Penumbra.Interop.Hooks.PostProcessing;
+using Penumbra.Interop.Hooks.ResourceLoading;
 
 namespace Penumbra.UI.Tabs.Debug;
 

@@ -11,7 +11,7 @@ public sealed unsafe class LoadMtrlTex : FastHook<LoadMtrlTex.Delegate>
     public LoadMtrlTex(HookManager hooks, GameState gameState)
     {
         _gameState = gameState;
-        Task       = hooks.CreateHook<Delegate>("Load Material Textures", Sigs.LoadMtrlTex, Detour, true);
+        Task       = hooks.CreateHook<Delegate>("Load Material Textures", Sigs.LoadMtrlTex, Detour, HookSettings.ResourceHooks);
     }
 
     public delegate byte Delegate(MaterialResourceHandle* mtrlResourceHandle);

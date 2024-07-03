@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 

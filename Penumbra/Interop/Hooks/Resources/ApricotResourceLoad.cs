@@ -11,7 +11,7 @@ public sealed unsafe class ApricotResourceLoad : FastHook<ApricotResourceLoad.De
     public ApricotResourceLoad(HookManager hooks, GameState gameState)
     {
         _gameState = gameState;
-        Task       = hooks.CreateHook<Delegate>("Load Apricot Resource", Sigs.ApricotResourceLoad, Detour, true);
+        Task       = hooks.CreateHook<Delegate>("Load Apricot Resource", Sigs.ApricotResourceLoad, Detour, HookSettings.ResourceHooks);
     }
 
     public delegate byte Delegate(ResourceHandle* handle, nint unk1, byte unk2);

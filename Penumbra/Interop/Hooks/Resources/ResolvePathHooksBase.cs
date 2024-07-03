@@ -59,7 +59,8 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[93], type, ResolveVfx, ResolveVfxHuman);
         _resolveEidPathHook   = Create<SingleResolveDelegate>( $"{name}.{nameof(ResolveEid)}",   hooks, vTable[94], ResolveEid);
         // @formatter:on
-        Enable();
+        if (HookSettings.ResourceHooks)
+            Enable();
     }
 
     public void Enable()

@@ -4,12 +4,12 @@ using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using Penumbra.Interop.Hooks.Objects;
+using Penumbra.Interop.Hooks.ResourceLoading;
 
 namespace Penumbra.Interop.PathResolving;
 

@@ -8,7 +8,6 @@ using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Services;
 using Penumbra.Interop.Services;
@@ -22,6 +21,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using System.Xml.Linq;
+using Penumbra.Interop.Hooks.ResourceLoading;
 
 namespace Penumbra;
 

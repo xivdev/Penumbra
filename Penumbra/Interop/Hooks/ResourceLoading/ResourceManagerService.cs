@@ -8,7 +8,7 @@ using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 
-namespace Penumbra.Interop.ResourceLoading;
+namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public unsafe class ResourceManagerService : IRequiredService
 {
@@ -23,10 +23,10 @@ public unsafe class ResourceManagerService : IRequiredService
     public ResourceHandle* FindResource(ResourceCategory cat, ResourceType ext, uint crc32)
     {
         ref var manager = ref *ResourceManager;
-        var     catIdx  = (uint)cat >> 0x18;
+        var catIdx = (uint)cat >> 0x18;
         cat = (ResourceCategory)(ushort)cat;
         ref var category = ref manager.ResourceGraph->Containers[(int)cat];
-        var     extMap   = FindInMap(category.CategoryMaps[(int)catIdx].Value, (uint)ext);
+        var extMap = FindInMap(category.CategoryMaps[(int)catIdx].Value, (uint)ext);
         if (extMap == null)
             return null;
 

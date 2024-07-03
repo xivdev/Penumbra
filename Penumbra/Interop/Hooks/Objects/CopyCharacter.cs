@@ -15,7 +15,7 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
 
     public CopyCharacter(HookManager hooks)
         : base("Copy Character")
-        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, true);
+        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, HookSettings.ObjectHooks);
 
     private readonly Task<Hook<Delegate>> _task;
 
