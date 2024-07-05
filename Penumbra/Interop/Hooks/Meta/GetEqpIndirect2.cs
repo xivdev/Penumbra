@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
-using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 

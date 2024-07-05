@@ -10,7 +10,7 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
 {
     public enum Priority
     {
-        /// <seealso cref="PathResolving.MetaState"/>
+        /// <seealso cref="PathResolving.MetaState.OnCreatingCharacterBase"/>
         MetaState = 0,
     }
 
@@ -64,10 +64,10 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
     {
         public enum Priority
         {
-            /// <seealso cref="PathResolving.DrawObjectState"/>
+            /// <seealso cref="PathResolving.DrawObjectState.OnCharacterBaseCreated"/>
             DrawObjectState = 0,
 
-            /// <seealso cref="PathResolving.MetaState"/>
+            /// <seealso cref="PathResolving.MetaState.OnCharacterBaseCreated"/>
             MetaState = 0,
         }
     }

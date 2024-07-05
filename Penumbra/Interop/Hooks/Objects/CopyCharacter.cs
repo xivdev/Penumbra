@@ -9,7 +9,7 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
 {
     public enum Priority
     {
-        /// <seealso cref="PathResolving.CutsceneService"/>
+        /// <seealso cref="PathResolving.CutsceneService.OnCharacterCopy"/>
         CutsceneService = 0,
     }
 
@@ -38,8 +38,7 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
 
     private ulong Detour(CharacterSetupContainer* target, Character* source, uint unk)
     {
-        // TODO: update when CS updated.
-        var character = ((Character**)target)[1];
+        var character = target->OwnerObject;
         Penumbra.Log.Verbose($"[{Name}] Triggered with target: 0x{(nint)target:X}, source : 0x{(nint)source:X} unk: {unk}.");
         Invoke(character, source);
         return _task.Result.Original(target, source, unk);

@@ -10,8 +10,7 @@ namespace Penumbra.Interop.Hooks.Meta;
 
 public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
 {
-    public delegate float* Delegate(nint cmpResource, float* storage, Race race, byte gender, byte isSecondSubRace, byte bodyType,
-        byte bustSize);
+    public delegate float* Delegate(nint cmpResource, float* storage, SubRace race, byte gender, byte bodyType, byte bustSize);
 
     private readonly MetaState       _metaState;
     private readonly MetaFileManager _metaFileManager;
@@ -24,7 +23,7 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         _metaState.Config.ModsEnabled += Toggle;
     }
 
-    private float* Detour(nint cmpResource, float* storage, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte bustSize)
+    private float* Detour(nint cmpResource, float* storage, SubRace clan, byte gender, byte bodyType, byte bustSize)
     {
         if (gender == 0)
         {
@@ -38,7 +37,6 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         if (bodyType < 2 && _metaState.RspCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
             var bustScale = bustSize / 100f;
-            var clan      = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
             var ptr       = CmpFile.GetDefaults(_metaFileManager, clan, RspAttribute.BustMinX);
             storage[0] = GetValue(0, RspAttribute.BustMinX, RspAttribute.BustMaxX);
             storage[1] = GetValue(1, RspAttribute.BustMinY, RspAttribute.BustMaxY);
@@ -58,11 +56,11 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         }
         else
         {
-            ret = Task.Result.Original(cmpResource, storage, race, gender, isSecondSubRace, bodyType, bustSize);
+            ret = Task.Result.Original(cmpResource, storage, clan, gender, bodyType, bustSize);
         }
 
         Penumbra.Log.Excessive(
-            $"[GetRspBust] Invoked on 0x{cmpResource:X} with {race}, {(Gender)(gender + 1)}, {isSecondSubRace == 1}, {bodyType}, {bustSize}, returned {storage[0]}, {storage[1]}, {storage[2]}.");
+            $"[GetRspBust] Invoked on 0x{cmpResource:X} with {clan}, {(Gender)(gender + 1)}, {bodyType}, {bustSize}, returned {storage[0]}, {storage[1]}, {storage[2]}.");
         return ret;
     }
 

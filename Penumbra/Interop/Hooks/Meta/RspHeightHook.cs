@@ -10,7 +10,7 @@ namespace Penumbra.Interop.Hooks.Meta;
 
 public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
 {
-    public delegate float Delegate(nint cmpResource, Race clan, byte gender, byte isSecondSubRace, byte bodyType, byte height);
+    public delegate float Delegate(nint cmpResource, SubRace clan, byte gender, byte bodyType, byte height);
 
     private readonly MetaState       _metaState;
     private readonly MetaFileManager _metaFileManager;
@@ -23,7 +23,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
         _metaState.Config.ModsEnabled += Toggle;
     }
 
-    private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte height)
+    private unsafe float Detour(nint cmpResource, SubRace clan, byte gender, byte bodyType, byte height)
     {
         float scale;
         if (bodyType < 2
@@ -36,7 +36,6 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
             if (height > 100)
                 height = 0;
 
-            var clan = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
             var (minIdent, maxIdent) = gender == 0
                 ? (new RspIdentifier(clan, RspAttribute.MaleMinSize), new RspIdentifier(clan,   RspAttribute.MaleMaxSize))
                 : (new RspIdentifier(clan, RspAttribute.FemaleMinSize), new RspIdentifier(clan, RspAttribute.FemaleMaxSize));
@@ -68,11 +67,11 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
         }
         else
         {
-            scale = Task.Result.Original(cmpResource, race, gender, isSecondSubRace, bodyType, height);
+            scale = Task.Result.Original(cmpResource, clan, gender, bodyType, height);
         }
 
         Penumbra.Log.Excessive(
-            $"[GetRspHeight] Invoked on 0x{cmpResource:X} with {race}, {(Gender)(gender + 1)}, {isSecondSubRace == 1}, {bodyType}, {height}, returned {scale}.");
+            $"[GetRspHeight] Invoked on 0x{cmpResource:X} with {clan}, {(Gender)(gender + 1)}, {bodyType}, {height}, returned {scale}.");
         return scale;
     }
 
