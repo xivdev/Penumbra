@@ -4,6 +4,7 @@ namespace Penumbra.Interop.Structs;
 public enum MetaIndex : int
 {
     Eqp = 0,
+    Evp = 1,
     Gmp = 2,
 
     Eqdp0101 = 3,
@@ -21,9 +22,8 @@ public enum MetaIndex : int
     Eqdp1301,
     Eqdp1401,
     Eqdp1501,
-
-    //Eqdp1601, // TODO: female Hrothgar
-    Eqdp1701 = Eqdp1501 + 2,
+    Eqdp1601,
+    Eqdp1701,
     Eqdp1801,
     Eqdp0104,
     Eqdp0204,
@@ -51,9 +51,8 @@ public enum MetaIndex : int
     Eqdp1301Acc,
     Eqdp1401Acc,
     Eqdp1501Acc,
-
-    //Eqdp1601Acc, // TODO: female Hrothgar
-    Eqdp1701Acc = Eqdp1501Acc + 2,
+    Eqdp1601Acc,
+    Eqdp1701Acc,
     Eqdp1801Acc,
     Eqdp0104Acc,
     Eqdp0204Acc,
@@ -66,7 +65,7 @@ public enum MetaIndex : int
     Eqdp9104Acc,
     Eqdp9204Acc,
 
-    HumanCmp = 64,
+    HumanCmp = 71,
     FaceEst,
     HairEst,
     HeadEst,

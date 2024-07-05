@@ -6,16 +6,16 @@ namespace Penumbra.Interop.Structs;
 public unsafe struct CharacterUtilityData
 {
     public const int IndexHumanPbd       = 63;
-    public const int IndexTransparentTex = 72;
-    public const int IndexDecalTex       = 73;
-    public const int IndexSkinShpk       = 76;
+    public const int IndexTransparentTex = 79;
+    public const int IndexDecalTex       = 80;
+    public const int IndexSkinShpk       = 83;
 
     public static readonly MetaIndex[] EqdpIndices = Enum.GetNames<MetaIndex>()
         .Zip(Enum.GetValues<MetaIndex>())
         .Where(n => n.First.StartsWith("Eqdp"))
         .Select(n => n.Second).ToArray();
 
-    public const int TotalNumResources = 87;
+    public const int TotalNumResources = 89;
 
     /// <summary> Obtain the index for the eqdp file corresponding to the given race code and accessory. </summary>
     public static MetaIndex EqdpIdx(GenderRace raceCode, bool accessory)
@@ -36,7 +36,7 @@ public unsafe struct CharacterUtilityData
             1301 => accessory ? MetaIndex.Eqdp1301Acc : MetaIndex.Eqdp1301,
             1401 => accessory ? MetaIndex.Eqdp1401Acc : MetaIndex.Eqdp1401,
             1501 => accessory ? MetaIndex.Eqdp1501Acc : MetaIndex.Eqdp1501,
-            //1601 => accessory ? MetaIndex.Eqdp1601Acc : MetaIndex.Eqdp1601, Female Hrothgar
+            1601 => accessory ? MetaIndex.Eqdp1601Acc : MetaIndex.Eqdp1601,
             1701 => accessory ? MetaIndex.Eqdp1701Acc : MetaIndex.Eqdp1701,
             1801 => accessory ? MetaIndex.Eqdp1801Acc : MetaIndex.Eqdp1801,
             0104 => accessory ? MetaIndex.Eqdp0104Acc : MetaIndex.Eqdp0104,
