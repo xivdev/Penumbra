@@ -14,6 +14,12 @@ public unsafe struct TextureResourceHandle
 
     [FieldOffset(0x0)]
     public CsHandle.TextureResourceHandle CsHandle;
+
+    [FieldOffset(0x104)]
+    public byte SomeLodFlag;
+
+    public bool ChangeLod
+        => (SomeLodFlag & 1) != 0;
 }
 
 public enum LoadState : byte
