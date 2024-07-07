@@ -1,4 +1,3 @@
-using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;

@@ -4,6 +4,7 @@ using Lumina.Data.Parsing;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
@@ -67,6 +68,7 @@ public partial class ModEditWindow
     {
         var ret = tab.Dirty;
         var data = UpdateFile(tab.Mdl, ret, disabled);
+        DrawVersionUpdate(tab, disabled);
         DrawImportExport(tab, disabled);
 
         ret |= DrawModelMaterialDetails(tab, disabled);
@@ -78,6 +80,19 @@ public partial class ModEditWindow
         ret |= DrawOtherModelDetails(data);
 
         return !disabled && ret;
+    }
+
+    private void DrawVersionUpdate(MdlTab tab, bool disabled)
+    {
+        if (disabled || tab.Mdl.Version is not MdlFile.V5)
+            return;
+
+        if (!ImUtf8.ButtonEx("Update MDL Version from V5 to V6"u8, "Try using this if the bone weights of a pre-Dawntrail model seem wrong.\n\nThis is not revertible."u8,
+                new Vector2(-0.1f, 0), false, 0, Colors.PressEnterWarningBg))
+            return;
+
+        tab.Mdl.ConvertV5ToV6();
+        _modelTab.SaveFile();
     }
 
     private void DrawImportExport(MdlTab tab, bool disabled)
