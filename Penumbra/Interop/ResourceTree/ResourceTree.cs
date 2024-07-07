@@ -124,7 +124,7 @@ public class ResourceTree
 
             // This way to tell apart MainHand and OffHand is not always accurate, but seems good enough for what we're doing with it.
             var slot       = weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand;
-            var equipment  = new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, new StainIds(weapon->Stain1, weapon->Stain2));
+            var equipment  = new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, new StainIds(weapon->Stain0, weapon->Stain1));
             var weaponType = weapon->SecondaryId;
 
             var genericContext = globalContext.CreateContext(subObject, 0xFFFFFFFFu, slot, equipment, weaponType);

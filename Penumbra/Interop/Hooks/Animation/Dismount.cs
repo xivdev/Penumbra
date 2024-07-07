@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Services;
 using Penumbra.GameData;
@@ -18,26 +19,26 @@ public sealed unsafe class Dismount : FastHook<Dismount.Delegate>
         Task                = hooks.CreateHook<Delegate>("Dismount", Sigs.Dismount, Detour, HookSettings.VfxIdentificationHooks);
     }
 
-    public delegate void Delegate(nint a1, nint a2);
+    public delegate void Delegate(MountContainer* a1, nint a2);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void Detour(nint a1, nint a2)
+    private void Detour(MountContainer* a1, nint a2)
     {
-        Penumbra.Log.Excessive($"[Dismount] Invoked on {a1:X} with {a2:X}.");
-        if (a1 == nint.Zero)
+        Penumbra.Log.Excessive($"[Dismount] Invoked on 0x{(nint)a1:X} with {a2:X}.");
+        if (a1 == null)
         {
             Task.Result.Original(a1, a2);
             return;
         }
 
-        var gameObject = *(GameObject**)(a1 + 8);
+        var gameObject = a1->OwnerObject;
         if (gameObject == null)
         {
             Task.Result.Original(a1, a2);
             return;
         }
 
-        var last = _state.SetAnimationData(_collectionResolver.IdentifyCollection(gameObject, true));
+        var last = _state.SetAnimationData(_collectionResolver.IdentifyCollection((GameObject*) gameObject, true));
         Task.Result.Original(a1, a2);
         _state.RestoreAnimationData(last);
     }

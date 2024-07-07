@@ -430,7 +430,7 @@ public class DebugTab : Window, ITab, IUiService
 
         foreach (var obj in _objects)
         {
-            ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
+            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
             ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
                 ? string.Empty
@@ -482,14 +482,15 @@ public class DebugTab : Window, ITab, IUiService
                     {
                         var gameObject = (GameObject*)gameObjectPtr;
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted($"0x{drawObject:X}");
+
+                        ImGuiUtil.CopyOnClickSelectable($"0x{drawObject:X}");
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(gameObject->ObjectIndex.ToString());
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(child ? "Child" : "Main");
                         ImGui.TableNextColumn();
                         var (address, name) = ($"0x{gameObjectPtr:X}", new ByteString(gameObject->Name).ToString());
-                        ImGui.TextUnformatted(address);
+                        ImGuiUtil.CopyOnClickSelectable(address);
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(name);
                         ImGui.TableNextColumn();

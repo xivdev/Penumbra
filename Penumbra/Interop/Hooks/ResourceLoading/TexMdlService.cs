@@ -87,6 +87,11 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
 
     private readonly ThreadLocal<bool> _texReturnData = new(() => default);
 
+    private delegate void UpdateCategoryDelegate(TextureResourceHandle* resourceHandle);
+
+    [Signature(Sigs.TexHandleUpdateCategory)]
+    private readonly UpdateCategoryDelegate _updateCategory = null!;
+
     /// <summary>
     /// The function that checks a files CRC64 to determine whether it is 'protected'.
     /// We use it to check against our stored CRC64s and if it corresponds, we return the custom flag for models.
@@ -99,9 +104,14 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
             return CustomFileFlag;
 
         if (_customTexCrc.Contains(crc64))
+        {
             _texReturnData.Value = true;
+            return nint.Zero;
+        }
 
-        return _checkFileStateHook.Original(ptr, crc64);
+        var ret = _checkFileStateHook.Original(ptr, crc64);
+        Penumbra.Log.Excessive($"[CheckFileState] Called on 0x{ptr:X} with CRC {crc64:X16}, returned 0x{ret:X}.");
+        return ret;
     }
 
     private delegate byte LoadTexFileLocalDelegate(TextureResourceHandle* handle, int unk1, SeFileDescriptor* unk2, bool unk3);
@@ -118,7 +128,7 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
 
     private delegate byte TexResourceHandleOnLoadPrototype(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2);
 
-    [Signature(Sigs.TexResourceHandleOnLoad, DetourName = nameof(OnLoadDetour))]
+    [Signature(Sigs.TexHandleOnLoad, DetourName = nameof(OnLoadDetour))]
     private readonly Hook<TexResourceHandleOnLoadPrototype> _textureOnLoadHook = null!;
 
     private byte OnLoadDetour(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2)
@@ -129,7 +139,9 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
 
         // Function failed on a replaced texture, call local.
         _texReturnData.Value = false;
-        return _loadTexFileLocal(handle, _lodService.GetLod(handle), descriptor, unk2 != 0);
+        ret                  = _loadTexFileLocal(handle, _lodService.GetLod(handle), descriptor, unk2 != 0);
+        _updateCategory(handle);
+        return ret;
     }
 
     private delegate byte LoadMdlFileExternPrototype(ResourceHandle* handle, nint unk1, bool unk2, nint unk3);

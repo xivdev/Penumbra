@@ -15,21 +15,21 @@ public unsafe class ResourceLoader : IDisposable, IService
 {
     private readonly ResourceService _resources;
     private readonly FileReadService _fileReadService;
-    private readonly TexMdlService _texMdlService;
+    private readonly TexMdlService   _texMdlService;
 
     private ResolveData _resolvedData = ResolveData.Invalid;
 
     public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService)
     {
-        _resources = resources;
+        _resources       = resources;
         _fileReadService = fileReadService;
-        _texMdlService = texMdlService;
+        _texMdlService   = texMdlService;
         ResetResolvePath();
 
-        _resources.ResourceRequested += ResourceHandler;
+        _resources.ResourceRequested    += ResourceHandler;
         _resources.ResourceHandleIncRef += IncRefProtection;
         _resources.ResourceHandleDecRef += DecRefProtection;
-        _fileReadService.ReadSqPack += ReadSqPackDetour;
+        _fileReadService.ReadSqPack     += ReadSqPackDetour;
     }
 
     /// <summary> Load a resource for a given path and a specific collection. </summary>
@@ -80,10 +80,10 @@ public unsafe class ResourceLoader : IDisposable, IService
 
     public void Dispose()
     {
-        _resources.ResourceRequested -= ResourceHandler;
+        _resources.ResourceRequested    -= ResourceHandler;
         _resources.ResourceHandleIncRef -= IncRefProtection;
         _resources.ResourceHandleDecRef -= DecRefProtection;
-        _fileReadService.ReadSqPack -= ReadSqPackDetour;
+        _fileReadService.ReadSqPack     -= ReadSqPackDetour;
     }
 
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
@@ -93,6 +93,9 @@ public unsafe class ResourceLoader : IDisposable, IService
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
+
+        if (path.ToString() == "vfx/common/eff/abi_cnj022g.avfx")
+            ;
 
         // If no replacements are being made, we still want to be able to trigger the event.
         var (resolvedPath, data) = _incMode.Value
@@ -112,7 +115,7 @@ public unsafe class ResourceLoader : IDisposable, IService
         // Replace the hash and path with the correct one for the replacement.
         hash = ComputeHash(resolvedPath.Value.InternalName, parameters);
         var oldPath = path;
-        path = p;
+        path        = p;
         returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
         ResourceLoaded?.Invoke(returnValue, oldPath, resolvedPath.Value, data);
     }
@@ -121,7 +124,8 @@ public unsafe class ResourceLoader : IDisposable, IService
     {
         if (fileDescriptor->ResourceHandle == null)
         {
-            Penumbra.Log.Error("[ResourceLoader] Failure to load file from SqPack: invalid File Descriptor.");
+            Penumbra.Log.Verbose(
+                $"[ResourceLoader] Failure to load file from SqPack: invalid File Descriptor: {Marshal.PtrToStringUni((nint)(&fileDescriptor->Utf16FileName))}");
             return;
         }
 
@@ -140,12 +144,12 @@ public unsafe class ResourceLoader : IDisposable, IService
         }
 
         var path = ByteString.FromSpanUnsafe(actualPath, gamePath.Path.IsNullTerminated, gamePath.Path.IsAsciiLowerCase, gamePath.Path.IsAscii);
-        fileDescriptor->ResourceHandle->FileNameData = path.Path;
+        fileDescriptor->ResourceHandle->FileNameData   = path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = path.Length;
         MtrlForceSync(fileDescriptor, ref isSync);
         returnValue = DefaultLoadResource(path, fileDescriptor, priority, isSync, data);
         // Return original resource handle path so that they can be loaded separately.
-        fileDescriptor->ResourceHandle->FileNameData = gamePath.Path.Path;
+        fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
     }
 
@@ -165,7 +169,7 @@ public unsafe class ResourceLoader : IDisposable, IService
             // Ensure that the file descriptor has its wchar_t array on aligned boundary even if it has to be odd.
             var fd = stackalloc char[0x11 + 0x0B + 14];
             fileDescriptor->FileDescriptor = (byte*)fd + 1;
-            CreateFileWHook.WritePtr(fd + 0x11, gamePath.Path, gamePath.Length);
+            CreateFileWHook.WritePtr(fd + 0x11,                      gamePath.Path, gamePath.Length);
             CreateFileWHook.WritePtr(&fileDescriptor->Utf16FileName, gamePath.Path, gamePath.Length);
 
             // Use the SE ReadFile function.
@@ -206,7 +210,7 @@ public unsafe class ResourceLoader : IDisposable, IService
             return;
 
         _incMode.Value = true;
-        returnValue = _resources.IncRef(handle);
+        returnValue    = _resources.IncRef(handle);
         _incMode.Value = false;
     }
 

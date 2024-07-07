@@ -16,23 +16,25 @@ public sealed unsafe class LoadCharacterSound : FastHook<LoadCharacterSound.Dele
 
     public LoadCharacterSound(HookManager hooks, GameState state, CollectionResolver collectionResolver, CrashHandlerService crashHandler)
     {
-        _state = state;
+        _state              = state;
         _collectionResolver = collectionResolver;
-        _crashHandler = crashHandler;
-        Task = hooks.CreateHook<Delegate>("Load Character Sound", (nint)VfxContainer.MemberFunctionPointers.LoadCharacterSound, Detour, HookSettings.VfxIdentificationHooks);
+        _crashHandler       = crashHandler;
+        Task = hooks.CreateHook<Delegate>("Load Character Sound", (nint)VfxContainer.MemberFunctionPointers.LoadCharacterSound, Detour,
+            HookSettings.VfxIdentificationHooks);
     }
 
-    public delegate nint Delegate(nint container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7);
+    public delegate nint Delegate(VfxContainer* container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private nint Detour(nint container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7)
+    private nint Detour(VfxContainer* container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7)
     {
-        var character = *(GameObject**)(container + 8);
+        var character = (GameObject*)container->OwnerObject;
         var newData   = _collectionResolver.IdentifyCollection(character, true);
         var last      = _state.SetSoundData(newData);
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.LoadCharacterSound);
         var ret = Task.Result.Original(container, unk1, unk2, unk3, unk4, unk5, unk6, unk7);
-        Penumbra.Log.Excessive($"[Load Character Sound] Invoked with {container:X} {unk1} {unk2} {unk3} {unk4} {unk5} {unk6} {unk7} -> {ret}.");
+        Penumbra.Log.Excessive(
+            $"[Load Character Sound] Invoked with {(nint)container:X} {unk1} {unk2} {unk3} {unk4} {unk5} {unk6} {unk7} -> {ret}.");
         _state.RestoreSoundData(last);
         return ret;
     }
