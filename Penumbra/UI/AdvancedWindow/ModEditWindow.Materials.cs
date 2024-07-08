@@ -3,6 +3,7 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
@@ -16,6 +17,7 @@ public partial class ModEditWindow
 
     private bool DrawMaterialPanel(MtrlTab tab, bool disabled)
     {
+        DrawVersionUpdate(tab, disabled);
         DrawMaterialLivePreviewRebind(tab, disabled);
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
@@ -32,6 +34,20 @@ public partial class ModEditWindow
         DrawOtherMaterialDetails(tab.Mtrl, disabled);
 
         return !disabled && ret;
+    }
+
+    private void DrawVersionUpdate(MtrlTab tab, bool disabled)
+    {
+        if (disabled || tab.Mtrl.IsDawnTrail)
+            return;
+
+        if (!ImUtf8.ButtonEx("Update MTRL Version to Dawntrail"u8,
+                "Try using this if the material can not be loaded or should use legacy shaders.\n\nThis is not revertible."u8,
+                new Vector2(-0.1f, 0), false, 0, Colors.PressEnterWarningBg))
+            return;
+
+        tab.Mtrl.MigrateToDawntrail();
+        _materialTab.SaveFile();
     }
 
     private static void DrawMaterialLivePreviewRebind(MtrlTab tab, bool disabled)

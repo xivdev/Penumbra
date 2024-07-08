@@ -81,11 +81,12 @@ internal partial record ResolveContext
         // Resolving a material path through the game's code can dereference null pointers for materials that involve IMC metadata.
         return ModelType switch
         {
-            ModelType.Human when SlotIndex < 10 && mtrlFileName[8] != (byte)'b' => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
-            ModelType.DemiHuman                                                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
-            ModelType.Weapon                                                    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
-            ModelType.Monster                                                   => ResolveMonsterMaterialPath(modelPath, imc, mtrlFileName),
-            _                                                                   => ResolveMaterialPathNative(mtrlFileName),
+            ModelType.Human when SlotIndex is < 10 or 16 && mtrlFileName[8] != (byte)'b'
+                => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.DemiHuman => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.Weapon    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.Monster   => ResolveMonsterMaterialPath(modelPath, imc, mtrlFileName),
+            _                   => ResolveMaterialPathNative(mtrlFileName),
         };
     }
 
@@ -96,7 +97,7 @@ internal partial record ResolveContext
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
-        pathBuffer            = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
+        pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
         return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
     }
@@ -126,7 +127,7 @@ internal partial record ResolveContext
                 WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId);
 
                 Span<byte> pathBuffer = stackalloc byte[260];
-                pathBuffer            = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
+                pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
 
                 var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
                 if (weaponPosition >= 0)
@@ -145,7 +146,7 @@ internal partial record ResolveContext
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[260];
-        pathBuffer            = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
+        pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
         return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
     }
@@ -166,7 +167,8 @@ internal partial record ResolveContext
         return entry.MaterialId;
     }
 
-    private static Span<byte> AssembleMaterialPath(Span<byte> materialPathBuffer, ReadOnlySpan<byte> modelPath, byte variant, ReadOnlySpan<byte> mtrlFileName)
+    private static Span<byte> AssembleMaterialPath(Span<byte> materialPathBuffer, ReadOnlySpan<byte> modelPath, byte variant,
+        ReadOnlySpan<byte> mtrlFileName)
     {
         var modelPosition = modelPath.IndexOf("/model/"u8);
         if (modelPosition < 0)
@@ -187,8 +189,8 @@ internal partial record ResolveContext
     {
         for (var i = destination.Length; i-- > 0;)
         {
-            destination[i] = (byte)('0' + number % 10);
-            number /= 10;
+            destination[i] =  (byte)('0' + number % 10);
+            number         /= 10;
         }
     }
 
@@ -197,13 +199,17 @@ internal partial record ResolveContext
         ByteString? path;
         try
         {
+            Penumbra.Log.Information($"{(nint)CharacterBase:X} {ModelType} {SlotIndex} 0x{(ulong)mtrlFileName:X}");
+            Penumbra.Log.Information($"{new ByteString(mtrlFileName)}");
             path = CharacterBase->ResolveMtrlPathAsByteString(SlotIndex, mtrlFileName);
         }
         catch (AccessViolationException)
         {
-            Penumbra.Log.Error($"Access violation during attempt to resolve material path\nDraw object: {(nint)CharacterBase:X} (of type {ModelType})\nSlot index: {SlotIndex}\nMaterial file name: {(nint)mtrlFileName:X} ({new string((sbyte*)mtrlFileName)})");
+            Penumbra.Log.Error(
+                $"Access violation during attempt to resolve material path\nDraw object: {(nint)CharacterBase:X} (of type {ModelType})\nSlot index: {SlotIndex}\nMaterial file name: {(nint)mtrlFileName:X} ({new string((sbyte*)mtrlFileName)})");
             return Utf8GamePath.Empty;
         }
+
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -235,30 +241,23 @@ internal partial record ResolveContext
         var characterRaceCode = (GenderRace)human->RaceSexId;
         switch (partialSkeletonIndex)
         {
-            case 0:
-                return (characterRaceCode, "base", 1);
+            case 0: return (characterRaceCode, "base", 1);
             case 1:
                 var faceId    = human->FaceId;
                 var tribe     = human->Customize[(int)Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex.Tribe];
                 var modelType = human->Customize[(int)Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex.ModelType];
                 if (faceId < 201)
-                {
                     faceId -= tribe switch
                     {
                         0xB when modelType == 4 => 100,
                         0xE | 0xF               => 100,
                         _                       => 0,
                     };
-                }
                 return ResolveHumanExtraSkeletonData(characterRaceCode, EstType.Face, faceId);
-            case 2:
-                return ResolveHumanExtraSkeletonData(characterRaceCode, EstType.Hair, human->HairId);
-            case 3:
-                return ResolveHumanEquipmentSkeletonData(EquipSlot.Head, EstType.Head);
-            case 4:
-                return ResolveHumanEquipmentSkeletonData(EquipSlot.Body, EstType.Body);
-            default:
-                return (0, string.Empty, 0);
+            case 2:  return ResolveHumanExtraSkeletonData(characterRaceCode, EstType.Hair, human->HairId);
+            case 3:  return ResolveHumanEquipmentSkeletonData(EquipSlot.Head, EstType.Head);
+            case 4:  return ResolveHumanEquipmentSkeletonData(EquipSlot.Body, EstType.Body);
+            default: return (0, string.Empty, 0);
         }
     }
 
@@ -269,7 +268,8 @@ internal partial record ResolveContext
         return ResolveHumanExtraSkeletonData(ResolveEqdpRaceCode(slot, equipment.Set), type, equipment.Set);
     }
 
-    private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstType type, PrimaryId primary)
+    private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstType type,
+        PrimaryId primary)
     {
         var metaCache   = Global.Collection.MetaCache;
         var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary) ?? default;

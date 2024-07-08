@@ -37,6 +37,8 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
+    public readonly MigrationManager MigrationManager;
+
     private readonly PerformanceTracker      _performance;
     private readonly ModEditor               _editor;
     private readonly Configuration           _config;
@@ -588,7 +590,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, ObjectManager objects, IFramework framework,
-        CharacterBaseDestructor characterBaseDestructor, MetaDrawers metaDrawers)
+        CharacterBaseDestructor characterBaseDestructor, MetaDrawers metaDrawers, MigrationManager migrationManager)
         : base(WindowBaseLabel)
     {
         _performance             = performance;
@@ -608,6 +610,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _objects                 = objects;
         _framework               = framework;
         _characterBaseDestructor = characterBaseDestructor;
+        MigrationManager         = migrationManager;
         _metaDrawers             = metaDrawers;
         _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,

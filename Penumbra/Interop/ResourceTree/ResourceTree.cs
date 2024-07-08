@@ -73,11 +73,11 @@ public class ResourceTree
 
         var genericContext = globalContext.CreateContext(model);
 
-        for (var i = 0; i < model->SlotCount; ++i)
+        for (var i = 0u; i < model->SlotCount; ++i)
         {
             var slotContext = i < equipment.Length
-                ? globalContext.CreateContext(model, (uint)i, ((uint)i).ToEquipSlot(), equipment[i])
-                : globalContext.CreateContext(model, (uint)i);
+                ? globalContext.CreateContext(model, i, i.ToEquipSlot(), equipment[(int)i])
+                : globalContext.CreateContext(model, i);
 
             var imc     = (ResourceHandle*)model->IMCArray[i];
             var imcNode = slotContext.CreateNodeFromImc(imc);

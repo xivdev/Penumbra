@@ -253,25 +253,12 @@ public partial class TexToolsImporter
 
         extractedFile.Directory?.Create();
 
-        if (extractedFile.FullName.EndsWith(".mdl"))
-            ProcessMdl(data.Data);
+        data.Data = Path.GetExtension(extractedFile.FullName) switch
+        {
+            ".mdl" => _migrationManager.MigrateTtmpModel(extractedFile.FullName, data.Data),
+            _      => data.Data,
+        };
 
         _compactor.WriteAllBytesAsync(extractedFile.FullName, data.Data, _token).Wait(_token);
-    }
-
-    private static void ProcessMdl(byte[] mdl)
-    {
-        const int modelHeaderLodOffset = 22;
-
-        // Model file header LOD num
-        mdl[64] = 1;
-
-        // Model header LOD num
-        var stackSize           = BitConverter.ToUInt32(mdl, 4);
-        var runtimeBegin        = stackSize + 0x44;
-        var stringsLengthOffset = runtimeBegin + 4;
-        var stringsLength       = BitConverter.ToUInt32(mdl, (int)stringsLengthOffset);
-        var modelHeaderStart    = stringsLengthOffset + stringsLength + 4;
-        mdl[modelHeaderStart + modelHeaderLodOffset] = 1;
     }
 }

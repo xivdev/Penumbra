@@ -94,9 +94,6 @@ public unsafe class ResourceLoader : IDisposable, IService
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
 
-        if (path.ToString() == "vfx/common/eff/abi_cnj022g.avfx")
-            ;
-
         // If no replacements are being made, we still want to be able to trigger the event.
         var (resolvedPath, data) = _incMode.Value
             ? (null, ResolveData.Invalid)

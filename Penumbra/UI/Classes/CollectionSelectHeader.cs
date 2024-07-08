@@ -37,9 +37,9 @@ public class CollectionSelectHeader : IUiService
         var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
         using (var _ = ImRaii.Group())
         {
-            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo(), 1);
+            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo(),   1);
             DrawCollectionButton(buttonSize, GetInterfaceCollectionInfo(), 2);
-            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(), 3);
+            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(),    3);
             DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
 
             _collectionCombo.Draw("##collectionSelector", comboWidth, ColorId.SelectedCollection.Value());

@@ -41,10 +41,11 @@ public class SettingsTab : ITab, IUiService
     private readonly DalamudSubstitutionProvider _dalamudSubstitutionProvider;
     private readonly FileCompactor               _compactor;
     private readonly DalamudConfigService        _dalamudConfig;
-    private readonly IDalamudPluginInterface      _pluginInterface;
+    private readonly IDalamudPluginInterface     _pluginInterface;
     private readonly IDataManager                _gameData;
     private readonly PredefinedTagManager        _predefinedTagManager;
     private readonly CrashHandlerService         _crashService;
+    private readonly MigrationSectionDrawer      _migrationDrawer;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -55,7 +56,8 @@ public class SettingsTab : ITab, IUiService
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
-        IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService)
+        IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
+        MigrationSectionDrawer migrationDrawer)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -77,6 +79,7 @@ public class SettingsTab : ITab, IUiService
             _compactor.Enabled = _config.UseFileSystemCompression;
         _predefinedTagManager = predefinedTagConfig;
         _crashService         = crashService;
+        _migrationDrawer      = migrationDrawer;
     }
 
     public void DrawHeader()
@@ -102,6 +105,7 @@ public class SettingsTab : ITab, IUiService
         ImGui.NewLine();
 
         DrawGeneralSettings();
+        _migrationDrawer.Draw();
         DrawColorSettings();
         DrawPredefinedTagsSection();
         DrawAdvancedSettings();
