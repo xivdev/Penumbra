@@ -691,8 +691,9 @@ public partial class ModEditWindow
                 _edit._characterBaseDestructor.Unsubscribe(UnbindFromDrawObjectMaterialInstances);
         }
 
+        // TODO Readd ShadersKnown
         public bool Valid
-            => ShadersKnown && Mtrl.Valid;
+            => (true || ShadersKnown) && Mtrl.Valid;
 
         public byte[] Write()
         {
