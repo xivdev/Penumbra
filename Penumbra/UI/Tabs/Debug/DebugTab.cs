@@ -177,6 +177,8 @@ public class DebugTab : Window, ITab, IUiService
         ImGui.NewLine();
         DrawDebugCharacterUtility();
         ImGui.NewLine();
+        DrawShaderReplacementFixer();
+        ImGui.NewLine();
         DrawData();
         ImGui.NewLine();
         DrawResourceProblems();
@@ -712,27 +714,6 @@ public class DebugTab : Window, ITab, IUiService
         if (!ImGui.CollapsingHeader("Character Utility"))
             return;
 
-        var enableShaderReplacementFixer = _shaderReplacementFixer.Enabled;
-        if (ImGui.Checkbox("Enable Shader Replacement Fixer", ref enableShaderReplacementFixer))
-            _shaderReplacementFixer.Enabled = enableShaderReplacementFixer;
-
-        if (enableShaderReplacementFixer)
-        {
-            ImGui.SameLine();
-            ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
-            var slowPathCallDeltas = _shaderReplacementFixer.GetAndResetSlowPathCallDeltas();
-            ImGui.SameLine();
-            ImGui.TextUnformatted($"\u0394 Slow-Path Calls for skin.shpk: {slowPathCallDeltas.Skin}");
-            ImGui.SameLine();
-            ImGui.TextUnformatted($"characterglass.shpk: {slowPathCallDeltas.CharacterGlass}");
-            ImGui.SameLine();
-            ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
-            ImGui.SameLine();
-            ImGui.TextUnformatted($"Materials with Modded skin.shpk: {_shaderReplacementFixer.ModdedSkinShpkCount}");
-            ImGui.SameLine();
-            ImGui.TextUnformatted($"characterglass.shpk: {_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
-        }
-
         using var table = Table("##CharacterUtility", 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
@@ -785,6 +766,80 @@ public class DebugTab : Window, ITab, IUiService
                 ImGui.TableNextColumn();
             }
         }
+    }
+
+    private void DrawShaderReplacementFixer()
+    {
+        if (!ImGui.CollapsingHeader("Shader Replacement Fixer"))
+            return;
+
+        var enableShaderReplacementFixer = _shaderReplacementFixer.Enabled;
+        if (ImGui.Checkbox("Enable Shader Replacement Fixer", ref enableShaderReplacementFixer))
+            _shaderReplacementFixer.Enabled = enableShaderReplacementFixer;
+
+        if (!enableShaderReplacementFixer)
+            return;
+
+        using var table = Table("##ShaderReplacementFixer", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+            -Vector2.UnitX);
+        if (!table)
+            return;
+
+        var slowPathCallDeltas = _shaderReplacementFixer.GetAndResetSlowPathCallDeltas();
+
+        ImGui.TableSetupColumn("Shader Package Name",        ImGuiTableColumnFlags.WidthStretch, 0.6f);
+        ImGui.TableSetupColumn("Materials with Modded ShPk", ImGuiTableColumnFlags.WidthStretch, 0.2f);
+        ImGui.TableSetupColumn("\u0394 Slow-Path Calls",     ImGuiTableColumnFlags.WidthStretch, 0.2f);
+        ImGui.TableHeadersRow();
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("skin.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedSkinShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.Skin}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("iris.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedIrisShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.Iris}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("characterglass.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterGlass}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("charactertransparency.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTransparencyShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTransparency}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("charactertattoo.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTattooShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTattoo}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("characterocclusion.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterOcclusionShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterOcclusion}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("hairmask.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedHairMaskShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.HairMask}");
     }
 
     /// <summary> Draw information about the resident resource files. </summary>
