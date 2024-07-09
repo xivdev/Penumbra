@@ -11,7 +11,7 @@
     "ApplicableVersion": "any",
     "DalamudApiLevel": 10,
     "IsHide": "False",
-    "IsTestingExclusive": "False",
+    "IsTestingExclusive": "True",
     "DownloadCount": 0,
     "LastUpdate": 0,
     "LoadPriority": 69420,
