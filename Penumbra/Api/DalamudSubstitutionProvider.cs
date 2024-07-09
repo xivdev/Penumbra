@@ -1,3 +1,4 @@
+using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using OtterGui.Services;
 using Penumbra.Collections;
@@ -13,6 +14,7 @@ namespace Penumbra.Api;
 public class DalamudSubstitutionProvider : IDisposable, IApiService
 {
     private readonly ITextureSubstitutionProvider _substitution;
+    private readonly IUiBuilder                   _uiBuilder;
     private readonly ActiveCollectionData         _activeCollectionData;
     private readonly Configuration                _config;
     private readonly CommunicatorService          _communicator;
@@ -21,9 +23,10 @@ public class DalamudSubstitutionProvider : IDisposable, IApiService
         => _config.UseDalamudUiTextureRedirection;
 
     public DalamudSubstitutionProvider(ITextureSubstitutionProvider substitution, ActiveCollectionData activeCollectionData,
-        Configuration config, CommunicatorService communicator)
+        Configuration config, CommunicatorService communicator, IUiBuilder ui)
     {
         _substitution         = substitution;
+        _uiBuilder            = ui;
         _activeCollectionData = activeCollectionData;
         _config               = config;
         _communicator         = communicator;
@@ -41,6 +44,9 @@ public class DalamudSubstitutionProvider : IDisposable, IApiService
 
     public void ResetSubstitutions(IEnumerable<Utf8GamePath> paths)
     {
+        if (!_uiBuilder.UiPrepared)
+            return;
+
         var transformed = paths
             .Where(p => (p.Path.StartsWith("ui/"u8) || p.Path.StartsWith("common/font/"u8)) && p.Path.EndsWith(".tex"u8))
             .Select(p => p.ToString());
@@ -91,10 +97,7 @@ public class DalamudSubstitutionProvider : IDisposable, IApiService
             case ResolvedFileChanged.Type.Added:
             case ResolvedFileChanged.Type.Removed:
             case ResolvedFileChanged.Type.Replaced:
-                ResetSubstitutions(new[]
-                {
-                    key,
-                });
+                ResetSubstitutions([key]);
                 break;
             case ResolvedFileChanged.Type.FullRecomputeStart:
             case ResolvedFileChanged.Type.FullRecomputeFinished:
