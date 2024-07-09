@@ -39,6 +39,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
         ImUtf8.HoverTooltip("This increments the version marker and restructures the bone table to the new version."u8);
 
+        value = config.MigrateImportedMaterialsToLegacy;
         if (ImUtf8.Checkbox("Automatically Migrate Materials to Dawntrail on Import"u8, ref value))
         {
             config.MigrateImportedMaterialsToLegacy = value;

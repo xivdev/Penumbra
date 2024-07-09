@@ -243,6 +243,7 @@ public class MigrationManager(Configuration config) : IService
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
+        s.Position = 0;
         using var b       = new BinaryReader(s);
         var       version = b.ReadUInt32();
         if (version == MdlFile.V5)
