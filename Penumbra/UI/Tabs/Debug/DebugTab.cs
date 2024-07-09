@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -433,10 +434,11 @@ public class DebugTab : Window, ITab, IUiService
         foreach (var obj in _objects)
         {
             ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
-            ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
-            ImGuiUtil.DrawTableColumn(obj.Address == nint.Zero
-                ? string.Empty
-                : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
+            ImGui.TableNextColumn();
+            ImGuiUtil.CopyOnClickSelectable($"0x{obj.Address:X}");
+            ImGui.TableNextColumn();
+            if (obj.Address != nint.Zero)
+                ImGuiUtil.CopyOnClickSelectable($"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
             var identifier = _actors.FromObject(obj, out _, false, true, false);
             ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
             var id = obj.AsObject->ObjectKind is ObjectKind.BattleNpc

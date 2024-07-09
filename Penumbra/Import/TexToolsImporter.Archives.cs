@@ -1,3 +1,4 @@
+using System.IO;
 using Dalamud.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -90,7 +91,7 @@ public partial class TexToolsImporter
             }
             else
             {
-                HandleFileMigrations(reader);
+                HandleFileMigrationsAndWrite(reader);
             }
 
             ++_currentFileIdx;
@@ -118,12 +119,18 @@ public partial class TexToolsImporter
     }
 
 
-    private void HandleFileMigrations(IReader reader)
+    private void HandleFileMigrationsAndWrite(IReader reader)
     {
         switch (Path.GetExtension(reader.Entry.Key))
         {
             case ".mdl":
                 _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                break;
+            case ".mtrl":
+                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                break;
+            default:
+                reader.WriteEntryToDirectory(_currentModDirectory!.FullName, _extractionOptions);
                 break;
         }
     }

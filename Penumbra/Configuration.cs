@@ -99,7 +99,8 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool           UseFileSystemCompression      { get; set; } = true;
     public bool           EnableHttpApi                 { get; set; } = true;
 
-    public bool MigrateImportedModelsToV6 { get; set; } = false;
+    public bool MigrateImportedModelsToV6 { get; set; } = true;
+    public bool MigrateImportedMaterialsToLegacy { get; set; } = true;
 
     public string DefaultModImportPath    { get; set; } = string.Empty;
     public bool   AlwaysOpenDefaultImport { get; set; } = false;

@@ -9,65 +9,61 @@ namespace Penumbra.Services;
 
 public class MigrationManager(Configuration config) : IService
 {
+    public enum TaskType : byte
+    {
+        None,
+        MdlMigration,
+        MdlRestoration,
+        MdlCleanup,
+        MtrlMigration,
+        MtrlRestoration,
+        MtrlCleanup,
+    }
+
+    public class MigrationData(bool hasUnchanged)
+
+    {
+        public          int  Changed;
+        public          int  Unchanged;
+        public          int  Failed;
+        public          bool HasData;
+        public readonly bool HasUnchanged = hasUnchanged;
+
+        public int Total
+            => Changed + Unchanged + Failed;
+
+        public void Init()
+        {
+            Changed   = 0;
+            Unchanged = 0;
+            Failed    = 0;
+            HasData   = true;
+        }
+    }
+
     private Task?                    _currentTask;
     private CancellationTokenSource? _source;
 
-    public bool HasCleanUpTask   { get; private set; }
-    public bool HasMigrationTask { get; private set; }
-    public bool HasRestoreTask   { get; private set; }
+    public TaskType CurrentTask { get; private set; }
 
-    public bool IsMigrationTask   { get; private set; }
-    public bool IsRestorationTask { get; private set; }
-    public bool IsCleanupTask     { get; private set; }
+    public readonly MigrationData MdlMigration    = new(true);
+    public readonly MigrationData MtrlMigration   = new(true);
+    public readonly MigrationData MdlCleanup      = new(false);
+    public readonly MigrationData MtrlCleanup     = new(false);
+    public readonly MigrationData MdlRestoration  = new(false);
+    public readonly MigrationData MtrlRestoration = new(false);
 
-
-    public int Restored     { get; private set; }
-    public int RestoreFails { get; private set; }
-
-    public int CleanedUp { get; private set; }
-
-    public int CleanupFails { get; private set; }
-
-    public int Migrated { get; private set; }
-
-    public int Unchanged { get; private set; }
-
-    public int Failed { get; private set; }
 
     public bool IsRunning
         => _currentTask is { IsCompleted: false };
 
-    /// <summary> Writes or migrates a .mdl file during extraction from a regular archive. </summary>
-    public void MigrateMdlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
-    {
-        if (!config.MigrateImportedModelsToV6)
-        {
-            reader.WriteEntryToDirectory(directory, options);
-            return;
-        }
+    public void CleanMdlBackups(string path)
+        => CleanBackups(path, "*.mdl.bak", "model", MdlCleanup, TaskType.MdlCleanup);
 
-        var       path = Path.Combine(directory, reader.Entry.Key);
-        using var s    = new MemoryStream();
-        using var e    = reader.OpenEntryStream();
-        e.CopyTo(s);
-        using var b       = new BinaryReader(s);
-        var       version = b.ReadUInt32();
-        if (version == MdlFile.V5)
-        {
-            var data = s.ToArray();
-            var mdl  = new MdlFile(data);
-            MigrateModel(path, mdl, false);
-            Penumbra.Log.Debug($"Migrated model {reader.Entry.Key} from V5 to V6 during import.");
-        }
-        else
-        {
-            using var f = File.Open(path, FileMode.Create, FileAccess.Write);
-            s.Seek(0, SeekOrigin.Begin);
-            s.WriteTo(f);
-        }
-    }
+    public void CleanMtrlBackups(string path)
+        => CleanBackups(path, "*.mtrl.bak", "material", MtrlCleanup, TaskType.MtrlCleanup);
 
-    public void CleanBackups(string path)
+    private void CleanBackups(string path, string extension, string fileType, MigrationData data, TaskType type)
     {
         if (IsRunning)
             return;
@@ -76,13 +72,9 @@ public class MigrationManager(Configuration config) : IService
         var token = _source.Token;
         _currentTask = Task.Run(() =>
         {
-            HasCleanUpTask    = true;
-            IsCleanupTask     = true;
-            IsMigrationTask   = false;
-            IsRestorationTask = false;
-            CleanedUp         = 0;
-            CleanupFails      = 0;
-            foreach (var file in Directory.EnumerateFiles(path, "*.mdl.bak", SearchOption.AllDirectories))
+            CurrentTask = type;
+            data.Init();
+            foreach (var file in Directory.EnumerateFiles(path, extension, SearchOption.AllDirectories))
             {
                 if (token.IsCancellationRequested)
                     return;
@@ -90,19 +82,25 @@ public class MigrationManager(Configuration config) : IService
                 try
                 {
                     File.Delete(file);
-                    ++CleanedUp;
-                    Penumbra.Log.Debug($"Deleted model backup file {file}.");
+                    ++data.Changed;
+                    Penumbra.Log.Debug($"Deleted {fileType} backup file {file}.");
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Messager.NotificationMessage(ex, $"Failed to delete model backup file {file}", NotificationType.Warning);
-                    ++CleanupFails;
+                    Penumbra.Messager.NotificationMessage(ex, $"Failed to delete {fileType} backup file {file}", NotificationType.Warning);
+                    ++data.Failed;
                 }
             }
         }, token);
     }
 
-    public void RestoreBackups(string path)
+    public void RestoreMdlBackups(string path)
+        => RestoreBackups(path, "*.mdl.bak", "model", MdlRestoration, TaskType.MdlRestoration);
+
+    public void RestoreMtrlBackups(string path)
+        => RestoreBackups(path, "*.mtrl.bak", "material", MtrlRestoration, TaskType.MtrlRestoration);
+
+    private void RestoreBackups(string path, string extension, string fileType, MigrationData data, TaskType type)
     {
         if (IsRunning)
             return;
@@ -111,13 +109,9 @@ public class MigrationManager(Configuration config) : IService
         var token = _source.Token;
         _currentTask = Task.Run(() =>
         {
-            HasRestoreTask    = true;
-            IsCleanupTask     = false;
-            IsMigrationTask   = false;
-            IsRestorationTask = true;
-            CleanedUp         = 0;
-            CleanupFails      = 0;
-            foreach (var file in Directory.EnumerateFiles(path, "*.mdl.bak", SearchOption.AllDirectories))
+            CurrentTask = type;
+            data.Init();
+            foreach (var file in Directory.EnumerateFiles(path, extension, SearchOption.AllDirectories))
             {
                 if (token.IsCancellationRequested)
                     return;
@@ -126,40 +120,38 @@ public class MigrationManager(Configuration config) : IService
                 try
                 {
                     File.Copy(file, target, true);
-                    ++Restored;
-                    Penumbra.Log.Debug($"Restored model backup file {file} to {target}.");
+                    ++data.Changed;
+                    Penumbra.Log.Debug($"Restored {fileType} backup file {file} to {target}.");
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Messager.NotificationMessage(ex, $"Failed to restore model backup file {file} to {target}",
+                    Penumbra.Messager.NotificationMessage(ex, $"Failed to restore {fileType} backup file {file} to {target}",
                         NotificationType.Warning);
-                    ++RestoreFails;
+                    ++data.Failed;
                 }
             }
         }, token);
     }
 
-    /// <summary> Update the data of a .mdl file during TTMP extraction. Returns either the existing array or a new one. </summary>
-    public byte[] MigrateTtmpModel(string path, byte[] data)
-    {
-        FixLodNum(data);
-        if (!config.MigrateImportedModelsToV6)
-            return data;
+    public void MigrateMdlDirectory(string path, bool createBackups)
+        => MigrateDirectory(path, createBackups, "*.mdl", "model", MdlMigration, TaskType.MdlMigration, "from V5 to V6", "V6",
+            (file, fileData, backups) =>
+            {
+                var mdl = new MdlFile(fileData);
+                return MigrateModel(file, mdl, backups);
+            });
 
-        var version = BitConverter.ToUInt32(data);
-        if (version != 5)
-            return data;
+    public void MigrateMtrlDirectory(string path, bool createBackups)
+        => MigrateDirectory(path, createBackups, "*.mtrl", "material", MtrlMigration, TaskType.MtrlMigration, "to Dawntrail", "Dawntrail",
+            (file, fileData, backups) =>
+            {
+                var mtrl = new MtrlFile(fileData);
+                return MigrateMaterial(file, mtrl, backups);
+            }
+        );
 
-        var mdl = new MdlFile(data);
-        if (!mdl.ConvertV5ToV6())
-            return data;
-
-        data = mdl.Write();
-        Penumbra.Log.Debug($"Migrated model {path} from V5 to V6 during import.");
-        return data;
-    }
-
-    public void MigrateDirectory(string path, bool createBackups)
+    private void MigrateDirectory(string path, bool createBackups, string extension, string fileType, MigrationData data, TaskType type,
+        string action, string state, Func<string, byte[], bool, bool> func)
     {
         if (IsRunning)
             return;
@@ -168,14 +160,9 @@ public class MigrationManager(Configuration config) : IService
         var token = _source.Token;
         _currentTask = Task.Run(() =>
         {
-            HasMigrationTask  = true;
-            IsCleanupTask     = false;
-            IsMigrationTask   = true;
-            IsRestorationTask = false;
-            Unchanged         = 0;
-            Migrated          = 0;
-            Failed            = 0;
-            foreach (var file in Directory.EnumerateFiles(path, "*.mdl", SearchOption.AllDirectories))
+            CurrentTask = type;
+            data.Init();
+            foreach (var file in Directory.EnumerateFiles(path, extension, SearchOption.AllDirectories))
             {
                 if (token.IsCancellationRequested)
                     return;
@@ -183,24 +170,24 @@ public class MigrationManager(Configuration config) : IService
                 var timer = Stopwatch.StartNew();
                 try
                 {
-                    var data = File.ReadAllBytes(file);
-                    var mdl  = new MdlFile(data);
-                    if (MigrateModel(file, mdl, createBackups))
+                    var fileData = File.ReadAllBytes(file);
+                    if (func(file, fileData, createBackups))
                     {
-                        ++Migrated;
-                        Penumbra.Log.Debug($"Migrated model file {file} from V5 to V6 in {timer.ElapsedMilliseconds} ms.");
+                        ++data.Changed;
+                        Penumbra.Log.Debug($"Migrated {fileType} file {file} {action} in {timer.ElapsedMilliseconds} ms.");
                     }
                     else
                     {
-                        ++Unchanged;
-                        Penumbra.Log.Verbose($"Verified that model file {file} is already V6 in {timer.ElapsedMilliseconds} ms.");
+                        ++data.Unchanged;
+                        Penumbra.Log.Verbose($"Verified that {fileType} file {file} is already {state} in {timer.ElapsedMilliseconds} ms.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Messager.NotificationMessage(ex, $"Failed to migrate model file {file} to V6 in {timer.ElapsedMilliseconds} ms",
+                    ++data.Failed;
+                    Penumbra.Messager.NotificationMessage(ex,
+                        $"Failed to migrate {fileType} file {file} to {state} in {timer.ElapsedMilliseconds} ms",
                         NotificationType.Warning);
-                    ++Failed;
                 }
             }
         }, token);
@@ -211,22 +198,6 @@ public class MigrationManager(Configuration config) : IService
         _source?.Cancel();
         _source      = null;
         _currentTask = null;
-    }
-
-    private static void FixLodNum(byte[] data)
-    {
-        const int modelHeaderLodOffset = 22;
-
-        // Model file header LOD num
-        data[64] = 1;
-
-        // Model header LOD num
-        var stackSize           = BitConverter.ToUInt32(data, 4);
-        var runtimeBegin        = stackSize + 0x44;
-        var stringsLengthOffset = runtimeBegin + 4;
-        var stringsLength       = BitConverter.ToUInt32(data, (int)stringsLengthOffset);
-        var modelHeaderStart    = stringsLengthOffset + stringsLength + 4;
-        data[modelHeaderStart + modelHeaderLodOffset] = 1;
     }
 
     public static bool TryMigrateSingleModel(string path, bool createBackup)
@@ -259,6 +230,113 @@ public class MigrationManager(Configuration config) : IService
         }
     }
 
+    /// <summary> Writes or migrates a .mdl file during extraction from a regular archive. </summary>
+    public void MigrateMdlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
+    {
+        if (!config.MigrateImportedModelsToV6)
+        {
+            reader.WriteEntryToDirectory(directory, options);
+            return;
+        }
+
+        var       path = Path.Combine(directory, reader.Entry.Key);
+        using var s    = new MemoryStream();
+        using var e    = reader.OpenEntryStream();
+        e.CopyTo(s);
+        using var b       = new BinaryReader(s);
+        var       version = b.ReadUInt32();
+        if (version == MdlFile.V5)
+        {
+            var data = s.ToArray();
+            var mdl  = new MdlFile(data);
+            MigrateModel(path, mdl, false);
+            Penumbra.Log.Debug($"Migrated model {reader.Entry.Key} from V5 to V6 during import.");
+        }
+        else
+        {
+            using var f = File.Open(path, FileMode.Create, FileAccess.Write);
+            s.Seek(0, SeekOrigin.Begin);
+            s.WriteTo(f);
+        }
+    }
+
+    public void MigrateMtrlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
+    {
+        if (!config.MigrateImportedMaterialsToLegacy)
+        {
+            reader.WriteEntryToDirectory(directory, options);
+            return;
+        }
+
+        var       path = Path.Combine(directory, reader.Entry.Key);
+        using var s    = new MemoryStream();
+        using var e    = reader.OpenEntryStream();
+        e.CopyTo(s);
+        var file = new MtrlFile(s.GetBuffer());
+        if (!file.IsDawnTrail)
+        {
+            file.MigrateToDawntrail();
+            Penumbra.Log.Debug($"Migrated material {reader.Entry.Key} to Dawntrail during import.");
+        }
+
+        using var f = File.Open(path, FileMode.Create, FileAccess.Write);
+        s.Seek(0, SeekOrigin.Begin);
+        s.WriteTo(f);
+    }
+
+    /// <summary> Update the data of a .mdl file during TTMP extraction. Returns either the existing array or a new one. </summary>
+    public byte[] MigrateTtmpModel(string path, byte[] data)
+    {
+        FixLodNum(data);
+        if (!config.MigrateImportedModelsToV6)
+            return data;
+
+        var version = BitConverter.ToUInt32(data);
+        if (version != 5)
+            return data;
+
+        try
+        {
+            var mdl = new MdlFile(data);
+            if (!mdl.ConvertV5ToV6())
+                return data;
+
+            data = mdl.Write();
+            Penumbra.Log.Debug($"Migrated model {path} from V5 to V6 during import.");
+            return data;
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Warning($"Failed to migrate model {path} from V5 to V6 during import:\n{ex}");
+            return data;
+        }
+    }
+
+    /// <summary> Update the data of a .mtrl file during TTMP extraction. Returns either the existing array or a new one. </summary>
+    public byte[] MigrateTtmpMaterial(string path, byte[] data)
+    {
+        if (!config.MigrateImportedMaterialsToLegacy)
+            return data;
+
+        try
+        {
+            var mtrl = new MtrlFile(data);
+            if (mtrl.IsDawnTrail)
+                return data;
+
+            mtrl.MigrateToDawntrail();
+            data = mtrl.Write();
+            Penumbra.Log.Debug($"Migrated material {path} to Dawntrail during import.");
+            return data;
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Warning($"Failed to migrate material {path} to Dawntrail during import:\n{ex}");
+            return data;
+        }
+    }
+
+
     private static bool MigrateModel(string path, MdlFile mdl, bool createBackup)
     {
         if (!mdl.ConvertV5ToV6())
@@ -283,5 +361,21 @@ public class MigrationManager(Configuration config) : IService
             File.Copy(path, Path.ChangeExtension(path, ".mtrl.bak"));
         File.WriteAllBytes(path, data);
         return true;
+    }
+
+    private static void FixLodNum(byte[] data)
+    {
+        const int modelHeaderLodOffset = 22;
+
+        // Model file header LOD num
+        data[64] = 1;
+
+        // Model header LOD num
+        var stackSize           = BitConverter.ToUInt32(data, 4);
+        var runtimeBegin        = stackSize + 0x44;
+        var stringsLengthOffset = runtimeBegin + 4;
+        var stringsLength       = BitConverter.ToUInt32(data, (int)stringsLengthOffset);
+        var modelHeaderStart    = stringsLengthOffset + stringsLength + 4;
+        data[modelHeaderStart + modelHeaderLodOffset] = 1;
     }
 }

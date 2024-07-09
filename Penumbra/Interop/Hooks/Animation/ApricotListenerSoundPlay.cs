@@ -1,3 +1,4 @@
+using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
@@ -16,6 +17,7 @@ public sealed unsafe class ApricotListenerSoundPlay : FastHook<ApricotListenerSo
     private readonly CollectionResolver  _collectionResolver;
     private readonly CrashHandlerService _crashHandler;
 
+    // TODO because of inlining.
     public ApricotListenerSoundPlay(HookManager hooks, GameState state, CollectionResolver collectionResolver, CrashHandlerService crashHandler)
     {
         _state              = state;

@@ -255,8 +255,9 @@ public partial class TexToolsImporter
 
         data.Data = Path.GetExtension(extractedFile.FullName) switch
         {
-            ".mdl" => _migrationManager.MigrateTtmpModel(extractedFile.FullName, data.Data),
-            _      => data.Data,
+            ".mdl"  => _migrationManager.MigrateTtmpModel(extractedFile.FullName, data.Data),
+            ".mtrl" => _migrationManager.MigrateTtmpMaterial(extractedFile.FullName, data.Data),
+            _       => data.Data,
         };
 
         _compactor.WriteAllBytesAsync(extractedFile.FullName, data.Data, _token).Wait(_token);
