@@ -249,11 +249,13 @@ public class MigrationManager(Configuration config) : IService
         {
             var data = s.ToArray();
             var mdl  = new MdlFile(data);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             MigrateModel(path, mdl, false);
             Penumbra.Log.Debug($"Migrated model {reader.Entry.Key} from V5 to V6 during import.");
         }
         else
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             using var f = File.Open(path, FileMode.Create, FileAccess.Write);
             s.Seek(0, SeekOrigin.Begin);
             s.WriteTo(f);
@@ -279,6 +281,7 @@ public class MigrationManager(Configuration config) : IService
             Penumbra.Log.Debug($"Migrated material {reader.Entry.Key} to Dawntrail during import.");
         }
 
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var f = File.Open(path, FileMode.Create, FileAccess.Write);
         s.Seek(0, SeekOrigin.Begin);
         s.WriteTo(f);
