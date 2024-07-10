@@ -26,7 +26,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         SetupEffectiveSizes();
         collectionHeader.Draw(true);
         DrawFilters();
-        using var child = ImRaii.Child("##EffectiveChangesTab", -Vector2.One, false);
+        using var child = ImRaii.Child("##EffectiveChangesTab", ImGui.GetContentRegionAvail(), false);
         if (!child)
             return;
 

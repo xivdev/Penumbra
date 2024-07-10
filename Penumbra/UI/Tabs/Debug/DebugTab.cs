@@ -15,7 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Services;
-using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -96,6 +95,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly IClientState              _clientState;
     private readonly IpcTester                 _ipcTester;
     private readonly CrashHandlerPanel         _crashHandlerPanel;
+    private readonly TexHeaderDrawer           _texHeaderDrawer;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState,
@@ -105,7 +105,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
-        Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel)
+        Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -141,6 +141,7 @@ public class DebugTab : Window, ITab, IUiService
         _diagnostics               = diagnostics;
         _ipcTester                 = ipcTester;
         _crashHandlerPanel         = crashHandlerPanel;
+        _texHeaderDrawer           = texHeaderDrawer;
         _objects                   = objects;
         _clientState               = clientState;
     }
@@ -175,6 +176,8 @@ public class DebugTab : Window, ITab, IUiService
         DrawActorsDebug();
         ImGui.NewLine();
         DrawCollectionCaches();
+        ImGui.NewLine();
+        _texHeaderDrawer.Draw();
         ImGui.NewLine();
         DrawDebugCharacterUtility();
         ImGui.NewLine();
