@@ -213,6 +213,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
+        sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
         sb.Append(
             $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");

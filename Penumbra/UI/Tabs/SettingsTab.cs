@@ -757,6 +757,9 @@ public class SettingsTab : ITab, IUiService
         Checkbox("Auto Deduplicate on Import",
             "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
             _config.AutoDeduplicateOnImport, v => _config.AutoDeduplicateOnImport = v);
+        Checkbox("Auto Reduplicate UI Files on PMP Import",
+            "Automatically reduplicate and normalize UI-specific files on import from PMP files. This is STRONGLY recommended because deduplicated UI files crash the game.",
+            _config.AutoReduplicateUiOnImport, v => _config.AutoReduplicateUiOnImport = v);
         DrawCompressionBox();
         Checkbox("Keep Default Metadata Changes on Import",
             "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "

@@ -1,9 +1,7 @@
-using System.IO;
 using Dalamud.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
-using Penumbra.GameData.Files;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using SharpCompress.Archives;
@@ -11,7 +9,6 @@ using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
-using static FFXIVClientStructs.FFXIV.Client.UI.Misc.ConfigModule;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
 namespace Penumbra.Import;
@@ -114,6 +111,7 @@ public partial class TexToolsImporter
 
         _currentModDirectory.Refresh();
         _modManager.Creator.SplitMultiGroups(_currentModDirectory);
+        _editor.ModNormalizer.NormalizeUi(_currentModDirectory);
 
         return _currentModDirectory;
     }

@@ -96,6 +96,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
     public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool           AutoDeduplicateOnImport       { get; set; } = true;
+    public bool           AutoReduplicateUiOnImport     { get; set; } = true;
     public bool           UseFileSystemCompression      { get; set; } = true;
     public bool           EnableHttpApi                 { get; set; } = true;
 
