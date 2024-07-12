@@ -25,20 +25,22 @@ public partial class TexToolsImporter
         if (_modPackCount == 0)
         {
             ImGuiUtil.Center("Nothing to extract.");
-            return false;
+            return true;
         }
 
         if (_modPackCount == _currentModPackIdx)
-            return DrawEndState();
+        {
+            DrawEndState();
+            return true;
+        }
 
         ImGui.NewLine();
         var percentage = (float)_currentModPackIdx / _modPackCount;
         ImGui.ProgressBar(percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}");
         ImGui.NewLine();
-        if (State == ImporterState.DeduplicatingFiles)
-            ImGui.TextUnformatted($"Deduplicating {_currentModName}...");
-        else
-            ImGui.TextUnformatted($"Extracting {_currentModName}...");
+        ImGui.TextUnformatted(State == ImporterState.DeduplicatingFiles
+            ? $"Deduplicating {_currentModName}..."
+            : $"Extracting {_currentModName}...");
 
         if (_currentNumOptions > 1)
         {
@@ -63,18 +65,15 @@ public partial class TexToolsImporter
     }
 
 
-    private bool DrawEndState()
+    private void DrawEndState()
     {
         var success = ExtractedMods.Count(t => t.Error == null);
-
-        if (ImGui.IsKeyPressed(ImGuiKey.Escape))
-            return true;
 
         ImGui.TextUnformatted($"Successfully extracted {success} / {ExtractedMods.Count} files.");
         ImGui.NewLine();
         using var table = ImRaii.Table("##files", 2);
         if (!table)
-            return false;
+            return;
 
         foreach (var (file, dir, ex) in ExtractedMods)
         {
@@ -93,8 +92,6 @@ public partial class TexToolsImporter
                 ImGuiUtil.HoverTooltip(ex.ToString());
             }
         }
-
-        return false;
     }
 
     public bool DrawCancelButton(Vector2 size)

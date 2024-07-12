@@ -1,4 +1,6 @@
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui.Services;
@@ -68,13 +70,16 @@ public sealed class ImportPopup : Window, IUiService
         ImGui.SetNextWindowSize(size);
         using var popup = ImRaii.Popup(importPopup, ImGuiWindowFlags.Modal);
         PopupWasDrawn = true;
+        var terminate = false;
         using (var child = ImRaii.Child("##import", new Vector2(-1, size.Y - ImGui.GetFrameHeight() * 2)))
         {
-            if (child)
-                import.DrawProgressInfo(new Vector2(-1, ImGui.GetFrameHeight()));
+            if (child.Success && import.DrawProgressInfo(new Vector2(-1, ImGui.GetFrameHeight())))
+                if (!ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize())
+                 && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    terminate = true;
         }
 
-        var terminate = import.State == ImporterState.Done
+        terminate |= import.State == ImporterState.Done
             ? ImGui.Button("Close", -Vector2.UnitX)
             : import.DrawCancelButton(-Vector2.UnitX);
         if (terminate)
