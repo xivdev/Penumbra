@@ -27,6 +27,7 @@ public interface IModGroup
     public Mod                Mod             { get; }
     public string             Name            { get; set; }
     public string             Description     { get; set; }
+    public string             Image           { get; set; }
     public GroupType          Type            { get; }
     public GroupDrawBehaviour Behaviour       { get; }
     public ModPriority        Priority        { get; set; }

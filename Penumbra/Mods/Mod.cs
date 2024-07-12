@@ -51,6 +51,7 @@ public sealed class Mod : IMod
     public string                Description { get; internal set; } = string.Empty;
     public string                Version     { get; internal set; } = string.Empty;
     public string                Website     { get; internal set; } = string.Empty;
+    public string                Image       { get; internal set; } = string.Empty;
     public IReadOnlyList<string> ModTags     { get; internal set; } = [];
 
 

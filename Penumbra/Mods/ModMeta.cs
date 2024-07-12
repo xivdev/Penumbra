@@ -19,6 +19,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
             { nameof(Mod.Name), JToken.FromObject(mod.Name) },
             { nameof(Mod.Author), JToken.FromObject(mod.Author) },
             { nameof(Mod.Description), JToken.FromObject(mod.Description) },
+            { nameof(Mod.Image), JToken.FromObject(mod.Image) },
             { nameof(Mod.Version), JToken.FromObject(mod.Version) },
             { nameof(Mod.Website), JToken.FromObject(mod.Website) },
             { nameof(Mod.ModTags), JToken.FromObject(mod.ModTags) },

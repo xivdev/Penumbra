@@ -22,6 +22,7 @@ public enum ModDataChangeType : ushort
     Favorite    = 0x0200,
     LocalTags   = 0x0400,
     Note        = 0x0800,
+    Image       = 0x1000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService) : IService
@@ -113,6 +114,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             var newName        = json[nameof(Mod.Name)]?.Value<string>() ?? string.Empty;
             var newAuthor      = json[nameof(Mod.Author)]?.Value<string>() ?? string.Empty;
             var newDescription = json[nameof(Mod.Description)]?.Value<string>() ?? string.Empty;
+            var newImage       = json[nameof(Mod.Image)]?.Value<string>() ?? string.Empty;
             var newVersion     = json[nameof(Mod.Version)]?.Value<string>() ?? string.Empty;
             var newWebsite     = json[nameof(Mod.Website)]?.Value<string>() ?? string.Empty;
             var newFileVersion = json[nameof(ModMeta.FileVersion)]?.Value<uint>() ?? 0;
@@ -136,6 +138,12 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             {
                 changes         |= ModDataChangeType.Description;
                 mod.Description =  newDescription;
+            }
+
+            if (mod.Image != newImage)
+            {
+                changes   |= ModDataChangeType.Image;
+                mod.Image =  newImage;
             }
 
             if (mod.Version != newVersion)

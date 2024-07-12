@@ -26,6 +26,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public          Mod               Mod             { get; }      = mod;
     public          string            Name            { get; set; } = "Group";
     public          string            Description     { get; set; } = string.Empty;
+    public          string            Image           { get; set; } = string.Empty;
     public          ModPriority       Priority        { get; set; }
     public          Setting           DefaultSettings { get; set; }
     public readonly List<MultiSubMod> OptionData = [];
@@ -69,6 +70,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         {
             Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
+            Image           = json[nameof(Image)]?.ToObject<string>() ?? string.Empty,
             Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
         };

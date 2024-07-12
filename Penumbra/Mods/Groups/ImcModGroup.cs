@@ -20,6 +20,7 @@ public class ImcModGroup(Mod mod) : IModGroup
     public Mod    Mod         { get; }      = mod;
     public string Name        { get; set; } = "Option";
     public string Description { get; set; } = string.Empty;
+    public string Image       { get; set; } = string.Empty;
 
     public GroupType Type
         => GroupType.Imc;
@@ -170,6 +171,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         {
             Name         = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
             Description  = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
+            Image        = json[nameof(Image)]?.ToObject<string>() ?? string.Empty,
             Priority     = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultEntry = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
             AllVariants  = json[nameof(AllVariants)]?.ToObject<bool>() ?? false,
