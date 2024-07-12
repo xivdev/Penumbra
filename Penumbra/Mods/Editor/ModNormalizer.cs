@@ -277,6 +277,7 @@ public class ModNormalizer(ModManager _modManager, Configuration _config) : ISer
 
     private void ApplyRedirections()
     {
+        _modManager.OptionEditor.SetFiles(Mod.Default, _redirections[0][0]);
         foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
             foreach (var (container, containerIdx) in group.DataContainers.WithIndex())
                 _modManager.OptionEditor.SetFiles(container, _redirections[groupIdx + 1][containerIdx]);
