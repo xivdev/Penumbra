@@ -100,7 +100,8 @@ public readonly record struct ImcIdentifier(
                     return false;
                 if (!Enum.IsDefined(ObjectType))
                     return false;
-
+                if (ItemData.AdaptOffhandImc(PrimaryId, out _))
+                    return false;
                 break;
         }
 

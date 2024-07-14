@@ -45,7 +45,7 @@ public class ValidityChecker : IService
     public void LogExceptions()
     {
         if (ImcExceptions.Count > 0)
-            Penumbra.Messager.NotificationMessage($"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
+            Penumbra.Messager.NotificationMessage($"{ImcExceptions.Count} IMC Exceptions thrown during Penumbra load. Please repair your game files.",
                 NotificationType.Warning);
     }
 
