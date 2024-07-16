@@ -132,7 +132,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
             sb.Append($"   |   {unused} Unused Files");
 
         if (_editor.Files.Missing.Count > 0)
-            sb.Append($"   |   {_editor.Files.Available.Count} Missing Files");
+            sb.Append($"   |   {_editor.Files.Missing.Count} Missing Files");
 
         if (redirections > 0)
             sb.Append($"   |   {redirections} Redirections");
