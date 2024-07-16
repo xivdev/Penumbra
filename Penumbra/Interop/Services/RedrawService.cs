@@ -301,9 +301,14 @@ public sealed unsafe partial class RedrawService : IDisposable
             (CharacterModes)6 => // fishing
                 GetCurrentAnimationId(obj) switch
                 {
-                    278 => true, // line out.
-                    283 => true, // reeling in
-                    _   => false,
+                    278  => true, // line out.
+                    283  => true, // reeling in
+                    284  => true, // reeling in
+                    287  => true, // reeling in 2
+                    3149 => true, // line out sitting,
+                    3155 => true, // reeling in sitting,
+                    3159 => true, // reeling in sitting 2,
+                    _    => false,
                 },
             _ => false,
         };
@@ -419,7 +424,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (housingManager == null)
             return;
 
-        var currentTerritory = (OutdoorTerritory*) housingManager->CurrentTerritory;
+        var currentTerritory = (OutdoorTerritory*)housingManager->CurrentTerritory;
         if (currentTerritory == null || currentTerritory->GetTerritoryType() is not HousingTerritoryType.Outdoor)
             return;
 
