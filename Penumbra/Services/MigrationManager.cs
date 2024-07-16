@@ -233,8 +233,6 @@ public class MigrationManager(Configuration config) : IService
     /// <summary> Writes or migrates a .mdl file during extraction from a regular archive. </summary>
     public void MigrateMdlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
     {
-        // TODO reactivate when this works.
-        return;
         if (!config.MigrateImportedModelsToV6)
         {
             reader.WriteEntryToDirectory(directory, options);
@@ -267,9 +265,7 @@ public class MigrationManager(Configuration config) : IService
 
     public void MigrateMtrlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
     {
-        // TODO reactivate when this works.
-        return;
-        if (!config.MigrateImportedMaterialsToLegacy)
+        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO change when this is working
         {
             reader.WriteEntryToDirectory(directory, options);
             return;
@@ -327,7 +323,7 @@ public class MigrationManager(Configuration config) : IService
     /// <summary> Update the data of a .mtrl file during TTMP extraction. Returns either the existing array or a new one. </summary>
     public byte[] MigrateTtmpMaterial(string path, byte[] data)
     {
-        if (!config.MigrateImportedMaterialsToLegacy)
+        if (!config.MigrateImportedMaterialsToLegacy || true) // TODO fix when this is working
             return data;
 
         try
