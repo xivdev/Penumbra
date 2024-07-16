@@ -59,7 +59,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
                 importDate = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
                 favorite   = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
                 note       = json[nameof(Mod.Note)]?.Value<string>() ?? note;
-                localTags  = json[nameof(Mod.LocalTags)]?.Values<string>().OfType<string>() ?? localTags;
+                localTags  = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
                 save       = false;
             }
             catch (Exception e)
@@ -119,7 +119,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             var newWebsite     = json[nameof(Mod.Website)]?.Value<string>() ?? string.Empty;
             var newFileVersion = json[nameof(ModMeta.FileVersion)]?.Value<uint>() ?? 0;
             var importDate     = json[nameof(Mod.ImportDate)]?.Value<long>();
-            var modTags        = json[nameof(Mod.ModTags)]?.Values<string>().OfType<string>();
+            var modTags        = (json[nameof(Mod.ModTags)] as JArray)?.Values<string>().OfType<string>();
 
             ModDataChangeType changes = 0;
             if (mod.Name != newName)

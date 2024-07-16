@@ -115,12 +115,21 @@ public sealed class ModManager : ModStorage, IDisposable, IService
                 Penumbra.Log.Error($"Could not delete the mod {mod.ModPath.Name}:\n{e}");
             }
 
+        RemoveMod(mod);
+    }
+
+    /// <summary>
+    /// Remove a loaded mod. The event is invoked before the mod is removed from the list.
+    /// Does not delete the mod from the filesystem.
+    /// Updates indices of later mods.
+    /// </summary>
+    public void RemoveMod(Mod mod)
+    {
         _communicator.ModPathChanged.Invoke(ModPathChangeType.Deleted, mod, mod.ModPath, null);
         foreach (var remainingMod in Mods.Skip(mod.Index + 1))
             --remainingMod.Index;
         Mods.RemoveAt(mod.Index);
-
-        Penumbra.Log.Debug($"Deleted mod {mod.Name}.");
+        Penumbra.Log.Debug($"Removed loaded mod {mod.Name} from list.");
     }
 
     /// <summary>
@@ -135,10 +144,9 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         if (!Creator.ReloadMod(mod, true, out var metaChange))
         {
             Penumbra.Log.Warning(mod.Name.Length == 0
-                ? $"Reloading mod {oldName} has failed, new name is empty. Deleting instead."
-                : $"Reloading mod {oldName} failed, {mod.ModPath.FullName} does not exist anymore or it ha. Deleting instead.");
-
-            DeleteMod(mod);
+                ? $"Reloading mod {oldName} has failed, new name is empty. Removing from loaded mods instead."
+                : $"Reloading mod {oldName} failed, {mod.ModPath.FullName} does not exist anymore or it has invalid data. Removing from loaded mods instead.");
+            RemoveMod(mod);
             return;
         }
 
