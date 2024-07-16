@@ -22,10 +22,11 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
         DrawMdlMigration();
         DrawMdlRestore();
         DrawMdlCleanup();
-        ImGui.Separator();
-        DrawMtrlMigration();
-        DrawMtrlRestore();
-        DrawMtrlCleanup();
+        // TODO enable when this works
+        //ImGui.Separator();
+        //DrawMtrlMigration();
+        //DrawMtrlRestore();
+        //DrawMtrlCleanup();
     }
 
     private void DrawSettings()
@@ -39,15 +40,16 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
         ImUtf8.HoverTooltip("This increments the version marker and restructures the bone table to the new version."u8);
 
-        value = config.MigrateImportedMaterialsToLegacy;
-        if (ImUtf8.Checkbox("Automatically Migrate Materials to Dawntrail on Import"u8, ref value))
-        {
-            config.MigrateImportedMaterialsToLegacy = value;
-            config.Save();
-        }
-
-        ImUtf8.HoverTooltip(
-            "This currently only increases the color-table size and switches the shader from 'character.shpk' to 'characterlegacy.shpk', if the former is used."u8);
+        // TODO enable when this works
+        //value = config.MigrateImportedMaterialsToLegacy;
+        //if (ImUtf8.Checkbox("Automatically Migrate Materials to Dawntrail on Import"u8, ref value))
+        //{
+        //    config.MigrateImportedMaterialsToLegacy = value;
+        //    config.Save();
+        //}
+        //
+        //ImUtf8.HoverTooltip(
+        //    "This currently only increases the color-table size and switches the shader from 'character.shpk' to 'characterlegacy.shpk', if the former is used."u8);
 
         ImUtf8.Checkbox("Create Backups During Manual Migration", ref _createBackups);
     }

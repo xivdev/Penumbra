@@ -233,6 +233,8 @@ public class MigrationManager(Configuration config) : IService
     /// <summary> Writes or migrates a .mdl file during extraction from a regular archive. </summary>
     public void MigrateMdlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
     {
+        // TODO reactivate when this works.
+        return;
         if (!config.MigrateImportedModelsToV6)
         {
             reader.WriteEntryToDirectory(directory, options);
@@ -265,6 +267,8 @@ public class MigrationManager(Configuration config) : IService
 
     public void MigrateMtrlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
     {
+        // TODO reactivate when this works.
+        return;
         if (!config.MigrateImportedMaterialsToLegacy)
         {
             reader.WriteEntryToDirectory(directory, options);
@@ -276,16 +280,20 @@ public class MigrationManager(Configuration config) : IService
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);
         var file = new MtrlFile(s.GetBuffer());
-        if (!file.IsDawnTrail)
-        {
-            file.MigrateToDawntrail();
-            Penumbra.Log.Debug($"Migrated material {reader.Entry.Key} to Dawntrail during import.");
-        }
 
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var f = File.Open(path, FileMode.Create, FileAccess.Write);
-        s.Seek(0, SeekOrigin.Begin);
-        s.WriteTo(f);
+        if (file.IsDawnTrail)
+        {
+            file.MigrateToDawntrail();
+            Penumbra.Log.Debug($"Migrated material {reader.Entry.Key} to Dawntrail during import.");
+            f.Write(file.Write());
+        }
+        else
+        {
+            s.Seek(0, SeekOrigin.Begin);
+            s.WriteTo(f);
+        }
     }
 
     /// <summary> Update the data of a .mdl file during TTMP extraction. Returns either the existing array or a new one. </summary>
