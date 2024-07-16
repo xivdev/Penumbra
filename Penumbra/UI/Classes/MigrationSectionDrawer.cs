@@ -23,10 +23,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
         DrawMdlRestore();
         DrawMdlCleanup();
         // TODO enable when this works
-        //ImGui.Separator();
+        ImGui.Separator();
         //DrawMtrlMigration();
-        //DrawMtrlRestore();
-        //DrawMtrlCleanup();
+        DrawMtrlRestore();
+        DrawMtrlCleanup();
     }
 
     private void DrawSettings()
