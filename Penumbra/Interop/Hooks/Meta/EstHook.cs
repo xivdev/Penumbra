@@ -35,7 +35,7 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
         else
             ret = Task.Result.Original(estResource, genderRace, id);
 
-        Penumbra.Log.Information($"[FindEstEntry] Invoked with 0x{(nint)estResource:X}, {genderRace}, {id}, returned {ret.Value}.");
+        Penumbra.Log.Excessive($"[FindEstEntry] Invoked with 0x{(nint)estResource:X}, {genderRace}, {id}, returned {ret.Value}.");
         return ret;
     }
 
