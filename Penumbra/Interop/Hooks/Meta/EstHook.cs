@@ -3,51 +3,58 @@ using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public class EstHook : FastHook<EstHook.Delegate>, IDisposable
+public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
 {
-    public delegate EstEntry Delegate(uint id, int estType, uint genderRace);
+    public delegate EstEntry Delegate(ResourceHandle* estResource, uint id, uint genderRace);
 
-    private readonly MetaState _metaState;
+    private readonly CharacterUtility _characterUtility;
+    private readonly MetaState        _metaState;
 
-    public EstHook(HookManager hooks, MetaState metaState)
+    public EstHook(HookManager hooks, MetaState metaState, CharacterUtility characterUtility)
     {
-        _metaState                    =  metaState;
-        Task                          =  hooks.CreateHook<Delegate>("GetEstEntry", Sigs.GetEstEntry, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
+        _metaState        = metaState;
+        _characterUtility = characterUtility;
+        Task = hooks.CreateHook<Delegate>("FindEstEntry", Sigs.FindEstEntry, Detour,
+            metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
         _metaState.Config.ModsEnabled += Toggle;
     }
 
-    private EstEntry Detour(uint genderRace, int estType, uint id)
+    private EstEntry Detour(ResourceHandle* estResource, uint genderRace, uint id)
     {
         EstEntry ret;
         if (_metaState.EstCollection.TryPeek(out var collection)
          && collection is { Valid: true, ModCollection.MetaCache: { } cache }
-         && cache.Est.TryGetValue(Convert(genderRace, estType, id), out var entry))
+         && cache.Est.TryGetValue(Convert(estResource, genderRace, id), out var entry))
             ret = entry.Entry;
         else
-            ret = Task.Result.Original(genderRace, estType, id);
+            ret = Task.Result.Original(estResource, genderRace, id);
 
-        Penumbra.Log.Excessive($"[GetEstEntry] Invoked with {genderRace}, {estType}, {id}, returned {ret.Value}.");
+        Penumbra.Log.Information($"[FindEstEntry] Invoked with 0x{(nint)estResource:X}, {genderRace}, {id}, returned {ret.Value}.");
         return ret;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static EstIdentifier Convert(uint genderRace, int estType, uint id)
+    private EstIdentifier Convert(ResourceHandle* estResource, uint genderRace, uint id)
     {
         var i  = new PrimaryId((ushort)id);
         var gr = (GenderRace)genderRace;
-        var type = estType switch
-        {
-            1 => EstType.Face,
-            2 => EstType.Hair,
-            3 => EstType.Head,
-            4 => EstType.Body,
-            _ => (EstType)0,
-        };
-        return new EstIdentifier(i, type, gr);
+
+        if (estResource == _characterUtility.Address->BodyEstResource)
+            return new EstIdentifier(i, EstType.Body, gr);
+        if (estResource == _characterUtility.Address->HairEstResource)
+            return new EstIdentifier(i, EstType.Hair, gr);
+        if (estResource == _characterUtility.Address->FaceEstResource)
+            return new EstIdentifier(i, EstType.Face, gr);
+        if (estResource == _characterUtility.Address->HeadEstResource)
+            return new EstIdentifier(i, EstType.Head, gr);
+
+        return new EstIdentifier(i, 0, gr);
     }
 
     public void Dispose()
