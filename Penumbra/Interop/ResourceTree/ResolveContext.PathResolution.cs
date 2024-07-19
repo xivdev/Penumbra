@@ -3,6 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String;
@@ -51,10 +52,8 @@ internal partial record ResolveContext
             return GenderRace.MidlanderMale;
 
         var metaCache = Global.Collection.MetaCache;
-        if (metaCache == null)
-            return GenderRace.MidlanderMale;
-
-        var entry = metaCache.GetEqdpEntry(characterRaceCode, accessory, primaryId);
+        var entry = metaCache?.GetEqdpEntry(characterRaceCode, accessory, primaryId)
+         ?? ExpandedEqdpFile.GetDefault(Global.MetaFileManager, characterRaceCode, accessory, primaryId);
         if (entry.ToBits(slot).Item2)
             return characterRaceCode;
 
@@ -62,7 +61,8 @@ internal partial record ResolveContext
         if (fallbackRaceCode == GenderRace.MidlanderMale)
             return GenderRace.MidlanderMale;
 
-        entry = metaCache.GetEqdpEntry(fallbackRaceCode, accessory, primaryId);
+        entry = metaCache?.GetEqdpEntry(fallbackRaceCode, accessory, primaryId)
+         ?? ExpandedEqdpFile.GetDefault(Global.MetaFileManager, fallbackRaceCode, accessory, primaryId);
         if (entry.ToBits(slot).Item2)
             return fallbackRaceCode;
 
@@ -271,8 +271,9 @@ internal partial record ResolveContext
     private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstType type,
         PrimaryId primary)
     {
-        var metaCache   = Global.Collection.MetaCache;
-        var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary) ?? default;
+        var metaCache = Global.Collection.MetaCache;
+        var skeletonSet = metaCache?.GetEstEntry(type, raceCode, primary)
+         ?? EstFile.GetDefault(Global.MetaFileManager, type, raceCode, primary);
         return (raceCode, type.ToName(), skeletonSet.AsId);
     }
 

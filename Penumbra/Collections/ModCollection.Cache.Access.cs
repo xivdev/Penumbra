@@ -43,15 +43,6 @@ public partial class ModCollection
     internal MetaCache? MetaCache
         => _cache?.Meta;
 
-    public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
-    {
-        if (_cache != null)
-            return _cache.Meta.GetImcFile(path, out file);
-
-        file = null;
-        return false;
-    }
-
     internal IReadOnlyDictionary<Utf8GamePath, ModPath> ResolvedFiles
         => _cache?.ResolvedFiles ?? new ConcurrentDictionary<Utf8GamePath, ModPath>();
 

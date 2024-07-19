@@ -8,6 +8,7 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Meta;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -15,6 +16,7 @@ namespace Penumbra.Interop.ResourceTree;
 public class ResourceTreeFactory(
     IDataManager gameData,
     ObjectManager objects,
+    MetaFileManager metaFileManager,
     CollectionResolver resolver,
     ObjectIdentification identifier,
     Configuration config,
@@ -78,7 +80,7 @@ public class ResourceTreeFactory(
         var networked = character.EntityId != 0xE0000000;
         var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
             networked, collectionResolveData.ModCollection.Name, collectionResolveData.ModCollection.AnonymizedName);
-        var globalContext = new GlobalResolveContext(identifier, collectionResolveData.ModCollection,
+        var globalContext = new GlobalResolveContext(metaFileManager, identifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
         using (var _ = pathState.EnterInternalResolve())
         {

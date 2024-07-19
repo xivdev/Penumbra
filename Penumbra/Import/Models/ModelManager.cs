@@ -12,6 +12,8 @@ using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
 using Penumbra.Import.Models.Import;
 using Penumbra.Import.Textures;
+using Penumbra.Meta;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
 using SixLabors.ImageSharp;
@@ -22,7 +24,7 @@ namespace Penumbra.Import.Models;
 using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
-public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser)
+public sealed class ModelManager(IFramework framework, MetaFileManager metaFileManager, ActiveCollections collections, GamePathParser parser)
     : SingleTaskQueue, IDisposable, IService
 {
     private readonly IFramework _framework = framework;
@@ -97,7 +99,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         // Try to use an entry from provided manipulations, falling back to the current collection.
         var targetId = modEst?.Value
          ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
-         ?? EstEntry.Zero;
+         ?? EstFile.GetDefault(metaFileManager, type, info.GenderRace, info.PrimaryId);
 
         // If there's no entries, we can assume that there's no additional skeleton.
         if (targetId == EstEntry.Zero)

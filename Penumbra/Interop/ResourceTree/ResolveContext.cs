@@ -11,6 +11,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Meta;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
@@ -19,7 +20,12 @@ using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.M
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal record GlobalResolveContext(ObjectIdentification Identifier, ModCollection Collection, TreeBuildCache TreeBuildCache, bool WithUiData)
+internal record GlobalResolveContext(
+    MetaFileManager MetaFileManager,
+    ObjectIdentification Identifier,
+    ModCollection Collection,
+    TreeBuildCache TreeBuildCache,
+    bool WithUiData)
 {
     public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
@@ -111,7 +117,7 @@ internal unsafe partial record ResolveContext(
         if (resourceHandle == null)
             throw new ArgumentNullException(nameof(resourceHandle));
 
-        var fileName       = (ReadOnlySpan<byte>) resourceHandle->FileName.AsSpan();
+        var fileName       = (ReadOnlySpan<byte>)resourceHandle->FileName.AsSpan();
         var additionalData = ByteString.Empty;
         if (PathDataHandler.Split(fileName, out fileName, out var data))
             additionalData = ByteString.FromSpanUnsafe(data, false).Clone();

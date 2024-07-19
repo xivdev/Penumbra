@@ -103,10 +103,6 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     ~MetaCache()
         => Dispose();
 
-    /// <summary> Try to obtain a manipulated IMC file. </summary>
-    public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
-        => Imc.GetFile(path.Path, out file);
-
     internal EqdpEntry GetEqdpEntry(GenderRace race, bool accessory, PrimaryId primaryId)
         => Eqdp.ApplyFullEntry(primaryId, race, accessory, Meta.Files.ExpandedEqdpFile.GetDefault(manager, race, accessory, primaryId));
 
