@@ -15,7 +15,7 @@ public unsafe struct CharacterUtilityData
         .Where(n => n.First.StartsWith("Eqdp"))
         .Select(n => n.Second).ToArray();
 
-    public const int TotalNumResources = 89;
+    public const int TotalNumResources = 114;
 
     /// <summary> Obtain the index for the eqdp file corresponding to the given race code and accessory. </summary>
     public static MetaIndex EqdpIdx(GenderRace raceCode, bool accessory)

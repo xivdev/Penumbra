@@ -199,8 +199,6 @@ internal partial record ResolveContext
         ByteString? path;
         try
         {
-            Penumbra.Log.Information($"{(nint)CharacterBase:X} {ModelType} {SlotIndex} 0x{(ulong)mtrlFileName:X}");
-            Penumbra.Log.Information($"{new ByteString(mtrlFileName)}");
             path = CharacterBase->ResolveMtrlPathAsByteString(SlotIndex, mtrlFileName);
         }
         catch (AccessViolationException)

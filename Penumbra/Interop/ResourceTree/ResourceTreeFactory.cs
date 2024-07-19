@@ -18,7 +18,7 @@ public class ResourceTreeFactory(
     ObjectManager objects,
     MetaFileManager metaFileManager,
     CollectionResolver resolver,
-    ObjectIdentification identifier,
+    ObjectIdentification objectIdentifier,
     Configuration config,
     ActorManager actors,
     PathState pathState) : IService
@@ -80,7 +80,7 @@ public class ResourceTreeFactory(
         var networked = character.EntityId != 0xE0000000;
         var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
             networked, collectionResolveData.ModCollection.Name, collectionResolveData.ModCollection.AnonymizedName);
-        var globalContext = new GlobalResolveContext(metaFileManager, identifier, collectionResolveData.ModCollection,
+        var globalContext = new GlobalResolveContext(metaFileManager, objectIdentifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
         using (var _ = pathState.EnterInternalResolve())
         {
@@ -125,6 +125,14 @@ public class ResourceTreeFactory(
 
     private static void FilterFullPaths(ResourceTree tree, string? onlyWithinPath)
     {
+        foreach (var node in tree.FlatNodes)
+        {
+            if (!ShallKeepPath(node.FullPath, onlyWithinPath))
+                node.FullPath = FullPath.Empty;
+        }
+
+        return;
+
         static bool ShallKeepPath(FullPath fullPath, string? onlyWithinPath)
         {
             if (!fullPath.IsRooted)
@@ -138,12 +146,6 @@ public class ResourceTreeFactory(
             }
 
             return fullPath.Exists;
-        }
-
-        foreach (var node in tree.FlatNodes)
-        {
-            if (!ShallKeepPath(node.FullPath, onlyWithinPath))
-                node.FullPath = FullPath.Empty;
         }
     }
 
