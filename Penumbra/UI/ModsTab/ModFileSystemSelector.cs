@@ -196,10 +196,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         }
 
         while (_modImportManager.AddUnpackedMod(out var mod))
-        {
-            MoveModToDefaultDirectory(mod);
             SelectByValue(mod);
-        }
     }
 
     protected override void DrawLeafName(FileSystem<Mod>.Leaf leaf, in ModState state, bool selected)
@@ -377,34 +374,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             _collectionManager.Editor.SetMultipleModInheritances(_collectionManager.Active.Current, mods, enabled);
         else
             _collectionManager.Editor.SetMultipleModStates(_collectionManager.Active.Current, mods, enabled);
-    }
-
-    /// <summary>
-    /// If a default import folder is setup, try to move the given mod in there.
-    /// If the folder does not exist, create it if possible.
-    /// </summary>
-    /// <param name="mod"></param>
-    private void MoveModToDefaultDirectory(Mod mod)
-    {
-        if (_config.DefaultImportFolder.Length == 0)
-            return;
-
-        try
-        {
-            var leaf = FileSystem.Root.GetChildren(ISortMode<Mod>.Lexicographical)
-                .FirstOrDefault(f => f is FileSystem<Mod>.Leaf l && l.Value == mod);
-            if (leaf == null)
-                throw new Exception("Mod was not found at root.");
-
-            var folder = FileSystem.FindOrCreateAllFolders(_config.DefaultImportFolder);
-            FileSystem.Move(leaf, folder);
-        }
-        catch (Exception e)
-        {
-            _messager.NotificationMessage(e,
-                $"Could not move newly imported mod {mod.Name} to default import folder {_config.DefaultImportFolder}.",
-                NotificationType.Warning);
-        }
     }
 
     private void DrawHelpPopup()
