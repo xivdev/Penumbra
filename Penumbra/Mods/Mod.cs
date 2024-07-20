@@ -73,7 +73,7 @@ public sealed class Mod : IMod
 
         var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
         var setManips        = new MetaDictionary();
-        foreach (var (group, groupIndex) in Groups.WithIndex().OrderByDescending(g => g.Value.Priority))
+        foreach (var (group, groupIndex) in Groups.WithIndex().Reverse().OrderByDescending(g => g.Value.Priority))
         {
             var config = settings.Settings[groupIndex];
             group.AddData(config, dictRedirections, setManips);
