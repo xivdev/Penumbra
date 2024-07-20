@@ -75,7 +75,7 @@ public partial class ModEditWindow
             ImGui.TableHeader("Dye Preview");
         }
 
-        for (var i = 0; i < ColorTable.NumUsedRows; ++i)
+        for (var i = 0; i < ColorTable.NumRows; ++i)
         {
             ret |= DrawColorTableRow(tab, i, disabled);
             ImGui.TableNextRow();
