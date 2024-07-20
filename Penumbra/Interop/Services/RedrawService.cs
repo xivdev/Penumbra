@@ -424,8 +424,8 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (housingManager == null)
             return;
 
-        var currentTerritory = (OutdoorTerritory*)housingManager->CurrentTerritory;
-        if (currentTerritory == null || currentTerritory->GetTerritoryType() is not HousingTerritoryType.Outdoor)
+        var currentTerritory = (IndoorTerritory*)housingManager->CurrentTerritory;
+        if (currentTerritory == null || currentTerritory->GetTerritoryType() is not HousingTerritoryType.Indoor)
             return;
 
 
