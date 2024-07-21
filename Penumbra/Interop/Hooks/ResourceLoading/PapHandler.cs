@@ -17,7 +17,5 @@ public sealed class PapHandler(PapRewriter.PapResourceHandlerPrototype papResour
     }
     
     public void Dispose()
-    {
-        _papRewriter.Dispose();
-    }
+        => _papRewriter.Dispose();
 }

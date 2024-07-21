@@ -5,65 +5,56 @@ using Decoder = Iced.Intel.Decoder;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-// A good chunk of this was blatantly stolen from Dalamud's SigScanner 'cause I could not be faffed, maybe I'll rewrite it later
-public class PeSigScanner : IDisposable
+// A good chunk of this was blatantly stolen from Dalamud's SigScanner 'cause Winter could not be faffed, Winter will definitely not rewrite it later
+public unsafe class PeSigScanner : IDisposable
 {
-    private MemoryMappedFile File { get; }
+    private readonly MemoryMappedFile         _file;
+    private readonly MemoryMappedViewAccessor _textSection;
 
-    private uint TextSectionStart { get; }
-    private uint TextSectionSize  { get; }
-    
-    private IntPtr ModuleBaseAddress         { get; }
-    private uint   TextSectionVirtualAddress { get; }
-    
-    private MemoryMappedViewAccessor TextSection { get; }
-    
-    
+    private readonly nint _moduleBaseAddress;
+    private readonly uint _textSectionVirtualAddress;
+
+
     public PeSigScanner()
     {
         var mainModule = Process.GetCurrentProcess().MainModule!;
-        var fileName     = mainModule.FileName;
-        ModuleBaseAddress = mainModule.BaseAddress;
+        var fileName   = mainModule.FileName;
+        _moduleBaseAddress = mainModule.BaseAddress;
 
         if (fileName == null)
-        {
-            throw new Exception("Can't get main module path, the fuck is going on?");
-        }
-        
-        File = MemoryMappedFile.CreateFromFile(fileName, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+            throw new Exception("Unable to obtain main module path. This should not happen.");
 
-        using var fileStream = File.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
+        _file = MemoryMappedFile.CreateFromFile(fileName, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+
+        using var fileStream = _file.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
         var       pe         = new PeFile(fileStream);
 
         var textSection = pe.ImageSectionHeaders!.First(header => header.Name == ".text");
 
-        TextSectionStart = textSection.PointerToRawData;
-        TextSectionSize  = textSection.SizeOfRawData;
-        TextSectionVirtualAddress   = textSection.VirtualAddress;
+        var textSectionStart = textSection.PointerToRawData;
+        var textSectionSize  = textSection.SizeOfRawData;
+        _textSectionVirtualAddress = textSection.VirtualAddress;
 
-        TextSection = File.CreateViewAccessor(TextSectionStart, TextSectionSize, MemoryMappedFileAccess.Read);
+        _textSection = _file.CreateViewAccessor(textSectionStart, textSectionSize, MemoryMappedFileAccess.Read);
     }
 
 
-    private IntPtr ScanText(string signature)
+    private nint ScanText(string signature)
     {
-        var scanRet = Scan(TextSection, signature);
-        
-        var instrByte = Marshal.ReadByte(scanRet);
-
-        if (instrByte is 0xE8 or 0xE9)
+        var scanRet = Scan(_textSection, signature);
+        if (*(byte*)scanRet is 0xE8 or 0xE9)
             scanRet = ReadJmpCallSig(scanRet);
 
         return scanRet;
     }
-    
-    private static IntPtr ReadJmpCallSig(IntPtr sigLocation)
+
+    private static nint ReadJmpCallSig(nint sigLocation)
     {
-        var jumpOffset = Marshal.ReadInt32(sigLocation, 1);
-        return IntPtr.Add(sigLocation, 5 + jumpOffset);
+        var jumpOffset = *(int*)(sigLocation + 1);
+        return sigLocation + 5 + jumpOffset;
     }
-    
-    public bool TryScanText(string signature, out IntPtr result)
+
+    public bool TryScanText(string signature, out nint result)
     {
         try
         {
@@ -72,21 +63,22 @@ public class PeSigScanner : IDisposable
         }
         catch (KeyNotFoundException)
         {
-            result = IntPtr.Zero;
+            result = nint.Zero;
             return false;
         }
     }
-    
-    private IntPtr Scan(MemoryMappedViewAccessor section, string signature)
+
+    private nint Scan(MemoryMappedViewAccessor section, string signature)
     {
         var (needle, mask) = ParseSignature(signature);
-        
-        var index       = IndexOf(section, needle, mask);
+
+        var index = IndexOf(section, needle, mask);
         if (index < 0)
             throw new KeyNotFoundException($"Can't find a signature of {signature}");
-        return new IntPtr(ModuleBaseAddress + index - section.PointerOffset + TextSectionVirtualAddress);
+
+        return (nint)(_moduleBaseAddress + index - section.PointerOffset + _textSectionVirtualAddress);
     }
-    
+
     private static (byte[] Needle, bool[] Mask) ParseSignature(string signature)
     {
         signature = signature.Replace(" ", string.Empty);
@@ -99,7 +91,7 @@ public class PeSigScanner : IDisposable
         for (var i = 0; i < needleLength; i++)
         {
             var hexString = signature.Substring(i * 2, 2);
-            if (hexString == "??" || hexString == "**")
+            if (hexString is "??" or "**")
             {
                 needle[i] = 0;
                 mask[i]   = true;
@@ -112,10 +104,12 @@ public class PeSigScanner : IDisposable
 
         return (needle, mask);
     }
-    
-    private static unsafe int IndexOf(MemoryMappedViewAccessor section, byte[] needle, bool[] mask)
+
+    private static int IndexOf(MemoryMappedViewAccessor section, byte[] needle, bool[] mask)
     {
-        if (needle.Length > section.Capacity) return -1;
+        if (needle.Length > section.Capacity)
+            return -1;
+
         var badShift  = BuildBadCharTable(needle, mask);
         var last      = needle.Length - 1;
         var offset    = 0;
@@ -144,19 +138,19 @@ public class PeSigScanner : IDisposable
 
         return -1;
     }
-    
-    
+
+
     private static int[] BuildBadCharTable(byte[] needle, bool[] mask)
     {
         int idx;
         var last     = needle.Length - 1;
         var badShift = new int[256];
         for (idx = last; idx > 0 && !mask[idx]; --idx)
-        {
-        }
+        { }
 
-        var diff            = last - idx;
-        if (diff == 0) diff = 1;
+        var diff = last - idx;
+        if (diff == 0)
+            diff = 1;
 
         for (idx = 0; idx <= 255; ++idx)
             badShift[idx] = diff;
@@ -164,16 +158,16 @@ public class PeSigScanner : IDisposable
             badShift[needle[idx]] = last - idx;
         return badShift;
     }
-    
+
     // Detects function termination; this is done in a really stupid way that will possibly break if looked at wrong, but it'll work for now
     // If this shits itself, go bother Winter to implement proper CFG + basic block detection
-    public IEnumerable<Instruction> GetFunctionInstructions(IntPtr addr)
+    public IEnumerable<Instruction> GetFunctionInstructions(nint address)
     {
-        var fileOffset = addr - TextSectionVirtualAddress - ModuleBaseAddress;
-        
-        var codeReader = new MappedCodeReader(TextSection, fileOffset);
-        var decoder = Decoder.Create(64, codeReader, (ulong)addr.ToInt64());
-        
+        var fileOffset = address - _textSectionVirtualAddress - _moduleBaseAddress;
+
+        var codeReader = new MappedCodeReader(_textSection, fileOffset);
+        var decoder    = Decoder.Create(64, codeReader, (ulong)address.ToInt64());
+
         do
         {
             decoder.Decode(out var instr);
@@ -188,7 +182,7 @@ public class PeSigScanner : IDisposable
 
     public void Dispose()
     {
-        TextSection.Dispose();
-        File.Dispose();
+        _textSection.Dispose();
+        _file.Dispose();
     }
 }
