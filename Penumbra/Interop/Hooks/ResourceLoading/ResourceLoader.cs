@@ -51,13 +51,13 @@ public unsafe class ResourceLoader : IDisposable, IService
 
         if (!resolvedPath.HasValue || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var utf8ResolvedPath))
         {
-            PapRequested?.Invoke(gamePath, gamePath, _resolvedData);
+            PapRequested?.Invoke(gamePath);
             return length;
         }
 
         NativeMemory.Copy(utf8ResolvedPath.Path.Path, path, (nuint)utf8ResolvedPath.Length);
         path[utf8ResolvedPath.Length] = 0;
-        PapRequested?.Invoke(gamePath, utf8ResolvedPath, _resolvedData);
+        PapRequested?.Invoke(gamePath);
         return utf8ResolvedPath.Length;
     }
 
