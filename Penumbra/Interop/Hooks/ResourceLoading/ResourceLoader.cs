@@ -16,10 +16,10 @@ public unsafe class ResourceLoader : IDisposable, IService
     private readonly ResourceService _resources;
     private readonly FileReadService _fileReadService;
     private readonly TexMdlService   _texMdlService;
-    
-    private readonly PapHandler _papHandler;
+    private readonly PapHandler      _papHandler;
 
-    private ResolveData _resolvedData = ResolveData.Invalid;
+    private ResolveData                _resolvedData = ResolveData.Invalid;
+    public event Action<Utf8GamePath>? PapRequested;
 
     public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService)
     {
@@ -36,24 +36,28 @@ public unsafe class ResourceLoader : IDisposable, IService
         _papHandler = new PapHandler(PapResourceHandler);
         _papHandler.Enable();
     }
-    
+
     private int PapResourceHandler(void* self, byte* path, int length)
     {
-        Utf8GamePath.FromPointer(path, out var gamePath);
-        
+        if (!Utf8GamePath.FromPointer(path, out var gamePath))
+            return length;
+
         var (resolvedPath, _) = _incMode.Value
             ? (null, ResolveData.Invalid)
             : _resolvedData.Valid
                 ? (_resolvedData.ModCollection.ResolvePath(gamePath), _resolvedData)
                 : ResolvePath(gamePath, ResourceCategory.Chara, ResourceType.Pap);
-        
-        if (!resolvedPath.HasValue || !Utf8GamePath.FromString(resolvedPath.Value.FullName, out var utf8ResolvedPath))
+
+
+        if (!resolvedPath.HasValue || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var utf8ResolvedPath))
         {
+            PapRequested?.Invoke(gamePath, gamePath, _resolvedData);
             return length;
         }
-        
+
         NativeMemory.Copy(utf8ResolvedPath.Path.Path, path, (nuint)utf8ResolvedPath.Length);
         path[utf8ResolvedPath.Length] = 0;
+        PapRequested?.Invoke(gamePath, utf8ResolvedPath, _resolvedData);
         return utf8ResolvedPath.Length;
     }
 

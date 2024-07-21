@@ -36,31 +36,47 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
     private          Regex?                   _logRegex;
     private          int                      _newMaxEntries;
 
-    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader, ResourceHandleDestructor destructor)
+    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader,
+        ResourceHandleDestructor destructor)
     {
-        _actors                             =  actors;
-        _config                             =  config;
-        _ephemeral                          =  config.Ephemeral;
-        _resources                          =  resources;
-        _destructor                         =  destructor;
-        _loader                             =  loader;
-        _table                              =  new ResourceWatcherTable(config.Ephemeral, _records);
-        _resources.ResourceRequested        += OnResourceRequested;
+        _actors                      =  actors;
+        _config                      =  config;
+        _ephemeral                   =  config.Ephemeral;
+        _resources                   =  resources;
+        _destructor                  =  destructor;
+        _loader                      =  loader;
+        _table                       =  new ResourceWatcherTable(config.Ephemeral, _records);
+        _resources.ResourceRequested += OnResourceRequested;
         _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
-        _loader.ResourceLoaded              += OnResourceLoaded;
-        _loader.FileLoaded                  += OnFileLoaded;
+        _loader.ResourceLoaded += OnResourceLoaded;
+        _loader.FileLoaded     += OnFileLoaded;
+        _loader.PapRequested   += OnPapRequested;
         UpdateFilter(_ephemeral.ResourceLoggingFilter, false);
         _newMaxEntries = _config.MaxResourceWatcherRecords;
+    }
+
+    private void OnPapRequested(Utf8GamePath original)
+    {
+        if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
+            Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested asynchronously.");
+
+        if (!_ephemeral.EnableResourceWatcher)
+            return;
+
+        var record = Record.CreateRequest(original.Path, false);
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+            _newRecords.Enqueue(record);
     }
 
     public unsafe void Dispose()
     {
         Clear();
         _records.TrimExcess();
-        _resources.ResourceRequested        -= OnResourceRequested;
+        _resources.ResourceRequested -= OnResourceRequested;
         _destructor.Unsubscribe(OnResourceDestroyed);
-        _loader.ResourceLoaded              -= OnResourceLoaded;
-        _loader.FileLoaded                  -= OnFileLoaded;
+        _loader.ResourceLoaded -= OnResourceLoaded;
+        _loader.FileLoaded     -= OnFileLoaded;
+        _loader.PapRequested   -= OnPapRequested;
     }
 
     private void Clear()
@@ -200,8 +216,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
 
 
     private unsafe void OnResourceRequested(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
-        Utf8GamePath original,
-        GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
+        Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
             Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested {(sync ? "synchronously." : "asynchronously.")}");
