@@ -16,8 +16,10 @@ public unsafe class ResourceLoader : IDisposable, IService
     private readonly ResourceService _resources;
     private readonly FileReadService _fileReadService;
     private readonly TexMdlService   _texMdlService;
+    private readonly PapHandler      _papHandler;
 
-    private ResolveData _resolvedData = ResolveData.Invalid;
+    private ResolveData                _resolvedData = ResolveData.Invalid;
+    public event Action<Utf8GamePath>? PapRequested;
 
     public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService)
     {
@@ -30,6 +32,33 @@ public unsafe class ResourceLoader : IDisposable, IService
         _resources.ResourceHandleIncRef += IncRefProtection;
         _resources.ResourceHandleDecRef += DecRefProtection;
         _fileReadService.ReadSqPack     += ReadSqPackDetour;
+
+        _papHandler = new PapHandler(PapResourceHandler);
+        _papHandler.Enable();
+    }
+
+    private int PapResourceHandler(void* self, byte* path, int length)
+    {
+        if (!Utf8GamePath.FromPointer(path, out var gamePath))
+            return length;
+
+        var (resolvedPath, _) = _incMode.Value
+            ? (null, ResolveData.Invalid)
+            : _resolvedData.Valid
+                ? (_resolvedData.ModCollection.ResolvePath(gamePath), _resolvedData)
+                : ResolvePath(gamePath, ResourceCategory.Chara, ResourceType.Pap);
+
+
+        if (!resolvedPath.HasValue || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var utf8ResolvedPath))
+        {
+            PapRequested?.Invoke(gamePath);
+            return length;
+        }
+
+        NativeMemory.Copy(utf8ResolvedPath.Path.Path, path, (nuint)utf8ResolvedPath.Length);
+        path[utf8ResolvedPath.Length] = 0;
+        PapRequested?.Invoke(gamePath);
+        return utf8ResolvedPath.Length;
     }
 
     /// <summary> Load a resource for a given path and a specific collection. </summary>
@@ -84,6 +113,7 @@ public unsafe class ResourceLoader : IDisposable, IService
         _resources.ResourceHandleIncRef -= IncRefProtection;
         _resources.ResourceHandleDecRef -= DecRefProtection;
         _fileReadService.ReadSqPack     -= ReadSqPackDetour;
+        _papHandler.Dispose();
     }
 
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,

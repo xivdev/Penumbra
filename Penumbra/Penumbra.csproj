@@ -68,6 +68,10 @@
             <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="Iced">
+            <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="OtterTex.dll">
             <HintPath>lib\OtterTex.dll</HintPath>
         </Reference>
@@ -79,6 +83,7 @@
         <PackageReference Include="SharpCompress" Version="0.33.0" />
         <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0030" />
         <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0030" />
+        <PackageReference Include="PeNet" Version="4.0.5" />
     </ItemGroup>
 
     <ItemGroup>
