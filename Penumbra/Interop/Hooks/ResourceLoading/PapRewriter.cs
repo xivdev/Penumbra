@@ -13,10 +13,10 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
     private readonly Dictionary<nint, AsmHook> _hooks           = [];
     private readonly List<nint>                _nativeAllocList = [];
 
-    public void Rewrite(string sig)
+    public void Rewrite(string sig, string name)
     {
         if (!_scanner.TryScanText(sig, out var address))
-            throw new Exception($"Signature [{sig}] could not be found.");
+            throw new Exception($"Signature for {name} [{sig}] could not be found.");
 
         var funcInstructions = _scanner.GetFunctionInstructions(address).ToArray();
         var hookPoints       = ScanPapHookPoints(funcInstructions).ToList();
@@ -68,20 +68,20 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 
                     // Plop 'rax' (our return value, the path size) into r8, so it's the third argument for the subsequent Crc32() call
                     "mov r8, rax",
-                ], "Pap Redirection"
+                ], $"{name}.PapRedirection"
             );
 
             _hooks.Add(hookAddress, hook);
             hook.Enable();
 
             // Now we're adjusting every single reference to the stack allocated 'path' to our substantially bigger 'stringLoc'
-            UpdatePathAddresses(stackAccesses, stringAllocation);
+            UpdatePathAddresses(stackAccesses, stringAllocation, name);
         }
     }
 
-    private void UpdatePathAddresses(IEnumerable<Instruction> stackAccesses, nint stringAllocation)
+    private void UpdatePathAddresses(IEnumerable<Instruction> stackAccesses, nint stringAllocation, string name)
     {
-        foreach (var stackAccess in stackAccesses)
+        foreach (var (stackAccess, index) in stackAccesses.WithIndex())
         {
             var hookAddress = new IntPtr((long)stackAccess.IP + stackAccess.Length);
 
@@ -95,7 +95,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
                 [
                     "use64",
                     $"mov {targetRegister}, 0x{stringAllocation:x8}",
-                ], "Pap Stack Accesses"
+                ], $"{name}.PapStackAccess[{index}]"
             );
 
             _hooks.Add(hookAddress, hook);
