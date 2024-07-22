@@ -1,3 +1,4 @@
+using System.Text.Unicode;
 using Dalamud.Hooking;
 using Iced.Intel;
 using OtterGui;
@@ -25,7 +26,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
         {
             var stackAccesses    = ScanStackAccesses(funcInstructions, hookPoint).ToList();
             var stringAllocation = NativeAlloc(Utf8GamePath.MaxGamePathLength);
-
+            WriteToAlloc(stringAllocation, Utf8GamePath.MaxGamePathLength, name);
             // We'll need to grab our true hook point; the location where we can change the path at our leisure.
             // This is going to be the first call instruction after our 'hookPoint', so, we'll find that.
             // Pretty scuffed, this might need a refactoring at some point.
@@ -163,5 +164,12 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
             NativeFree(mem);
 
         _nativeAllocList.Clear();
+    }
+
+    [Conditional("DEBUG")]
+    private static unsafe void WriteToAlloc(nint alloc, int size, string name)
+    {
+        var span = new Span<byte>((void*)alloc, size);
+        Utf8.TryWrite(span, $"Penumbra.{name}\0", out _);
     }
 }

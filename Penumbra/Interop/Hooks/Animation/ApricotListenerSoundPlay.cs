@@ -42,7 +42,7 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
         if (((flags >> 13) & 1) == 0)
             return Task.Result.Original(a1, unused, timeOffset);
 
-        Penumbra.Log.Information(
+        Penumbra.Log.Excessive(
             $"[Apricot Listener Sound Play Caller] Invoked on 0x{a1:X} with {unused}, {timeOffset}.");
         // Fetch the IInstanceListenner (sixth argument to inlined call of SoundPlay)
         var apricotIInstanceListenner = *(nint*)(someIntermediate + 0x270);

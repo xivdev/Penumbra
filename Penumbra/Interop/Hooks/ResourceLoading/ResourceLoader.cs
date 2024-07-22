@@ -18,8 +18,8 @@ public unsafe class ResourceLoader : IDisposable, IService
     private readonly TexMdlService   _texMdlService;
     private readonly PapHandler      _papHandler;
 
-    private ResolveData                _resolvedData = ResolveData.Invalid;
-    public event Action<Utf8GamePath>? PapRequested;
+    private ResolveData                                        _resolvedData = ResolveData.Invalid;
+    public event Action<Utf8GamePath, FullPath?, ResolveData>? PapRequested;
 
     public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService)
     {
@@ -42,23 +42,23 @@ public unsafe class ResourceLoader : IDisposable, IService
         if (!Utf8GamePath.FromPointer(path, out var gamePath))
             return length;
 
-        var (resolvedPath, _) = _incMode.Value
+        var (resolvedPath, data) = _incMode.Value
             ? (null, ResolveData.Invalid)
             : _resolvedData.Valid
                 ? (_resolvedData.ModCollection.ResolvePath(gamePath), _resolvedData)
                 : ResolvePath(gamePath, ResourceCategory.Chara, ResourceType.Pap);
 
 
-        if (!resolvedPath.HasValue || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var utf8ResolvedPath))
+        if (!resolvedPath.HasValue)
         {
-            PapRequested?.Invoke(gamePath);
+            PapRequested?.Invoke(gamePath, null, data);
             return length;
         }
 
-        NativeMemory.Copy(utf8ResolvedPath.Path.Path, path, (nuint)utf8ResolvedPath.Length);
-        path[utf8ResolvedPath.Length] = 0;
-        PapRequested?.Invoke(gamePath);
-        return utf8ResolvedPath.Length;
+        PapRequested?.Invoke(gamePath, resolvedPath.Value, data);
+        NativeMemory.Copy(resolvedPath.Value.InternalName.Path, path, (nuint)resolvedPath.Value.InternalName.Length);
+        path[resolvedPath.Value.InternalName.Length] = 0;
+        return resolvedPath.Value.InternalName.Length;
     }
 
     /// <summary> Load a resource for a given path and a specific collection. </summary>

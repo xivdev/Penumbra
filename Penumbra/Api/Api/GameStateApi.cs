@@ -25,12 +25,14 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
         _cutsceneService               =  cutsceneService;
         _resourceLoader                =  resourceLoader;
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
+        _resourceLoader.PapRequested   += OnPapRequested;
         _communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
     }
 
     public unsafe void Dispose()
     {
         _resourceLoader.ResourceLoaded -= OnResourceLoaded;
+        _resourceLoader.PapRequested   -= OnPapRequested;
         _communicator.CreatedCharacterBase.Unsubscribe(OnCreatedCharacterBase);
     }
 
@@ -67,14 +69,27 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
 
     public PenumbraApiEc SetCutsceneParentIndex(int copyIdx, int newParentIdx)
         => _cutsceneService.SetParentIndex(copyIdx, newParentIdx)
-            ? PenumbraApiEc.Success 
+            ? PenumbraApiEc.Success
             : PenumbraApiEc.InvalidArgument;
 
     private unsafe void OnResourceLoaded(ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, ResolveData resolveData)
     {
-        if (resolveData.AssociatedGameObject != nint.Zero)
-            GameObjectResourceResolved?.Invoke(resolveData.AssociatedGameObject, originalPath.ToString(),
-                manipulatedPath?.ToString() ?? originalPath.ToString());
+        if (resolveData.AssociatedGameObject != nint.Zero && GameObjectResourceResolved != null)
+        {
+            var original = originalPath.ToString();
+            GameObjectResourceResolved.Invoke(resolveData.AssociatedGameObject, original,
+                manipulatedPath?.ToString() ?? original);
+        }
+    }
+
+    private void OnPapRequested(Utf8GamePath originalPath, FullPath? manipulatedPath, ResolveData resolveData)
+    {
+        if (resolveData.AssociatedGameObject != nint.Zero && GameObjectResourceResolved != null)
+        {
+            var original = originalPath.ToString();
+            GameObjectResourceResolved.Invoke(resolveData.AssociatedGameObject, original,
+                manipulatedPath?.ToString() ?? original);
+        }
     }
 
     private void OnCreatedCharacterBase(nint gameObject, ModCollection collection, nint drawObject)

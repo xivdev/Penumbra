@@ -11,7 +11,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
-using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
@@ -55,7 +54,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         _newMaxEntries = _config.MaxResourceWatcherRecords;
     }
 
-    private void OnPapRequested(Utf8GamePath original)
+    private void OnPapRequested(Utf8GamePath original, FullPath? _1, ResolveData _2)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
             Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested asynchronously.");
