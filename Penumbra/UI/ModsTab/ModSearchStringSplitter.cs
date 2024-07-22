@@ -95,9 +95,9 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
         }
 
         var fullName = folder.FullName();
-        return Forced.All(i => MatchesName(i, folder.Name, fullName))
-         && !Negated.Any(i => MatchesName(i, folder.Name, fullName))
-         && (General.Count == 0 || General.Any(i => MatchesName(i, folder.Name, fullName)));
+        return Forced.All(i => MatchesName(i, folder.Name, fullName, false))
+         && !Negated.Any(i => MatchesName(i, folder.Name, fullName, true))
+         && (General.Count == 0 || General.Any(i => MatchesName(i, folder.Name, fullName, false)));
     }
 
     protected override bool Matches(Entry entry, ModFileSystem.Leaf leaf)
@@ -128,11 +128,11 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
             _                                      => true,
         };
 
-    private static bool MatchesName(Entry entry, ReadOnlySpan<char> name, ReadOnlySpan<char> fullName)
+    private static bool MatchesName(Entry entry, ReadOnlySpan<char> name, ReadOnlySpan<char> fullName, bool defaultValue)
         => entry.Type switch
         {
             ModSearchType.Default => fullName.Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
             ModSearchType.Name    => name.Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
-            _                     => false,
+            _                     => defaultValue,
         };
 }
