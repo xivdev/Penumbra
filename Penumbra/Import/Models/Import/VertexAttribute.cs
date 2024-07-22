@@ -132,72 +132,50 @@ public class VertexAttribute
         {
             if (!accessors.ContainsKey("JOINTS_1"))
                 throw notifier.Exception("Mesh contained WEIGHTS_1 attribute but no corresponding JOINTS_1 attribute.");
-            
-            var element = new MdlStructs.VertexElement()
-            {
-                Stream = 0,
-                Type  = (byte)MdlFile.VertexType.UShort4,
-                Usage = (byte)MdlFile.VertexUsage.BlendWeights,
-            };
-
-            var weights0 = weights0Accessor.AsVector4Array();
-            var weights1 = weights1Accessor.AsVector4Array();
-
-            return new VertexAttribute(
-                element,
-                index => {
-                    var weight0       = weights0[index];
-                    var weight1       = weights1[index];
-                    var originalData  = BuildUshort4(weight0, weight1);
-                    var byteValues    = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
-                    return AdjustByteArray(byteValues, originalData);
-                }
-            );
         }
-        else
+
+        var element = new MdlStructs.VertexElement()
         {
-            var element = new MdlStructs.VertexElement()
+            Stream = 0,
+            Type  = (byte)MdlFile.VertexType.UShort4,
+            Usage = (byte)MdlFile.VertexUsage.BlendWeights,
+        };
+
+        var weights0 = weights0Accessor.AsVector4Array();
+        var weights1 = weights1Accessor?.AsVector4Array();
+
+        return new VertexAttribute(
+            element,
+            index => {
+                var weight0       = weights0[index];
+                var weight1       = weights1?[index];
+                var originalData  = BuildUshort4(weight0, weight1 ?? Vector4.Zero);
+                var byteValues    = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
+                return AdjustByteArray(byteValues, originalData);
+            }
+        );
+       
+        /*var element = new MdlStructs.VertexElement()
+        {
+            Stream = 0,
+            Type   = (byte)MdlFile.VertexType.NByte4,
+            Usage  = (byte)MdlFile.VertexUsage.BlendWeights,
+        };
+
+        var weights0 = weights0Accessor.AsVector4Array();
+
+        return new VertexAttribute(
+            element,
+            index =>
             {
-                Stream = 0,
-                Type   = (byte)MdlFile.VertexType.UShort4,
-                Usage  = (byte)MdlFile.VertexUsage.BlendWeights,
-            };
-
-            var weights0 = weights0Accessor.AsVector4Array();
-
-            return new VertexAttribute(
-                element,
-                index => {
-                    var weight0       = weights0[index];
-                    var weight1       = Vector4.Zero;
-                    var originalData  = BuildUshort4(weight0, weight1);
-                    var byteValues    = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
-                    return AdjustByteArray(byteValues, originalData);
-                }
-            );
-            
-            /*var element = new MdlStructs.VertexElement()
-            {
-                Stream = 0,
-                Type   = (byte)MdlFile.VertexType.NByte4,
-                Usage  = (byte)MdlFile.VertexUsage.BlendWeights,
-            };
-
-            var weights0 = weights0Accessor.AsVector4Array();
-
-            return new VertexAttribute(
-                element,
-                index =>
-                {
-                    var weight0 = weights0[index];
-                    var originalData   = new[] { weight0.X, weight0.Y, weight0.Z, weight0.W };
-                    var byteValues     = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
-                    var newByteValues = AdjustByteArray(byteValues, originalData);
-                    if (!newByteValues.SequenceEqual(byteValues))
-                        notifier.Warning("Adjusted blend weights to maintain precision.");
-                    return newByteValues;
-                });*/
-        }
+                var weight0 = weights0[index];
+                var originalData   = new[] { weight0.X, weight0.Y, weight0.Z, weight0.W };
+                var byteValues     = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
+                var newByteValues = AdjustByteArray(byteValues, originalData);
+                if (!newByteValues.SequenceEqual(byteValues))
+                    notifier.Warning("Adjusted blend weights to maintain precision.");
+                return newByteValues;
+            });*/
     }
 
     private static byte[] AdjustByteArray(byte[] byteValues, float[] originalValues)
@@ -241,100 +219,77 @@ public class VertexAttribute
         if (boneMap == null)
             throw notifier.Exception("Mesh contained JOINTS_0 attribute but no bone mapping was created.");
 
-        var joints0  = joints0Accessor.AsVector4Array();
-        var weights0 = weights0Accessor.AsVector4Array();
-
-        if (accessors.TryGetValue("JOINTS_1", out var joints1Accessor))
+        var joints0       = joints0Accessor.AsVector4Array();
+        var weights0      = weights0Accessor.AsVector4Array();
+        accessors.TryGetValue("JOINTS_1", out var joints1Accessor);
+        accessors.TryGetValue("WEIGHTS_1", out var weights1Accessor);
+        var element = new MdlStructs.VertexElement
         {
-            if (!accessors.TryGetValue("WEIGHTS_1", out var weights1Accessor))
-                throw notifier.Exception("Mesh contained JOINTS_1 attribute but no corresponding WEIGHTS_1 attribute.");
+            Stream = 0,
+            Type   = (byte)MdlFile.VertexType.UShort4,
+            Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
+        };
 
-            var element = new MdlStructs.VertexElement
+        var joints1  = joints1Accessor?.AsVector4Array();
+        var weights1 = weights1Accessor?.AsVector4Array();
+
+        return new VertexAttribute(
+            element,
+            index =>
             {
-                Stream = 0,
-                Type   = (byte)MdlFile.VertexType.UShort4,
-                Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
-            };
-
-            var joints1  = joints1Accessor.AsVector4Array();
-            var weights1 = weights1Accessor.AsVector4Array();
-
-            return new VertexAttribute(
-                element,
-                index =>
+                var gltfIndices0 = joints0[index];
+                var gltfWeights0 = weights0[index];
+                var gltfIndices1 = joints1?[index];
+                var gltfWeights1 = weights1?[index];
+                var v0 = new Vector4(
+                    gltfWeights0.X == 0 ? 0 : boneMap[(ushort)gltfIndices0.X],
+                    gltfWeights0.Y == 0 ? 0 : boneMap[(ushort)gltfIndices0.Y],
+                    gltfWeights0.Z == 0 ? 0 : boneMap[(ushort)gltfIndices0.Z],
+                    gltfWeights0.W == 0 ? 0 : boneMap[(ushort)gltfIndices0.W]
+                );
+                
+                Vector4 v1;
+                if (gltfIndices1 != null && gltfWeights1 != null)
                 {
-                    var gltfIndices0 = joints0[index];
-                    var gltfWeights0 = weights0[index];
-                    var gltfIndices1 = joints1[index];
-                    var gltfWeights1 = weights1[index];
-                    var v0 = new Vector4(
-                        gltfWeights0.X == 0 ? 0 : boneMap[(ushort)gltfIndices0.X],
-                        gltfWeights0.Y == 0 ? 0 : boneMap[(ushort)gltfIndices0.Y],
-                        gltfWeights0.Z == 0 ? 0 : boneMap[(ushort)gltfIndices0.Z],
-                        gltfWeights0.W == 0 ? 0 : boneMap[(ushort)gltfIndices0.W]
+                    v1 = new Vector4(
+                        gltfWeights1.Value.X == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.X],
+                        gltfWeights1.Value.Y == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Y],
+                        gltfWeights1.Value.Z == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Z],
+                        gltfWeights1.Value.W == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.W]
                     );
-                    var v1 = new Vector4(
-                        gltfWeights1.X == 0 ? 0 : boneMap[(ushort)gltfIndices1.X],
-                        gltfWeights1.Y == 0 ? 0 : boneMap[(ushort)gltfIndices1.Y],
-                        gltfWeights1.Z == 0 ? 0 : boneMap[(ushort)gltfIndices1.Z],
-                        gltfWeights1.W == 0 ? 0 : boneMap[(ushort)gltfIndices1.W]
-                    );
-
-                    var byteValues = BuildUshort4(v0, v1);
-
-                    return byteValues.Select(x => (byte)x).ToArray();
                 }
-            );
-        }
-        else
+                else
+                {
+                    v1 = Vector4.Zero;
+                }
+
+                var byteValues = BuildUshort4(v0, v1);
+
+                return byteValues.Select(x => (byte)x).ToArray();
+            }
+        );
+        
+        /*var element = new MdlStructs.VertexElement()
         {
-            var element = new MdlStructs.VertexElement
-            {
-                Stream = 0,
-                Type   = (byte)MdlFile.VertexType.UShort4,
-                Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
-            };
-            
-            return new VertexAttribute(
-                element,
-                index =>
-                {
-                    var gltfIndices0 = joints0[index];
-                    var gltfWeights0 = weights0[index];
-                    var v0 = new Vector4(
-                        gltfWeights0.X == 0 ? 0 : boneMap[(ushort)gltfIndices0.X],
-                        gltfWeights0.Y == 0 ? 0 : boneMap[(ushort)gltfIndices0.Y],
-                        gltfWeights0.Z == 0 ? 0 : boneMap[(ushort)gltfIndices0.Z],
-                        gltfWeights0.W == 0 ? 0 : boneMap[(ushort)gltfIndices0.W]
-                    );
-                    var v1 = Vector4.Zero;
-                    var byteValues = BuildUshort4(v0, v1);
+            Stream = 0,
+            Type   = (byte)MdlFile.VertexType.UByte4,
+            Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
+        };
 
-                    return byteValues.Select(x => (byte)x).ToArray();
-                }
-            );
-            /*var element = new MdlStructs.VertexElement()
+        return new VertexAttribute(
+            element,
+            index =>
             {
-                Stream = 0,
-                Type   = (byte)MdlFile.VertexType.UByte4,
-                Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
-            };
-
-            return new VertexAttribute(
-                element,
-                index =>
-                {
-                    var gltfIndices = joints0[index];
-                    var gltfWeights = weights0[index];
-                    return BuildUByte4(new Vector4(
-                        gltfWeights.X == 0 ? 0 : boneMap[(ushort)gltfIndices.X],
-                        gltfWeights.Y == 0 ? 0 : boneMap[(ushort)gltfIndices.Y],
-                        gltfWeights.Z == 0 ? 0 : boneMap[(ushort)gltfIndices.Z],
-                        gltfWeights.W == 0 ? 0 : boneMap[(ushort)gltfIndices.W]
-                    ));
-                }
-            );*/
-        }
+                var gltfIndices = joints0[index];
+                var gltfWeights = weights0[index];
+                return BuildUByte4(new Vector4(
+                    gltfWeights.X == 0 ? 0 : boneMap[(ushort)gltfIndices.X],
+                    gltfWeights.Y == 0 ? 0 : boneMap[(ushort)gltfIndices.Y],
+                    gltfWeights.Z == 0 ? 0 : boneMap[(ushort)gltfIndices.Z],
+                    gltfWeights.W == 0 ? 0 : boneMap[(ushort)gltfIndices.W]
+                ));
+            }
+        );*/
     }
 
     public static VertexAttribute? Normal(Accessors accessors, IEnumerable<Accessors> morphAccessors)
@@ -620,18 +575,11 @@ public class VertexAttribute
             (byte)Math.Round(input.Z * 255f),
             (byte)Math.Round(input.W * 255f),
         ];
-
-    private static float[] BuildUshort4(Vector4 v0, Vector4 v1)
-    {
-        var buf = new float[8];
-        buf[0] = v0.X;
-        buf[4] = v1.X;
-        buf[1] = v0.Y;
-        buf[5] = v1.Y;
-        buf[2] = v0.Z;
-        buf[6] = v1.Z;
-        buf[3] = v0.W;
-        buf[7] = v1.W;
-        return buf;
-    }
+    
+    private static float[] BuildUshort4(Vector4 v0, Vector4 v1) =>
+        new[]
+        {
+            v0.X, v0.Y, v0.Z, v0.W,
+            v1.X, v1.Y, v1.Z, v1.W,
+        };
 }
