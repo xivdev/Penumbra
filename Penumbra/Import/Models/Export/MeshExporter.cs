@@ -314,24 +314,9 @@ public class MeshExporter
             MdlFile.VertexType.NByte4 => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f),
             MdlFile.VertexType.Half2 => new Vector2((float)reader.ReadHalf(), (float)reader.ReadHalf()),
             MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf()),
-            MdlFile.VertexType.UShort4 => ReadUShort4(reader),
+            MdlFile.VertexType.UShort4 => reader.ReadBytes(8),
             var other => throw _notifier.Exception<ArgumentOutOfRangeException>($"Unhandled vertex type {other}"),
         };
-    }
-    
-    private byte[] ReadUShort4(BinaryReader reader)
-    {
-        var buffer = reader.ReadBytes(8);
-        var byteValues = new byte[8];
-        byteValues[0] = buffer[0];
-        byteValues[4] = buffer[1];
-        byteValues[1] = buffer[2];
-        byteValues[5] = buffer[3];
-        byteValues[2] = buffer[4];
-        byteValues[6] = buffer[5];
-        byteValues[3] = buffer[6];
-        byteValues[7] = buffer[7];
-        return byteValues;
     }
 
     /// <summary> Get the vertex geometry type for this mesh's vertex usages. </summary>
