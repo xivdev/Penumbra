@@ -2,6 +2,7 @@ using Dalamud.Hooking;
 using Iced.Intel;
 using OtterGui;
 using Penumbra.String.Classes;
+using Swan;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
@@ -9,9 +10,10 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 {
     public unsafe delegate int PapResourceHandlerPrototype(void* self, byte* path, int length);
 
-    private readonly PeSigScanner              _scanner         = new();
-    private readonly Dictionary<nint, AsmHook> _hooks           = [];
-    private readonly List<nint>                _nativeAllocList = [];
+    private readonly PeSigScanner                        _scanner          = new();
+    private readonly Dictionary<nint, AsmHook>           _hooks            = [];
+    private readonly Dictionary<(nint, Register, ulong), nint> _nativeAllocPaths  = [];
+    private readonly List<nint>                          _nativeAllocCaves = [];
 
     public void Rewrite(string sig, string name)
     {
@@ -24,7 +26,10 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
         foreach (var hookPoint in hookPoints)
         {
             var stackAccesses    = ScanStackAccesses(funcInstructions, hookPoint).ToList();
-            var stringAllocation = NativeAlloc(Utf8GamePath.MaxGamePathLength);
+            var stringAllocation = NativeAllocPath(
+                address, hookPoint.MemoryBase, hookPoint.MemoryDisplacement64,
+                Utf8GamePath.MaxGamePathLength
+                );
 
             // We'll need to grab our true hook point; the location where we can change the path at our leisure.
             // This is going to be the first call instruction after our 'hookPoint', so, we'll find that.
@@ -43,7 +48,7 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
             var targetRegister = hookPoint.Op0Register.ToString().ToLower();
             var hookAddress    = new IntPtr((long)detourPoint.IP);
 
-            var caveAllocation = NativeAlloc(16);
+            var caveAllocation = NativeAllocCave(16);
             var hook = new AsmHook(
                 hookAddress,
                 [
@@ -136,12 +141,23 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
         }
     }
 
-    private unsafe nint NativeAlloc(nuint size)
+    private unsafe nint NativeAllocCave(nuint size)
     {
         var caveLoc = (nint)NativeMemory.Alloc(size);
-        _nativeAllocList.Add(caveLoc);
+        _nativeAllocCaves.Add(caveLoc);
 
         return caveLoc;
+    }
+    
+    // This is a bit conked but, if we identify a path by:
+    // 1) The function it belongs to (starting address, 'funcAddress')
+    // 2) The stack register (not strictly necessary - should always be rbp - but abundance of caution, so I don't hit myself in the future)
+    // 3) The displacement on the stack
+    // Then we ensure we have a unique identifier for the specific variable location of that specific function
+    // This is useful because sometimes the stack address is reused within the same function for different GetResourceAsync calls
+    private unsafe nint NativeAllocPath(nint funcAddress, Register stackRegister, ulong stackDisplacement, nuint size)
+    {
+        return _nativeAllocPaths.GetOrAdd((funcAddress, stackRegister, stackDisplacement), _ => (nint)NativeMemory.Alloc(size));
     }
 
     private static unsafe void NativeFree(nint mem)
@@ -159,9 +175,14 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 
         _hooks.Clear();
 
-        foreach (var mem in _nativeAllocList)
+        foreach (var mem in _nativeAllocCaves)
             NativeFree(mem);
 
-        _nativeAllocList.Clear();
+        _nativeAllocCaves.Clear();
+        
+        foreach (var mem in _nativeAllocPaths.Values)
+            NativeFree(mem);
+
+        _nativeAllocPaths.Clear();
     }
 }
