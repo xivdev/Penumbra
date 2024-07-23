@@ -537,6 +537,7 @@ public class MeshExporter
         => data switch
         {
             byte[] value   => value.Select(x => x / 255f).ToArray(),
+            Vector4 v4     => new[] { v4.X, v4.Y, v4.Z, v4.W },
             _              => throw new ArgumentOutOfRangeException($"Invalid float[] input {data}"),
         };
 }
