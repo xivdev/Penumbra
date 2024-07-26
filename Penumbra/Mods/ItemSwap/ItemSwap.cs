@@ -15,13 +15,9 @@ public static class ItemSwap
     public class InvalidItemTypeException : Exception
     { }
 
-    public class MissingFileException : Exception
+    public class MissingFileException(ResourceType type, object path) : Exception($"Could not load {type} File Data for \"{path}\".")
     {
-        public readonly ResourceType Type;
-
-        public MissingFileException(ResourceType type, object path)
-            : base($"Could not load {type} File Data for \"{path}\".")
-            => Type = type;
+        public readonly ResourceType Type = type;
     }
 
     private static bool LoadFile(MetaFileManager manager, FullPath path, out byte[] data)
@@ -47,7 +43,7 @@ public static class ItemSwap
                 Penumbra.Log.Debug($"Could not load file {path}:\n{e}");
             }
 
-        data = Array.Empty<byte>();
+        data = [];
         return false;
     }
 
