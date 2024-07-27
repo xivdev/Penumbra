@@ -72,4 +72,7 @@ public readonly record struct EqpEntryInternal(uint Value)
         var (offset, mask) = Eqp.OffsetAndMask(slot);
         return (uint)((ulong)(entry & mask) >> offset);
     }
+
+    public override string ToString()
+        => Value.ToString("X8");
 }
