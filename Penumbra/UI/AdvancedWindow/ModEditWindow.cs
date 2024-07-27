@@ -179,7 +179,6 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         DrawSwapTab();
         _modMergeTab.Draw();
         DrawDuplicatesTab();
-        DrawMaterialReassignmentTab();
         DrawQuickImportTab();
         _modelTab.Draw();
         _materialTab.Draw();
