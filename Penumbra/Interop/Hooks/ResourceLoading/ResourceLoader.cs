@@ -17,15 +17,17 @@ public unsafe class ResourceLoader : IDisposable, IService
     private readonly FileReadService _fileReadService;
     private readonly TexMdlService   _texMdlService;
     private readonly PapHandler      _papHandler;
+    private readonly Configuration   _config;
 
     private ResolveData                                        _resolvedData = ResolveData.Invalid;
     public event Action<Utf8GamePath, FullPath?, ResolveData>? PapRequested;
 
-    public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService)
+    public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService, Configuration config)
     {
         _resources       = resources;
         _fileReadService = fileReadService;
         _texMdlService   = texMdlService;
+        _config          = config;
         ResetResolvePath();
 
         _resources.ResourceRequested    += ResourceHandler;
@@ -39,7 +41,7 @@ public unsafe class ResourceLoader : IDisposable, IService
 
     private int PapResourceHandler(void* self, byte* path, int length)
     {
-        if (!Utf8GamePath.FromPointer(path, out var gamePath))
+        if (!_config.EnableMods || !Utf8GamePath.FromPointer(path, out var gamePath))
             return length;
 
         var (resolvedPath, data) = _incMode.Value
@@ -119,7 +121,7 @@ public unsafe class ResourceLoader : IDisposable, IService
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
         Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
-        if (returnValue != null)
+        if (!_config.EnableMods || returnValue != null)
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
