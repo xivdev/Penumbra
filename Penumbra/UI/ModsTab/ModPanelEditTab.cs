@@ -111,27 +111,6 @@ public class ModPanelEditTab(
         MoveDirectory.Draw(modManager, _mod, buttonSize);
 
         UiHelpers.DefaultLineSpace();
-        DrawUpdateBibo(buttonSize);
-
-        UiHelpers.DefaultLineSpace();
-    }
-
-    private void DrawUpdateBibo(Vector2 buttonSize)
-    {
-        if (ImGui.Button("Update Bibo Material", buttonSize))
-        {
-            editor.LoadMod(_mod);
-            editor.MdlMaterialEditor.ReplaceAllMaterials("bibo",     "b");
-            editor.MdlMaterialEditor.ReplaceAllMaterials("bibopube", "c");
-            editor.MdlMaterialEditor.SaveAllModels(editor.Compactor);
-            editWindow.UpdateModels();
-        }
-
-        ImGuiUtil.HoverTooltip(
-            "For every model in this mod, change all material names that end in a _b or _c suffix to a _bibo or _bibopube suffix respectively.\n"
-          + "Does nothing if the mod does not contain any such models or no model contains such materials.\n"
-          + "Use this for outdated mods made for old Bibo bodies.\n"
-          + "Go to Advanced Editing for more fine-tuned control over material assignment.");
     }
 
     private void BackupButtons(Vector2 buttonSize)
