@@ -12,6 +12,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI;
+using Penumbra.UI.Knowledge;
 
 namespace Penumbra;
 
@@ -29,11 +30,12 @@ public class CommandHandler : IDisposable, IApiService
     private readonly CollectionManager _collectionManager;
     private readonly Penumbra          _penumbra;
     private readonly CollectionEditor  _collectionEditor;
+    private readonly KnowledgeWindow   _knowledgeWindow;
 
     public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService,
-        Configuration config,
-        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors, Penumbra penumbra,
-        CollectionEditor collectionEditor)
+        Configuration config, ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors,
+        Penumbra penumbra,
+        CollectionEditor collectionEditor, KnowledgeWindow knowledgeWindow)
     {
         _commandManager    = commandManager;
         _redrawService     = redrawService;
@@ -45,6 +47,7 @@ public class CommandHandler : IDisposable, IApiService
         _chat              = chat;
         _penumbra          = penumbra;
         _collectionEditor  = collectionEditor;
+        _knowledgeWindow   = knowledgeWindow;
         framework.RunOnFrameworkThread(() =>
         {
             if (_commandManager.Commands.ContainsKey(CommandName))
@@ -69,7 +72,7 @@ public class CommandHandler : IDisposable, IApiService
         var argumentList = arguments.Split(' ', 2);
         arguments = argumentList.Length == 2 ? argumentList[1] : string.Empty;
 
-        var _ = argumentList[0].ToLowerInvariant() switch
+        _ = argumentList[0].ToLowerInvariant() switch
         {
             "window"     => ToggleWindow(arguments),
             "enable"     => SetPenumbraState(arguments, true),
@@ -83,6 +86,7 @@ public class CommandHandler : IDisposable, IApiService
             "collection" => SetCollection(arguments),
             "mod"        => SetMod(arguments),
             "bulktag"    => SetTag(arguments),
+            "knowledge"  => HandleKnowledge(arguments),
             _            => PrintHelp(argumentList[0]),
         };
     }
@@ -304,7 +308,7 @@ public class CommandHandler : IDisposable, IApiService
                     identifiers = _actors.FromUserString(split[2], false);
                 }
             }
-            catch (ActorManager.IdentifierParseError e)
+            catch (ActorIdentifierFactory.IdentifierParseError e)
             {
                 _chat.Print(new SeStringBuilder().AddText("The argument ").AddRed(split[2], true)
                     .AddText($" could not be converted to an identifier. {e.Message}")
@@ -618,5 +622,11 @@ public class CommandHandler : IDisposable, IApiService
     {
         if (_config.PrintSuccessfulCommandsToChat)
             _chat.Print(text());
+    }
+
+    private bool HandleKnowledge(string arguments)
+    {
+        _knowledgeWindow.Toggle();
+        return true;
     }
 }

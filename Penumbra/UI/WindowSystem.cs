@@ -3,6 +3,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using OtterGui.Services;
 using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.Knowledge;
 using Penumbra.UI.Tabs.Debug;
 
 namespace Penumbra.UI;
@@ -14,20 +15,24 @@ public class PenumbraWindowSystem : IDisposable, IUiService
     private readonly FileDialogService _fileDialog;
     public readonly  ConfigWindow      Window;
     public readonly  PenumbraChangelog Changelog;
+    public readonly  KnowledgeWindow   KnowledgeWindow;
 
     public PenumbraWindowSystem(IDalamudPluginInterface pi, Configuration config, PenumbraChangelog changelog, ConfigWindow window,
-        LaunchButton _, ModEditWindow editWindow, FileDialogService fileDialog, ImportPopup importPopup, DebugTab debugTab)
+        LaunchButton _, ModEditWindow editWindow, FileDialogService fileDialog, ImportPopup importPopup, DebugTab debugTab,
+        KnowledgeWindow knowledgeWindow)
     {
-        _uiBuilder    = pi.UiBuilder;
-        _fileDialog   = fileDialog;
-        Changelog     = changelog;
-        Window        = window;
-        _windowSystem = new WindowSystem("Penumbra");
+        _uiBuilder      = pi.UiBuilder;
+        _fileDialog     = fileDialog;
+        KnowledgeWindow = knowledgeWindow;
+        Changelog       = changelog;
+        Window          = window;
+        _windowSystem   = new WindowSystem("Penumbra");
         _windowSystem.AddWindow(changelog.Changelog);
         _windowSystem.AddWindow(window);
         _windowSystem.AddWindow(editWindow);
         _windowSystem.AddWindow(importPopup);
         _windowSystem.AddWindow(debugTab);
+        _windowSystem.AddWindow(KnowledgeWindow);
         _uiBuilder.OpenMainUi            += Window.Toggle;
         _uiBuilder.OpenConfigUi          += Window.OpenSettings;
         _uiBuilder.Draw                  += _windowSystem.Draw;
