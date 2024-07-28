@@ -11,7 +11,6 @@ using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.UI.AdvancedWindow;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.ModsTab.Groups;
 
@@ -22,8 +21,6 @@ public class ModPanelEditTab(
     ModFileSystemSelector selector,
     ModFileSystem fileSystem,
     Services.MessageService messager,
-    ModEditWindow editWindow,
-    ModEditor editor,
     FilenameService filenames,
     ModExportManager modExportManager,
     Configuration config,
