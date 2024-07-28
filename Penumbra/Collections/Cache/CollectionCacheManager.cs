@@ -84,6 +84,12 @@ public class CollectionCacheManager : IDisposable, IService
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnCollectionInheritanceChange);
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
+
+        foreach (var collection in _storage)
+        {
+            collection._cache?.Dispose();
+            collection._cache = null;
+        }
     }
 
     public void AddChange(CollectionCache.ChangeData data)
