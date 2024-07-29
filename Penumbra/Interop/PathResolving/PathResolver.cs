@@ -52,6 +52,7 @@ public class PathResolver : IDisposable, IService
         if (resourceType is ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb)
             return (null, ResolveData.Invalid);
 
+        path = path.ToLower();
         return category switch
         {
             // Only Interface collection.

@@ -52,7 +52,7 @@ public static class SubMod
         if (files != null)
             foreach (var property in files.Properties())
             {
-                if (Utf8GamePath.FromString(property.Name, out var p))
+                if (Utf8GamePath.FromString(property.Name, out var p, true))
                     data.Files.TryAdd(p, new FullPath(basePath, property.Value.ToObject<Utf8RelPath>()));
             }
 
@@ -60,7 +60,7 @@ public static class SubMod
         if (swaps != null)
             foreach (var property in swaps.Properties())
             {
-                if (Utf8GamePath.FromString(property.Name, out var p))
+                if (Utf8GamePath.FromString(property.Name, out var p, true))
                     data.FileSwaps.TryAdd(p, new FullPath(property.Value.ToObject<string>()!));
             }
 
