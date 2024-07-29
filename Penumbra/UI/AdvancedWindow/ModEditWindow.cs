@@ -179,7 +179,6 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         DrawSwapTab();
         _modMergeTab.Draw();
         DrawDuplicatesTab();
-        DrawMaterialReassignmentTab();
         DrawQuickImportTab();
         _modelTab.Draw();
         _materialTab.Draw();
@@ -192,6 +191,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         }
 
         DrawMissingFilesTab();
+        DrawMaterialReassignmentTab();
     }
 
     /// <summary> A row of three buttonSizes and a help marker that can be used for material suffix changing. </summary>
