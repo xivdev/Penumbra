@@ -209,7 +209,7 @@ public partial class ModEditWindow
 
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
-            if (Utf8GamePath.FromString(_gamePathEdit, out var path, false))
+            if (Utf8GamePath.FromString(_gamePathEdit, out var path))
                 _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
 
             _fileIdx = -1;
@@ -217,7 +217,7 @@ public partial class ModEditWindow
         }
         else if (_fileIdx == i
               && _pathIdx == j
-              && (!Utf8GamePath.FromString(_gamePathEdit, out var path, false)
+              && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !path.Equals(gamePath) && !_editor.FileEditor.CanAddGamePath(path)))
         {
             ImGui.SameLine();
@@ -241,7 +241,7 @@ public partial class ModEditWindow
 
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
-            if (Utf8GamePath.FromString(_gamePathEdit, out var path, false) && !path.IsEmpty)
+            if (Utf8GamePath.FromString(_gamePathEdit, out var path) && !path.IsEmpty)
                 _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
 
             _fileIdx = -1;
@@ -249,7 +249,7 @@ public partial class ModEditWindow
         }
         else if (_fileIdx == i
               && _pathIdx == -1
-              && (!Utf8GamePath.FromString(_gamePathEdit, out var path, false)
+              && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !_editor.FileEditor.CanAddGamePath(path)))
         {
             ImGui.SameLine();

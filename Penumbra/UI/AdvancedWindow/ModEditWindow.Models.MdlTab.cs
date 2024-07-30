@@ -271,7 +271,7 @@ public partial class ModEditWindow
         private byte[]? ReadFile(string path)
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
-            if (!Utf8GamePath.FromString(path, out var utf8Path, true))
+            if (!Utf8GamePath.FromString(path, out var utf8Path))
                 throw new Exception($"Resolved path {path} could not be converted to a game path.");
 
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path) ?? new FullPath(utf8Path);

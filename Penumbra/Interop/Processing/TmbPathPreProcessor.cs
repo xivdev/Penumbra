@@ -11,6 +11,6 @@ public sealed class TmbPathPreProcessor : IPathPreProcessor
     public ResourceType Type
         => ResourceType.Tmb;
 
-    public FullPath? PreProcess(ResolveData resolveData, ByteString path, Utf8GamePath _, bool nonDefault, FullPath? resolved)
+    public FullPath? PreProcess(ResolveData resolveData, CiByteString path, Utf8GamePath _, bool nonDefault, FullPath? resolved)
         => nonDefault ? PathDataHandler.CreateTmb(path, resolveData.ModCollection) : resolved;
 }

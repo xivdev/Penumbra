@@ -47,11 +47,11 @@ public unsafe struct ResourceHandle
         public ulong DataLength;
     }
 
-    public readonly ByteString FileName()
+    public readonly CiByteString FileName()
         => CsHandle.FileName.AsByteString();
 
     public readonly bool GamePath(out Utf8GamePath path)
-        => Utf8GamePath.FromSpan(CsHandle.FileName.AsSpan(), out path);
+        => Utf8GamePath.FromSpan(CsHandle.FileName.AsSpan(), MetaDataComputation.All, out path);
 
     [FieldOffset(0x00)]
     public CsHandle.ResourceHandle CsHandle;

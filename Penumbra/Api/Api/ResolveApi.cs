@@ -94,7 +94,7 @@ public class ResolveApi(
         if (!config.EnableMods)
             return path;
 
-        var gamePath = Utf8GamePath.FromString(path, out var p, true) ? p : Utf8GamePath.Empty;
+        var gamePath = Utf8GamePath.FromString(path, out var p) ? p : Utf8GamePath.Empty;
         var ret      = collection.ResolvePath(gamePath);
         return ret?.ToString() ?? path;
     }

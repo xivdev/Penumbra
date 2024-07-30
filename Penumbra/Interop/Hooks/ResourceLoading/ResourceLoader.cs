@@ -41,7 +41,7 @@ public unsafe class ResourceLoader : IDisposable, IService
 
     private int PapResourceHandler(void* self, byte* path, int length)
     {
-        if (!_config.EnableMods || !Utf8GamePath.FromPointer(path, out var gamePath))
+        if (!_config.EnableMods || !Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
             return length;
 
         var (resolvedPath, data) = _incMode.Value
@@ -64,7 +64,7 @@ public unsafe class ResourceLoader : IDisposable, IService
     }
 
     /// <summary> Load a resource for a given path and a specific collection. </summary>
-    public ResourceHandle* LoadResolvedResource(ResourceCategory category, ResourceType type, ByteString path, ResolveData resolveData)
+    public ResourceHandle* LoadResolvedResource(ResourceCategory category, ResourceType type, CiByteString path, ResolveData resolveData)
     {
         _resolvedData = resolveData;
         var ret = _resources.GetResource(category, type, path);
@@ -73,7 +73,7 @@ public unsafe class ResourceLoader : IDisposable, IService
     }
 
     /// <summary> Load a resource for a given path and a specific collection. </summary>
-    public SafeResourceHandle LoadResolvedSafeResource(ResourceCategory category, ResourceType type, ByteString path, ResolveData resolveData)
+    public SafeResourceHandle LoadResolvedSafeResource(ResourceCategory category, ResourceType type, CiByteString path, ResolveData resolveData)
     {
         _resolvedData = resolveData;
         var ret = _resources.GetSafeResource(category, type, path);
@@ -98,7 +98,7 @@ public unsafe class ResourceLoader : IDisposable, IService
     /// </summary>
     public event ResourceLoadedDelegate? ResourceLoaded;
 
-    public delegate void FileLoadedDelegate(ResourceHandle* resource, ByteString path, bool returnValue, bool custom,
+    public delegate void FileLoadedDelegate(ResourceHandle* resource, CiByteString path, bool returnValue, bool custom,
         ReadOnlySpan<byte> additionalData);
 
     /// <summary>
@@ -172,7 +172,8 @@ public unsafe class ResourceLoader : IDisposable, IService
             return;
         }
 
-        var path = ByteString.FromSpanUnsafe(actualPath, gamePath.Path.IsNullTerminated, gamePath.Path.IsAsciiLowerCase, gamePath.Path.IsAscii);
+        var path = CiByteString.FromSpanUnsafe(actualPath, gamePath.Path.IsNullTerminated, gamePath.Path.IsAsciiLowerCase,
+            gamePath.Path.IsAscii);
         fileDescriptor->ResourceHandle->FileNameData   = path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = path.Length;
         MtrlForceSync(fileDescriptor, ref isSync);
@@ -184,7 +185,7 @@ public unsafe class ResourceLoader : IDisposable, IService
 
 
     /// <summary> Load a resource by its path. If it is rooted, it will be loaded from the drive, otherwise from the SqPack. </summary>
-    private byte DefaultLoadResource(ByteString gamePath, SeFileDescriptor* fileDescriptor, int priority,
+    private byte DefaultLoadResource(CiByteString gamePath, SeFileDescriptor* fileDescriptor, int priority,
         bool isSync, ReadOnlySpan<byte> additionalData)
     {
         if (Utf8GamePath.IsRooted(gamePath))
@@ -265,7 +266,7 @@ public unsafe class ResourceLoader : IDisposable, IService
     }
 
     /// <summary> Compute the CRC32 hash for a given path together with potential resource parameters. </summary>
-    private static int ComputeHash(ByteString path, GetResourceParameters* pGetResParams)
+    private static int ComputeHash(CiByteString path, GetResourceParameters* pGetResParams)
     {
         if (pGetResParams == null || !pGetResParams->IsPartialRead)
             return path.Crc32;
@@ -273,11 +274,11 @@ public unsafe class ResourceLoader : IDisposable, IService
         // When the game requests file only partially, crc32 includes that information, in format of:
         // path/to/file.ext.hex_offset.hex_size
         // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
-        return ByteString.Join(
+        return CiByteString.Join(
             (byte)'.',
             path,
-            ByteString.FromStringUnsafe(pGetResParams->SegmentOffset.ToString("x"), true),
-            ByteString.FromStringUnsafe(pGetResParams->SegmentLength.ToString("x"), true)
+            CiByteString.FromString(pGetResParams->SegmentOffset.ToString("x"), out var s1, MetaDataComputation.None) ? s1 : CiByteString.Empty,
+            CiByteString.FromString(pGetResParams->SegmentLength.ToString("x"), out var s2, MetaDataComputation.None) ? s2 : CiByteString.Empty
         ).Crc32;
     }
 

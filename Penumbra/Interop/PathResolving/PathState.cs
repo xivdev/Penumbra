@@ -28,7 +28,7 @@ public sealed class PathState(CollectionResolver collectionResolver, MetaState m
         _internalResolve.Dispose();
     }
 
-    public bool Consume(ByteString _, out ResolveData collection)
+    public bool Consume(CiByteString _, out ResolveData collection)
     {
         if (_resolveData.IsValueCreated)
         {

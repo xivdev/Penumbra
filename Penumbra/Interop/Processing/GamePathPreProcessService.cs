@@ -11,7 +11,7 @@ public interface IPathPreProcessor : IService
 {
     public ResourceType Type { get; }
 
-    public FullPath? PreProcess(ResolveData resolveData, ByteString path, Utf8GamePath originalGamePath, bool nonDefault, FullPath? resolved);
+    public FullPath? PreProcess(ResolveData resolveData, CiByteString path, Utf8GamePath originalGamePath, bool nonDefault, FullPath? resolved);
 }
 
 public class GamePathPreProcessService : IService
@@ -24,7 +24,7 @@ public class GamePathPreProcessService : IService
     }
 
 
-    public (FullPath? Path, ResolveData Data) PreProcess(ResolveData resolveData, ByteString path, bool nonDefault, ResourceType type,
+    public (FullPath? Path, ResolveData Data) PreProcess(ResolveData resolveData, CiByteString path, bool nonDefault, ResourceType type,
         FullPath? resolved,
         Utf8GamePath originalPath)
     {

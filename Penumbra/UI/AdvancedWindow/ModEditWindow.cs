@@ -562,7 +562,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         return new FullPath(path);
     }
 
-    private HashSet<Utf8GamePath> FindPathsStartingWith(ByteString prefix)
+    private HashSet<Utf8GamePath> FindPathsStartingWith(CiByteString prefix)
     {
         var ret = new HashSet<Utf8GamePath>();
 

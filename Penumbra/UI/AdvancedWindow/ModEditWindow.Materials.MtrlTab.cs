@@ -25,7 +25,7 @@ public partial class ModEditWindow
     {
         private const int ShpkPrefixLength = 16;
 
-        private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk/"u8, true, true, true);
+        private static readonly CiByteString ShpkPrefix = CiByteString.FromSpanUnsafe("shader/sm5/shpk/"u8, true, true, true);
 
         private readonly ModEditWindow _edit;
         public readonly  MtrlFile      Mtrl;
@@ -77,7 +77,7 @@ public partial class ModEditWindow
         public FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
         {
             defaultPath = GamePaths.Shader.ShpkPath(Mtrl.ShaderPackage.Name);
-            if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath, true))
+            if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath))
                 return FullPath.Empty;
 
             return _edit.FindBestMatch(defaultGamePath);

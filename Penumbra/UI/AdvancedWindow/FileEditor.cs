@@ -6,6 +6,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Compression;
 using OtterGui.Raii;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.GameData.Files;
 using Penumbra.Mods.Editor;
@@ -98,7 +99,7 @@ public class FileEditor<T>(
         _inInput = ImGui.IsItemActive();
         if (ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0)
         {
-            _isDefaultPathUtf8Valid = Utf8GamePath.FromString(_defaultPath, out _defaultPathUtf8, true);
+            _isDefaultPathUtf8Valid = Utf8GamePath.FromString(_defaultPath, out _defaultPathUtf8);
             _quickImport            = null;
             fileDialog.Reset();
             try
@@ -306,7 +307,7 @@ public class FileEditor<T>(
                 foreach (var (option, gamePath) in file.SubModUsage)
                 {
                     ImGui.TableNextColumn();
-                    UiHelpers.Text(gamePath.Path);
+                    ImUtf8.Text(gamePath.Path.Span);
                     ImGui.TableNextColumn();
                     using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
                     ImGui.TextUnformatted(option.GetFullName());

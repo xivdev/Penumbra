@@ -45,25 +45,25 @@ internal unsafe partial record ResolveContext(
     public CharacterBase* CharacterBase
         => CharacterBasePointer.Value;
 
-    private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
+    private static readonly CiByteString ShpkPrefix = CiByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
     private ModelType ModelType
         => CharacterBase->GetModelType();
 
-    private ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath)
+    private ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, CiByteString gamePath)
     {
         if (resourceHandle == null)
             return null;
         if (gamePath.IsEmpty)
             return null;
-        if (!Utf8GamePath.FromByteString(ByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path, false))
+        if (!Utf8GamePath.FromByteString(CiByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path))
             return null;
 
         return GetOrCreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
     }
 
     [SkipLocalsInit]
-    private ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool dx11)
+    private ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, CiByteString gamePath, bool dx11)
     {
         if (resourceHandle == null)
             return null;
@@ -81,7 +81,7 @@ internal unsafe partial record ResolveContext(
             prefixed[lastDirectorySeparator + 2] = (byte)'-';
             gamePath.Span[(lastDirectorySeparator + 1)..].CopyTo(prefixed[(lastDirectorySeparator + 3)..]);
 
-            if (!Utf8GamePath.FromSpan(prefixed[..(gamePath.Length + 2)], out var tmp))
+            if (!Utf8GamePath.FromSpan(prefixed[..(gamePath.Length + 2)], MetaDataComputation.None, out var tmp))
                 return null;
 
             path = tmp.Clone();
@@ -118,11 +118,11 @@ internal unsafe partial record ResolveContext(
             throw new ArgumentNullException(nameof(resourceHandle));
 
         var fileName       = (ReadOnlySpan<byte>)resourceHandle->FileName.AsSpan();
-        var additionalData = ByteString.Empty;
+        var additionalData = CiByteString.Empty;
         if (PathDataHandler.Split(fileName, out fileName, out var data))
-            additionalData = ByteString.FromSpanUnsafe(data, false).Clone();
+            additionalData = CiByteString.FromSpanUnsafe(data, false).Clone();
 
-        var fullPath = Utf8GamePath.FromSpan(fileName, out var p) ? new FullPath(p.Clone()) : FullPath.Empty;
+        var fullPath = Utf8GamePath.FromSpan(fileName, MetaDataComputation.None, out var p) ? new FullPath(p.Clone()) : FullPath.Empty;
 
         var node = new ResourceNode(type, objectAddress, (nint)resourceHandle, GetResourceHandleLength(resourceHandle), this)
         {
@@ -222,7 +222,7 @@ internal unsafe partial record ResolveContext(
             return cached;
 
         var node     = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
-        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new ByteString(resource->ShpkName));
+        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new CiByteString(resource->ShpkName));
         if (shpkNode != null)
         {
             if (Global.WithUiData)
@@ -236,7 +236,7 @@ internal unsafe partial record ResolveContext(
         var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->TextureCount; i++)
         {
-            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new ByteString(resource->TexturePath(i)),
+            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new CiByteString(resource->TexturePath(i)),
                 resource->Textures[i].IsDX11);
             if (texNode == null)
                 continue;

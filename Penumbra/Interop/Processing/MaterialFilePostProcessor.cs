@@ -10,7 +10,7 @@ public sealed class MaterialFilePostProcessor //: IFilePostProcessor
     public ResourceType Type
         => ResourceType.Mtrl;
 
-    public unsafe void PostProcess(ResourceHandle* resource, ByteString originalGamePath, ReadOnlySpan<byte> additionalData)
+    public unsafe void PostProcess(ResourceHandle* resource, CiByteString originalGamePath, ReadOnlySpan<byte> additionalData)
     {
         if (!PathDataHandler.ReadMtrl(additionalData, out var data))
             return;

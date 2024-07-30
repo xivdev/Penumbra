@@ -16,7 +16,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private static readonly ByteString DisassemblyLabel = ByteString.FromSpanUnsafe("##disassembly"u8, true, true, true);
+    private static readonly CiByteString DisassemblyLabel = CiByteString.FromSpanUnsafe("##disassembly"u8, true, true, true);
 
     private readonly FileEditor<ShpkTab> _shaderPackageTab;
 

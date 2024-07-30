@@ -11,7 +11,7 @@ public sealed class ImcPathPreProcessor : IPathPreProcessor
     public ResourceType Type
         => ResourceType.Imc;
 
-    public FullPath? PreProcess(ResolveData resolveData, ByteString path, Utf8GamePath originalGamePath, bool _, FullPath? resolved)
+    public FullPath? PreProcess(ResolveData resolveData, CiByteString path, Utf8GamePath originalGamePath, bool _, FullPath? resolved)
         => resolveData.ModCollection.MetaCache?.Imc.HasFile(originalGamePath.Path) ?? false
             ? PathDataHandler.CreateImc(path, resolveData.ModCollection)
             : resolved;

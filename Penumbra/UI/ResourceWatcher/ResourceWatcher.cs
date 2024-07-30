@@ -163,7 +163,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         }
     }
 
-    private bool FilterMatch(ByteString path, out string match)
+    private bool FilterMatch(CiByteString path, out string match)
     {
         match = path.ToString();
         return _logFilter.Length == 0 || (_logRegex?.IsMatch(match) ?? false) || match.Contains(_logFilter, StringComparison.OrdinalIgnoreCase);
@@ -255,7 +255,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
             _newRecords.Enqueue(record);
     }
 
-    private unsafe void OnFileLoaded(ResourceHandle* resource, ByteString path, bool success, bool custom, ReadOnlySpan<byte> _)
+    private unsafe void OnFileLoaded(ResourceHandle* resource, CiByteString path, bool success, bool custom, ReadOnlySpan<byte> _)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
             Penumbra.Log.Information(

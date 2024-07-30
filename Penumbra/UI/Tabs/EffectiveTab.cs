@@ -4,6 +4,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
@@ -134,12 +135,12 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
     {
         var (path, name) = pair;
         ImGui.TableNextColumn();
-        UiHelpers.CopyOnClickSelectable(path.Path);
+        ImUtf8.CopyOnClickSelectable(path.Path.Span);
 
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        UiHelpers.CopyOnClickSelectable(name.Path.InternalName);
+        ImUtf8.CopyOnClickSelectable(name.Path.InternalName.Span);
         ImGuiUtil.HoverTooltip($"\nChanged by {name.Mod.Name}.");
     }
 

@@ -1,7 +1,5 @@
-using System.Text.Unicode;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Dalamud.Memory;
 using ImGuiNET;
 using OtterGui.Services;
 using OtterGui.Text;

@@ -216,10 +216,10 @@ public static class ResourceExtensions
         };
     }
 
-    public static ResourceType Type(ByteString path)
+    public static ResourceType Type(CiByteString path)
     {
         var extIdx = path.LastIndexOf((byte)'.');
-        var ext    = extIdx == -1 ? path : extIdx == path.Length - 1 ? ByteString.Empty : path.Substring(extIdx + 1);
+        var ext    = extIdx == -1 ? path : extIdx == path.Length - 1 ? CiByteString.Empty : path.Substring(extIdx + 1);
 
         return ext.Length switch
         {
@@ -231,7 +231,7 @@ public static class ResourceExtensions
         };
     }
 
-    public static ResourceCategory Category(ByteString path)
+    public static ResourceCategory Category(CiByteString path)
     {
         if (path.Length < 3)
             return ResourceCategory.Debug;

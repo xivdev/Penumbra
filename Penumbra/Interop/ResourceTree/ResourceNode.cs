@@ -15,7 +15,7 @@ public class ResourceNode : ICloneable
     public readonly nint               ResourceHandle;
     public          Utf8GamePath[]     PossibleGamePaths;
     public          FullPath           FullPath;
-    public          ByteString         AdditionalData;
+    public          CiByteString       AdditionalData;
     public readonly ulong              Length;
     public readonly List<ResourceNode> Children;
     internal        ResolveContext?    ResolveContext;
@@ -26,9 +26,9 @@ public class ResourceNode : ICloneable
         set
         {
             if (value.IsEmpty)
-                PossibleGamePaths = Array.Empty<Utf8GamePath>();
+                PossibleGamePaths = [];
             else
-                PossibleGamePaths = new[] { value };
+                PossibleGamePaths = [value];
         }
     }
 
@@ -40,8 +40,8 @@ public class ResourceNode : ICloneable
         Type              = type;
         ObjectAddress     = objectAddress;
         ResourceHandle    = resourceHandle;
-        PossibleGamePaths = Array.Empty<Utf8GamePath>();
-        AdditionalData    = ByteString.Empty;
+        PossibleGamePaths = [];
+        AdditionalData    = CiByteString.Empty;
         Length            = length;
         Children          = new List<ResourceNode>();
         ResolveContext    = resolveContext;
@@ -90,7 +90,7 @@ public class ResourceNode : ICloneable
 
     public readonly record struct UiData(string? Name, ChangedItemIcon Icon)
     {
-        public readonly UiData PrependName(string prefix)
+        public UiData PrependName(string prefix)
             => Name == null ? this : new UiData(prefix + Name, Icon);
     }
 }

@@ -4,7 +4,6 @@ using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
@@ -130,7 +129,7 @@ public class DalamudSubstitutionProvider : IDisposable, IApiService
 
         try
         {
-            if (!Utf8GamePath.FromString(path, out var utf8Path, true))
+            if (!Utf8GamePath.FromString(path, out var utf8Path))
                 return;
 
             var resolved = _activeCollectionData.Interface.ResolvePath(utf8Path);

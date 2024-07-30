@@ -31,27 +31,27 @@ public static class PathDataHandler
 
     /// <summary> Create the encoding path for an IMC file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static FullPath CreateImc(ByteString path, ModCollection collection)
+    public static FullPath CreateImc(CiByteString path, ModCollection collection)
         => new($"|{collection.LocalId.Id}_{collection.ImcChangeCounter}_{DiscriminatorString}|{path}");
 
     /// <summary> Create the encoding path for a TMB file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static FullPath CreateTmb(ByteString path, ModCollection collection)
+    public static FullPath CreateTmb(CiByteString path, ModCollection collection)
         => CreateBase(path, collection);
 
     /// <summary> Create the encoding path for an AVFX file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static FullPath CreateAvfx(ByteString path, ModCollection collection)
+    public static FullPath CreateAvfx(CiByteString path, ModCollection collection)
         => CreateBase(path, collection);
 
     /// <summary> Create the encoding path for a MTRL file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static FullPath CreateMtrl(ByteString path, ModCollection collection, Utf8GamePath originalPath)
+    public static FullPath CreateMtrl(CiByteString path, ModCollection collection, Utf8GamePath originalPath)
         => new($"|{collection.LocalId.Id}_{collection.ChangeCounter}_{originalPath.Path.Crc32:X8}_{DiscriminatorString}|{path}");
 
     /// <summary> The base function shared by most file types. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static FullPath CreateBase(ByteString path, ModCollection collection)
+    private static FullPath CreateBase(CiByteString path, ModCollection collection)
         => new($"|{collection.LocalId.Id}_{collection.ChangeCounter}_{DiscriminatorString}|{path}");
 
     /// <summary> Read an additional data blurb and parse it into usable data for all file types but Materials. </summary>

@@ -11,7 +11,7 @@ public sealed class ImcFilePostProcessor(CollectionStorage collections) : IFileP
     public ResourceType Type
         => ResourceType.Imc;
 
-    public unsafe void PostProcess(ResourceHandle* resource, ByteString originalGamePath, ReadOnlySpan<byte> additionalData)
+    public unsafe void PostProcess(ResourceHandle* resource, CiByteString originalGamePath, ReadOnlySpan<byte> additionalData)
     {
         if (!PathDataHandler.Read(additionalData, out var data) || data.Discriminator != PathDataHandler.Discriminator)
             return;

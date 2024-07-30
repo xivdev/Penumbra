@@ -270,7 +270,7 @@ public partial class ModCreator(
     public MultiSubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option, ModPriority priority)
     {
         var list = optionFolder.EnumerateNonHiddenFiles()
-            .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath, true), gamePath, new FullPath(f)))
+            .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
         var mod = MultiSubMod.WithoutGroup(option.Name, option.Description, priority);
@@ -291,7 +291,7 @@ public partial class ModCreator(
         ReloadMod(mod, false, out _);
         foreach (var file in mod.FindUnusedFiles())
         {
-            if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath, true))
+            if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath))
                 mod.Default.Files.TryAdd(gamePath, file);
         }
 

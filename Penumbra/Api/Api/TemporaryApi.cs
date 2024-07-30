@@ -137,7 +137,7 @@ public class TemporaryApi(
         paths = new Dictionary<Utf8GamePath, FullPath>(redirections.Count);
         foreach (var (gString, fString) in redirections)
         {
-            if (!Utf8GamePath.FromString(gString, out var path, false))
+            if (!Utf8GamePath.FromString(gString, out var path))
             {
                 paths = null;
                 return false;

@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -399,6 +400,33 @@ public class DebugTab : Window, ITab, IUiService
                         ImGuiUtil.DrawTableColumn(name);
                         ImGui.TableNextColumn();
                     }
+                }
+            }
+        }
+
+        using (var tree = ImUtf8.TreeNode("String Memory"u8))
+        {
+            if (tree)
+            {
+                using (ImUtf8.Group())
+                {
+                    ImUtf8.Text("Currently Allocated Strings"u8);
+                    ImUtf8.Text("Total Allocated Strings"u8);
+                    ImUtf8.Text("Free'd Allocated Strings"u8);
+                    ImUtf8.Text("Currently Allocated Bytes"u8);
+                    ImUtf8.Text("Total Allocated Bytes"u8);
+                    ImUtf8.Text("Free'd Allocated Bytes"u8);
+                }
+
+                ImGui.SameLine();
+                using (ImUtf8.Group())
+                {
+                    ImUtf8.Text($"{PenumbraStringMemory.CurrentStrings}");
+                    ImUtf8.Text($"{PenumbraStringMemory.AllocatedStrings}");
+                    ImUtf8.Text($"{PenumbraStringMemory.FreedStrings}");
+                    ImUtf8.Text($"{PenumbraStringMemory.CurrentBytes}");
+                    ImUtf8.Text($"{PenumbraStringMemory.AllocatedBytes}");
+                    ImUtf8.Text($"{PenumbraStringMemory.FreedBytes}");
                 }
             }
         }

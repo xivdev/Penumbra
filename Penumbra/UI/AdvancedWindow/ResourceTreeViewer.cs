@@ -84,7 +84,8 @@ public class ResourceTreeViewer
 
                 using (var c = ImRaii.PushColor(ImGuiCol.Text, CategoryColor(category).Value()))
                 {
-                    var isOpen = ImGui.CollapsingHeader($"{(_incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
+                    var isOpen = ImGui.CollapsingHeader($"{(_incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
+                        index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
                     if (debugMode)
                     {
                         using var _ = ImRaii.PushFont(UiBuilder.MonoFont);
@@ -149,7 +150,9 @@ public class ResourceTreeViewer
         var filterChanged = false;
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - yOffset);
         using (ImRaii.Child("##typeFilter", new Vector2(ImGui.GetContentRegionAvail().X, ChangedItemDrawer.TypeFilterIconSize.Y)))
+        {
             filterChanged |= _changedItemDrawer.DrawTypeFilter(ref _typeFilter);
+        }
 
         var fieldWidth = (ImGui.GetContentRegionAvail().X - checkSpacing * 2.0f - ImGui.GetFrameHeightWithSpacing()) / 2.0f;
         ImGui.SetNextItemWidth(fieldWidth);
@@ -181,7 +184,8 @@ public class ResourceTreeViewer
             }
         });
 
-    private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash, ChangedItemDrawer.ChangedItemIcon parentFilterIcon)
+    private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash,
+        ChangedItemDrawer.ChangedItemIcon parentFilterIcon)
     {
         var debugMode   = _config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
@@ -196,9 +200,9 @@ public class ResourceTreeViewer
                 return true;
 
             return node.Name != null && node.Name.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-                || node.FullPath.FullName.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-                || node.FullPath.InternalName.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-                || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
+             || node.FullPath.FullName.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
+             || node.FullPath.InternalName.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
+             || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
         }
 
         NodeVisibility CalculateNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemDrawer.ChangedItemIcon parentFilterIcon)
@@ -226,10 +230,11 @@ public class ResourceTreeViewer
                 visibility = CalculateNodeVisibility(nodePathHash, node, parentFilterIcon);
                 _filterCache.Add(nodePathHash, visibility);
             }
+
             return visibility;
         }
 
-        string GetAdditionalDataSuffix(ByteString data)
+        string GetAdditionalDataSuffix(CiByteString data)
             => !debugMode || data.IsEmpty ? string.Empty : $"\n\nAdditional Data: {data}";
 
         foreach (var (resourceNode, index) in resourceNodes.WithIndex())
@@ -252,8 +257,9 @@ public class ResourceTreeViewer
             var unfolded = _unfolded.Contains(nodePathHash);
             using (var indent = ImRaii.PushIndent(level))
             {
-                var hasVisibleChildren = resourceNode.Children.Any(child => GetNodeVisibility(unchecked(nodePathHash * 31 + child.ResourceHandle), child, filterIcon) != NodeVisibility.Hidden);
-                var unfoldable         = hasVisibleChildren && visibility != NodeVisibility.DescendentsOnly;
+                var hasVisibleChildren = resourceNode.Children.Any(child
+                    => GetNodeVisibility(unchecked(nodePathHash * 31 + child.ResourceHandle), child, filterIcon) != NodeVisibility.Hidden);
+                var unfoldable = hasVisibleChildren && visibility != NodeVisibility.DescendentsOnly;
                 if (unfoldable)
                 {
                     using var font   = ImRaii.PushFont(UiBuilder.IconFont);
@@ -317,13 +323,15 @@ public class ResourceTreeViewer
                 ImGui.Selectable(resourceNode.FullPath.ToPath(), false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
-                ImGuiUtil.HoverTooltip($"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
+                ImGuiUtil.HoverTooltip(
+                    $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
             else
             {
                 ImGui.Selectable("(unavailable)", false, ImGuiSelectableFlags.Disabled,
                     new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
-                ImGuiUtil.HoverTooltip($"The actual path to this file is unavailable.\nIt may be managed by another plug-in.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
+                ImGuiUtil.HoverTooltip(
+                    $"The actual path to this file is unavailable.\nIt may be managed by another plug-in.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
 
             mutedColor.Dispose();

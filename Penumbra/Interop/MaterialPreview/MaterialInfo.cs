@@ -49,7 +49,10 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
 
     public static unsafe List<MaterialInfo> FindMaterials(IEnumerable<nint> gameObjects, string materialPath)
     {
-        var needle = ByteString.FromString(materialPath.Replace('\\', '/'), out var m, true) ? m : ByteString.Empty;
+        var needle = CiByteString.FromString(materialPath.Replace('\\', '/'), out var m,
+            MetaDataComputation.CiCrc32 | MetaDataComputation.Crc32)
+            ? m
+            : CiByteString.Empty;
 
         var result = new List<MaterialInfo>(Enum.GetValues<DrawObjectType>().Length);
         foreach (var objectPtr in gameObjects)
@@ -83,7 +86,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
                             continue;
 
                         PathDataHandler.Split(mtrlHandle->ResourceHandle.FileName.AsSpan(), out var path, out _);
-                        var fileName = ByteString.FromSpanUnsafe(path, true);
+                        var fileName = CiByteString.FromSpanUnsafe(path, true);
                         if (fileName == needle)
                             result.Add(new MaterialInfo(index, type, i, j));
                     }

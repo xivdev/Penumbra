@@ -3,7 +3,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String;
@@ -99,7 +98,7 @@ internal partial record ResolveContext
         Span<byte> pathBuffer = stackalloc byte[260];
         pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
-        return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
+        return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
     }
 
     [SkipLocalsInit]
@@ -133,7 +132,7 @@ internal partial record ResolveContext
                 if (weaponPosition >= 0)
                     WriteZeroPaddedNumber(pathBuffer[(weaponPosition + 9)..(weaponPosition + 13)], mirroredSetId);
 
-                return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
+                return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
             }
         }
 
@@ -148,7 +147,7 @@ internal partial record ResolveContext
         Span<byte> pathBuffer = stackalloc byte[260];
         pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
-        return Utf8GamePath.FromSpan(pathBuffer, out var path) ? path.Clone() : Utf8GamePath.Empty;
+        return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
     }
 
     private unsafe byte ResolveMaterialVariant(ResourceHandle* imc, Variant variant)
@@ -196,7 +195,7 @@ internal partial record ResolveContext
 
     private unsafe Utf8GamePath ResolveMaterialPathNative(byte* mtrlFileName)
     {
-        ByteString? path;
+        CiByteString? path;
         try
         {
             path = CharacterBase->ResolveMtrlPathAsByteString(SlotIndex, mtrlFileName);

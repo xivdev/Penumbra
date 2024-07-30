@@ -39,14 +39,14 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         }
     }
 
-    public ResourceHandle* GetResource(ResourceCategory category, ResourceType type, ByteString path)
+    public ResourceHandle* GetResource(ResourceCategory category, ResourceType type, CiByteString path)
     {
         var hash = path.Crc32;
         return GetResourceHandler(true, (ResourceManager*)_resourceManager.ResourceManagerAddress,
             &category,                  &type, &hash, path.Path, null, false);
     }
 
-    public SafeResourceHandle GetSafeResource(ResourceCategory category, ResourceType type, ByteString path)
+    public SafeResourceHandle GetSafeResource(ResourceCategory category, ResourceType type, CiByteString path)
         => new((CSResourceHandle*)GetResource(category, type, path), false);
 
     public void Dispose()
@@ -102,7 +102,7 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk)
     {
         using var performance = _performance.Measure(PerformanceType.GetResourceHandler);
-        if (!Utf8GamePath.FromPointer(path, out var gamePath))
+        if (!Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
         {
             Penumbra.Log.Error("[ResourceService] Could not create GamePath from resource path.");
             return isSync
@@ -120,7 +120,7 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     }
 
     /// <summary> Call the original GetResource function. </summary>
-    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, ByteString path,
+    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path,
         GetResourceParameters* resourceParameters = null, bool unk = false)
         => sync
             ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,

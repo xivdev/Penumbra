@@ -7,6 +7,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.SafeHandles;
+using Penumbra.String;
 using Penumbra.String.Classes;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
@@ -15,7 +16,7 @@ namespace Penumbra.Interop.Hooks.PostProcessing;
 public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredService
 {
     public static readonly Utf8GamePath PreBoneDeformerPath =
-        Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, out var p) ? p : Utf8GamePath.Empty;
+        Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
 
     // Approximate name guesses.
     private delegate void  CharacterBaseSetupScalingDelegate(CharacterBase* drawObject, uint slotIndex);

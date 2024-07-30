@@ -8,12 +8,12 @@ namespace Penumbra.Collections.Cache;
 
 public sealed class ImcCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<ImcIdentifier, ImcEntry>(manager, collection)
 {
-    private readonly Dictionary<ByteString, (ImcFile, HashSet<ImcIdentifier>)> _imcFiles = [];
+    private readonly Dictionary<CiByteString, (ImcFile, HashSet<ImcIdentifier>)> _imcFiles = [];
 
-    public bool HasFile(ByteString path)
+    public bool HasFile(CiByteString path)
         => _imcFiles.ContainsKey(path);
 
-    public bool GetFile(ByteString path, [NotNullWhen(true)] out ImcFile? file)
+    public bool GetFile(CiByteString path, [NotNullWhen(true)] out ImcFile? file)
     {
         if (!_imcFiles.TryGetValue(path, out var p))
         {

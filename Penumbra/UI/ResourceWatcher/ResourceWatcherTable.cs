@@ -50,7 +50,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => DrawByteString(item.Path, 280 * UiHelpers.Scale);
     }
 
-    private static unsafe void DrawByteString(ByteString path, float length)
+    private static unsafe void DrawByteString(CiByteString path, float length)
     {
         Vector2 vec;
         ImGuiNative.igCalcTextSize(&vec, path.Path, path.Path + path.Length, 0, 0);
@@ -61,7 +61,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
         else
         {
             var        fileName = path.LastIndexOf((byte)'/');
-            ByteString shortPath;
+            CiByteString shortPath;
             if (fileName != -1)
             {
                 using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(2 * UiHelpers.Scale));

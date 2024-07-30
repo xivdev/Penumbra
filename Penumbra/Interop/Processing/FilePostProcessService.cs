@@ -10,7 +10,7 @@ namespace Penumbra.Interop.Processing;
 public interface IFilePostProcessor : IService
 {
     public        ResourceType Type { get; }
-    public unsafe void         PostProcess(ResourceHandle* resource, ByteString originalGamePath, ReadOnlySpan<byte> additionalData);
+    public unsafe void         PostProcess(ResourceHandle* resource, CiByteString originalGamePath, ReadOnlySpan<byte> additionalData);
 }
 
 public unsafe class FilePostProcessService : IRequiredService, IDisposable
@@ -30,7 +30,7 @@ public unsafe class FilePostProcessService : IRequiredService, IDisposable
         _resourceLoader.FileLoaded -= OnFileLoaded;
     }
 
-    private void OnFileLoaded(ResourceHandle* resource, ByteString path, bool returnValue, bool custom,
+    private void OnFileLoaded(ResourceHandle* resource, CiByteString path, bool returnValue, bool custom,
         ReadOnlySpan<byte> additionalData)
     {
         if (_processors.TryGetValue(resource->FileType, out var processor))
