@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
@@ -22,18 +23,19 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
         => _gameState.LastGameObject;
 
     public unsafe DrawObjectState(ObjectManager objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
-        CharacterBaseDestructor characterBaseDestructor, GameState gameState)
+        CharacterBaseDestructor characterBaseDestructor, GameState gameState, IFramework framework)
     {
         _objects                 = objects;
         _createCharacterBase     = createCharacterBase;
         _weaponReload            = weaponReload;
         _characterBaseDestructor = characterBaseDestructor;
         _gameState               = gameState;
+        framework.RunOnFrameworkThread(InitializeDrawObjects);
+
         _weaponReload.Subscribe(OnWeaponReloading, WeaponReload.Priority.DrawObjectState);
         _weaponReload.Subscribe(OnWeaponReloaded,  WeaponReload.PostEvent.Priority.DrawObjectState);
         _createCharacterBase.Subscribe(OnCharacterBaseCreated, CreateCharacterBase.PostEvent.Priority.DrawObjectState);
         _characterBaseDestructor.Subscribe(OnCharacterBaseDestructor, CharacterBaseDestructor.Priority.DrawObjectState);
-        InitializeDrawObjects();
     }
 
     public bool ContainsKey(nint key)
@@ -94,7 +96,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     /// </summary>
     private unsafe void InitializeDrawObjects()
     {
-        foreach(var actor in _objects)
+        foreach (var actor in _objects)
         {
             if (actor is { IsCharacter: true, Model.Valid: true })
                 IterateDrawObjectTree((Object*)actor.Model.Address, actor, false, false);
