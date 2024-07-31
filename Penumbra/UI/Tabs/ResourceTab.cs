@@ -81,7 +81,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
                 return;
 
             var address = $"0x{(ulong)r:X}";
-            ImGuiUtil.TextNextColumn($"0x{hash:X8}");
+            ImGuiUtil.DrawTableColumn($"0x{hash:X8}");
             ImGui.TableNextColumn();
             ImGuiUtil.CopyOnClickSelectable(address);
 
@@ -101,7 +101,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
 
             ImGuiUtil.HoverTooltip("Click to copy byte-wise file data to clipboard, if any.");
 
-            ImGuiUtil.TextNextColumn(r->RefCount.ToString());
+            ImGuiUtil.DrawTableColumn(r->RefCount.ToString());
         });
     }
 

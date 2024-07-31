@@ -140,7 +140,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             var       value = (mask & (1 << i)) != 0;
             using (ImRaii.Disabled(!cache.CanChange(i)))
             {
-                if (ImUtf8.Checkbox(TerminatedByteString.Empty, ref value))
+                if (ImUtf8.Checkbox(""u8, ref value))
                 {
                     if (data is ImcModGroup g)
                         editor.ChangeDefaultAttribute(g, cache, i, value);

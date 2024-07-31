@@ -405,7 +405,7 @@ public partial class ModEditWindow
                         }
 
                     var fcGroup = FindOrAddGroup(Constants, "Further Constants");
-                    foreach (var (start, end) in handledElements.Ranges(true))
+                    foreach (var (start, end) in handledElements.Ranges(complement:true))
                     {
                         if ((shpkConstant.ByteOffset & 0x3) == 0)
                         {
