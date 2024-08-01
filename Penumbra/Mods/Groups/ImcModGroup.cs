@@ -186,7 +186,7 @@ public class ImcModGroup(Mod mod) : IModGroup
             return null;
         }
 
-        var rollingMask = ret.DefaultEntry.AttributeMask;
+        var rollingMask = 0ul;
         if (options != null)
             foreach (var child in options.Children())
             {
