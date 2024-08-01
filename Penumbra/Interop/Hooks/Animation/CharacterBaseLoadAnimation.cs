@@ -26,7 +26,8 @@ public sealed unsafe class CharacterBaseLoadAnimation : FastHook<CharacterBaseLo
         _collectionResolver = collectionResolver;
         _drawObjectState    = drawObjectState;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("CharacterBase Load Animation", Sigs.CharacterBaseLoadAnimation, Detour, HookSettings.VfxIdentificationHooks);
+        Task = hooks.CreateHook<Delegate>("CharacterBase Load Animation", Sigs.CharacterBaseLoadAnimation, Detour,
+            !HookOverrides.Instance.Animation.CharacterBaseLoadAnimation);
     }
 
     public delegate void Delegate(DrawObject* drawBase);

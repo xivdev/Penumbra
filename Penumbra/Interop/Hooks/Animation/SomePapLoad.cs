@@ -22,7 +22,7 @@ public sealed unsafe class SomePapLoad : FastHook<SomePapLoad.Delegate>
         _collectionResolver = collectionResolver;
         _objects            = objects;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Some PAP Load", Sigs.LoadSomePap, Detour, HookSettings.VfxIdentificationHooks);
+        Task                = hooks.CreateHook<Delegate>("Some PAP Load", Sigs.LoadSomePap, Detour, !HookOverrides.Instance.Animation.SomePapLoad);
     }
 
     public delegate void Delegate(nint a1, int a2, nint a3, int a4);

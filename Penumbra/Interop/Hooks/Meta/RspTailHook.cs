@@ -19,14 +19,18 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
-        _metaState.Config.ModsEnabled += Toggle;
+        Task = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour,
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspTailHook);
+        if (!HookOverrides.Instance.Meta.RspTailHook)
+            _metaState.Config.ModsEnabled += Toggle;
     }
 
     private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte tailLength)
     {
         float scale;
-        if (bodyType < 2 && _metaState.RspCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache })
+        if (bodyType < 2
+         && _metaState.RspCollection.TryPeek(out var collection)
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
             var clan = (SubRace)(((int)race - 1) * 2 + 1 + isSecondSubRace);
             var (minIdent, maxIdent) = gender == 0

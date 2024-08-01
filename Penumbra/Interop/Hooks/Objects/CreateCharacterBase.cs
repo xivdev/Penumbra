@@ -16,7 +16,7 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
 
     public CreateCharacterBase(HookManager hooks)
         : base("Create CharacterBase")
-        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, HookSettings.ObjectHooks);
+        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CreateCharacterBase);
 
     private readonly Task<Hook<Delegate>> _task;
 

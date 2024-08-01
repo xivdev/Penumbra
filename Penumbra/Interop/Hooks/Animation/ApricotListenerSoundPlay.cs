@@ -24,7 +24,7 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
         _collectionResolver = collectionResolver;
         _crashHandler       = crashHandler;
         Task = hooks.CreateHook<Delegate>("Apricot Listener Sound Play Caller", Sigs.ApricotListenerSoundPlayCaller, Detour,
-            true); //HookSettings.VfxIdentificationHooks);
+            !HookOverrides.Instance.Animation.ApricotListenerSoundPlayCaller);
     }
 
     public delegate nint Delegate(nint a1, nint a2, float a3);

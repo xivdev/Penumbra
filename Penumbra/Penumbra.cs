@@ -21,6 +21,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using System.Xml.Linq;
+using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.ResourceLoading;
 
 namespace Penumbra;
@@ -52,9 +53,10 @@ public class Penumbra : IDalamudPlugin
     {
         try
         {
-            _services        = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
-            Messager         = _services.GetService<MessageService>();
-            _validityChecker = _services.GetService<ValidityChecker>();
+            HookOverrides.Instance = HookOverrides.LoadFile(pluginInterface);
+            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
+            Messager               = _services.GetService<MessageService>();
+            _validityChecker       = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
 
             var startup = _services.GetService<DalamudConfigService>()
@@ -215,6 +217,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
         sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
+        sb.Append($"> **`Hook Overrides:              `** {HookOverrides.Instance.IsCustomLoaded}\n");
         sb.Append(
             $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");
         sb.Append(

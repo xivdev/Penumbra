@@ -19,7 +19,7 @@ public unsafe class CreateFileWHook : IDisposable, IRequiredService
     public CreateFileWHook(IGameInteropProvider interop)
     {
         _createFileWHook = interop.HookFromImport<CreateFileWDelegate>(null, "KERNEL32.dll", "CreateFileW", 0, CreateFileWDetour);
-        if (HookSettings.ReplacementHooks)
+        if (!HookOverrides.Instance.ResourceLoading.CreateFileWHook)
             _createFileWHook.Enable();
     }
 

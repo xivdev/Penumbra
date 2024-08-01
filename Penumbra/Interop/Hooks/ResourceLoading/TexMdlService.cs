@@ -46,12 +46,12 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
     {
         interop.InitializeFromAttributes(this);
         _lodService = new LodService(interop);
-        if (HookSettings.ReplacementHooks)
-        {
+        if (HookOverrides.Instance.ResourceLoading.CheckFileState)
             _checkFileStateHook.Enable();
+        if (HookOverrides.Instance.ResourceLoading.LoadMdlFileExtern)
             _loadMdlFileExternHook.Enable();
+        if (HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)
             _textureOnLoadHook.Enable();
-        }
     }
 
     /// <summary> Add CRC64 if the given file is a model or texture file and has an associated path. </summary>

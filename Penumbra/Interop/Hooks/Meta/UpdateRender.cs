@@ -13,8 +13,8 @@ public sealed unsafe class UpdateRender : FastHook<UpdateRender.Delegate>
     public UpdateRender(HookManager hooks, CollectionResolver collectionResolver, MetaState metaState, CharacterBaseVTables vTables)
     {
         _collectionResolver = collectionResolver;
-        _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Human.UpdateRender", vTables.HumanVTable[4], Detour, HookSettings.MetaParentHooks);
+        _metaState = metaState;
+        Task = hooks.CreateHook<Delegate>("Human.UpdateRender", vTables.HumanVTable[4], Detour, !HookOverrides.Instance.Meta.UpdateRender);
     }
 
     public delegate void Delegate(DrawObject* drawObject);

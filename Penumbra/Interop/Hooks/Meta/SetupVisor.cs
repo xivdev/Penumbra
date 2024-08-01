@@ -19,7 +19,7 @@ public sealed unsafe class SetupVisor : FastHook<SetupVisor.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Setup Visor", Sigs.SetupVisor, Detour, HookSettings.MetaParentHooks);
+        Task                = hooks.CreateHook<Delegate>("Setup Visor", Sigs.SetupVisor, Detour, !HookOverrides.Instance.Meta.SetupVisor);
     }
 
     public delegate byte Delegate(DrawObject* drawObject, ushort modelId, byte visorState);

@@ -14,7 +14,7 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("Calculate Height", (nint)Character.MemberFunctionPointers.CalculateHeight, Detour, HookSettings.MetaParentHooks);
+        Task = hooks.CreateHook<Delegate>("Calculate Height", (nint)Character.MemberFunctionPointers.CalculateHeight, Detour, !HookOverrides.Instance.Meta.CalculateHeight);
     }
 
     public delegate ulong Delegate(Character* character);

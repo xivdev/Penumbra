@@ -16,8 +16,10 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>, ID
     public EqdpAccessoryHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task       = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", Sigs.GetEqdpAccessoryEntry, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
-        _metaState.Config.ModsEnabled += Toggle;
+        Task = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", Sigs.GetEqdpAccessoryEntry, Detour,
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EqdpAccessoryHook);
+        if (!HookOverrides.Instance.Meta.EqdpAccessoryHook)
+            _metaState.Config.ModsEnabled += Toggle;
     }
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)

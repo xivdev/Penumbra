@@ -26,7 +26,7 @@ public sealed unsafe class LoadCharacterVfx : FastHook<LoadCharacterVfx.Delegate
         _collectionResolver = collectionResolver;
         _objects            = objects;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Load Character VFX", Sigs.LoadCharacterVfx, Detour, HookSettings.VfxIdentificationHooks);
+        Task                = hooks.CreateHook<Delegate>("Load Character VFX", Sigs.LoadCharacterVfx, Detour, !HookOverrides.Instance.Animation.LoadCharacterVfx);
     }
 
     public delegate nint Delegate(byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4);

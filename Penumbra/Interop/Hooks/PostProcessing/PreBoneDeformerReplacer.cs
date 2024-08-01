@@ -38,9 +38,9 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
         _resourceLoader     = resourceLoader;
         _framework          = framework;
         _humanSetupScalingHook = hooks.CreateHook<CharacterBaseSetupScalingDelegate>("HumanSetupScaling", vTables.HumanVTable[58], SetupScaling,
-            HookSettings.PostProcessingHooks).Result;
+            !HookOverrides.Instance.PostProcessing.HumanSetupScaling).Result;
         _humanCreateDeformerHook = hooks.CreateHook<CharacterBaseCreateDeformerDelegate>("HumanCreateDeformer", vTables.HumanVTable[101],
-            CreateDeformer, HookSettings.PostProcessingHooks).Result;
+            CreateDeformer, !HookOverrides.Instance.PostProcessing.HumanCreateDeformer).Result;
     }
 
     public void Dispose()

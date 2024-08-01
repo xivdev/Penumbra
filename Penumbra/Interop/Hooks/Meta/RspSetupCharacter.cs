@@ -15,7 +15,7 @@ public sealed unsafe class RspSetupCharacter : FastHook<RspSetupCharacter.Delega
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("RSP Setup Character", Sigs.RspSetupCharacter, Detour, HookSettings.MetaParentHooks);
+        Task                = hooks.CreateHook<Delegate>("RSP Setup Character", Sigs.RspSetupCharacter, Detour, !HookOverrides.Instance.Meta.RspSetupCharacter);
     }
 
     public delegate void Delegate(DrawObject* drawObject, nint unk2, float unk3, nint unk4, byte unk5);

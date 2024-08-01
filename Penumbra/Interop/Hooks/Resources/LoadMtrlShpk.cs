@@ -14,7 +14,7 @@ public sealed unsafe class LoadMtrlShpk : FastHook<LoadMtrlShpk.Delegate>
     {
         _gameState    = gameState;
         _communicator = communicator;
-        Task          = hooks.CreateHook<Delegate>("Load Material Shaders", Sigs.LoadMtrlShpk, Detour, HookSettings.ResourceHooks);
+        Task          = hooks.CreateHook<Delegate>("Load Material Shaders", Sigs.LoadMtrlShpk, Detour, HookOverrides.Instance.Resources.LoadMtrlShpk);
     }
 
     public delegate byte Delegate(MaterialResourceHandle* mtrlResourceHandle);

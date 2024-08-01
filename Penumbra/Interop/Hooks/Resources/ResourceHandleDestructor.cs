@@ -23,7 +23,8 @@ public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHa
 
     public ResourceHandleDestructor(HookManager hooks)
         : base("Destroy ResourceHandle")
-        => _task = hooks.CreateHook<Delegate>(Name, Sigs.ResourceHandleDestructor, Detour, HookSettings.ResourceHooks);
+        => _task = hooks.CreateHook<Delegate>(Name, Sigs.ResourceHandleDestructor, Detour,
+            HookOverrides.Instance.Resources.ResourceHandleDestructor);
 
     private readonly Task<Hook<Delegate>> _task;
 

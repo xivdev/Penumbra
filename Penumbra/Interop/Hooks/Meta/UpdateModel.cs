@@ -15,7 +15,7 @@ public sealed unsafe class UpdateModel : FastHook<UpdateModel.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Update Model", Sigs.UpdateModel, Detour, HookSettings.MetaParentHooks);
+        Task                = hooks.CreateHook<Delegate>("Update Model", Sigs.UpdateModel, Detour, !HookOverrides.Instance.Meta.UpdateModel);
     }
 
     public delegate void Delegate(DrawObject* drawObject);

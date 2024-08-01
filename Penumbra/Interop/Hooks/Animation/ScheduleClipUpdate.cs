@@ -23,7 +23,7 @@ public sealed unsafe class ScheduleClipUpdate : FastHook<ScheduleClipUpdate.Dele
         _collectionResolver = collectionResolver;
         _objects            = objects;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Schedule Clip Update", Sigs.ScheduleClipUpdate, Detour, HookSettings.VfxIdentificationHooks);
+        Task                = hooks.CreateHook<Delegate>("Schedule Clip Update", Sigs.ScheduleClipUpdate, Detour, !HookOverrides.Instance.Animation.ScheduleClipUpdate);
     }
 
     public delegate void Delegate(ClipScheduler* x);

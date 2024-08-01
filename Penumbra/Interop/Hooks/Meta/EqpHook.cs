@@ -15,8 +15,10 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>, IDisposable
     public EqpHook(HookManager hooks, MetaState metaState)
     {
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("GetEqpFlags", Sigs.GetEqpEntry, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
-        _metaState.Config.ModsEnabled += Toggle;
+        Task = hooks.CreateHook<Delegate>("GetEqpFlags", Sigs.GetEqpEntry, Detour,
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EqpHook);
+        if (!HookOverrides.Instance.Meta.EqpHook)
+            _metaState.Config.ModsEnabled += Toggle;
     }
 
     private void Detour(CharacterUtility* utility, EqpEntry* flags, CharacterArmor* armor)

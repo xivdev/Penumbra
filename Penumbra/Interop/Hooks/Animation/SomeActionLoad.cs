@@ -20,7 +20,7 @@ public sealed unsafe class SomeActionLoad : FastHook<SomeActionLoad.Delegate>
         _state              = state;
         _collectionResolver = collectionResolver;
         _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Some Action Load", Sigs.LoadSomeAction, Detour, HookSettings.VfxIdentificationHooks);
+        Task                = hooks.CreateHook<Delegate>("Some Action Load", Sigs.LoadSomeAction, Detour, !HookOverrides.Instance.Animation.SomeActionLoad);
     }
 
     public delegate void Delegate(TimelineContainer* timelineManager);

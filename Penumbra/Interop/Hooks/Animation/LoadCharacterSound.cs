@@ -20,7 +20,7 @@ public sealed unsafe class LoadCharacterSound : FastHook<LoadCharacterSound.Dele
         _collectionResolver = collectionResolver;
         _crashHandler       = crashHandler;
         Task = hooks.CreateHook<Delegate>("Load Character Sound", (nint)VfxContainer.MemberFunctionPointers.LoadCharacterSound, Detour,
-            HookSettings.VfxIdentificationHooks);
+            !HookOverrides.Instance.Animation.LoadCharacterSound);
     }
 
     public delegate nint Delegate(VfxContainer* container, int unk1, int unk2, nint unk3, ulong unk4, int unk5, int unk6, ulong unk7);

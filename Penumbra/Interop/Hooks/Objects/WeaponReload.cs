@@ -16,7 +16,7 @@ public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Cha
 
     public WeaponReload(HookManager hooks)
         : base("Reload Weapon")
-        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, HookSettings.ObjectHooks);
+        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.WeaponReload);
 
     private readonly Task<Hook<Delegate>> _task;
 

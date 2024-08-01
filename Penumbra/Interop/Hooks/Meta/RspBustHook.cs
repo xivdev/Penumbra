@@ -19,8 +19,10 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
     {
         _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task             = hooks.CreateHook<Delegate>("GetRspBust", Sigs.GetRspBust, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
-        _metaState.Config.ModsEnabled += Toggle;
+        Task = hooks.CreateHook<Delegate>("GetRspBust", Sigs.GetRspBust, Detour,
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspBustHook);
+        if (!HookOverrides.Instance.Meta.RspBustHook)
+            _metaState.Config.ModsEnabled += Toggle;
     }
 
     private float* Detour(nint cmpResource, float* storage, SubRace clan, byte gender, byte bodyType, byte bustSize)
@@ -34,7 +36,9 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         }
 
         var ret = storage;
-        if (bodyType < 2 && _metaState.RspCollection.TryPeek(out var collection) && collection is { Valid: true, ModCollection.MetaCache: { } cache })
+        if (bodyType < 2
+         && _metaState.RspCollection.TryPeek(out var collection)
+         && collection is { Valid: true, ModCollection.MetaCache: { } cache })
         {
             var bustScale = bustSize / 100f;
             var ptr       = CmpFile.GetDefaults(_metaFileManager, clan, RspAttribute.BustMinX);

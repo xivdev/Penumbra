@@ -14,7 +14,6 @@ public unsafe class PeSigScanner : IDisposable
     private readonly nint _moduleBaseAddress;
     private readonly uint _textSectionVirtualAddress;
 
-
     public PeSigScanner()
     {
         var mainModule = Process.GetCurrentProcess().MainModule!;

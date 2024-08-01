@@ -17,10 +17,12 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
 
     public RspHeightHook(HookManager hooks, MetaState metaState, MetaFileManager metaFileManager)
     {
-        _metaState = metaState;
+        _metaState       = metaState;
         _metaFileManager = metaFileManager;
-        Task = hooks.CreateHook<Delegate>("GetRspHeight", Sigs.GetRspHeight, Detour, metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
-        _metaState.Config.ModsEnabled += Toggle;
+        Task = hooks.CreateHook<Delegate>("GetRspHeight", Sigs.GetRspHeight, Detour,
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspHeightHook);
+        if (!HookOverrides.Instance.Meta.RspHeightHook)
+            _metaState.Config.ModsEnabled += Toggle;
     }
 
     private unsafe float Detour(nint cmpResource, SubRace clan, byte gender, byte bodyType, byte height)
@@ -33,6 +35,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
             // Special cases.
             if (height == 0xFF)
                 return 1.0f;
+
             if (height > 100)
                 height = 0;
 

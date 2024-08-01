@@ -31,7 +31,7 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
         _conditions = conditions;
         _objects = objects;
         _crashHandler = crashHandler;
-        Task = hooks.CreateHook<Delegate>("Load Timeline Resources", Sigs.LoadTimelineResources, Detour, HookSettings.VfxIdentificationHooks);
+        Task = hooks.CreateHook<Delegate>("Load Timeline Resources", Sigs.LoadTimelineResources, Detour, !HookOverrides.Instance.Animation.LoadTimelineResources);
     }
 
     public delegate ulong Delegate(SchedulerTimeline* timeline);

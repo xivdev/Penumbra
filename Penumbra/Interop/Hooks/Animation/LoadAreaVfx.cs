@@ -17,10 +17,10 @@ public sealed unsafe class LoadAreaVfx : FastHook<LoadAreaVfx.Delegate>
 
     public LoadAreaVfx(HookManager hooks, GameState state, CollectionResolver collectionResolver, CrashHandlerService crashHandler)
     {
-        _state              = state;
+        _state = state;
         _collectionResolver = collectionResolver;
-        _crashHandler       = crashHandler;
-        Task                = hooks.CreateHook<Delegate>("Load Area VFX", Sigs.LoadAreaVfx, Detour, HookSettings.VfxIdentificationHooks);
+        _crashHandler = crashHandler;
+        Task = hooks.CreateHook<Delegate>("Load Area VFX", Sigs.LoadAreaVfx, Detour, !HookOverrides.Instance.Animation.LoadAreaVfx);
     }
 
     public delegate nint Delegate(uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3);

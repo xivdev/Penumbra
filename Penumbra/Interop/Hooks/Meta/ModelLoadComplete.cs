@@ -13,7 +13,7 @@ public sealed unsafe class ModelLoadComplete : FastHook<ModelLoadComplete.Delega
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Model Load Complete", vtables.HumanVTable[59], Detour, HookSettings.MetaParentHooks);
+        Task                = hooks.CreateHook<Delegate>("Model Load Complete", vtables.HumanVTable[59], Detour, !HookOverrides.Instance.Meta.ModelLoadComplete);
     }
 
     public delegate void Delegate(DrawObject* drawObject);

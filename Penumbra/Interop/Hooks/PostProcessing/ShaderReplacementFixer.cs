@@ -90,20 +90,26 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         _modelRenderer            = modelRenderer;
         _communicator             = communicator;
 
-        _skinState = new(
+        _skinState = new ModdedShaderPackageState(
             () => (ShaderPackageResourceHandle**)&_utility.Address->SkinShpkResource,
             () => (ShaderPackageResourceHandle*)_utility.DefaultSkinShpkResource);
-        _irisState                  = new(() => _modelRenderer.IrisShaderPackage,                  () => _modelRenderer.DefaultIrisShaderPackage);
-        _characterGlassState        = new(() => _modelRenderer.CharacterGlassShaderPackage,        () => _modelRenderer.DefaultCharacterGlassShaderPackage);
-        _characterTransparencyState = new(() => _modelRenderer.CharacterTransparencyShaderPackage, () => _modelRenderer.DefaultCharacterTransparencyShaderPackage);
-        _characterTattooState       = new(() => _modelRenderer.CharacterTattooShaderPackage,       () => _modelRenderer.DefaultCharacterTattooShaderPackage);
-        _characterOcclusionState    = new(() => _modelRenderer.CharacterOcclusionShaderPackage,    () => _modelRenderer.DefaultCharacterOcclusionShaderPackage);
-        _hairMaskState              = new(() => _modelRenderer.HairMaskShaderPackage,              () => _modelRenderer.DefaultHairMaskShaderPackage);
+        _irisState = new ModdedShaderPackageState(() => _modelRenderer.IrisShaderPackage, () => _modelRenderer.DefaultIrisShaderPackage);
+        _characterGlassState = new ModdedShaderPackageState(() => _modelRenderer.CharacterGlassShaderPackage,
+            () => _modelRenderer.DefaultCharacterGlassShaderPackage);
+        _characterTransparencyState = new ModdedShaderPackageState(() => _modelRenderer.CharacterTransparencyShaderPackage,
+            () => _modelRenderer.DefaultCharacterTransparencyShaderPackage);
+        _characterTattooState = new ModdedShaderPackageState(() => _modelRenderer.CharacterTattooShaderPackage,
+            () => _modelRenderer.DefaultCharacterTattooShaderPackage);
+        _characterOcclusionState = new ModdedShaderPackageState(() => _modelRenderer.CharacterOcclusionShaderPackage,
+            () => _modelRenderer.DefaultCharacterOcclusionShaderPackage);
+        _hairMaskState =
+            new ModdedShaderPackageState(() => _modelRenderer.HairMaskShaderPackage, () => _modelRenderer.DefaultHairMaskShaderPackage);
 
         _humanOnRenderMaterialHook = hooks.CreateHook<CharacterBaseOnRenderMaterialDelegate>("Human.OnRenderMaterial", vTables.HumanVTable[64],
-            OnRenderHumanMaterial, HookSettings.PostProcessingHooks).Result;
+            OnRenderHumanMaterial, !HookOverrides.Instance.PostProcessing.HumanOnRenderMaterial).Result;
         _modelRendererOnRenderMaterialHook = hooks.CreateHook<ModelRendererOnRenderMaterialDelegate>("ModelRenderer.OnRenderMaterial",
-            Sigs.ModelRendererOnRenderMaterial, ModelRendererOnRenderMaterialDetour, HookSettings.PostProcessingHooks).Result;
+            Sigs.ModelRendererOnRenderMaterial, ModelRendererOnRenderMaterialDetour,
+            !HookOverrides.Instance.PostProcessing.ModelRendererOnRenderMaterial).Result;
         _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.ShaderReplacementFixer);
         _resourceHandleDestructor.Subscribe(OnResourceHandleDestructor, ResourceHandleDestructor.Priority.ShaderReplacementFixer);
     }
@@ -123,7 +129,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         _skinState.ClearMaterials();
     }
 
-    public (ulong Skin, ulong Iris, ulong CharacterGlass, ulong CharacterTransparency, ulong CharacterTattoo, ulong CharacterOcclusion, ulong HairMask) GetAndResetSlowPathCallDeltas()
+    public (ulong Skin, ulong Iris, ulong CharacterGlass, ulong CharacterTransparency, ulong CharacterTattoo, ulong CharacterOcclusion, ulong
+        HairMask) GetAndResetSlowPathCallDeltas()
         => (_skinState.GetAndResetSlowPathCallDelta(),
             _irisState.GetAndResetSlowPathCallDelta(),
             _characterGlassState.GetAndResetSlowPathCallDelta(),
@@ -208,7 +215,12 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private uint GetTotalMaterialCountForModelRenderer()
-        => _irisState.MaterialCount + _characterGlassState.MaterialCount + _characterTransparencyState.MaterialCount + _characterTattooState.MaterialCount + _characterOcclusionState.MaterialCount + _hairMaskState.MaterialCount;
+        => _irisState.MaterialCount
+          + _characterGlassState.MaterialCount
+          + _characterTransparencyState.MaterialCount
+          + _characterTattooState.MaterialCount
+          + _characterOcclusionState.MaterialCount
+          + _hairMaskState.MaterialCount;
 
     private nint OnRenderHumanMaterial(CharacterBase* human, CSModelRenderer.OnRenderMaterialParams* param)
     {

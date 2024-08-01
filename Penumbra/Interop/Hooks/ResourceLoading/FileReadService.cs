@@ -15,7 +15,7 @@ public unsafe class FileReadService : IDisposable, IRequiredService
         _resourceManager = resourceManager;
         _performance = performance;
         interop.InitializeFromAttributes(this);
-        if (HookSettings.ReplacementHooks)
+        if (!HookOverrides.Instance.ResourceLoading.ReadSqPack)
             _readSqPackHook.Enable();
     }
 

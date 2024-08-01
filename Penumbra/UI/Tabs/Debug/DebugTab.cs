@@ -97,6 +97,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly IpcTester                 _ipcTester;
     private readonly CrashHandlerPanel         _crashHandlerPanel;
     private readonly TexHeaderDrawer           _texHeaderDrawer;
+    private readonly HookOverrideDrawer        _hookOverrides;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState,
@@ -106,7 +107,8 @@ public class DebugTab : Window, ITab, IUiService
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
-        Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer)
+        Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
+        HookOverrideDrawer hookOverrides)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -143,6 +145,7 @@ public class DebugTab : Window, ITab, IUiService
         _ipcTester                 = ipcTester;
         _crashHandlerPanel         = crashHandlerPanel;
         _texHeaderDrawer           = texHeaderDrawer;
+        _hookOverrides             = hookOverrides;
         _objects                   = objects;
         _clientState               = clientState;
     }
@@ -166,34 +169,21 @@ public class DebugTab : Window, ITab, IUiService
             return;
 
         DrawDebugTabGeneral();
-        ImGui.NewLine();
         _crashHandlerPanel.Draw();
-        ImGui.NewLine();
         _diagnostics.DrawDiagnostics();
         DrawPerformanceTab();
-        ImGui.NewLine();
         DrawPathResolverDebug();
-        ImGui.NewLine();
         DrawActorsDebug();
-        ImGui.NewLine();
         DrawCollectionCaches();
-        ImGui.NewLine();
         _texHeaderDrawer.Draw();
-        ImGui.NewLine();
         DrawDebugCharacterUtility();
-        ImGui.NewLine();
         DrawShaderReplacementFixer();
-        ImGui.NewLine();
         DrawData();
-        ImGui.NewLine();
         DrawResourceProblems();
-        ImGui.NewLine();
+        _hookOverrides.Draw();
         DrawPlayerModelInfo();
-        ImGui.NewLine();
         DrawGlobalVariableInfo();
-        ImGui.NewLine();
         DrawDebugTabIpc();
-        ImGui.NewLine();
     }
 
 
@@ -434,7 +424,6 @@ public class DebugTab : Window, ITab, IUiService
 
     private void DrawPerformanceTab()
     {
-        ImGui.NewLine();
         if (!ImGui.CollapsingHeader("Performance"))
             return;
 

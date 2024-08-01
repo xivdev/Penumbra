@@ -8,6 +8,9 @@ public sealed class PapHandler(PapRewriter.PapResourceHandlerPrototype papResour
 
     public void Enable()
     {
+        if (HookOverrides.Instance.ResourceLoading.PapHooks)
+            return;
+
         ReadOnlySpan<(string Sig, string Name)> signatures =
         [
             (Sigs.LoadAlwaysResidentMotionPacks, nameof(Sigs.LoadAlwaysResidentMotionPacks)),

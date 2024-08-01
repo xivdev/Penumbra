@@ -21,8 +21,9 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
         _metaState        = metaState;
         _characterUtility = characterUtility;
         Task = hooks.CreateHook<Delegate>("FindEstEntry", Sigs.FindEstEntry, Detour,
-            metaState.Config.EnableMods && HookSettings.MetaEntryHooks);
-        _metaState.Config.ModsEnabled += Toggle;
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EstHook);
+        if (!HookOverrides.Instance.Meta.EstHook)
+            _metaState.Config.ModsEnabled += Toggle;
     }
 
     private EstEntry Detour(ResourceHandle* estResource, uint genderRace, uint id)
