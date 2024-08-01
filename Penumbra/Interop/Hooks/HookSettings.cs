@@ -5,6 +5,9 @@ namespace Penumbra.Interop.Hooks;
 
 public class HookOverrides
 {
+    [JsonIgnore]
+    public bool IsCustomLoaded { get; private set; }
+
     public static HookOverrides Instance = new();
 
     public AnimationHooks       Animation;
@@ -113,7 +116,8 @@ public class HookOverrides
         try
         {
             var text = File.ReadAllText(path);
-            var ret  = JsonConvert.DeserializeObject<HookOverrides>(text);
+            var ret  = JsonConvert.DeserializeObject<HookOverrides>(text)!;
+            ret.IsCustomLoaded = true;
             Penumbra.Log.Warning("A hook override file was loaded, some hooks may be disabled and Penumbra might not be working as expected.");
             return ret;
         }
