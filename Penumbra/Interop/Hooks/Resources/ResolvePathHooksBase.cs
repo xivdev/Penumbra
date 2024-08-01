@@ -67,7 +67,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         
         
         // @formatter:on
-        if (HookOverrides.Instance.Resources.ResolvePathHooks)
+        if (!HookOverrides.Instance.Resources.ResolvePathHooks)
             Enable();
     }
 

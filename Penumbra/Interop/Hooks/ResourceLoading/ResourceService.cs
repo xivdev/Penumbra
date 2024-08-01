@@ -30,13 +30,13 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         _decRefHook = interop.HookFromAddress<ResourceHandleDecRefPrototype>(
             (nint)CSResourceHandle.MemberFunctionPointers.DecRef,
             ResourceHandleDecRefDetour);
-        if (HookOverrides.Instance.ResourceLoading.GetResourceSync)
+        if (!HookOverrides.Instance.ResourceLoading.GetResourceSync)
             _getResourceSyncHook.Enable();
-        if (HookOverrides.Instance.ResourceLoading.GetResourceAsync)
+        if (!HookOverrides.Instance.ResourceLoading.GetResourceAsync)
             _getResourceAsyncHook.Enable();
-        if (HookOverrides.Instance.ResourceLoading.IncRef)
+        if (!HookOverrides.Instance.ResourceLoading.IncRef)
             _incRefHook.Enable();
-        if (HookOverrides.Instance.ResourceLoading.DecRef)
+        if (!HookOverrides.Instance.ResourceLoading.DecRef)
             _decRefHook.Enable();
     }
 

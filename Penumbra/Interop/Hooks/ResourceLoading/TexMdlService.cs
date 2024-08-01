@@ -46,11 +46,11 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
     {
         interop.InitializeFromAttributes(this);
         _lodService = new LodService(interop);
-        if (HookOverrides.Instance.ResourceLoading.CheckFileState)
+        if (!HookOverrides.Instance.ResourceLoading.CheckFileState)
             _checkFileStateHook.Enable();
-        if (HookOverrides.Instance.ResourceLoading.LoadMdlFileExtern)
+        if (!HookOverrides.Instance.ResourceLoading.LoadMdlFileExtern)
             _loadMdlFileExternHook.Enable();
-        if (HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)
+        if (!HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)
             _textureOnLoadHook.Enable();
     }
 
