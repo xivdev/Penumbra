@@ -242,7 +242,7 @@ public class ImcModGroup(Mod mod) : IModGroup
                 continue;
 
             var option = OptionData[i];
-            mask |= option.AttributeMask;
+            mask ^= option.AttributeMask;
         }
 
         return mask;

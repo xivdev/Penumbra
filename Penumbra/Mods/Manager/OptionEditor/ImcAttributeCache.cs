@@ -21,23 +21,14 @@ public unsafe ref struct ImcAttributeCache
             _option[i]    = byte.MaxValue;
 
             var flag = (ushort)(1 << i);
-            var set  = (group.DefaultEntry.AttributeMask & flag) != 0;
-            if (set)
-            {
-                _canChange[i] = true;
-                _option[i]    = byte.MaxValue - 1;
-                continue;
-            }
-
             foreach (var (option, idx) in group.OptionData.WithIndex())
             {
-                set = (option.AttributeMask & flag) != 0;
-                if (set)
-                {
-                    _canChange[i] = option.AttributeMask != flag;
-                    _option[i]    = (byte)idx;
-                    break;
-                }
+                if ((option.AttributeMask & flag) == 0)
+                    continue;
+
+                _canChange[i] = option.AttributeMask != flag;
+                _option[i]    = (byte)idx;
+                break;
             }
 
             if (_option[i] == byte.MaxValue && LowestUnsetMask is 0)
@@ -65,25 +56,16 @@ public unsafe ref struct ImcAttributeCache
             return true;
         }
 
-        if (!_canChange[idx])
-            return false;
-
         var mask = (ushort)(oldMask | flag);
         if (oldMask == mask)
             return false;
 
         group.DefaultEntry = group.DefaultEntry with { AttributeMask = mask };
-        if (_option[idx] <= ImcEntry.NumAttributes)
-        {
-            var option = group.OptionData[_option[idx]];
-            option.AttributeMask = (ushort)(option.AttributeMask & ~flag);
-        }
-
         return true;
     }
 
     /// <summary> Set an attribute flag to a value if possible, remove it from its prior option or the default entry if necessary, and return if anything changed. </summary>
-    public readonly bool Set(ImcSubMod option, int idx, bool value)
+    public readonly bool Set(ImcSubMod option, int idx, bool value, bool turnOffDefault = false)
     {
         if (!_canChange[idx])
             return false;
@@ -110,7 +92,7 @@ public unsafe ref struct ImcAttributeCache
             var oldOption = option.Group.OptionData[_option[idx]];
             oldOption.AttributeMask = (ushort)(oldOption.AttributeMask & ~flag);
         }
-        else if (_option[idx] is byte.MaxValue - 1)
+        else if (turnOffDefault && _option[idx] is byte.MaxValue - 1)
         {
             option.Group.DefaultEntry = option.Group.DefaultEntry with
             {
