@@ -42,6 +42,9 @@ using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
+using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.AdvancedWindow.Materials;
 
 namespace Penumbra.UI.Tabs.Debug;
 
@@ -697,32 +700,48 @@ public class DebugTab : Window, ITab, IUiService
         if (!mainTree)
             return;
 
-        foreach (var (key, data) in _stains.StmFile.Entries)
+        using (var legacyTree = TreeNode("stainingtemplate.stm"))
+        {
+            if (legacyTree)
+                DrawStainTemplatesFile(_stains.LegacyStmFile);
+        }
+
+        using (var gudTree = TreeNode("stainingtemplate_gud.stm"))
+        {
+            if (gudTree)
+                DrawStainTemplatesFile(_stains.GudStmFile);
+        }
+    }
+
+    private static void DrawStainTemplatesFile<TDyePack>(StmFile<TDyePack> stmFile) where TDyePack : unmanaged, IDyePack<TDyePack>
+    {
+        foreach (var (key, data) in stmFile.Entries)
         {
             using var tree = TreeNode($"Template {key}");
             if (!tree)
                 continue;
 
-            using var table = Table("##table", 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+            using var table = Table("##table", data.Colors.Length + data.Scalars.Length, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
             if (!table)
                 continue;
 
-            for (var i = 0; i < StmFile.StainingTemplateEntry.NumElements; ++i)
+            for (var i = 0; i < StmFile<TDyePack>.StainingTemplateEntry.NumElements; ++i)
             {
-                var (r, g, b) = data.DiffuseEntries[i];
-                ImGuiUtil.DrawTableColumn($"{r:F6} | {g:F6} | {b:F6}");
+                foreach (var list in data.Colors)
+                {
+                    var color = list[i];
+                    ImGui.TableNextColumn();
+                    var frame = new Vector2(ImGui.GetTextLineHeight());
+                    ImGui.ColorButton("###color", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
+                    ImGui.SameLine();
+                    ImGui.TextUnformatted($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");
+                }
 
-                (r, g, b) = data.SpecularEntries[i];
-                ImGuiUtil.DrawTableColumn($"{r:F6} | {g:F6} | {b:F6}");
-
-                (r, g, b) = data.EmissiveEntries[i];
-                ImGuiUtil.DrawTableColumn($"{r:F6} | {g:F6} | {b:F6}");
-
-                var a = data.SpecularPowerEntries[i];
-                ImGuiUtil.DrawTableColumn($"{a:F6}");
-
-                a = data.GlossEntries[i];
-                ImGuiUtil.DrawTableColumn($"{a:F6}");
+                foreach (var list in data.Scalars)
+                {
+                    var scalar = list[i];
+                    ImGuiUtil.DrawTableColumn($"{scalar:F6}");
+                }
             }
         }
     }
