@@ -52,6 +52,7 @@ public partial class MtrlTab
         {
             LegacyColorTable legacyTable                                            => DrawLegacyColorTable(legacyTable, Mtrl.DyeTable as LegacyColorDyeTable, disabled),
             ColorTable table when Mtrl.ShaderPackage.Name is "characterlegacy.shpk" => DrawLegacyColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled),
+            ColorTable table                                                        => DrawColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled),
             _                                                                       => false,
         };
 
