@@ -279,7 +279,7 @@ public class MigrationManager(Configuration config) : IService
 
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var f = File.Open(path, FileMode.Create, FileAccess.Write);
-        if (file.IsDawnTrail)
+        if (file.IsDawntrail)
         {
             file.MigrateToDawntrail();
             Penumbra.Log.Debug($"Migrated material {reader.Entry.Key} to Dawntrail during import.");
@@ -329,7 +329,7 @@ public class MigrationManager(Configuration config) : IService
         try
         {
             var mtrl = new MtrlFile(data);
-            if (mtrl.IsDawnTrail)
+            if (mtrl.IsDawntrail)
                 return data;
 
             mtrl.MigrateToDawntrail();
