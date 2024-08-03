@@ -1,9 +1,9 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
 using OtterGui;
+using OtterGui.Text.HelperObjects;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Data;
@@ -16,7 +16,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
 using static Penumbra.Interop.Structs.StructExtensions;
-using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
+using CharaBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -29,25 +29,25 @@ internal record GlobalResolveContext(
 {
     public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
-    public unsafe ResolveContext CreateContext(CharacterBase* characterBase, uint slotIndex = 0xFFFFFFFFu,
+    public unsafe ResolveContext CreateContext(CharaBase* characterBase, uint slotIndex = 0xFFFFFFFFu,
         EquipSlot slot = EquipSlot.Unknown, CharacterArmor equipment = default, SecondaryId secondaryId = default)
         => new(this, characterBase, slotIndex, slot, equipment, secondaryId);
 }
 
 internal unsafe partial record ResolveContext(
     GlobalResolveContext Global,
-    Pointer<CharacterBase> CharacterBasePointer,
+    Pointer<CharaBase> CharacterBasePointer,
     uint SlotIndex,
     EquipSlot Slot,
     CharacterArmor Equipment,
     SecondaryId SecondaryId)
 {
-    public CharacterBase* CharacterBase
+    public CharaBase* CharacterBase
         => CharacterBasePointer.Value;
 
     private static readonly CiByteString ShpkPrefix = CiByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
 
-    private ModelType ModelType
+    private CharaBase.ModelType ModelType
         => CharacterBase->GetModelType();
 
     private ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, CiByteString gamePath)
@@ -75,11 +75,14 @@ internal unsafe partial record ResolveContext(
             if (lastDirectorySeparator == -1 || lastDirectorySeparator > gamePath.Length - 3)
                 return null;
 
-            Span<byte> prefixed = stackalloc byte[260];
-            gamePath.Span[..(lastDirectorySeparator + 1)].CopyTo(prefixed);
-            prefixed[lastDirectorySeparator + 1] = (byte)'-';
-            prefixed[lastDirectorySeparator + 2] = (byte)'-';
-            gamePath.Span[(lastDirectorySeparator + 1)..].CopyTo(prefixed[(lastDirectorySeparator + 3)..]);
+            Span<byte> prefixed = stackalloc byte[CharaBase.PathBufferSize];
+
+            var writer = new SpanTextWriter(prefixed);
+            writer.Append(gamePath.Span[..(lastDirectorySeparator + 1)]);
+            writer.Append((byte)'-');
+            writer.Append((byte)'-');
+            writer.Append(gamePath.Span[(lastDirectorySeparator + 1)..]);
+            writer.EnsureNullTerminated();
 
             if (!Utf8GamePath.FromSpan(prefixed[..(gamePath.Length + 2)], MetaDataComputation.None, out var tmp))
                 return null;

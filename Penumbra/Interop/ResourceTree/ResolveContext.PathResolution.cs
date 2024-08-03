@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using OtterGui.Text.HelperObjects;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -8,26 +9,33 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using static Penumbra.Interop.Structs.StructExtensions;
+using CharaBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
 
 namespace Penumbra.Interop.ResourceTree;
 
 internal partial record ResolveContext
 {
+    private static bool IsEquipmentOrAccessorySlot(uint slotIndex)
+        => slotIndex is < 10 or 16 or 17;
+
+    private static bool IsEquipmentSlot(uint slotIndex)
+        => slotIndex is < 5 or 16 or 17;
+
     private Utf8GamePath ResolveModelPath()
     {
         // Correctness:
         // Resolving a model path through the game's code can use EQDP metadata for human equipment models.
         return ModelType switch
         {
-            ModelType.Human when SlotIndex < 10 => ResolveEquipmentModelPath(),
-            _                                   => ResolveModelPathNative(),
+            ModelType.Human when IsEquipmentOrAccessorySlot(SlotIndex) => ResolveEquipmentModelPath(),
+            _                                                          => ResolveModelPathNative(),
         };
     }
 
     private Utf8GamePath ResolveEquipmentModelPath()
     {
-        var path = SlotIndex < 5
+        var path = IsEquipmentSlot(SlotIndex)
             ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot)
             : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot);
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
@@ -39,7 +47,7 @@ internal partial record ResolveContext
     private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, PrimaryId primaryId)
     {
         var slotIndex = slot.ToIndex();
-        if (slotIndex >= 10 || ModelType != ModelType.Human)
+        if (!IsEquipmentOrAccessorySlot(slotIndex) || ModelType != ModelType.Human)
             return GenderRace.MidlanderMale;
 
         var characterRaceCode = (GenderRace)((Human*)CharacterBase)->RaceSexId;
@@ -80,7 +88,7 @@ internal partial record ResolveContext
         // Resolving a material path through the game's code can dereference null pointers for materials that involve IMC metadata.
         return ModelType switch
         {
-            ModelType.Human when SlotIndex is < 10 or 16 && mtrlFileName[8] != (byte)'b'
+            ModelType.Human when IsEquipmentOrAccessorySlot(SlotIndex) && mtrlFileName[8] != (byte)'b'
                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.DemiHuman => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.Weapon    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
@@ -95,7 +103,7 @@ internal partial record ResolveContext
         var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
-        Span<byte> pathBuffer = stackalloc byte[260];
+        Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
         pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
         return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
@@ -109,31 +117,25 @@ internal partial record ResolveContext
         if (setIdHigh is 20 && mtrlFileName[14] == (byte)'c')
             return Utf8GamePath.FromString(GamePaths.Weapon.Mtrl.Path(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
 
-        // MNK (03??, 16??), NIN (18??) and DNC (26??) offhands share materials with the corresponding mainhand
-        if (setIdHigh is 3 or 16 or 18 or 26)
+        // Some offhands share materials with the corresponding mainhand
+        if (ItemData.AdaptOffhandImc(Equipment.Set.Id, out var mirroredSetId))
         {
-            var setIdLow = Equipment.Set.Id % 100;
-            if (setIdLow > 50)
-            {
-                var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
-                var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
+            var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
+            var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
-                var mirroredSetId = (ushort)(Equipment.Set.Id - 50);
+            Span<byte> mirroredFileName = stackalloc byte[32];
+            mirroredFileName = mirroredFileName[..fileName.Length];
+            fileName.CopyTo(mirroredFileName);
+            WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId.Id);
 
-                Span<byte> mirroredFileName = stackalloc byte[32];
-                mirroredFileName = mirroredFileName[..fileName.Length];
-                fileName.CopyTo(mirroredFileName);
-                WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId);
+            Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
+            pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
 
-                Span<byte> pathBuffer = stackalloc byte[260];
-                pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
+            var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
+            if (weaponPosition >= 0)
+                WriteZeroPaddedNumber(pathBuffer[(weaponPosition + 9)..(weaponPosition + 13)], mirroredSetId.Id);
 
-                var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
-                if (weaponPosition >= 0)
-                    WriteZeroPaddedNumber(pathBuffer[(weaponPosition + 9)..(weaponPosition + 13)], mirroredSetId);
-
-                return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
-            }
+            return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
         }
 
         return ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName);
@@ -144,7 +146,7 @@ internal partial record ResolveContext
         var variant  = ResolveMaterialVariant(imc, (byte)((Monster*)CharacterBase)->Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
-        Span<byte> pathBuffer = stackalloc byte[260];
+        Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
         pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
         return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
@@ -175,13 +177,21 @@ internal partial record ResolveContext
 
         var baseDirectory = modelPath[..modelPosition];
 
-        baseDirectory.CopyTo(materialPathBuffer);
-        "/material/v"u8.CopyTo(materialPathBuffer[baseDirectory.Length..]);
-        WriteZeroPaddedNumber(materialPathBuffer.Slice(baseDirectory.Length + 11, 4), variant);
-        materialPathBuffer[baseDirectory.Length + 15] = (byte)'/';
-        mtrlFileName.CopyTo(materialPathBuffer[(baseDirectory.Length + 16)..]);
+        var writer = new SpanTextWriter(materialPathBuffer);
+        writer.Append(baseDirectory);
+        writer.Append("/material/v"u8);
+        WriteZeroPaddedNumber(ref writer, 4, variant);
+        writer.Append((byte)'/');
+        writer.Append(mtrlFileName);
+        writer.EnsureNullTerminated();
 
-        return materialPathBuffer[..(baseDirectory.Length + 16 + mtrlFileName.Length)];
+        return materialPathBuffer[..writer.Position];
+    }
+
+    private static void WriteZeroPaddedNumber(ref SpanTextWriter writer, int width, ushort number)
+    {
+        WriteZeroPaddedNumber(writer.GetRemainingSpan()[..width], number);
+        writer.Advance(width);
     }
 
     private static void WriteZeroPaddedNumber(Span<byte> destination, ushort number)
