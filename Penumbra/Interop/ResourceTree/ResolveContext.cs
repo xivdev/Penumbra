@@ -230,8 +230,8 @@ internal unsafe partial record ResolveContext(
             node.Children.Add(shpkNode);
         }
 
-        var shpkFile = Global.WithUiData && shpkNode != null ? Global.TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
-        var shpk     = Global.WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
+        var shpkNames = Global.WithUiData && shpkNode != null ? Global.TreeBuildCache.ReadShaderPackageNames(shpkNode.FullPath) : null;
+        var shpk      = Global.WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
         var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->TextureCount; i++)
@@ -255,7 +255,12 @@ internal unsafe partial record ResolveContext(
                         alreadyProcessedSamplerIds.Add(samplerId.Value);
                         var samplerCrc = GetSamplerCrcById(shpk, samplerId.Value);
                         if (samplerCrc.HasValue)
-                            name = shpkFile?.GetSamplerById(samplerCrc.Value)?.Name ?? $"Texture 0x{samplerCrc.Value:X8}";
+                        {
+                            if (shpkNames != null && shpkNames.TryGetValue(samplerCrc.Value, out var samplerName))
+                                name = samplerName.Value;
+                            else
+                                name = $"Texture 0x{samplerCrc.Value:X8}";
+                        }
                     }
                 }
 
