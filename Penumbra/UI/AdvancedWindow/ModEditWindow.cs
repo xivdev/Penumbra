@@ -615,7 +615,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _shaderPackageTab = new FileEditor<ShpkTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
             () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
+            (bytes, path, _) => new ShpkTab(_fileDialog, bytes, path));
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;
