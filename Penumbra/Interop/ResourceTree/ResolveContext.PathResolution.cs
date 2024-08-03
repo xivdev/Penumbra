@@ -111,31 +111,25 @@ internal partial record ResolveContext
         if (setIdHigh is 20 && mtrlFileName[14] == (byte)'c')
             return Utf8GamePath.FromString(GamePaths.Weapon.Mtrl.Path(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
 
-        // MNK (03??, 16??), NIN (18??) and DNC (26??) offhands share materials with the corresponding mainhand
-        if (setIdHigh is 3 or 16 or 18 or 26)
+        // Some offhands share materials with the corresponding mainhand
+        if (ItemData.AdaptOffhandImc(Equipment.Set.Id, out var mirroredSetId))
         {
-            var setIdLow = Equipment.Set.Id % 100;
-            if (setIdLow > 50)
-            {
-                var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
-                var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
+            var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
+            var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
-                var mirroredSetId = (ushort)(Equipment.Set.Id - 50);
+            Span<byte> mirroredFileName = stackalloc byte[32];
+            mirroredFileName = mirroredFileName[..fileName.Length];
+            fileName.CopyTo(mirroredFileName);
+            WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId.Id);
 
-                Span<byte> mirroredFileName = stackalloc byte[32];
-                mirroredFileName = mirroredFileName[..fileName.Length];
-                fileName.CopyTo(mirroredFileName);
-                WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId);
+            Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
+            pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
 
-                Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
-                pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
+            var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
+            if (weaponPosition >= 0)
+                WriteZeroPaddedNumber(pathBuffer[(weaponPosition + 9)..(weaponPosition + 13)], mirroredSetId.Id);
 
-                var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
-                if (weaponPosition >= 0)
-                    WriteZeroPaddedNumber(pathBuffer[(weaponPosition + 9)..(weaponPosition + 13)], mirroredSetId);
-
-                return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
-            }
+            return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
         }
 
         return ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName);
