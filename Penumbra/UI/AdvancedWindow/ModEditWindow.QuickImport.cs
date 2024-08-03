@@ -15,6 +15,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
+    private readonly FileDialogService                                         _fileDialog;
     private readonly ResourceTreeFactory                                       _resourceTreeFactory;
     private readonly ResourceTreeViewer                                        _quickImportViewer;
     private readonly Dictionary<FullPath, IWritable?>                          _quickImportWritables = new();

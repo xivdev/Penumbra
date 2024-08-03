@@ -7,9 +7,9 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
 {
     private readonly ShaderPackage* _shaderPackage;
 
-    private readonly uint    _originalShPkFlags;
-    private readonly float[] _originalMaterialParameter;
-    private readonly uint[]  _originalSamplerFlags;
+    private readonly uint   _originalShPkFlags;
+    private readonly byte[] _originalMaterialParameter;
+    private readonly uint[] _originalSamplerFlags;
 
     public LiveMaterialPreviewer(ObjectManager objects, MaterialInfo materialInfo)
         : base(objects, materialInfo)
@@ -28,7 +28,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
 
         _originalShPkFlags = Material->ShaderFlags;
 
-        _originalMaterialParameter = Material->MaterialParameterCBuffer->TryGetBuffer().ToArray();
+        _originalMaterialParameter = Material->MaterialParameterCBuffer->TryGetBuffer<byte>().ToArray();
 
         _originalSamplerFlags = new uint[Material->TextureCount];
         for (var i = 0; i < _originalSamplerFlags.Length; ++i)
@@ -43,7 +43,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
             return;
 
         Material->ShaderFlags = _originalShPkFlags;
-        var materialParameter = Material->MaterialParameterCBuffer->TryGetBuffer();
+        var materialParameter = Material->MaterialParameterCBuffer->TryGetBuffer<byte>();
         if (!materialParameter.IsEmpty)
             _originalMaterialParameter.AsSpan().CopyTo(materialParameter);
 
@@ -59,7 +59,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         Material->ShaderFlags = shPkFlags;
     }
 
-    public void SetMaterialParameter(uint parameterCrc, Index offset, Span<float> value)
+    public void SetMaterialParameter(uint parameterCrc, Index offset, ReadOnlySpan<byte> value)
     {
         if (!CheckValidity())
             return;
@@ -68,7 +68,7 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
         if (constantBuffer == null)
             return;
 
-        var buffer = constantBuffer->TryGetBuffer();
+        var buffer = constantBuffer->TryGetBuffer<byte>();
         if (buffer.IsEmpty)
             return;
 
@@ -78,12 +78,10 @@ public sealed unsafe class LiveMaterialPreviewer : LiveMaterialPreviewerBase
             if (parameter.CRC != parameterCrc)
                 continue;
 
-            if ((parameter.Offset & 0x3) != 0
-             || (parameter.Size & 0x3) != 0
-             || (parameter.Offset + parameter.Size) >> 2 > buffer.Length)
+            if (parameter.Offset + parameter.Size > buffer.Length)
                 return;
 
-            value.TryCopyTo(buffer.Slice(parameter.Offset >> 2, parameter.Size >> 2)[offset..]);
+            value.TryCopyTo(buffer.Slice(parameter.Offset, parameter.Size)[offset..]);
             return;
         }
     }

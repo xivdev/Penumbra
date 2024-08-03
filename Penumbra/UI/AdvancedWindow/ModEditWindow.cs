@@ -13,10 +13,8 @@ using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
-using Penumbra.GameData.Interop;
 using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
-using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
@@ -26,6 +24,7 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
@@ -39,20 +38,17 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 
     public readonly MigrationManager MigrationManager;
 
-    private readonly PerformanceTracker      _performance;
-    private readonly ModEditor               _editor;
-    private readonly Configuration           _config;
-    private readonly ItemSwapTab             _itemSwapTab;
-    private readonly MetaFileManager         _metaFileManager;
-    private readonly ActiveCollections       _activeCollections;
-    private readonly StainService            _stainService;
-    private readonly ModMergeTab             _modMergeTab;
-    private readonly CommunicatorService     _communicator;
-    private readonly IDragDropManager        _dragDropManager;
-    private readonly IDataManager            _gameData;
-    private readonly IFramework              _framework;
-    private readonly ObjectManager           _objects;
-    private readonly CharacterBaseDestructor _characterBaseDestructor;
+    private readonly PerformanceTracker  _performance;
+    private readonly ModEditor           _editor;
+    private readonly Configuration       _config;
+    private readonly ItemSwapTab         _itemSwapTab;
+    private readonly MetaFileManager     _metaFileManager;
+    private readonly ActiveCollections   _activeCollections;
+    private readonly ModMergeTab         _modMergeTab;
+    private readonly CommunicatorService _communicator;
+    private readonly IDragDropManager    _dragDropManager;
+    private readonly IDataManager        _gameData;
+    private readonly IFramework          _framework;
 
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
@@ -541,7 +537,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
     /// If none exists, goes through all options in the currently selected mod (if any) in order of priority and resolves in them. 
     /// If no redirection is found in either of those options, returns the original path.
     /// </remarks>
-    private FullPath FindBestMatch(Utf8GamePath path)
+    internal FullPath FindBestMatch(Utf8GamePath path)
     {
         var currentFile = _activeCollections.Current.ResolvePath(path);
         if (currentFile != null)
@@ -562,7 +558,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         return new FullPath(path);
     }
 
-    private HashSet<Utf8GamePath> FindPathsStartingWith(CiByteString prefix)
+    internal HashSet<Utf8GamePath> FindPathsStartingWith(CiByteString prefix)
     {
         var ret = new HashSet<Utf8GamePath>();
 
@@ -587,34 +583,32 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
+        ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
-        ResourceTreeViewerFactory resourceTreeViewerFactory, ObjectManager objects, IFramework framework,
-        CharacterBaseDestructor characterBaseDestructor, MetaDrawers metaDrawers, MigrationManager migrationManager)
+        ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
+        MetaDrawers metaDrawers, MigrationManager migrationManager,
+        MtrlTabFactory mtrlTabFactory)
         : base(WindowBaseLabel)
     {
-        _performance             = performance;
-        _itemSwapTab             = itemSwapTab;
-        _gameData                = gameData;
-        _config                  = config;
-        _editor                  = editor;
-        _metaFileManager         = metaFileManager;
-        _stainService            = stainService;
-        _activeCollections       = activeCollections;
-        _modMergeTab             = modMergeTab;
-        _communicator            = communicator;
-        _dragDropManager         = dragDropManager;
-        _textures                = textures;
-        _models                  = models;
-        _fileDialog              = fileDialog;
-        _objects                 = objects;
-        _framework               = framework;
-        _characterBaseDestructor = characterBaseDestructor;
-        MigrationManager         = migrationManager;
-        _metaDrawers             = metaDrawers;
+        _performance       = performance;
+        _itemSwapTab       = itemSwapTab;
+        _gameData          = gameData;
+        _config            = config;
+        _editor            = editor;
+        _metaFileManager   = metaFileManager;
+        _activeCollections = activeCollections;
+        _modMergeTab       = modMergeTab;
+        _communicator      = communicator;
+        _dragDropManager   = dragDropManager;
+        _textures          = textures;
+        _models            = models;
+        _fileDialog        = fileDialog;
+        _framework         = framework;
+        MigrationManager   = migrationManager;
+        _metaDrawers       = metaDrawers;
         _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
+            (bytes, path, writable) => mtrlTabFactory.Create(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
             () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new MdlTab(this, bytes, path));

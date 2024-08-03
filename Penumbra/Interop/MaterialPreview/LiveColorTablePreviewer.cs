@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.SafeHandles;
 
@@ -7,16 +8,15 @@ namespace Penumbra.Interop.MaterialPreview;
 
 public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
 {
-    public const int TextureWidth  = 4;
-    public const int TextureHeight = GameData.Files.MaterialStructs.LegacyColorTable.NumUsedRows;
-    public const int TextureLength = TextureWidth * TextureHeight * 4;
-
     private readonly IFramework _framework;
 
     private readonly Texture**         _colorTableTexture;
     private readonly SafeTextureHandle _originalColorTableTexture;
 
     private bool _updatePending;
+
+    public int Width  { get; }
+    public int Height { get; }
 
     public Half[] ColorTable { get; }
 
@@ -33,17 +33,23 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         if (colorSetTextures == null)
             throw new InvalidOperationException("Draw object doesn't have color table textures");
 
-        _colorTableTexture = colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot);
+        _colorTableTexture = colorSetTextures + (MaterialInfo.ModelSlot * CharacterBase.MaterialsPerSlot + MaterialInfo.MaterialSlot);
+        
 
         _originalColorTableTexture = new SafeTextureHandle(*_colorTableTexture, true);
         if (_originalColorTableTexture == null)
             throw new InvalidOperationException("Material doesn't have a color table");
 
-        ColorTable     = new Half[TextureLength];
+        Width          = (int)_originalColorTableTexture.Texture->Width;
+        Height         = (int)_originalColorTableTexture.Texture->Height;
+        ColorTable     = new Half[Width * Height * 4];
         _updatePending = true;
 
         framework.Update += OnFrameworkUpdate;
     }
+
+    public Span<Half> GetColorRow(int i)
+        => ColorTable.AsSpan().Slice(Width * 4 * i, Width * 4);
 
     protected override void Clear(bool disposing, bool reset)
     {
@@ -74,8 +80,8 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
             return;
 
         var textureSize = stackalloc int[2];
-        textureSize[0] = TextureWidth;
-        textureSize[1] = TextureHeight;
+        textureSize[0] = Width;
+        textureSize[1] = Height;
 
         using var texture =
             new SafeTextureHandle(Device.Instance()->CreateTexture2D(textureSize, 1, 0x2460, 0x80000804, 7), false);
@@ -104,6 +110,6 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         if (colorSetTextures == null)
             return false;
 
-        return _colorTableTexture == colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot);
+        return _colorTableTexture == colorSetTextures + (MaterialInfo.ModelSlot * CharacterBase.MaterialsPerSlot + MaterialInfo.MaterialSlot);
     }
 }
