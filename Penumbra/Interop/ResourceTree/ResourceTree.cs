@@ -9,6 +9,7 @@ using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
+using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -44,8 +45,8 @@ public class ResourceTree
         PlayerRelated            = playerRelated;
         CollectionName           = collectionName;
         AnonymizedCollectionName = anonymizedCollectionName;
-        Nodes                    = new List<ResourceNode>();
-        FlatNodes                = new HashSet<ResourceNode>();
+        Nodes                    = [];
+        FlatNodes                = [];
     }
 
     public void ProcessPostfix(Action<ResourceNode, ResourceNode?> action)
@@ -59,13 +60,13 @@ public class ResourceTree
         var character = (Character*)GameObjectAddress;
         var model     = (CharacterBase*)DrawObjectAddress;
         var modelType = model->GetModelType();
-        var human     = modelType == CharacterBase.ModelType.Human ? (Human*)model : null;
+        var human     = modelType == ModelType.Human ? (Human*)model : null;
         var equipment = modelType switch
         {
-            CharacterBase.ModelType.Human => new ReadOnlySpan<CharacterArmor>(&human->Head, 10),
-            CharacterBase.ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(
+            ModelType.Human => new ReadOnlySpan<CharacterArmor>(&human->Head, 12),
+            ModelType.DemiHuman => new ReadOnlySpan<CharacterArmor>(
                 Unsafe.AsPointer(ref character->DrawData.EquipmentModelIds[0]), 10),
-            _ => ReadOnlySpan<CharacterArmor>.Empty,
+            _ => [],
         };
         ModelId       = character->CharacterData.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
@@ -75,9 +76,18 @@ public class ResourceTree
 
         for (var i = 0u; i < model->SlotCount; ++i)
         {
-            var slotContext = i < equipment.Length
-                ? globalContext.CreateContext(model, i, i.ToEquipSlot(), equipment[(int)i])
-                : globalContext.CreateContext(model, i);
+            var slotContext = modelType switch
+            {
+                ModelType.Human => i switch
+                {
+                    < 10     => globalContext.CreateContext(model, i, i.ToEquipSlot(), equipment[(int)i]),
+                    16 or 17 => globalContext.CreateContext(model, i, EquipSlot.Head,  equipment[(int)(i - 6)]),
+                    _        => globalContext.CreateContext(model, i),
+                },
+                _ => i < equipment.Length
+                    ? globalContext.CreateContext(model, i, i.ToEquipSlot(), equipment[(int)i])
+                    : globalContext.CreateContext(model, i),
+            };
 
             var imc     = (ResourceHandle*)model->IMCArray[i];
             var imcNode = slotContext.CreateNodeFromImc(imc);
@@ -117,7 +127,7 @@ public class ResourceTree
 
             var subObject = (CharacterBase*)baseSubObject;
 
-            if (subObject->GetModelType() != CharacterBase.ModelType.Weapon)
+            if (subObject->GetModelType() != ModelType.Weapon)
                 continue;
 
             var weapon = (Weapon*)subObject;

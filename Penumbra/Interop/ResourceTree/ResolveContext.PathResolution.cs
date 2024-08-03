@@ -16,20 +16,26 @@ namespace Penumbra.Interop.ResourceTree;
 
 internal partial record ResolveContext
 {
+    private static bool IsEquipmentOrAccessorySlot(uint slotIndex)
+        => slotIndex is < 10 or 16 or 17;
+
+    private static bool IsEquipmentSlot(uint slotIndex)
+        => slotIndex is < 5 or 16 or 17;
+
     private Utf8GamePath ResolveModelPath()
     {
         // Correctness:
         // Resolving a model path through the game's code can use EQDP metadata for human equipment models.
         return ModelType switch
         {
-            ModelType.Human when SlotIndex < 10 => ResolveEquipmentModelPath(),
-            _                                   => ResolveModelPathNative(),
+            ModelType.Human when IsEquipmentOrAccessorySlot(SlotIndex) => ResolveEquipmentModelPath(),
+            _                                                          => ResolveModelPathNative(),
         };
     }
 
     private Utf8GamePath ResolveEquipmentModelPath()
     {
-        var path = SlotIndex < 5
+        var path = IsEquipmentSlot(SlotIndex)
             ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot)
             : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot);
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
@@ -41,7 +47,7 @@ internal partial record ResolveContext
     private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, PrimaryId primaryId)
     {
         var slotIndex = slot.ToIndex();
-        if (slotIndex >= 10 || ModelType != ModelType.Human)
+        if (!IsEquipmentOrAccessorySlot(slotIndex) || ModelType != ModelType.Human)
             return GenderRace.MidlanderMale;
 
         var characterRaceCode = (GenderRace)((Human*)CharacterBase)->RaceSexId;
@@ -82,7 +88,7 @@ internal partial record ResolveContext
         // Resolving a material path through the game's code can dereference null pointers for materials that involve IMC metadata.
         return ModelType switch
         {
-            ModelType.Human when SlotIndex is < 10 or 16 && mtrlFileName[8] != (byte)'b'
+            ModelType.Human when IsEquipmentOrAccessorySlot(SlotIndex) && mtrlFileName[8] != (byte)'b'
                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.DemiHuman => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.Weapon    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
