@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using OtterGui.Text.HelperObjects;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -8,6 +9,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using static Penumbra.Interop.Structs.StructExtensions;
+using CharaBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -95,7 +97,7 @@ internal partial record ResolveContext
         var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
-        Span<byte> pathBuffer = stackalloc byte[260];
+        Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
         pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
         return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
@@ -125,7 +127,7 @@ internal partial record ResolveContext
                 fileName.CopyTo(mirroredFileName);
                 WriteZeroPaddedNumber(mirroredFileName[4..8], mirroredSetId);
 
-                Span<byte> pathBuffer = stackalloc byte[260];
+                Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
                 pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, mirroredFileName);
 
                 var weaponPosition = pathBuffer.IndexOf("/weapon/w"u8);
@@ -144,7 +146,7 @@ internal partial record ResolveContext
         var variant  = ResolveMaterialVariant(imc, (byte)((Monster*)CharacterBase)->Variant);
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
-        Span<byte> pathBuffer = stackalloc byte[260];
+        Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
         pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
 
         return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
@@ -175,13 +177,21 @@ internal partial record ResolveContext
 
         var baseDirectory = modelPath[..modelPosition];
 
-        baseDirectory.CopyTo(materialPathBuffer);
-        "/material/v"u8.CopyTo(materialPathBuffer[baseDirectory.Length..]);
-        WriteZeroPaddedNumber(materialPathBuffer.Slice(baseDirectory.Length + 11, 4), variant);
-        materialPathBuffer[baseDirectory.Length + 15] = (byte)'/';
-        mtrlFileName.CopyTo(materialPathBuffer[(baseDirectory.Length + 16)..]);
+        var writer = new SpanTextWriter(materialPathBuffer);
+        writer.Append(baseDirectory);
+        writer.Append("/material/v"u8);
+        WriteZeroPaddedNumber(ref writer, 4, variant);
+        writer.Append((byte)'/');
+        writer.Append(mtrlFileName);
+        writer.EnsureNullTerminated();
 
-        return materialPathBuffer[..(baseDirectory.Length + 16 + mtrlFileName.Length)];
+        return materialPathBuffer[..writer.Position];
+    }
+
+    private static void WriteZeroPaddedNumber(ref SpanTextWriter writer, int width, ushort number)
+    {
+        WriteZeroPaddedNumber(writer.GetRemainingSpan()[..width], number);
+        writer.Advance(width);
     }
 
     private static void WriteZeroPaddedNumber(Span<byte> destination, ushort number)
