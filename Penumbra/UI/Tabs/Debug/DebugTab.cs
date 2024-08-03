@@ -713,7 +713,7 @@ public class DebugTab : Window, ITab, IUiService
         }
     }
 
-    private static void DrawStainTemplatesFile<TDyePack>(StmFile<TDyePack> stmFile) where TDyePack : unmanaged, IDyePack<TDyePack>
+    private static void DrawStainTemplatesFile<TDyePack>(StmFile<TDyePack> stmFile) where TDyePack : unmanaged, IDyePack
     {
         foreach (var (key, data) in stmFile.Entries)
         {
