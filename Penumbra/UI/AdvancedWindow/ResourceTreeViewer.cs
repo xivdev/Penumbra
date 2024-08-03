@@ -27,7 +27,7 @@ public class ResourceTreeViewer
     private readonly Dictionary<nint, NodeVisibility> _filterCache;
 
     private TreeCategory                      _categoryFilter;
-    private ChangedItemDrawer.ChangedItemIcon _typeFilter;
+    private ChangedItemIconFlag _typeFilter;
     private string                            _nameFilter;
     private string                            _nodeFilter;
 
@@ -48,7 +48,7 @@ public class ResourceTreeViewer
         _filterCache = [];
 
         _categoryFilter = AllCategories;
-        _typeFilter     = ChangedItemDrawer.AllFlags;
+        _typeFilter     = ChangedItemFlagExtensions.AllFlags;
         _nameFilter     = string.Empty;
         _nodeFilter     = string.Empty;
     }
@@ -185,13 +185,13 @@ public class ResourceTreeViewer
         });
 
     private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash,
-        ChangedItemDrawer.ChangedItemIcon parentFilterIcon)
+        ChangedItemIconFlag parentFilterIconFlag)
     {
         var debugMode   = _config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
         var cellHeight  = _actionCapacity > 0 ? frameHeight : 0.0f;
 
-        bool MatchesFilter(ResourceNode node, ChangedItemDrawer.ChangedItemIcon filterIcon)
+        bool MatchesFilter(ResourceNode node, ChangedItemIconFlag filterIcon)
         {
             if (!_typeFilter.HasFlag(filterIcon))
                 return false;
@@ -205,12 +205,12 @@ public class ResourceTreeViewer
              || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
         }
 
-        NodeVisibility CalculateNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemDrawer.ChangedItemIcon parentFilterIcon)
+        NodeVisibility CalculateNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
         {
             if (node.Internal && !debugMode)
                 return NodeVisibility.Hidden;
 
-            var filterIcon = node.Icon != 0 ? node.Icon : parentFilterIcon;
+            var filterIcon = node.IconFlag != 0 ? node.IconFlag : parentFilterIcon;
             if (MatchesFilter(node, filterIcon))
                 return NodeVisibility.Visible;
 
@@ -223,7 +223,7 @@ public class ResourceTreeViewer
             return NodeVisibility.Hidden;
         }
 
-        NodeVisibility GetNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemDrawer.ChangedItemIcon parentFilterIcon)
+        NodeVisibility GetNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
         {
             if (!_filterCache.TryGetValue(nodePathHash, out var visibility))
             {
@@ -241,7 +241,7 @@ public class ResourceTreeViewer
         {
             var nodePathHash = unchecked(pathHash + resourceNode.ResourceHandle);
 
-            var visibility = GetNodeVisibility(nodePathHash, resourceNode, parentFilterIcon);
+            var visibility = GetNodeVisibility(nodePathHash, resourceNode, parentFilterIconFlag);
             if (visibility == NodeVisibility.Hidden)
                 continue;
 
@@ -250,7 +250,7 @@ public class ResourceTreeViewer
 
             using var mutedColor = ImRaii.PushColor(ImGuiCol.Text, textColorInternal, resourceNode.Internal);
 
-            var filterIcon = resourceNode.Icon != 0 ? resourceNode.Icon : parentFilterIcon;
+            var filterIcon = resourceNode.IconFlag != 0 ? resourceNode.IconFlag : parentFilterIconFlag;
 
             using var id = ImRaii.PushId(index);
             ImGui.TableNextColumn();
@@ -281,7 +281,7 @@ public class ResourceTreeViewer
                     ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 }
 
-                _changedItemDrawer.DrawCategoryIcon(resourceNode.Icon);
+                _changedItemDrawer.DrawCategoryIcon(resourceNode.IconFlag);
                 ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 ImGui.TableHeader(resourceNode.Name);
                 if (ImGui.IsItemClicked() && unfoldable)

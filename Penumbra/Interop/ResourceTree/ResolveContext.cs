@@ -345,7 +345,7 @@ internal unsafe partial record ResolveContext(
                         _                 => string.Empty,
                     }
                   + item.Name;
-                return new ResourceNode.UiData(name, ChangedItemDrawer.GetCategoryIcon(item.Name, item));
+                return new ResourceNode.UiData(name, item.Type.GetCategoryIcon().ToFlag());
             }
 
         var dataFromPath = GuessUiDataFromPath(gamePath);
@@ -353,8 +353,8 @@ internal unsafe partial record ResolveContext(
             return dataFromPath;
 
         return isEquipment
-            ? new ResourceNode.UiData(Slot.ToName(), ChangedItemDrawer.GetCategoryIcon(Slot.ToSlot()))
-            : new ResourceNode.UiData(null,          ChangedItemDrawer.ChangedItemIcon.Unknown);
+            ? new ResourceNode.UiData(Slot.ToName(), Slot.ToEquipType().GetCategoryIcon().ToFlag())
+            : new ResourceNode.UiData(null,          ChangedItemIconFlag.Unknown);
     }
 
     internal ResourceNode.UiData GuessUiDataFromPath(Utf8GamePath gamePath)
@@ -362,13 +362,13 @@ internal unsafe partial record ResolveContext(
         foreach (var obj in Global.Identifier.Identify(gamePath.ToString()))
         {
             var name = obj.Key;
-            if (name.StartsWith("Customization:"))
+            if (obj.Value is IdentifiedCustomization)
                 name = name[14..].Trim();
             if (name != "Unknown")
-                return new ResourceNode.UiData(name, ChangedItemDrawer.GetCategoryIcon(obj.Key, obj.Value));
+                return new ResourceNode.UiData(name, obj.Value.GetIcon().ToFlag());
         }
 
-        return new ResourceNode.UiData(null, ChangedItemDrawer.ChangedItemIcon.Unknown);
+        return new ResourceNode.UiData(null, ChangedItemIconFlag.Unknown);
     }
 
     private static string? SafeGet(ReadOnlySpan<string> array, Index index)

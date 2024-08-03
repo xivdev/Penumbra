@@ -6,6 +6,7 @@ using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
+using Penumbra.GameData.Data;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
@@ -66,22 +67,22 @@ public class ChangedItemsTab(
     }
 
     /// <summary> Apply the current filters. </summary>
-    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
+    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData?)> item)
         => drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
          && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
 
     /// <summary> Draw a full column for a changed item. </summary>
-    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
+    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData?)> item)
     {
         ImGui.TableNextColumn();
-        drawer.DrawCategoryIcon(item.Key, item.Value.Item2);
+        drawer.DrawCategoryIcon(item.Value.Item2);
         ImGui.SameLine();
         drawer.DrawChangedItem(item.Key, item.Value.Item2);
         ImGui.TableNextColumn();
         DrawModColumn(item.Value.Item1);
 
         ImGui.TableNextColumn();
-        drawer.DrawModelData(item.Value.Item2);
+        ChangedItemDrawer.DrawModelData(item.Value.Item2);
     }
 
     private void DrawModColumn(SingleArray<IMod> mods)

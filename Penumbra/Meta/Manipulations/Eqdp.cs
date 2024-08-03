@@ -15,7 +15,7 @@ public readonly record struct EqdpIdentifier(PrimaryId SetId, EquipSlot Slot, Ge
     public Gender Gender
         => GenderRace.Split().Item1;
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
         => identifier.Identify(changedItems, GamePaths.Equipment.Mdl.Path(SetId, GenderRace, Slot));
 
     public MetaIndex FileIndex()

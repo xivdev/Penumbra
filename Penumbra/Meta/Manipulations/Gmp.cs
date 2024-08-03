@@ -8,7 +8,7 @@ namespace Penumbra.Meta.Manipulations;
 
 public readonly record struct GmpIdentifier(PrimaryId SetId) : IMetaIdentifier, IComparable<GmpIdentifier>
 {
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
         => identifier.Identify(changedItems, GamePaths.Equipment.Mdl.Path(SetId, GenderRace.MidlanderMale, EquipSlot.Head));
 
     public MetaIndex FileIndex()

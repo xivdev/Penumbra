@@ -174,7 +174,7 @@ public class ResourceTree
                 {
                     pbdNode              = pbdNode.Clone();
                     pbdNode.FallbackName = "Racial Deformer";
-                    pbdNode.Icon         = ChangedItemDrawer.ChangedItemIcon.Customization;
+                    pbdNode.IconFlag         = ChangedItemIconFlag.Customization;
                 }
 
                 Nodes.Add(pbdNode);
@@ -192,7 +192,7 @@ public class ResourceTree
             {
                 decalNode              = decalNode.Clone();
                 decalNode.FallbackName = "Face Decal";
-                decalNode.Icon         = ChangedItemDrawer.ChangedItemIcon.Customization;
+                decalNode.IconFlag         = ChangedItemIconFlag.Customization;
             }
 
             Nodes.Add(decalNode);
@@ -209,7 +209,7 @@ public class ResourceTree
             {
                 legacyDecalNode              = legacyDecalNode.Clone();
                 legacyDecalNode.FallbackName = "Legacy Body Decal";
-                legacyDecalNode.Icon         = ChangedItemDrawer.ChangedItemIcon.Customization;
+                legacyDecalNode.IconFlag         = ChangedItemIconFlag.Customization;
             }
 
             Nodes.Add(legacyDecalNode);

@@ -36,7 +36,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
                 collection = ModCollection.Empty;
 
             if (collection.HasCache)
-                return collection.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Item2);
+                return collection.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Item2?.ToInternalObject());
 
             Penumbra.Log.Warning($"Collection {collectionId} does not exist or is not loaded.");
             return [];

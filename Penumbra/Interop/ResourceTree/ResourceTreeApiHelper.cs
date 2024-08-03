@@ -67,7 +67,7 @@ internal static class ResourceTreeApiHelper
                     continue;
 
                 var fullPath = node.FullPath.ToPath();
-                resDictionary.Add(node.ResourceHandle, (fullPath, node.Name ?? string.Empty, (uint)ChangedItemDrawer.ToApiIcon(node.Icon)));
+                resDictionary.Add(node.ResourceHandle, (fullPath, node.Name ?? string.Empty, (uint)node.IconFlag.ToApiIcon()));
             }
         }
 
@@ -106,7 +106,7 @@ internal static class ResourceTreeApiHelper
             var ret = new JObject
             {
                 [nameof(ResourceNodeDto.Type)]           = new JValue(node.Type),
-                [nameof(ResourceNodeDto.Icon)]           = new JValue(ChangedItemDrawer.ToApiIcon(node.Icon)),
+                [nameof(ResourceNodeDto.Icon)]           = new JValue(node.IconFlag.ToApiIcon()),
                 [nameof(ResourceNodeDto.Name)]           = node.Name,
                 [nameof(ResourceNodeDto.GamePath)]       = node.GamePath.Equals(Utf8GamePath.Empty) ? null : node.GamePath.ToString(),
                 [nameof(ResourceNodeDto.ActualPath)]     = node.FullPath.ToString(),

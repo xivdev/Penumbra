@@ -4,6 +4,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Widgets;
+using Penumbra.GameData.Data;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -24,7 +25,7 @@ public class ModPanelChangedItemsTab(ModFileSystemSelector selector, ChangedItem
         if (!table)
             return;
 
-        var zipList = ZipList.FromSortedList((SortedList<string, object?>)selector.Selected!.ChangedItems);
+        var zipList = ZipList.FromSortedList(selector.Selected!.ChangedItems);
         var height  = ImGui.GetFrameHeightWithSpacing();
         ImGui.TableNextColumn();
         var skips     = ImGuiClip.GetNecessarySkips(height);
@@ -32,15 +33,15 @@ public class ModPanelChangedItemsTab(ModFileSystemSelector selector, ChangedItem
         ImGuiClip.DrawEndDummy(remainder, height);
     }
 
-    private bool CheckFilter((string Name, object? Data) kvp)
+    private bool CheckFilter((string Name, IIdentifiedObjectData? Data) kvp)
         => drawer.FilterChangedItem(kvp.Name, kvp.Data, LowerString.Empty);
 
-    private void DrawChangedItem((string Name, object? Data) kvp)
+    private void DrawChangedItem((string Name, IIdentifiedObjectData? Data) kvp)
     {
         ImGui.TableNextColumn();
-        drawer.DrawCategoryIcon(kvp.Name, kvp.Data);
+        drawer.DrawCategoryIcon(kvp.Data);
         ImGui.SameLine();
         drawer.DrawChangedItem(kvp.Name, kvp.Data);
-        drawer.DrawModelData(kvp.Data);
+        ChangedItemDrawer.DrawModelData(kvp.Data);
     }
 }

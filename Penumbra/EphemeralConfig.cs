@@ -23,24 +23,24 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     [JsonIgnore]
     private readonly ModPathChanged _modPathChanged;
 
-    public int                               Version                           { get; set; } = Configuration.Constants.CurrentVersion;
-    public int                               LastSeenVersion                   { get; set; } = PenumbraChangelog.LastChangelogVersion;
-    public bool                              DebugSeparateWindow               { get; set; } = false;
-    public int                               TutorialStep                      { get; set; } = 0;
-    public bool                              EnableResourceLogging             { get; set; } = false;
-    public string                            ResourceLoggingFilter             { get; set; } = string.Empty;
-    public bool                              EnableResourceWatcher             { get; set; } = false;
-    public bool                              OnlyAddMatchingResources          { get; set; } = true;
-    public ResourceTypeFlag                  ResourceWatcherResourceTypes      { get; set; } = ResourceExtensions.AllResourceTypes;
-    public ResourceCategoryFlag              ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
-    public RecordType                        ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
-    public CollectionsTab.PanelMode          CollectionPanel                   { get; set; } = CollectionsTab.PanelMode.SimpleAssignment;
-    public TabType                           SelectedTab                       { get; set; } = TabType.Settings;
-    public ChangedItemDrawer.ChangedItemIcon ChangedItemFilter                 { get; set; } = ChangedItemDrawer.DefaultFlags;
-    public bool                              FixMainWindow                     { get; set; } = false;
-    public string                            LastModPath                       { get; set; } = string.Empty;
-    public bool                              AdvancedEditingOpen               { get; set; } = false;
-    public bool                              ForceRedrawOnFileChange           { get; set; } = false;
+    public int                      Version                           { get; set; } = Configuration.Constants.CurrentVersion;
+    public int                      LastSeenVersion                   { get; set; } = PenumbraChangelog.LastChangelogVersion;
+    public bool                     DebugSeparateWindow               { get; set; } = false;
+    public int                      TutorialStep                      { get; set; } = 0;
+    public bool                     EnableResourceLogging             { get; set; } = false;
+    public string                   ResourceLoggingFilter             { get; set; } = string.Empty;
+    public bool                     EnableResourceWatcher             { get; set; } = false;
+    public bool                     OnlyAddMatchingResources          { get; set; } = true;
+    public ResourceTypeFlag         ResourceWatcherResourceTypes      { get; set; } = ResourceExtensions.AllResourceTypes;
+    public ResourceCategoryFlag     ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
+    public RecordType               ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
+    public CollectionsTab.PanelMode CollectionPanel                   { get; set; } = CollectionsTab.PanelMode.SimpleAssignment;
+    public TabType                  SelectedTab                       { get; set; } = TabType.Settings;
+    public ChangedItemIconFlag      ChangedItemFilter                 { get; set; } = ChangedItemFlagExtensions.DefaultFlags;
+    public bool                     FixMainWindow                     { get; set; } = false;
+    public string                   LastModPath                       { get; set; } = string.Empty;
+    public bool                     AdvancedEditingOpen               { get; set; } = false;
+    public bool                     ForceRedrawOnFileChange           { get; set; } = false;
 
     /// <summary>
     /// Load the current configuration.

@@ -70,7 +70,7 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
     public override string ToString()
         => $"Global EQP - {Type}{(Condition != 0 ? $" - {Condition.Id}" : string.Empty)}";
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
     {
         var path = Type switch
         {

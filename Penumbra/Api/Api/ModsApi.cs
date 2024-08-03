@@ -134,6 +134,6 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
     public Dictionary<string, object?> GetChangedItems(string modDirectory, string modName)
         => _modManager.TryGetMod(modDirectory, modName, out var mod)
-            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToInternalObject())
             : [];
 }

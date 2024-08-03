@@ -115,7 +115,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
             _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Ephemeral.ResourceWatcherRecordTypes;
         _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionsTab.PanelMode>() ?? _config.Ephemeral.CollectionPanel;
         _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
-        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemDrawer.ChangedItemIcon>()
+        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
          ?? _config.Ephemeral.ChangedItemFilter;
         _config.Ephemeral.FixMainWindow = _data["FixMainWindow"]?.ToObject<bool>() ?? _config.Ephemeral.FixMainWindow;
         _config.Ephemeral.Save();

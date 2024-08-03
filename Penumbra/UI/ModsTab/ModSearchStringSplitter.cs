@@ -19,16 +19,16 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
 {
     public readonly struct Entry : ISplitterEntry<ModSearchType, Entry>
     {
-        public string                            Needle     { get; init; }
-        public ModSearchType                     Type       { get; init; }
-        public ChangedItemDrawer.ChangedItemIcon IconFilter { get; init; }
+        public string              Needle         { get; init; }
+        public ModSearchType       Type           { get; init; }
+        public ChangedItemIconFlag IconFlagFilter { get; init; }
 
         public bool Contains(Entry other)
         {
             if (Type != other.Type)
                 return false;
             if (Type is ModSearchType.Category)
-                return IconFilter == other.IconFilter;
+                return IconFlagFilter == other.IconFlagFilter;
 
             return Needle.Contains(other.Needle);
         }
@@ -77,7 +77,7 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
                 if (ChangedItemDrawer.TryParsePartial(entry.Needle, out var icon))
                     list[i] = entry with
                     {
-                        IconFilter = icon,
+                        IconFlagFilter = icon,
                         Needle = string.Empty,
                     };
                 else
@@ -110,7 +110,7 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
             ModSearchType.Name        => leaf.Value.Name.Lower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
             ModSearchType.Author      => leaf.Value.Author.Lower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
             ModSearchType.Category => leaf.Value.ChangedItems.Any(p
-                => (ChangedItemDrawer.GetCategoryIcon(p.Key, p.Value) & entry.IconFilter) != 0),
+                => ((p.Value?.Icon.ToFlag() ?? ChangedItemIconFlag.Unknown) & entry.IconFlagFilter) != 0),
             _ => true,
         };
 
