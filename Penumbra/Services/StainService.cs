@@ -16,7 +16,7 @@ namespace Penumbra.Services;
 public class StainService : IService
 {
     public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile)
-        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), MouseWheelType.None, Penumbra.Log) where TDyePack : unmanaged, IDyePack<TDyePack>
+        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), MouseWheelType.None, Penumbra.Log) where TDyePack : unmanaged, IDyePack
     {
         // FIXME There might be a better way to handle that.
         public int CurrentDyeChannel = 0;
@@ -102,7 +102,7 @@ public class StainService : IService
         };
 
     /// <summary> Loads a STM file. Opportunistically attempts to re-use the file already read by the game, with Lumina fallback. </summary>
-    private static unsafe StmFile<TDyePack> LoadStmFile<TDyePack>(ResourceHandle* stmResourceHandle, IDataManager dataManager) where TDyePack : unmanaged, IDyePack<TDyePack>
+    private static unsafe StmFile<TDyePack> LoadStmFile<TDyePack>(ResourceHandle* stmResourceHandle, IDataManager dataManager) where TDyePack : unmanaged, IDyePack
     {
         if (stmResourceHandle != null)
         {
