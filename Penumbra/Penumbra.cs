@@ -21,6 +21,8 @@ using Penumbra.GameData.Enums;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using System.Xml.Linq;
+using Dalamud.Plugin.Services;
+using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.ResourceLoading;
 
@@ -109,16 +111,17 @@ public class Penumbra : IDalamudPlugin
     private void SetupApi()
     {
         _services.GetService<IpcProviders>();
+        var itemSheet = _services.GetService<IDataManager>().GetExcelSheet<Item>()!;
         _communicatorService.ChangedItemHover.Subscribe(it =>
         {
-            if (it is (Item, FullEquipType))
+            if (it is IdentifiedItem)
                 ImGui.TextUnformatted("Left Click to create an item link in chat.");
         }, ChangedItemHover.Priority.Link);
 
         _communicatorService.ChangedItemClick.Subscribe((button, it) =>
         {
-            if (button == MouseButton.Left && it is (Item item, FullEquipType type))
-                Messager.LinkItem(item);
+            if (button == MouseButton.Left && it is IdentifiedItem item && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)
+                Messager.LinkItem(i);
         }, ChangedItemClick.Priority.Link);
     }
 

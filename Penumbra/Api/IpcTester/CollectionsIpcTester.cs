@@ -8,7 +8,7 @@ using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Collections.Manager;
-using Penumbra.GameData.Enums;
+using Penumbra.GameData.Data;
 using ImGuiClip = OtterGui.ImGuiClip;
 
 namespace Penumbra.Api.IpcTester;
@@ -17,10 +17,10 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
 {
     private int               _objectIdx;
     private string            _collectionIdString = string.Empty;
-    private Guid?             _collectionId       = null;
-    private bool              _allowCreation      = true;
-    private bool              _allowDeletion      = true;
-    private ApiCollectionType _type               = ApiCollectionType.Yourself;
+    private Guid?             _collectionId;
+    private bool              _allowCreation = true;
+    private bool              _allowDeletion = true;
+    private ApiCollectionType _type          = ApiCollectionType.Yourself;
 
     private Dictionary<Guid, string>          _collections  = [];
     private (string, ChangedItemType, uint)[] _changedItems = [];
@@ -116,7 +116,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
             var items = new GetChangedItemsForCollection(pi).Invoke(_collectionId.GetValueOrDefault(Guid.Empty));
             _changedItems = items.Select(kvp =>
             {
-                var (type, id) = ChangedItemExtensions.ChangedItemToTypeAndId(kvp.Value);
+                var (type, id) = kvp.Value.ToApiObject();
                 return (kvp.Key, type, id);
             }).ToArray();
             ImGui.OpenPopup("Changed Item List");
@@ -130,9 +130,9 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
         if (!p)
             return;
 
-        using (var t = ImRaii.Table("##ChangedItems", 3, ImGuiTableFlags.SizingFixedFit))
+        using (var table = ImRaii.Table("##ChangedItems", 3, ImGuiTableFlags.SizingFixedFit))
         {
-            if (t)
+            if (table)
                 ImGuiClip.ClippedDraw(_changedItems, t =>
                 {
                     ImGuiUtil.DrawTableColumn(t.Item1);

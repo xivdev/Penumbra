@@ -1,5 +1,6 @@
 using OtterGui;
 using OtterGui.Classes;
+using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
@@ -100,7 +101,7 @@ public sealed class Mod : IMod
     }
 
     // Cache
-    public readonly SortedList<string, object?> ChangedItems = new();
+    public readonly SortedList<string, IIdentifiedObjectData?> ChangedItems = new();
 
     public string LowerChangedItemsString { get; internal set; } = string.Empty;
     public string AllTagsLower            { get; internal set; } = string.Empty;

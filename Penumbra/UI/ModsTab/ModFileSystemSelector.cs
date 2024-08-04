@@ -550,7 +550,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
           + "Enter t:[string] to filter for mods set to specific tags.\n"
           + "Enter n:[string] to filter only for mod names and no paths.\n"
           + "Enter a:[string] to filter for mods by specific authors.\n"
-          + $"Enter s:[string] to filter for mods by the categories of the items they change (1-{ChangedItemDrawer.NumCategories + 1} or partial category name).\n\n"
+          + $"Enter s:[string] to filter for mods by the categories of the items they change (1-{ChangedItemFlagExtensions.NumCategories + 1} or partial category name).\n\n"
           + "Use None as a placeholder value that only matches empty lists or names.\n"
           + "Regularly, a mod has to match all supplied criteria separately.\n"
           + "Put a - in front of a search token to search only for mods not matching the criterion.\n"

@@ -45,7 +45,7 @@ public interface IModGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer);
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations);
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems);
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems);
 
     /// <summary> Ensure that a value is valid for a group. </summary>
     public Setting FixSetting(Setting setting);

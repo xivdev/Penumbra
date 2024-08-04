@@ -18,7 +18,7 @@ public enum MetaManipulationType : byte
 
 public interface IMetaIdentifier
 {
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems);
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems);
 
     public MetaIndex FileIndex();
 

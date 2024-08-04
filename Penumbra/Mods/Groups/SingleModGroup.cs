@@ -111,7 +111,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
         OptionData[setting.AsIndex].AddDataTo(redirections, manipulations);
     }
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
     {
         foreach (var container in DataContainers)
             identifier.AddChangedItems(container, changedItems);

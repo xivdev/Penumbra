@@ -6,6 +6,7 @@ using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
+using Penumbra.GameData.Data;
 
 namespace Penumbra.Collections.Cache;
 
@@ -18,14 +19,14 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// </summary>
 public sealed class CollectionCache : IDisposable
 {
-    private readonly CollectionCacheManager                           _manager;
-    private readonly ModCollection                                    _collection;
-    public readonly  CollectionModData                                ModData       = new();
-    private readonly SortedList<string, (SingleArray<IMod>, object?)> _changedItems = [];
-    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>      ResolvedFiles = new();
-    public readonly  CustomResourceCache                              CustomResources;
-    public readonly  MetaCache                                        Meta;
-    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      ConflictDict = [];
+    private readonly CollectionCacheManager                                          _manager;
+    private readonly ModCollection                                                   _collection;
+    public readonly  CollectionModData                                               ModData       = new();
+    private readonly SortedList<string, (SingleArray<IMod>, IIdentifiedObjectData?)> _changedItems = [];
+    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>                     ResolvedFiles = new();
+    public readonly  CustomResourceCache                                             CustomResources;
+    public readonly  MetaCache                                                       Meta;
+    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>                     ConflictDict = [];
 
     public int Calculating = -1;
 
@@ -41,7 +42,7 @@ public sealed class CollectionCache : IDisposable
     private int _changedItemsSaveCounter = -1;
 
     // Obtain currently changed items. Computes them if they haven't been computed before.
-    public IReadOnlyDictionary<string, (SingleArray<IMod>, object?)> ChangedItems
+    public IReadOnlyDictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)> ChangedItems
     {
         get
         {
@@ -412,7 +413,7 @@ public sealed class CollectionCache : IDisposable
             // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.
             var identifier = _manager.MetaFileManager.Identifier;
-            var items      = new SortedList<string, object?>(512);
+            var items      = new SortedList<string, IIdentifiedObjectData?>(512);
 
             void AddItems(IMod mod)
             {
@@ -421,8 +422,8 @@ public sealed class CollectionCache : IDisposable
                     if (!_changedItems.TryGetValue(name, out var data))
                         _changedItems.Add(name, (new SingleArray<IMod>(mod), obj));
                     else if (!data.Item1.Contains(mod))
-                        _changedItems[name] = (data.Item1.Append(mod), obj is int x && data.Item2 is int y ? x + y : obj);
-                    else if (obj is int x && data.Item2 is int y)
+                        _changedItems[name] = (data.Item1.Append(mod), obj is IdentifiedCounter x && data.Item2 is IdentifiedCounter y ? x + y : obj);
+                    else if (obj is IdentifiedCounter x && data.Item2 is IdentifiedCounter y)
                         _changedItems[name] = (data.Item1, x + y);
                 }
 

@@ -135,7 +135,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         : FilterComboCache<(EquipItem Item, bool InMod)>(() =>
         {
             var list = data.ByType[type];
-            if (selector?.Selected is { } mod && mod.ChangedItems.Values.Any(o => o is EquipItem i && i.Type == type))
+            if (selector?.Selected is { } mod && mod.ChangedItems.Values.Any(o => o is IdentifiedItem i && i.Item.Type == type))
                 return list.Select(i => (i, mod.ChangedItems.ContainsKey(i.Name))).OrderByDescending(p => p.Item2).ToList();
 
             return list.Select(i => (i, false)).ToList();

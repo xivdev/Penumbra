@@ -186,7 +186,7 @@ public static class EquipmentSwap
         PrimaryId idTo, byte mtrlTo)
     {
         var eqdpFromIdentifier = new EqdpIdentifier(idFrom, slotFrom, gr);
-        var eqdpToIdentifier   = new EqdpIdentifier(idTo, slotTo, gr);
+        var eqdpToIdentifier   = new EqdpIdentifier(idTo,   slotTo,   gr);
         var eqdpFromDefault    = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(manager, eqdpFromIdentifier), slotFrom);
         var eqdpToDefault      = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(manager, eqdpToIdentifier),   slotTo);
         var meta = new MetaSwap<EqdpIdentifier, EqdpEntryInternal>(i => manips.TryGetValue(i, out var e) ? e : null, eqdpFromIdentifier,
@@ -255,7 +255,8 @@ public static class EquipmentSwap
         {
             items = identifier.Identify(slotFrom.IsEquipment()
                     ? GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)
-                    : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)).Select(kvp => kvp.Value).OfType<EquipItem>()
+                    : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom))
+                .Select(kvp => kvp.Value).OfType<IdentifiedItem>().Select(i => i.Item)
                 .ToArray();
             variants = Enumerable.Range(0, imc.Count + 1).Select(i => (Variant)i).ToArray();
         }

@@ -27,10 +27,10 @@ public readonly record struct ImcIdentifier(
         : this(primaryId, variant, slot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment, 0, slot, BodySlot.Unknown)
     { }
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
         => AddChangedItems(identifier, changedItems, false);
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems, bool allVariants)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems, bool allVariants)
     {
         var path = ObjectType switch
         {

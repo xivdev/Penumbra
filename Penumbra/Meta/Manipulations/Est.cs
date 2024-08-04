@@ -24,7 +24,7 @@ public readonly record struct EstIdentifier(PrimaryId SetId, EstType Slot, Gende
     public Gender Gender
         => GenderRace.Split().Item1;
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
     {
         switch (Slot)
         {

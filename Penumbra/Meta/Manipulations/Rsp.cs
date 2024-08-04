@@ -1,4 +1,3 @@
-using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
@@ -9,7 +8,7 @@ namespace Penumbra.Meta.Manipulations;
 
 public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attribute) : IMetaIdentifier
 {
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
         => changedItems.TryAdd($"{SubRace.ToName()} {Attribute.ToFullString()}", null);
 
     public MetaIndex FileIndex()

@@ -1,7 +1,7 @@
 using Penumbra.Api.Enums;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using ChangedItemIcon = Penumbra.UI.ChangedItemDrawer.ChangedItemIcon;
+using Penumbra.UI;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -9,7 +9,7 @@ public class ResourceNode : ICloneable
 {
     public          string?            Name;
     public          string?            FallbackName;
-    public          ChangedItemIcon    Icon;
+    public          ChangedItemIconFlag    IconFlag;
     public readonly ResourceType       Type;
     public readonly nint               ObjectAddress;
     public readonly nint               ResourceHandle;
@@ -51,7 +51,7 @@ public class ResourceNode : ICloneable
     {
         Name              = other.Name;
         FallbackName      = other.FallbackName;
-        Icon              = other.Icon;
+        IconFlag              = other.IconFlag;
         Type              = other.Type;
         ObjectAddress     = other.ObjectAddress;
         ResourceHandle    = other.ResourceHandle;
@@ -79,7 +79,7 @@ public class ResourceNode : ICloneable
     public void SetUiData(UiData uiData)
     {
         Name = uiData.Name;
-        Icon = uiData.Icon;
+        IconFlag = uiData.IconFlag;
     }
 
     public void PrependName(string prefix)
@@ -88,9 +88,9 @@ public class ResourceNode : ICloneable
             Name = prefix + Name;
     }
 
-    public readonly record struct UiData(string? Name, ChangedItemIcon Icon)
+    public readonly record struct UiData(string? Name, ChangedItemIconFlag IconFlag)
     {
         public UiData PrependName(string prefix)
-            => Name == null ? this : new UiData(prefix + Name, Icon);
+            => Name == null ? this : new UiData(prefix + Name, IconFlag);
     }
 }

@@ -432,7 +432,7 @@ public class SettingsTab : ITab, IUiService
                 _config.HideChangedItemFilters = v;
                 if (v)
                 {
-                    _config.Ephemeral.ChangedItemFilter = ChangedItemDrawer.AllFlags;
+                    _config.Ephemeral.ChangedItemFilter = ChangedItemFlagExtensions.AllFlags;
                     _config.Ephemeral.Save();
                 }
             });

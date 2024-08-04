@@ -1,8 +1,8 @@
 using OtterGui.Classes;
 using Penumbra.Mods;
-using Penumbra.Meta.Files;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Cache;
+using Penumbra.GameData.Data;
 using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections;
@@ -46,8 +46,8 @@ public partial class ModCollection
     internal IReadOnlyDictionary<Utf8GamePath, ModPath> ResolvedFiles
         => _cache?.ResolvedFiles ?? new ConcurrentDictionary<Utf8GamePath, ModPath>();
 
-    internal IReadOnlyDictionary<string, (SingleArray<IMod>, object?)> ChangedItems
-        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, object?)>();
+    internal IReadOnlyDictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)> ChangedItems
+        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)>();
 
     internal IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => _cache?.AllConflicts ?? Array.Empty<SingleArray<ModConflicts>>();

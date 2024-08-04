@@ -1,7 +1,7 @@
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.GameData.Enums;
+using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
@@ -81,21 +81,21 @@ public class UiApi : IPenumbraApiUi, IApiService, IDisposable
     public void CloseMainWindow()
         => _configWindow.IsOpen = false;
 
-    private void OnChangedItemClick(MouseButton button, object? data)
+    private void OnChangedItemClick(MouseButton button, IIdentifiedObjectData? data)
     {
         if (ChangedItemClicked == null)
             return;
 
-        var (type, id) = ChangedItemExtensions.ChangedItemToTypeAndId(data);
+        var (type, id) = data?.ToApiObject() ?? (ChangedItemType.None, 0);
         ChangedItemClicked.Invoke(button, type, id);
     }
 
-    private void OnChangedItemHover(object? data)
+    private void OnChangedItemHover(IIdentifiedObjectData? data)
     {
         if (ChangedItemTooltip == null)
             return;
 
-        var (type, id) = ChangedItemExtensions.ChangedItemToTypeAndId(data);
+        var (type, id) = data?.ToApiObject() ?? (ChangedItemType.None, 0);
         ChangedItemTooltip.Invoke(type, id);
     }
 }

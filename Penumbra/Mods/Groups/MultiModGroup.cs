@@ -126,7 +126,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
         }
     }
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
     {
         foreach (var container in DataContainers)
             identifier.AddChangedItems(container, changedItems);
