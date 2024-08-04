@@ -191,7 +191,7 @@ public partial class MtrlTab
 
         var row = Mtrl.Table switch
         {
-            LegacyColorTable legacyTable => new ColorTable.Row(legacyTable[rowIdx]),
+            LegacyColorTable legacyTable => new ColorTableRow(legacyTable[rowIdx]),
             ColorTable       table       => table[rowIdx],
             _                            => throw new InvalidOperationException($"Unsupported color table type {Mtrl.Table.GetType()}"),
         };
@@ -199,7 +199,7 @@ public partial class MtrlTab
         {
             var dyeRow = Mtrl.DyeTable switch
             {
-                LegacyColorDyeTable legacyDyeTable => new ColorDyeTable.Row(legacyDyeTable[rowIdx]),
+                LegacyColorDyeTable legacyDyeTable => new ColorDyeTableRow(legacyDyeTable[rowIdx]),
                 ColorDyeTable       dyeTable       => dyeTable[rowIdx],
                 _                                  => throw new InvalidOperationException($"Unsupported color dye table type {Mtrl.DyeTable.GetType()}"),
             };
@@ -258,7 +258,7 @@ public partial class MtrlTab
         }
     }
 
-    private static void ApplyHighlight(ref ColorTable.Row row, ColorId colorId, float time)
+    private static void ApplyHighlight(ref ColorTableRow row, ColorId colorId, float time)
     {
         var level      = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
         var baseColor  = colorId.Value();

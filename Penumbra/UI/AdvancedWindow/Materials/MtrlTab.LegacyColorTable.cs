@@ -33,6 +33,7 @@ public partial class MtrlTab
                 UpdateColorTableRowPreview(i);
                 ret = true;
             }
+
             ImGui.TableNextRow();
         }
 
@@ -56,6 +57,7 @@ public partial class MtrlTab
                 UpdateColorTableRowPreview(i);
                 ret = true;
             }
+
             ImGui.TableNextRow();
         }
 
@@ -108,8 +110,10 @@ public partial class MtrlTab
         }
 
         ImGui.TableNextColumn();
-        using (var font = ImRaii.PushFont(UiBuilder.MonoFont))
+        using (ImRaii.PushFont(UiBuilder.MonoFont))
+        {
             ImUtf8.Text($"{(rowIdx >> 1) + 1,2:D}{"AB"[rowIdx & 1]}");
+        }
 
         ImGui.TableNextColumn();
         using var dis = ImRaii.Disabled(disabled);
@@ -131,9 +135,11 @@ public partial class MtrlTab
             ret |= CtApplyStainCheckbox("##dyeSpecular"u8, "Apply Specular Color on Dye"u8, dye.SpecularColor,
                 b => dyeTable[rowIdx].SpecularColor = b);
         }
+
         ImGui.SameLine();
         ImGui.SetNextItemWidth(pctSize);
-        ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.SpecularMask * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
+        ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.SpecularMask * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f,
+            1.0f,
             v => table[rowIdx].SpecularMask = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
@@ -155,7 +161,8 @@ public partial class MtrlTab
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(floatSize);
         var glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
-        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Shininess, "%.1f"u8, glossStrengthMin, HalfMaxValue, Math.Max(0.1f, (float)row.Shininess * 0.025f),
+        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Shininess, "%.1f"u8, glossStrengthMin, HalfMaxValue,
+            Math.Max(0.1f, (float)row.Shininess * 0.025f),
             v => table[rowIdx].Shininess = v);
 
         if (dyeTable != null)
@@ -197,7 +204,7 @@ public partial class MtrlTab
     {
         using var id        = ImRaii.PushId(rowIdx);
         ref var   row       = ref table[rowIdx];
-        var       dye       = dyeTable != null ? dyeTable[rowIdx] : default;
+        var       dye       = dyeTable?[rowIdx] ?? default;
         var       floatSize = LegacyColorTableFloatSize * UiHelpers.Scale;
         var       pctSize   = LegacyColorTablePercentageSize * UiHelpers.Scale;
         var       intSize   = LegacyColorTableIntegerSize * UiHelpers.Scale;
@@ -213,8 +220,10 @@ public partial class MtrlTab
         }
 
         ImGui.TableNextColumn();
-        using (var font = ImRaii.PushFont(UiBuilder.MonoFont))
+        using (ImRaii.PushFont(UiBuilder.MonoFont))
+        {
             ImUtf8.Text($"{(rowIdx >> 1) + 1,2:D}{"AB"[rowIdx & 1]}");
+        }
 
         ImGui.TableNextColumn();
         using var dis = ImRaii.Disabled(disabled);
@@ -236,6 +245,7 @@ public partial class MtrlTab
             ret |= CtApplyStainCheckbox("##dyeSpecular"u8, "Apply Specular Color on Dye"u8, dye.SpecularColor,
                 b => dyeTable[rowIdx].SpecularColor = b);
         }
+
         ImGui.SameLine();
         ImGui.SetNextItemWidth(pctSize);
         ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.Scalar7 * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
@@ -260,7 +270,8 @@ public partial class MtrlTab
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(floatSize);
         var glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
-        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Scalar3, "%.1f"u8, glossStrengthMin, HalfMaxValue, Math.Max(0.1f, (float)row.Scalar3 * 0.025f),
+        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Scalar3, "%.1f"u8, glossStrengthMin, HalfMaxValue,
+            Math.Max(0.1f, (float)row.Scalar3 * 0.025f),
             v => table[rowIdx].Scalar3 = v);
 
         if (dyeTable != null)
@@ -307,7 +318,7 @@ public partial class MtrlTab
         return ret;
     }
 
-    private bool DrawLegacyDyePreview(int rowIdx, bool disabled, LegacyColorDyeTable.Row dye, float floatSize)
+    private bool DrawLegacyDyePreview(int rowIdx, bool disabled, LegacyColorDyeTableRow dye, float floatSize)
     {
         var stain = _stainService.StainCombo1.CurrentSelection.Key;
         if (stain == 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))
@@ -326,7 +337,7 @@ public partial class MtrlTab
         return ret;
     }
 
-    private bool DrawLegacyDyePreview(int rowIdx, bool disabled, ColorDyeTable.Row dye, float floatSize)
+    private bool DrawLegacyDyePreview(int rowIdx, bool disabled, ColorDyeTableRow dye, float floatSize)
     {
         var stain = _stainService.GetStainCombo(dye.Channel).CurrentSelection.Key;
         if (stain == 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))
@@ -337,10 +348,11 @@ public partial class MtrlTab
         var ret = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
             "Apply the selected dye to this row.", disabled, true);
 
-        ret = ret && Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, [
-            _stainService.StainCombo1.CurrentSelection.Key,
-            _stainService.StainCombo2.CurrentSelection.Key,
-        ], rowIdx);
+        ret = ret
+         && Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, [
+                _stainService.StainCombo1.CurrentSelection.Key,
+                _stainService.StainCombo2.CurrentSelection.Key,
+            ], rowIdx);
 
         ImGui.SameLine();
         DrawLegacyDyePreview(values, floatSize);
