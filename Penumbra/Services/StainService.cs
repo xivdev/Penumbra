@@ -16,7 +16,8 @@ namespace Penumbra.Services;
 public class StainService : IService
 {
     public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile)
-        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), MouseWheelType.None, Penumbra.Log) where TDyePack : unmanaged, IDyePack
+        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), MouseWheelType.None, Penumbra.Log)
+        where TDyePack : unmanaged, IDyePack
     {
         // FIXME There might be a better way to handle that.
         public int CurrentDyeChannel = 0;
@@ -80,11 +81,21 @@ public class StainService : IService
 
     public unsafe StainService(IDataManager dataManager, CharacterUtility characterUtility, DictStain stainData)
     {
-        StainData     = stainData;
-        StainCombo1   = CreateStainCombo();
-        StainCombo2   = CreateStainCombo();
-        LegacyStmFile = LoadStmFile<LegacyDyePack>(characterUtility.Address->LegacyStmResource, dataManager);
-        GudStmFile    = LoadStmFile<DyePack>(characterUtility.Address->GudStmResource, dataManager);
+        StainData   = stainData;
+        StainCombo1 = CreateStainCombo();
+        StainCombo2 = CreateStainCombo();
+
+        if (characterUtility.Address == null)
+        {
+            LegacyStmFile = LoadStmFile<LegacyDyePack>(null, dataManager);
+            GudStmFile    = LoadStmFile<DyePack>(null, dataManager);
+        }
+        else
+        {
+            LegacyStmFile = LoadStmFile<LegacyDyePack>(characterUtility.Address->LegacyStmResource, dataManager);
+            GudStmFile    = LoadStmFile<DyePack>(characterUtility.Address->GudStmResource, dataManager);
+        }
+
 
         FilterComboColors[] stainCombos = [StainCombo1, StainCombo2];
 
@@ -98,11 +109,13 @@ public class StainService : IService
         {
             0 => StainCombo1,
             1 => StainCombo2,
-            _ => throw new ArgumentOutOfRangeException(nameof(channel), channel, $"Unsupported dye channel {channel} (supported values are 0 and 1)")
+            _ => throw new ArgumentOutOfRangeException(nameof(channel), channel,
+                $"Unsupported dye channel {channel} (supported values are 0 and 1)"),
         };
 
     /// <summary> Loads a STM file. Opportunistically attempts to re-use the file already read by the game, with Lumina fallback. </summary>
-    private static unsafe StmFile<TDyePack> LoadStmFile<TDyePack>(ResourceHandle* stmResourceHandle, IDataManager dataManager) where TDyePack : unmanaged, IDyePack
+    private static unsafe StmFile<TDyePack> LoadStmFile<TDyePack>(ResourceHandle* stmResourceHandle, IDataManager dataManager)
+        where TDyePack : unmanaged, IDyePack
     {
         if (stmResourceHandle != null)
         {
