@@ -597,11 +597,11 @@ public partial class ModEditWindow
             if (!Mtrl.HasTable)
                 return;
 
-            var row = new LegacyColorTable.Row(Mtrl.Table[rowIdx]);
+            var row = new LegacyColorTableRow(Mtrl.Table[rowIdx]);
             if (Mtrl.HasDyeTable)
             {
                 var stm = _edit._stainService.StmFile;
-                var dye = new LegacyColorDyeTable.Row(Mtrl.DyeTable[rowIdx]);
+                var dye = new LegacyColorDyeTableRow(Mtrl.DyeTable[rowIdx]);
                 if (stm.TryGetValue(dye.Template, _edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
                     row.ApplyDyeTemplate(dye, dyes);
             }
@@ -651,7 +651,7 @@ public partial class ModEditWindow
             }
         }
 
-        private static void ApplyHighlight(ref LegacyColorTable.Row row, float time)
+        private static void ApplyHighlight(ref LegacyColorTableRow row, float time)
         {
             var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
             var baseColor = ColorId.InGameHighlight.Value();

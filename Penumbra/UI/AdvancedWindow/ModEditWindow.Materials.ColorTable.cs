@@ -171,7 +171,7 @@ public partial class ModEditWindow
     }
 
     [SkipLocalsInit]
-    private static unsafe void ColorTableCopyClipboardButton(ColorTable.Row row, ColorDyeTable.Row dye)
+    private static unsafe void ColorTableCopyClipboardButton(ColorTableRow row, ColorDyeTableRow dye)
     {
         if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Clipboard.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
                 "Export this row to your clipboard.", false, true))
@@ -179,11 +179,11 @@ public partial class ModEditWindow
 
         try
         {
-            Span<byte> data = stackalloc byte[ColorTable.Row.Size + ColorDyeTable.Row.Size];
+            Span<byte> data = stackalloc byte[ColorTableRow.Size + ColorDyeTableRow.Size];
             fixed (byte* ptr = data)
             {
-                MemoryUtility.MemCpyUnchecked(ptr,                       &row, ColorTable.Row.Size);
-                MemoryUtility.MemCpyUnchecked(ptr + ColorTable.Row.Size, &dye, ColorDyeTable.Row.Size);
+                MemoryUtility.MemCpyUnchecked(ptr,                       &row, ColorTableRow.Size);
+                MemoryUtility.MemCpyUnchecked(ptr + ColorTableRow.Size, &dye, ColorDyeTableRow.Size);
             }
 
             var text = Convert.ToBase64String(data);
@@ -219,15 +219,15 @@ public partial class ModEditWindow
         {
             var text = ImGui.GetClipboardText();
             var data = Convert.FromBase64String(text);
-            if (data.Length != ColorTable.Row.Size + ColorDyeTable.Row.Size
+            if (data.Length != ColorTableRow.Size + ColorDyeTableRow.Size
              || !tab.Mtrl.HasTable)
                 return false;
 
             fixed (byte* ptr = data)
             {
-                tab.Mtrl.Table[rowIdx] = *(ColorTable.Row*)ptr;
+                tab.Mtrl.Table[rowIdx] = *(ColorTableRow*)ptr;
                 if (tab.Mtrl.HasDyeTable)
-                    tab.Mtrl.DyeTable[rowIdx] = *(ColorDyeTable.Row*)(ptr + ColorTable.Row.Size);
+                    tab.Mtrl.DyeTable[rowIdx] = *(ColorDyeTableRow*)(ptr + ColorTableRow.Size);
             }
 
             tab.UpdateColorTableRowPreview(rowIdx);
@@ -453,7 +453,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawDyePreview(MtrlTab tab, int rowIdx, bool disabled, ColorDyeTable.Row dye, float floatSize)
+    private bool DrawDyePreview(MtrlTab tab, int rowIdx, bool disabled, ColorDyeTableRow dye, float floatSize)
     {
         var stain = _stainService.StainCombo.CurrentSelection.Key;
         if (stain == 0 || !_stainService.StmFile.Entries.TryGetValue(dye.Template, out var entry))
