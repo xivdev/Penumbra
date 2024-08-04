@@ -10,7 +10,6 @@ using Penumbra.GameData.Interop;
 using Penumbra.String;
 using static Penumbra.GameData.Files.ShpkFile;
 using OtterGui.Widgets;
-using Penumbra.GameData.Files.ShaderStructs;
 using OtterGui.Text;
 using Penumbra.GameData.Structs;
 
@@ -56,21 +55,17 @@ public partial class ModEditWindow
     private static void DrawShaderPackageSummary(ShpkTab tab)
     {
         if (tab.Shpk.IsLegacy)
-        {
             ImUtf8.Text("This legacy shader package will not work in the current version of the game. Do not attempt to load it.",
                 ImGuiUtil.HalfBlendText(0x80u)); // Half red
-        }
-        ImGui.TextUnformatted(tab.Header);
+        ImUtf8.Text(tab.Header);
         if (!tab.Shpk.Disassembled)
-        {
             ImUtf8.Text("Your system doesn't support disassembling shaders. Some functionality will be missing.",
                 ImGuiUtil.HalfBlendText(0x80u)); // Half red
-        }
     }
 
     private static void DrawShaderExportButton(ShpkTab tab, string objectName, Shader shader, int idx)
     {
-        if (!ImGui.Button($"Export Shader Program Blob ({shader.Blob.Length} bytes)"))
+        if (!ImUtf8.Button($"Export Shader Program Blob ({shader.Blob.Length} bytes)"))
             return;
 
         var defaultName = objectName[0] switch
@@ -106,7 +101,7 @@ public partial class ModEditWindow
 
     private static void DrawShaderImportButton(ShpkTab tab, string objectName, Shader[] shaders, int idx)
     {
-        if (!ImGui.Button("Replace Shader Program Blob"))
+        if (!ImUtf8.Button("Replace Shader Program Blob"u8))
             return;
 
         tab.FileDialog.OpenFilePicker($"Replace {objectName} #{idx} Program Blob...", "Shader Program Blobs{.o,.cso,.dxbc,.dxil}",
@@ -145,8 +140,8 @@ public partial class ModEditWindow
 
     private static unsafe void DrawRawDisassembly(Shader shader)
     {
-        using var t2 = ImRaii.TreeNode("Raw Program Disassembly");
-        if (!t2)
+        using var tree = ImUtf8.TreeNode("Raw Program Disassembly"u8);
+        if (!tree)
             return;
 
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
@@ -164,31 +159,34 @@ public partial class ModEditWindow
             {
                 foreach (var (key, keyIdx) in shader.SystemValues!.WithIndex())
                 {
-                    ImRaii.TreeNode($"Used with System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
+                    ImUtf8.TreeNode(
+                        $"Used with System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
 
                 foreach (var (key, keyIdx) in shader.SceneValues!.WithIndex())
                 {
-                    ImRaii.TreeNode($"Used with Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
+                    ImUtf8.TreeNode(
+                        $"Used with Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
 
                 foreach (var (key, keyIdx) in shader.MaterialValues!.WithIndex())
                 {
-                    ImRaii.TreeNode($"Used with Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
+                    ImUtf8.TreeNode(
+                        $"Used with Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
 
                 foreach (var (key, keyIdx) in shader.SubViewValues!.WithIndex())
                 {
-                    ImRaii.TreeNode($"Used with Sub-View Key #{keyIdx} \u2208 {{ {tab.NameSetToString(key)} }}",
+                    ImUtf8.TreeNode($"Used with Sub-View Key #{keyIdx} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
             }
         }
 
-        ImRaii.TreeNode($"Used in Passes: {tab.NameSetToString(shader.Passes)}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+        ImUtf8.TreeNode($"Used in Passes: {tab.NameSetToString(shader.Passes)}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
     }
 
     private static void DrawShaderPackageFilterSection(ShpkTab tab)
@@ -215,19 +213,20 @@ public partial class ModEditWindow
     {
         if (values.PossibleValues == null)
         {
-            ImRaii.TreeNode(label, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            ImUtf8.TreeNode(label, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             return;
         }
 
-        using var node = ImRaii.TreeNode(label);
+        using var node = ImUtf8.TreeNode(label);
         if (!node)
             return;
 
         foreach (var value in values.PossibleValues)
         {
             var contains = values.Contains(value);
-            if (!ImGui.Checkbox($"{tab.TryResolveName(value)}", ref contains))
+            if (!ImUtf8.Checkbox($"{tab.TryResolveName(value)}", ref contains))
                 continue;
+
             if (contains)
             {
                 if (values.AddExisting(value))
@@ -249,7 +248,7 @@ public partial class ModEditWindow
 
     private static bool DrawShaderPackageShaderArray(ShpkTab tab, string objectName, Shader[] shaders, bool disabled)
     {
-        if (shaders.Length == 0 || !ImGui.CollapsingHeader($"{objectName}s"))
+        if (shaders.Length == 0 || !ImUtf8.CollapsingHeader($"{objectName}s"))
             return false;
 
         var ret = false;
@@ -259,7 +258,7 @@ public partial class ModEditWindow
             if (!tab.IsFilterMatch(shader))
                 continue;
 
-            using var t = ImRaii.TreeNode($"{objectName} #{idx}");
+            using var t = ImUtf8.TreeNode($"{objectName} #{idx}");
             if (!t)
                 continue;
 
@@ -270,20 +269,20 @@ public partial class ModEditWindow
                 DrawShaderImportButton(tab, objectName, shaders, idx);
             }
 
-            ret |= DrawShaderPackageResourceArray("Constant Buffers",       "slot", true,  shader.Constants, false, true);
-            ret |= DrawShaderPackageResourceArray("Samplers",               "slot", false, shader.Samplers,  false, true);
+            ret |= DrawShaderPackageResourceArray("Constant Buffers", "slot", true,  shader.Constants, false, true);
+            ret |= DrawShaderPackageResourceArray("Samplers",         "slot", false, shader.Samplers,  false, true);
             if (!tab.Shpk.IsLegacy)
-                ret |= DrawShaderPackageResourceArray("Textures",           "slot", false, shader.Textures,  false, true);
-            ret |= DrawShaderPackageResourceArray("Unordered Access Views", "slot", true,  shader.Uavs,      false, true);
+                ret |= DrawShaderPackageResourceArray("Textures", "slot", false, shader.Textures, false, true);
+            ret |= DrawShaderPackageResourceArray("Unordered Access Views", "slot", true, shader.Uavs, false, true);
 
             if (shader.DeclaredInputs != 0)
-                ImRaii.TreeNode($"Declared Inputs: {shader.DeclaredInputs}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+                ImUtf8.TreeNode($"Declared Inputs: {shader.DeclaredInputs}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             if (shader.UsedInputs != 0)
-                ImRaii.TreeNode($"Used Inputs: {shader.UsedInputs}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+                ImUtf8.TreeNode($"Used Inputs: {shader.UsedInputs}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
 
             if (shader.AdditionalHeader.Length > 8)
             {
-                using var t2 = ImRaii.TreeNode($"Additional Header (Size: {shader.AdditionalHeader.Length})###AdditionalHeader");
+                using var t2 = ImUtf8.TreeNode($"Additional Header (Size: {shader.AdditionalHeader.Length})###AdditionalHeader");
                 if (t2)
                     Widget.DrawHexViewer(shader.AdditionalHeader);
             }
@@ -313,23 +312,28 @@ public partial class ModEditWindow
         var usedString = UsedComponentString(withSize, false, resource);
         if (usedString.Length > 0)
         {
-            ImRaii.TreeNode(hasFilter ? $"Globally Used: {usedString}" : $"Used: {usedString}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            ImUtf8.TreeNode(hasFilter ? $"Globally Used: {usedString}" : $"Used: {usedString}",
+                ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             if (hasFilter)
             {
                 var filteredUsedString = UsedComponentString(withSize, true, resource);
                 if (filteredUsedString.Length > 0)
-                    ImRaii.TreeNode($"Used within Filters: {filteredUsedString}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+                    ImUtf8.TreeNode($"Used within Filters: {filteredUsedString}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet)
+                        .Dispose();
                 else
-                    ImRaii.TreeNode("Unused within Filters", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+                    ImUtf8.TreeNode("Unused within Filters"u8, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
         }
         else
-            ImRaii.TreeNode(hasFilter ? "Globally Unused" : "Unused", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+        {
+            ImUtf8.TreeNode(hasFilter ? "Globally Unused"u8 : "Unused"u8, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+        }
 
         return ret;
     }
 
-    private static bool DrawShaderPackageResourceArray(string arrayName, string slotLabel, bool withSize, Resource[] resources, bool hasFilter, bool disabled)
+    private static bool DrawShaderPackageResourceArray(string arrayName, string slotLabel, bool withSize, Resource[] resources, bool hasFilter,
+        bool disabled)
     {
         if (resources.Length == 0)
             return false;
@@ -345,8 +349,8 @@ public partial class ModEditWindow
             var name = $"#{idx}: {buf.Name} (ID: 0x{buf.Id:X8}), {slotLabel}: {buf.Slot}"
               + (withSize ? $", size: {buf.Size} registers###{idx}: {buf.Name} (ID: 0x{buf.Id:X8})" : string.Empty);
             using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-            using var t2   = ImRaii.TreeNode(name, !disabled || buf.Used != null ? 0 : ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet);
-            font.Dispose();
+            using var t2   = ImUtf8.TreeNode(name, !disabled || buf.Used != null ? 0 : ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet);
+            font.Pop();
             if (t2)
                 ret |= DrawShaderPackageResource(slotLabel, withSize, ref buf, hasFilter, disabled);
         }
@@ -361,7 +365,7 @@ public partial class ModEditWindow
           + new Vector2(ImGui.CalcTextSize(label).X + 3 * ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetFrameHeight(),
                 ImGui.GetStyle().FramePadding.Y);
 
-        var ret = ImGui.CollapsingHeader(label);
+        var ret = ImUtf8.CollapsingHeader(label);
         ImGui.GetWindowDrawList()
             .AddText(UiBuilder.DefaultFont, UiBuilder.DefaultFont.FontSize, pos, ImGui.GetColorU32(ImGuiCol.Text), "Layout");
         return ret;
@@ -374,7 +378,7 @@ public partial class ModEditWindow
         if (isSizeWellDefined)
             return true;
 
-        ImGui.TextUnformatted(materialParams.HasValue
+        ImUtf8.Text(materialParams.HasValue
             ? $"Buffer size mismatch: {file.MaterialParamsSize} bytes ≠ {materialParams.Value.Size} registers ({materialParams.Value.Size << 4} bytes)"
             : $"Buffer size mismatch: {file.MaterialParamsSize} bytes, not a multiple of 16");
         return false;
@@ -382,7 +386,7 @@ public partial class ModEditWindow
 
     private static bool DrawShaderPackageMaterialMatrix(ShpkTab tab, bool disabled)
     {
-        ImGui.TextUnformatted(tab.Shpk.Disassembled
+        ImUtf8.Text(tab.Shpk.Disassembled
             ? "Parameter positions (continuations are grayed out, globally unused values are red, unused values within filters are yellow):"
             : "Parameter positions (continuations are grayed out):");
 
@@ -398,10 +402,7 @@ public partial class ModEditWindow
         ImGui.TableSetupColumn("w",          ImGuiTableColumnFlags.WidthFixed, 250 * UiHelpers.Scale);
         ImGui.TableHeadersRow();
 
-        var textColorStart       = ImGui.GetColorU32(ImGuiCol.Text);
-        var textColorCont        = ImGuiUtil.HalfTransparent(textColorStart);  // Half opacity
-        var textColorUnusedStart = ImGuiUtil.HalfBlend(textColorStart, 0x80u); // Half red
-        var textColorUnusedCont  = ImGuiUtil.HalfTransparent(textColorUnusedStart);
+        var textColorStart = ImGui.GetColorU32(ImGuiCol.Text);
 
         var ret = false;
         for (var i = 0; i < tab.Matrix.GetLength(0); ++i)
@@ -420,12 +421,12 @@ public partial class ModEditWindow
                     color = ImGuiUtil.HalfTransparent(color); // Half opacity
                 using var _         = ImRaii.PushId(i * 4 + j);
                 var       deletable = !disabled && idx >= 0;
-                using (var font = ImRaii.PushFont(UiBuilder.MonoFont, tooltip.Length > 0))
+                using (ImRaii.PushFont(UiBuilder.MonoFont, tooltip.Length > 0))
                 {
-                    using (var c = ImRaii.PushColor(ImGuiCol.Text, color))
+                    using (ImRaii.PushColor(ImGuiCol.Text, color))
                     {
                         ImGui.TableNextColumn();
-                        ImGui.Selectable(name);
+                        ImUtf8.Selectable(name);
                         if (deletable && ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)
                         {
                             tab.Shpk.MaterialParams = tab.Shpk.MaterialParams.RemoveItems(idx);
@@ -434,11 +435,11 @@ public partial class ModEditWindow
                         }
                     }
 
-                    ImGuiUtil.HoverTooltip(tooltip);
+                    ImUtf8.HoverTooltip(tooltip);
                 }
 
                 if (deletable)
-                    ImGuiUtil.HoverTooltip("\nControl + Right-Click to remove.");
+                    ImUtf8.HoverTooltip("\nControl + Right-Click to remove."u8);
             }
         }
 
@@ -450,7 +451,9 @@ public partial class ModEditWindow
         if (!ImUtf8.Button("Export globally unused parameters as material dev-kit file"u8))
             return;
 
-        tab.FileDialog.OpenSavePicker("Export material dev-kit file", ".json", $"{Path.GetFileNameWithoutExtension(tab.FilePath)}.json", ".json", DoSave, null, false);
+        tab.FileDialog.OpenSavePicker("Export material dev-kit file", ".json", $"{Path.GetFileNameWithoutExtension(tab.FilePath)}.json",
+            ".json", DoSave, null, false);
+        return;
 
         void DoSave(bool success, string path)
         {
@@ -476,22 +479,22 @@ public partial class ModEditWindow
 
     private static void DrawShaderPackageMisalignedParameters(ShpkTab tab)
     {
-        using var t = ImRaii.TreeNode("Misaligned / Overflowing Parameters");
+        using var t = ImUtf8.TreeNode("Misaligned / Overflowing Parameters"u8);
         if (!t)
             return;
 
         using var _ = ImRaii.PushFont(UiBuilder.MonoFont);
         foreach (var name in tab.MalformedParameters)
-            ImRaii.TreeNode(name, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+            ImUtf8.TreeNode(name, ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
     }
 
     private static void DrawShaderPackageStartCombo(ShpkTab tab)
     {
         using var s = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
-        using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
+        using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
             ImGui.SetNextItemWidth(UiHelpers.Scale * 400);
-            using var c = ImRaii.Combo("##Start", tab.Orphans[tab.NewMaterialParamStart].Name);
+            using var c = ImUtf8.Combo("##Start", tab.Orphans[tab.NewMaterialParamStart].Name);
             if (c)
                 foreach (var (start, idx) in tab.Orphans.WithIndex())
                 {
@@ -501,7 +504,7 @@ public partial class ModEditWindow
         }
 
         ImGui.SameLine();
-        ImGui.TextUnformatted("Start");
+        ImUtf8.Text("Start"u8);
     }
 
     private static void DrawShaderPackageEndCombo(ShpkTab tab)
@@ -510,7 +513,7 @@ public partial class ModEditWindow
         using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
         {
             ImGui.SetNextItemWidth(UiHelpers.Scale * 400);
-            using var c = ImRaii.Combo("##End", tab.Orphans[tab.NewMaterialParamEnd].Name);
+            using var c = ImUtf8.Combo("##End", tab.Orphans[tab.NewMaterialParamEnd].Name);
             if (c)
             {
                 var current = tab.Orphans[tab.NewMaterialParamStart].Index;
@@ -527,7 +530,7 @@ public partial class ModEditWindow
         }
 
         ImGui.SameLine();
-        ImGui.TextUnformatted("End");
+        ImUtf8.Text("End"u8);
     }
 
     private static bool DrawShaderPackageNewParameter(ShpkTab tab)
@@ -540,15 +543,14 @@ public partial class ModEditWindow
 
         ImGui.SetNextItemWidth(UiHelpers.Scale * 400);
         var newName = tab.NewMaterialParamName.Value!;
-        if (ImGui.InputText("Name", ref newName, 63))
+        if (ImUtf8.InputText("Name", ref newName))
             tab.NewMaterialParamName = newName;
 
         var tooltip = tab.UsedIds.Contains(tab.NewMaterialParamName.Crc32)
-            ? "The ID is already in use. Please choose a different name."
-            : string.Empty;
-        if (!ImGuiUtil.DrawDisabledButton($"Add {tab.NewMaterialParamName} (0x{tab.NewMaterialParamName.Crc32:X8})", new Vector2(400 * UiHelpers.Scale, ImGui.GetFrameHeight()),
-                tooltip,
-                tooltip.Length > 0))
+            ? "The ID is already in use. Please choose a different name."u8
+            : ""u8;
+        if (!ImUtf8.ButtonEx($"Add {tab.NewMaterialParamName} (0x{tab.NewMaterialParamName.Crc32:X8})", tooltip,
+                new Vector2(400 * UiHelpers.Scale, ImGui.GetFrameHeight()), tooltip.Length > 0))
             return false;
 
         tab.Shpk.MaterialParams = tab.Shpk.MaterialParams.AddItem(new MaterialParam
@@ -589,15 +591,15 @@ public partial class ModEditWindow
     {
         var ret = false;
 
-        if (!ImGui.CollapsingHeader("Shader Resources"))
+        if (!ImUtf8.CollapsingHeader("Shader Resources"u8))
             return false;
 
         var hasFilters = tab.FilterPopCount != tab.FilterMaximumPopCount;
-        ret |= DrawShaderPackageResourceArray("Constant Buffers",       "type", true,  tab.Shpk.Constants, hasFilters, disabled);
-        ret |= DrawShaderPackageResourceArray("Samplers",               "type", false, tab.Shpk.Samplers,  hasFilters, disabled);
+        ret |= DrawShaderPackageResourceArray("Constant Buffers", "type", true,  tab.Shpk.Constants, hasFilters, disabled);
+        ret |= DrawShaderPackageResourceArray("Samplers",         "type", false, tab.Shpk.Samplers,  hasFilters, disabled);
         if (!tab.Shpk.IsLegacy)
-            ret |= DrawShaderPackageResourceArray("Textures",           "type", false, tab.Shpk.Textures,  hasFilters, disabled);
-        ret |= DrawShaderPackageResourceArray("Unordered Access Views", "type", false, tab.Shpk.Uavs,      hasFilters, disabled);
+            ret |= DrawShaderPackageResourceArray("Textures", "type", false, tab.Shpk.Textures, hasFilters, disabled);
+        ret |= DrawShaderPackageResourceArray("Unordered Access Views", "type", false, tab.Shpk.Uavs, hasFilters, disabled);
 
         return ret;
     }
@@ -607,18 +609,20 @@ public partial class ModEditWindow
         if (keys.Count == 0)
             return;
 
-        using var t = ImRaii.TreeNode(arrayName);
+        using var t = ImUtf8.TreeNode(arrayName);
         if (!t)
             return;
 
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
         foreach (var (key, idx) in keys.WithIndex())
         {
-            using var t2 = ImRaii.TreeNode(withId ? $"#{idx}: {tab.TryResolveName(key.Id)} (0x{key.Id:X8})" : $"#{idx}");
+            using var t2 = ImUtf8.TreeNode(withId ? $"#{idx}: {tab.TryResolveName(key.Id)} (0x{key.Id:X8})" : $"#{idx}");
             if (t2)
             {
-                ImRaii.TreeNode($"Default Value: {tab.TryResolveName(key.DefaultValue)} (0x{key.DefaultValue:X8})", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
-                ImRaii.TreeNode($"Known Values: {tab.NameSetToString(key.Values, true)}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+                ImUtf8.TreeNode($"Default Value: {tab.TryResolveName(key.DefaultValue)} (0x{key.DefaultValue:X8})",
+                    ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+                ImUtf8.TreeNode($"Known Values: {tab.NameSetToString(key.Values, true)}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet)
+                    .Dispose();
             }
         }
     }
@@ -628,7 +632,7 @@ public partial class ModEditWindow
         if (tab.Shpk.Nodes.Length <= 0)
             return;
 
-        using var t = ImRaii.TreeNode($"Nodes ({tab.Shpk.Nodes.Length})###Nodes");
+        using var t = ImUtf8.TreeNode($"Nodes ({tab.Shpk.Nodes.Length})###Nodes");
         if (!t)
             return;
 
@@ -639,39 +643,44 @@ public partial class ModEditWindow
             if (!tab.IsFilterMatch(node))
                 continue;
 
-            using var t2 = ImRaii.TreeNode($"#{idx:D4}: Selector: 0x{node.Selector:X8}");
+            using var t2 = ImUtf8.TreeNode($"#{idx:D4}: Selector: 0x{node.Selector:X8}");
             if (!t2)
                 continue;
 
             foreach (var (key, keyIdx) in node.SystemKeys.WithIndex())
             {
-                ImRaii.TreeNode($"System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SystemValues![keyIdx])} }}",
+                ImUtf8.TreeNode(
+                    $"System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SystemValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
             foreach (var (key, keyIdx) in node.SceneKeys.WithIndex())
             {
-                ImRaii.TreeNode($"Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SceneValues![keyIdx])} }}",
+                ImUtf8.TreeNode(
+                    $"Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SceneValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
             foreach (var (key, keyIdx) in node.MaterialKeys.WithIndex())
             {
-                ImRaii.TreeNode($"Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.MaterialValues![keyIdx])} }}",
+                ImUtf8.TreeNode(
+                    $"Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.MaterialValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
             foreach (var (key, keyIdx) in node.SubViewKeys.WithIndex())
             {
-                ImRaii.TreeNode($"Sub-View Key #{keyIdx} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SubViewValues![keyIdx])} }}",
+                ImUtf8.TreeNode(
+                    $"Sub-View Key #{keyIdx} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SubViewValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
-            ImRaii.TreeNode($"Pass Indices: {string.Join(' ', node.PassIndices.Select(c => $"{c:X2}"))}",
+            ImUtf8.TreeNode($"Pass Indices: {string.Join(' ', node.PassIndices.Select(c => $"{c:X2}"))}",
                 ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             foreach (var (pass, passIdx) in node.Passes.WithIndex())
             {
-                ImRaii.TreeNode($"Pass #{passIdx}: ID: {tab.TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}",
+                ImUtf8.TreeNode(
+                        $"Pass #{passIdx}: ID: {tab.TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet)
                     .Dispose();
             }
@@ -680,7 +689,7 @@ public partial class ModEditWindow
 
     private static void DrawShaderPackageSelection(ShpkTab tab)
     {
-        if (!ImGui.CollapsingHeader("Shader Selection"))
+        if (!ImUtf8.CollapsingHeader("Shader Selection"u8))
             return;
 
         DrawKeyArray(tab, "System Keys",   true,  tab.Shpk.SystemKeys);
@@ -689,13 +698,13 @@ public partial class ModEditWindow
         DrawKeyArray(tab, "Sub-View Keys", false, tab.Shpk.SubViewKeys);
 
         DrawShaderPackageNodes(tab);
-        using var t = ImRaii.TreeNode($"Node Selectors ({tab.Shpk.NodeSelectors.Count})###NodeSelectors");
+        using var t = ImUtf8.TreeNode($"Node Selectors ({tab.Shpk.NodeSelectors.Count})###NodeSelectors");
         if (t)
         {
             using var font = ImRaii.PushFont(UiBuilder.MonoFont);
             foreach (var selector in tab.Shpk.NodeSelectors)
             {
-                ImRaii.TreeNode($"#{selector.Value:D4}: Selector: 0x{selector.Key:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet)
+                ImUtf8.TreeNode($"#{selector.Value:D4}: Selector: 0x{selector.Key:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet)
                     .Dispose();
             }
         }
@@ -703,14 +712,14 @@ public partial class ModEditWindow
 
     private static void DrawOtherShaderPackageDetails(ShpkTab tab)
     {
-        if (!ImGui.CollapsingHeader("Further Content"))
+        if (!ImUtf8.CollapsingHeader("Further Content"u8))
             return;
 
-        ImRaii.TreeNode($"Version: 0x{tab.Shpk.Version:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
+        ImUtf8.TreeNode($"Version: 0x{tab.Shpk.Version:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
 
         if (tab.Shpk.AdditionalData.Length > 0)
         {
-            using var t = ImRaii.TreeNode($"Additional Data (Size: {tab.Shpk.AdditionalData.Length})###AdditionalData");
+            using var t = ImUtf8.TreeNode($"Additional Data (Size: {tab.Shpk.AdditionalData.Length})###AdditionalData");
             if (t)
                 Widget.DrawHexViewer(tab.Shpk.AdditionalData);
         }
@@ -718,9 +727,9 @@ public partial class ModEditWindow
 
     private static string UsedComponentString(bool withSize, bool filtered, in Resource resource)
     {
-        var used            = filtered ? resource.FilteredUsed            : resource.Used;
+        var used            = filtered ? resource.FilteredUsed : resource.Used;
         var usedDynamically = filtered ? resource.FilteredUsedDynamically : resource.UsedDynamically;
-        var sb = new StringBuilder(256);
+        var sb              = new StringBuilder(256);
         if (withSize)
         {
             foreach (var (components, i) in (used ?? Array.Empty<DisassembledShader.VectorComponents>()).WithIndex())

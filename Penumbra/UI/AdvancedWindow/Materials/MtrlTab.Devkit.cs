@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using OtterGui.Text.Widget.Editors;
 using Penumbra.String.Classes;
@@ -29,8 +30,8 @@ public partial class MtrlTab
     }
 
     private T? TryGetShpkDevkitData<T>(string category, uint? id, bool mayVary) where T : class
-        => TryGetShpkDevkitData<T>(AssociatedShpkDevkit, LoadedShpkDevkitPathName, category, id, mayVary)
-            ?? TryGetShpkDevkitData<T>(AssociatedBaseDevkit, LoadedBaseDevkitPathName, category, id, mayVary);
+        => TryGetShpkDevkitData<T>(_associatedShpkDevkit,  _loadedShpkDevkitPathName, category, id, mayVary)
+         ?? TryGetShpkDevkitData<T>(_associatedBaseDevkit, _loadedBaseDevkitPathName, category, id, mayVary);
 
     private T? TryGetShpkDevkitData<T>(JObject? devkit, string devkitPathName, string category, uint? id, bool mayVary) where T : class
     {
@@ -47,7 +48,7 @@ public partial class MtrlTab
             {
                 var selector = BuildSelector(data!["Vary"]!
                     .Select(key => (uint)key)
-                    .Select(key => Mtrl.GetShaderKey(key)?.Value ?? AssociatedShpk!.GetMaterialKeyById(key)!.Value.DefaultValue));
+                    .Select(key => Mtrl.GetShaderKey(key)?.Value ?? _associatedShpk!.GetMaterialKeyById(key)!.Value.DefaultValue));
                 var index = (int)data["Selectors"]![selector.ToString()]!;
                 data = data["Items"]![index];
             }
@@ -62,12 +63,14 @@ public partial class MtrlTab
         }
     }
 
+    [UsedImplicitly]
     private sealed class DevkitShaderKeyValue
     {
         public string Label       = string.Empty;
         public string Description = string.Empty;
     }
 
+    [UsedImplicitly]
     private sealed class DevkitShaderKey
     {
         public string                                 Label       = string.Empty;
@@ -75,6 +78,7 @@ public partial class MtrlTab
         public Dictionary<uint, DevkitShaderKeyValue> Values      = [];
     }
 
+    [UsedImplicitly]
     private sealed class DevkitSampler
     {
         public string Label          = string.Empty;
@@ -84,14 +88,16 @@ public partial class MtrlTab
 
     private enum DevkitConstantType
     {
-        Hidden         = -1,
-        Float          = 0,
+        Hidden = -1,
+        Float  = 0,
+
         /// <summary> Integer encoded as a float. </summary>
-        Integer        = 1,
-        Color          = 2,
-        Enum           = 3,
+        Integer = 1,
+        Color = 2,
+        Enum  = 3,
+
         /// <summary> Native integer. </summary>
-        Int32          = 4,
+        Int32 = 4,
         Int32Enum      = 5,
         Int8           = 6,
         Int8Enum       = 7,
@@ -105,6 +111,7 @@ public partial class MtrlTab
         SphereMapIndex = 15,
     }
 
+    [UsedImplicitly]
     private sealed class DevkitConstantValue
     {
         public string Label       = string.Empty;
@@ -112,6 +119,7 @@ public partial class MtrlTab
         public double Value       = 0;
     }
 
+    [UsedImplicitly]
     private sealed class DevkitConstant
     {
         public uint               Offset      = 0;
@@ -147,7 +155,7 @@ public partial class MtrlTab
             => ByteOffset ?? Offset * ValueSize;
 
         public uint? EffectiveByteSize
-            => ByteSize ?? (Length * ValueSize);
+            => ByteSize ?? Length * ValueSize;
 
         public unsafe uint ValueSize
             => Type switch
@@ -198,19 +206,23 @@ public partial class MtrlTab
         private IEditor<T> CreateIntegerEditor<T>()
             where T : unmanaged, INumber<T>
             => ((Drag || Slider) && !Hex
-                ? (Drag
-                    ? (IEditor<T>)DragEditor<T>.CreateInteger(ToInteger<T>(Minimum), ToInteger<T>(Maximum), Speed ?? 0.25f, RelativeSpeed, Unit, 0)
-                    : SliderEditor<T>.CreateInteger(ToInteger<T>(Minimum) ?? default, ToInteger<T>(Maximum) ?? default, Unit, 0))
-                : InputEditor<T>.CreateInteger(ToInteger<T>(Minimum), ToInteger<T>(Maximum), ToInteger<T>(Step), ToInteger<T>(StepFast), Hex, Unit, 0))
+                    ? Drag
+                        ? (IEditor<T>)DragEditor<T>.CreateInteger(ToInteger<T>(Minimum), ToInteger<T>(Maximum), Speed ?? 0.25f, RelativeSpeed,
+                            Unit, 0)
+                        : SliderEditor<T>.CreateInteger(ToInteger<T>(Minimum) ?? default, ToInteger<T>(Maximum) ?? default, Unit, 0)
+                    : InputEditor<T>.CreateInteger(ToInteger<T>(Minimum), ToInteger<T>(Maximum), ToInteger<T>(Step), ToInteger<T>(StepFast),
+                        Hex, Unit, 0))
                 .WithFactorAndBias(ToInteger<T>(Factor), ToInteger<T>(Bias));
 
         private IEditor<T> CreateFloatEditor<T>()
             where T : unmanaged, INumber<T>, IPowerFunctions<T>
-            => ((Drag || Slider)
-                ? (Drag
-                    ? (IEditor<T>)DragEditor<T>.CreateFloat(ToFloat<T>(Minimum), ToFloat<T>(Maximum), Speed ?? 0.1f, RelativeSpeed, Precision, Unit, 0)
-                    : SliderEditor<T>.CreateFloat(ToFloat<T>(Minimum) ?? default, ToFloat<T>(Maximum) ?? default, Precision, Unit, 0))
-                : InputEditor<T>.CreateFloat(ToFloat<T>(Minimum), ToFloat<T>(Maximum), T.CreateSaturating(Step), T.CreateSaturating(StepFast), Precision, Unit, 0))
+            => (Drag || Slider
+                    ? Drag
+                        ? (IEditor<T>)DragEditor<T>.CreateFloat(ToFloat<T>(Minimum), ToFloat<T>(Maximum), Speed ?? 0.1f, RelativeSpeed,
+                            Precision, Unit, 0)
+                        : SliderEditor<T>.CreateFloat(ToFloat<T>(Minimum) ?? default, ToFloat<T>(Maximum) ?? default, Precision, Unit, 0)
+                    : InputEditor<T>.CreateFloat(ToFloat<T>(Minimum), ToFloat<T>(Maximum), T.CreateSaturating(Step),
+                        T.CreateSaturating(StepFast), Precision, Unit, 0))
                 .WithExponent(T.CreateSaturating(Exponent))
                 .WithFactorAndBias(T.CreateSaturating(Factor), T.CreateSaturating(Bias));
 

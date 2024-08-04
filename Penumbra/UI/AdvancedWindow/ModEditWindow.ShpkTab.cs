@@ -21,11 +21,11 @@ public partial class ModEditWindow
         public short NewMaterialParamStart;
         public short NewMaterialParamEnd;
 
-        public SharedSet<uint, uint>[] FilterSystemValues;
-        public SharedSet<uint, uint>[] FilterSceneValues;
-        public SharedSet<uint, uint>[] FilterMaterialValues;
-        public SharedSet<uint, uint>[] FilterSubViewValues;
-        public SharedSet<uint, uint>   FilterPasses;
+        public readonly SharedSet<uint, uint>[] FilterSystemValues;
+        public readonly SharedSet<uint, uint>[] FilterSceneValues;
+        public readonly SharedSet<uint, uint>[] FilterMaterialValues;
+        public readonly SharedSet<uint, uint>[] FilterSubViewValues;
+        public          SharedSet<uint, uint>   FilterPasses;
 
         public readonly int FilterMaximumPopCount;
         public          int FilterPopCount;
@@ -46,6 +46,7 @@ public partial class ModEditWindow
             {
                 Shpk = new ShpkFile(bytes, false);
             }
+
             FilePath = filePath;
 
             Header = $"Shader Package for DirectX {(int)Shpk.DirectXVersion}";
@@ -105,13 +106,21 @@ public partial class ModEditWindow
             _nameSetWithIdsCache.Clear();
         }
 
-        public void UpdateNameCache()
+        private void UpdateNameCache()
         {
-            static void CollectResourceNames(Dictionary<uint, Name> nameCache, ShpkFile.Resource[] resources)
-            {
-                foreach (var resource in resources)
-                    nameCache.TryAdd(resource.Id, resource.Name);
-            }
+            CollectResourceNames(_nameCache, Shpk.Constants);
+            CollectResourceNames(_nameCache, Shpk.Samplers);
+            CollectResourceNames(_nameCache, Shpk.Textures);
+            CollectResourceNames(_nameCache, Shpk.Uavs);
+
+            CollectKeyNames(_nameCache, Shpk.SystemKeys);
+            CollectKeyNames(_nameCache, Shpk.SceneKeys);
+            CollectKeyNames(_nameCache, Shpk.MaterialKeys);
+            CollectKeyNames(_nameCache, Shpk.SubViewKeys);
+
+            _nameSetCache.Clear();
+            _nameSetWithIdsCache.Clear();
+            return;
 
             static void CollectKeyNames(Dictionary<uint, Name> nameCache, ShpkFile.Key[] keys)
             {
@@ -128,18 +137,11 @@ public partial class ModEditWindow
                 }
             }
 
-            CollectResourceNames(_nameCache, Shpk.Constants);
-            CollectResourceNames(_nameCache, Shpk.Samplers);
-            CollectResourceNames(_nameCache, Shpk.Textures);
-            CollectResourceNames(_nameCache, Shpk.Uavs);
-
-            CollectKeyNames(_nameCache, Shpk.SystemKeys);
-            CollectKeyNames(_nameCache, Shpk.SceneKeys);
-            CollectKeyNames(_nameCache, Shpk.MaterialKeys);
-            CollectKeyNames(_nameCache, Shpk.SubViewKeys);
-
-            _nameSetCache.Clear();
-            _nameSetWithIdsCache.Clear();
+            static void CollectResourceNames(Dictionary<uint, Name> nameCache, ShpkFile.Resource[] resources)
+            {
+                foreach (var resource in resources)
+                    nameCache.TryAdd(resource.Id, resource.Name);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,6 +153,7 @@ public partial class ModEditWindow
             var cache = withIds ? _nameSetWithIdsCache : _nameSetCache;
             if (cache.TryGetValue(nameSet, out var nameSetStr))
                 return nameSetStr;
+
             if (withIds)
                 nameSetStr = string.Join(", ", nameSet.Select(id => $"{TryResolveName(id)} (0x{id:X8})"));
             else
@@ -186,7 +189,8 @@ public partial class ModEditWindow
                 var jEnd   = ((param.ByteOffset + param.ByteSize - 1) >> 2) & 3;
                 if ((param.ByteOffset & 0x3) != 0 || (param.ByteSize & 0x3) != 0)
                 {
-                    MalformedParameters.Add($"ID: {TryResolveName(param.Id)} (0x{param.Id:X8}), offset: 0x{param.ByteOffset:X4}, size: 0x{param.ByteSize:X4}");
+                    MalformedParameters.Add(
+                        $"ID: {TryResolveName(param.Id)} (0x{param.Id:X8}), offset: 0x{param.ByteOffset:X4}, size: 0x{param.ByteSize:X4}");
                     continue;
                 }
 
@@ -206,7 +210,8 @@ public partial class ModEditWindow
                         var tt =
                             $"{MtrlTab.MaterialParamRangeName(materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2).Item1} ({TryResolveName(param.Id)}, 0x{param.Id:X8})";
                         if (component < defaultFloats.Length)
-                            tt += $"\n\nDefault value: {defaultFloats[component]} ({defaults[component << 2]:X2} {defaults[(component << 2) | 1]:X2} {defaults[(component << 2) | 2]:X2} {defaults[(component << 2) | 3]:X2})";
+                            tt +=
+                                $"\n\nDefault value: {defaultFloats[component]} ({defaults[component << 2]:X2} {defaults[(component << 2) | 1]:X2} {defaults[(component << 2) | 2]:X2} {defaults[(component << 2) | 3]:X2})";
                         Matrix[i, j] = (TryResolveName(param.Id).ToString(), tt, (short)idx, 0);
                     }
                 }
@@ -265,7 +270,8 @@ public partial class ModEditWindow
                     if (oldStart == linear)
                         newMaterialParamStart = (short)Orphans.Count;
 
-                    Orphans.Add(($"{materialParams?.Name ?? ShpkFile.MaterialParamsConstantName}{MtrlTab.MaterialParamName(false, linear)}", linear));
+                    Orphans.Add(($"{materialParams?.Name ?? ShpkFile.MaterialParamsConstantName}{MtrlTab.MaterialParamName(false, linear)}",
+                        linear));
                 }
             }
 
@@ -407,7 +413,6 @@ public partial class ModEditWindow
                     var unusedSlices = new JArray();
 
                     if (materialParameterUsage.Indices(start, length).Any())
-                    {
                         foreach (var (rgStart, rgEnd) in materialParameterUsage.Ranges(start, length, true))
                         {
                             unusedSlices.Add(new JObject
@@ -417,14 +422,11 @@ public partial class ModEditWindow
                                 ["Length"] = rgEnd - rgStart,
                             });
                         }
-                    }
                     else
-                    {
                         unusedSlices.Add(new JObject
                         {
                             ["Type"] = "Hidden",
                         });
-                    }
 
                     dkConstants[param.Id.ToString()] = unusedSlices;
                 }

@@ -35,7 +35,7 @@ public partial class MtrlTab
 
         Constants.Clear();
         string mpPrefix;
-        if (AssociatedShpk == null)
+        if (_associatedShpk == null)
         {
             mpPrefix = MaterialParamsConstantName.Value!;
             var fcGroup = FindOrAddGroup(Constants, "Further Constants");
@@ -51,12 +51,12 @@ public partial class MtrlTab
         }
         else
         {
-            mpPrefix = AssociatedShpk.GetConstantById(MaterialParamsConstantId)?.Name ?? MaterialParamsConstantName.Value!;
+            mpPrefix = _associatedShpk.GetConstantById(MaterialParamsConstantId)?.Name ?? MaterialParamsConstantName.Value!;
             var autoNameMaxLength = Math.Max(Names.LongestKnownNameLength, mpPrefix.Length + 8);
-            foreach (var shpkConstant in AssociatedShpk.MaterialParams)
+            foreach (var shpkConstant in _associatedShpk.MaterialParams)
             {
                 var name            = Names.KnownNames.TryResolve(shpkConstant.Id);
-                var constant        = Mtrl.GetOrAddConstant(shpkConstant.Id, AssociatedShpk, out var constantIndex);
+                var constant        = Mtrl.GetOrAddConstant(shpkConstant.Id, _associatedShpk, out var constantIndex);
                 var values          = Mtrl.GetConstantValue<byte>(constant);
                 var handledElements = new IndexSet(values.Length, false);
 
@@ -64,8 +64,8 @@ public partial class MtrlTab
                 if (dkData != null)
                     foreach (var dkConstant in dkData)
                     {
-                        var offset = (int)dkConstant.EffectiveByteOffset;
-                        var length = values.Length - offset;
+                        var offset       = (int)dkConstant.EffectiveByteOffset;
+                        var length       = values.Length - offset;
                         var constantSize = dkConstant.EffectiveByteSize;
                         if (constantSize.HasValue)
                             length = Math.Min(length, (int)constantSize.Value);
@@ -86,7 +86,6 @@ public partial class MtrlTab
                 foreach (var (start, end) in handledElements.Ranges(complement: true))
                 {
                     if (start == 0 && end == values.Length && end - start <= 16)
-                    {
                         if (name.Value != null)
                         {
                             fcGroup.Add((
@@ -94,7 +93,6 @@ public partial class MtrlTab
                                 constantIndex, 0..values.Length, string.Empty, true, DefaultConstantEditorFor(name)));
                             continue;
                         }
-                    }
 
                     if ((shpkConstant.ByteOffset & 0x3) == 0 && (shpkConstant.ByteSize & 0x3) == 0)
                     {
@@ -105,7 +103,8 @@ public partial class MtrlTab
                             var rangeEnd   = Math.Min(i + 16, end);
                             if (rangeEnd > rangeStart)
                             {
-                                var autoName = $"{mpPrefix}[{j,2:D}]{VectorSwizzle(((offset + rangeStart) & 0xF) >> 2, ((offset + rangeEnd - 1) & 0xF) >> 2)}";
+                                var autoName =
+                                    $"{mpPrefix}[{j,2:D}]{VectorSwizzle(((offset + rangeStart) & 0xF) >> 2, ((offset + rangeEnd - 1) & 0xF) >> 2)}";
                                 fcGroup.Add((
                                     $"{autoName.PadRight(autoNameMaxLength)} (0x{shpkConstant.Id:X8})",
                                     constantIndex, rangeStart..rangeEnd, string.Empty, true, DefaultConstantEditorFor(name)));
@@ -116,7 +115,8 @@ public partial class MtrlTab
                     {
                         for (var i = start; i < end; i += 16)
                         {
-                            fcGroup.Add(($"{"???".PadRight(autoNameMaxLength)} (0x{shpkConstant.Id:X8})", constantIndex, i..Math.Min(i + 16, end), string.Empty, true,
+                            fcGroup.Add(($"{"???".PadRight(autoNameMaxLength)} (0x{shpkConstant.Id:X8})", constantIndex,
+                                i..Math.Min(i + 16, end), string.Empty, true,
                                 DefaultConstantEditorFor(name)));
                         }
                     }
@@ -178,15 +178,16 @@ public partial class MtrlTab
                         ret = true;
                         SetMaterialParameter(constant.Id, slice.Start, buffer[slice]);
                     }
-                    var shpkConstant         = AssociatedShpk?.GetMaterialParamById(constant.Id);
-                    var defaultConstantValue = shpkConstant.HasValue ? AssociatedShpk!.GetMaterialParamDefault<byte>(shpkConstant.Value) : [];
+
+                    var shpkConstant         = _associatedShpk?.GetMaterialParamById(constant.Id);
+                    var defaultConstantValue = shpkConstant.HasValue ? _associatedShpk!.GetMaterialParamDefault<byte>(shpkConstant.Value) : [];
                     var defaultValue         = IsValid(slice, defaultConstantValue.Length) ? defaultConstantValue[slice] : [];
-                    var canReset             = AssociatedShpk?.MaterialParamsDefaults != null
+                    var canReset = _associatedShpk?.MaterialParamsDefaults != null
                         ? defaultValue.Length > 0 && !defaultValue.SequenceEqual(buffer[slice])
                         : buffer[slice].ContainsAnyExcept((byte)0);
                     ImUtf8.SameLineInner();
                     if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Backspace.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
-                        "Reset this constant to its default value.\n\nHold Ctrl to unlock.", !ImGui.GetIO().KeyCtrl || !canReset, true))
+                            "Reset this constant to its default value.\n\nHold Ctrl to unlock.", !ImGui.GetIO().KeyCtrl || !canReset, true))
                     {
                         ret = true;
                         if (defaultValue.Length > 0)

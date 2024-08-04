@@ -4,7 +4,6 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
-using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Interop;
@@ -21,7 +20,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
     private const int ShpkPrefixLength = 16;
 
     private static readonly CiByteString ShpkPrefix = CiByteString.FromSpanUnsafe("shader/sm5/shpk/"u8, true, true, true);
-    
+
     private readonly IDataManager            _gameData;
     private readonly IFramework              _framework;
     private readonly ObjectManager           _objects;
@@ -40,7 +39,8 @@ public sealed partial class MtrlTab : IWritable, IDisposable
     private bool _updateOnNextFrame;
 
     public unsafe MtrlTab(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
-        StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog, MaterialTemplatePickers materialTemplatePickers,
+        StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog,
+        MaterialTemplatePickers materialTemplatePickers,
         Configuration config, ModEditWindow edit, MtrlFile file, string filePath, bool writable)
     {
         _gameData                = gameData;
@@ -53,11 +53,11 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         _materialTemplatePickers = materialTemplatePickers;
         _config                  = config;
 
-        _edit                = edit;
-        Mtrl                 = file;
-        FilePath             = filePath;
-        Writable             = writable;
-        AssociatedBaseDevkit = TryLoadShpkDevkit("_base", out LoadedBaseDevkitPathName);
+        _edit                 = edit;
+        Mtrl                  = file;
+        FilePath              = filePath;
+        Writable              = writable;
+        _associatedBaseDevkit = TryLoadShpkDevkit("_base", out _loadedBaseDevkitPathName);
         Update();
         LoadShpk(FindAssociatedShpk(out _, out _));
         if (writable)
@@ -118,7 +118,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         using var dis = ImRaii.Disabled(disabled);
 
         var tmp = shaderFlags.EnableTransparency;
-        if (ImGui.Checkbox("Enable Transparency", ref tmp))
+        if (ImUtf8.Checkbox("Enable Transparency"u8, ref tmp))
         {
             shaderFlags.EnableTransparency = tmp;
             ret                            = true;
@@ -127,14 +127,14 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         ImGui.SameLine(200 * UiHelpers.Scale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
         tmp = shaderFlags.HideBackfaces;
-        if (ImGui.Checkbox("Hide Backfaces", ref tmp))
+        if (ImUtf8.Checkbox("Hide Backfaces"u8, ref tmp))
         {
             shaderFlags.HideBackfaces = tmp;
             ret                       = true;
             SetShaderPackageFlags(Mtrl.ShaderPackage.Flags);
         }
 
-        if (ShpkLoading)
+        if (_shpkLoading)
         {
             ImGui.SameLine(400 * UiHelpers.Scale + 2 * ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
 
@@ -147,32 +147,32 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
     private void DrawOtherMaterialDetails(bool _)
     {
-        if (!ImGui.CollapsingHeader("Further Content"))
+        if (!ImUtf8.CollapsingHeader("Further Content"u8))
             return;
 
-        using (var sets = ImRaii.TreeNode("UV Sets", ImGuiTreeNodeFlags.DefaultOpen))
+        using (var sets = ImUtf8.TreeNode("UV Sets"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (sets)
                 foreach (var set in Mtrl.UvSets)
-                    ImRaii.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
+                    ImUtf8.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
         }
 
-        using (var sets = ImRaii.TreeNode("Color Sets", ImGuiTreeNodeFlags.DefaultOpen))
+        using (var sets = ImUtf8.TreeNode("Color Sets"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (sets)
                 foreach (var set in Mtrl.ColorSets)
-                    ImRaii.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
+                    ImUtf8.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
         }
 
         if (Mtrl.AdditionalData.Length <= 0)
             return;
 
-        using var t = ImRaii.TreeNode($"Additional Data (Size: {Mtrl.AdditionalData.Length})###AdditionalData");
+        using var t = ImUtf8.TreeNode($"Additional Data (Size: {Mtrl.AdditionalData.Length})###AdditionalData");
         if (t)
             Widget.DrawHexViewer(Mtrl.AdditionalData);
     }
 
-    public void Update()
+    private void Update()
     {
         UpdateShaders();
         UpdateTextures();
@@ -187,12 +187,12 @@ public sealed partial class MtrlTab : IWritable, IDisposable
     }
 
     public bool Valid
-        => ShadersKnown && Mtrl.Valid;
+        => _shadersKnown && Mtrl.Valid;
 
     public byte[] Write()
     {
         var output = Mtrl.Clone();
-        output.GarbageCollect(AssociatedShpk, SamplerIds);
+        output.GarbageCollect(_associatedShpk, SamplerIds);
 
         return output.Write();
     }

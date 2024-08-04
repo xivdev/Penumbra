@@ -12,20 +12,20 @@ namespace Penumbra.UI.AdvancedWindow.Materials;
 
 public partial class MtrlTab
 {
-    public readonly List<LiveMaterialPreviewer>   MaterialPreviewers        = new(4);
-    public readonly List<LiveColorTablePreviewer> ColorTablePreviewers      = new(4);
-    public          int                           HighlightedColorTablePair = -1;
-    public readonly Stopwatch                     HighlightTime             = new();
+    private readonly List<LiveMaterialPreviewer>   _materialPreviewers        = new(4);
+    private readonly List<LiveColorTablePreviewer> _colorTablePreviewers      = new(4);
+    private          int                           _highlightedColorTablePair = -1;
+    private readonly Stopwatch                     _highlightTime             = new();
 
     private void DrawMaterialLivePreviewRebind(bool disabled)
     {
         if (disabled)
             return;
 
-        if (ImGui.Button("Reload live preview"))
+        if (ImUtf8.Button("Reload live preview"u8))
             BindToMaterialInstances();
 
-        if (MaterialPreviewers.Count != 0 || ColorTablePreviewers.Count != 0)
+        if (_materialPreviewers.Count != 0 || _colorTablePreviewers.Count != 0)
             return;
 
         ImGui.SameLine();
@@ -34,7 +34,7 @@ public partial class MtrlTab
             "The current material has not been found on your character. Please check the Import from Screen tab for more information."u8);
     }
 
-    public unsafe void BindToMaterialInstances()
+    private unsafe void BindToMaterialInstances()
     {
         UnbindFromMaterialInstances();
 
@@ -50,7 +50,7 @@ public partial class MtrlTab
 
             try
             {
-                MaterialPreviewers.Add(new LiveMaterialPreviewer(_objects, materialInfo));
+                _materialPreviewers.Add(new LiveMaterialPreviewer(_objects, materialInfo));
                 foundMaterials.Add((nint)material);
             }
             catch (InvalidOperationException)
@@ -68,7 +68,7 @@ public partial class MtrlTab
         {
             try
             {
-                ColorTablePreviewers.Add(new LiveColorTablePreviewer(_objects, _framework, materialInfo));
+                _colorTablePreviewers.Add(new LiveColorTablePreviewer(_objects, _framework, materialInfo));
             }
             catch (InvalidOperationException)
             {
@@ -81,53 +81,53 @@ public partial class MtrlTab
 
     private void UnbindFromMaterialInstances()
     {
-        foreach (var previewer in MaterialPreviewers)
+        foreach (var previewer in _materialPreviewers)
             previewer.Dispose();
-        MaterialPreviewers.Clear();
+        _materialPreviewers.Clear();
 
-        foreach (var previewer in ColorTablePreviewers)
+        foreach (var previewer in _colorTablePreviewers)
             previewer.Dispose();
-        ColorTablePreviewers.Clear();
+        _colorTablePreviewers.Clear();
     }
 
     private unsafe void UnbindFromDrawObjectMaterialInstances(CharacterBase* characterBase)
     {
-        for (var i = MaterialPreviewers.Count; i-- > 0;)
+        for (var i = _materialPreviewers.Count; i-- > 0;)
         {
-            var previewer = MaterialPreviewers[i];
+            var previewer = _materialPreviewers[i];
             if (previewer.DrawObject != characterBase)
                 continue;
 
             previewer.Dispose();
-            MaterialPreviewers.RemoveAt(i);
+            _materialPreviewers.RemoveAt(i);
         }
 
-        for (var i = ColorTablePreviewers.Count; i-- > 0;)
+        for (var i = _colorTablePreviewers.Count; i-- > 0;)
         {
-            var previewer = ColorTablePreviewers[i];
+            var previewer = _colorTablePreviewers[i];
             if (previewer.DrawObject != characterBase)
                 continue;
 
             previewer.Dispose();
-            ColorTablePreviewers.RemoveAt(i);
+            _colorTablePreviewers.RemoveAt(i);
         }
     }
 
-    public void SetShaderPackageFlags(uint shPkFlags)
+    private void SetShaderPackageFlags(uint shPkFlags)
     {
-        foreach (var previewer in MaterialPreviewers)
+        foreach (var previewer in _materialPreviewers)
             previewer.SetShaderPackageFlags(shPkFlags);
     }
 
-    public void SetMaterialParameter(uint parameterCrc, Index offset, Span<byte> value)
+    private void SetMaterialParameter(uint parameterCrc, Index offset, Span<byte> value)
     {
-        foreach (var previewer in MaterialPreviewers)
+        foreach (var previewer in _materialPreviewers)
             previewer.SetMaterialParameter(parameterCrc, offset, value);
     }
 
-    public void SetSamplerFlags(uint samplerCrc, uint samplerFlags)
+    private void SetSamplerFlags(uint samplerCrc, uint samplerFlags)
     {
-        foreach (var previewer in MaterialPreviewers)
+        foreach (var previewer in _materialPreviewers)
             previewer.SetSamplerFlags(samplerCrc, samplerFlags);
     }
 
@@ -145,14 +145,14 @@ public partial class MtrlTab
             SetSamplerFlags(sampler.SamplerId, sampler.Flags);
     }
 
-    public void HighlightColorTablePair(int pairIdx)
+    private void HighlightColorTablePair(int pairIdx)
     {
-        var oldPairIdx = HighlightedColorTablePair;
+        var oldPairIdx = _highlightedColorTablePair;
 
-        if (HighlightedColorTablePair != pairIdx)
+        if (_highlightedColorTablePair != pairIdx)
         {
-            HighlightedColorTablePair = pairIdx;
-            HighlightTime.Restart();
+            _highlightedColorTablePair = pairIdx;
+            _highlightTime.Restart();
         }
 
         if (oldPairIdx >= 0)
@@ -160,19 +160,6 @@ public partial class MtrlTab
             UpdateColorTableRowPreview(oldPairIdx << 1);
             UpdateColorTableRowPreview((oldPairIdx << 1) | 1);
         }
-        if (pairIdx >= 0)
-        {
-            UpdateColorTableRowPreview(pairIdx << 1);
-            UpdateColorTableRowPreview((pairIdx << 1) | 1);
-        }
-    }
-
-    public void CancelColorTableHighlight()
-    {
-        var pairIdx = HighlightedColorTablePair;
-
-        HighlightedColorTablePair = -1;
-        HighlightTime.Reset();
 
         if (pairIdx >= 0)
         {
@@ -181,9 +168,23 @@ public partial class MtrlTab
         }
     }
 
-    public void UpdateColorTableRowPreview(int rowIdx)
+    private void CancelColorTableHighlight()
     {
-        if (ColorTablePreviewers.Count == 0)
+        var pairIdx = _highlightedColorTablePair;
+
+        _highlightedColorTablePair = -1;
+        _highlightTime.Reset();
+
+        if (pairIdx >= 0)
+        {
+            UpdateColorTableRowPreview(pairIdx << 1);
+            UpdateColorTableRowPreview((pairIdx << 1) | 1);
+        }
+    }
+
+    private void UpdateColorTableRowPreview(int rowIdx)
+    {
+        if (_colorTablePreviewers.Count == 0)
             return;
 
         if (Mtrl.Table == null)
@@ -192,7 +193,7 @@ public partial class MtrlTab
         var row = Mtrl.Table switch
         {
             LegacyColorTable legacyTable => new ColorTableRow(legacyTable[rowIdx]),
-            ColorTable       table       => table[rowIdx],
+            ColorTable table             => table[rowIdx],
             _                            => throw new InvalidOperationException($"Unsupported color table type {Mtrl.Table.GetType()}"),
         };
         if (Mtrl.DyeTable != null)
@@ -200,8 +201,8 @@ public partial class MtrlTab
             var dyeRow = Mtrl.DyeTable switch
             {
                 LegacyColorDyeTable legacyDyeTable => new ColorDyeTableRow(legacyDyeTable[rowIdx]),
-                ColorDyeTable       dyeTable       => dyeTable[rowIdx],
-                _                                  => throw new InvalidOperationException($"Unsupported color dye table type {Mtrl.DyeTable.GetType()}"),
+                ColorDyeTable dyeTable => dyeTable[rowIdx],
+                _ => throw new InvalidOperationException($"Unsupported color dye table type {Mtrl.DyeTable.GetType()}"),
             };
             if (dyeRow.Channel < StainService.ChannelCount)
             {
@@ -213,21 +214,21 @@ public partial class MtrlTab
             }
         }
 
-        if (HighlightedColorTablePair << 1 == rowIdx)
-            ApplyHighlight(ref row, ColorId.InGameHighlight, (float)HighlightTime.Elapsed.TotalSeconds);
-        else if (((HighlightedColorTablePair << 1) | 1) == rowIdx)
-            ApplyHighlight(ref row, ColorId.InGameHighlight2, (float)HighlightTime.Elapsed.TotalSeconds);
+        if (_highlightedColorTablePair << 1 == rowIdx)
+            ApplyHighlight(ref row, ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
+        else if (((_highlightedColorTablePair << 1) | 1) == rowIdx)
+            ApplyHighlight(ref row, ColorId.InGameHighlight2, (float)_highlightTime.Elapsed.TotalSeconds);
 
-        foreach (var previewer in ColorTablePreviewers)
+        foreach (var previewer in _colorTablePreviewers)
         {
             row[..].CopyTo(previewer.GetColorRow(rowIdx));
             previewer.ScheduleUpdate();
         }
     }
 
-    public void UpdateColorTablePreview()
+    private void UpdateColorTablePreview()
     {
-        if (ColorTablePreviewers.Count == 0)
+        if (_colorTablePreviewers.Count == 0)
             return;
 
         if (Mtrl.Table == null)
@@ -237,7 +238,8 @@ public partial class MtrlTab
         var dyeRows = Mtrl.DyeTable != null ? ColorDyeTable.CastOrConvert(Mtrl.DyeTable) : null;
         if (dyeRows != null)
         {
-            ReadOnlySpan<StainId> stainIds = [
+            ReadOnlySpan<StainId> stainIds =
+            [
                 _stainService.StainCombo1.CurrentSelection.Key,
                 _stainService.StainCombo2.CurrentSelection.Key,
             ];
@@ -245,13 +247,14 @@ public partial class MtrlTab
             rows.ApplyDye(_stainService.GudStmFile,    stainIds, dyeRows);
         }
 
-        if (HighlightedColorTablePair >= 0)
+        if (_highlightedColorTablePair >= 0)
         {
-            ApplyHighlight(ref rows[HighlightedColorTablePair << 1],       ColorId.InGameHighlight,  (float)HighlightTime.Elapsed.TotalSeconds);
-            ApplyHighlight(ref rows[(HighlightedColorTablePair << 1) | 1], ColorId.InGameHighlight2, (float)HighlightTime.Elapsed.TotalSeconds);
+            ApplyHighlight(ref rows[_highlightedColorTablePair << 1], ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
+            ApplyHighlight(ref rows[(_highlightedColorTablePair << 1) | 1], ColorId.InGameHighlight2,
+                (float)_highlightTime.Elapsed.TotalSeconds);
         }
 
-        foreach (var previewer in ColorTablePreviewers)
+        foreach (var previewer in _colorTablePreviewers)
         {
             rows.AsHalves().CopyTo(previewer.ColorTable);
             previewer.ScheduleUpdate();
@@ -260,11 +263,11 @@ public partial class MtrlTab
 
     private static void ApplyHighlight(ref ColorTableRow row, ColorId colorId, float time)
     {
-        var level      = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
-        var baseColor  = colorId.Value();
+        var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
+        var baseColor = colorId.Value();
         var color     = level * new Vector3(baseColor & 0xFF, (baseColor >> 8) & 0xFF, (baseColor >> 16) & 0xFF);
         var halfColor = (HalfColor)(color * color);
-            
+
         row.DiffuseColor  = halfColor;
         row.SpecularColor = halfColor;
         row.EmissiveColor = halfColor;

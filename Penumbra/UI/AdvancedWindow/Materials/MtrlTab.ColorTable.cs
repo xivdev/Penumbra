@@ -13,7 +13,7 @@ public partial class MtrlTab
 {
     private const float ColorTableScalarSize = 65.0f;
 
-    private int _colorTableSelectedPair = 0;
+    private int _colorTableSelectedPair;
 
     private bool DrawColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
     {
@@ -23,25 +23,27 @@ public partial class MtrlTab
 
     private void DrawColorTablePairSelector(ColorTable table, bool disabled)
     {
+        var style            = ImGui.GetStyle();
+        var itemSpacing      = style.ItemSpacing.X;
+        var itemInnerSpacing = style.ItemInnerSpacing.X;
+        var framePadding     = style.FramePadding;
+        var buttonWidth      = (ImGui.GetContentRegionAvail().X - itemSpacing * 7.0f) * 0.125f;
+        var frameHeight      = ImGui.GetFrameHeight();
+        var highlighterSize  = ImUtf8.CalcIconSize(FontAwesomeIcon.Crosshairs) + framePadding * 2.0f;
+        var spaceWidth       = ImUtf8.CalcTextSize(" "u8).X;
+        var spacePadding     = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
+
         using var font      = ImRaii.PushFont(UiBuilder.MonoFont);
         using var alignment = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
-        var style = ImGui.GetStyle();
-        var itemSpacing = style.ItemSpacing.X;
-        var itemInnerSpacing = style.ItemInnerSpacing.X;
-        var framePadding = style.FramePadding;
-        var buttonWidth = (ImGui.GetContentRegionAvail().X - itemSpacing * 7.0f) * 0.125f;
-        var frameHeight = ImGui.GetFrameHeight();
-        var highlighterSize = ImUtf8.CalcIconSize(FontAwesomeIcon.Crosshairs) + framePadding * 2.0f;
-        var spaceWidth = ImUtf8.CalcTextSize(" "u8).X;
-        var spacePadding = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
         for (var i = 0; i < ColorTable.NumRows >> 1; i += 8)
         {
             for (var j = 0; j < 8; ++j)
             {
                 var pairIndex = i + j;
-                using (var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), pairIndex == _colorTableSelectedPair))
+                using (ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), pairIndex == _colorTableSelectedPair))
                 {
-                    if (ImUtf8.Button($"#{pairIndex + 1}".PadLeft(3 + spacePadding), new Vector2(buttonWidth, ImGui.GetFrameHeightWithSpacing() + frameHeight)))
+                    if (ImUtf8.Button($"#{pairIndex + 1}".PadLeft(3 + spacePadding),
+                            new Vector2(buttonWidth, ImGui.GetFrameHeightWithSpacing() + frameHeight)))
                         _colorTableSelectedPair = pairIndex;
                 }
 
@@ -79,12 +81,10 @@ public partial class MtrlTab
 
     private bool DrawColorTablePairEditor(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
     {
-        var retA     = false;
-        var retB     = false;
-        ref var rowA = ref table[_colorTableSelectedPair << 1];
-        ref var rowB = ref table[(_colorTableSelectedPair << 1) | 1];
-        var dyeA     = dyeTable != null ? dyeTable[_colorTableSelectedPair << 1] : default;
-        var dyeB     = dyeTable != null ? dyeTable[(_colorTableSelectedPair << 1) | 1] : default;
+        var retA        = false;
+        var retB        = false;
+        var dyeA        = dyeTable?[_colorTableSelectedPair << 1] ?? default;
+        var dyeB        = dyeTable?[(_colorTableSelectedPair << 1) | 1] ?? default;
         var previewDyeA = _stainService.GetStainCombo(dyeA.Channel).CurrentSelection.Key;
         var previewDyeB = _stainService.GetStainCombo(dyeB.Channel).CurrentSelection.Key;
         var dyePackA    = _stainService.GudStmFile.GetValueOrNull(dyeA.Template, previewDyeA);
@@ -108,68 +108,96 @@ public partial class MtrlTab
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
             using var dis = ImRaii.Disabled(disabled);
-            using (var id = ImUtf8.PushId("ColorsA"u8))
+            using (ImUtf8.PushId("ColorsA"u8))
+            {
                 retA |= DrawColors(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
             columns.Next();
-            using (var id = ImUtf8.PushId("ColorsB"u8))
+            using (ImUtf8.PushId("ColorsB"u8))
+            {
                 retB |= DrawColors(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+            }
         }
 
         DrawHeader("  Physical Parameters"u8);
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
             using var dis = ImRaii.Disabled(disabled);
-            using (var id = ImUtf8.PushId("PbrA"u8))
+            using (ImUtf8.PushId("PbrA"u8))
+            {
                 retA |= DrawPbr(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
             columns.Next();
-            using (var id = ImUtf8.PushId("PbrB"u8))
+            using (ImUtf8.PushId("PbrB"u8))
+            {
                 retB |= DrawPbr(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+            }
         }
 
         DrawHeader("  Sheen Layer Parameters"u8);
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
             using var dis = ImRaii.Disabled(disabled);
-            using (var id = ImUtf8.PushId("SheenA"u8))
+            using (ImUtf8.PushId("SheenA"u8))
+            {
                 retA |= DrawSheen(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
             columns.Next();
-            using (var id = ImUtf8.PushId("SheenB"u8))
+            using (ImUtf8.PushId("SheenB"u8))
+            {
                 retB |= DrawSheen(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+            }
         }
 
         DrawHeader("  Pair Blending"u8);
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
             using var dis = ImRaii.Disabled(disabled);
-            using (var id = ImUtf8.PushId("BlendingA"u8))
+            using (ImUtf8.PushId("BlendingA"u8))
+            {
                 retA |= DrawBlending(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
             columns.Next();
-            using (var id = ImUtf8.PushId("BlendingB"u8))
+            using (ImUtf8.PushId("BlendingB"u8))
+            {
                 retB |= DrawBlending(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+            }
         }
 
         DrawHeader("  Material Template"u8);
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
             using var dis = ImRaii.Disabled(disabled);
-            using (var id = ImUtf8.PushId("TemplateA"u8))
+            using (ImUtf8.PushId("TemplateA"u8))
+            {
                 retA |= DrawTemplate(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
             columns.Next();
-            using (var id = ImUtf8.PushId("TemplateB"u8))
+            using (ImUtf8.PushId("TemplateB"u8))
+            {
                 retB |= DrawTemplate(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+            }
         }
 
         if (dyeTable != null)
         {
             DrawHeader("  Dye Properties"u8);
-            using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
+            using var columns = ImUtf8.Columns(2, "ColorTable"u8);
+            using var dis     = ImRaii.Disabled(disabled);
+            using (ImUtf8.PushId("DyeA"u8))
             {
-                using var dis = ImRaii.Disabled(disabled);
-                using (var id = ImUtf8.PushId("DyeA"u8))
-                    retA |= DrawDye(dyeTable, dyePackA, _colorTableSelectedPair << 1);
-                columns.Next();
-                using (var id = ImUtf8.PushId("DyeB"u8))
-                    retB |= DrawDye(dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retA |= DrawDye(dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
+            columns.Next();
+            using (ImUtf8.PushId("DyeB"u8))
+            {
+                retB |= DrawDye(dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
             }
         }
 
@@ -177,11 +205,16 @@ public partial class MtrlTab
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
             using var dis = ImRaii.Disabled(disabled);
-            using (var id = ImUtf8.PushId("FurtherA"u8))
+            using (ImUtf8.PushId("FurtherA"u8))
+            {
                 retA |= DrawFurther(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+            }
+
             columns.Next();
-            using (var id = ImUtf8.PushId("FurtherB"u8))
+            using (ImUtf8.PushId("FurtherB"u8))
+            {
                 retB |= DrawFurther(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+            }
         }
 
         if (retA)
@@ -195,18 +228,21 @@ public partial class MtrlTab
     /// <remarks> Padding styles do not seem to apply to this component. It is recommended to prepend two spaces. </remarks>
     private static void DrawHeader(ReadOnlySpan<byte> label)
     {
-        var headerColor = ImGui.GetColorU32(ImGuiCol.Header);
-        using var _     = ImRaii.PushColor(ImGuiCol.HeaderHovered, headerColor).Push(ImGuiCol.HeaderActive, headerColor);
+        var       headerColor = ImGui.GetColorU32(ImGuiCol.Header);
+        using var _           = ImRaii.PushColor(ImGuiCol.HeaderHovered, headerColor).Push(ImGuiCol.HeaderActive, headerColor);
         ImUtf8.CollapsingHeader(label, ImGuiTreeNodeFlags.Leaf);
     }
 
     private static bool DrawColors(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var dyeOffset = ImGui.GetContentRegionAvail().X + ImGui.GetStyle().ItemSpacing.X - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() * 2.0f;
+        var dyeOffset = ImGui.GetContentRegionAvail().X
+          + ImGui.GetStyle().ItemSpacing.X
+          - ImGui.GetStyle().ItemInnerSpacing.X
+          - ImGui.GetFrameHeight() * 2.0f;
 
-        var ret     = false;
+        var     ret = false;
         ref var row = ref table[rowIdx];
-        var dye     = dyeTable != null ? dyeTable[rowIdx] : default;
+        var     dye = dyeTable?[rowIdx] ?? default;
 
         ret |= CtColorPicker("Diffuse Color"u8, default, row.DiffuseColor,
             c => table[rowIdx].DiffuseColor = c);
@@ -247,13 +283,17 @@ public partial class MtrlTab
     private static bool DrawBlending(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
         var scalarSize = ColorTableScalarSize * UiHelpers.Scale;
-        var dyeOffset  = ImGui.GetContentRegionAvail().X + ImGui.GetStyle().ItemSpacing.X - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize;
+        var dyeOffset = ImGui.GetContentRegionAvail().X
+          + ImGui.GetStyle().ItemSpacing.X
+          - ImGui.GetStyle().ItemInnerSpacing.X
+          - ImGui.GetFrameHeight()
+          - scalarSize;
 
         var isRowB = (rowIdx & 1) != 0;
 
-        var ret     = false;
+        var     ret = false;
         ref var row = ref table[rowIdx];
-        var dye     = dyeTable != null ? dyeTable[rowIdx] : default;
+        var     dye = dyeTable?[rowIdx] ?? default;
 
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragHalf(isRowB ? "Field #19"u8 : "Anisotropy Degree"u8, default, row.Anisotropy, "%.2f"u8, 0.0f, HalfMaxValue, 0.1f,
@@ -261,11 +301,13 @@ public partial class MtrlTab
         if (dyeTable != null)
         {
             ImGui.SameLine(dyeOffset);
-            ret |= CtApplyStainCheckbox("##dyeAnisotropy"u8, isRowB ? "Apply Field #19 on Dye"u8 : "Apply Anisotropy Degree on Dye"u8, dye.Anisotropy,
+            ret |= CtApplyStainCheckbox("##dyeAnisotropy"u8, isRowB ? "Apply Field #19 on Dye"u8 : "Apply Anisotropy Degree on Dye"u8,
+                dye.Anisotropy,
                 b => dyeTable[rowIdx].Anisotropy = b);
             ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(scalarSize);
-            CtDragHalf("##dyePreviewAnisotropy"u8, isRowB ? "Dye Preview for Field #19"u8 : "Dye Preview for Anisotropy Degree"u8, dyePack?.Anisotropy, "%.2f"u8);
+            CtDragHalf("##dyePreviewAnisotropy"u8, isRowB ? "Dye Preview for Field #19"u8 : "Dye Preview for Anisotropy Degree"u8,
+                dyePack?.Anisotropy,               "%.2f"u8);
         }
 
         return ret;
@@ -276,11 +318,11 @@ public partial class MtrlTab
         var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
         var itemSpacing = ImGui.GetStyle().ItemSpacing.X;
         var dyeOffset   = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize - 64.0f;
-        var subcolWidth = CalculateSubcolumnWidth(2);
+        var subColWidth = CalculateSubColumnWidth(2);
 
-        var ret     = false;
+        var     ret = false;
         ref var row = ref table[rowIdx];
-        var dye     = dyeTable != null ? dyeTable[rowIdx] : default;
+        var     dye = dyeTable?[rowIdx] ?? default;
 
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragScalar("Shader ID"u8, default, row.ShaderId, "%d"u8, (ushort)0, (ushort)255, 0.25f,
@@ -306,13 +348,15 @@ public partial class MtrlTab
             ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() with { Y = cursor.Y });
             ImGui.SetNextItemWidth(scalarSize + itemSpacing + 64.0f);
             using var dis = ImRaii.Disabled();
-            CtSphereMapIndexPicker("###SphereMapIndexDye"u8, "Dye Preview for Sphere Map"u8, dyePack?.SphereMapIndex ?? ushort.MaxValue, false, Nop);
+            CtSphereMapIndexPicker("###SphereMapIndexDye"u8, "Dye Preview for Sphere Map"u8, dyePack?.SphereMapIndex ?? ushort.MaxValue, false,
+                Nop);
         }
 
         ImGui.Dummy(new Vector2(64.0f, 0.0f));
         ImGui.SameLine();
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Sphere Map Intensity"u8, default, (float)row.SphereMapMask * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f, 1.0f,
+        ret |= CtDragScalar("Sphere Map Intensity"u8, default, (float)row.SphereMapMask * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f,
+            HalfMaxValue * 100.0f,                    1.0f,
             v => table[rowIdx].SphereMapMask = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
@@ -326,10 +370,10 @@ public partial class MtrlTab
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
-        var leftLineHeight = 64.0f + ImGui.GetStyle().FramePadding.Y * 2.0f;
+        var leftLineHeight  = 64.0f + ImGui.GetStyle().FramePadding.Y * 2.0f;
         var rightLineHeight = 3.0f * ImGui.GetFrameHeight() + 2.0f * ImGui.GetStyle().ItemSpacing.Y;
-        var lineHeight = Math.Max(leftLineHeight, rightLineHeight);
-        var cursorPos = ImGui.GetCursorScreenPos();
+        var lineHeight      = Math.Max(leftLineHeight, rightLineHeight);
+        var cursorPos       = ImGui.GetCursorScreenPos();
         ImGui.SetCursorScreenPos(cursorPos + new Vector2(0.0f, (lineHeight - leftLineHeight) * 0.5f));
         ImGui.SetNextItemWidth(scalarSize + (itemSpacing + 64.0f) * 2.0f);
         ret |= CtTileIndexPicker("###TileIndex"u8, default, row.TileIndex, false,
@@ -337,9 +381,10 @@ public partial class MtrlTab
         ImUtf8.SameLineInner();
         ImUtf8.Text("Tile"u8);
 
-        ImGui.SameLine(subcolWidth);
-        ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() with { Y = cursorPos.Y + (lineHeight - rightLineHeight) * 0.5f, });
-        using (var cld = ImUtf8.Child("###TileProperties"u8, new(ImGui.GetContentRegionAvail().X, float.Lerp(rightLineHeight, lineHeight, 0.5f)), false))
+        ImGui.SameLine(subColWidth);
+        ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() with { Y = cursorPos.Y + (lineHeight - rightLineHeight) * 0.5f });
+        using (ImUtf8.Child("###TileProperties"u8,
+                   new Vector2(ImGui.GetContentRegionAvail().X, float.Lerp(rightLineHeight, lineHeight, 0.5f))))
         {
             ImGui.Dummy(new Vector2(scalarSize, 0.0f));
             ImUtf8.SameLineInner();
@@ -350,7 +395,8 @@ public partial class MtrlTab
             ret |= CtTileTransformMatrix(row.TileTransform, scalarSize, true,
                 m => table[rowIdx].TileTransform = m);
             ImUtf8.SameLineInner();
-            ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() - new Vector2(0.0f, (ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.Y) * 0.5f));
+            ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos()
+              - new Vector2(0.0f, (ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.Y) * 0.5f));
             ImUtf8.Text("Tile Transform"u8);
         }
 
@@ -360,15 +406,20 @@ public partial class MtrlTab
     private static bool DrawPbr(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
         var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
-        var subcolWidth = CalculateSubcolumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
-        var dyeOffset   = subcolWidth - ImGui.GetStyle().ItemSpacing.X * 2.0f - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize;
+        var subColWidth = CalculateSubColumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
+        var dyeOffset = subColWidth
+          - ImGui.GetStyle().ItemSpacing.X * 2.0f
+          - ImGui.GetStyle().ItemInnerSpacing.X
+          - ImGui.GetFrameHeight()
+          - scalarSize;
 
-        var ret     = false;
+        var     ret = false;
         ref var row = ref table[rowIdx];
-        var dye     = dyeTable != null ? dyeTable[rowIdx] : default;
+        var     dye = dyeTable?[rowIdx] ?? default;
 
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Roughness"u8, default, (float)row.Roughness * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f, 1.0f,
+        ret |= CtDragScalar("Roughness"u8, default, (float)row.Roughness * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f,
+            1.0f,
             v => table[rowIdx].Roughness = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
@@ -380,13 +431,14 @@ public partial class MtrlTab
             CtDragScalar("##dyePreviewRoughness"u8, "Dye Preview for Roughness"u8, (float?)dyePack?.Roughness * 100.0f, "%.0f%%"u8);
         }
 
-        ImGui.SameLine(subcolWidth);
+        ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Metalness"u8, default, (float)row.Metalness * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f, 1.0f,
+        ret |= CtDragScalar("Metalness"u8, default, (float)row.Metalness * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f,
+            1.0f,
             v => table[rowIdx].Metalness = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
-            ImGui.SameLine(subcolWidth + dyeOffset);
+            ImGui.SameLine(subColWidth + dyeOffset);
             ret |= CtApplyStainCheckbox("##dyeMetalness"u8, "Apply Metalness on Dye"u8, dye.Metalness,
                 b => dyeTable[rowIdx].Metalness = b);
             ImUtf8.SameLineInner();
@@ -400,12 +452,16 @@ public partial class MtrlTab
     private static bool DrawSheen(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
         var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
-        var subcolWidth = CalculateSubcolumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
-        var dyeOffset   = subcolWidth - ImGui.GetStyle().ItemSpacing.X * 2.0f - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize;
+        var subColWidth = CalculateSubColumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
+        var dyeOffset = subColWidth
+          - ImGui.GetStyle().ItemSpacing.X * 2.0f
+          - ImGui.GetStyle().ItemInnerSpacing.X
+          - ImGui.GetFrameHeight()
+          - scalarSize;
 
-        var ret     = false;
+        var     ret = false;
         ref var row = ref table[rowIdx];
-        var dye     = dyeTable != null ? dyeTable[rowIdx] : default;
+        var     dye = dyeTable?[rowIdx] ?? default;
 
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragScalar("Sheen"u8, default, (float)row.SheenRate * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f, 1.0f,
@@ -420,13 +476,14 @@ public partial class MtrlTab
             CtDragScalar("##dyePreviewSheenRate"u8, "Dye Preview for Sheen"u8, (float?)dyePack?.SheenRate * 100.0f, "%.0f%%"u8);
         }
 
-        ImGui.SameLine(subcolWidth);
+        ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Sheen Tint"u8, default, (float)row.SheenTintRate * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f, 1.0f,
+        ret |= CtDragScalar("Sheen Tint"u8, default, (float)row.SheenTintRate * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f,
+            HalfMaxValue * 100.0f,          1.0f,
             v => table[rowIdx].SheenTintRate = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
-            ImGui.SameLine(subcolWidth + dyeOffset);
+            ImGui.SameLine(subColWidth + dyeOffset);
             ret |= CtApplyStainCheckbox("##dyeSheenTintRate"u8, "Apply Sheen Tint on Dye"u8, dye.SheenTintRate,
                 b => dyeTable[rowIdx].SheenTintRate = b);
             ImUtf8.SameLineInner();
@@ -435,7 +492,8 @@ public partial class MtrlTab
         }
 
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Sheen Roughness"u8, default, 100.0f / (float)row.SheenAperture, "%.0f%%"u8, 100.0f / HalfMaxValue, 100.0f / HalfEpsilon, 1.0f,
+        ret |= CtDragScalar("Sheen Roughness"u8, default, 100.0f / (float)row.SheenAperture, "%.0f%%"u8, 100.0f / HalfMaxValue,
+            100.0f / HalfEpsilon,                1.0f,
             v => table[rowIdx].SheenAperture = (Half)(100.0f / v));
         if (dyeTable != null)
         {
@@ -444,7 +502,8 @@ public partial class MtrlTab
                 b => dyeTable[rowIdx].SheenAperture = b);
             ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(scalarSize);
-            CtDragScalar("##dyePreviewSheenRoughness"u8, "Dye Preview for Sheen Roughness"u8, 100.0f / (float?)dyePack?.SheenAperture, "%.0f%%"u8);
+            CtDragScalar("##dyePreviewSheenRoughness"u8, "Dye Preview for Sheen Roughness"u8, 100.0f / (float?)dyePack?.SheenAperture,
+                "%.0f%%"u8);
         }
 
         return ret;
@@ -453,12 +512,16 @@ public partial class MtrlTab
     private static bool DrawFurther(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
         var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
-        var subcolWidth = CalculateSubcolumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
-        var dyeOffset   = subcolWidth - ImGui.GetStyle().ItemSpacing.X * 2.0f - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize;
+        var subColWidth = CalculateSubColumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
+        var dyeOffset = subColWidth
+          - ImGui.GetStyle().ItemSpacing.X * 2.0f
+          - ImGui.GetStyle().ItemInnerSpacing.X
+          - ImGui.GetFrameHeight()
+          - scalarSize;
 
-        var ret     = false;
+        var     ret = false;
         ref var row = ref table[rowIdx];
-        var dye     = dyeTable != null ? dyeTable[rowIdx] : default;
+        var     dye = dyeTable?[rowIdx] ?? default;
 
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragHalf("Field #11"u8, default, row.Scalar11, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
@@ -479,7 +542,7 @@ public partial class MtrlTab
         ret |= CtDragHalf("Field #3"u8, default, row.Scalar3, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
             v => table[rowIdx].Scalar3 = v);
 
-        ImGui.SameLine(subcolWidth);
+        ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragHalf("Field #7"u8, default, row.Scalar7, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
             v => table[rowIdx].Scalar7 = v);
@@ -488,7 +551,7 @@ public partial class MtrlTab
         ret |= CtDragHalf("Field #15"u8, default, row.Scalar15, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
             v => table[rowIdx].Scalar15 = v);
 
-        ImGui.SameLine(subcolWidth);
+        ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragHalf("Field #17"u8, default, row.Scalar17, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
             v => table[rowIdx].Scalar17 = v);
@@ -497,7 +560,7 @@ public partial class MtrlTab
         ret |= CtDragHalf("Field #20"u8, default, row.Scalar20, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
             v => table[rowIdx].Scalar20 = v);
 
-        ImGui.SameLine(subcolWidth);
+        ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragHalf("Field #22"u8, default, row.Scalar22, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
             v => table[rowIdx].Scalar22 = v);
@@ -513,33 +576,32 @@ public partial class MtrlTab
     {
         var scalarSize       = ColorTableScalarSize * UiHelpers.Scale;
         var applyButtonWidth = ImUtf8.CalcTextSize("Apply Preview Dye"u8).X + ImGui.GetStyle().FramePadding.X * 2.0f;
-        var subcolWidth      = CalculateSubcolumnWidth(2, applyButtonWidth);
-        
-        var ret     = false;
+        var subColWidth      = CalculateSubColumnWidth(2, applyButtonWidth);
+
+        var     ret = false;
         ref var dye = ref dyeTable[rowIdx];
 
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragScalar("Dye Channel"u8, default, dye.Channel + 1, "%d"u8, 1, StainService.ChannelCount, 0.1f,
             value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
-        ImGui.SameLine(subcolWidth);
+        ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
         if (_stainService.GudTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty,
-            scalarSize + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
+                scalarSize + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
         {
             dye.Template = _stainService.LegacyTemplateCombo.CurrentSelection;
             ret          = true;
         }
+
         ImUtf8.SameLineInner();
         ImUtf8.Text("Dye Template"u8);
         ImGui.SameLine(ImGui.GetContentRegionAvail().X - applyButtonWidth + ImGui.GetStyle().ItemSpacing.X);
         using var dis = ImRaii.Disabled(!dyePack.HasValue);
         if (ImUtf8.Button("Apply Preview Dye"u8))
-        {
             ret |= Mtrl.ApplyDyeToRow(_stainService.GudStmFile, [
                 _stainService.StainCombo1.CurrentSelection.Key,
                 _stainService.StainCombo2.CurrentSelection.Key,
             ], rowIdx);
-        }
 
         return ret;
     }
@@ -554,9 +616,9 @@ public partial class MtrlTab
         ImGui.TextUnformatted(text);
     }
 
-    private static float CalculateSubcolumnWidth(int numSubcolumns, float reservedSpace = 0.0f)
+    private static float CalculateSubColumnWidth(int numSubColumns, float reservedSpace = 0.0f)
     {
         var itemSpacing = ImGui.GetStyle().ItemSpacing.X;
-        return (ImGui.GetContentRegionAvail().X - reservedSpace - itemSpacing * (numSubcolumns - 1)) / numSubcolumns + itemSpacing;
+        return (ImGui.GetContentRegionAvail().X - reservedSpace - itemSpacing * (numSubColumns - 1)) / numSubColumns + itemSpacing;
     }
 }

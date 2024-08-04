@@ -23,7 +23,7 @@ public partial class MtrlTab
     {
         Textures.Clear();
         SamplerIds.Clear();
-        if (AssociatedShpk == null)
+        if (_associatedShpk == null)
         {
             SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
             if (Mtrl.Table != null)
@@ -34,11 +34,11 @@ public partial class MtrlTab
         }
         else
         {
-            foreach (var index in VertexShaders)
-                SamplerIds.UnionWith(AssociatedShpk.VertexShaders[index].Samplers.Select(sampler => sampler.Id));
-            foreach (var index in PixelShaders)
-                SamplerIds.UnionWith(AssociatedShpk.PixelShaders[index].Samplers.Select(sampler => sampler.Id));
-            if (!ShadersKnown)
+            foreach (var index in _vertexShaders)
+                SamplerIds.UnionWith(_associatedShpk.VertexShaders[index].Samplers.Select(sampler => sampler.Id));
+            foreach (var index in _pixelShaders)
+                SamplerIds.UnionWith(_associatedShpk.PixelShaders[index].Samplers.Select(sampler => sampler.Id));
+            if (!_shadersKnown)
             {
                 SamplerIds.UnionWith(Mtrl.ShaderPackage.Samplers.Select(sampler => sampler.SamplerId));
                 if (Mtrl.Table != null)
@@ -47,11 +47,11 @@ public partial class MtrlTab
 
             foreach (var samplerId in SamplerIds)
             {
-                var shpkSampler = AssociatedShpk.GetSamplerById(samplerId);
+                var shpkSampler = _associatedShpk.GetSamplerById(samplerId);
                 if (shpkSampler is not { Slot: 2 })
                     continue;
 
-                var dkData = TryGetShpkDevkitData<DevkitSampler>("Samplers", samplerId, true);
+                var dkData     = TryGetShpkDevkitData<DevkitSampler>("Samplers", samplerId, true);
                 var hasDkLabel = !string.IsNullOrEmpty(dkData?.Label);
 
                 var sampler = Mtrl.GetOrAddSampler(samplerId, dkData?.DefaultTexture ?? string.Empty, out var samplerIndex);
@@ -95,9 +95,12 @@ public partial class MtrlTab
     private static ReadOnlySpan<byte> TextureAddressModeTooltip(TextureAddressMode addressMode)
         => addressMode switch
         {
-            TextureAddressMode.Wrap   => "Tile the texture at every UV integer junction.\n\nFor example, for U values between 0 and 3, the texture is repeated three times."u8,
-            TextureAddressMode.Mirror => "Flip the texture at every UV integer junction.\n\nFor U values between 0 and 1, for example, the texture is addressed normally; between 1 and 2, the texture is mirrored; between 2 and 3, the texture is normal again; and so on."u8,
-            TextureAddressMode.Clamp  => "Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0, respectively."u8,
+            TextureAddressMode.Wrap =>
+                "Tile the texture at every UV integer junction.\n\nFor example, for U values between 0 and 3, the texture is repeated three times."u8,
+            TextureAddressMode.Mirror =>
+                "Flip the texture at every UV integer junction.\n\nFor U values between 0 and 1, for example, the texture is addressed normally; between 1 and 2, the texture is mirrored; between 2 and 3, the texture is normal again; and so on."u8,
+            TextureAddressMode.Clamp =>
+                "Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0, respectively."u8,
             TextureAddressMode.Border => "Texture coordinates outside the range [0.0, 1.0] are set to the border color (generally black)."u8,
             _                         => ""u8,
         };
@@ -167,7 +170,7 @@ public partial class MtrlTab
 
         return ret;
     }
-    
+
     private static bool ComboTextureAddressMode(ReadOnlySpan<byte> label, ref TextureAddressMode value)
     {
         using var c = ImUtf8.Combo(label, value.ToString());
@@ -202,7 +205,7 @@ public partial class MtrlTab
             ret          = true;
         }
 
-        ref var samplerFlags = ref SamplerFlags.Wrap(ref sampler.Flags);
+        ref var samplerFlags = ref Wrap(ref sampler.Flags);
 
         ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
         var addressMode = samplerFlags.UAddressMode;

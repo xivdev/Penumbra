@@ -12,9 +12,9 @@ namespace Penumbra.UI.AdvancedWindow.Materials;
 
 public partial class MtrlTab
 {
-    private static readonly float HalfMinValue  = (float)Half.MinValue;
-    private static readonly float HalfMaxValue  = (float)Half.MaxValue;
-    private static readonly float HalfEpsilon   = (float)Half.Epsilon;
+    private static readonly float HalfMinValue = (float)Half.MinValue;
+    private static readonly float HalfMaxValue = (float)Half.MaxValue;
+    private static readonly float HalfEpsilon  = (float)Half.Epsilon;
 
     private static readonly FontAwesomeCheckbox ApplyStainCheckbox = new(FontAwesomeIcon.FillDrip);
 
@@ -22,11 +22,11 @@ public partial class MtrlTab
 
     private bool DrawColorTableSection(bool disabled)
     {
-        if ((!ShpkLoading && !SamplerIds.Contains(ShpkFile.TableSamplerId)) || Mtrl.Table == null)
+        if (!_shpkLoading && !SamplerIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
             return false;
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
-        if (!ImGui.CollapsingHeader("Color Table", ImGuiTreeNodeFlags.DefaultOpen))
+        if (!ImUtf8.CollapsingHeader("Color Table"u8, ImGuiTreeNodeFlags.DefaultOpen))
             return false;
 
         ColorTableCopyAllClipboardButton();
@@ -35,7 +35,7 @@ public partial class MtrlTab
         if (!disabled)
         {
             ImGui.SameLine();
-            ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+            ImUtf8.IconDummy();
             ImGui.SameLine();
             ret |= ColorTableDyeableCheckbox();
         }
@@ -43,17 +43,18 @@ public partial class MtrlTab
         if (Mtrl.DyeTable != null)
         {
             ImGui.SameLine();
-            ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+            ImUtf8.IconDummy();
             ImGui.SameLine();
             ret |= DrawPreviewDye(disabled);
         }
 
         ret |= Mtrl.Table switch
         {
-            LegacyColorTable legacyTable                                            => DrawLegacyColorTable(legacyTable, Mtrl.DyeTable as LegacyColorDyeTable, disabled),
-            ColorTable table when Mtrl.ShaderPackage.Name is "characterlegacy.shpk" => DrawLegacyColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled),
-            ColorTable table                                                        => DrawColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled),
-            _                                                                       => false,
+            LegacyColorTable legacyTable => DrawLegacyColorTable(legacyTable, Mtrl.DyeTable as LegacyColorDyeTable, disabled),
+            ColorTable table when Mtrl.ShaderPackage.Name is "characterlegacy.shpk" => DrawLegacyColorTable(table,
+                Mtrl.DyeTable as ColorDyeTable, disabled),
+            ColorTable table => DrawColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled),
+            _                => false,
         };
 
         return ret;
@@ -64,7 +65,7 @@ public partial class MtrlTab
         if (Mtrl.Table == null)
             return;
 
-        if (!ImGui.Button("Export All Rows to Clipboard", ImGuiHelpers.ScaledVector2(200, 0)))
+        if (!ImUtf8.Button("Export All Rows to Clipboard"u8, ImGuiHelpers.ScaledVector2(200, 0)))
             return;
 
         try
@@ -178,16 +179,18 @@ public partial class MtrlTab
     private bool ColorTableDyeableCheckbox()
     {
         var dyeable = Mtrl.DyeTable != null;
-        var ret     = ImGui.Checkbox("Dyeable", ref dyeable);
+        var ret     = ImUtf8.Checkbox("Dyeable"u8, ref dyeable);
 
         if (ret)
         {
-            Mtrl.DyeTable = dyeable ? Mtrl.Table switch
-            {
-                ColorTable       => new ColorDyeTable(),
-                LegacyColorTable => new LegacyColorDyeTable(),
-                _                => null,
-            } : null;
+            Mtrl.DyeTable = dyeable
+                ? Mtrl.Table switch
+                {
+                    ColorTable       => new ColorDyeTable(),
+                    LegacyColorTable => new LegacyColorDyeTable(),
+                    _                => null,
+                }
+                : null;
             UpdateColorTablePreview();
         }
 
@@ -227,24 +230,27 @@ public partial class MtrlTab
 
     private void ColorTableHighlightButton(int pairIdx, bool disabled)
     {
-        ImUtf8.IconButton(FontAwesomeIcon.Crosshairs, "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
-            ImGui.GetFrameHeight() * Vector2.One, disabled || ColorTablePreviewers.Count == 0);
+        ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
+            "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
+            ImGui.GetFrameHeight() * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
 
         if (ImGui.IsItemHovered())
             HighlightColorTablePair(pairIdx);
-        else if (HighlightedColorTablePair == pairIdx)
+        else if (_highlightedColorTablePair == pairIdx)
             CancelColorTableHighlight();
     }
 
     private static void CtBlendRect(Vector2 rcMin, Vector2 rcMax, uint topColor, uint bottomColor)
     {
-        var style = ImGui.GetStyle();
-        var frameRounding = style.FrameRounding;
+        var style          = ImGui.GetStyle();
+        var frameRounding  = style.FrameRounding;
         var frameThickness = style.FrameBorderSize;
-        var borderColor = ImGui.GetColorU32(ImGuiCol.Border);
-        var drawList = ImGui.GetWindowDrawList();
+        var borderColor    = ImGui.GetColorU32(ImGuiCol.Border);
+        var drawList       = ImGui.GetWindowDrawList();
         if (topColor == bottomColor)
+        {
             drawList.AddRectFilled(rcMin, rcMax, topColor, frameRounding, ImDrawFlags.RoundCornersDefault);
+        }
         else
         {
             drawList.AddRectFilled(
@@ -258,10 +264,12 @@ public partial class MtrlTab
                 rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3) }, rcMax,
                 bottomColor, frameRounding, ImDrawFlags.RoundCornersBottomLeft | ImDrawFlags.RoundCornersBottomRight);
         }
+
         drawList.AddRect(rcMin, rcMax, borderColor, frameRounding, ImDrawFlags.RoundCornersDefault, frameThickness);
     }
 
-    private static bool CtColorPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, HalfColor current, Action<HalfColor> setter, ReadOnlySpan<byte> letter = default)
+    private static bool CtColorPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, HalfColor current, Action<HalfColor> setter,
+        ReadOnlySpan<byte> letter = default)
     {
         var ret       = false;
         var inputSqrt = PseudoSqrtRgb((Vector3)current);
@@ -291,10 +299,13 @@ public partial class MtrlTab
         return ret;
     }
 
-    private static void CtColorPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, HalfColor? current, ReadOnlySpan<byte> letter = default)
+    private static void CtColorPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, HalfColor? current,
+        ReadOnlySpan<byte> letter = default)
     {
         if (current.HasValue)
+        {
             CtColorPicker(label, description, current.Value, Nop, letter);
+        }
         else
         {
             var tmp = Vector4.Zero;
@@ -308,8 +319,8 @@ public partial class MtrlTab
 
             if (letter.Length > 0 && ImGui.IsItemVisible())
             {
-                var textSize  = ImUtf8.CalcTextSize(letter);
-                var center    = ImGui.GetItemRectMin() + (ImGui.GetItemRectSize() - textSize) / 2;
+                var textSize = ImUtf8.CalcTextSize(letter);
+                var center   = ImGui.GetItemRectMin() + (ImGui.GetItemRectSize() - textSize) / 2;
                 ImGui.GetWindowDrawList().AddText(letter, center, 0x80000000u);
             }
 
@@ -319,7 +330,7 @@ public partial class MtrlTab
 
     private static bool CtApplyStainCheckbox(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, bool current, Action<bool> setter)
     {
-        var tmp = current;
+        var tmp    = current;
         var result = ApplyStainCheckbox.Draw(label, ref tmp);
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == current)
@@ -329,68 +340,79 @@ public partial class MtrlTab
         return true;
     }
 
-    private static bool CtDragHalf(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, Half value, ReadOnlySpan<byte> format, float min, float max, float speed, Action<Half> setter)
+    private static bool CtDragHalf(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, Half value, ReadOnlySpan<byte> format, float min,
+        float max, float speed, Action<Half> setter)
     {
-        var tmp = (float)value;
+        var tmp    = (float)value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
+
         var newValue = (Half)tmp;
         if (newValue == value)
             return false;
+
         setter(newValue);
         return true;
     }
 
-    private static bool CtDragHalf(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref Half value, ReadOnlySpan<byte> format, float min, float max, float speed)
+    private static bool CtDragHalf(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref Half value, ReadOnlySpan<byte> format,
+        float min, float max, float speed)
     {
-        var tmp = (float)value;
+        var tmp    = (float)value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
+
         var newValue = (Half)tmp;
         if (newValue == value)
             return false;
+
         value = newValue;
         return true;
     }
 
     private static void CtDragHalf(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, Half? value, ReadOnlySpan<byte> format)
     {
-        using var _        = ImRaii.Disabled();
-        var valueOrDefault = value ?? Half.Zero;
-        var floatValue     = (float)valueOrDefault;
+        using var _              = ImRaii.Disabled();
+        var       valueOrDefault = value ?? Half.Zero;
+        var       floatValue     = (float)valueOrDefault;
         CtDragHalf(label, description, valueOrDefault, value.HasValue ? format : "-"u8, floatValue, floatValue, 0.0f, Nop);
     }
 
-    private static bool CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, T value, ReadOnlySpan<byte> format, T min, T max, float speed, Action<T> setter) where T : unmanaged, INumber<T>
+    private static bool CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, T value, ReadOnlySpan<byte> format, T min,
+        T max, float speed, Action<T> setter) where T : unmanaged, INumber<T>
     {
-        var tmp = value;
+        var tmp    = value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
+
         setter(tmp);
         return true;
     }
 
-    private static bool CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref T value, ReadOnlySpan<byte> format, T min, T max, float speed) where T : unmanaged, INumber<T>
+    private static bool CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref T value, ReadOnlySpan<byte> format, T min,
+        T max, float speed) where T : unmanaged, INumber<T>
     {
-        var tmp = value;
+        var tmp    = value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
+
         value = tmp;
         return true;
     }
 
-    private static void CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, T? value, ReadOnlySpan<byte> format) where T : unmanaged, INumber<T>
+    private static void CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, T? value, ReadOnlySpan<byte> format)
+        where T : unmanaged, INumber<T>
     {
-        using var _        = ImRaii.Disabled();
-        var valueOrDefault = value ?? T.Zero;
+        using var _              = ImRaii.Disabled();
+        var       valueOrDefault = value ?? T.Zero;
         CtDragScalar(label, description, valueOrDefault, value.HasValue ? format : "-"u8, valueOrDefault, valueOrDefault, 0.0f, Nop);
     }
 
@@ -398,14 +420,17 @@ public partial class MtrlTab
     {
         if (!_materialTemplatePickers.DrawTileIndexPicker(label, description, ref value, compact))
             return false;
+
         setter(value);
         return true;
     }
 
-    private bool CtSphereMapIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact, Action<ushort> setter)
+    private bool CtSphereMapIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact,
+        Action<ushort> setter)
     {
         if (!_materialTemplatePickers.DrawSphereMapIndexPicker(label, description, ref value, compact))
             return false;
+
         setter(value);
         return true;
     }
@@ -430,33 +455,34 @@ public partial class MtrlTab
             ret |= CtDragHalf("##TileTransformVU"u8, "Tile Skew V"u8, ref tmp.VU, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
             if (!ret || tmp == value)
                 return false;
+
             setter(tmp);
         }
         else
         {
             value.Decompose(out var scale, out var rotation, out var shear);
             rotation *= 180.0f / MathF.PI;
-            shear *= 180.0f / MathF.PI;
+            shear    *= 180.0f / MathF.PI;
             ImGui.SetNextItemWidth(floatSize);
             var scaleXChanged = CtDragScalar("##TileScaleU"u8, "Tile Scale U"u8, ref scale.X, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
             var activated     = ImGui.IsItemActivated();
             var deactivated   = ImGui.IsItemDeactivated();
             ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(floatSize);
-            var scaleYChanged =  CtDragScalar("##TileScaleV"u8, "Tile Scale V"u8, ref scale.Y, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
-            activated         |= ImGui.IsItemActivated();
-            deactivated       |= ImGui.IsItemDeactivated();
+            var scaleYChanged = CtDragScalar("##TileScaleV"u8, "Tile Scale V"u8, ref scale.Y, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
+            activated   |= ImGui.IsItemActivated();
+            deactivated |= ImGui.IsItemDeactivated();
             if (!twoRowLayout)
                 ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(floatSize);
-            var rotationChanged =  CtDragScalar("##TileRotation"u8, "Tile Rotation"u8, ref rotation, "%.0f°"u8, -180.0f, 180.0f, 1.0f);
-            activated           |= ImGui.IsItemActivated();
-            deactivated         |= ImGui.IsItemDeactivated();
+            var rotationChanged = CtDragScalar("##TileRotation"u8, "Tile Rotation"u8, ref rotation, "%.0f°"u8, -180.0f, 180.0f, 1.0f);
+            activated   |= ImGui.IsItemActivated();
+            deactivated |= ImGui.IsItemDeactivated();
             ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(floatSize);
-            var shearChanged =  CtDragScalar("##TileShear"u8, "Tile Shear"u8, ref shear, "%.0f°"u8, -90.0f, 90.0f, 1.0f);
-            activated        |= ImGui.IsItemActivated();
-            deactivated      |= ImGui.IsItemDeactivated();
+            var shearChanged = CtDragScalar("##TileShear"u8, "Tile Shear"u8, ref shear, "%.0f°"u8, -90.0f, 90.0f, 1.0f);
+            activated   |= ImGui.IsItemActivated();
+            deactivated |= ImGui.IsItemDeactivated();
             if (deactivated)
                 _pinnedTileTransform = null;
             else if (activated)
@@ -464,6 +490,7 @@ public partial class MtrlTab
             ret = scaleXChanged | scaleYChanged | rotationChanged | shearChanged;
             if (!ret)
                 return false;
+
             if (_pinnedTileTransform.HasValue)
             {
                 var (pinScale, pinRotation, pinShear) = _pinnedTileTransform.Value;
@@ -476,11 +503,14 @@ public partial class MtrlTab
                 if (!shearChanged)
                     shear = pinShear;
             }
+
             var newValue = HalfMatrix2x2.Compose(scale, rotation * MathF.PI / 180.0f, shear * MathF.PI / 180.0f);
             if (newValue == value)
                 return false;
+
             setter(newValue);
         }
+
         return true;
     }
 

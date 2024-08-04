@@ -21,8 +21,8 @@ public partial class MtrlTab
     // Apricot shader packages are unlisted because
     // 1. they cause severe performance/memory issues when calculating the effective shader set
     // 2. they probably aren't intended for use with materials anyway
-    internal static readonly IReadOnlyList<string> StandardShaderPackages = new[]
-    {
+    private static readonly IReadOnlyList<string> StandardShaderPackages =
+    [
         "3dui.shpk",
         // "apricot_decal_dummy.shpk",
         // "apricot_decal_ring.shpk",
@@ -80,35 +80,35 @@ public partial class MtrlTab
         "verticalfog.shpk",
         "water.shpk",
         "weather.shpk",
-    };
+    ];
 
-    private static readonly byte[] UnknownShadersString = Encoding.UTF8.GetBytes("Vertex Shaders: ???\nPixel Shaders: ???");
+    private static readonly byte[] UnknownShadersString = "Vertex Shaders: ???\nPixel Shaders: ???"u8.ToArray();
 
     private string[]? _shpkNames;
 
-    public string          ShaderHeader             = "Shader###Shader";
-    public FullPath        LoadedShpkPath           = FullPath.Empty;
-    public string          LoadedShpkPathName       = string.Empty;
-    public string          LoadedShpkDevkitPathName = string.Empty;
-    public string          ShaderComment            = string.Empty;
-    public ShpkFile?       AssociatedShpk;
-    public bool            ShpkLoading;
-    public JObject?        AssociatedShpkDevkit;
+    private string    _shaderHeader             = "Shader###Shader";
+    private FullPath  _loadedShpkPath           = FullPath.Empty;
+    private string    _loadedShpkPathName       = string.Empty;
+    private string    _loadedShpkDevkitPathName = string.Empty;
+    private string    _shaderComment            = string.Empty;
+    private ShpkFile? _associatedShpk;
+    private bool      _shpkLoading;
+    private JObject?  _associatedShpkDevkit;
 
-    public readonly string   LoadedBaseDevkitPathName;
-    public readonly JObject? AssociatedBaseDevkit;
+    private readonly string   _loadedBaseDevkitPathName;
+    private readonly JObject? _associatedBaseDevkit;
 
     // Shader Key State
-    public readonly
+    private readonly
         List<(string Label, int Index, string Description, bool MonoFont, IReadOnlyList<(string Label, uint Value, string Description)>
-            Values)> ShaderKeys = new(16);
+            Values)> _shaderKeys = new(16);
 
-    public readonly HashSet<int>         VertexShaders = new(16);
-    public readonly HashSet<int>         PixelShaders  = new(16);
-    public          bool                 ShadersKnown;
-    public          ReadOnlyMemory<byte> ShadersString = UnknownShadersString;
+    private readonly HashSet<int>         _vertexShaders = new(16);
+    private readonly HashSet<int>         _pixelShaders  = new(16);
+    private          bool                 _shadersKnown;
+    private          ReadOnlyMemory<byte> _shadersString = UnknownShadersString;
 
-    public string[] GetShpkNames()
+    private string[] GetShpkNames()
     {
         if (null != _shpkNames)
             return _shpkNames;
@@ -122,7 +122,7 @@ public partial class MtrlTab
         return _shpkNames;
     }
 
-    public FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
+    private FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
     {
         defaultPath = GamePaths.Shader.ShpkPath(Mtrl.ShaderPackage.Name);
         if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath))
@@ -131,45 +131,45 @@ public partial class MtrlTab
         return _edit.FindBestMatch(defaultGamePath);
     }
 
-    public void LoadShpk(FullPath path)
+    private void LoadShpk(FullPath path)
         => Task.Run(() => DoLoadShpk(path));
 
     private async Task DoLoadShpk(FullPath path)
     {
-        ShadersKnown = false;
-        ShaderHeader = $"Shader ({Mtrl.ShaderPackage.Name})###Shader";
-        ShpkLoading  = true;
+        _shadersKnown = false;
+        _shaderHeader = $"Shader ({Mtrl.ShaderPackage.Name})###Shader";
+        _shpkLoading  = true;
 
         try
         {
             var data = path.IsRooted
                 ? await File.ReadAllBytesAsync(path.FullName)
                 : _gameData.GetFile(path.InternalName.ToString())?.Data;
-            LoadedShpkPath     = path;
-            AssociatedShpk     = data?.Length > 0 ? new ShpkFile(data) : throw new Exception("Failure to load file data.");
-            LoadedShpkPathName = path.ToPath();
+            _loadedShpkPath     = path;
+            _associatedShpk     = data?.Length > 0 ? new ShpkFile(data) : throw new Exception("Failure to load file data.");
+            _loadedShpkPathName = path.ToPath();
         }
         catch (Exception e)
         {
-            LoadedShpkPath     = FullPath.Empty;
-            LoadedShpkPathName = string.Empty;
-            AssociatedShpk     = null;
-            Penumbra.Messager.NotificationMessage(e, $"Could not load {LoadedShpkPath.ToPath()}.", NotificationType.Error, false);
+            _loadedShpkPath     = FullPath.Empty;
+            _loadedShpkPathName = string.Empty;
+            _associatedShpk     = null;
+            Penumbra.Messager.NotificationMessage(e, $"Could not load {_loadedShpkPath.ToPath()}.", NotificationType.Error, false);
         }
         finally
         {
-            ShpkLoading  = false;
+            _shpkLoading = false;
         }
 
-        if (LoadedShpkPath.InternalName.IsEmpty)
+        if (_loadedShpkPath.InternalName.IsEmpty)
         {
-            AssociatedShpkDevkit     = null;
-            LoadedShpkDevkitPathName = string.Empty;
+            _associatedShpkDevkit     = null;
+            _loadedShpkDevkitPathName = string.Empty;
         }
         else
         {
-            AssociatedShpkDevkit =
-                TryLoadShpkDevkit(Path.GetFileNameWithoutExtension(Mtrl.ShaderPackage.Name), out LoadedShpkDevkitPathName);
+            _associatedShpkDevkit =
+                TryLoadShpkDevkit(Path.GetFileNameWithoutExtension(Mtrl.ShaderPackage.Name), out _loadedShpkDevkitPathName);
         }
 
         UpdateShaderKeys();
@@ -178,9 +178,9 @@ public partial class MtrlTab
 
     private void UpdateShaderKeys()
     {
-        ShaderKeys.Clear();
-        if (AssociatedShpk != null)
-            foreach (var key in AssociatedShpk.MaterialKeys)
+        _shaderKeys.Clear();
+        if (_associatedShpk != null)
+            foreach (var key in _associatedShpk.MaterialKeys)
             {
                 var keyName    = Names.KnownNames.TryResolve(key.Id);
                 var dkData     = TryGetShpkDevkitData<DevkitShaderKey>("ShaderKeys", key.Id, false);
@@ -210,7 +210,7 @@ public partial class MtrlTab
 
                     return string.Compare(x.Label, y.Label, StringComparison.Ordinal);
                 });
-                ShaderKeys.Add((hasDkLabel ? dkData!.Label : keyName.ToString(), mtrlKeyIndex, dkData?.Description ?? string.Empty,
+                _shaderKeys.Add((hasDkLabel ? dkData!.Label : keyName.ToString(), mtrlKeyIndex, dkData?.Description ?? string.Empty,
                     !hasDkLabel, values));
             }
         else
@@ -218,7 +218,7 @@ public partial class MtrlTab
             {
                 var keyName   = Names.KnownNames.TryResolve(key.Category);
                 var valueName = keyName.WithKnownSuffixes().TryResolve(Names.KnownNames, key.Value);
-                ShaderKeys.Add((keyName.ToString(), index, string.Empty, true, [(valueName.ToString(), key.Value, string.Empty)]));
+                _shaderKeys.Add((keyName.ToString(), index, string.Empty, true, [(valueName.ToString(), key.Value, string.Empty)]));
             }
     }
 
@@ -232,27 +232,28 @@ public partial class MtrlTab
                 passSet = [];
                 byPassSets.Add(passId, passSet);
             }
+
             passSet.Add(shaderIndex);
         }
 
-        VertexShaders.Clear();
-        PixelShaders.Clear();
+        _vertexShaders.Clear();
+        _pixelShaders.Clear();
 
         var vertexShadersByPass = new Dictionary<uint, HashSet<int>>();
         var pixelShadersByPass  = new Dictionary<uint, HashSet<int>>();
 
-        if (AssociatedShpk == null || !AssociatedShpk.IsExhaustiveNodeAnalysisFeasible())
+        if (_associatedShpk == null || !_associatedShpk.IsExhaustiveNodeAnalysisFeasible())
         {
-            ShadersKnown = false;
+            _shadersKnown = false;
         }
         else
         {
-            ShadersKnown = true;
-            var systemKeySelectors  = AllSelectors(AssociatedShpk.SystemKeys).ToArray();
-            var sceneKeySelectors   = AllSelectors(AssociatedShpk.SceneKeys).ToArray();
-            var subViewKeySelectors = AllSelectors(AssociatedShpk.SubViewKeys).ToArray();
+            _shadersKnown = true;
+            var systemKeySelectors  = AllSelectors(_associatedShpk.SystemKeys).ToArray();
+            var sceneKeySelectors   = AllSelectors(_associatedShpk.SceneKeys).ToArray();
+            var subViewKeySelectors = AllSelectors(_associatedShpk.SubViewKeys).ToArray();
             var materialKeySelector =
-                BuildSelector(AssociatedShpk.MaterialKeys.Select(key => Mtrl.GetOrAddShaderKey(key.Id, key.DefaultValue).Value));
+                BuildSelector(_associatedShpk.MaterialKeys.Select(key => Mtrl.GetOrAddShaderKey(key.Id, key.DefaultValue).Value));
 
             foreach (var systemKeySelector in systemKeySelectors)
             {
@@ -261,38 +262,39 @@ public partial class MtrlTab
                     foreach (var subViewKeySelector in subViewKeySelectors)
                     {
                         var selector = BuildSelector(systemKeySelector, sceneKeySelector, materialKeySelector, subViewKeySelector);
-                        var node     = AssociatedShpk.GetNodeBySelector(selector);
+                        var node     = _associatedShpk.GetNodeBySelector(selector);
                         if (node.HasValue)
                             foreach (var pass in node.Value.Passes)
                             {
-                                AddShader(VertexShaders, vertexShadersByPass, pass.Id, (int)pass.VertexShader);
-                                AddShader(PixelShaders,  pixelShadersByPass,  pass.Id, (int)pass.PixelShader);
+                                AddShader(_vertexShaders, vertexShadersByPass, pass.Id, (int)pass.VertexShader);
+                                AddShader(_pixelShaders,  pixelShadersByPass,  pass.Id, (int)pass.PixelShader);
                             }
                         else
-                            ShadersKnown = false;
+                            _shadersKnown = false;
                     }
                 }
             }
         }
 
-        if (ShadersKnown)
+        if (_shadersKnown)
         {
             var builder = new StringBuilder();
-            foreach (var (passId, passVS) in vertexShadersByPass)
+            foreach (var (passId, passVertexShader) in vertexShadersByPass)
             {
                 if (builder.Length > 0)
                     builder.Append("\n\n");
 
                 var passName = Names.KnownNames.TryResolve(passId);
-                var shaders  = passVS.OrderBy(i => i).Select(i => $"#{i}");
+                var shaders  = passVertexShader.OrderBy(i => i).Select(i => $"#{i}");
                 builder.Append($"Vertex Shaders ({passName}): {string.Join(", ", shaders)}");
-                if (pixelShadersByPass.TryGetValue(passId, out var passPS))
+                if (pixelShadersByPass.TryGetValue(passId, out var passPixelShader))
                 {
-                    shaders = passPS.OrderBy(i => i).Select(i => $"#{i}");
+                    shaders = passPixelShader.OrderBy(i => i).Select(i => $"#{i}");
                     builder.Append($"\nPixel Shaders ({passName}): {string.Join(", ", shaders)}");
                 }
             }
-            foreach (var (passId, passPS) in pixelShadersByPass)
+
+            foreach (var (passId, passPixelShader) in pixelShadersByPass)
             {
                 if (vertexShadersByPass.ContainsKey(passId))
                     continue;
@@ -301,22 +303,24 @@ public partial class MtrlTab
                     builder.Append("\n\n");
 
                 var passName = Names.KnownNames.TryResolve(passId);
-                var shaders  = passPS.OrderBy(i => i).Select(i => $"#{i}");
+                var shaders  = passPixelShader.OrderBy(i => i).Select(i => $"#{i}");
                 builder.Append($"Pixel Shaders ({passName}): {string.Join(", ", shaders)}");
             }
 
-            ShadersString = Encoding.UTF8.GetBytes(builder.ToString());
+            _shadersString = Encoding.UTF8.GetBytes(builder.ToString());
         }
         else
-            ShadersString = UnknownShadersString;
+        {
+            _shadersString = UnknownShadersString;
+        }
 
-        ShaderComment = TryGetShpkDevkitData<string>("Comment", null, true) ?? string.Empty;
+        _shaderComment = TryGetShpkDevkitData<string>("Comment", null, true) ?? string.Empty;
     }
 
     private bool DrawShaderSection(bool disabled)
     {
         var ret = false;
-        if (ImGui.CollapsingHeader(ShaderHeader))
+        if (ImGui.CollapsingHeader(_shaderHeader))
         {
             ret |= DrawPackageNameInput(disabled);
             ret |= DrawShaderFlagsInput(disabled);
@@ -325,20 +329,17 @@ public partial class MtrlTab
             DrawMaterialShaders();
         }
 
-        if (!ShpkLoading && (AssociatedShpk == null || AssociatedShpkDevkit == null))
+        if (!_shpkLoading && (_associatedShpk == null || _associatedShpkDevkit == null))
         {
             ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
-            if (AssociatedShpk == null)
-            {
+            if (_associatedShpk == null)
                 ImUtf8.Text("Unable to find a suitable shader (.shpk) file for cross-references. Some functionality will be missing."u8,
                     ImGuiUtil.HalfBlendText(0x80u)); // Half red
-            }
             else
-            {
-                ImUtf8.Text("No dev-kit file found for this material's shaders. Please install one for optimal editing experience, such as actual constant names instead of hexadecimal identifiers."u8,
+                ImUtf8.Text(
+                    "No dev-kit file found for this material's shaders. Please install one for optimal editing experience, such as actual constant names instead of hexadecimal identifiers."u8,
                     ImGuiUtil.HalfBlendText(0x8080u)); // Half yellow
-            }
         }
 
         return ret;
@@ -358,14 +359,14 @@ public partial class MtrlTab
         if (c)
             foreach (var value in GetShpkNames())
             {
-                if (ImGui.Selectable(value, value == Mtrl.ShaderPackage.Name))
-                {
-                    Mtrl.ShaderPackage.Name = value;
-                    ret                     = true;
-                    AssociatedShpk          = null;
-                    LoadedShpkPath          = FullPath.Empty;
-                    LoadShpk(FindAssociatedShpk(out _, out _));
-                }
+                if (!ImGui.Selectable(value, value == Mtrl.ShaderPackage.Name))
+                    continue;
+
+                Mtrl.ShaderPackage.Name = value;
+                ret                     = true;
+                _associatedShpk         = null;
+                _loadedShpkPath         = FullPath.Empty;
+                LoadShpk(FindAssociatedShpk(out _, out _));
             }
 
         return ret;
@@ -391,23 +392,23 @@ public partial class MtrlTab
     private void DrawCustomAssociations()
     {
         const string tooltip = "Click to copy file path to clipboard.";
-        var text = AssociatedShpk == null
+        var text = _associatedShpk == null
             ? "Associated .shpk file: None"
-            : $"Associated .shpk file: {LoadedShpkPathName}";
-        var devkitText = AssociatedShpkDevkit == null
+            : $"Associated .shpk file: {_loadedShpkPathName}";
+        var devkitText = _associatedShpkDevkit == null
             ? "Associated dev-kit file: None"
-            : $"Associated dev-kit file: {LoadedShpkDevkitPathName}";
-        var baseDevkitText = AssociatedBaseDevkit == null
+            : $"Associated dev-kit file: {_loadedShpkDevkitPathName}";
+        var baseDevkitText = _associatedBaseDevkit == null
             ? "Base dev-kit file: None"
-            : $"Base dev-kit file: {LoadedBaseDevkitPathName}";
+            : $"Base dev-kit file: {_loadedBaseDevkitPathName}";
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
-        ImGuiUtil.CopyOnClickSelectable(text,           LoadedShpkPathName,       tooltip);
-        ImGuiUtil.CopyOnClickSelectable(devkitText,     LoadedShpkDevkitPathName, tooltip);
-        ImGuiUtil.CopyOnClickSelectable(baseDevkitText, LoadedBaseDevkitPathName, tooltip);
+        ImUtf8.CopyOnClickSelectable(text,           _loadedShpkPathName,       tooltip);
+        ImUtf8.CopyOnClickSelectable(devkitText,     _loadedShpkDevkitPathName, tooltip);
+        ImUtf8.CopyOnClickSelectable(baseDevkitText, _loadedBaseDevkitPathName, tooltip);
 
-        if (ImGui.Button("Associate Custom .shpk File"))
+        if (ImUtf8.Button("Associate Custom .shpk File"u8))
             _fileDialog.OpenFilePicker("Associate Custom .shpk File...", ".shpk", (success, name) =>
             {
                 if (success)
@@ -416,15 +417,15 @@ public partial class MtrlTab
 
         var moddedPath = FindAssociatedShpk(out var defaultPath, out var gamePath);
         ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton("Associate Default .shpk File", Vector2.Zero, moddedPath.ToPath(),
-                moddedPath.Equals(LoadedShpkPath)))
+        if (ImUtf8.ButtonEx("Associate Default .shpk File"u8, moddedPath.ToPath(), Vector2.Zero,
+                moddedPath.Equals(_loadedShpkPath)))
             LoadShpk(moddedPath);
 
         if (!gamePath.Path.Equals(moddedPath.InternalName))
         {
             ImGui.SameLine();
-            if (ImGuiUtil.DrawDisabledButton("Associate Unmodded .shpk File", Vector2.Zero, defaultPath,
-                    gamePath.Path.Equals(LoadedShpkPath.InternalName)))
+            if (ImUtf8.ButtonEx("Associate Unmodded .shpk File", defaultPath, Vector2.Zero,
+                    gamePath.Path.Equals(_loadedShpkPath.InternalName)))
                 LoadShpk(new FullPath(gamePath));
         }
 
@@ -433,22 +434,23 @@ public partial class MtrlTab
 
     private bool DrawMaterialShaderKeys(bool disabled)
     {
-        if (ShaderKeys.Count == 0)
+        if (_shaderKeys.Count == 0)
             return false;
 
         var ret = false;
-        foreach (var (label, index, description, monoFont, values) in ShaderKeys)
+        foreach (var (label, index, description, monoFont, values) in _shaderKeys)
         {
             using var font         = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
             ref var   key          = ref Mtrl.ShaderPackage.ShaderKeys[index];
-            var       shpkKey      = AssociatedShpk?.GetMaterialKeyById(key.Category);
+            using var id           = ImUtf8.PushId((int)key.Category);
+            var       shpkKey      = _associatedShpk?.GetMaterialKeyById(key.Category);
             var       currentValue = key.Value;
             var (currentLabel, _, currentDescription) =
                 values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
             if (!disabled && shpkKey.HasValue)
             {
                 ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
-                using (var c = ImRaii.Combo($"##{key.Category:X8}", currentLabel))
+                using (var c = ImUtf8.Combo(""u8, currentLabel))
                 {
                     if (c)
                         foreach (var (valueLabel, value, valueDescription) in values)
@@ -469,16 +471,16 @@ public partial class MtrlTab
                 if (description.Length > 0)
                     ImGuiUtil.LabeledHelpMarker(label, description);
                 else
-                    ImGui.TextUnformatted(label);
+                    ImUtf8.Text(label);
             }
             else if (description.Length > 0 || currentDescription.Length > 0)
             {
-                ImGuiUtil.LabeledHelpMarker($"{label}: {currentLabel}",
+                ImUtf8.LabeledHelpMarker($"{label}: {currentLabel}",
                     description + (description.Length > 0 && currentDescription.Length > 0 ? "\n\n" : string.Empty) + currentDescription);
             }
             else
             {
-                ImGui.TextUnformatted($"{label}: {currentLabel}");
+                ImUtf8.Text($"{label}: {currentLabel}");
             }
         }
 
@@ -487,19 +489,19 @@ public partial class MtrlTab
 
     private void DrawMaterialShaders()
     {
-        if (AssociatedShpk == null)
+        if (_associatedShpk == null)
             return;
 
         using (var node = ImUtf8.TreeNode("Candidate Shaders"u8))
         {
             if (node)
-                ImUtf8.Text(ShadersString.Span);
+                ImUtf8.Text(_shadersString.Span);
         }
 
-        if (ShaderComment.Length > 0)
+        if (_shaderComment.Length > 0)
         {
             ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
-            ImGui.TextUnformatted(ShaderComment);
+            ImUtf8.Text(_shaderComment);
         }
     }
 }
