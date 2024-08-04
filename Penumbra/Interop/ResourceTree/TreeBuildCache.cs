@@ -1,8 +1,11 @@
+using System.IO.MemoryMappedFiles;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.ShaderStructs;
+using Penumbra.GameData.Files.Utility;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.String.Classes;
@@ -11,7 +14,7 @@ namespace Penumbra.Interop.ResourceTree;
 
 internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager dataManager, ActorManager actors)
 {
-    private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = [];
+    private readonly Dictionary<FullPath, IReadOnlyDictionary<uint, Name>?> _shaderPackageNames = [];
 
     public unsafe bool IsLocalPlayerRelated(ICharacter character)
     {
@@ -68,10 +71,10 @@ internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager data
     }
 
     /// <summary> Try to read a shpk file from the given path and cache it on success. </summary>
-    public ShpkFile? ReadShaderPackage(FullPath path)
-        => ReadFile(dataManager, path, _shaderPackages, bytes => new ShpkFile(bytes));
+    public IReadOnlyDictionary<uint, Name>? ReadShaderPackageNames(FullPath path)
+        => ReadFile(dataManager, path, _shaderPackageNames, bytes => ShpkFile.FastExtractNames(bytes.Span));
 
-    private static T? ReadFile<T>(IDataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<byte[], T> parseFile)
+    private static T? ReadFile<T>(IDataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<ReadOnlyMemory<byte>, T> parseFile)
         where T : class
     {
         if (path.FullName.Length == 0)
@@ -86,7 +89,8 @@ internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager data
         {
             if (path.IsRooted)
             {
-                parsed = parseFile(File.ReadAllBytes(pathStr));
+                using var mmFile = MmioMemoryManager.CreateFromFile(pathStr, access: MemoryMappedFileAccess.Read);
+                parsed = parseFile(mmFile.Memory);
             }
             else
             {

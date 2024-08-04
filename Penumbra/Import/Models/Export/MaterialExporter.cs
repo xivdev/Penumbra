@@ -49,7 +49,7 @@ public class MaterialExporter
     private static MaterialBuilder BuildCharacter(Material material, string name)
     {
         // Build the textures from the color table.
-        var table = new LegacyColorTable(material.Mtrl.Table);
+        var table = new LegacyColorTable(material.Mtrl.Table!);
 
         var normal = material.Textures[TextureUsage.SamplerNormal];
 
@@ -103,6 +103,7 @@ public class MaterialExporter
 
     // TODO: It feels a little silly to request the entire normal here when extracting the normal only needs some of the components.
     //       As a future refactor, it would be neat to accept a single-channel field here, and then do composition of other stuff later.
+    // TODO(Dawntrail): Use the dedicated index (_id) map, that is not embedded in the normal map's alpha channel anymore.
     private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal, LegacyColorTable table) : IRowOperation
     {
         public Image<Rgba32> Normal    { get; } = normal.Clone();
@@ -139,17 +140,17 @@ public class MaterialExporter
                 var nextRow  = table[tableRow.Next];
 
                 // Base colour (table, .b)
-                var lerpedDiffuse = Vector3.Lerp(prevRow.Diffuse, nextRow.Diffuse, tableRow.Weight);
+                var lerpedDiffuse = Vector3.Lerp((Vector3)prevRow.DiffuseColor, (Vector3)nextRow.DiffuseColor, tableRow.Weight);
                 baseColorSpan[x].FromVector4(new Vector4(lerpedDiffuse, 1));
                 baseColorSpan[x].A = normalPixel.B;
 
                 // Specular (table)
-                var lerpedSpecularColor = Vector3.Lerp(prevRow.Specular, nextRow.Specular, tableRow.Weight);
-                var lerpedSpecularFactor = float.Lerp(prevRow.SpecularStrength, nextRow.SpecularStrength, tableRow.Weight);
+                var lerpedSpecularColor = Vector3.Lerp((Vector3)prevRow.SpecularColor, (Vector3)nextRow.SpecularColor, tableRow.Weight);
+                var lerpedSpecularFactor = float.Lerp((float)prevRow.SpecularMask, (float)nextRow.SpecularMask, tableRow.Weight);
                 specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, lerpedSpecularFactor));
 
                 // Emissive (table)
-                var lerpedEmissive = Vector3.Lerp(prevRow.Emissive, nextRow.Emissive, tableRow.Weight);
+                var lerpedEmissive = Vector3.Lerp((Vector3)prevRow.EmissiveColor, (Vector3)nextRow.EmissiveColor, tableRow.Weight);
                 emissiveSpan[x].FromVector4(new Vector4(lerpedEmissive, 1));
 
                 // Normal (.rg)

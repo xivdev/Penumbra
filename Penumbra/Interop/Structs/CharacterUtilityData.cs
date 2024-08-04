@@ -5,10 +5,15 @@ namespace Penumbra.Interop.Structs;
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct CharacterUtilityData
 {
-    public const int IndexHumanPbd       = 63;
-    public const int IndexTransparentTex = 79;
-    public const int IndexDecalTex       = 80;
-    public const int IndexSkinShpk       = 83;
+    public const int IndexHumanPbd         = 63;
+    public const int IndexTransparentTex   = 79;
+    public const int IndexDecalTex         = 80;
+    public const int IndexTileOrbArrayTex  = 81;
+    public const int IndexTileNormArrayTex = 82;
+    public const int IndexSkinShpk         = 83;
+    public const int IndexGudStm           = 94;
+    public const int IndexLegacyStm        = 95;
+    public const int IndexSphereDArrayTex  = 96;
 
     public static readonly MetaIndex[] EqdpIndices = Enum.GetNames<MetaIndex>()
         .Zip(Enum.GetValues<MetaIndex>())
@@ -97,8 +102,23 @@ public unsafe struct CharacterUtilityData
     [FieldOffset(8 + IndexDecalTex * 8)]
     public TextureResourceHandle* DecalTexResource;
 
+    [FieldOffset(8 + IndexTileOrbArrayTex * 8)]
+    public TextureResourceHandle* TileOrbArrayTexResource;
+
+    [FieldOffset(8 + IndexTileNormArrayTex * 8)]
+    public TextureResourceHandle* TileNormArrayTexResource;
+
     [FieldOffset(8 + IndexSkinShpk * 8)]
     public ResourceHandle* SkinShpkResource;
+
+    [FieldOffset(8 + IndexGudStm * 8)]
+    public ResourceHandle* GudStmResource;
+
+    [FieldOffset(8 + IndexLegacyStm * 8)]
+    public ResourceHandle* LegacyStmResource;
+
+    [FieldOffset(8 + IndexSphereDArrayTex * 8)]
+    public TextureResourceHandle* SphereDArrayTexResource;
 
     // not included resources have no known use case.
 }

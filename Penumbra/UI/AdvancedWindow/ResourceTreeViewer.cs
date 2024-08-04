@@ -6,7 +6,6 @@ using OtterGui;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
 using Penumbra.String;
-using Penumbra.UI.Tabs;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -245,10 +244,7 @@ public class ResourceTreeViewer
             if (visibility == NodeVisibility.Hidden)
                 continue;
 
-            var textColor         = ImGui.GetColorU32(ImGuiCol.Text);
-            var textColorInternal = (textColor & 0x00FFFFFFu) | ((textColor & 0xFE000000u) >> 1); // Half opacity
-
-            using var mutedColor = ImRaii.PushColor(ImGuiCol.Text, textColorInternal, resourceNode.Internal);
+            using var mutedColor = ImRaii.PushColor(ImGuiCol.Text, ImGuiUtil.HalfTransparentText(), resourceNode.Internal);
 
             var filterIcon = resourceNode.IconFlag != 0 ? resourceNode.IconFlag : parentFilterIconFlag;
 

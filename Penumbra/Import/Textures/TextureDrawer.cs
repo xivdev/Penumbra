@@ -18,9 +18,7 @@ public static class TextureDrawer
     {
         if (texture.TextureWrap != null)
         {
-            size = size.X < texture.TextureWrap.Width
-                ? size with { Y = texture.TextureWrap.Height * size.X / texture.TextureWrap.Width }
-                : new Vector2(texture.TextureWrap.Width, texture.TextureWrap.Height);
+            size = texture.TextureWrap.Size.Contain(size);
 
             ImGui.Image(texture.TextureWrap.ImGuiHandle, size);
             DrawData(texture);

@@ -327,6 +327,9 @@ public class SettingsTab : ITab, IUiService
         UiHelpers.DefaultLineSpace();
 
         DrawModHandlingSettings();
+        UiHelpers.DefaultLineSpace();
+
+        DrawModEditorSettings();
         ImGui.NewLine();
     }
 
@@ -721,6 +724,15 @@ public class SettingsTab : ITab, IUiService
 
         ImGuiUtil.LabeledHelpMarker("Default Mod Import Organizational Folder",
             "Set the default Penumbra mod folder to place newly imported mods into.\nLeave blank to import into Root.");
+    }
+
+
+    /// <summary> Draw all settings pertaining to advanced editing of mods. </summary>
+    private void DrawModEditorSettings()
+    {
+        Checkbox("Advanced Editing: Edit Raw Tile UV Transforms",
+            "Edit the raw matrix components of tile UV transforms, instead of having them decomposed into scale, rotation and shear.",
+            _config.EditRawTileTransforms, v => _config.EditRawTileTransforms = v);
     }
 
     #endregion
