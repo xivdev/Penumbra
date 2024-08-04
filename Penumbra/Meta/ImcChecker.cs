@@ -12,12 +12,16 @@ public class ImcChecker
 
     public static int GetVariantCount(ImcIdentifier identifier)
     {
-        if (VariantCounts.TryGetValue(identifier, out var count))
-            return count;
+        lock (VariantCounts)
+        {
+            if (VariantCounts.TryGetValue(identifier, out var count))
+                return count;
 
-        count                      = GetFile(identifier)?.Count ?? 0;
-        VariantCounts[identifier] = count;
-        return count;
+            count                     = GetFile(identifier)?.Count ?? 0;
+            VariantCounts[identifier] = count;
+
+            return count;
+        }
     }
 
     public readonly record struct CachedEntry(ImcEntry Entry, bool FileExists, bool VariantExists);
