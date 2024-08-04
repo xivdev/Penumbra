@@ -46,6 +46,7 @@ public class Penumbra : IDalamudPlugin
     private readonly CharacterUtility        _characterUtility;
     private readonly RedrawService           _redrawService;
     private readonly CommunicatorService     _communicatorService;
+    private readonly IDataManager            _gameData;
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
@@ -78,6 +79,7 @@ public class Penumbra : IDalamudPlugin
             _tempCollections     = _services.GetService<TempCollectionManager>();
             _redrawService       = _services.GetService<RedrawService>();
             _communicatorService = _services.GetService<CommunicatorService>();
+            _gameData            = _services.GetService<IDataManager>();
             _services.GetService<ResourceService>(); // Initialize because not required anywhere else.
             _services.GetService<ModCacheManager>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
@@ -217,6 +219,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
+        sb.Append($"> **`Game Data Files:             `** {(_gameData.HasModifiedGameDataFiles ? "Modified" : "Pristine")}\n");
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
         sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
