@@ -103,11 +103,8 @@ public partial class MtrlTab
         ColorTableCopyClipboardButton(rowIdx);
         ImUtf8.SameLineInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
-        if ((rowIdx & 1) == 0)
-        {
-            ImUtf8.SameLineInner();
-            ColorTableHighlightButton(rowIdx >> 1, disabled);
-        }
+        ImUtf8.SameLineInner();
+        ColorTableRowHighlightButton(rowIdx, disabled);
 
         ImGui.TableNextColumn();
         using (ImRaii.PushFont(UiBuilder.MonoFont))
@@ -213,11 +210,8 @@ public partial class MtrlTab
         ColorTableCopyClipboardButton(rowIdx);
         ImUtf8.SameLineInner();
         var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
-        if ((rowIdx & 1) == 0)
-        {
-            ImUtf8.SameLineInner();
-            ColorTableHighlightButton(rowIdx >> 1, disabled);
-        }
+        ImUtf8.SameLineInner();
+        ColorTableRowHighlightButton(rowIdx, disabled);
 
         ImGui.TableNextColumn();
         using (ImRaii.PushFont(UiBuilder.MonoFont))

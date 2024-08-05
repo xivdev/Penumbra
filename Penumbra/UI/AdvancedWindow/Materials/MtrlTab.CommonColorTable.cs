@@ -228,7 +228,7 @@ public partial class MtrlTab
         }
     }
 
-    private void ColorTableHighlightButton(int pairIdx, bool disabled)
+    private void ColorTablePairHighlightButton(int pairIdx, bool disabled)
     {
         ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
             "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
@@ -237,6 +237,18 @@ public partial class MtrlTab
         if (ImGui.IsItemHovered())
             HighlightColorTablePair(pairIdx);
         else if (_highlightedColorTablePair == pairIdx)
+            CancelColorTableHighlight();
+    }
+
+    private void ColorTableRowHighlightButton(int rowIdx, bool disabled)
+    {
+        ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
+            "Highlight this row on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
+            ImGui.GetFrameHeight() * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
+
+        if (ImGui.IsItemHovered())
+            HighlightColorTableRow(rowIdx);
+        else if (_highlightedColorTableRow == rowIdx)
             CancelColorTableHighlight();
     }
 
