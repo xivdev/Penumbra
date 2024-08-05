@@ -24,8 +24,8 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.CreatedCharacterBase"/>
     public readonly CreatedCharacterBase CreatedCharacterBase = new();
 
-    /// <inheritdoc cref="Communication.MtrlShpkLoaded"/>
-    public readonly MtrlShpkLoaded MtrlShpkLoaded = new();
+    /// <inheritdoc cref="Communication.MtrlLoaded"/>
+    public readonly MtrlLoaded MtrlLoaded = new();
 
     /// <inheritdoc cref="Communication.ModDataChanged"/>
     public readonly ModDataChanged ModDataChanged = new();
@@ -87,7 +87,7 @@ public class CommunicatorService : IDisposable, IService
         TemporaryGlobalModChange.Dispose();
         CreatingCharacterBase.Dispose();
         CreatedCharacterBase.Dispose();
-        MtrlShpkLoaded.Dispose();
+        MtrlLoaded.Dispose();
         ModDataChanged.Dispose();
         ModOptionChanged.Dispose();
         ModDiscoveryStarted.Dispose();

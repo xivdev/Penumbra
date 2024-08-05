@@ -4,6 +4,7 @@ using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
+// TODO check if this is still needed, as our hooked function is called by LoadMtrl's hooked function
 public sealed unsafe class LoadMtrlTex : FastHook<LoadMtrlTex.Delegate>
 {
     private readonly GameState _gameState;
