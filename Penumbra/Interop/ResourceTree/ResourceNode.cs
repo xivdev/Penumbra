@@ -15,6 +15,8 @@ public class ResourceNode : ICloneable
     public readonly nint               ResourceHandle;
     public          Utf8GamePath[]     PossibleGamePaths;
     public          FullPath           FullPath;
+    public          string?            ModName;
+    public          string?            ModRelativePath;
     public          CiByteString       AdditionalData;
     public readonly ulong              Length;
     public readonly List<ResourceNode> Children;
@@ -57,6 +59,8 @@ public class ResourceNode : ICloneable
         ResourceHandle    = other.ResourceHandle;
         PossibleGamePaths = other.PossibleGamePaths;
         FullPath          = other.FullPath;
+        ModName           = other.ModName;
+        ModRelativePath   = other.ModRelativePath;
         AdditionalData    = other.AdditionalData;
         Length            = other.Length;
         Children          = other.Children;
