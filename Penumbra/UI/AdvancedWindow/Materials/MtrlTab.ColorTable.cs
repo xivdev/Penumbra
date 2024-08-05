@@ -91,15 +91,21 @@ public partial class MtrlTab
         var dyePackB    = _stainService.GudStmFile.GetValueOrNull(dyeB.Template, previewDyeB);
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
-            ColorTableCopyClipboardButton(_colorTableSelectedPair << 1);
-            ImUtf8.SameLineInner();
-            retA |= ColorTablePasteFromClipboardButton(_colorTableSelectedPair << 1, disabled);
+            using (ImUtf8.PushId("ClipboardA"u8))
+            {
+                ColorTableCopyClipboardButton(_colorTableSelectedPair << 1);
+                ImUtf8.SameLineInner();
+                retA |= ColorTablePasteFromClipboardButton(_colorTableSelectedPair << 1, disabled);
+            }
             ImGui.SameLine();
             CenteredTextInRest($"Row {_colorTableSelectedPair + 1}A");
             columns.Next();
-            ColorTableCopyClipboardButton((_colorTableSelectedPair << 1) | 1);
-            ImUtf8.SameLineInner();
-            retB |= ColorTablePasteFromClipboardButton((_colorTableSelectedPair << 1) | 1, disabled);
+            using (ImUtf8.PushId("ClipboardB"u8))
+            {
+                ColorTableCopyClipboardButton((_colorTableSelectedPair << 1) | 1);
+                ImUtf8.SameLineInner();
+                retB |= ColorTablePasteFromClipboardButton((_colorTableSelectedPair << 1) | 1, disabled);
+            }
             ImGui.SameLine();
             CenteredTextInRest($"Row {_colorTableSelectedPair + 1}B");
         }
