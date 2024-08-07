@@ -316,7 +316,10 @@ public class ResourceTreeViewer
             ImGui.TableNextColumn();
             if (resourceNode.FullPath.FullName.Length > 0)
             {
-                ImGui.Selectable(resourceNode.FullPath.ToPath(), false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                var uiFullPathStr = resourceNode.ModName != null && resourceNode.ModRelativePath != null
+                    ? $"[{resourceNode.ModName}] {resourceNode.ModRelativePath}"
+                    : resourceNode.FullPath.ToPath();
+                ImGui.Selectable(uiFullPathStr, false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
                 ImGuiUtil.HoverTooltip(

@@ -110,7 +110,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         _modelRendererOnRenderMaterialHook = hooks.CreateHook<ModelRendererOnRenderMaterialDelegate>("ModelRenderer.OnRenderMaterial",
             Sigs.ModelRendererOnRenderMaterial, ModelRendererOnRenderMaterialDetour,
             !HookOverrides.Instance.PostProcessing.ModelRendererOnRenderMaterial).Result;
-        _communicator.MtrlShpkLoaded.Subscribe(OnMtrlShpkLoaded, MtrlShpkLoaded.Priority.ShaderReplacementFixer);
+        _communicator.MtrlLoaded.Subscribe(OnMtrlLoaded, MtrlLoaded.Priority.ShaderReplacementFixer);
         _resourceHandleDestructor.Subscribe(OnResourceHandleDestructor, ResourceHandleDestructor.Priority.ShaderReplacementFixer);
     }
 
@@ -118,7 +118,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     {
         _modelRendererOnRenderMaterialHook.Dispose();
         _humanOnRenderMaterialHook.Dispose();
-        _communicator.MtrlShpkLoaded.Unsubscribe(OnMtrlShpkLoaded);
+        _communicator.MtrlLoaded.Unsubscribe(OnMtrlLoaded);
         _resourceHandleDestructor.Unsubscribe(OnResourceHandleDestructor);
         _hairMaskState.ClearMaterials();
         _characterOcclusionState.ClearMaterials();
@@ -147,7 +147,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         return shpkName.SequenceEqual(mtrlResource->ShpkNameSpan);
     }
 
-    private void OnMtrlShpkLoaded(nint mtrlResourceHandle, nint gameObject)
+    private void OnMtrlLoaded(nint mtrlResourceHandle, nint gameObject)
     {
         var mtrl = (MaterialResourceHandle*)mtrlResourceHandle;
         var shpk = mtrl->ShaderPackageResourceHandle;

@@ -9,6 +9,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
+using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
@@ -21,7 +22,8 @@ public class ResourceTreeFactory(
     ObjectIdentification objectIdentifier,
     Configuration config,
     ActorManager actors,
-    PathState pathState) : IService
+    PathState pathState,
+    ModManager modManager) : IService
 {
     private TreeBuildCache CreateTreeBuildCache()
         => new(objects, gameData, actors);
@@ -93,7 +95,10 @@ public class ResourceTreeFactory(
         // This is currently unneeded as we can resolve all paths by querying the draw object:
         // ResolveGamePaths(tree, collectionResolveData.ModCollection);
         if (globalContext.WithUiData)
+        {
             ResolveUiData(tree);
+            ResolveModData(tree);
+        }
         FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) != 0 ? config.ModDirectory : null);
         Cleanup(tree);
 
@@ -121,6 +126,18 @@ public class ResourceTreeFactory(
             if (node.Name == parent?.Name)
                 node.Name = null;
         });
+    }
+
+    private void ResolveModData(ResourceTree tree)
+    {
+        foreach (var node in tree.FlatNodes)
+        {
+            if (node.FullPath.IsRooted && modManager.TryIdentifyPath(node.FullPath.FullName, out var mod, out var relativePath))
+            {
+                node.ModName         = mod.Name;
+                node.ModRelativePath = relativePath;
+            }
+        }
     }
 
     private static void FilterFullPaths(ResourceTree tree, string? onlyWithinPath)

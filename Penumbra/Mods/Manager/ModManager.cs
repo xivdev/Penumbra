@@ -350,4 +350,22 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             Penumbra.Log.Error($"Could not scan for mods:\n{ex}");
         }
     }
+
+    public bool TryIdentifyPath(string path, [NotNullWhen(true)] out Mod? mod, [NotNullWhen(true)] out string? relativePath)
+    {
+        var relPath = Path.GetRelativePath(BasePath.FullName, path);
+        if (relPath != "." && (relPath.StartsWith('.') || Path.IsPathRooted(relPath)))
+        {
+            mod          = null;
+            relativePath = null;
+            return false;
+        }
+
+        var modDirectorySeparator = relPath.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
+
+        var modDirectory = modDirectorySeparator < 0 ? relPath : relPath[..modDirectorySeparator];
+        relativePath = modDirectorySeparator < 0 ? string.Empty : relPath[(modDirectorySeparator + 1)..];
+
+        return TryGetMod(modDirectory, "\0", out mod);
+    }
 }

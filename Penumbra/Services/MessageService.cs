@@ -2,10 +2,14 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui.Log;
 using OtterGui.Services;
+using Penumbra.Mods.Manager;
+using Penumbra.String.Classes;
+using Notification = OtterGui.Classes.Notification;
 
 namespace Penumbra.Services;
 
@@ -37,5 +41,17 @@ public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INoti
         {
             Message = payload,
         });
+    }
+
+    public void PrintFileWarning(ModManager modManager, string fullPath, Utf8GamePath originalGamePath, string messageComplement)
+    {
+        // Don't warn for files managed by other plugins, or files we aren't sure about.
+        if (!modManager.TryIdentifyPath(fullPath, out var mod, out _))
+            return;
+
+        AddTaggedMessage($"{fullPath}.{messageComplement}",
+            new Notification(
+                $"Cowardly refusing to load replacement for {originalGamePath.Filename().ToString().ToLowerInvariant()} by {mod.Name}{(messageComplement.Length > 0 ? ":\n" : ".")}{messageComplement}",
+                NotificationType.Warning, 10000));
     }
 }

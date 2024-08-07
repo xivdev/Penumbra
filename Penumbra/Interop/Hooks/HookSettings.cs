@@ -99,7 +99,7 @@ public class HookOverrides
     public struct ResourceHooks
     {
         public bool ApricotResourceLoad;
-        public bool LoadMtrlShpk;
+        public bool LoadMtrl;
         public bool LoadMtrlTex;
         public bool ResolvePathHooks;
         public bool ResourceHandleDestructor;
