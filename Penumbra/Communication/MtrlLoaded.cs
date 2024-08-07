@@ -10,7 +10,7 @@ public sealed class MtrlLoaded() : EventWrapper<nint, nint, MtrlLoaded.Priority>
 {
     public enum Priority
     {
-        /// <seealso cref="Penumbra.Interop.Hooks.PostProcessing.ShaderReplacementFixer.OnMtrlLoaded"/>
+        /// <seealso cref="Interop.Hooks.PostProcessing.ShaderReplacementFixer.OnMtrlLoaded"/>
         ShaderReplacementFixer = 0,
     }
 }

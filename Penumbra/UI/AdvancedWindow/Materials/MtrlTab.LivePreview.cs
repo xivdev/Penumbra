@@ -14,6 +14,7 @@ public partial class MtrlTab
 {
     private readonly List<LiveMaterialPreviewer>   _materialPreviewers        = new(4);
     private readonly List<LiveColorTablePreviewer> _colorTablePreviewers      = new(4);
+    private          int                           _highlightedColorTableRow  = -1;
     private          int                           _highlightedColorTablePair = -1;
     private readonly Stopwatch                     _highlightTime             = new();
 
@@ -168,12 +169,34 @@ public partial class MtrlTab
         }
     }
 
+    private void HighlightColorTableRow(int rowIdx)
+    {
+        var oldRowIdx = _highlightedColorTableRow;
+
+        if (_highlightedColorTableRow != rowIdx)
+        {
+            _highlightedColorTableRow = rowIdx;
+            _highlightTime.Restart();
+        }
+
+        if (oldRowIdx >= 0)
+            UpdateColorTableRowPreview(oldRowIdx);
+
+        if (rowIdx >= 0)
+            UpdateColorTableRowPreview(rowIdx);
+    }
+
     private void CancelColorTableHighlight()
     {
+        var rowIdx  = _highlightedColorTableRow;
         var pairIdx = _highlightedColorTablePair;
 
+        _highlightedColorTableRow  = -1;
         _highlightedColorTablePair = -1;
         _highlightTime.Reset();
+
+        if (rowIdx >= 0)
+            UpdateColorTableRowPreview(rowIdx);
 
         if (pairIdx >= 0)
         {
@@ -214,7 +237,7 @@ public partial class MtrlTab
             }
         }
 
-        if (_highlightedColorTablePair << 1 == rowIdx)
+        if (_highlightedColorTablePair << 1 == rowIdx || _highlightedColorTableRow == rowIdx)
             ApplyHighlight(ref row, ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
         else if (((_highlightedColorTablePair << 1) | 1) == rowIdx)
             ApplyHighlight(ref row, ColorId.InGameHighlight2, (float)_highlightTime.Elapsed.TotalSeconds);
@@ -246,6 +269,9 @@ public partial class MtrlTab
             rows.ApplyDye(_stainService.LegacyStmFile, stainIds, dyeRows);
             rows.ApplyDye(_stainService.GudStmFile,    stainIds, dyeRows);
         }
+
+        if (_highlightedColorTableRow >= 0)
+            ApplyHighlight(ref rows[_highlightedColorTableRow], ColorId.InGameHighlight, (float)_highlightTime.Elapsed.TotalSeconds);
 
         if (_highlightedColorTablePair >= 0)
         {

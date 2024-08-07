@@ -37,7 +37,7 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         
 
         _originalColorTableTexture = new SafeTextureHandle(*_colorTableTexture, true);
-        if (_originalColorTableTexture == null)
+        if (_originalColorTableTexture.Texture == null)
             throw new InvalidOperationException("Material doesn't have a color table");
 
         Width          = (int)_originalColorTableTexture.Texture->Width;

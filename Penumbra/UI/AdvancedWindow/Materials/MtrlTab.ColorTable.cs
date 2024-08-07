@@ -30,11 +30,14 @@ public partial class MtrlTab
         var buttonWidth      = (ImGui.GetContentRegionAvail().X - itemSpacing * 7.0f) * 0.125f;
         var frameHeight      = ImGui.GetFrameHeight();
         var highlighterSize  = ImUtf8.CalcIconSize(FontAwesomeIcon.Crosshairs) + framePadding * 2.0f;
-        var spaceWidth       = ImUtf8.CalcTextSize(" "u8).X;
-        var spacePadding     = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
 
         using var font      = ImRaii.PushFont(UiBuilder.MonoFont);
         using var alignment = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
+
+        // This depends on the font being pushed for "proper" alignment of the pair indices in the buttons.
+        var spaceWidth   = ImUtf8.CalcTextSize(" "u8).X;
+        var spacePadding = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
+
         for (var i = 0; i < ColorTable.NumRows >> 1; i += 8)
         {
             for (var j = 0; j < 8; ++j)
@@ -72,7 +75,7 @@ public partial class MtrlTab
                 var cursor = ImGui.GetCursorScreenPos();
                 ImGui.SetCursorScreenPos(rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 0.5f) - highlighterSize.Y * 0.5f });
                 font.Pop();
-                ColorTableHighlightButton(pairIndex, disabled);
+                ColorTablePairHighlightButton(pairIndex, disabled);
                 font.Push(UiBuilder.MonoFont);
                 ImGui.SetCursorScreenPos(cursor);
             }
@@ -83,6 +86,8 @@ public partial class MtrlTab
     {
         var retA        = false;
         var retB        = false;
+        var rowAIdx     = _colorTableSelectedPair << 1;
+        var rowBIdx     = rowAIdx | 1;
         var dyeA        = dyeTable?[_colorTableSelectedPair << 1] ?? default;
         var dyeB        = dyeTable?[(_colorTableSelectedPair << 1) | 1] ?? default;
         var previewDyeA = _stainService.GetStainCombo(dyeA.Channel).CurrentSelection.Key;
@@ -91,17 +96,15 @@ public partial class MtrlTab
         var dyePackB    = _stainService.GudStmFile.GetValueOrNull(dyeB.Template, previewDyeB);
         using (var columns = ImUtf8.Columns(2, "ColorTable"u8))
         {
-            ColorTableCopyClipboardButton(_colorTableSelectedPair << 1);
-            ImUtf8.SameLineInner();
-            retA |= ColorTablePasteFromClipboardButton(_colorTableSelectedPair << 1, disabled);
-            ImGui.SameLine();
-            CenteredTextInRest($"Row {_colorTableSelectedPair + 1}A");
+            using (ImUtf8.PushId("RowHeaderA"u8))
+            {
+                retA |= DrawRowHeader(rowAIdx, disabled);
+            }
             columns.Next();
-            ColorTableCopyClipboardButton((_colorTableSelectedPair << 1) | 1);
-            ImUtf8.SameLineInner();
-            retB |= ColorTablePasteFromClipboardButton((_colorTableSelectedPair << 1) | 1, disabled);
-            ImGui.SameLine();
-            CenteredTextInRest($"Row {_colorTableSelectedPair + 1}B");
+            using (ImUtf8.PushId("RowHeaderB"u8))
+            {
+                retB |= DrawRowHeader(rowBIdx, disabled);
+            }
         }
 
         DrawHeader("  Colors"u8);
@@ -110,13 +113,13 @@ public partial class MtrlTab
             using var dis = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("ColorsA"u8))
             {
-                retA |= DrawColors(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawColors(table, dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("ColorsB"u8))
             {
-                retB |= DrawColors(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawColors(table, dyeTable, dyePackB, rowBIdx);
             }
         }
 
@@ -126,13 +129,13 @@ public partial class MtrlTab
             using var dis = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("PbrA"u8))
             {
-                retA |= DrawPbr(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawPbr(table, dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("PbrB"u8))
             {
-                retB |= DrawPbr(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawPbr(table, dyeTable, dyePackB, rowBIdx);
             }
         }
 
@@ -142,13 +145,13 @@ public partial class MtrlTab
             using var dis = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("SheenA"u8))
             {
-                retA |= DrawSheen(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawSheen(table, dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("SheenB"u8))
             {
-                retB |= DrawSheen(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawSheen(table, dyeTable, dyePackB, rowBIdx);
             }
         }
 
@@ -158,13 +161,13 @@ public partial class MtrlTab
             using var dis = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("BlendingA"u8))
             {
-                retA |= DrawBlending(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawBlending(table, dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("BlendingB"u8))
             {
-                retB |= DrawBlending(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawBlending(table, dyeTable, dyePackB, rowBIdx);
             }
         }
 
@@ -174,13 +177,13 @@ public partial class MtrlTab
             using var dis = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("TemplateA"u8))
             {
-                retA |= DrawTemplate(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawTemplate(table, dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("TemplateB"u8))
             {
-                retB |= DrawTemplate(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawTemplate(table, dyeTable, dyePackB, rowBIdx);
             }
         }
 
@@ -191,13 +194,13 @@ public partial class MtrlTab
             using var dis     = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("DyeA"u8))
             {
-                retA |= DrawDye(dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawDye(dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("DyeB"u8))
             {
-                retB |= DrawDye(dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawDye(dyeTable, dyePackB, rowBIdx);
             }
         }
 
@@ -207,20 +210,20 @@ public partial class MtrlTab
             using var dis = ImRaii.Disabled(disabled);
             using (ImUtf8.PushId("FurtherA"u8))
             {
-                retA |= DrawFurther(table, dyeTable, dyePackA, _colorTableSelectedPair << 1);
+                retA |= DrawFurther(table, dyeTable, dyePackA, rowAIdx);
             }
 
             columns.Next();
             using (ImUtf8.PushId("FurtherB"u8))
             {
-                retB |= DrawFurther(table, dyeTable, dyePackB, (_colorTableSelectedPair << 1) | 1);
+                retB |= DrawFurther(table, dyeTable, dyePackB, rowBIdx);
             }
         }
 
         if (retA)
-            UpdateColorTableRowPreview(_colorTableSelectedPair << 1);
+            UpdateColorTableRowPreview(rowAIdx);
         if (retB)
-            UpdateColorTableRowPreview((_colorTableSelectedPair << 1) | 1);
+            UpdateColorTableRowPreview(rowBIdx);
 
         return retA | retB;
     }
@@ -231,6 +234,20 @@ public partial class MtrlTab
         var       headerColor = ImGui.GetColorU32(ImGuiCol.Header);
         using var _           = ImRaii.PushColor(ImGuiCol.HeaderHovered, headerColor).Push(ImGuiCol.HeaderActive, headerColor);
         ImUtf8.CollapsingHeader(label, ImGuiTreeNodeFlags.Leaf);
+    }
+
+    private bool DrawRowHeader(int rowIdx, bool disabled)
+    {
+        ColorTableCopyClipboardButton(rowIdx);
+        ImUtf8.SameLineInner();
+        var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
+        ImUtf8.SameLineInner();
+        ColorTableRowHighlightButton(rowIdx, disabled);
+
+        ImGui.SameLine();
+        CenteredTextInRest($"Row {(rowIdx >> 1) + 1}{"AB"[rowIdx & 1]}");
+
+        return ret;
     }
 
     private static bool DrawColors(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
@@ -589,7 +606,7 @@ public partial class MtrlTab
         if (_stainService.GudTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty,
                 scalarSize + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
         {
-            dye.Template = _stainService.LegacyTemplateCombo.CurrentSelection;
+            dye.Template = _stainService.GudTemplateCombo.CurrentSelection;
             ret          = true;
         }
 
