@@ -4,23 +4,26 @@ using Penumbra.Collections;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.Utility;
 using Penumbra.Interop.Hooks.ResourceLoading;
+using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.UI;
 
 namespace Penumbra.Interop.Processing;
 
 /// <summary>
 /// Path pre-processor for shader packages that reverts redirects to known invalid files, as bad ShPks can crash the game.
 /// </summary>
-public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager, ChatWarningService chatWarningService) : IPathPreProcessor
+public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager, MessageService messager, ModManager modManager)
+    : IPathPreProcessor
 {
     public ResourceType Type
         => ResourceType.Shpk;
 
-    public unsafe FullPath? PreProcess(ResolveData resolveData, CiByteString path, Utf8GamePath originalGamePath, bool nonDefault, FullPath? resolved)
+    public unsafe FullPath? PreProcess(ResolveData resolveData, CiByteString path, Utf8GamePath originalGamePath, bool nonDefault,
+        FullPath? resolved)
     {
-        chatWarningService.CleanLastFileWarnings(false);
+        messager.CleanTaggedMessages(false);
 
         if (!resolved.HasValue)
             return null;
@@ -31,7 +34,8 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
             return resolvedPath;
 
         // If the ShPk is already loaded, it means that it already passed the sanity check.
-        var existingResource = resourceManager.FindResource(ResourceCategory.Shader, ResourceType.Shpk, unchecked((uint)resolvedPath.InternalName.Crc32));
+        var existingResource =
+            resourceManager.FindResource(ResourceCategory.Shader, ResourceType.Shpk, unchecked((uint)resolvedPath.InternalName.Crc32));
         if (existingResource != null)
             return resolvedPath;
 
@@ -39,8 +43,7 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
         if (checkResult == SanityCheckResult.Success)
             return resolvedPath;
 
-        Penumbra.Log.Warning($"Refusing to honor file redirection because of failed sanity check (result: {checkResult}). Original path: {originalGamePath} Redirected path: {resolvedPath}");
-        chatWarningService.PrintFileWarning(resolvedPath.FullName, originalGamePath, WarningMessageComplement(checkResult));
+        messager.PrintFileWarning(modManager, resolvedPath.FullName, originalGamePath, WarningMessageComplement(checkResult));
 
         return null;
     }
@@ -49,8 +52,8 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
     {
         try
         {
-            using var file = MmioMemoryManager.CreateFromFile(path);
-            var bytes = file.GetSpan();
+            using var file  = MmioMemoryManager.CreateFromFile(path);
+            var       bytes = file.GetSpan();
 
             return ShpkFile.FastIsLegacy(bytes)
                 ? SanityCheckResult.Legacy
@@ -69,9 +72,9 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
     private static string WarningMessageComplement(SanityCheckResult result)
         => result switch
         {
-            SanityCheckResult.IoError  => "cannot read the modded file.",
-            SanityCheckResult.NotFound => "the modded file does not exist.",
-            SanityCheckResult.Legacy   => "this mod is not compatible with Dawntrail. Get an updated version, if possible, or disable it.",
+            SanityCheckResult.IoError  => "Cannot read the modded file.",
+            SanityCheckResult.NotFound => "The modded file does not exist.",
+            SanityCheckResult.Legacy   => "This mod is not compatible with Dawntrail. Get an updated version, if possible, or disable it.",
             _                          => string.Empty,
         };
 
