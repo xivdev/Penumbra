@@ -18,27 +18,26 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     public static readonly Utf8GamePath PreBoneDeformerPath =
         Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
 
-    // Approximate name guesses.
-    private delegate void  CharacterBaseSetupScalingDelegate(CharacterBase* drawObject, uint slotIndex);
-    private delegate void* CharacterBaseCreateDeformerDelegate(CharacterBase* drawObject, uint slotIndex);
+    // Approximate name guess.
+    private  delegate void* CharacterBaseCreateDeformerDelegate(CharacterBase* drawObject, uint slotIndex);
 
-    private readonly Hook<CharacterBaseSetupScalingDelegate>   _humanSetupScalingHook;
     private readonly Hook<CharacterBaseCreateDeformerDelegate> _humanCreateDeformerHook;
 
-    private readonly CharacterUtility   _utility;
-    private readonly CollectionResolver _collectionResolver;
-    private readonly ResourceLoader     _resourceLoader;
-    private readonly IFramework         _framework;
+    private readonly CharacterUtility      _utility;
+    private readonly CollectionResolver    _collectionResolver;
+    private readonly ResourceLoader        _resourceLoader;
+    private readonly IFramework            _framework;
+    private readonly HumanSetupScalingHook _humanSetupScalingHook;
 
     public PreBoneDeformerReplacer(CharacterUtility utility, CollectionResolver collectionResolver, ResourceLoader resourceLoader,
-        HookManager hooks, IFramework framework, CharacterBaseVTables vTables)
+        HookManager hooks, IFramework framework, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
-        _utility            = utility;
-        _collectionResolver = collectionResolver;
-        _resourceLoader     = resourceLoader;
-        _framework          = framework;
-        _humanSetupScalingHook = hooks.CreateHook<CharacterBaseSetupScalingDelegate>("HumanSetupScaling", vTables.HumanVTable[58], SetupScaling,
-            !HookOverrides.Instance.PostProcessing.HumanSetupScaling).Result;
+        _utility               = utility;
+        _collectionResolver    = collectionResolver;
+        _resourceLoader        = resourceLoader;
+        _framework             = framework;
+        _humanSetupScalingHook = humanSetupScalingHook;
+        _humanSetupScalingHook.SetupReplacements += SetupHSSReplacements;
         _humanCreateDeformerHook = hooks.CreateHook<CharacterBaseCreateDeformerDelegate>("HumanCreateDeformer", vTables.HumanVTable[101],
             CreateDeformer, !HookOverrides.Instance.PostProcessing.HumanCreateDeformer).Result;
     }
@@ -46,7 +45,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     public void Dispose()
     {
         _humanCreateDeformerHook.Dispose();
-        _humanSetupScalingHook.Dispose();
+        _humanSetupScalingHook.SetupReplacements -= SetupHSSReplacements;
     }
 
     private SafeResourceHandle GetPreBoneDeformerForCharacter(CharacterBase* drawObject)
@@ -58,22 +57,24 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
         return cache.CustomResources.Get(ResourceCategory.Chara, ResourceType.Pbd, PreBoneDeformerPath, resolveData);
     }
 
-    private void SetupScaling(CharacterBase* drawObject, uint slotIndex)
+    private void SetupHSSReplacements(CharacterBase* drawObject, uint slotIndex, Span<HumanSetupScalingHook.Replacement> replacements,
+        ref int numReplacements, ref IDisposable? pbdDisposable, ref object? shpkLock)
     {
         if (!_framework.IsInFrameworkUpdateThread)
             Penumbra.Log.Warning(
-                $"{nameof(PreBoneDeformerReplacer)}.{nameof(SetupScaling)}(0x{(nint)drawObject:X}, {slotIndex}) called out of framework thread");
+                $"{nameof(PreBoneDeformerReplacer)}.{nameof(SetupHSSReplacements)}(0x{(nint)drawObject:X}, {slotIndex}) called out of framework thread");
 
-        using var preBoneDeformer = GetPreBoneDeformerForCharacter(drawObject);
+        var preBoneDeformer = GetPreBoneDeformerForCharacter(drawObject);
         try
         {
-            if (!preBoneDeformer.IsInvalid)
-                _utility.Address->HumanPbdResource = (Structs.ResourceHandle*)preBoneDeformer.ResourceHandle;
-            _humanSetupScalingHook.Original(drawObject, slotIndex);
+            pbdDisposable = preBoneDeformer;
+            replacements[numReplacements++] = new((nint)(&_utility.Address->HumanPbdResource), (nint)preBoneDeformer.ResourceHandle,
+                _utility.DefaultHumanPbdResource);
         }
-        finally
+        catch
         {
-            _utility.Address->HumanPbdResource = (Structs.ResourceHandle*)_utility.DefaultHumanPbdResource;
+            preBoneDeformer.Dispose();
+            throw;
         }
     }
 

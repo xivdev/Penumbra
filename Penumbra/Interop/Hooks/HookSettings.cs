@@ -80,6 +80,8 @@ public class HookOverrides
         public bool HumanCreateDeformer;
         public bool HumanOnRenderMaterial;
         public bool ModelRendererOnRenderMaterial;
+        public bool ModelRendererUnkFunc;
+        public bool PrepareColorTable;
     }
 
     public struct ResourceLoadingHooks

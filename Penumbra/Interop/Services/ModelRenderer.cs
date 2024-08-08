@@ -2,6 +2,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Services;
+using ModelRendererData = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRenderer;
 
 namespace Penumbra.Interop.Services;
 
@@ -9,46 +10,53 @@ public unsafe class ModelRenderer : IDisposable, IRequiredService
 {
     public bool Ready { get; private set; }
 
-    public ShaderPackageResourceHandle** IrisShaderPackage
+    public ModelRendererData* Address
         => Manager.Instance() switch
         {
             null              => null,
-            var renderManager => &renderManager->ModelRenderer.IrisShaderPackage,
+            var renderManager => &renderManager->ModelRenderer,
+        };
+
+    public ShaderPackageResourceHandle** IrisShaderPackage
+        => Address switch
+        {
+            null     => null,
+            var data => &data->IrisShaderPackage,
         };
 
     public ShaderPackageResourceHandle** CharacterGlassShaderPackage
-        => Manager.Instance() switch
+        => Address switch
         {
-            null              => null,
-            var renderManager => &renderManager->ModelRenderer.CharacterGlassShaderPackage,
+            null     => null,
+            var data => &data->CharacterGlassShaderPackage,
         };
 
     public ShaderPackageResourceHandle** CharacterTransparencyShaderPackage
-        => Manager.Instance() switch
+        => Address switch
         {
-            null              => null,
-            var renderManager => &renderManager->ModelRenderer.CharacterTransparencyShaderPackage,
+            null     => null,
+            var data => &data->CharacterTransparencyShaderPackage,
         };
 
     public ShaderPackageResourceHandle** CharacterTattooShaderPackage
-        => Manager.Instance() switch
+        => Address switch
         {
-            null              => null,
-            var renderManager => &renderManager->ModelRenderer.CharacterTattooShaderPackage,
+            null     => null,
+            var data => &data->CharacterTattooShaderPackage,
         };
 
     public ShaderPackageResourceHandle** CharacterOcclusionShaderPackage
-        => Manager.Instance() switch
+        => Address switch
         {
-            null              => null,
-            var renderManager => &renderManager->ModelRenderer.CharacterOcclusionShaderPackage,
+            null     => null,
+            var data => &data->CharacterOcclusionShaderPackage,
         };
 
     public ShaderPackageResourceHandle** HairMaskShaderPackage
-        => Manager.Instance() switch
+        => Address switch
         {
-            null              => null,
-            var renderManager => &renderManager->ModelRenderer.HairMaskShaderPackage,
+            null     => null,
+            var data => &data->HairMaskShaderPackage,
         };
 
     public ShaderPackageResourceHandle* DefaultIrisShaderPackage { get; private set; }
@@ -96,7 +104,7 @@ public unsafe class ModelRenderer : IDisposable, IRequiredService
         if (DefaultCharacterTransparencyShaderPackage == null)
         {
             DefaultCharacterTransparencyShaderPackage =  *CharacterTransparencyShaderPackage;
-            anyMissing                               |= DefaultCharacterTransparencyShaderPackage == null;
+            anyMissing                                |= DefaultCharacterTransparencyShaderPackage == null;
         }
 
         if (DefaultCharacterTattooShaderPackage == null)
