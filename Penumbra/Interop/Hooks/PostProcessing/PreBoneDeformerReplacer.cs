@@ -19,7 +19,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
         Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
 
     // Approximate name guess.
-    private  delegate void* CharacterBaseCreateDeformerDelegate(CharacterBase* drawObject, uint slotIndex);
+    private delegate void* CharacterBaseCreateDeformerDelegate(CharacterBase* drawObject, uint slotIndex);
 
     private readonly Hook<CharacterBaseCreateDeformerDelegate> _humanCreateDeformerHook;
 
@@ -32,12 +32,12 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     public PreBoneDeformerReplacer(CharacterUtility utility, CollectionResolver collectionResolver, ResourceLoader resourceLoader,
         HookManager hooks, IFramework framework, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
-        _utility               = utility;
-        _collectionResolver    = collectionResolver;
-        _resourceLoader        = resourceLoader;
-        _framework             = framework;
-        _humanSetupScalingHook = humanSetupScalingHook;
-        _humanSetupScalingHook.SetupReplacements += SetupHSSReplacements;
+        _utility                                 =  utility;
+        _collectionResolver                      =  collectionResolver;
+        _resourceLoader                          =  resourceLoader;
+        _framework                               =  framework;
+        _humanSetupScalingHook                   =  humanSetupScalingHook;
+        _humanSetupScalingHook.SetupReplacements += SetupHssReplacements;
         _humanCreateDeformerHook = hooks.CreateHook<CharacterBaseCreateDeformerDelegate>("HumanCreateDeformer", vTables.HumanVTable[101],
             CreateDeformer, !HookOverrides.Instance.PostProcessing.HumanCreateDeformer).Result;
     }
@@ -45,7 +45,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     public void Dispose()
     {
         _humanCreateDeformerHook.Dispose();
-        _humanSetupScalingHook.SetupReplacements -= SetupHSSReplacements;
+        _humanSetupScalingHook.SetupReplacements -= SetupHssReplacements;
     }
 
     private SafeResourceHandle GetPreBoneDeformerForCharacter(CharacterBase* drawObject)
@@ -57,18 +57,19 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
         return cache.CustomResources.Get(ResourceCategory.Chara, ResourceType.Pbd, PreBoneDeformerPath, resolveData);
     }
 
-    private void SetupHSSReplacements(CharacterBase* drawObject, uint slotIndex, Span<HumanSetupScalingHook.Replacement> replacements,
+    private void SetupHssReplacements(CharacterBase* drawObject, uint slotIndex, Span<HumanSetupScalingHook.Replacement> replacements,
         ref int numReplacements, ref IDisposable? pbdDisposable, ref object? shpkLock)
     {
         if (!_framework.IsInFrameworkUpdateThread)
             Penumbra.Log.Warning(
-                $"{nameof(PreBoneDeformerReplacer)}.{nameof(SetupHSSReplacements)}(0x{(nint)drawObject:X}, {slotIndex}) called out of framework thread");
+                $"{nameof(PreBoneDeformerReplacer)}.{nameof(SetupHssReplacements)}(0x{(nint)drawObject:X}, {slotIndex}) called out of framework thread");
 
         var preBoneDeformer = GetPreBoneDeformerForCharacter(drawObject);
         try
         {
             pbdDisposable = preBoneDeformer;
-            replacements[numReplacements++] = new((nint)(&_utility.Address->HumanPbdResource), (nint)preBoneDeformer.ResourceHandle,
+            replacements[numReplacements++] = new HumanSetupScalingHook.Replacement((nint)(&_utility.Address->HumanPbdResource),
+                (nint)preBoneDeformer.ResourceHandle,
                 _utility.DefaultHumanPbdResource);
         }
         catch

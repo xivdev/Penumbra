@@ -11,10 +11,8 @@ public unsafe class HumanSetupScalingHook : FastHook<HumanSetupScalingHook.Deleg
     public event EventDelegate? SetupReplacements;
 
     public HumanSetupScalingHook(HookManager hooks, CharacterBaseVTables vTables)
-    {
-        Task = hooks.CreateHook<Delegate>("Human.SetupScaling", vTables.HumanVTable[58], Detour,
+        => Task = hooks.CreateHook<Delegate>("Human.SetupScaling", vTables.HumanVTable[58], Detour,
             !HookOverrides.Instance.PostProcessing.HumanSetupScaling);
-    }
 
     private void Detour(CharacterBase* drawObject, uint slotIndex)
     {
@@ -32,6 +30,7 @@ public unsafe class HumanSetupScalingHook : FastHook<HumanSetupScalingHook.Deleg
                 Monitor.Enter(shpkLock);
                 releaseLock = true;
             }
+
             for (var i = 0; i < numReplacements; ++i)
                 *(nint*)replacements[i].AddressToReplace = replacements[i].ValueToSet;
             Task.Result.Original(drawObject, slotIndex);
@@ -50,6 +49,6 @@ public unsafe class HumanSetupScalingHook : FastHook<HumanSetupScalingHook.Deleg
 
     public delegate void EventDelegate(CharacterBase* drawObject, uint slotIndex, Span<Replacement> replacements, ref int numReplacements,
         ref IDisposable? pbdDisposable, ref object? shpkLock);
-    
+
     public readonly record struct Replacement(nint AddressToReplace, nint ValueToSet, nint ValueToRestore);
 }

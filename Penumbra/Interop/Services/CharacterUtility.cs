@@ -67,7 +67,7 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
             _framework.Update += LoadDefaultResources;
     }
 
-    /// <summary> We store the default data of the resources so we can always restore them. </summary>
+    /// <summary> We store the default data of the resources, so we can always restore them. </summary>
     private void LoadDefaultResources(object _)
     {
         if (Address == null)

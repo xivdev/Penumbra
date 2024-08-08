@@ -8,7 +8,6 @@ using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Hooks.Resources;
-using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
@@ -137,7 +136,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         _hairMaskState =
             new ModdedShaderPackageState(() => _modelRenderer.HairMaskShaderPackage, () => _modelRenderer.DefaultHairMaskShaderPackage);
 
-        _humanSetupScalingHook.SetupReplacements += SetupHSSReplacements;
+        _humanSetupScalingHook.SetupReplacements += SetupHssReplacements;
         _humanOnRenderMaterialHook = hooks.CreateHook<CharacterBaseOnRenderMaterialDelegate>("Human.OnRenderMaterial", vTables.HumanVTable[64],
             OnRenderHumanMaterial, !HookOverrides.Instance.PostProcessing.HumanOnRenderMaterial).Result;
         _modelRendererOnRenderMaterialHook = hooks.CreateHook<ModelRendererOnRenderMaterialDelegate>("ModelRenderer.OnRenderMaterial",
@@ -146,7 +145,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         _modelRendererUnkFuncHook = hooks.CreateHook<ModelRendererUnkFuncDelegate>("ModelRenderer.UnkFunc",
             Sigs.ModelRendererUnkFunc, ModelRendererUnkFuncDetour,
             !HookOverrides.Instance.PostProcessing.ModelRendererUnkFunc).Result;
-        _prepareColorTableHook = hooks.CreateHook<MaterialResourceHandle.Delegates.PrepareColorTable>("MaterialResourceHandle.PrepareColorTable",
+        _prepareColorTableHook = hooks.CreateHook<MaterialResourceHandle.Delegates.PrepareColorTable>(
+            "MaterialResourceHandle.PrepareColorTable",
             Sigs.PrepareColorSet, PrepareColorTableDetour,
             !HookOverrides.Instance.PostProcessing.PrepareColorTable).Result;
 
@@ -160,7 +160,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         _modelRendererUnkFuncHook.Dispose();
         _modelRendererOnRenderMaterialHook.Dispose();
         _humanOnRenderMaterialHook.Dispose();
-        _humanSetupScalingHook.SetupReplacements -= SetupHSSReplacements;
+        _humanSetupScalingHook.SetupReplacements -= SetupHssReplacements;
 
         _communicator.MtrlLoaded.Unsubscribe(OnMtrlLoaded);
         _resourceHandleDestructor.Unsubscribe(OnResourceHandleDestructor);
@@ -188,14 +188,6 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             _characterOcclusionState.GetAndResetSlowPathCallDelta(),
             _hairMaskState.GetAndResetSlowPathCallDelta());
 
-    private static bool IsMaterialWithShpk(MaterialResourceHandle* mtrlResource, ReadOnlySpan<byte> shpkName)
-    {
-        if (mtrlResource == null)
-            return false;
-
-        return shpkName.SequenceEqual(mtrlResource->ShpkNameSpan);
-    }
-
     private void OnMtrlLoaded(nint mtrlResourceHandle, nint gameObject)
     {
         var mtrl = (MaterialResourceHandle*)mtrlResourceHandle;
@@ -203,9 +195,11 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         if (shpk == null)
             return;
 
-        var shpkName  = mtrl->ShpkNameSpan;
-        var shpkState = GetStateForHumanSetup(shpkName) ?? GetStateForHumanRender(shpkName) ?? GetStateForModelRendererRender(shpkName)
-            ?? GetStateForModelRendererUnk(shpkName) ?? GetStateForColorTable(shpkName);
+        var shpkName = mtrl->ShpkNameSpan;
+        var shpkState = GetStateForHumanSetup(shpkName)
+         ?? GetStateForHumanRender(shpkName)
+         ?? GetStateForModelRendererRender(shpkName)
+         ?? GetStateForModelRendererUnk(shpkName) ?? GetStateForColorTable(shpkName);
 
         if (shpkState != null && shpk != shpkState.DefaultShaderPackage)
             shpkState.TryAddMaterial(mtrlResourceHandle);
@@ -228,12 +222,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => mtrlResource == null ? null : GetStateForHumanSetup(mtrlResource->ShpkNameSpan);
 
     private ModdedShaderPackageState? GetStateForHumanSetup(ReadOnlySpan<byte> shpkName)
-    {
-        if (CharacterStockingsShpkName.SequenceEqual(shpkName))
-            return _characterStockingsState;
-
-        return null;
-    }
+        => CharacterStockingsShpkName.SequenceEqual(shpkName) ? _characterStockingsState : null;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private uint GetTotalMaterialCountForHumanSetup()
@@ -243,12 +232,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => mtrlResource == null ? null : GetStateForHumanRender(mtrlResource->ShpkNameSpan);
 
     private ModdedShaderPackageState? GetStateForHumanRender(ReadOnlySpan<byte> shpkName)
-    {
-        if (SkinShpkName.SequenceEqual(shpkName))
-            return _skinState;
-
-        return null;
-    }
+        => SkinShpkName.SequenceEqual(shpkName) ? _skinState : null;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private uint GetTotalMaterialCountForHumanRender()
@@ -305,18 +289,13 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
           + _characterStockingsState.MaterialCount;
 
     private ModdedShaderPackageState? GetStateForColorTable(ReadOnlySpan<byte> shpkName)
-    {
-        if (CharacterLegacyShpkName.SequenceEqual(shpkName))
-            return _characterLegacyState;
-
-        return null;
-    }
+        => CharacterLegacyShpkName.SequenceEqual(shpkName) ? _characterLegacyState : null;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private uint GetTotalMaterialCountForColorTable()
         => _characterLegacyState.MaterialCount;
 
-    private void SetupHSSReplacements(CharacterBase* drawObject, uint slotIndex, Span<HumanSetupScalingHook.Replacement> replacements,
+    private void SetupHssReplacements(CharacterBase* drawObject, uint slotIndex, Span<HumanSetupScalingHook.Replacement> replacements,
         ref int numReplacements, ref IDisposable? pbdDisposable, ref object? shpkLock)
     {
         // If we don't have any on-screen instances of modded characterstockings.shpk, we don't need the slow path at all.
@@ -326,6 +305,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         var model = drawObject->Models[slotIndex];
         if (model == null)
             return;
+
         MaterialResourceHandle*   mtrlResource = null;
         ModdedShaderPackageState? shpkState    = null;
         foreach (var material in model->MaterialsSpan)
@@ -340,6 +320,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             if (shpkState != null)
                 break;
         }
+
         if (shpkState == null || shpkState.MaterialCount == 0)
             return;
 
@@ -348,7 +329,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         // This is less performance-critical than the others, as this is called by the game only on draw object creation and slot update.
         // There are still thread safety concerns as it might be called in other threads by plugins.
         shpkLock = shpkState;
-        replacements[numReplacements++] = new((nint)shpkState.ShaderPackageReference, (nint)mtrlResource->ShaderPackageResourceHandle,
+        replacements[numReplacements++] = new HumanSetupScalingHook.Replacement((nint)shpkState.ShaderPackageReference,
+            (nint)mtrlResource->ShaderPackageResourceHandle,
             (nint)shpkState.DefaultShaderPackage);
     }
 
@@ -439,7 +421,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         // Same performance considerations as OnRenderHumanMaterial.
         lock (shpkState)
         {
-            var shpkReference  = shpkState.ShaderPackageReference;
+            var shpkReference = shpkState.ShaderPackageReference;
             try
             {
                 *shpkReference = mtrlResource->ShaderPackageResourceHandle;
@@ -452,7 +434,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         }
     }
 
-    private MaterialResourceHandle* GetMaterialResourceHandle(ModelRendererStructs.UnkPayload* unkPayload)
+    private static MaterialResourceHandle* GetMaterialResourceHandle(ModelRendererStructs.UnkPayload* unkPayload)
     {
         // TODO ClientStructs-ify
         var unkPointer    = *(nint*)((nint)unkPayload->ModelResourceHandle + 0xE8) + unkPayload->UnkIndex * 0x24;
@@ -467,13 +449,14 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
         if (mtrlResource->ShaderPackageResourceHandle == null)
         {
-            Penumbra.Log.Warning($"ShaderReplacementFixer found a MaterialResourceHandle with no shader package");
+            Penumbra.Log.Warning("ShaderReplacementFixer found a MaterialResourceHandle with no shader package");
             return null;
         }
 
         if (mtrlResource->ShaderPackageResourceHandle->ShaderPackage != unkPayload->ShaderWrapper->ShaderPackage)
         {
-            Penumbra.Log.Warning($"ShaderReplacementFixer found a MaterialResourceHandle (0x{(nint)mtrlResource:X}) with an inconsistent shader package (got 0x{(nint)mtrlResource->ShaderPackageResourceHandle->ShaderPackage:X}, expected 0x{(nint)unkPayload->ShaderWrapper->ShaderPackage:X})");
+            Penumbra.Log.Warning(
+                $"ShaderReplacementFixer found a MaterialResourceHandle (0x{(nint)mtrlResource:X}) with an inconsistent shader package (got 0x{(nint)mtrlResource->ShaderPackageResourceHandle->ShaderPackage:X}, expected 0x{(nint)unkPayload->ShaderWrapper->ShaderPackage:X})");
             return null;
         }
 
