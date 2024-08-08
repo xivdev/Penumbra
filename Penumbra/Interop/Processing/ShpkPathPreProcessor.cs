@@ -1,3 +1,4 @@
+using System.IO.MemoryMappedFiles;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -52,7 +53,7 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
     {
         try
         {
-            using var file  = MmioMemoryManager.CreateFromFile(path);
+            using var file  = MmioMemoryManager.CreateFromFile(path, access: MemoryMappedFileAccess.Read);
             var       bytes = file.GetSpan();
 
             return ShpkFile.FastIsLegacy(bytes)

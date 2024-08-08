@@ -834,20 +834,6 @@ public class DebugTab : Window, ITab, IUiService
         ImGui.TableHeadersRow();
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted("skin.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedSkinShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.Skin}");
-
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("iris.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedIrisShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.Iris}");
-
-        ImGui.TableNextColumn();
         ImGui.TextUnformatted("characterglass.shpk");
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
@@ -855,18 +841,11 @@ public class DebugTab : Window, ITab, IUiService
         ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterGlass}");
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted("charactertransparency.shpk");
+        ImGui.TextUnformatted("characterlegacy.shpk");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTransparencyShpkCount}");
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterLegacyShpkCount}");
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTransparency}");
-
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("charactertattoo.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTattooShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTattoo}");
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterLegacy}");
 
         ImGui.TableNextColumn();
         ImGui.TextUnformatted("characterocclusion.shpk");
@@ -876,11 +855,46 @@ public class DebugTab : Window, ITab, IUiService
         ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterOcclusion}");
 
         ImGui.TableNextColumn();
+        ImGui.TextUnformatted("characterstockings.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterStockingsShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterStockings}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("charactertattoo.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTattooShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTattoo}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("charactertransparency.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTransparencyShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTransparency}");
+
+        ImGui.TableNextColumn();
         ImGui.TextUnformatted("hairmask.shpk");
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedHairMaskShpkCount}");
         ImGui.TableNextColumn();
         ImGui.TextUnformatted($"{slowPathCallDeltas.HairMask}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("iris.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedIrisShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.Iris}");
+
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted("skin.shpk");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedSkinShpkCount}");
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted($"{slowPathCallDeltas.Skin}");
     }
 
     /// <summary> Draw information about the resident resource files. </summary>

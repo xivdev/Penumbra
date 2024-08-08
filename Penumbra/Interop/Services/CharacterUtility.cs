@@ -28,10 +28,12 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
 
     public bool         Ready { get; private set; }
     public event Action LoadingFinished;
-    public nint         DefaultHumanPbdResource    { get; private set; }
-    public nint         DefaultTransparentResource { get; private set; }
-    public nint         DefaultDecalResource       { get; private set; }
-    public nint         DefaultSkinShpkResource    { get; private set; }
+    public nint         DefaultHumanPbdResource               { get; private set; }
+    public nint         DefaultTransparentResource            { get; private set; }
+    public nint         DefaultDecalResource                  { get; private set; }
+    public nint         DefaultSkinShpkResource               { get; private set; }
+    public nint         DefaultCharacterStockingsShpkResource { get; private set; }
+    public nint         DefaultCharacterLegacyShpkResource    { get; private set; }
 
     /// <summary>
     /// The relevant indices depend on which meta manipulations we allow for.
@@ -108,6 +110,18 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
             anyMissing              |= DefaultSkinShpkResource == nint.Zero;
         }
 
+        if (DefaultCharacterStockingsShpkResource == nint.Zero)
+        {
+            DefaultCharacterStockingsShpkResource =  (nint)Address->CharacterStockingsShpkResource;
+            anyMissing                            |= DefaultCharacterStockingsShpkResource == nint.Zero;
+        }
+
+        if (DefaultCharacterLegacyShpkResource == nint.Zero)
+        {
+            DefaultCharacterLegacyShpkResource =  (nint)Address->CharacterLegacyShpkResource;
+            anyMissing                         |= DefaultCharacterLegacyShpkResource == nint.Zero;
+        }
+
         if (anyMissing)
             return;
 
@@ -122,10 +136,12 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
         if (!Ready)
             return;
 
-        Address->HumanPbdResource       = (ResourceHandle*)DefaultHumanPbdResource;
-        Address->TransparentTexResource = (TextureResourceHandle*)DefaultTransparentResource;
-        Address->DecalTexResource       = (TextureResourceHandle*)DefaultDecalResource;
-        Address->SkinShpkResource       = (ResourceHandle*)DefaultSkinShpkResource;
+        Address->HumanPbdResource               = (ResourceHandle*)DefaultHumanPbdResource;
+        Address->TransparentTexResource         = (TextureResourceHandle*)DefaultTransparentResource;
+        Address->DecalTexResource               = (TextureResourceHandle*)DefaultDecalResource;
+        Address->SkinShpkResource               = (ResourceHandle*)DefaultSkinShpkResource;
+        Address->CharacterStockingsShpkResource = (ResourceHandle*)DefaultCharacterStockingsShpkResource;
+        Address->CharacterLegacyShpkResource    = (ResourceHandle*)DefaultCharacterLegacyShpkResource;
     }
 
     public void Dispose()
