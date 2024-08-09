@@ -59,7 +59,7 @@ public class PenumbraChangelog : IUiService
 
     private static void Add1_2_1_0(Changelog log)
         => log.NextVersion("Version 1.2.1.0")
-            .RegisterHighlight("Penumbra is now released for Dawntrail.")
+            .RegisterHighlight("Penumbra is now released for Dawntrail!")
             .RegisterEntry("Mods themselves may have to be updated. TexTools provides options for this.",                              1)
             .RegisterEntry("For model files, Penumbra provides a rudimentary update function, but prefer using TexTools if possible.", 1)
             .RegisterEntry("Other files, like materials and textures, will have to go through TexTools for the moment.",               1)
@@ -81,10 +81,10 @@ public class PenumbraChangelog : IUiService
             .RegisterImportant(
                 "The 'Update Bibo' button was removed. The functionality is redundant since any mods that old need to be updated anyway.")
             .RegisterEntry("Clicking the button on modern mods generally caused more harm than benefit.", 1)
-            .RegisterImportant("Model Import/Export is temporarily disabled until Dawntrail-related changes can be made.")
             .RegisterEntry(
                 "If you somehow still need to mass-migrate materials in your models, the Material Reassignment tab in Advanced Editing is still available for this.",
                 1)
+            .RegisterImportant("Model Import/Export is temporarily disabled until Dawntrail-related changes can be made.")
             .RegisterHighlight("You can now change a mods state in any collection from its Collections tab via right-clicking the state.")
             .RegisterHighlight("Items changed in a mod now sort before other items in the Item Swap tab, and are highlighted.")
             .RegisterEntry("Path handling was improved in regards to case-sensitivity.")
