@@ -63,6 +63,8 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("Mods themselves may have to be updated. TexTools provides options for this.",                              1)
             .RegisterEntry("For model files, Penumbra provides a rudimentary update function, but prefer using TexTools if possible.", 1)
             .RegisterEntry("Other files, like materials and textures, will have to go through TexTools for the moment.",               1)
+            .RegisterEntry(
+                "Some outdated mods can be identified by Penumbra and are prevented from loading entirely (specifically shaders, by Ny).", 1)
             .RegisterImportant("I am sorry that it took this long, but there was an immense amount of work to be done from the start.")
             .RegisterImportant(
                 "Since Penumbra has been in Testing for quite a while, multitudes of bugs and issues cropped up that needed to be dealt with.",
@@ -84,6 +86,7 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry(
                 "If you somehow still need to mass-migrate materials in your models, the Material Reassignment tab in Advanced Editing is still available for this.",
                 1)
+            .RegisterEntry("The On-Screen tab was updated and improved and can now display modded actual paths in more useful form.")
             .RegisterImportant("Model Import/Export is temporarily disabled until Dawntrail-related changes can be made.")
             .RegisterHighlight("You can now change a mods state in any collection from its Collections tab via right-clicking the state.")
             .RegisterHighlight("Items changed in a mod now sort before other items in the Item Swap tab, and are highlighted.")
