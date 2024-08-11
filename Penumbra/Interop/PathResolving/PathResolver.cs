@@ -61,7 +61,7 @@ public class PathResolver : IDisposable, IService
             ResourceCategory.GameScript => (null, ResolveData.Invalid),
             // Use actual resolving.
             ResourceCategory.Chara  => Resolve(path, resourceType),
-            ResourceCategory.Shader => Resolve(path, resourceType),
+            ResourceCategory.Shader => ResolveShader(path, resourceType),
             ResourceCategory.Vfx    => Resolve(path, resourceType),
             ResourceCategory.Sound  => Resolve(path, resourceType),
             // EXD Modding in general should probably be prohibited but is currently used for fan translations.
@@ -81,6 +81,19 @@ public class PathResolver : IDisposable, IService
             ResourceCategory.Music    => DefaultResolver(path),
             _                         => DefaultResolver(path),
         };
+    }
+
+    /// <remarks> Replacing the characterstockings.shpk or the characterocclusion.shpk files currently causes crashes, so we just entirely prevent that. </remarks>
+    private (FullPath?, ResolveData) ResolveShader(Utf8GamePath gamePath, ResourceType type)
+    {
+        if (type is not ResourceType.Shpk)
+            return Resolve(gamePath, type);
+
+        if (gamePath.Path.EndsWith("occlusion.shpk"u8)
+         || gamePath.Path.EndsWith("stockings.shpk"u8))
+            return (null, ResolveData.Invalid);
+
+        return Resolve(gamePath, type);
     }
 
     public (FullPath?, ResolveData) Resolve(Utf8GamePath gamePath, ResourceType type)
