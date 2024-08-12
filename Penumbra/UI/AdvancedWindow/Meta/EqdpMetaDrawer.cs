@@ -86,11 +86,11 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
         ImUtf8.HoverTooltip("Model Set ID"u8);
 
         ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Gender.ToName(), FrameColor);
+        ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
         ImUtf8.HoverTooltip("Model Race"u8);
 
         ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
+        ImUtf8.TextFramed(identifier.Gender.ToName(), FrameColor);
         ImUtf8.HoverTooltip("Gender"u8);
 
         ImGui.TableNextColumn();
