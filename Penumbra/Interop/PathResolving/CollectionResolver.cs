@@ -216,10 +216,13 @@ public sealed unsafe class CollectionResolver(
     private ModCollection? CollectionByAttributes(Actor actor, ref bool notYetReady)
     {
         if (!actor.IsCharacter)
+        {
+            Penumbra.Log.Excessive($"Actor to be identified was not yet a Character.");
+            notYetReady = true;
             return null;
+        }
 
         // Only handle human models.
-
         if (!IsModelHuman((uint)actor.AsCharacter->CharacterData.ModelCharaId))
             return null;
 
