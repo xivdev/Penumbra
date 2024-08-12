@@ -63,6 +63,9 @@ public class MigrationManager(Configuration config) : IService
     public void CleanMtrlBackups(string path)
         => CleanBackups(path, "*.mtrl.bak", "material", MtrlCleanup, TaskType.MtrlCleanup);
 
+    public void Await()
+        => _currentTask?.Wait();
+
     private void CleanBackups(string path, string extension, string fileType, MigrationData data, TaskType type)
     {
         if (IsRunning)

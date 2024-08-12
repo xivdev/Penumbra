@@ -15,15 +15,17 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     private readonly ModImportManager    _modImportManager;
     private readonly Configuration       _config;
     private readonly ModFileSystem       _modFileSystem;
+    private readonly MigrationManager    _migrationManager;
 
     public ModsApi(ModManager modManager, ModImportManager modImportManager, Configuration config, ModFileSystem modFileSystem,
-        CommunicatorService communicator)
+        CommunicatorService communicator, MigrationManager migrationManager)
     {
         _modManager       = modManager;
         _modImportManager = modImportManager;
         _config           = config;
         _modFileSystem    = modFileSystem;
         _communicator     = communicator;
+        _migrationManager = migrationManager;
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiMods);
     }
 
@@ -81,9 +83,16 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
             return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
 
         _modManager.AddMod(dir);
+        if (_config.MigrateImportedModelsToV6)
+        {
+            _migrationManager.MigrateMdlDirectory(dir.FullName, false);
+            _migrationManager.Await();
+        }
+
         if (_config.UseFileSystemCompression)
             new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
                 CompressionAlgorithm.Xpress8K);
+
         return ApiHelpers.Return(PenumbraApiEc.Success, args);
     }
 
