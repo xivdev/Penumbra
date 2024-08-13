@@ -168,9 +168,9 @@ public class VertexAttribute
             var closestIndex = Enumerable.Range(0, byteValues.Length)
                 .Where(i => adjustment switch
                 {
-                    < 0 when byteValues[i] > 0   => true,
-                    > 0 when byteValues[i] < 255 => true,
-                    _                            => true,
+                    < 0 => byteValues[i] > 0,
+                    > 0 => byteValues[i] < 255,
+                    _ => true,
                 })
                 .Select(index => (index, delta: Math.Abs(originalData[index] - (byteValues[index] * (1f / 255f)))))
                 .MinBy(x => x.delta)
