@@ -154,28 +154,6 @@ public class VertexAttribute
                 return AdjustByteArray(byteValues, originalData);
             }
         );
-       
-        /*var element = new MdlStructs.VertexElement()
-        {
-            Stream = 0,
-            Type   = (byte)MdlFile.VertexType.NByte4,
-            Usage  = (byte)MdlFile.VertexUsage.BlendWeights,
-        };
-
-        var weights0 = weights0Accessor.AsVector4Array();
-
-        return new VertexAttribute(
-            element,
-            index =>
-            {
-                var weight0 = weights0[index];
-                var originalData   = new[] { weight0.X, weight0.Y, weight0.Z, weight0.W };
-                var byteValues     = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
-                var newByteValues = AdjustByteArray(byteValues, originalData);
-                if (!newByteValues.SequenceEqual(byteValues))
-                    notifier.Warning("Adjusted blend weights to maintain precision.");
-                return newByteValues;
-            });*/
     }
 
     private static byte[] AdjustByteArray(byte[] byteValues, float[] originalValues)
@@ -268,28 +246,6 @@ public class VertexAttribute
                 return byteValues.Select(x => (byte)x).ToArray();
             }
         );
-        
-        /*var element = new MdlStructs.VertexElement()
-        {
-            Stream = 0,
-            Type   = (byte)MdlFile.VertexType.UByte4,
-            Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
-        };
-
-        return new VertexAttribute(
-            element,
-            index =>
-            {
-                var gltfIndices = joints0[index];
-                var gltfWeights = weights0[index];
-                return BuildUByte4(new Vector4(
-                    gltfWeights.X == 0 ? 0 : boneMap[(ushort)gltfIndices.X],
-                    gltfWeights.Y == 0 ? 0 : boneMap[(ushort)gltfIndices.Y],
-                    gltfWeights.Z == 0 ? 0 : boneMap[(ushort)gltfIndices.Z],
-                    gltfWeights.W == 0 ? 0 : boneMap[(ushort)gltfIndices.W]
-                ));
-            }
-        );*/
     }
 
     public static VertexAttribute? Normal(Accessors accessors, IEnumerable<Accessors> morphAccessors)
