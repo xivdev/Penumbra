@@ -146,43 +146,39 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => {
-                var weight0       = weights0[index];
-                var weight1       = weights1?[index];
-                var originalData  = BuildUshort4(weight0, weight1 ?? Vector4.Zero);
-                var byteValues    = originalData.Select(x => (byte)Math.Round(x * 255f)).ToArray();
-                return AdjustByteArray(byteValues, originalData);
-            }
+            index => BuildBlendWeights(weights0[index], weights1?[index] ?? Vector4.Zero)
         );
     }
-
-    private static byte[] AdjustByteArray(byte[] byteValues, float[] originalValues)
+    
+    private static byte[] BuildBlendWeights(Vector4 v1, Vector4 v2)
     {
+        var originalData = BuildUshort4(v1, v2);
+        var  byteValues   = new byte[originalData.Length];
+        for (var i = 0; i < originalData.Length; i++)
+        {
+            byteValues[i] = (byte)Math.Round(originalData[i] * 255f);
+        }
+        
         // Blend weights are _very_ sensitive to float imprecision - a vertex sum being off
         // by one, such as 256, is enough to cause a visible defect. To avoid this, we tweak
         // the converted values to have the expected sum, preferencing values with minimal differences.
-        var adjustment = 255 - byteValues.Select(value => (int)value).Sum();
+        var adjustment = 255 - byteValues.Sum(value => value);
         while (adjustment != 0)
         {
-            var convertedValues = byteValues.Select(value => value * (1f / 255f)).ToArray();
             var closestIndex = Enumerable.Range(0, byteValues.Length)
-                .Where(index =>
+                .Where(i => adjustment switch
                 {
-                    var byteValue = byteValues[index];
-                    if (adjustment < 0)
-                        return byteValue > 0;
-                    if (adjustment > 0)
-                        return byteValue < 255;
-
-                    return true;
+                    < 0 when byteValues[i] > 0   => true,
+                    > 0 when byteValues[i] < 255 => true,
+                    _                            => true,
                 })
-                .Select(index => (index, delta: Math.Abs(originalValues[index] - convertedValues[index])))
+                .Select(index => (index, delta: Math.Abs(originalData[index] - (byteValues[index] * (1f / 255f)))))
                 .MinBy(x => x.delta)
                 .index;
-            byteValues[closestIndex] = (byte)(byteValues[closestIndex] + Math.CopySign(1, adjustment));
-            adjustment               = 255 - byteValues.Select(value => (int)value).Sum();
+            byteValues[closestIndex] += (byte)Math.CopySign(1, adjustment);
+            adjustment               = 255 - byteValues.Sum(value => value);
         }
-
+        
         return byteValues;
     }
 
@@ -226,7 +222,7 @@ public class VertexAttribute
                     gltfWeights0.W == 0 ? 0 : boneMap[(ushort)gltfIndices0.W]
                 );
                 
-                Vector4 v1;
+                var v1 = Vector4.Zero;
                 if (gltfIndices1 != null && gltfWeights1 != null)
                 {
                     v1 = new Vector4(
@@ -235,10 +231,6 @@ public class VertexAttribute
                         gltfWeights1.Value.Z == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.Z],
                         gltfWeights1.Value.W == 0 ? 0 : boneMap[(ushort)gltfIndices1.Value.W]
                     );
-                }
-                else
-                {
-                    v1 = Vector4.Zero;
                 }
 
                 var byteValues = BuildUshort4(v0, v1);
