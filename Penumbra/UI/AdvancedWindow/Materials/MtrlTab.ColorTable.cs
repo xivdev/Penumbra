@@ -13,15 +13,13 @@ public partial class MtrlTab
 {
     private const float ColorTableScalarSize = 65.0f;
 
-    private int _colorTableSelectedPair;
-
-    private bool DrawColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
+    private bool DrawColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled, MtrlTabUiState uiState)
     {
-        DrawColorTablePairSelector(table, disabled);
-        return DrawColorTablePairEditor(table, dyeTable, disabled);
+        DrawColorTablePairSelector(table, disabled, uiState);
+        return DrawColorTablePairEditor(table, dyeTable, disabled, uiState);
     }
 
-    private void DrawColorTablePairSelector(ColorTable table, bool disabled)
+    private void DrawColorTablePairSelector<TRow>(IColorTable<TRow> table, bool disabled, MtrlTabUiState uiState) where TRow : unmanaged, IColorRow
     {
         var style            = ImGui.GetStyle();
         var itemSpacing      = style.ItemSpacing.X;
@@ -38,16 +36,17 @@ public partial class MtrlTab
         var spaceWidth   = ImUtf8.CalcTextSize(" "u8).X;
         var spacePadding = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
 
-        for (var i = 0; i < ColorTable.NumRows >> 1; i += 8)
+        for (var i = 0; i < table.Height >> 1; i += 8)
         {
-            for (var j = 0; j < 8; ++j)
+            var numPairsInRow = Math.Min(8, (table.Height >> 1) - i);
+            for (var j = 0; j < numPairsInRow; ++j)
             {
                 var pairIndex = i + j;
-                using (ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), pairIndex == _colorTableSelectedPair))
+                using (ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), pairIndex == uiState.ColorTableSelectedPair))
                 {
                     if (ImUtf8.Button($"#{pairIndex + 1}".PadLeft(3 + spacePadding),
                             new Vector2(buttonWidth, ImGui.GetFrameHeightWithSpacing() + frameHeight)))
-                        _colorTableSelectedPair = pairIndex;
+                        uiState.ColorTableSelectedPair = pairIndex;
                 }
 
                 var rcMin = ImGui.GetItemRectMin() + framePadding;
@@ -69,7 +68,7 @@ public partial class MtrlTab
                     ImGuiUtil.ColorConvertFloat3ToU32(PseudoSqrtRgb((Vector3)table[pairIndex << 1].EmissiveColor)),
                     ImGuiUtil.ColorConvertFloat3ToU32(PseudoSqrtRgb((Vector3)table[(pairIndex << 1) | 1].EmissiveColor))
                 );
-                if (j < 7)
+                if (j + 1 < numPairsInRow)
                     ImGui.SameLine();
 
                 var cursor = ImGui.GetCursorScreenPos();
@@ -82,14 +81,14 @@ public partial class MtrlTab
         }
     }
 
-    private bool DrawColorTablePairEditor(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
+    private bool DrawColorTablePairEditor(ColorTable table, ColorDyeTable? dyeTable, bool disabled, MtrlTabUiState uiState)
     {
         var retA        = false;
         var retB        = false;
-        var rowAIdx     = _colorTableSelectedPair << 1;
+        var rowAIdx     = uiState.ColorTableSelectedPair << 1;
         var rowBIdx     = rowAIdx | 1;
-        var dyeA        = dyeTable?[_colorTableSelectedPair << 1] ?? default;
-        var dyeB        = dyeTable?[(_colorTableSelectedPair << 1) | 1] ?? default;
+        var dyeA        = dyeTable?[uiState.ColorTableSelectedPair << 1] ?? default;
+        var dyeB        = dyeTable?[(uiState.ColorTableSelectedPair << 1) | 1] ?? default;
         var previewDyeA = _stainService.GetStainCombo(dyeA.Channel).CurrentSelection.Key;
         var previewDyeB = _stainService.GetStainCombo(dyeB.Channel).CurrentSelection.Key;
         var dyePackA    = _stainService.GudStmFile.GetValueOrNull(dyeA.Template, previewDyeA);
@@ -335,7 +334,6 @@ public partial class MtrlTab
         var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
         var itemSpacing = ImGui.GetStyle().ItemSpacing.X;
         var dyeOffset   = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize - 64.0f;
-        var subColWidth = CalculateSubColumnWidth(2);
 
         var     ret = false;
         ref var row = ref table[rowIdx];
@@ -387,6 +385,20 @@ public partial class MtrlTab
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
+        ret |= DrawTemplateTile(table, rowIdx);
+
+        return ret;
+    }
+
+    private bool DrawTemplateTile<TRow>(IColorTable<TRow> table, int rowIdx) where TRow : unmanaged, IColorRow
+    {
+        var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
+        var itemSpacing = ImGui.GetStyle().ItemSpacing.X;
+        var subColWidth = CalculateSubColumnWidth(2);
+
+        var     ret = false;
+        ref var row = ref table[rowIdx];
+
         var leftLineHeight  = 64.0f + ImGui.GetStyle().FramePadding.Y * 2.0f;
         var rightLineHeight = 3.0f * ImGui.GetFrameHeight() + 2.0f * ImGui.GetStyle().ItemSpacing.Y;
         var lineHeight      = Math.Max(leftLineHeight, rightLineHeight);
@@ -406,8 +418,13 @@ public partial class MtrlTab
             ImGui.Dummy(new Vector2(scalarSize, 0.0f));
             ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(scalarSize);
-            ret |= CtDragScalar("Tile Opacity"u8, default, (float)row.TileAlpha * 100.0f, "%.0f%%"u8, 0.0f, HalfMaxValue * 100.0f, 1.0f,
-                v => table[rowIdx].TileAlpha = (Half)(v * 0.01f));
+            if (table is ColorTable rwTable)
+            {
+                ret |= CtDragScalar("Tile Opacity"u8, default, (float)row.TileAlpha * 100.0f, "%.0f%%"u8, 0.0f, HalfMaxValue * 100.0f, 1.0f,
+                    v => rwTable[rowIdx].TileAlpha = (Half)(v * 0.01f));
+            }
+            else
+                CtDragScalar<float>("Tile Opacity"u8, default, (float)row.TileAlpha * 100.0f, "%.0f%%"u8);
 
             ret |= CtTileTransformMatrix(row.TileTransform, scalarSize, true,
                 m => table[rowIdx].TileTransform = m);

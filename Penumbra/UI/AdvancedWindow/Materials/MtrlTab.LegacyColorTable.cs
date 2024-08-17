@@ -16,31 +16,8 @@ public partial class MtrlTab
     private const float LegacyColorTableIntegerSize    = 40.0f;
     private const float LegacyColorTableByteSize       = 25.0f;
 
-    private bool DrawLegacyColorTable(LegacyColorTable table, LegacyColorDyeTable? dyeTable, bool disabled)
-    {
-        using var imTable = ImUtf8.Table("##ColorTable"u8, dyeTable != null ? 10 : 8,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
-        if (!imTable)
-            return false;
-
-        DrawLegacyColorTableHeader(dyeTable != null);
-
-        var ret = false;
-        for (var i = 0; i < LegacyColorTable.NumRows; ++i)
-        {
-            if (DrawLegacyColorTableRow(table, dyeTable, i, disabled))
-            {
-                UpdateColorTableRowPreview(i);
-                ret = true;
-            }
-
-            ImGui.TableNextRow();
-        }
-
-        return ret;
-    }
-
-    private bool DrawLegacyColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
+    private bool DrawLegacyColorTable<TRow, TDyeRow>(IColorTable<TRow> table, IColorDyeTable<TDyeRow>? dyeTable, bool disabled)
+        where TRow : unmanaged, ILegacyColorRow where TDyeRow : unmanaged, ILegacyColorDyeRow
     {
         using var imTable = ImUtf8.Table("##ColorTable"u8, dyeTable != null ? 10 : 8,
             ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
@@ -91,113 +68,8 @@ public partial class MtrlTab
         }
     }
 
-    private bool DrawLegacyColorTableRow(LegacyColorTable table, LegacyColorDyeTable? dyeTable, int rowIdx, bool disabled)
-    {
-        using var id        = ImRaii.PushId(rowIdx);
-        ref var   row       = ref table[rowIdx];
-        var       dye       = dyeTable != null ? dyeTable[rowIdx] : default;
-        var       floatSize = LegacyColorTableFloatSize * UiHelpers.Scale;
-        var       pctSize   = LegacyColorTablePercentageSize * UiHelpers.Scale;
-        var       intSize   = LegacyColorTableIntegerSize * UiHelpers.Scale;
-        ImGui.TableNextColumn();
-        ColorTableCopyClipboardButton(rowIdx);
-        ImUtf8.SameLineInner();
-        var ret = ColorTablePasteFromClipboardButton(rowIdx, disabled);
-        ImUtf8.SameLineInner();
-        ColorTableRowHighlightButton(rowIdx, disabled);
-
-        ImGui.TableNextColumn();
-        using (ImRaii.PushFont(UiBuilder.MonoFont))
-        {
-            ImUtf8.Text($"{(rowIdx >> 1) + 1,2:D}{"AB"[rowIdx & 1]}");
-        }
-
-        ImGui.TableNextColumn();
-        using var dis = ImRaii.Disabled(disabled);
-        ret |= CtColorPicker("##Diffuse"u8, "Diffuse Color"u8, row.DiffuseColor,
-            c => table[rowIdx].DiffuseColor = c);
-        if (dyeTable != null)
-        {
-            ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeDiffuse"u8, "Apply Diffuse Color on Dye"u8, dye.DiffuseColor,
-                b => dyeTable[rowIdx].DiffuseColor = b);
-        }
-
-        ImGui.TableNextColumn();
-        ret |= CtColorPicker("##Specular"u8, "Specular Color"u8, row.SpecularColor,
-            c => table[rowIdx].SpecularColor = c);
-        if (dyeTable != null)
-        {
-            ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeSpecular"u8, "Apply Specular Color on Dye"u8, dye.SpecularColor,
-                b => dyeTable[rowIdx].SpecularColor = b);
-        }
-
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(pctSize);
-        ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.SpecularMask * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f,
-            1.0f,
-            v => table[rowIdx].SpecularMask = (Half)(v * 0.01f));
-        if (dyeTable != null)
-        {
-            ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeSpecularMask"u8, "Apply Specular Strength on Dye"u8, dye.SpecularMask,
-                b => dyeTable[rowIdx].SpecularMask = b);
-        }
-
-        ImGui.TableNextColumn();
-        ret |= CtColorPicker("##Emissive"u8, "Emissive Color"u8, row.EmissiveColor,
-            c => table[rowIdx].EmissiveColor = c);
-        if (dyeTable != null)
-        {
-            ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeEmissive"u8, "Apply Emissive Color on Dye"u8, dye.EmissiveColor,
-                b => dyeTable[rowIdx].EmissiveColor = b);
-        }
-
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(floatSize);
-        var glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
-        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Shininess, "%.1f"u8, glossStrengthMin, HalfMaxValue,
-            Math.Max(0.1f, (float)row.Shininess * 0.025f),
-            v => table[rowIdx].Shininess = v);
-
-        if (dyeTable != null)
-        {
-            ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Shininess,
-                b => dyeTable[rowIdx].Shininess = b);
-        }
-
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(intSize);
-        ret |= CtTileIndexPicker("##TileIndex"u8, "Tile Index"u8, row.TileIndex, true,
-            value => table[rowIdx].TileIndex = value);
-
-        ImGui.TableNextColumn();
-        ret |= CtTileTransformMatrix(row.TileTransform, floatSize, false,
-            m => table[rowIdx].TileTransform = m);
-
-        if (dyeTable != null)
-        {
-            ImGui.TableNextColumn();
-            if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
-                  + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
-            {
-                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection;
-                ret                       = true;
-            }
-
-            ImGuiUtil.HoverTooltip("Dye Template", ImGuiHoveredFlags.AllowWhenDisabled);
-
-            ImGui.TableNextColumn();
-            ret |= DrawLegacyDyePreview(rowIdx, disabled, dye, floatSize);
-        }
-
-        return ret;
-    }
-
-    private bool DrawLegacyColorTableRow(ColorTable table, ColorDyeTable? dyeTable, int rowIdx, bool disabled)
+    private bool DrawLegacyColorTableRow<TRow, TDyeRow>(IColorTable<TRow> table, IColorDyeTable<TDyeRow>? dyeTable, int rowIdx, bool disabled)
+        where TRow : unmanaged, ILegacyColorRow where TDyeRow : unmanaged, ILegacyColorDyeRow
     {
         using var id        = ImRaii.PushId(rowIdx);
         ref var   row       = ref table[rowIdx];
@@ -242,13 +114,13 @@ public partial class MtrlTab
 
         ImGui.SameLine();
         ImGui.SetNextItemWidth(pctSize);
-        ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.Scalar7 * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
-            v => table[rowIdx].Scalar7 = (Half)(v * 0.01f));
+        ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.SpecularMask * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
+            v => table[rowIdx].SpecularMask = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
             ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeSpecularMask"u8, "Apply Specular Strength on Dye"u8, dye.Metalness,
-                b => dyeTable[rowIdx].Metalness = b);
+            ret |= CtApplyStainCheckbox("##dyeSpecularMask"u8, "Apply Specular Strength on Dye"u8, dye.SpecularMask,
+                b => dyeTable[rowIdx].SpecularMask = b);
         }
 
         ImGui.TableNextColumn();
@@ -264,15 +136,15 @@ public partial class MtrlTab
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(floatSize);
         var glossStrengthMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
-        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Scalar3, "%.1f"u8, glossStrengthMin, HalfMaxValue,
-            Math.Max(0.1f, (float)row.Scalar3 * 0.025f),
-            v => table[rowIdx].Scalar3 = v);
+        ret |= CtDragHalf("##Shininess"u8, "Gloss Strength"u8, row.Shininess, "%.1f"u8, glossStrengthMin, HalfMaxValue,
+            Math.Max(0.1f, (float)row.Shininess * 0.025f),
+            v => table[rowIdx].Shininess = v);
 
         if (dyeTable != null)
         {
             ImUtf8.SameLineInner();
-            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Scalar3,
-                b => dyeTable[rowIdx].Scalar3 = b);
+            ret |= CtApplyStainCheckbox("##dyeShininess"u8, "Apply Gloss Strength on Dye"u8, dye.Shininess,
+                b => dyeTable[rowIdx].Shininess = b);
         }
 
         ImGui.TableNextColumn();
@@ -281,8 +153,13 @@ public partial class MtrlTab
             value => table[rowIdx].TileIndex = value);
         ImUtf8.SameLineInner();
         ImGui.SetNextItemWidth(pctSize);
-        ret |= CtDragScalar("##TileAlpha"u8, "Tile Opacity"u8, (float)row.TileAlpha * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
-            v => table[rowIdx].TileAlpha = (Half)(v * 0.01f));
+        if (table is ColorTable rwTable)
+        {
+            ret |= CtDragScalar("##TileAlpha"u8, "Tile Opacity"u8, (float)row.TileAlpha * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
+                v => rwTable[rowIdx].TileAlpha = (Half)(v * 0.01f));
+        }
+        else
+            CtDragScalar<float>("##TileAlpha"u8, "Tile Opacity"u8, (float)row.TileAlpha * 100.0f, "%.0f%%"u8);
 
         ImGui.TableNextColumn();
         ret |= CtTileTransformMatrix(row.TileTransform, floatSize, false,
@@ -292,8 +169,13 @@ public partial class MtrlTab
         {
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(byteSize);
-            ret |= CtDragScalar("##DyeChannel"u8, "Dye Channel"u8, dye.Channel + 1, "%hhd"u8, 1, StainService.ChannelCount, 0.25f,
-                value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
+            if (dyeTable is ColorDyeTable rwDyeTable)
+            {
+                ret |= CtDragScalar("##DyeChannel"u8, "Dye Channel"u8, dye.Channel + 1, "%d"u8, 1, StainService.ChannelCount, 0.25f,
+                    value => rwDyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
+            }
+            else
+                CtDragScalar<int>("##DyeChannel"u8, "Dye Channel"u8, dye.Channel + 1, "%d"u8);
             ImUtf8.SameLineInner();
             _stainService.LegacyTemplateCombo.CurrentDyeChannel = dye.Channel;
             if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
@@ -312,7 +194,8 @@ public partial class MtrlTab
         return ret;
     }
 
-    private bool DrawLegacyDyePreview(int rowIdx, bool disabled, LegacyColorDyeTableRow dye, float floatSize)
+    private bool DrawLegacyDyePreview<TDyeRow>(int rowIdx, bool disabled, TDyeRow dye, float floatSize)
+        where TDyeRow : unmanaged, ILegacyColorDyeRow
     {
         var stain = _stainService.StainCombo1.CurrentSelection.Key;
         if (stain == 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))

@@ -20,7 +20,7 @@ public partial class MtrlTab
 
     private static (Vector2 Scale, float Rotation, float Shear)? _pinnedTileTransform;
 
-    private bool DrawColorTableSection(bool disabled)
+    private bool DrawColorTableSection(bool disabled, MtrlTabUiState uiState)
     {
         if (!_shpkLoading && !SamplerIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
             return false;
@@ -53,7 +53,7 @@ public partial class MtrlTab
             LegacyColorTable legacyTable => DrawLegacyColorTable(legacyTable, Mtrl.DyeTable as LegacyColorDyeTable, disabled),
             ColorTable table when Mtrl.ShaderPackage.Name is "characterlegacy.shpk" => DrawLegacyColorTable(table,
                 Mtrl.DyeTable as ColorDyeTable, disabled),
-            ColorTable table => DrawColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled),
+            ColorTable table => DrawColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled, uiState),
             _                => false,
         };
 
@@ -230,11 +230,13 @@ public partial class MtrlTab
 
     private void ColorTablePairHighlightButton(int pairIdx, bool disabled)
     {
+        var wholePairSelectorHighlight = (_config.WholePairSelectorAlwaysHighlights || ImGui.GetIO().KeyCtrl) && ImGui.IsItemHovered();
+
         ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
             "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
             ImGui.GetFrameHeight() * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
 
-        if (ImGui.IsItemHovered())
+        if (wholePairSelectorHighlight || ImGui.IsItemHovered())
             HighlightColorTablePair(pairIdx);
         else if (_highlightedColorTablePair == pairIdx)
             CancelColorTableHighlight();
@@ -266,14 +268,14 @@ public partial class MtrlTab
         else
         {
             drawList.AddRectFilled(
-                rcMin, rcMax with { Y = float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3) },
+                rcMin, rcMax with { Y = MathF.Floor(float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3)) },
                 topColor, frameRounding, ImDrawFlags.RoundCornersTopLeft | ImDrawFlags.RoundCornersTopRight);
             drawList.AddRectFilledMultiColor(
-                rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3) },
-                rcMax with { Y = float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3) },
+                rcMin with { Y = MathF.Floor(float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3)) },
+                rcMax with { Y = MathF.Ceiling(float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3)) },
                 topColor, topColor, bottomColor, bottomColor);
             drawList.AddRectFilled(
-                rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3) }, rcMax,
+                rcMin with { Y = MathF.Ceiling(float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3)) }, rcMax,
                 bottomColor, frameRounding, ImDrawFlags.RoundCornersBottomLeft | ImDrawFlags.RoundCornersBottomRight);
         }
 
