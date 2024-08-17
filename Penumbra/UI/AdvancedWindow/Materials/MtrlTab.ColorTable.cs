@@ -36,6 +36,9 @@ public partial class MtrlTab
         var spaceWidth   = ImUtf8.CalcTextSize(" "u8).X;
         var spacePadding = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
 
+        if (uiState.ColorTableSelectedPair >= table.Height >> 1)
+            uiState.ColorTableSelectedPair = 0;
+
         for (var i = 0; i < table.Height >> 1; i += 8)
         {
             var numPairsInRow = Math.Min(8, (table.Height >> 1) - i);
