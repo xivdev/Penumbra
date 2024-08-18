@@ -13,31 +13,31 @@ namespace Penumbra.Interop.PathResolving;
 public class PathResolver : IDisposable, IService
 {
     private readonly PerformanceTracker _performance;
-    private readonly Configuration      _config;
-    private readonly CollectionManager  _collectionManager;
-    private readonly ResourceLoader     _loader;
+    private readonly Configuration _config;
+    private readonly CollectionManager _collectionManager;
+    private readonly ResourceLoader _loader;
 
-    private readonly SubfileHelper             _subfileHelper;
-    private readonly PathState                 _pathState;
-    private readonly MetaState                 _metaState;
-    private readonly GameState                 _gameState;
-    private readonly CollectionResolver        _collectionResolver;
+    private readonly SubfileHelper _subfileHelper;
+    private readonly PathState _pathState;
+    private readonly MetaState _metaState;
+    private readonly GameState _gameState;
+    private readonly CollectionResolver _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
 
     public PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,
         GamePathPreProcessService preprocessor)
     {
-        _performance        = performance;
-        _config             = config;
-        _collectionManager  = collectionManager;
-        _subfileHelper      = subfileHelper;
-        _pathState          = pathState;
-        _metaState          = metaState;
-        _gameState          = gameState;
-        _preprocessor       = preprocessor;
+        _performance = performance;
+        _config = config;
+        _collectionManager = collectionManager;
+        _subfileHelper = subfileHelper;
+        _pathState = pathState;
+        _metaState = metaState;
+        _gameState = gameState;
+        _preprocessor = preprocessor;
         _collectionResolver = collectionResolver;
-        _loader             = loader;
+        _loader = loader;
         _loader.ResolvePath = ResolvePath;
     }
 
@@ -48,22 +48,24 @@ public class PathResolver : IDisposable, IService
         if (!_config.EnableMods)
             return (null, ResolveData.Invalid);
 
+        //TODO @Star - check for state validater where applicable, otherwise will break executions
+
         // Do not allow manipulating layers to prevent very obvious cheating and softlocks.
-        if (resourceType is ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb)
-            return (null, ResolveData.Invalid);
+        //if (resourceType is ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb)
+        //return (null, ResolveData.Invalid);
 
         return category switch
         {
             // Only Interface collection.
             ResourceCategory.Ui => ResolveUi(path),
             // Never allow changing scripts.
-            ResourceCategory.UiScript   => (null, ResolveData.Invalid),
+            ResourceCategory.UiScript => (null, ResolveData.Invalid),
             ResourceCategory.GameScript => (null, ResolveData.Invalid),
             // Use actual resolving.
-            ResourceCategory.Chara  => Resolve(path, resourceType),
+            ResourceCategory.Chara => Resolve(path, resourceType),
             ResourceCategory.Shader => ResolveShader(path, resourceType),
-            ResourceCategory.Vfx    => Resolve(path, resourceType),
-            ResourceCategory.Sound  => Resolve(path, resourceType),
+            ResourceCategory.Vfx => Resolve(path, resourceType),
+            ResourceCategory.Sound => Resolve(path, resourceType),
             // EXD Modding in general should probably be prohibited but is currently used for fan translations.
             // We prevent WebURL specifically because it technically allows launching arbitrary programs / to execute arbitrary code.
             ResourceCategory.Exd => path.Path.StartsWith("exd/weburl"u8)
@@ -76,10 +78,10 @@ public class PathResolver : IDisposable, IService
                 ? ResolveUi(path)
                 : DefaultResolver(path),
             ResourceCategory.BgCommon => DefaultResolver(path),
-            ResourceCategory.Bg       => DefaultResolver(path),
-            ResourceCategory.Cut      => DefaultResolver(path),
-            ResourceCategory.Music    => DefaultResolver(path),
-            _                         => DefaultResolver(path),
+            ResourceCategory.Bg => DefaultResolver(path),
+            ResourceCategory.Cut => DefaultResolver(path),
+            ResourceCategory.Music => DefaultResolver(path),
+            _ => DefaultResolver(path),
         };
     }
 
