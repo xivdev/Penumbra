@@ -14,7 +14,7 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState = metaState;
-        Task = hooks.CreateHook<Delegate>("Calculate Height", (nint)Character.MemberFunctionPointers.CalculateHeight, Detour, true);
+        Task = hooks.CreateHook<Delegate>("Calculate Height", (nint)Character.MemberFunctionPointers.CalculateHeight, Detour, !HookOverrides.Instance.Meta.CalculateHeight);
     }
 
     public delegate ulong Delegate(Character* character);
@@ -22,10 +22,11 @@ public sealed unsafe class CalculateHeight : FastHook<CalculateHeight.Delegate>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private ulong Detour(Character* character)
     {
-        var       collection = _collectionResolver.IdentifyCollection((GameObject*)character, true);
-        using var cmp        = _metaState.ResolveRspData(collection.ModCollection);
-        var       ret        = Task.Result.Original.Invoke(character);
+        var collection = _collectionResolver.IdentifyCollection((GameObject*)character, true);
+        _metaState.RspCollection.Push(collection);
+        var ret = Task.Result.Original.Invoke(character);
         Penumbra.Log.Excessive($"[Calculate Height] Invoked on {(nint)character:X} -> {ret}.");
+        _metaState.RspCollection.Pop();
         return ret;
     }
 }

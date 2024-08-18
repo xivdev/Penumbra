@@ -17,7 +17,7 @@ public sealed unsafe class EnableDraw : IHookService
     public EnableDraw(HookManager hooks, GameState state)
     {
         _state = state;
-        _task = hooks.CreateHook<Delegate>("Enable Draw", Sigs.EnableDraw, Detour, true);
+        _task  = hooks.CreateHook<Delegate>("Enable Draw", Sigs.EnableDraw, Detour, !HookOverrides.Instance.Objects.EnableDraw);
     }
 
     private delegate void Delegate(GameObject* gameObject);

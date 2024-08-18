@@ -24,8 +24,8 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.CreatedCharacterBase"/>
     public readonly CreatedCharacterBase CreatedCharacterBase = new();
 
-    /// <inheritdoc cref="Communication.MtrlShpkLoaded"/>
-    public readonly MtrlShpkLoaded MtrlShpkLoaded = new();
+    /// <inheritdoc cref="Communication.MtrlLoaded"/>
+    public readonly MtrlLoaded MtrlLoaded = new();
 
     /// <inheritdoc cref="Communication.ModDataChanged"/>
     public readonly ModDataChanged ModDataChanged = new();
@@ -42,6 +42,9 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.ModDirectoryChanged"/>
     public readonly ModDirectoryChanged ModDirectoryChanged = new();
 
+    /// <inheritdoc cref="Communication.ModFileChanged"/>
+    public readonly ModFileChanged ModFileChanged = new();
+
     /// <inheritdoc cref="Communication.ModPathChanged"/>
     public readonly ModPathChanged ModPathChanged = new();
 
@@ -54,8 +57,14 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.EnabledChanged"/>
     public readonly EnabledChanged EnabledChanged = new();
 
+    /// <inheritdoc cref="Communication.PreSettingsTabBarDraw"/>
+    public readonly PreSettingsTabBarDraw PreSettingsTabBarDraw = new();
+
     /// <inheritdoc cref="Communication.PreSettingsPanelDraw"/>
     public readonly PreSettingsPanelDraw PreSettingsPanelDraw = new();
+
+    /// <inheritdoc cref="Communication.PostEnabledDraw"/>
+    public readonly PostEnabledDraw PostEnabledDraw = new();
 
     /// <inheritdoc cref="Communication.PostSettingsPanelDraw"/>
     public readonly PostSettingsPanelDraw PostSettingsPanelDraw = new();
@@ -78,7 +87,7 @@ public class CommunicatorService : IDisposable, IService
         TemporaryGlobalModChange.Dispose();
         CreatingCharacterBase.Dispose();
         CreatedCharacterBase.Dispose();
-        MtrlShpkLoaded.Dispose();
+        MtrlLoaded.Dispose();
         ModDataChanged.Dispose();
         ModOptionChanged.Dispose();
         ModDiscoveryStarted.Dispose();
@@ -88,7 +97,9 @@ public class CommunicatorService : IDisposable, IService
         ModSettingChanged.Dispose();
         CollectionInheritanceChanged.Dispose();
         EnabledChanged.Dispose();
+        PreSettingsTabBarDraw.Dispose();
         PreSettingsPanelDraw.Dispose();
+        PostEnabledDraw.Dispose();
         PostSettingsPanelDraw.Dispose();
         ChangedItemHover.Dispose();
         ChangedItemClick.Dispose();

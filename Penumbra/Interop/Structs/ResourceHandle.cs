@@ -14,6 +14,12 @@ public unsafe struct TextureResourceHandle
 
     [FieldOffset(0x0)]
     public CsHandle.TextureResourceHandle CsHandle;
+
+    [FieldOffset(0x104)]
+    public byte SomeLodFlag;
+
+    public bool ChangeLod
+        => (SomeLodFlag & 1) != 0;
 }
 
 public enum LoadState : byte
@@ -41,11 +47,11 @@ public unsafe struct ResourceHandle
         public ulong DataLength;
     }
 
-    public readonly ByteString FileName()
+    public readonly CiByteString FileName()
         => CsHandle.FileName.AsByteString();
 
     public readonly bool GamePath(out Utf8GamePath path)
-        => Utf8GamePath.FromSpan(CsHandle.FileName.AsSpan(), out path);
+        => Utf8GamePath.FromSpan(CsHandle.FileName.AsSpan(), MetaDataComputation.All, out path);
 
     [FieldOffset(0x00)]
     public CsHandle.ResourceHandle CsHandle;
@@ -83,12 +89,12 @@ public unsafe struct ResourceHandle
     [FieldOffset(0xB8)]
     public uint DataLength;
 
-    public (IntPtr Data, int Length) GetData()
+    public (nint Data, int Length) GetData()
         => Data != null
-            ? ((IntPtr)Data->DataPtr, (int)Data->DataLength)
-            : (IntPtr.Zero, 0);
+            ? ((nint)Data->DataPtr, (int)Data->DataLength)
+            : (nint.Zero, 0);
 
-    public bool SetData(IntPtr data, int length)
+    public bool SetData(nint data, int length)
     {
         if (Data == null)
             return false;

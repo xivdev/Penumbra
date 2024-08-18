@@ -5,29 +5,25 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods;
 
-public readonly struct ModLocalData : ISavable
+public readonly struct ModLocalData(Mod mod) : ISavable
 {
     public const int FileVersion = 3;
 
-    private readonly Mod _mod;
-
-    public ModLocalData(Mod mod)
-        => _mod = mod;
-
     public string ToFilename(FilenameService fileNames)
-        => fileNames.LocalDataFile(_mod);
+        => fileNames.LocalDataFile(mod);
 
     public void Save(StreamWriter writer)
     {
         var jObject = new JObject
         {
             { nameof(FileVersion), JToken.FromObject(FileVersion) },
-            { nameof(Mod.ImportDate), JToken.FromObject(_mod.ImportDate) },
-            { nameof(Mod.LocalTags), JToken.FromObject(_mod.LocalTags) },
-            { nameof(Mod.Note), JToken.FromObject(_mod.Note) },
-            { nameof(Mod.Favorite), JToken.FromObject(_mod.Favorite) },
+            { nameof(Mod.ImportDate), JToken.FromObject(mod.ImportDate) },
+            { nameof(Mod.LocalTags), JToken.FromObject(mod.LocalTags) },
+            { nameof(Mod.Note), JToken.FromObject(mod.Note) },
+            { nameof(Mod.Favorite), JToken.FromObject(mod.Favorite) },
         };
-        using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        using var jWriter = new JsonTextWriter(writer);
+        jWriter.Formatting = Formatting.Indented;
         jObject.WriteTo(jWriter);
     }
 

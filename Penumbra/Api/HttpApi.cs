@@ -1,11 +1,13 @@
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using OtterGui.Services;
+using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 
 namespace Penumbra.Api;
 
-public class HttpApi : IDisposable
+public class HttpApi : IDisposable, IApiService
 {
     private partial class Controller : WebApiController
     {
@@ -67,7 +69,7 @@ public class HttpApi : IDisposable
         public partial object? GetMods()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(GetMods)} triggered.");
-            return _api.GetModList();
+            return _api.Mods.GetModList();
         }
 
         public async partial Task Redraw()
@@ -75,17 +77,15 @@ public class HttpApi : IDisposable
             var data = await HttpContext.GetRequestDataAsync<RedrawData>();
             Penumbra.Log.Debug($"[HTTP] {nameof(Redraw)} triggered with {data}.");
             if (data.ObjectTableIndex >= 0)
-                _api.RedrawObject(data.ObjectTableIndex, data.Type);
-            else if (data.Name.Length > 0)
-                _api.RedrawObject(data.Name, data.Type);
+                _api.Redraw.RedrawObject(data.ObjectTableIndex, data.Type);
             else
-                _api.RedrawAll(data.Type);
+                _api.Redraw.RedrawAll(data.Type);
         }
 
         public partial void RedrawAll()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(RedrawAll)} triggered.");
-            _api.RedrawAll(RedrawType.Redraw);
+            _api.Redraw.RedrawAll(RedrawType.Redraw);
         }
 
         public async partial Task ReloadMod()
@@ -95,10 +95,10 @@ public class HttpApi : IDisposable
             // Add the mod if it is not already loaded and if the directory name is given.
             // AddMod returns Success if the mod is already loaded.
             if (data.Path.Length != 0)
-                _api.AddMod(data.Path);
+                _api.Mods.AddMod(data.Path);
 
             // Reload the mod by path or name, which will also remove no-longer existing mods.
-            _api.ReloadMod(data.Path, data.Name);
+            _api.Mods.ReloadMod(data.Path, data.Name);
         }
 
         public async partial Task InstallMod()
@@ -106,13 +106,13 @@ public class HttpApi : IDisposable
             var data = await HttpContext.GetRequestDataAsync<ModInstallData>();
             Penumbra.Log.Debug($"[HTTP] {nameof(InstallMod)} triggered with {data}.");
             if (data.Path.Length != 0)
-                _api.InstallMod(data.Path);
+                _api.Mods.InstallMod(data.Path);
         }
 
         public partial void OpenWindow()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(OpenWindow)} triggered.");
-            _api.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
+            _api.Ui.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
         }
 
         private record ModReloadData(string Path, string Name)

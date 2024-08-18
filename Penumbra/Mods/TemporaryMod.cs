@@ -1,9 +1,12 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -13,38 +16,45 @@ public class TemporaryMod : IMod
 {
     public LowerString Name     { get; init; } = LowerString.Empty;
     public int         Index    { get; init; } = -2;
-    public int         Priority { get; init; } = int.MaxValue;
+    public ModPriority Priority { get; init; } = ModPriority.MaxValue;
 
     public int TotalManipulations
         => Default.Manipulations.Count;
 
-    public readonly SubMod Default;
+    public readonly DefaultSubMod Default;
 
-    ISubMod IMod.Default
-        => Default;
+    public AppliedModData GetData(ModSettings? settings = null)
+    {
+        Dictionary<Utf8GamePath, FullPath> dict;
+        if (Default.FileSwaps.Count == 0)
+        {
+            dict = Default.Files;
+        }
+        else if (Default.Files.Count == 0)
+        {
+            dict = Default.FileSwaps;
+        }
+        else
+        {
+            // Need to ensure uniqueness.
+            dict = new Dictionary<Utf8GamePath, FullPath>(Default.Files.Count + Default.FileSwaps.Count);
+            foreach (var (gamePath, file) in Default.Files.Concat(Default.FileSwaps))
+                dict.TryAdd(gamePath, file);
+        }
+
+        return new AppliedModData(dict, Default.Manipulations);
+    }
 
     public IReadOnlyList<IModGroup> Groups
         => Array.Empty<IModGroup>();
 
-    public IEnumerable<SubMod> AllSubMods
-        => new[]
-        {
-            Default,
-        };
-
     public TemporaryMod()
-        => Default = new SubMod(this);
+        => Default = new DefaultSubMod(this);
 
-    public void SetFile(Utf8GamePath gamePath, FullPath fullPath)
-        => Default.FileData[gamePath] = fullPath;
-
-    public bool SetManipulation(MetaManipulation manip)
-        => Default.ManipulationData.Remove(manip) | Default.ManipulationData.Add(manip);
-
-    public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, HashSet<MetaManipulation> manips)
+    public void SetAll(Dictionary<Utf8GamePath, FullPath> dict, MetaDictionary manips)
     {
-        Default.FileData         = dict;
-        Default.ManipulationData = manips;
+        Default.Files         = dict;
+        Default.Manipulations = manips;
     }
 
     public static void SaveTempCollection(Configuration config, SaveService saveService, ModManager modManager, ModCollection collection,
@@ -56,7 +66,8 @@ public class TemporaryMod : IMod
             dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Name, config.ReplaceNonAsciiOnImport, true);
             var fileDir = Directory.CreateDirectory(Path.Combine(dir.FullName, "files"));
             modManager.DataEditor.CreateMeta(dir, collection.Name, character ?? config.DefaultModAuthor,
-                $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null);
+                $"Mod generated from temporary collection {collection.Id} for {character ?? "Unknown Character"} with name {collection.Name}.",
+                null, null);
             var mod        = new Mod(dir);
             var defaultMod = mod.Default;
             foreach (var (gamePath, fullPath) in collection.ResolvedFiles)
@@ -67,33 +78,32 @@ public class TemporaryMod : IMod
                 }
 
                 var targetPath = fullPath.Path.FullName;
-                if (fullPath.Path.Name.StartsWith('|'))
-                {
-                    targetPath = targetPath.Split('|', 3, StringSplitOptions.RemoveEmptyEntries).Last();
-                }
+                if (PathDataHandler.Split(fullPath.Path.FullName, out var actualPath, out _))
+                    targetPath = actualPath.ToString();
 
                 if (Path.IsPathRooted(targetPath))
                 {
                     var target = Path.Combine(fileDir.FullName, Path.GetFileName(targetPath));
                     File.Copy(targetPath, target, true);
-                    defaultMod.FileData[gamePath] = new FullPath(target);
+                    defaultMod.Files[gamePath] = new FullPath(target);
                 }
                 else
                 {
-                    defaultMod.FileSwapData[gamePath] = new FullPath(targetPath);
+                    defaultMod.FileSwaps[gamePath] = new FullPath(targetPath);
                 }
             }
 
-            foreach (var manip in collection.MetaCache?.Manipulations ?? Array.Empty<MetaManipulation>())
-                defaultMod.ManipulationData.Add(manip);
+            var manips = new MetaDictionary(collection.MetaCache);
+            defaultMod.Manipulations.UnionWith(manips);
 
-            saveService.ImmediateSave(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
+            saveService.ImmediateSaveSync(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
             modManager.AddMod(dir);
-            Penumbra.Log.Information($"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}.");
+            Penumbra.Log.Information(
+                $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identifier}.");
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not save temporary collection {collection.Name} to permanent Mod:\n{e}");
+            Penumbra.Log.Error($"Could not save temporary collection {collection.Identifier} to permanent Mod:\n{e}");
             if (dir != null && Directory.Exists(dir.FullName))
             {
                 try

@@ -33,7 +33,7 @@ public class IndividualAssignmentUi : IDisposable
         _actors            = actors;
         _collectionManager = collectionManager;
         _communicator.CollectionChange.Subscribe(UpdateIdentifiers, CollectionChange.Priority.IndividualAssignmentUi);
-        _actors.Awaiter.ContinueWith(_ => SetupCombos());
+        _actors.Awaiter.ContinueWith(_ => SetupCombos(), TaskScheduler.Default);
     }
 
     public string PlayerTooltip   { get; private set; } = NewPlayerTooltipEmpty;

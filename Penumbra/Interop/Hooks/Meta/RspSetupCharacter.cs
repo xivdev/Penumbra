@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 
@@ -14,7 +15,7 @@ public sealed unsafe class RspSetupCharacter : FastHook<RspSetupCharacter.Delega
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("RSP Setup Character", Sigs.RspSetupCharacter, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("RSP Setup Character", Sigs.RspSetupCharacter, Detour, !HookOverrides.Instance.Meta.RspSetupCharacter);
     }
 
     public delegate void Delegate(DrawObject* drawObject, nint unk2, float unk3, nint unk4, byte unk5);
@@ -30,8 +31,9 @@ public sealed unsafe class RspSetupCharacter : FastHook<RspSetupCharacter.Delega
             return;
         }
 
-        var       collection = _collectionResolver.IdentifyCollection(drawObject, true);
-        using var cmp        = _metaState.ResolveRspData(collection.ModCollection);
+        var collection = _collectionResolver.IdentifyCollection(drawObject, true);
+        _metaState.RspCollection.Push(collection);
         Task.Result.Original.Invoke(drawObject, unk2, unk3, unk4, unk5);
+        _metaState.RspCollection.Pop();
     }
 }

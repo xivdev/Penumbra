@@ -60,6 +60,13 @@ public enum ResourceTypeFlag : ulong
     Uld  = 0x0002_0000_0000_0000,
     Waoe = 0x0004_0000_0000_0000,
     Wtd  = 0x0008_0000_0000_0000,
+    Bklb = 0x0010_0000_0000_0000,
+    Cutb = 0x0020_0000_0000_0000,
+    Eanb = 0x0040_0000_0000_0000,
+    Eslb = 0x0080_0000_0000_0000,
+    Fpeb = 0x0100_0000_0000_0000,
+    Kdb  = 0x0200_0000_0000_0000,
+    Kdlb = 0x0400_0000_0000_0000,
 }
 
 [Flags]
@@ -141,6 +148,13 @@ public static class ResourceExtensions
             ResourceType.Uld  => ResourceTypeFlag.Uld,
             ResourceType.Waoe => ResourceTypeFlag.Waoe,
             ResourceType.Wtd  => ResourceTypeFlag.Wtd,
+            ResourceType.Bklb => ResourceTypeFlag.Bklb,
+            ResourceType.Cutb => ResourceTypeFlag.Cutb,
+            ResourceType.Eanb => ResourceTypeFlag.Eanb,
+            ResourceType.Eslb => ResourceTypeFlag.Eslb,
+            ResourceType.Fpeb => ResourceTypeFlag.Fpeb,
+            ResourceType.Kdb  => ResourceTypeFlag.Kdb ,
+            ResourceType.Kdlb => ResourceTypeFlag.Kdlb,
             _                 => 0,
         };
 
@@ -148,7 +162,7 @@ public static class ResourceExtensions
         => (type.ToFlag() & flags) != 0;
 
     public static ResourceCategoryFlag ToFlag(this ResourceCategory type)
-        => type switch
+        => (ResourceCategory)((uint) type & 0x00FFFFFF) switch
         {
             ResourceCategory.Common     => ResourceCategoryFlag.Common,
             ResourceCategory.BgCommon   => ResourceCategoryFlag.BgCommon,
@@ -202,10 +216,10 @@ public static class ResourceExtensions
         };
     }
 
-    public static ResourceType Type(ByteString path)
+    public static ResourceType Type(CiByteString path)
     {
         var extIdx = path.LastIndexOf((byte)'.');
-        var ext    = extIdx == -1 ? path : extIdx == path.Length - 1 ? ByteString.Empty : path.Substring(extIdx + 1);
+        var ext    = extIdx == -1 ? path : extIdx == path.Length - 1 ? CiByteString.Empty : path.Substring(extIdx + 1);
 
         return ext.Length switch
         {
@@ -217,7 +231,7 @@ public static class ResourceExtensions
         };
     }
 
-    public static ResourceCategory Category(ByteString path)
+    public static ResourceCategory Category(CiByteString path)
     {
         if (path.Length < 3)
             return ResourceCategory.Debug;

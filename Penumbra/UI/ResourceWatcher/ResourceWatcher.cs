@@ -2,12 +2,14 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
+using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -15,47 +17,65 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
-public sealed class ResourceWatcher : IDisposable, ITab
+public sealed class ResourceWatcher : IDisposable, ITab, IUiService
 {
     public const int        DefaultMaxEntries = 1024;
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
 
-    private readonly Configuration           _config;
-    private readonly EphemeralConfig         _ephemeral;
-    private readonly ResourceService         _resources;
-    private readonly ResourceLoader          _loader;
-    private readonly ActorManager            _actors;
-    private readonly List<Record>            _records    = [];
-    private readonly ConcurrentQueue<Record> _newRecords = [];
-    private readonly ResourceWatcherTable    _table;
-    private          string                  _logFilter = string.Empty;
-    private          Regex?                  _logRegex;
-    private          int                     _newMaxEntries;
+    private readonly Configuration            _config;
+    private readonly EphemeralConfig          _ephemeral;
+    private readonly ResourceService          _resources;
+    private readonly ResourceLoader           _loader;
+    private readonly ResourceHandleDestructor _destructor;
+    private readonly ActorManager             _actors;
+    private readonly List<Record>             _records    = [];
+    private readonly ConcurrentQueue<Record>  _newRecords = [];
+    private readonly ResourceWatcherTable     _table;
+    private          string                   _logFilter = string.Empty;
+    private          Regex?                   _logRegex;
+    private          int                      _newMaxEntries;
 
-    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader)
+    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader,
+        ResourceHandleDestructor destructor)
     {
-        _actors                             =  actors;
-        _config                             =  config;
-        _ephemeral                          =  config.Ephemeral;
-        _resources                          =  resources;
-        _loader                             =  loader;
-        _table                              =  new ResourceWatcherTable(config.Ephemeral, _records);
-        _resources.ResourceRequested        += OnResourceRequested;
-        _resources.ResourceHandleDestructor += OnResourceDestroyed;
-        _loader.ResourceLoaded              += OnResourceLoaded;
-        _loader.FileLoaded                  += OnFileLoaded;
+        _actors                      =  actors;
+        _config                      =  config;
+        _ephemeral                   =  config.Ephemeral;
+        _resources                   =  resources;
+        _destructor                  =  destructor;
+        _loader                      =  loader;
+        _table                       =  new ResourceWatcherTable(config.Ephemeral, _records);
+        _resources.ResourceRequested += OnResourceRequested;
+        _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
+        _loader.ResourceLoaded += OnResourceLoaded;
+        _loader.FileLoaded     += OnFileLoaded;
+        _loader.PapRequested   += OnPapRequested;
         UpdateFilter(_ephemeral.ResourceLoggingFilter, false);
         _newMaxEntries = _config.MaxResourceWatcherRecords;
+    }
+
+    private void OnPapRequested(Utf8GamePath original, FullPath? _1, ResolveData _2)
+    {
+        if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
+            Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested asynchronously.");
+
+        if (!_ephemeral.EnableResourceWatcher)
+            return;
+
+        var record = Record.CreateRequest(original.Path, false);
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+            _newRecords.Enqueue(record);
     }
 
     public unsafe void Dispose()
     {
         Clear();
         _records.TrimExcess();
-        _resources.ResourceRequested        -= OnResourceRequested;
-        _resources.ResourceHandleDestructor -= OnResourceDestroyed;
-        _loader.ResourceLoaded              -= OnResourceLoaded;
-        _loader.FileLoaded                  -= OnFileLoaded;
+        _resources.ResourceRequested -= OnResourceRequested;
+        _destructor.Unsubscribe(OnResourceDestroyed);
+        _loader.ResourceLoaded -= OnResourceLoaded;
+        _loader.FileLoaded     -= OnFileLoaded;
+        _loader.PapRequested   -= OnPapRequested;
     }
 
     private void Clear()
@@ -143,7 +163,7 @@ public sealed class ResourceWatcher : IDisposable, ITab
         }
     }
 
-    private bool FilterMatch(ByteString path, out string match)
+    private bool FilterMatch(CiByteString path, out string match)
     {
         match = path.ToString();
         return _logFilter.Length == 0 || (_logRegex?.IsMatch(match) ?? false) || match.Contains(_logFilter, StringComparison.OrdinalIgnoreCase);
@@ -195,8 +215,7 @@ public sealed class ResourceWatcher : IDisposable, ITab
 
 
     private unsafe void OnResourceRequested(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
-        Utf8GamePath original,
-        GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
+        Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
             Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested {(sync ? "synchronously." : "asynchronously.")}");
@@ -236,7 +255,7 @@ public sealed class ResourceWatcher : IDisposable, ITab
             _newRecords.Enqueue(record);
     }
 
-    private unsafe void OnFileLoaded(ResourceHandle* resource, ByteString path, bool success, bool custom, ByteString _)
+    private unsafe void OnFileLoaded(ResourceHandle* resource, CiByteString path, bool success, bool custom, ReadOnlySpan<byte> _)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
             Penumbra.Log.Information(
@@ -266,7 +285,7 @@ public sealed class ResourceWatcher : IDisposable, ITab
 
     public unsafe string Name(ResolveData resolve, string none = "")
     {
-        if (resolve.AssociatedGameObject == IntPtr.Zero || !_actors.Awaiter.IsCompletedSuccessfully)
+        if (resolve.AssociatedGameObject == nint.Zero || !_actors.Awaiter.IsCompletedSuccessfully)
             return none;
 
         try

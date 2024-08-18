@@ -5,7 +5,7 @@ using Penumbra.Mods;
 
 namespace Penumbra.Services;
 
-public class FilenameService(DalamudPluginInterface pi) : IService
+public class FilenameService(IDalamudPluginInterface pi) : IService
 {
     public readonly string ConfigDirectory       = pi.ConfigDirectory.FullName;
     public readonly string CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");
@@ -14,10 +14,17 @@ public class FilenameService(DalamudPluginInterface pi) : IService
     public readonly string EphemeralConfigFile   = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
     public readonly string FilesystemFile        = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
     public readonly string ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
+    public readonly string PredefinedTagFile     = Path.Combine(pi.ConfigDirectory.FullName, "predefined_tags.json");
+
+    public readonly string CrashHandlerExe =
+        Path.Combine(pi.AssemblyLocation.DirectoryName!, "Penumbra.CrashHandler.exe");
+
+    public readonly string LogFileName =
+        Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(pi.ConfigDirectory.FullName)!)!, "Penumbra.log");
 
     /// <summary> Obtain the path of a collection file given its name.</summary>
     public string CollectionFile(ModCollection collection)
-        => CollectionFile(collection.Name);
+        => CollectionFile(collection.Identifier);
 
     /// <summary> Obtain the path of a collection file given its name. </summary>
     public string CollectionFile(string collectionName)
@@ -37,7 +44,7 @@ public class FilenameService(DalamudPluginInterface pi) : IService
         get
         {
             var directory = new DirectoryInfo(CollectionDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : Array.Empty<FileInfo>();
+            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
         }
     }
 
@@ -47,7 +54,7 @@ public class FilenameService(DalamudPluginInterface pi) : IService
         get
         {
             var directory = new DirectoryInfo(LocalDataDirectory);
-            return directory.Exists ? directory.EnumerateFiles("*.json") : Array.Empty<FileInfo>();
+            return directory.Exists ? directory.EnumerateFiles("*.json") : [];
         }
     }
 

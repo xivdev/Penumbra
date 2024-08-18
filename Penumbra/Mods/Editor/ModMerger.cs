@@ -1,22 +1,24 @@
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Utility;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModMerger : IDisposable
+public class ModMerger : IDisposable, IService
 {
     private readonly Configuration         _config;
     private readonly CommunicatorService   _communicator;
-    private readonly ModOptionEditor       _editor;
+    private readonly ModGroupEditor        _editor;
     private readonly ModFileSystemSelector _selector;
     private readonly DuplicateManager      _duplicates;
     private readonly ModManager            _mods;
@@ -32,14 +34,14 @@ public class ModMerger : IDisposable
     private readonly Dictionary<string, string> _fileToFile         = [];
     private readonly HashSet<string>            _createdDirectories = [];
     private readonly HashSet<int>               _createdGroups      = [];
-    private readonly HashSet<SubMod>            _createdOptions     = [];
+    private readonly HashSet<IModOption>        _createdOptions     = [];
 
-    public readonly HashSet<SubMod> SelectedOptions = [];
+    public readonly HashSet<IModDataContainer> SelectedOptions = [];
 
     public readonly IReadOnlyList<string> Warnings = new List<string>();
     public          Exception?            Error { get; private set; }
 
-    public ModMerger(ModManager mods, ModOptionEditor editor, ModFileSystemSelector selector, DuplicateManager duplicates,
+    public ModMerger(ModManager mods, ModGroupEditor editor, ModFileSystemSelector selector, DuplicateManager duplicates,
         CommunicatorService communicator, ModCreator creator, Configuration config)
     {
         _editor                    =  editor;
@@ -78,7 +80,8 @@ public class ModMerger : IDisposable
                 MergeWithOptions();
             else
                 MergeIntoOption(OptionGroupName, OptionName);
-            _duplicates.DeduplicateMod(MergeToMod.ModPath);
+
+            _duplicates.DeduplicateMod(MergeToMod.ModPath, true);
         }
         catch (Exception ex)
         {
@@ -92,29 +95,30 @@ public class ModMerger : IDisposable
 
     private void MergeWithOptions()
     {
-        MergeIntoOption(Enumerable.Repeat(MergeFromMod!.Default, 1), MergeToMod!.Default, false);
+        MergeIntoOption([MergeFromMod!.Default], MergeToMod!.Default, false);
 
         foreach (var originalGroup in MergeFromMod!.Groups)
         {
             var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
             if (groupCreated)
                 _createdGroups.Add(groupIdx);
-            if (group.Type != originalGroup.Type)
-                ((List<string>)Warnings).Add(
-                    $"The merged group {group.Name} already existed, but has a different type {group.Type} than the original group of type {originalGroup.Type}.");
+            if (group == null)
+                throw new Exception(
+                    $"The merged group {originalGroup.Name} already existed, but had a different type than the original group of type {originalGroup.Type}.");
 
-            foreach (var originalOption in originalGroup)
+            foreach (var originalOption in originalGroup.DataContainers)
             {
-                var (option, optionCreated) = _editor.FindOrAddOption(MergeToMod!, groupIdx, originalOption.Name);
+                var (option, _, optionCreated) = _editor.FindOrAddOption(group, originalOption.GetName());
                 if (optionCreated)
                 {
-                    _createdOptions.Add(option);
-                    MergeIntoOption(Enumerable.Repeat(originalOption, 1), option, false);
+                    _createdOptions.Add(option!);
+                    // #TODO DataContainer <> Option.
+                    MergeIntoOption([originalOption], (IModDataContainer)option!, false);
                 }
                 else
                 {
                     throw new Exception(
-                        $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: The option {option.FullName} already existed.");
+                        $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: The option {option!.FullName} already existed.");
                 }
             }
         }
@@ -127,19 +131,19 @@ public class ModMerger : IDisposable
         if (groupName.Length == 0 && optionName.Length == 0)
         {
             CopyFiles(MergeToMod!.ModPath);
-            MergeIntoOption(MergeFromMod!.AllSubMods.Reverse(), MergeToMod!.Default, true);
+            MergeIntoOption(MergeFromMod!.AllDataContainers.Reverse(), MergeToMod!.Default, true);
         }
         else if (groupName.Length * optionName.Length == 0)
         {
             return;
         }
 
-        var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName);
+        var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, GroupType.Multi, groupName, SaveType.None);
         if (groupCreated)
             _createdGroups.Add(groupIdx);
-        var (option, optionCreated) = _editor.FindOrAddOption(MergeToMod!, groupIdx, optionName);
+        var (option, _, optionCreated) = _editor.FindOrAddOption(group!, optionName, SaveType.None);
         if (optionCreated)
-            _createdOptions.Add(option);
+            _createdOptions.Add(option!);
         var dir = ModCreator.NewOptionDirectory(MergeToMod!.ModPath, groupName, _config.ReplaceNonAsciiOnImport);
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
@@ -147,20 +151,51 @@ public class ModMerger : IDisposable
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
         CopyFiles(dir);
-        MergeIntoOption(MergeFromMod!.AllSubMods.Reverse(), option, true);
+        // #TODO DataContainer <> Option.
+        MergeIntoOption(MergeFromMod!.AllDataContainers.Reverse(), (IModDataContainer)option!, true);
     }
 
-    private void MergeIntoOption(IEnumerable<ISubMod> mergeOptions, SubMod option, bool fromFileToFile)
+    private void MergeIntoOption(IEnumerable<IModDataContainer> mergeOptions, IModDataContainer option, bool fromFileToFile)
     {
-        var redirections = option.FileData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        var swaps        = option.FileSwapData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        var manips       = option.ManipulationData.ToHashSet();
+        var redirections = option.Files.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        var swaps        = option.FileSwaps.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        var manips       = option.Manipulations.Clone();
+
+        foreach (var originalOption in mergeOptions)
+        {
+            if (!manips.MergeForced(originalOption.Manipulations, out var failed))
+                throw new Exception(
+                    $"Could not add meta manipulation {failed} from {originalOption.GetFullName()} to {option.GetFullName()} because another manipulation of the same data already exists in this option.");
+
+            foreach (var (swapA, swapB) in originalOption.FileSwaps)
+            {
+                if (!swaps.TryAdd(swapA, swapB))
+                    throw new Exception(
+                        $"Could not add file swap {swapB} -> {swapA} from {originalOption.GetFullName()} to {option.GetFullName()} because another swap of the key already exists.");
+            }
+
+            foreach (var (gamePath, path) in originalOption.Files)
+            {
+                if (!GetFullPath(path, out var newFile))
+                    throw new Exception(
+                        $"Could not add file redirection {path} -> {gamePath} from {originalOption.GetFullName()} to {option.GetFullName()} because the file does not exist in the new mod.");
+                if (!redirections.TryAdd(gamePath, newFile))
+                    throw new Exception(
+                        $"Could not add file redirection {path} -> {gamePath} from {originalOption.GetFullName()} to {option.GetFullName()} because a redirection for the game path already exists.");
+            }
+        }
+
+        _editor.SetFiles(option, redirections, SaveType.None);
+        _editor.SetFileSwaps(option, swaps, SaveType.None);
+        _editor.SetManipulations(option, manips, SaveType.None);
+        _editor.ForceSave(option, SaveType.ImmediateSync);
+        return;
 
         bool GetFullPath(FullPath input, out FullPath ret)
         {
             if (fromFileToFile)
             {
-                if (!_fileToFile.TryGetValue(input.FullName, out var s))
+                if (!_fileToFile.TryGetValue(input.FullName.ToLowerInvariant(), out var s))
                 {
                     ret = input;
                     return false;
@@ -176,37 +211,6 @@ public class ModMerger : IDisposable
             ret = new FullPath(MergeToMod!.ModPath, relPath);
             return true;
         }
-
-        foreach (var originalOption in mergeOptions)
-        {
-            foreach (var manip in originalOption.Manipulations)
-            {
-                if (!manips.Add(manip))
-                    throw new Exception(
-                        $"Could not add meta manipulation {manip} from {originalOption.FullName} to {option.FullName} because another manipulation of the same data already exists in this option.");
-            }
-
-            foreach (var (swapA, swapB) in originalOption.FileSwaps)
-            {
-                if (!swaps.TryAdd(swapA, swapB))
-                    throw new Exception(
-                        $"Could not add file swap {swapB} -> {swapA} from {originalOption.FullName} to {option.FullName} because another swap of the key already exists.");
-            }
-
-            foreach (var (gamePath, path) in originalOption.Files)
-            {
-                if (!GetFullPath(path, out var newFile))
-                    throw new Exception(
-                        $"Could not add file redirection {path} -> {gamePath} from {originalOption.FullName} to {option.FullName} because the file does not exist in the new mod.");
-                if (!redirections.TryAdd(gamePath, newFile))
-                    throw new Exception(
-                        $"Could not add file redirection {path} -> {gamePath} from {originalOption.FullName} to {option.FullName} because a redirection for the game path already exists.");
-            }
-        }
-
-        _editor.OptionSetFiles(MergeToMod!, option.GroupIdx, option.OptionIdx, redirections);
-        _editor.OptionSetFileSwaps(MergeToMod!, option.GroupIdx, option.OptionIdx, swaps);
-        _editor.OptionSetManipulations(MergeToMod!, option.GroupIdx, option.OptionIdx, manips);
     }
 
     private void CopyFiles(DirectoryInfo directory)
@@ -233,7 +237,7 @@ public class ModMerger : IDisposable
             Directory.CreateDirectory(finalDir);
             file.CopyTo(path);
             Penumbra.Log.Verbose($"[Merger] Copied file {file.FullName} to {path}.");
-            _fileToFile.Add(file.FullName, path);
+            _fileToFile.Add(file.FullName.ToLowerInvariant(), path);
         }
     }
 
@@ -249,7 +253,7 @@ public class ModMerger : IDisposable
         Mod?           result = null;
         try
         {
-            dir = _creator.CreateEmptyMod(_mods.BasePath, modName, $"Split off from {mods[0].ParentMod.Name}.");
+            dir = _creator.CreateEmptyMod(_mods.BasePath, modName, $"Split off from {mods[0].Mod.Name}.");
             if (dir == null)
                 throw new Exception($"Could not split off mods, unable to create new mod with name {modName}.");
 
@@ -258,31 +262,34 @@ public class ModMerger : IDisposable
             if (mods.Count == 1)
             {
                 var files = CopySubModFiles(mods[0], dir);
-                _editor.OptionSetFiles(result, -1, 0, files);
-                _editor.OptionSetFileSwaps(result, -1, 0, mods[0].FileSwapData);
-                _editor.OptionSetManipulations(result, -1, 0, mods[0].ManipulationData);
+                _editor.SetFiles(result.Default, files, SaveType.None);
+                _editor.SetFileSwaps(result.Default, mods[0].FileSwaps, SaveType.None);
+                _editor.SetManipulations(result.Default, mods[0].Manipulations, SaveType.None);
+                _editor.ForceSave(result.Default);
             }
             else
             {
                 foreach (var originalOption in mods)
                 {
-                    var originalGroup = originalOption.ParentMod.Groups[originalOption.GroupIdx];
-                    if (originalOption.IsDefault)
+                    if (originalOption.Group is not { } originalGroup)
                     {
                         var files = CopySubModFiles(mods[0], dir);
-                        _editor.OptionSetFiles(result, -1, 0, files);
-                        _editor.OptionSetFileSwaps(result, -1, 0, mods[0].FileSwapData);
-                        _editor.OptionSetManipulations(result, -1, 0, mods[0].ManipulationData);
+                        _editor.SetFiles(result.Default, files);
+                        _editor.SetFileSwaps(result.Default, mods[0].FileSwaps);
+                        _editor.SetManipulations(result.Default, mods[0].Manipulations);
+                        _editor.ForceSave(result.Default);
                     }
                     else
                     {
-                        var (group, groupIdx, _) = _editor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
-                        var (option, _)          = _editor.FindOrAddOption(result, groupIdx, originalOption.Name);
-                        var folder = Path.Combine(dir.FullName, group.Name, option.Name);
+                        // TODO DataContainer <> Option.
+                        var (group, _, _)  = _editor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
+                        var (option, _, _) = _editor.FindOrAddOption(group!, originalOption.GetName());
+                        var folder = Path.Combine(dir.FullName, group!.Name, option!.Name);
                         var files  = CopySubModFiles(originalOption, new DirectoryInfo(folder));
-                        _editor.OptionSetFiles(result, groupIdx, option.OptionIdx, files);
-                        _editor.OptionSetFileSwaps(result, groupIdx, option.OptionIdx, originalOption.FileSwapData);
-                        _editor.OptionSetManipulations(result, groupIdx, option.OptionIdx, originalOption.ManipulationData);
+                        _editor.SetFiles((IModDataContainer)option, files, SaveType.None);
+                        _editor.SetFileSwaps((IModDataContainer)option, originalOption.FileSwaps, SaveType.None);
+                        _editor.SetManipulations((IModDataContainer)option, originalOption.Manipulations, SaveType.None);
+                        _editor.ForceSave((IModDataContainer)option);
                     }
                 }
             }
@@ -304,11 +311,11 @@ public class ModMerger : IDisposable
         }
     }
 
-    private static Dictionary<Utf8GamePath, FullPath> CopySubModFiles(SubMod option, DirectoryInfo newMod)
+    private static Dictionary<Utf8GamePath, FullPath> CopySubModFiles(IModDataContainer option, DirectoryInfo newMod)
     {
-        var ret        = new Dictionary<Utf8GamePath, FullPath>(option.FileData.Count);
-        var parentPath = ((Mod)option.ParentMod).ModPath.FullName;
-        foreach (var (path, file) in option.FileData)
+        var ret        = new Dictionary<Utf8GamePath, FullPath>(option.Files.Count);
+        var parentPath = ((Mod)option.Mod).ModPath.FullName;
+        foreach (var (path, file) in option.Files)
         {
             var target = Path.GetRelativePath(parentPath, file.FullName);
             target = Path.Combine(newMod.FullName, target);
@@ -337,15 +344,15 @@ public class ModMerger : IDisposable
     {
         foreach (var option in _createdOptions)
         {
-            _editor.DeleteOption(MergeToMod!, option.GroupIdx, option.OptionIdx);
+            _editor.DeleteOption(option);
             Penumbra.Log.Verbose($"[Merger] Removed option {option.FullName}.");
         }
 
         foreach (var group in _createdGroups)
         {
             var groupName = MergeToMod!.Groups[group];
-            _editor.DeleteModGroup(MergeToMod!, group);
-            Penumbra.Log.Verbose($"[Merger] Removed option group {groupName}.");
+            _editor.DeleteModGroup(groupName);
+            Penumbra.Log.Verbose($"[Merger] Removed option group {groupName.Name}.");
         }
 
         foreach (var dir in _createdDirectories)

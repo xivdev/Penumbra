@@ -3,6 +3,7 @@ using OtterGui.Compression;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using FileMode = System.IO.FileMode;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 using ZipArchiveEntry = SharpCompress.Archives.Zip.ZipArchiveEntry;
@@ -27,31 +28,33 @@ public partial class TexToolsImporter : IDisposable
     public          ImporterState                                               State { get; private set; }
     public readonly List<(FileInfo File, DirectoryInfo? Mod, Exception? Error)> ExtractedMods;
 
-    private readonly Configuration _config;
-    private readonly ModEditor     _editor;
-    private readonly ModManager    _modManager;
-    private readonly FileCompactor _compactor;
+    private readonly Configuration    _config;
+    private readonly ModEditor        _editor;
+    private readonly ModManager       _modManager;
+    private readonly FileCompactor    _compactor;
+    private readonly MigrationManager _migrationManager;
 
     public TexToolsImporter(int count, IEnumerable<FileInfo> modPackFiles, Action<FileInfo, DirectoryInfo?, Exception?> handler,
-        Configuration config, ModEditor editor, ModManager modManager, FileCompactor compactor)
+        Configuration config, ModEditor editor, ModManager modManager, FileCompactor compactor, MigrationManager migrationManager)
     {
-        _baseDirectory = modManager.BasePath;
-        _tmpFile       = Path.Combine(_baseDirectory.FullName, TempFileName);
-        _modPackFiles  = modPackFiles;
-        _config        = config;
-        _editor        = editor;
-        _modManager    = modManager;
-        _compactor     = compactor;
-        _modPackCount  = count;
-        ExtractedMods  = new List<(FileInfo, DirectoryInfo?, Exception?)>(count);
-        _token         = _cancellation.Token;
+        _baseDirectory    = modManager.BasePath;
+        _tmpFile          = Path.Combine(_baseDirectory.FullName, TempFileName);
+        _modPackFiles     = modPackFiles;
+        _config           = config;
+        _editor           = editor;
+        _modManager       = modManager;
+        _compactor        = compactor;
+        _migrationManager = migrationManager;
+        _modPackCount     = count;
+        ExtractedMods     = new List<(FileInfo, DirectoryInfo?, Exception?)>(count);
+        _token            = _cancellation.Token;
         Task.Run(ImportFiles, _token)
-            .ContinueWith(_ => CloseStreams())
+            .ContinueWith(_ => CloseStreams(), TaskScheduler.Default)
             .ContinueWith(_ =>
             {
                 foreach (var (file, dir, error) in ExtractedMods)
                     handler(file, dir, error);
-            });
+            }, TaskScheduler.Default);
     }
 
     private void CloseStreams()

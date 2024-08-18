@@ -1,4 +1,6 @@
 using OtterGui.Classes;
+using Penumbra.Api.Api;
+using Penumbra.GameData.Data;
 
 namespace Penumbra.Communication;
 
@@ -8,11 +10,11 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the hovered object data if any. </item>
 /// </list>
 /// </summary>
-public sealed class ChangedItemHover() : EventWrapper<object?, ChangedItemHover.Priority>(nameof(ChangedItemHover))
+public sealed class ChangedItemHover() : EventWrapper<IIdentifiedObjectData?, ChangedItemHover.Priority>(nameof(ChangedItemHover))
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.ChangedItemTooltip"/>
+        /// <seealso cref="UiApi.OnChangedItemHover"/>
         Default = 0,
 
         /// <seealso cref="Penumbra.SetupApi"/>

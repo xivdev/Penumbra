@@ -1,6 +1,7 @@
 using Dalamud.Utility;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
@@ -21,19 +22,11 @@ public enum ModDataChangeType : ushort
     Favorite    = 0x0200,
     LocalTags   = 0x0400,
     Note        = 0x0800,
+    Image       = 0x1000,
 }
 
-public class ModDataEditor
+public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService) : IService
 {
-    private readonly SaveService         _saveService;
-    private readonly CommunicatorService _communicatorService;
-
-    public ModDataEditor(SaveService saveService, CommunicatorService communicatorService)
-    {
-        _saveService         = saveService;
-        _communicatorService = communicatorService;
-    }
-
     /// <summary> Create the file containing the meta information about a mod from scratch. </summary>
     public void CreateMeta(DirectoryInfo directory, string? name, string? author, string? description, string? version,
         string? website)
@@ -44,12 +37,12 @@ public class ModDataEditor
         mod.Description = description ?? mod.Description;
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
-        _saveService.ImmediateSave(new ModMeta(mod));
+        saveService.ImmediateSave(new ModMeta(mod));
     }
 
     public ModDataChangeType LoadLocalData(Mod mod)
     {
-        var dataFile = _saveService.FileNames.LocalDataFile(mod);
+        var dataFile = saveService.FileNames.LocalDataFile(mod);
 
         var importDate = 0L;
         var localTags  = Enumerable.Empty<string>();
@@ -58,8 +51,6 @@ public class ModDataEditor
 
         var save = true;
         if (File.Exists(dataFile))
-        {
-            save = false;
             try
             {
                 var text = File.ReadAllText(dataFile);
@@ -68,13 +59,13 @@ public class ModDataEditor
                 importDate = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
                 favorite   = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
                 note       = json[nameof(Mod.Note)]?.Value<string>() ?? note;
-                localTags  = json[nameof(Mod.LocalTags)]?.Values<string>().OfType<string>() ?? localTags;
+                localTags  = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
+                save       = false;
             }
             catch (Exception e)
             {
                 Penumbra.Log.Error($"Could not load local mod data:\n{e}");
             }
-        }
 
         if (importDate == 0)
             importDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -101,14 +92,14 @@ public class ModDataEditor
         }
 
         if (save)
-            _saveService.QueueSave(new ModLocalData(mod));
+            saveService.QueueSave(new ModLocalData(mod));
 
         return changes;
     }
 
     public ModDataChangeType LoadMeta(ModCreator creator, Mod mod)
     {
-        var metaFile = _saveService.FileNames.ModMetaPath(mod);
+        var metaFile = saveService.FileNames.ModMetaPath(mod);
         if (!File.Exists(metaFile))
         {
             Penumbra.Log.Debug($"No mod meta found for {mod.ModPath.Name}.");
@@ -123,11 +114,12 @@ public class ModDataEditor
             var newName        = json[nameof(Mod.Name)]?.Value<string>() ?? string.Empty;
             var newAuthor      = json[nameof(Mod.Author)]?.Value<string>() ?? string.Empty;
             var newDescription = json[nameof(Mod.Description)]?.Value<string>() ?? string.Empty;
+            var newImage       = json[nameof(Mod.Image)]?.Value<string>() ?? string.Empty;
             var newVersion     = json[nameof(Mod.Version)]?.Value<string>() ?? string.Empty;
             var newWebsite     = json[nameof(Mod.Website)]?.Value<string>() ?? string.Empty;
             var newFileVersion = json[nameof(ModMeta.FileVersion)]?.Value<uint>() ?? 0;
             var importDate     = json[nameof(Mod.ImportDate)]?.Value<long>();
-            var modTags        = json[nameof(Mod.ModTags)]?.Values<string>().OfType<string>();
+            var modTags        = (json[nameof(Mod.ModTags)] as JArray)?.Values<string>().OfType<string>();
 
             ModDataChangeType changes = 0;
             if (mod.Name != newName)
@@ -148,6 +140,12 @@ public class ModDataEditor
                 mod.Description =  newDescription;
             }
 
+            if (mod.Image != newImage)
+            {
+                changes   |= ModDataChangeType.Image;
+                mod.Image =  newImage;
+            }
+
             if (mod.Version != newVersion)
             {
                 changes     |= ModDataChangeType.Version;
@@ -161,10 +159,10 @@ public class ModDataEditor
             }
 
             if (newFileVersion != ModMeta.FileVersion)
-                if (ModMigration.Migrate(creator, _saveService, mod, json, ref newFileVersion))
+                if (ModMigration.Migrate(creator, saveService, mod, json, ref newFileVersion))
                 {
                     changes |= ModDataChangeType.Migration;
-                    _saveService.ImmediateSave(new ModMeta(mod));
+                    saveService.ImmediateSave(new ModMeta(mod));
                 }
 
             if (importDate != null && mod.ImportDate != importDate.Value)
@@ -191,8 +189,8 @@ public class ModDataEditor
 
         var oldName = mod.Name;
         mod.Name = newName;
-        _saveService.QueueSave(new ModMeta(mod));
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Name, mod, oldName.Text);
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Name, mod, oldName.Text);
     }
 
     public void ChangeModAuthor(Mod mod, string newAuthor)
@@ -201,8 +199,8 @@ public class ModDataEditor
             return;
 
         mod.Author = newAuthor;
-        _saveService.QueueSave(new ModMeta(mod));
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Author, mod, null);
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Author, mod, null);
     }
 
     public void ChangeModDescription(Mod mod, string newDescription)
@@ -211,8 +209,8 @@ public class ModDataEditor
             return;
 
         mod.Description = newDescription;
-        _saveService.QueueSave(new ModMeta(mod));
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Description, mod, null);
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Description, mod, null);
     }
 
     public void ChangeModVersion(Mod mod, string newVersion)
@@ -221,8 +219,8 @@ public class ModDataEditor
             return;
 
         mod.Version = newVersion;
-        _saveService.QueueSave(new ModMeta(mod));
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Version, mod, null);
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Version, mod, null);
     }
 
     public void ChangeModWebsite(Mod mod, string newWebsite)
@@ -231,8 +229,8 @@ public class ModDataEditor
             return;
 
         mod.Website = newWebsite;
-        _saveService.QueueSave(new ModMeta(mod));
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Website, mod, null);
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Website, mod, null);
     }
 
     public void ChangeModTag(Mod mod, int tagIdx, string newTag)
@@ -247,9 +245,8 @@ public class ModDataEditor
             return;
 
         mod.Favorite = state;
-        _saveService.QueueSave(new ModLocalData(mod));
-        ;
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
+        saveService.QueueSave(new ModLocalData(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
 
     public void ChangeModNote(Mod mod, string newNote)
@@ -258,9 +255,8 @@ public class ModDataEditor
             return;
 
         mod.Note = newNote;
-        _saveService.QueueSave(new ModLocalData(mod));
-        ;
-        _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
+        saveService.QueueSave(new ModLocalData(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
 
     private void ChangeTag(Mod mod, int tagIdx, string newTag, bool local)
@@ -269,7 +265,7 @@ public class ModDataEditor
         if (tagIdx < 0 || tagIdx > which.Count)
             return;
 
-        ModDataChangeType flags = 0;
+        ModDataChangeType flags;
         if (tagIdx == which.Count)
         {
             flags = ModLocalData.UpdateTags(mod, local ? null : which.Append(newTag), local ? which.Append(newTag) : null);
@@ -282,19 +278,19 @@ public class ModDataEditor
         }
 
         if (flags.HasFlag(ModDataChangeType.ModTags))
-            _saveService.QueueSave(new ModMeta(mod));
+            saveService.QueueSave(new ModMeta(mod));
 
         if (flags.HasFlag(ModDataChangeType.LocalTags))
-            _saveService.QueueSave(new ModLocalData(mod));
+            saveService.QueueSave(new ModLocalData(mod));
 
         if (flags != 0)
-            _communicatorService.ModDataChanged.Invoke(flags, mod, null);
+            communicatorService.ModDataChanged.Invoke(flags, mod, null);
     }
 
     public void MoveDataFile(DirectoryInfo oldMod, DirectoryInfo newMod)
     {
-        var oldFile = _saveService.FileNames.LocalDataFile(oldMod.Name);
-        var newFile = _saveService.FileNames.LocalDataFile(newMod.Name);
+        var oldFile = saveService.FileNames.LocalDataFile(oldMod.Name);
+        var newFile = saveService.FileNames.LocalDataFile(newMod.Name);
         if (!File.Exists(oldFile))
             return;
 

@@ -1,4 +1,3 @@
-using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
@@ -49,7 +48,7 @@ public partial class ModEditWindow
 
         /// <inheritdoc/>
         public bool Valid
-            => Mdl.Valid;
+            => Mdl.Valid && Mdl.Materials.All(ValidateMaterial);
 
         /// <inheritdoc/>
         public byte[] Write()
@@ -85,17 +84,17 @@ public partial class ModEditWindow
             {
                 // TODO: Is it worth trying to order results based on option priorities for cases where more than one match is found?
                 // NOTE: We're using case-insensitive comparisons, as option group paths in mods are stored in lower case, but the mod editor uses paths directly from the file system, which may be mixed case.
-                return mod.AllSubMods
+                return mod.AllDataContainers
                     .SelectMany(m => m.Files.Concat(m.FileSwaps))
                     .Where(kv => kv.Value.FullName.Equals(path, StringComparison.OrdinalIgnoreCase))
                     .Select(kv => kv.Key)
                     .ToList();
             });
 
-            task.ContinueWith(t => { GamePaths = FinalizeIo(t); });
+            task.ContinueWith(t => { GamePaths = FinalizeIo(t); }, TaskScheduler.Default);
         }
 
-        private EstManipulation[] GetCurrentEstManipulations()
+        private KeyValuePair<EstIdentifier, EstEntry>[] GetCurrentEstManipulations()
         {
             var mod    = _edit._editor.Mod;
             var option = _edit._editor.Option;
@@ -103,12 +102,10 @@ public partial class ModEditWindow
                 return [];
 
             // Filter then prepend the current option to ensure it's chosen first.
-            return mod.AllSubMods
+            return mod.AllDataContainers
                 .Where(subMod => subMod != option)
                 .Prepend(option)
-                .SelectMany(subMod => subMod.Manipulations)
-                .Where(manipulation => manipulation.ManipulationType is MetaManipulation.Type.Est)
-                .Select(manipulation => manipulation.Est)
+                .SelectMany(subMod => subMod.Manipulations.Est)
                 .ToArray();
         }
 
@@ -130,7 +127,7 @@ public partial class ModEditWindow
 
             BeginIo();
             _edit._models.ExportToGltf(ExportConfig, Mdl, sklbPaths, ReadFile, outputPath)
-                .ContinueWith(FinalizeIo);
+                .ContinueWith(FinalizeIo, TaskScheduler.Default);
         }
 
         /// <summary> Import a model from an interchange format. </summary>
@@ -144,7 +141,7 @@ public partial class ModEditWindow
                     var mdlFile = FinalizeIo(task, result => result.Item1, result => result.Item2);
                     if (mdlFile != null)
                         FinalizeImport(mdlFile);
-                });
+                }, TaskScheduler.Default);
         }
 
         /// <summary> Finalise the import of a .mdl, applying any post-import transformations and state updates. </summary>
@@ -220,24 +217,9 @@ public partial class ModEditWindow
         /// <param name="source"> Model to copy element ids from. </param>
         private static void MergeElementIds(MdlFile target, MdlFile source)
         {
-            var elementIds = new List<MdlStructs.ElementIdStruct>();
-
-            foreach (var sourceElement in source.ElementIds)
-            {
-                var sourceBone  = source.Bones[sourceElement.ParentBoneName];
-                var targetIndex = target.Bones.IndexOf(sourceBone);
-                // Given that there's no means of authoring these at the moment, this should probably remain a hard error.
-                if (targetIndex == -1)
-                    throw new Exception(
-                        $"Failed to merge element IDs. Original model contains element IDs targeting bone {sourceBone}, which is not present on the imported model.");
-
-                elementIds.Add(sourceElement with
-                {
-                    ParentBoneName = (uint)targetIndex,
-                });
-            }
-
-            target.ElementIds = [.. elementIds];
+            // This is overly simplistic, but effectively reproduces what TT did, sort of.
+            // TODO: Get a better idea of what these values represent. `ParentBoneName`, if it is a pointer into the bone array, does not seem to be _bounded_ by the bone array length, at least in the model. I'm guessing it _may_ be pointing into a .sklb instead? (i.e. the weapon's skeleton). EID stuff in general needs more work.
+            target.ElementIds = [.. source.ElementIds];
         }
 
         private void BeginIo()
@@ -289,7 +271,7 @@ public partial class ModEditWindow
         private byte[]? ReadFile(string path)
         {
             // TODO: if cross-collection lookups are turned off, this conversion can be skipped
-            if (!Utf8GamePath.FromString(path, out var utf8Path, true))
+            if (!Utf8GamePath.FromString(path, out var utf8Path))
                 throw new Exception($"Resolved path {path} could not be converted to a game path.");
 
             var resolvedPath = _edit._activeCollections.Current.ResolvePath(utf8Path) ?? new FullPath(utf8Path);
@@ -298,6 +280,20 @@ public partial class ModEditWindow
             return resolvedPath.IsRooted
                 ? File.ReadAllBytes(resolvedPath.FullName)
                 : _edit._gameData.GetFile(resolvedPath.InternalName.ToString())?.Data;
+        }
+
+        /// <summary> Validate the specified material. </summary>
+        /// <remarks>
+        /// While materials can be relative (`/mt_...`) or absolute (`bg/...`),
+        /// they invariably must contain at least one directory seperator.
+        /// Missing this can lead to a crash.
+        /// 
+        /// They must also be at least one character (though this is enforced
+        /// by containing a `/`), and end with `.mtrl`.
+        /// </remarks>
+        public bool ValidateMaterial(string material)
+        {
+            return material.Contains('/') && material.EndsWith(".mtrl");
         }
 
         /// <summary> Remove the material given by the index. </summary>

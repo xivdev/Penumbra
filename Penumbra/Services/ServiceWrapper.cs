@@ -74,7 +74,7 @@ public abstract class AsyncServiceWrapper<T> : IDisposable
         {
             if (!_isDisposed)
                 FinishedCreation?.Invoke();
-        }, null);
+        }, TaskScheduler.Default);
     }
 
     public void Dispose()

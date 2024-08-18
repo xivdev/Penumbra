@@ -1,7 +1,8 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
+using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Services;
@@ -9,10 +10,10 @@ namespace Penumbra.Interop.Services;
 public sealed unsafe class DecalReverter : IDisposable
 {
     public static readonly Utf8GamePath DecalPath =
-        Utf8GamePath.FromSpan("chara/common/texture/decal_equip/_stigma.tex"u8, out var p) ? p : Utf8GamePath.Empty;
+        Utf8GamePath.FromSpan("chara/common/texture/decal_equip/_stigma.tex"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
 
     public static readonly Utf8GamePath TransparentPath =
-        Utf8GamePath.FromSpan("chara/common/texture/transparent.tex"u8, out var p) ? p : Utf8GamePath.Empty;
+        Utf8GamePath.FromSpan("chara/common/texture/transparent.tex"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
 
     private readonly CharacterUtility               _utility;
     private readonly Structs.TextureResourceHandle* _decal;

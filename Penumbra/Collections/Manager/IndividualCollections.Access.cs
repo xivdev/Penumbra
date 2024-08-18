@@ -127,7 +127,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
         }
     }
 
-    public bool TryGetCollection(GameObject? gameObject, out ModCollection? collection)
+    public bool TryGetCollection(IGameObject? gameObject, out ModCollection? collection)
         => TryGetCollection(_actors.FromObject(gameObject, true, false, false), out collection);
 
     public unsafe bool TryGetCollection(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection)

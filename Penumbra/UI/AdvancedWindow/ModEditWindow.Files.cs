@@ -3,9 +3,8 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
@@ -79,8 +78,8 @@ public partial class ModEditWindow
             var file = f.RelPath.ToString();
             return f.SubModUsage.Count == 0
                 ? Enumerable.Repeat((file, "Unused", string.Empty, 0x40000080u), 1)
-                : f.SubModUsage.Select(s => (file, s.Item2.ToString(), s.Item1.FullName,
-                    _editor.Option! == s.Item1 && _mod!.HasOptions ? 0x40008000u : 0u));
+                : f.SubModUsage.Select(s => (file, s.Item2.ToString(), s.Item1.GetFullName(),
+                    _editor.Option! == s.Item1 && Mod!.HasOptions ? 0x40008000u : 0u));
         });
 
         void DrawLine((string, string, string, uint) data)
@@ -148,13 +147,13 @@ public partial class ModEditWindow
         (string, int) GetMulti()
         {
             var groups = registry.SubModUsage.GroupBy(s => s.Item1).ToArray();
-            return (string.Join("\n", groups.Select(g => g.Key.Name)), groups.Length);
+            return (string.Join("\n", groups.Select(g => g.Key.GetName())), groups.Length);
         }
 
         var (text, groupCount) = color switch
         {
             ColorId.ConflictingMod => (string.Empty, 0),
-            ColorId.NewMod         => (registry.SubModUsage[0].Item1.Name, 1),
+            ColorId.NewMod         => (registry.SubModUsage[0].Item1.GetName(), 1),
             ColorId.InheritedMod   => GetMulti(),
             _                      => (string.Empty, 0),
         };
@@ -192,7 +191,7 @@ public partial class ModEditWindow
         ImGuiUtil.RightAlign(rightText);
     }
 
-    private void PrintGamePath(int i, int j, FileRegistry registry, ISubMod subMod, Utf8GamePath gamePath)
+    private void PrintGamePath(int i, int j, FileRegistry registry, IModDataContainer subMod, Utf8GamePath gamePath)
     {
         using var id = ImRaii.PushId(j);
         ImGui.TableNextColumn();
@@ -210,7 +209,7 @@ public partial class ModEditWindow
 
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
-            if (Utf8GamePath.FromString(_gamePathEdit, out var path, false))
+            if (Utf8GamePath.FromString(_gamePathEdit, out var path))
                 _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
 
             _fileIdx = -1;
@@ -218,7 +217,7 @@ public partial class ModEditWindow
         }
         else if (_fileIdx == i
               && _pathIdx == j
-              && (!Utf8GamePath.FromString(_gamePathEdit, out var path, false)
+              && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !path.Equals(gamePath) && !_editor.FileEditor.CanAddGamePath(path)))
         {
             ImGui.SameLine();
@@ -228,7 +227,7 @@ public partial class ModEditWindow
         }
     }
 
-    private void PrintNewGamePath(int i, FileRegistry registry, ISubMod subMod)
+    private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer subMod)
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
         var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
@@ -242,7 +241,7 @@ public partial class ModEditWindow
 
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
-            if (Utf8GamePath.FromString(_gamePathEdit, out var path, false) && !path.IsEmpty)
+            if (Utf8GamePath.FromString(_gamePathEdit, out var path) && !path.IsEmpty)
                 _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
 
             _fileIdx = -1;
@@ -250,7 +249,7 @@ public partial class ModEditWindow
         }
         else if (_fileIdx == i
               && _pathIdx == -1
-              && (!Utf8GamePath.FromString(_gamePathEdit, out var path, false)
+              && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !_editor.FileEditor.CanAddGamePath(path)))
         {
             ImGui.SameLine();
@@ -301,9 +300,9 @@ public partial class ModEditWindow
         tt = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, !changes))
         {
-            var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, (SubMod)_editor.Option!);
+            var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
             if (failedFiles > 0)
-                Penumbra.Log.Information($"Failed to apply {failedFiles} file redirections to {_editor.Option!.FullName}.");
+                Penumbra.Log.Information($"Failed to apply {failedFiles} file redirections to {_editor.Option!.GetFullName()}.");
         }
 
 

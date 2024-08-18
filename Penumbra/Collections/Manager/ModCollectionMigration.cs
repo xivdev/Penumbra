@@ -1,8 +1,6 @@
-using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
-using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
 
@@ -40,9 +38,9 @@ internal static class ModCollectionMigration
 
     /// <summary> We treat every completely defaulted setting as inheritance-ready. </summary>
     private static bool SettingIsDefaultV0(ModSettings.SavedSettings setting)
-        => setting is { Enabled: false, Priority: 0 } && setting.Settings.Values.All(s => s == 0);
+        => setting is { Enabled: true, Priority.IsDefault: true } && setting.Settings.Values.All(s => s == Setting.Zero);
 
     /// <inheritdoc cref="SettingIsDefaultV0(ModSettings.SavedSettings)"/>
     private static bool SettingIsDefaultV0(ModSettings? setting)
-        => setting is { Enabled: false, Priority: 0 } && setting.Settings.All(s => s == 0);
+        => setting is { Enabled: true, Priority.IsDefault: true } && setting.Settings.All(s => s == Setting.Zero);
 }

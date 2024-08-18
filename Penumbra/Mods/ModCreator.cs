@@ -1,23 +1,30 @@
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-public partial class ModCreator(SaveService _saveService, Configuration config, ModDataEditor _dataEditor, MetaFileManager _metaFileManager,
-    GamePathParser _gamePathParser)
+public partial class ModCreator(
+    SaveService _saveService,
+    Configuration config,
+    ModDataEditor _dataEditor,
+    MetaFileManager _metaFileManager,
+    GamePathParser _gamePathParser) : IService
 {
     public readonly Configuration Config = config;
 
@@ -84,7 +91,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
         var changes = false;
         foreach (var file in _saveService.FileNames.GetOptionGroupFiles(mod))
         {
-            var group = LoadModGroup(mod, file, mod.Groups.Count);
+            var group = LoadModGroup(mod, file);
             if (group != null && mod.Groups.All(g => g.Name != group.Name))
             {
                 changes = changes
@@ -106,13 +113,10 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
     public void LoadDefaultOption(Mod mod)
     {
         var defaultFile = _saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
-        mod.Default.SetPosition(-1, 0);
         try
         {
-            if (!File.Exists(defaultFile))
-                mod.Default.Load(mod.ModPath, new JObject(), out _);
-            else
-                mod.Default.Load(mod.ModPath, JObject.Parse(File.ReadAllText(defaultFile)), out _);
+            var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
+            SubMod.LoadDataContainer(jObject, mod.Default, mod.ModPath);
         }
         catch (Exception e)
         {
@@ -151,7 +155,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
     {
         var          changes    = false;
         List<string> deleteList = new();
-        foreach (var subMod in mod.AllSubMods)
+        foreach (var subMod in mod.AllDataContainers)
         {
             var (localChanges, localDeleteList) =  IncorporateMetaChanges(subMod, mod.ModPath, false);
             changes                             |= localChanges;
@@ -159,7 +163,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                 deleteList.AddRange(localDeleteList);
         }
 
-        SubMod.DeleteDeleteList(deleteList, delete);
+        DeleteDeleteList(deleteList, delete);
 
         if (!changes)
             return;
@@ -173,10 +177,10 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
     /// If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
     /// If delete is true, the files are deleted afterwards.
     /// </summary>
-    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(SubMod option, DirectoryInfo basePath, bool delete)
+    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(IModDataContainer option, DirectoryInfo basePath, bool delete)
     {
         var deleteList   = new List<string>();
-        var oldSize      = option.ManipulationData.Count;
+        var oldSize      = option.Manipulations.Count;
         var deleteString = delete ? "with deletion." : "without deletion.";
         foreach (var (key, file) in option.Files.ToList())
         {
@@ -186,7 +190,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
             {
                 if (ext1 == ".meta" || ext2 == ".meta")
                 {
-                    option.FileData.Remove(key);
+                    option.Files.Remove(key);
                     if (!file.Exists)
                         continue;
 
@@ -195,11 +199,11 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
-                    option.ManipulationData.UnionWith(meta.MetaManipulations);
+                    option.Manipulations.UnionWith(meta.MetaManipulations);
                 }
                 else if (ext1 == ".rgsp" || ext2 == ".rgsp")
                 {
-                    option.FileData.Remove(key);
+                    option.Files.Remove(key);
                     if (!file.Exists)
                         continue;
 
@@ -209,7 +213,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
 
-                    option.ManipulationData.UnionWith(rgsp.MetaManipulations);
+                    option.Manipulations.UnionWith(rgsp.MetaManipulations);
                 }
             }
             catch (Exception e)
@@ -218,8 +222,8 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
             }
         }
 
-        SubMod.DeleteDeleteList(deleteList, delete);
-        return (oldSize < option.ManipulationData.Count, deleteList);
+        DeleteDeleteList(deleteList, delete);
+        return (oldSize < option.Manipulations.Count, deleteList);
     }
 
     /// <summary>
@@ -235,64 +239,47 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
 
     /// <summary> Create a file for an option group from given data. </summary>
     public void CreateOptionGroup(DirectoryInfo baseFolder, GroupType type, string name,
-        int priority, int index, uint defaultSettings, string desc, IEnumerable<ISubMod> subMods)
+        ModPriority priority, int index, Setting defaultSettings, string desc, IEnumerable<MultiSubMod> subMods)
     {
         switch (type)
         {
             case GroupType.Multi:
             {
-                var group = new MultiModGroup()
-                {
-                    Name            = name,
-                    Description     = desc,
-                    Priority        = priority,
-                    DefaultSettings = defaultSettings,
-                };
-                group.PrioritizedOptions.AddRange(subMods.OfType<SubMod>().Select((s, idx) => (s, idx)));
-                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
+                var group = MultiModGroup.WithoutMod(name);
+                group.Description     = desc;
+                group.Priority        = priority;
+                group.DefaultSettings = defaultSettings;
+                group.OptionData.AddRange(subMods.Select(s => s.Clone(group)));
+                _saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
             case GroupType.Single:
             {
-                var group = new SingleModGroup()
-                {
-                    Name            = name,
-                    Description     = desc,
-                    Priority        = priority,
-                    DefaultSettings = defaultSettings,
-                };
-                group.OptionData.AddRange(subMods.OfType<SubMod>());
-                _saveService.ImmediateSaveSync(new ModSaveGroup(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
+                var group = SingleModGroup.CreateForSaving(name);
+                group.Description     = desc;
+                group.Priority        = priority;
+                group.DefaultSettings = defaultSettings;
+                group.OptionData.AddRange(subMods.Select(s => s.ConvertToSingle(group)));
+                _saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
         }
     }
 
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>
-    public ISubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option)
+    public MultiSubMod CreateSubMod(DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option, ModPriority priority)
     {
         var list = optionFolder.EnumerateNonHiddenFiles()
-            .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath, true), gamePath, new FullPath(f)))
+            .Select(f => (Utf8GamePath.FromFile(f, optionFolder, out var gamePath), gamePath, new FullPath(f)))
             .Where(t => t.Item1);
 
-        var mod = new SubMod(null!) // Mod is irrelevant here, only used for saving.
-        {
-            Name        = option.Name,
-            Description = option.Description,
-        };
+        var mod = MultiSubMod.WithoutGroup(option.Name, option.Description, priority);
         foreach (var (_, gamePath, file) in list)
-            mod.FileData.TryAdd(gamePath, file);
+            mod.Files.TryAdd(gamePath, file);
 
         IncorporateMetaChanges(mod, baseFolder, true);
         return mod;
     }
-
-    /// <summary> Create an empty sub mod for single groups with None options. </summary>
-    internal static ISubMod CreateEmptySubMod(string name)
-        => new SubMod(null!) // Mod is irrelevant here, only used for saving.
-        {
-            Name = name,
-        };
 
     /// <summary>
     /// Create the default data file from all unused files that were not handled before
@@ -304,12 +291,12 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
         ReloadMod(mod, false, out _);
         foreach (var file in mod.FindUnusedFiles())
         {
-            if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath, true))
-                mod.Default.FileData.TryAdd(gamePath, file);
+            if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath))
+                mod.Default.Files.TryAdd(gamePath, file);
         }
 
         IncorporateMetaChanges(mod.Default, directory, true);
-        _saveService.ImmediateSaveSync(new ModSaveGroup(mod, -1, Config.ReplaceNonAsciiOnImport));
+        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
@@ -406,10 +393,8 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                 Penumbra.Log.Debug($"Writing the first {IModGroup.MaxMultiOptions} options to {Path.GetFileName(oldPath)} after split.");
                 using (var oldFile = File.CreateText(oldPath))
                 {
-                    using var j = new JsonTextWriter(oldFile)
-                    {
-                        Formatting = Formatting.Indented,
-                    };
+                    using var j = new JsonTextWriter(oldFile);
+                    j.Formatting = Formatting.Indented;
                     json.WriteTo(j);
                 }
 
@@ -417,10 +402,8 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
                     $"Writing the remaining {options.Count - IModGroup.MaxMultiOptions} options to {Path.GetFileName(newPath)} after split.");
                 using (var newFile = File.CreateText(newPath))
                 {
-                    using var j = new JsonTextWriter(newFile)
-                    {
-                        Formatting = Formatting.Indented,
-                    };
+                    using var j = new JsonTextWriter(newFile);
+                    j.Formatting = Formatting.Indented;
                     clone.WriteTo(j);
                 }
 
@@ -440,7 +423,7 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
 
 
     /// <summary> Load an option group for a specific mod by its file and index. </summary>
-    private static IModGroup? LoadModGroup(Mod mod, FileInfo file, int groupIdx)
+    private static IModGroup? LoadModGroup(Mod mod, FileInfo file)
     {
         if (!File.Exists(file.FullName))
             return null;
@@ -450,8 +433,9 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
             var json = JObject.Parse(File.ReadAllText(file.FullName));
             switch (json[nameof(Type)]?.ToObject<GroupType>() ?? GroupType.Single)
             {
-                case GroupType.Multi:  return MultiModGroup.Load(mod, json, groupIdx);
-                case GroupType.Single: return SingleModGroup.Load(mod, json, groupIdx);
+                case GroupType.Multi:  return MultiModGroup.Load(mod, json);
+                case GroupType.Single: return SingleModGroup.Load(mod, json);
+                case GroupType.Imc:    return ImcModGroup.Load(mod, json);
             }
         }
         catch (Exception e)
@@ -460,5 +444,23 @@ public partial class ModCreator(SaveService _saveService, Configuration config, 
         }
 
         return null;
+    }
+
+    internal static void DeleteDeleteList(IEnumerable<string> deleteList, bool delete)
+    {
+        if (!delete)
+            return;
+
+        foreach (var file in deleteList)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not delete incorporated meta file {file}:\n{e}");
+            }
+        }
     }
 }

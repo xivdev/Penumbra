@@ -1,21 +1,24 @@
+using System.IO.MemoryMappedFiles;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.ShaderStructs;
+using Penumbra.GameData.Files.Utility;
+using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
-using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal readonly struct TreeBuildCache(IObjectTable objects, IDataManager dataManager, ActorManager actors)
+internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager dataManager, ActorManager actors)
 {
-    private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = [];
+    private readonly Dictionary<FullPath, IReadOnlyDictionary<uint, Name>?> _shaderPackageNames = [];
 
-    public unsafe bool IsLocalPlayerRelated(Character character)
+    public unsafe bool IsLocalPlayerRelated(ICharacter character)
     {
-        var player = objects[0];
+        var player = objects.GetDalamudObject(0);
         if (player == null)
             return false;
 
@@ -25,36 +28,36 @@ internal readonly struct TreeBuildCache(IObjectTable objects, IDataManager dataM
         return actualIndex switch
         {
             < 2                              => true,
-            < (int)ScreenActor.CutsceneStart => gameObject->OwnerID == player.ObjectId,
+            < (int)ScreenActor.CutsceneStart => gameObject->OwnerId == player.EntityId,
             _                                => false,
         };
     }
 
-    public IEnumerable<Character> GetCharacters()
-        => objects.OfType<Character>();
+    public IEnumerable<ICharacter> GetCharacters()
+        => objects.Objects.OfType<ICharacter>();
 
-    public IEnumerable<Character> GetLocalPlayerRelatedCharacters()
+    public IEnumerable<ICharacter> GetLocalPlayerRelatedCharacters()
     {
-        var player = objects[0];
+        var player = objects.GetDalamudObject(0);
         if (player == null)
             yield break;
 
-        yield return (Character)player;
+        yield return (ICharacter)player;
 
-        var minion = objects[1];
+        var minion = objects.GetDalamudObject(1);
         if (minion != null)
-            yield return (Character)minion;
+            yield return (ICharacter)minion;
 
-        var playerId = player.ObjectId;
+        var playerId = player.EntityId;
         for (var i = 2; i < ObjectIndex.CutsceneStart.Index; i += 2)
         {
-            if (objects[i] is Character owned && owned.OwnerId == playerId)
+            if (objects.GetDalamudObject(i) is ICharacter owned && owned.OwnerId == playerId)
                 yield return owned;
         }
 
         for (var i = ObjectIndex.CutsceneStart.Index; i < ObjectIndex.CharacterScreen.Index; ++i)
         {
-            var character = objects[i] as Character;
+            var character = objects.GetDalamudObject((int) i) as ICharacter;
             if (character == null)
                 continue;
 
@@ -62,39 +65,16 @@ internal readonly struct TreeBuildCache(IObjectTable objects, IDataManager dataM
             if (parent < 0)
                 continue;
 
-            if (parent is 0 or 1 || objects[parent]?.OwnerId == playerId)
+            if (parent is 0 or 1 || objects.GetDalamudObject(parent)?.OwnerId == playerId)
                 yield return character;
         }
     }
 
-    private unsafe ByteString GetPlayerName(GameObject player)
-    {
-        var gameObject = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)player.Address;
-        return new ByteString(gameObject->Name);
-    }
-
-    private unsafe bool GetOwnedId(ByteString playerName, uint playerId, int idx, [NotNullWhen(true)] out Character? character)
-    {
-        character = objects[idx] as Character;
-        if (character == null)
-            return false;
-
-        var actorId = actors.FromObject(character, out var owner, true, true, true);
-        if (!actorId.IsValid)
-            return false;
-        if (owner != null && owner->OwnerID != playerId)
-            return false;
-        if (actorId.Type is not IdentifierType.Player || !actorId.PlayerName.Equals(playerName))
-            return false;
-
-        return true;
-    }
-
     /// <summary> Try to read a shpk file from the given path and cache it on success. </summary>
-    public ShpkFile? ReadShaderPackage(FullPath path)
-        => ReadFile(dataManager, path, _shaderPackages, bytes => new ShpkFile(bytes));
+    public IReadOnlyDictionary<uint, Name>? ReadShaderPackageNames(FullPath path)
+        => ReadFile(dataManager, path, _shaderPackageNames, bytes => ShpkFile.FastExtractNames(bytes.Span));
 
-    private static T? ReadFile<T>(IDataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<byte[], T> parseFile)
+    private static T? ReadFile<T>(IDataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<ReadOnlyMemory<byte>, T> parseFile)
         where T : class
     {
         if (path.FullName.Length == 0)
@@ -109,7 +89,8 @@ internal readonly struct TreeBuildCache(IObjectTable objects, IDataManager dataM
         {
             if (path.IsRooted)
             {
-                parsed = parseFile(File.ReadAllBytes(pathStr));
+                using var mmFile = MmioMemoryManager.CreateFromFile(pathStr, access: MemoryMappedFileAccess.Read);
+                parsed = parseFile(mmFile.Memory);
             }
             else
             {

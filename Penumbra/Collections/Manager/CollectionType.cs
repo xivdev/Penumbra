@@ -107,6 +107,9 @@ public static class CollectionTypeExtensions
     public static bool IsSpecial(this CollectionType collectionType)
         => collectionType < CollectionType.Default;
 
+    public static bool CanBeRemoved(this CollectionType collectionType)
+        => collectionType.IsSpecial() || collectionType is CollectionType.Individual;
+
     public static readonly (CollectionType, string, string)[] Special = Enum.GetValues<CollectionType>()
         .Where(IsSpecial)
         .Select(s => (s, s.ToName(), s.ToDescription()))

@@ -1,10 +1,9 @@
+using System.Text.Unicode;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
@@ -20,6 +19,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     private delegate nint NamedResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint name);
     private delegate nint PerSlotResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex);
     private delegate nint SingleResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize);
+    private delegate nint SkeletonVFuncDelegate(nint drawObject, int estType, nint unk);
 
     private delegate nint TmbResolveDelegate(nint drawObject, nint pathBuffer, nint pathBufferSize, nint timelineName);
 
@@ -38,6 +38,8 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     private readonly Hook<PerSlotResolveDelegate> _resolveSkpPathHook;
     private readonly Hook<TmbResolveDelegate>     _resolveTmbPathHook;
     private readonly Hook<VfxResolveDelegate>     _resolveVfxPathHook;
+    private readonly Hook<SkeletonVFuncDelegate>? _vFunc81Hook;
+    private readonly Hook<SkeletonVFuncDelegate>? _vFunc83Hook;
 
     private readonly PathState _parent;
 
@@ -45,20 +47,28 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     {
         _parent = parent;
         // @formatter:off
-        _resolveDecalPathHook = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveDecal)}", hooks, vTable[83], ResolveDecal);
-        _resolveEidPathHook   = Create<SingleResolveDelegate>( $"{name}.{nameof(ResolveEid)}",   hooks, vTable[85], ResolveEid);
-        _resolveImcPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveImc)}",   hooks, vTable[81], ResolveImc);
-        _resolveMPapPathHook  = Create<MPapResolveDelegate>(   $"{name}.{nameof(ResolveMPap)}",  hooks, vTable[79], ResolveMPap);
-        _resolveMdlPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveMdl)}",   hooks, vTable[73], type, ResolveMdl, ResolveMdlHuman);
-        _resolveMtrlPathHook  = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolveMtrl)}",  hooks, vTable[82], ResolveMtrl);
-        _resolvePapPathHook   = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolvePap)}",   hooks, vTable[76], type, ResolvePap, ResolvePapHuman);
-        _resolvePhybPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolvePhyb)}",  hooks, vTable[75], type, ResolvePhyb, ResolvePhybHuman);
-        _resolveSklbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSklb)}",  hooks, vTable[72], type, ResolveSklb, ResolveSklbHuman);
-        _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[74], type, ResolveSkp, ResolveSkpHuman);
-        _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[77], ResolveTmb);
-        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[84], ResolveVfx);
+        _resolveSklbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSklb)}",  hooks, vTable[76], type, ResolveSklb, ResolveSklbHuman);
+        _resolveMdlPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveMdl)}",   hooks, vTable[77], type, ResolveMdl, ResolveMdlHuman);
+        _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[78], type, ResolveSkp, ResolveSkpHuman);
+        _resolvePhybPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolvePhyb)}",  hooks, vTable[79], type, ResolvePhyb, ResolvePhybHuman);
+
+        _vFunc81Hook          = Create<SkeletonVFuncDelegate>( $"{name}.{nameof(VFunc81)}",      hooks, vTable[81], type, null, VFunc81);
+
+        _vFunc83Hook          = Create<SkeletonVFuncDelegate>( $"{name}.{nameof(VFunc83)}",      hooks, vTable[83], type, null, VFunc83);
+
+        _resolvePapPathHook   = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolvePap)}",   hooks, vTable[84], type, ResolvePap, ResolvePapHuman);
+        _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[85], ResolveTmb);
+        _resolveMPapPathHook  = Create<MPapResolveDelegate>(   $"{name}.{nameof(ResolveMPap)}",  hooks, vTable[87], ResolveMPap);
+        _resolveImcPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveImc)}",   hooks, vTable[89], ResolveImc);
+        _resolveMtrlPathHook  = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolveMtrl)}",  hooks, vTable[90], ResolveMtrl);
+        _resolveDecalPathHook = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveDecal)}", hooks, vTable[92], ResolveDecal);
+        _resolveVfxPathHook   = Create<VfxResolveDelegate>(    $"{name}.{nameof(ResolveVfx)}",   hooks, vTable[93], type, ResolveVfx, ResolveVfxHuman);
+        _resolveEidPathHook   = Create<SingleResolveDelegate>( $"{name}.{nameof(ResolveEid)}",   hooks, vTable[94], ResolveEid);
+        
+        
         // @formatter:on
-        Enable();
+        if (!HookOverrides.Instance.Resources.ResolvePathHooks)
+            Enable();
     }
 
     public void Enable()
@@ -75,6 +85,8 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveSkpPathHook.Enable();
         _resolveTmbPathHook.Enable();
         _resolveVfxPathHook.Enable();
+        _vFunc81Hook?.Enable();
+        _vFunc83Hook?.Enable();
     }
 
     public void Disable()
@@ -91,6 +103,8 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveSkpPathHook.Disable();
         _resolveTmbPathHook.Disable();
         _resolveVfxPathHook.Disable();
+        _vFunc81Hook?.Disable();
+        _vFunc83Hook?.Disable();
     }
 
     public void Dispose()
@@ -107,6 +121,8 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveSkpPathHook.Dispose();
         _resolveTmbPathHook.Dispose();
         _resolveVfxPathHook.Dispose();
+        _vFunc81Hook?.Dispose();
+        _vFunc83Hook?.Dispose();
     }
 
     private nint ResolveDecal(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
@@ -148,58 +164,110 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     private nint ResolveMdlHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
     {
-        var data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var eqdp = slotIndex > 9 || _parent.InInternalResolve
-            ? DisposableContainer.Empty
-            : _parent.MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace(drawObject), slotIndex < 5, slotIndex > 4);
-        return ResolvePath(data, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        if (slotIndex < 10)
+            _parent.MetaState.EqdpCollection.Push(collection);
+
+        var ret = ResolvePath(collection, _resolveMdlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+        if (slotIndex < 10)
+            _parent.MetaState.EqdpCollection.Pop();
+
+        return ret;
     }
 
     private nint ResolvePapHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection,
+            _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
     }
 
     private nint ResolvePhybHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
     }
 
     private nint ResolveSklbHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
     }
 
     private nint ResolveSkpHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
-        using var est = GetEstChanges(drawObject, out var data);
-        return ResolvePath(data, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolveSkpPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
     }
 
-    private DisposableContainer GetEstChanges(nint drawObject, out ResolveData data)
+    private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
     {
-        data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        if (_parent.InInternalResolve)
-            return DisposableContainer.Empty;
+        if (slotIndex is <= 4 or >= 10)
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstManipulation.EstType.Face),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Body),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Hair),
-            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Head));
+        var changedEquipData = ((Human*)drawObject)->ChangedEquipData;
+        // Enable vfxs for accessories
+        if (changedEquipData == null)
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+        var slot    = (ushort*)(changedEquipData + 12 * (nint)slotIndex);
+        var model   = slot[0];
+        var variant = slot[1];
+        var vfxId   = slot[4];
+
+        if (model == 0 || variant == 0 || vfxId == 0)
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), $"chara/accessory/a{model:D4}/vfx/eff/va{vfxId:D4}.avfx\0",
+                out _))
+            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+        *(ulong*)unkOutParam = 4;
+        return ResolvePath(drawObject, pathBuffer);
     }
 
+    private nint VFunc81(nint drawObject, int estType, nint unk)
+    {
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = _vFunc81Hook!.Original(drawObject, estType, unk);
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
+    }
+
+    private nint VFunc83(nint drawObject, int estType, nint unk)
+    {
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = _vFunc83Hook!.Original(drawObject, estType, unk);
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(string name, HookManager hooks, nint address, Type type, T other, T human) where T : Delegate
+    [return: NotNullIfNotNull(nameof(other))]
+    private static Hook<T>? Create<T>(string name, HookManager hooks, nint address, Type type, T? other, T human) where T : Delegate
     {
         var del = type switch
         {
             Type.Human => human,
             _          => other,
         };
+        if (del == null)
+            return null;
+
         return hooks.CreateHook(name, address, del).Result;
     }
 

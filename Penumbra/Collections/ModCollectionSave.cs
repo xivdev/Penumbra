@@ -1,32 +1,21 @@
 using Newtonsoft.Json.Linq;
-using Penumbra.Mods;
 using Penumbra.Services;
 using Newtonsoft.Json;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
-using Penumbra.Util;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Collections;
 
 /// <summary>
 /// Handle saving and loading a collection.
 /// </summary>
-internal readonly struct ModCollectionSave : ISavable
+internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection modCollection) : ISavable
 {
-    private readonly ModStorage    _modStorage;
-    private readonly ModCollection _modCollection;
-
-    public ModCollectionSave(ModStorage modStorage, ModCollection modCollection)
-    {
-        _modStorage    = modStorage;
-        _modCollection = modCollection;
-    }
-
     public string ToFilename(FilenameService fileNames)
-        => fileNames.CollectionFile(_modCollection);
+        => fileNames.CollectionFile(modCollection);
 
     public string LogName(string _)
-        => _modCollection.AnonymizedName;
+        => modCollection.AnonymizedName;
 
     public string TypeName
         => "Collection";
@@ -39,21 +28,23 @@ internal readonly struct ModCollectionSave : ISavable
         j.WriteStartObject();
         j.WritePropertyName("Version");
         j.WriteValue(ModCollection.CurrentVersion);
+        j.WritePropertyName(nameof(ModCollection.Id));
+        j.WriteValue(modCollection.Identifier);
         j.WritePropertyName(nameof(ModCollection.Name));
-        j.WriteValue(_modCollection.Name);
+        j.WriteValue(modCollection.Name);
         j.WritePropertyName(nameof(ModCollection.Settings));
 
         // Write all used and unused settings by mod directory name.
         j.WriteStartObject();
-        var list = new List<(string, ModSettings.SavedSettings)>(_modCollection.Settings.Count + _modCollection.UnusedSettings.Count);
-        for (var i = 0; i < _modCollection.Settings.Count; ++i)
+        var list = new List<(string, ModSettings.SavedSettings)>(modCollection.Settings.Count + modCollection.UnusedSettings.Count);
+        for (var i = 0; i < modCollection.Settings.Count; ++i)
         {
-            var settings = _modCollection.Settings[i];
+            var settings = modCollection.Settings[i];
             if (settings != null)
-                list.Add((_modStorage[i].ModPath.Name, new ModSettings.SavedSettings(settings, _modStorage[i])));
+                list.Add((modStorage[i].ModPath.Name, new ModSettings.SavedSettings(settings, modStorage[i])));
         }
 
-        list.AddRange(_modCollection.UnusedSettings.Select(kvp => (kvp.Key, kvp.Value)));
+        list.AddRange(modCollection.UnusedSettings.Select(kvp => (kvp.Key, kvp.Value)));
         list.Sort((a, b) => string.Compare(a.Item1, b.Item1, StringComparison.OrdinalIgnoreCase));
 
         foreach (var (modDir, settings) in list)
@@ -66,20 +57,20 @@ internal readonly struct ModCollectionSave : ISavable
 
         // Inherit by collection name.
         j.WritePropertyName("Inheritance");
-        x.Serialize(j, _modCollection.InheritanceByName ?? _modCollection.DirectlyInheritsFrom.Select(c => c.Name));
+        x.Serialize(j, modCollection.InheritanceByName ?? modCollection.DirectlyInheritsFrom.Select(c => c.Identifier));
         j.WriteEndObject();
     }
 
-    public static bool LoadFromFile(FileInfo file, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
+    public static bool LoadFromFile(FileInfo file, out Guid id, out string name, out int version, out Dictionary<string, ModSettings.SavedSettings> settings,
         out IReadOnlyList<string> inheritance)
     {
-        settings    = new Dictionary<string, ModSettings.SavedSettings>();
-        inheritance = Array.Empty<string>();
+        settings    = [];
+        inheritance = [];
         if (!file.Exists)
         {
             Penumbra.Log.Error("Could not read collection because file does not exist.");
-            name = string.Empty;
-
+            name    = string.Empty;
+            id      = Guid.Empty;
             version = 0;
             return false;
         }
@@ -87,8 +78,9 @@ internal readonly struct ModCollectionSave : ISavable
         try
         {
             var obj = JObject.Parse(File.ReadAllText(file.FullName));
-            name    = obj[nameof(ModCollection.Name)]?.ToObject<string>() ?? string.Empty;
             version = obj["Version"]?.ToObject<int>() ?? 0;
+            name    = obj[nameof(ModCollection.Name)]?.ToObject<string>() ?? string.Empty;
+            id      = obj[nameof(ModCollection.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
             // Custom deserialization that is converted with the constructor. 
             settings    = obj[nameof(ModCollection.Settings)]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>() ?? settings;
             inheritance = obj["Inheritance"]?.ToObject<List<string>>() ?? inheritance;
@@ -98,6 +90,7 @@ internal readonly struct ModCollectionSave : ISavable
         {
             name    = string.Empty;
             version = 0;
+            id      = Guid.Empty;
             Penumbra.Log.Error($"Could not read collection information from file:\n{e}");
             return false;
         }

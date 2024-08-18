@@ -1,8 +1,8 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
+using Penumbra.GameData.Interop;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
@@ -11,7 +11,7 @@ namespace Penumbra.Interop.PathResolving;
 
 public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>, IService
 {
-    private readonly IObjectTable            _objects;
+    private readonly ObjectManager           _objects;
     private readonly CreateCharacterBase     _createCharacterBase;
     private readonly WeaponReload            _weaponReload;
     private readonly CharacterBaseDestructor _characterBaseDestructor;
@@ -22,19 +22,20 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     public nint LastGameObject
         => _gameState.LastGameObject;
 
-    public unsafe DrawObjectState(IObjectTable objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
-        CharacterBaseDestructor characterBaseDestructor, GameState gameState)
+    public unsafe DrawObjectState(ObjectManager objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
+        CharacterBaseDestructor characterBaseDestructor, GameState gameState, IFramework framework)
     {
         _objects                 = objects;
         _createCharacterBase     = createCharacterBase;
         _weaponReload            = weaponReload;
         _characterBaseDestructor = characterBaseDestructor;
         _gameState               = gameState;
+        framework.RunOnFrameworkThread(InitializeDrawObjects);
+
         _weaponReload.Subscribe(OnWeaponReloading, WeaponReload.Priority.DrawObjectState);
         _weaponReload.Subscribe(OnWeaponReloaded,  WeaponReload.PostEvent.Priority.DrawObjectState);
         _createCharacterBase.Subscribe(OnCharacterBaseCreated, CreateCharacterBase.PostEvent.Priority.DrawObjectState);
         _characterBaseDestructor.Subscribe(OnCharacterBaseDestructor, CharacterBaseDestructor.Priority.DrawObjectState);
-        InitializeDrawObjects();
     }
 
     public bool ContainsKey(nint key)
@@ -95,11 +96,10 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     /// </summary>
     private unsafe void InitializeDrawObjects()
     {
-        for (var i = 0; i < _objects.Length; ++i)
+        foreach (var actor in _objects)
         {
-            var ptr = (GameObject*)_objects.GetObjectAddress(i);
-            if (ptr != null && ptr->IsCharacter() && ptr->DrawObject != null)
-                IterateDrawObjectTree(&ptr->DrawObject->Object, (nint)ptr, false, false);
+            if (actor is { IsCharacter: true, Model.Valid: true })
+                IterateDrawObjectTree((Object*)actor.Model.Address, actor, false, false);
         }
     }
 

@@ -2,9 +2,11 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
+using Penumbra.GameData.Data;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
@@ -12,22 +14,13 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class ChangedItemsTab : ITab
+public class ChangedItemsTab(
+    CollectionManager collectionManager,
+    CollectionSelectHeader collectionHeader,
+    ChangedItemDrawer drawer,
+    CommunicatorService communicator)
+    : ITab, IUiService
 {
-    private readonly CollectionManager      _collectionManager;
-    private readonly ChangedItemDrawer      _drawer;
-    private readonly CollectionSelectHeader _collectionHeader;
-    private readonly CommunicatorService    _communicator;
-
-    public ChangedItemsTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader, ChangedItemDrawer drawer,
-        CommunicatorService communicator)
-    {
-        _collectionManager = collectionManager;
-        _collectionHeader  = collectionHeader;
-        _drawer            = drawer;
-        _communicator      = communicator;
-    }
-
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
@@ -36,8 +29,8 @@ public class ChangedItemsTab : ITab
 
     public void DrawContent()
     {
-        _collectionHeader.Draw(true);
-        _drawer.DrawTypeFilter();
+        collectionHeader.Draw(true);
+        drawer.DrawTypeFilter();
         var       varWidth = DrawFilters();
         using var child    = ImRaii.Child("##changedItemsChild", -Vector2.One);
         if (!child)
@@ -54,7 +47,7 @@ public class ChangedItemsTab : ITab
         ImGui.TableSetupColumn("mods",  flags, varWidth - 130 * UiHelpers.Scale);
         ImGui.TableSetupColumn("id",    flags, 130 * UiHelpers.Scale);
 
-        var items = _collectionManager.Active.Current.ChangedItems;
+        var items = collectionManager.Active.Current.ChangedItems;
         var rest  = ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);
         ImGuiClip.DrawEndDummy(rest, height);
     }
@@ -74,22 +67,22 @@ public class ChangedItemsTab : ITab
     }
 
     /// <summary> Apply the current filters. </summary>
-    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
-        => _drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
+    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData?)> item)
+        => drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
          && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
 
     /// <summary> Draw a full column for a changed item. </summary>
-    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
+    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData?)> item)
     {
         ImGui.TableNextColumn();
-        _drawer.DrawCategoryIcon(item.Key, item.Value.Item2);
+        drawer.DrawCategoryIcon(item.Value.Item2);
         ImGui.SameLine();
-        _drawer.DrawChangedItem(item.Key, item.Value.Item2);
+        drawer.DrawChangedItem(item.Key, item.Value.Item2);
         ImGui.TableNextColumn();
         DrawModColumn(item.Value.Item1);
 
         ImGui.TableNextColumn();
-        _drawer.DrawModelData(item.Value.Item2);
+        ChangedItemDrawer.DrawModelData(item.Value.Item2);
     }
 
     private void DrawModColumn(SingleArray<IMod> mods)
@@ -102,7 +95,7 @@ public class ChangedItemsTab : ITab
         if (ImGui.Selectable(first.Name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight()))
          && ImGui.GetIO().KeyCtrl
          && first is Mod mod)
-            _communicator.SelectTab.Invoke(TabType.Mods, mod);
+            communicator.SelectTab.Invoke(TabType.Mods, mod);
 
         if (ImGui.IsItemHovered())
         {

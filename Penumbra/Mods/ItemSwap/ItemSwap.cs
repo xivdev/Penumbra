@@ -15,13 +15,9 @@ public static class ItemSwap
     public class InvalidItemTypeException : Exception
     { }
 
-    public class MissingFileException : Exception
+    public class MissingFileException(ResourceType type, object path) : Exception($"Could not load {type} File Data for \"{path}\".")
     {
-        public readonly ResourceType Type;
-
-        public MissingFileException(ResourceType type, object path)
-            : base($"Could not load {type} File Data for \"{path}\".")
-            => Type = type;
+        public readonly ResourceType Type = type;
     }
 
     private static bool LoadFile(MetaFileManager manager, FullPath path, out byte[] data)
@@ -47,7 +43,7 @@ public static class ItemSwap
                 Penumbra.Log.Debug($"Could not load file {path}:\n{e}");
             }
 
-        data = Array.Empty<byte>();
+        data = [];
         return false;
     }
 
@@ -133,38 +129,38 @@ public static class ItemSwap
     }
 
 
-    public static FileSwap CreatePhyb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstManipulation.EstType type,
-        GenderRace race, ushort estEntry)
+    public static FileSwap CreatePhyb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
+        GenderRace race, EstEntry estEntry)
     {
-        var phybPath = GamePaths.Skeleton.Phyb.Path(race, EstManipulation.ToName(type), estEntry);
+        var phybPath = GamePaths.Skeleton.Phyb.Path(race, type.ToName(), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Phyb, redirections, phybPath, phybPath);
     }
 
-    public static FileSwap CreateSklb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstManipulation.EstType type,
-        GenderRace race, ushort estEntry)
+    public static FileSwap CreateSklb(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EstType type,
+        GenderRace race, EstEntry estEntry)
     {
-        var sklbPath = GamePaths.Skeleton.Sklb.Path(race, EstManipulation.ToName(type), estEntry);
+        var sklbPath = GamePaths.Skeleton.Sklb.Path(race, type.ToName(), estEntry.AsId);
         return FileSwap.CreateSwap(manager, ResourceType.Sklb, redirections, sklbPath, sklbPath);
     }
 
-    /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
-    public static MetaSwap? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
-        Func<MetaManipulation, MetaManipulation> manips, EstManipulation.EstType type,
-        GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
+    public static MetaSwap<EstIdentifier, EstEntry>? CreateEst(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
+        MetaDictionary manips, EstType type, GenderRace genderRace, PrimaryId idFrom, PrimaryId idTo, bool ownMdl)
     {
         if (type == 0)
             return null;
 
-        var (gender, race) = genderRace.Split();
-        var fromDefault = new EstManipulation(gender, race, type, idFrom, EstFile.GetDefault(manager, type, genderRace, idFrom));
-        var toDefault   = new EstManipulation(gender, race, type, idTo,   EstFile.GetDefault(manager, type, genderRace, idTo));
-        var est         = new MetaSwap(manips, fromDefault, toDefault);
+        var manipFromIdentifier = new EstIdentifier(idFrom, type, genderRace);
+        var manipToIdentifier   = new EstIdentifier(idTo,   type, genderRace);
+        var manipFromDefault    = EstFile.GetDefault(manager, manipFromIdentifier);
+        var manipToDefault      = EstFile.GetDefault(manager, manipToIdentifier);
+        var est = new MetaSwap<EstIdentifier, EstEntry>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier, manipFromDefault,
+            manipToIdentifier, manipToDefault);
 
-        if (ownMdl && est.SwapApplied.Est.Entry >= 2)
+        if (ownMdl && est.SwapToModdedEntry.Value >= 2)
         {
-            var phyb = CreatePhyb(manager, redirections, type, genderRace, est.SwapApplied.Est.Entry);
+            var phyb = CreatePhyb(manager, redirections, type, genderRace, est.SwapToModdedEntry);
             est.ChildSwaps.Add(phyb);
-            var sklb = CreateSklb(manager, redirections, type, genderRace, est.SwapApplied.Est.Entry);
+            var sklb = CreateSklb(manager, redirections, type, genderRace, est.SwapToModdedEntry);
             est.ChildSwaps.Add(sklb);
         }
         else if (est.SwapAppliedIsDefault)
@@ -215,6 +211,22 @@ public static class ItemSwap
         => condition
             ? path.Replace($"_{from.ToSuffix()}_", $"_{to.ToSuffix()}_")
             : path;
+
+    public static string ReplaceType(string path, EquipSlot from, EquipSlot to, PrimaryId idFrom)
+    {
+        var isAccessoryFrom = from.IsAccessory();
+        if (isAccessoryFrom == to.IsAccessory())
+            return path;
+
+        if (isAccessoryFrom)
+        {
+            path = path.Replace("accessory/a", "equipment/e");
+            return path.Replace($"a{idFrom.Id:D4}", $"e{idFrom.Id:D4}");
+        }
+
+        path = path.Replace("equipment/e", "accessory/a");
+        return path.Replace($"e{idFrom.Id:D4}", $"a{idFrom.Id:D4}");
+    }
 
     public static string ReplaceRace(string path, GenderRace from, GenderRace to, bool condition = true)
         => ReplaceId(path, 'c', (ushort)from, (ushort)to, condition);

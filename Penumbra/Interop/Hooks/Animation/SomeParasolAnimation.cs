@@ -15,7 +15,7 @@ public sealed unsafe class SomeParasolAnimation : FastHook<SomeParasolAnimation.
     {
         _state              = state;
         _collectionResolver = collectionResolver;
-        Task                = hooks.CreateHook<Delegate>("Some Parasol Animation", Sigs.UnkParasolAnimation, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Some Parasol Animation", Sigs.UnkParasolAnimation, Detour, !HookOverrides.Instance.Animation.SomeParasolAnimation);
     }
 
     public delegate void Delegate(DrawObject* drawObject, int unk1);

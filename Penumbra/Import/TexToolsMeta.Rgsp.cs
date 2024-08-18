@@ -42,14 +42,6 @@ public partial class TexToolsMeta
             return Invalid;
         }
 
-        // Add the given values to the manipulations if they are not default.
-        void Add(RspAttribute attribute, float value)
-        {
-            var def = CmpFile.GetDefault(manager, subRace, attribute);
-            if (keepDefault || value != def)
-                ret.MetaManipulations.Add(new RspManipulation(subRace, attribute, value));
-        }
-
         if (gender == 1)
         {
             Add(RspAttribute.FemaleMinSize, br.ReadSingle());
@@ -73,5 +65,14 @@ public partial class TexToolsMeta
         }
 
         return ret;
+
+        // Add the given values to the manipulations if they are not default.
+        void Add(RspAttribute attribute, float value)
+        {
+            var identifier = new RspIdentifier(subRace, attribute);
+            var def        = CmpFile.GetDefault(manager, subRace, attribute);
+            if (keepDefault || value != def.Value)
+                ret.MetaManipulations.TryAdd(identifier, new RspEntry(value));
+        }
     }
 }

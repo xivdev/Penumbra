@@ -5,7 +5,8 @@ using OtterGui.Raii;
 using Penumbra.UI.Classes;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Housing;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
@@ -14,71 +15,57 @@ using Penumbra.Mods.Manager;
 using Penumbra.UI.ModsTab;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 using Penumbra.Collections.Manager;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.UI.Tabs;
 
-public class ModsTab : ITab
+public class ModsTab(
+    ModManager modManager,
+    CollectionManager collectionManager,
+    ModFileSystemSelector selector,
+    ModPanel panel,
+    TutorialService tutorial,
+    RedrawService redrawService,
+    Configuration config,
+    IClientState clientState,
+    CollectionSelectHeader collectionHeader,
+    ITargetManager targets,
+    ObjectManager objects)
+    : ITab, IUiService
 {
-    private readonly ModFileSystemSelector  _selector;
-    private readonly ModPanel               _panel;
-    private readonly TutorialService        _tutorial;
-    private readonly ModManager             _modManager;
-    private readonly ActiveCollections      _activeCollections;
-    private readonly RedrawService          _redrawService;
-    private readonly Configuration          _config;
-    private readonly IClientState           _clientState;
-    private readonly CollectionSelectHeader _collectionHeader;
-    private readonly ITargetManager         _targets;
-    private readonly IObjectTable           _objectTable;
-
-    public ModsTab(ModManager modManager, CollectionManager collectionManager, ModFileSystemSelector selector, ModPanel panel,
-        TutorialService tutorial, RedrawService redrawService, Configuration config, IClientState clientState,
-        CollectionSelectHeader collectionHeader, ITargetManager targets, IObjectTable objectTable)
-    {
-        _modManager        = modManager;
-        _activeCollections = collectionManager.Active;
-        _selector          = selector;
-        _panel             = panel;
-        _tutorial          = tutorial;
-        _redrawService     = redrawService;
-        _config            = config;
-        _clientState       = clientState;
-        _collectionHeader  = collectionHeader;
-        _targets           = targets;
-        _objectTable       = objectTable;
-    }
+    private readonly ActiveCollections _activeCollections = collectionManager.Active;
 
     public bool IsVisible
-        => _modManager.Valid;
+        => modManager.Valid;
 
     public ReadOnlySpan<byte> Label
         => "Mods"u8;
 
     public void DrawHeader()
-        => _tutorial.OpenTutorial(BasicTutorialSteps.Mods);
+        => tutorial.OpenTutorial(BasicTutorialSteps.Mods);
 
     public Mod SelectMod
     {
-        set => _selector.SelectByValue(value);
+        set => selector.SelectByValue(value);
     }
 
     public void DrawContent()
     {
         try
         {
-            _selector.Draw(GetModSelectorSize(_config));
+            selector.Draw(GetModSelectorSize(config));
             ImGui.SameLine();
             using var group = ImRaii.Group();
-            _collectionHeader.Draw(false);
+            collectionHeader.Draw(false);
 
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
-            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(-1, _config.HideRedrawBar ? 0 : -ImGui.GetFrameHeight()),
+            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(-1, config.HideRedrawBar ? 0 : -ImGui.GetFrameHeight()),
                        true, ImGuiWindowFlags.HorizontalScrollbar))
             {
                 style.Pop();
                 if (child)
-                    _panel.Draw();
+                    panel.Draw();
 
                 style.Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
             }
@@ -89,14 +76,14 @@ public class ModsTab : ITab
         catch (Exception e)
         {
             Penumbra.Log.Error($"Exception thrown during ModPanel Render:\n{e}");
-            Penumbra.Log.Error($"{_modManager.Count} Mods\n"
+            Penumbra.Log.Error($"{modManager.Count} Mods\n"
               + $"{_activeCollections.Current.AnonymizedName} Current Collection\n"
               + $"{_activeCollections.Current.Settings.Count} Settings\n"
-              + $"{_selector.SortMode.Name} Sort Mode\n"
-              + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
-              + $"{_selector.Selected?.Name ?? "NULL"} Selected Mod\n"
+              + $"{selector.SortMode.Name} Sort Mode\n"
+              + $"{selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
+              + $"{selector.Selected?.Name ?? "NULL"} Selected Mod\n"
               + $"{string.Join(", ", _activeCollections.Current.DirectlyInheritsFrom.Select(c => c.AnonymizedName))} Inheritances\n"
-              + $"{_selector.SelectedSettingCollection.AnonymizedName} Collection\n");
+              + $"{selector.SelectedSettingCollection.AnonymizedName} Collection\n");
         }
     }
 
@@ -115,9 +102,9 @@ public class ModsTab : ITab
 
     private void DrawRedrawLine()
     {
-        if (_config.HideRedrawBar)
+        if (config.HideRedrawBar)
         {
-            _tutorial.SkipTutorial(BasicTutorialSteps.Redrawing);
+            tutorial.SkipTutorial(BasicTutorialSteps.Redrawing);
             return;
         }
 
@@ -125,7 +112,7 @@ public class ModsTab : ITab
         var frameColor  = ImGui.GetColorU32(ImGuiCol.FrameBg);
         using (var _ = ImRaii.Group())
         {
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            using (ImRaii.PushFont(UiBuilder.IconFont))
             {
                 ImGuiUtil.DrawTextButton(FontAwesomeIcon.InfoCircle.ToIconString(), frameHeight, frameColor);
                 ImGui.SameLine();
@@ -135,15 +122,15 @@ public class ModsTab : ITab
         }
 
         var hovered = ImGui.IsItemHovered();
-        _tutorial.OpenTutorial(BasicTutorialSteps.Redrawing);
+        tutorial.OpenTutorial(BasicTutorialSteps.Redrawing);
         if (hovered)
             ImGui.SetTooltip($"The supported modifiers for '/penumbra redraw' are:\n{TutorialService.SupportedRedrawModifiers}");
 
         using var id       = ImRaii.PushId("Redraw");
-        using var disabled = ImRaii.Disabled(_clientState.LocalPlayer == null);
+        using var disabled = ImRaii.Disabled(clientState.LocalPlayer == null);
         ImGui.SameLine();
         var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 5 };
-        var tt = _objectTable.GetObjectAddress(0) == nint.Zero
+        var tt = !objects[0].Valid
             ? "\nCan only be used when you are logged in and your character is available."
             : string.Empty;
         DrawButton(buttonWidth, "All", string.Empty, tt);
@@ -151,13 +138,13 @@ public class ModsTab : ITab
         DrawButton(buttonWidth, "Self", "self", tt);
         ImGui.SameLine();
 
-        tt = _targets.Target == null && _targets.GPoseTarget == null
+        tt = targets.Target == null && targets.GPoseTarget == null
             ? "\nCan only be used when you have a target."
             : string.Empty;
         DrawButton(buttonWidth, "Target", "target", tt);
         ImGui.SameLine();
 
-        tt = _targets.FocusTarget == null
+        tt = targets.FocusTarget == null
             ? "\nCan only be used when you have a focus target."
             : string.Empty;
         DrawButton(buttonWidth, "Focus", "focus", tt);
@@ -176,9 +163,9 @@ public class ModsTab : ITab
                 if (ImGui.Button(label, size))
                 {
                     if (lower.Length > 0)
-                        _redrawService.RedrawObject(lower, RedrawType.Redraw);
+                        redrawService.RedrawObject(lower, RedrawType.Redraw);
                     else
-                        _redrawService.RedrawAll(RedrawType.Redraw);
+                        redrawService.RedrawAll(RedrawType.Redraw);
                 }
             }
 

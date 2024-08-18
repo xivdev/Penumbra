@@ -3,38 +3,31 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class EffectiveTab : ITab
+public class EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
+    : ITab, IUiService
 {
-    private readonly CollectionManager      _collectionManager;
-    private readonly CollectionSelectHeader _collectionHeader;
-
-    public EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
-    {
-        _collectionManager = collectionManager;
-        _collectionHeader  = collectionHeader;
-    }
-
     public ReadOnlySpan<byte> Label
         => "Effective Changes"u8;
 
     public void DrawContent()
     {
         SetupEffectiveSizes();
-        _collectionHeader.Draw(true);
+        collectionHeader.Draw(true);
         DrawFilters();
-        using var child = ImRaii.Child("##EffectiveChangesTab", -Vector2.One, false);
+        using var child = ImRaii.Child("##EffectiveChangesTab", ImGui.GetContentRegionAvail(), false);
         if (!child)
             return;
 
@@ -48,7 +41,7 @@ public class EffectiveTab : ITab
         ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, _effectiveArrowLength);
         ImGui.TableSetupColumn("##file",     ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength);
 
-        DrawEffectiveRows(_collectionManager.Active.Current, skips, height,
+        DrawEffectiveRows(collectionManager.Active.Current, skips, height,
             _effectiveFilePathFilter.Length > 0 || _effectiveGamePathFilter.Length > 0);
     }
 
@@ -107,7 +100,7 @@ public class EffectiveTab : ITab
             // Filters mean we can not use the known counts.
             if (hasFilters)
             {
-                var it2 = m.Select(p => (p.Key.ToString(), p.Value.Name));
+                var it2 = m.IdentifierSources.Select(p => (p.Item1.ToString(), p.Item2.Name));
                 if (stop >= 0)
                 {
                     ImGuiClip.DrawEndDummy(stop + it2.Count(CheckFilters), height);
@@ -126,7 +119,7 @@ public class EffectiveTab : ITab
                 }
                 else
                 {
-                    stop = ImGuiClip.ClippedDraw(m, skips, DrawLine, m.Count, ~stop);
+                    stop = ImGuiClip.ClippedDraw(m.IdentifierSources, skips, DrawLine, m.Count, ~stop);
                     ImGuiClip.DrawEndDummy(stop, height);
                 }
             }
@@ -142,12 +135,12 @@ public class EffectiveTab : ITab
     {
         var (path, name) = pair;
         ImGui.TableNextColumn();
-        UiHelpers.CopyOnClickSelectable(path.Path);
+        ImUtf8.CopyOnClickSelectable(path.Path.Span);
 
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        UiHelpers.CopyOnClickSelectable(name.Path.InternalName);
+        ImUtf8.CopyOnClickSelectable(name.Path.InternalName.Span);
         ImGuiUtil.HoverTooltip($"\nChanged by {name.Mod.Name}.");
     }
 
@@ -161,11 +154,11 @@ public class EffectiveTab : ITab
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        ImGuiUtil.CopyOnClickSelectable(name);
+        ImGuiUtil.CopyOnClickSelectable(name.Text);
     }
 
     /// <summary> Draw a line for a unfiltered/unconverted manipulation and mod-index pair. </summary>
-    private static void DrawLine(KeyValuePair<MetaManipulation, IMod> pair)
+    private static void DrawLine((IMetaIdentifier, IMod) pair)
     {
         var (manipulation, mod) = pair;
         ImGui.TableNextColumn();
@@ -174,7 +167,7 @@ public class EffectiveTab : ITab
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        ImGuiUtil.CopyOnClickSelectable(mod.Name);
+        ImGuiUtil.CopyOnClickSelectable(mod.Name.Text);
     }
 
     /// <summary> Check filters for file replacements. </summary>

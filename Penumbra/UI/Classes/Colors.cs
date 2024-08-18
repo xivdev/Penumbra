@@ -24,10 +24,13 @@ public enum ColorId
     NoAssignment,
     SelectorPriority,
     InGameHighlight,
+    InGameHighlight2,
     ResTreeLocalPlayer,
     ResTreePlayer,
     ResTreeNetworked,
     ResTreeNonNetworked,
+    PredefinedTagAdd,
+    PredefinedTagRemove,
 }
 
 public static class Colors
@@ -68,11 +71,14 @@ public static class Colors
             ColorId.NoModsAssignment     => ( 0x50000080, "'Use No Mods' Collection Assignment", "A collection assignment set to not use any mods at all."),
             ColorId.NoAssignment         => ( 0x00000000, "Unassigned Collection Assignment",    "A collection assignment that is not configured to any collection and thus just has no specific treatment."),
             ColorId.SelectorPriority     => ( 0xFF808080, "Mod Selector Priority",               "The priority displayed for non-zero priority mods in the mod selector."),
-            ColorId.InGameHighlight      => ( 0xFFEBCF89, "In-Game Highlight",                   "An in-game element that has been highlighted for ease of editing."),
+            ColorId.InGameHighlight      => ( 0xFFEBCF89, "In-Game Highlight (Primary)",         "An in-game element that has been highlighted for ease of editing."),
+            ColorId.InGameHighlight2     => ( 0xFF446CC0, "In-Game Highlight (Secondary)",       "Another in-game element that has been highlighted for ease of editing."),
             ColorId.ResTreeLocalPlayer   => ( 0xFFFFE0A0, "On-Screen: You",                      "You and what you own (mount, minion, accessory, pets and so on), in the On-Screen tab." ),
             ColorId.ResTreePlayer        => ( 0xFFC0FFC0, "On-Screen: Other Players",            "Other players and what they own, in the On-Screen tab." ),
             ColorId.ResTreeNetworked     => ( 0xFFFFFFFF, "On-Screen: Non-Players (Networked)",  "Non-player entities handled by the game server, in the On-Screen tab." ),
             ColorId.ResTreeNonNetworked  => ( 0xFFC0C0FF, "On-Screen: Non-Players (Local)",      "Non-player entities handled locally, in the On-Screen tab." ),
+            ColorId.PredefinedTagAdd     => ( 0xFF44AA44, "Predefined Tags: Add Tag",                "A predefined tag that is not present on the current mod and can be added." ),
+            ColorId.PredefinedTagRemove  => ( 0xFF2222AA, "Predefined Tags: Remove Tag",             "A predefined tag that is already present on the current mod and can be removed." ),
             _                            => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

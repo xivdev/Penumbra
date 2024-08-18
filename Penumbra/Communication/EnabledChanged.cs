@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Api;
+using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Communication;
 
@@ -13,7 +14,7 @@ public sealed class EnabledChanged() : EventWrapper<bool, EnabledChanged.Priorit
 {
     public enum Priority
     {
-        /// <seealso cref="Ipc.EnabledChange"/>
+        /// <seealso cref="Api.IpcSubscribers.Ipc.EnabledChange"/>
         Api = int.MinValue,
 
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnEnabledChange"/>

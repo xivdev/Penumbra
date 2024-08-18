@@ -6,30 +6,21 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
-using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class ResourceTab : ITab
+public class ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
+    : ITab, IUiService
 {
-    private readonly Configuration          _config;
-    private readonly ResourceManagerService _resourceManager;
-    private readonly ISigScanner            _sigScanner;
-
-    public ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
-    {
-        _config          = config;
-        _resourceManager = resourceManager;
-        _sigScanner      = sigScanner;
-    }
-
     public ReadOnlySpan<byte> Label
         => "Resource Manager"u8;
 
     public bool IsVisible
-        => _config.DebugMode;
+        => config.DebugMode;
 
     /// <summary> Draw a tab to iterate over the main resource maps and see what resources are currently loaded. </summary>
     public void DrawContent()
@@ -44,15 +35,15 @@ public class ResourceTab : ITab
 
         unsafe
         {
-            _resourceManager.IterateGraphs(DrawCategoryContainer);
+            resourceManager.IterateGraphs(DrawCategoryContainer);
         }
 
         ImGui.NewLine();
         unsafe
         {
             ImGui.TextUnformatted(
-                $"Static Address: 0x{(ulong)_resourceManager.ResourceManagerAddress:X} (+0x{(ulong)_resourceManager.ResourceManagerAddress - (ulong)_sigScanner.Module.BaseAddress:X})");
-            ImGui.TextUnformatted($"Actual Address: 0x{(ulong)_resourceManager.ResourceManager:X}");
+                $"Static Address: 0x{(ulong)resourceManager.ResourceManagerAddress:X} (+0x{(ulong)resourceManager.ResourceManagerAddress - (ulong)sigScanner.Module.BaseAddress:X})");
+            ImGui.TextUnformatted($"Actual Address: 0x{(ulong)resourceManager.ResourceManager:X}");
         }
     }
 
@@ -82,7 +73,7 @@ public class ResourceTab : ITab
         ImGui.TableSetupColumn("Refs", ImGuiTableColumnFlags.WidthFixed, _refsColumnWidth);
         ImGui.TableHeadersRow();
 
-        _resourceManager.IterateResourceMap(map, (hash, r) =>
+        resourceManager.IterateResourceMap(map, (hash, r) =>
         {
             // Filter unwanted names.
             if (_resourceManagerFilter.Length != 0
@@ -90,7 +81,7 @@ public class ResourceTab : ITab
                 return;
 
             var address = $"0x{(ulong)r:X}";
-            ImGuiUtil.TextNextColumn($"0x{hash:X8}");
+            ImGuiUtil.DrawTableColumn($"0x{hash:X8}");
             ImGui.TableNextColumn();
             ImGuiUtil.CopyOnClickSelectable(address);
 
@@ -110,7 +101,7 @@ public class ResourceTab : ITab
 
             ImGuiUtil.HoverTooltip("Click to copy byte-wise file data to clipboard, if any.");
 
-            ImGuiUtil.TextNextColumn(r->RefCount.ToString());
+            ImGuiUtil.DrawTableColumn(r->RefCount.ToString());
         });
     }
 
@@ -125,12 +116,12 @@ public class ResourceTab : ITab
         if (tree)
         {
             SetTableWidths();
-            _resourceManager.IterateExtMap(map, (ext, m) => DrawResourceMap(category, ext, m));
+            resourceManager.IterateExtMap(map, (ext, m) => DrawResourceMap(category, ext, m));
         }
     }
 
     /// <summary> Obtain a label for an extension node. </summary>
-    private static string GetNodeLabel(uint label, uint type, ulong count)
+    private static string GetNodeLabel(uint label, uint type, int count)
     {
         var (lowest, mid1, mid2, highest) = Functions.SplitBytes(type);
         return highest == 0

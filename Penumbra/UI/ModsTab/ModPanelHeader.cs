@@ -1,4 +1,5 @@
 using Dalamud.Interface.GameFonts;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
@@ -14,14 +15,15 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelHeader : IDisposable
 {
     /// <summary> We use a big, nice game font for the title. </summary>
-    private readonly GameFontHandle _nameFont;
+    private readonly IFontHandle _nameFont;
 
     private readonly CommunicatorService _communicator;
+    private          float               _lastPreSettingsHeight = 0;
 
-    public ModPanelHeader(DalamudPluginInterface pi, CommunicatorService communicator)
+    public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator)
     {
         _communicator = communicator;
-        _nameFont     = pi.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
+        _nameFont     = pi.UiBuilder.FontAtlas.NewGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModPanelHeader);
     }
 
@@ -31,9 +33,20 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void Draw()
     {
-        var offset = DrawModName();
-        DrawVersion(offset);
-        DrawSecondRow(offset);
+        var height     = ImGui.GetContentRegionAvail().Y;
+        var maxHeight = 3 * height / 4;
+        using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
+            ? ImRaii.Child("HeaderChild", new Vector2(ImGui.GetContentRegionAvail().X, maxHeight), false)
+            : null;
+        using (ImRaii.Group())
+        {
+            var offset = DrawModName();
+            DrawVersion(offset);
+            DrawSecondRow(offset);
+        }
+
+        _communicator.PreSettingsTabBarDraw.Invoke(_mod.Identifier, ImGui.GetItemRectSize().X, _nameWidth);
+        _lastPreSettingsHeight = ImGui.GetCursorPosY();
     }
 
     /// <summary>
@@ -42,11 +55,13 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void UpdateModData(Mod mod)
     {
+        _lastPreSettingsHeight = 0;
+        _mod = mod;
         // Name
         var name = $" {mod.Name} ";
         if (name != _modName)
         {
-            using var font = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+            using var f = _nameFont.Push();
             _modName      = name;
             _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * UiHelpers.Scale);
         }
@@ -89,6 +104,7 @@ public class ModPanelHeader : IDisposable
     }
 
     // Header data.
+    private Mod    _mod              = null!;
     private string _modName          = string.Empty;
     private string _modAuthor        = string.Empty;
     private string _modVersion       = string.Empty;
@@ -101,6 +117,8 @@ public class ModPanelHeader : IDisposable
     private float _modVersionWidth;
     private float _modWebsiteButtonWidth;
     private float _secondRowWidth;
+
+    private float _nameWidth;
 
     /// <summary>
     /// Draw the mod name in the game font with a 2px border, centered,
@@ -121,8 +139,9 @@ public class ModPanelHeader : IDisposable
 
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
-        using var font  = ImRaii.PushFont(_nameFont.ImFont, _nameFont.Available);
+        using var f     = _nameFont.Push();
         ImGuiUtil.DrawTextButton(_modName, Vector2.Zero, 0);
+        _nameWidth = ImGui.GetItemRectSize().X;
         return offset;
     }
 

@@ -1,8 +1,11 @@
 using Newtonsoft.Json;
+using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Util;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 
@@ -35,7 +38,8 @@ public partial class TexToolsImporter
 
         var modList = modListRaw.Select(m => JsonConvert.DeserializeObject<SimpleMod>(m, JsonSettings)!).ToList();
 
-        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetFileNameWithoutExtension(modPackFile.Name), _config.ReplaceNonAsciiOnImport, true);
+        _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetFileNameWithoutExtension(modPackFile.Name),
+            _config.ReplaceNonAsciiOnImport, true);
         // Create a new ModMeta from the TTMP mod list info
         _modManager.DataEditor.CreateMeta(_currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description,
             null, null);
@@ -150,8 +154,8 @@ public partial class TexToolsImporter
         }
 
         // Iterate through all pages
-        var options       = new List<ISubMod>();
-        var groupPriority = 0;
+        var options       = new List<MultiSubMod>();
+        var groupPriority = ModPriority.Default;
         var groupNames    = new HashSet<string>();
         foreach (var page in modList.ModPackPages)
         {
@@ -172,7 +176,7 @@ public partial class TexToolsImporter
                      ?? new DirectoryInfo(Path.Combine(_currentModDirectory.FullName,
                             numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}"));
 
-                    uint? defaultSettings = group.SelectionType == GroupType.Multi ? 0u : null;
+                    Setting? defaultSettings = group.SelectionType == GroupType.Multi ? Setting.Zero : null;
                     for (var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i)
                     {
                         var option = allOptions[i + optionIdx];
@@ -181,11 +185,11 @@ public partial class TexToolsImporter
                         var optionFolder = ModCreator.NewSubFolderName(groupFolder, option.Name, _config.ReplaceNonAsciiOnImport)
                          ?? new DirectoryInfo(Path.Combine(groupFolder.FullName, $"Option {i + optionIdx + 1}"));
                         ExtractSimpleModList(optionFolder, option.ModsJsons);
-                        options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option));
+                        options.Add(_modManager.Creator.CreateSubMod(_currentModDirectory, optionFolder, option, new ModPriority(i)));
                         if (option.IsChecked)
                             defaultSettings = group.SelectionType == GroupType.Multi
-                                ? defaultSettings!.Value | (1u << i)
-                                : (uint)i;
+                                ? defaultSettings!.Value | Setting.Multi(i)
+                                : Setting.Single(i);
 
                         ++_currentOptionIdx;
                     }
@@ -193,21 +197,23 @@ public partial class TexToolsImporter
                     optionIdx += maxOptions;
 
                     // Handle empty options for single select groups without creating a folder for them.
-                    // We only want one of those at most, and it should usually be the first option.
+                    // We only want one of those at most.
                     if (group.SelectionType == GroupType.Single)
                     {
-                        var empty = group.OptionList.FirstOrDefault(o => o.Name.Length > 0 && o.ModsJsons.Length == 0);
-                        if (empty != null)
+                        var idx = group.OptionList.IndexOf(o => o.Name.Length > 0 && o.ModsJsons.Length == 0);
+                        if (idx >= 0)
                         {
-                            _currentOptionName = empty.Name;
-                            options.Insert(0, ModCreator.CreateEmptySubMod(empty.Name));
-                            defaultSettings = defaultSettings == null ? 0 : defaultSettings.Value + 1;
+                            var option = group.OptionList[idx];
+                            _currentOptionName = option.Name;
+                            options.Insert(idx, MultiSubMod.WithoutGroup(option.Name, option.Description, ModPriority.Default));
+                            if (option.IsChecked)
+                                defaultSettings = Setting.Single(idx);
                         }
                     }
 
-                    _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
-                        defaultSettings ?? 0, group.Description, options);
-                    ++groupPriority;
+                    _modManager.Creator.CreateOptionGroup(_currentModDirectory, group.SelectionType, name, groupPriority, groupPriority.Value,
+                        defaultSettings ?? Setting.Zero, group.Description, options);
+                    groupPriority += 1;
                 }
             }
         }
@@ -247,25 +253,13 @@ public partial class TexToolsImporter
 
         extractedFile.Directory?.Create();
 
-        if (extractedFile.FullName.EndsWith(".mdl"))
-            ProcessMdl(data.Data);
+        data.Data = Path.GetExtension(extractedFile.FullName) switch
+        {
+            ".mdl"  => _migrationManager.MigrateTtmpModel(extractedFile.FullName, data.Data),
+            ".mtrl" => _migrationManager.MigrateTtmpMaterial(extractedFile.FullName, data.Data),
+            _       => data.Data,
+        };
 
         _compactor.WriteAllBytesAsync(extractedFile.FullName, data.Data, _token).Wait(_token);
-    }
-
-    private static void ProcessMdl(byte[] mdl)
-    {
-        const int modelHeaderLodOffset = 22;
-
-        // Model file header LOD num
-        mdl[64] = 1;
-
-        // Model header LOD num
-        var stackSize           = BitConverter.ToUInt32(mdl, 4);
-        var runtimeBegin        = stackSize + 0x44;
-        var stringsLengthOffset = runtimeBegin + 4;
-        var stringsLength       = BitConverter.ToUInt32(mdl, (int)stringsLengthOffset);
-        var modelHeaderStart    = stringsLengthOffset + stringsLength + 4;
-        mdl[modelHeaderStart + modelHeaderLodOffset] = 1;
     }
 }

@@ -1,5 +1,6 @@
 using Lumina.Data.Parsing;
 using OtterGui;
+using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
@@ -8,7 +9,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 {
     public struct Mesh
     {
-        public MdlStructs.MeshStruct          MeshStruct;
+        public MeshStruct          MeshStruct;
         public List<MdlStructs.SubmeshStruct> SubMeshStructs;
 
         public string? Material;
@@ -69,10 +70,14 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 
         return new Mesh
         {
-            MeshStruct = new MdlStructs.MeshStruct
+            MeshStruct = new MeshStruct
             {
-                VertexBufferOffset = [0, (uint)_streams[0].Count, (uint)(_streams[0].Count + _streams[1].Count)],
-                VertexBufferStride = _strides,
+                VertexBufferOffset1 = 0,
+                VertexBufferOffset2 = (uint)_streams[0].Count,
+                VertexBufferOffset3 = (uint)(_streams[0].Count + _streams[1].Count),
+                VertexBufferStride1 = _strides[0],
+                VertexBufferStride2 = _strides[1],
+                VertexBufferStride3 = _strides[2],
                 VertexCount        = _vertexCount,
                 VertexStreamCount = (byte)_vertexDeclaration.Value.VertexElements
                     .Select(element => element.Stream + 1)
@@ -80,7 +85,6 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
                 StartIndex = 0,
                 IndexCount = (uint)_indices.Count,
 
-                // TODO: import material names
                 MaterialIndex  = 0,
                 SubMeshIndex   = 0,
                 SubMeshCount   = (ushort)_subMeshes.Count,
@@ -167,7 +171,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
         // And finally, merge in the sub-mesh struct itself.
         _subMeshes.Add(subMesh.SubMeshStruct with
         {
-            IndexOffset = (ushort)(subMesh.SubMeshStruct.IndexOffset + indexOffset),
+            IndexOffset = (uint)(subMesh.SubMeshStruct.IndexOffset + indexOffset),
             AttributeIndexMask = Utility.GetMergedAttributeMask(
                 subMesh.SubMeshStruct.AttributeIndexMask, subMesh.MetaAttributes, _metaAttributes),
         });
@@ -190,15 +194,25 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
         foreach (var (primitive, primitiveIndex) in node.Mesh.Primitives.WithIndex())
         {
             // Per glTF specification, an asset with a skin MUST contain skinning attributes on its meshes.
-            var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0")
-             ?? throw notifier.Exception($"Primitive {primitiveIndex} is skinned but does not contain skinning vertex attributes.");
+            var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0")?.AsVector4Array();
+            var weightsAccessor = primitive.GetVertexAccessor("WEIGHTS_0")?.AsVector4Array();
+
+            if (jointsAccessor == null || weightsAccessor == null)
+                throw notifier.Exception($"Primitive {primitiveIndex} is skinned but does not contain skinning vertex attributes.");
 
             // Build a set of joints that are referenced by this mesh.
-            // TODO: Would be neat to omit 0-weighted joints here, but doing so will require some further work on bone mapping behavior to ensure the unweighted joints can still be resolved to valid bone indices during vertex data construction.
-            foreach (var joints in jointsAccessor.AsVector4Array())
+            for (var i = 0; i < jointsAccessor.Count; i++) 
             {
+                var joints = jointsAccessor[i];
+                var weights = weightsAccessor[i];
                 for (var index = 0; index < 4; index++)
+                {
+                    // If a joint has absolutely no weight, we omit the bone entirely.
+                    if (weights[index] == 0)
+                        continue;
+
                     usedJoints.Add((ushort)joints[index]);
+                }
             }
         }
 

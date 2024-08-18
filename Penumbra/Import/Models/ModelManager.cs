@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
 using OtterGui;
+using OtterGui.Services;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
@@ -11,6 +12,8 @@ using Penumbra.GameData.Structs;
 using Penumbra.Import.Models.Export;
 using Penumbra.Import.Models.Import;
 using Penumbra.Import.Textures;
+using Penumbra.Meta;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
 using SixLabors.ImageSharp;
@@ -21,7 +24,8 @@ namespace Penumbra.Import.Models;
 using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
-public sealed class ModelManager(IFramework framework, ActiveCollections collections, GamePathParser parser) : SingleTaskQueue, IDisposable
+public sealed class ModelManager(IFramework framework, MetaFileManager metaFileManager, ActiveCollections collections, GamePathParser parser)
+    : SingleTaskQueue, IDisposable, IService
 {
     private readonly IFramework _framework = framework;
 
@@ -37,7 +41,8 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         _tasks.Clear();
     }
 
-    public Task<IoNotifier> ExportToGltf(in ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read, string outputPath)
+    public Task<IoNotifier> ExportToGltf(in ExportConfig config, MdlFile mdl, IEnumerable<string> sklbPaths, Func<string, byte[]?> read,
+        string outputPath)
         => EnqueueWithResult(
             new ExportToGltfAction(this, config, mdl, sklbPaths, read, outputPath),
             action => action.Notifier
@@ -52,7 +57,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
     /// <summary> Try to find the .sklb paths for a .mdl file. </summary>
     /// <param name="mdlPath"> .mdl file to look up the skeletons for. </param>
     /// <param name="estManipulations"> Modified extra skeleton template parameters. </param>
-    public string[] ResolveSklbsForMdl(string mdlPath, EstManipulation[] estManipulations)
+    public string[] ResolveSklbsForMdl(string mdlPath, KeyValuePair<EstIdentifier, EstEntry>[] estManipulations)
     {
         var info = parser.GetFileInfo(mdlPath);
         if (info.FileType is not FileType.Model)
@@ -63,16 +68,16 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         return info.ObjectType switch
         {
             ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Body
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Body, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Body, info, estManipulations)],
             ObjectType.Equipment when info.EquipSlot.ToSlot() is EquipSlot.Head
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Head, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Head, info, estManipulations)],
             ObjectType.Equipment                                                      => [baseSkeleton],
             ObjectType.Accessory                                                      => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Body or BodySlot.Tail => [baseSkeleton],
             ObjectType.Character when info.BodySlot is BodySlot.Hair
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Hair, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Hair, info, estManipulations)],
             ObjectType.Character when info.BodySlot is BodySlot.Face or BodySlot.Ear
-                => [baseSkeleton, ..ResolveEstSkeleton(EstManipulation.EstType.Face, info, estManipulations)],
+                => [baseSkeleton, ..ResolveEstSkeleton(EstType.Face, info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
             ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
             ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
@@ -81,28 +86,26 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
         };
     }
 
-    private string[] ResolveEstSkeleton(EstManipulation.EstType type, GameObjectInfo info, EstManipulation[] estManipulations)
+    private string[] ResolveEstSkeleton(EstType type, GameObjectInfo info, KeyValuePair<EstIdentifier, EstEntry>[] estManipulations)
     {
         // Try to find an EST entry from the manipulations provided.
-        var (gender, race) = info.GenderRace.Split();
         var modEst = estManipulations
-            .FirstOrNull(est =>
-                est.Gender == gender
-             && est.Race == race
-             && est.Slot == type
-             && est.SetId == info.PrimaryId
+            .FirstOrNull(
+                est => est.Key.GenderRace == info.GenderRace
+                 && est.Key.Slot == type
+                 && est.Key.SetId == info.PrimaryId
             );
 
         // Try to use an entry from provided manipulations, falling back to the current collection.
-        var targetId = modEst?.Entry
+        var targetId = modEst?.Value
          ?? collections.Current.MetaCache?.GetEstEntry(type, info.GenderRace, info.PrimaryId)
-         ?? 0;
+         ?? EstFile.GetDefault(metaFileManager, type, info.GenderRace, info.PrimaryId);
 
         // If there's no entries, we can assume that there's no additional skeleton.
-        if (targetId == 0)
+        if (targetId == EstEntry.Zero)
             return [];
 
-        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, EstManipulation.ToName(type), targetId)];
+        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, type.ToName(), targetId.AsId)];
     }
 
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
@@ -162,7 +165,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                     {
                         return _tasks.TryRemove(a, out var unused);
                     }
-                }, CancellationToken.None);
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
                 return (t, token);
             }).Item1;
         }
@@ -178,7 +181,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
                 throw task.Exception;
 
             return process(action);
-        });
+        }, TaskScheduler.Default);
 
     private class ExportToGltfAction(
         ModelManager manager,
@@ -213,7 +216,7 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
 
             Penumbra.Log.Debug("[GLTF Export] Saving...");
             var gltfModel = scene.ToGltf2();
-            gltfModel.SaveGLTF(outputPath);
+            gltfModel.Save(outputPath);
             Penumbra.Log.Debug("[GLTF Export] Done.");
         }
 
@@ -250,9 +253,11 @@ public sealed class ModelManager(IFramework framework, ActiveCollections collect
             var path = manager.ResolveMtrlPath(relativePath, notifier);
             if (path == null)
                 return null;
+
             var bytes = read(path);
             if (bytes == null)
                 return null;
+
             var mtrl = new MtrlFile(bytes);
 
             return new MaterialExporter.Material

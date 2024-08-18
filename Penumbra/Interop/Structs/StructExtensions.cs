@@ -6,48 +6,48 @@ namespace Penumbra.Interop.Structs;
 
 internal static class StructExtensions
 {
-    public static unsafe ByteString AsByteString(in this StdString str)
-        => ByteString.FromSpanUnsafe(str.AsSpan(), true);
+    public static CiByteString AsByteString(in this StdString str)
+        => CiByteString.FromSpanUnsafe(str.AsSpan(), true);
 
-    public static ByteString ResolveEidPathAsByteString(in this CharacterBase character)
+    public static CiByteString ResolveEidPathAsByteString(ref this CharacterBase character)
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveEidPath(pathBuffer));
     }
 
-    public static ByteString ResolveImcPathAsByteString(in this CharacterBase character, uint slotIndex)
+    public static CiByteString ResolveImcPathAsByteString(ref this CharacterBase character, uint slotIndex)
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveImcPath(pathBuffer, slotIndex));
     }
 
-    public static ByteString ResolveMdlPathAsByteString(in this CharacterBase character, uint slotIndex)
+    public static CiByteString ResolveMdlPathAsByteString(ref this CharacterBase character, uint slotIndex)
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveMdlPath(pathBuffer, slotIndex));
     }
 
-    public static unsafe ByteString ResolveMtrlPathAsByteString(in this CharacterBase character, uint slotIndex, byte* mtrlFileName)
+    public static unsafe CiByteString ResolveMtrlPathAsByteString(ref this CharacterBase character, uint slotIndex, byte* mtrlFileName)
     {
         var pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveMtrlPath(pathBuffer, CharacterBase.PathBufferSize, slotIndex, mtrlFileName));
     }
 
-    public static ByteString ResolveSklbPathAsByteString(in this CharacterBase character, uint partialSkeletonIndex)
+    public static CiByteString ResolveSklbPathAsByteString(ref this CharacterBase character, uint partialSkeletonIndex)
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveSklbPath(pathBuffer, partialSkeletonIndex));
     }
 
-    public static ByteString ResolveSkpPathAsByteString(in this CharacterBase character, uint partialSkeletonIndex)
+    public static CiByteString ResolveSkpPathAsByteString(ref this CharacterBase character, uint partialSkeletonIndex)
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveSkpPath(pathBuffer, partialSkeletonIndex));
     }
 
-    private static unsafe ByteString ToOwnedByteString(byte* str)
-        => str == null ? ByteString.Empty : new ByteString(str).Clone();
+    private static unsafe CiByteString ToOwnedByteString(byte* str)
+        => str == null ? CiByteString.Empty : new CiByteString(str).Clone();
 
-    private static ByteString ToOwnedByteString(ReadOnlySpan<byte> str)
-        => str.Length == 0 ? ByteString.Empty : ByteString.FromSpanUnsafe(str, true).Clone();
+    private static CiByteString ToOwnedByteString(ReadOnlySpan<byte> str)
+        => str.Length == 0 ? CiByteString.Empty : CiByteString.FromSpanUnsafe(str, true).Clone();
 }

@@ -1,14 +1,17 @@
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using OtterGui.Tasks;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModNormalizer(ModManager _modManager, Configuration _config)
+public class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService) : IService
 {
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = [];
 
@@ -36,6 +39,103 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
         TotalSteps            = mod.TotalFileCount + 5;
 
         Worker = TrackedTask.Run(NormalizeSync);
+    }
+
+    public void NormalizeUi(DirectoryInfo modDirectory)
+    {
+        if (!config.AutoReduplicateUiOnImport)
+            return;
+
+        if (modManager.Creator.LoadMod(modDirectory, false) is not { } mod)
+            return;
+
+        Dictionary<FullPath, List<(IModDataContainer, Utf8GamePath)>> paths      = [];
+        Dictionary<IModDataContainer, string>                         containers = [];
+        foreach (var container in mod.AllDataContainers)
+        {
+            foreach (var (gamePath, path) in container.Files)
+            {
+                if (!gamePath.Path.StartsWith("ui/"u8))
+                    continue;
+
+                if (!paths.TryGetValue(path, out var list))
+                {
+                    list = [];
+                    paths.Add(path, list);
+                }
+
+                list.Add((container, gamePath));
+                containers.TryAdd(container, string.Empty);
+            }
+        }
+
+        foreach (var container in containers.Keys.ToList())
+        {
+            if (container.Group == null)
+                containers[container] = mod.ModPath.FullName;
+            else
+            {
+                var groupDir  = ModCreator.NewOptionDirectory(mod.ModPath, container.Group.Name, config.ReplaceNonAsciiOnImport);
+                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetName(),  config.ReplaceNonAsciiOnImport);
+                containers[container] = optionDir.FullName;
+            }
+        }
+
+        var anyChanges    = 0;
+        var modRootLength = mod.ModPath.FullName.Length + 1;
+        foreach (var (file, gamePaths) in paths)
+        {
+            if (gamePaths.Count < 2)
+                continue;
+
+            var keptPath = false;
+            foreach (var (container, gamePath) in gamePaths)
+            {
+                var directory   = containers[container];
+                var relPath     = new Utf8RelPath(gamePath).ToString();
+                var newFilePath = Path.Combine(directory, relPath);
+                if (newFilePath == file.FullName)
+                {
+                    Penumbra.Log.Verbose($"[UIReduplication] Kept {file.FullName[modRootLength..]} because new path was identical.");
+                    keptPath = true;
+                    continue;
+                }
+
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(newFilePath)!);
+                    File.Copy(file.FullName, newFilePath, false);
+                    Penumbra.Log.Verbose($"[UIReduplication] Copied {file.FullName[modRootLength..]} to {newFilePath[modRootLength..]}.");
+                    container.Files[gamePath] = new FullPath(newFilePath);
+                    ++anyChanges;
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error(
+                        $"[UIReduplication] Failed to copy {file.FullName[modRootLength..]} to {newFilePath[modRootLength..]}:\n{ex}");
+                }
+            }
+
+            if (keptPath)
+                continue;
+
+            try
+            {
+                File.Delete(file.FullName);
+                Penumbra.Log.Verbose($"[UIReduplication] Deleted {file.FullName[modRootLength..]} because no new path matched.");
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Error($"[UIReduplication] Failed to delete {file.FullName[modRootLength..]}:\n{ex}");
+            }
+        }
+
+        if (anyChanges == 0)
+            return;
+
+        saveService.Save(SaveType.ImmediateSync, new ModSaveGroup(mod.Default, config.ReplaceNonAsciiOnImport));
+        saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
+        Penumbra.Log.Information($"[UIReduplication] Saved groups after {anyChanges} changes.");
     }
 
     private void NormalizeSync()
@@ -167,29 +267,12 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
             // Normalize all other options.
             foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
             {
-                _redirections[groupIdx + 1].EnsureCapacity(group.Count);
-                for (var i = _redirections[groupIdx + 1].Count; i < group.Count; ++i)
+                var groupDir = ModCreator.CreateModFolder(directory, group.Name, config.ReplaceNonAsciiOnImport, true);
+                _redirections[groupIdx + 1].EnsureCapacity(group.DataContainers.Count);
+                for (var i = _redirections[groupIdx + 1].Count; i < group.DataContainers.Count; ++i)
                     _redirections[groupIdx + 1].Add([]);
-
-                var groupDir = ModCreator.CreateModFolder(directory, group.Name, _config.ReplaceNonAsciiOnImport, true);
-                foreach (var option in group.OfType<SubMod>())
-                {
-                    var optionDir = ModCreator.CreateModFolder(groupDir, option.Name, _config.ReplaceNonAsciiOnImport, true);
-
-                    newDict = _redirections[groupIdx + 1][option.OptionIdx];
-                    newDict.Clear();
-                    newDict.EnsureCapacity(option.FileData.Count);
-                    foreach (var (gamePath, fullPath) in option.FileData)
-                    {
-                        var relPath      = new Utf8RelPath(gamePath).ToString();
-                        var newFullPath  = Path.Combine(optionDir.FullName, relPath);
-                        var redirectPath = new FullPath(Path.Combine(Mod.ModPath.FullName, groupDir.Name, optionDir.Name, relPath));
-                        Directory.CreateDirectory(Path.GetDirectoryName(newFullPath)!);
-                        File.Copy(fullPath.FullName, newFullPath, true);
-                        newDict.Add(gamePath, redirectPath);
-                        ++Step;
-                    }
-                }
+                foreach (var (data, dataIdx) in group.DataContainers.WithIndex())
+                    HandleSubMod(groupDir, data, _redirections[groupIdx + 1][dataIdx]);
             }
 
             return true;
@@ -200,6 +283,25 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
         }
 
         return false;
+
+        void HandleSubMod(DirectoryInfo groupDir, IModDataContainer option, Dictionary<Utf8GamePath, FullPath> newDict)
+        {
+            var name      = option.GetName();
+            var optionDir = ModCreator.CreateModFolder(groupDir, name, config.ReplaceNonAsciiOnImport, true);
+
+            newDict.Clear();
+            newDict.EnsureCapacity(option.Files.Count);
+            foreach (var (gamePath, fullPath) in option.Files)
+            {
+                var relPath      = new Utf8RelPath(gamePath).ToString();
+                var newFullPath  = Path.Combine(optionDir.FullName, relPath);
+                var redirectPath = new FullPath(Path.Combine(Mod.ModPath.FullName, groupDir.Name, optionDir.Name, relPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(newFullPath)!);
+                File.Copy(fullPath.FullName, newFullPath, true);
+                newDict.Add(gamePath, redirectPath);
+                ++Step;
+            }
+        }
     }
 
     private bool MoveOldFiles()
@@ -274,9 +376,10 @@ public class ModNormalizer(ModManager _modManager, Configuration _config)
 
     private void ApplyRedirections()
     {
-        foreach (var option in Mod.AllSubMods)
-            _modManager.OptionEditor.OptionSetFiles(Mod, option.GroupIdx, option.OptionIdx,
-                _redirections[option.GroupIdx + 1][option.OptionIdx]);
+        modManager.OptionEditor.SetFiles(Mod.Default, _redirections[0][0]);
+        foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
+            foreach (var (container, containerIdx) in group.DataContainers.WithIndex())
+                modManager.OptionEditor.SetFiles(container, _redirections[groupIdx + 1][containerIdx]);
 
         ++Step;
     }

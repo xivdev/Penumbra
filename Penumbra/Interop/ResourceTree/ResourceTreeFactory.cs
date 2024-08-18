@@ -1,47 +1,40 @@
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
-using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Meta;
+using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-public class ResourceTreeFactory
+public class ResourceTreeFactory(
+    IDataManager gameData,
+    ObjectManager objects,
+    MetaFileManager metaFileManager,
+    CollectionResolver resolver,
+    ObjectIdentification objectIdentifier,
+    Configuration config,
+    ActorManager actors,
+    PathState pathState,
+    ModManager modManager) : IService
 {
-    private readonly IDataManager         _gameData;
-    private readonly IObjectTable         _objects;
-    private readonly CollectionResolver   _collectionResolver;
-    private readonly ObjectIdentification _identifier;
-    private readonly Configuration        _config;
-    private readonly ActorManager         _actors;
-    private readonly PathState            _pathState;
-
-    public ResourceTreeFactory(IDataManager gameData, IObjectTable objects, CollectionResolver resolver, ObjectIdentification identifier,
-        Configuration config, ActorManager actors, PathState pathState)
-    {
-        _gameData           = gameData;
-        _objects            = objects;
-        _collectionResolver = resolver;
-        _identifier         = identifier;
-        _config             = config;
-        _actors             = actors;
-        _pathState          = pathState;
-    }
-
     private TreeBuildCache CreateTreeBuildCache()
-        => new(_objects, _gameData, _actors);
+        => new(objects, gameData, actors);
 
-    public IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> GetLocalPlayerRelatedCharacters()
+    public IEnumerable<ICharacter> GetLocalPlayerRelatedCharacters()
     {
         var cache = CreateTreeBuildCache();
         return cache.GetLocalPlayerRelatedCharacters();
     }
 
-    public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromObjectTable(
+    public IEnumerable<(ICharacter Character, ResourceTree ResourceTree)> FromObjectTable(
         Flags flags)
     {
         var cache      = CreateTreeBuildCache();
@@ -55,8 +48,8 @@ public class ResourceTreeFactory
         }
     }
 
-    public IEnumerable<(Dalamud.Game.ClientState.Objects.Types.Character Character, ResourceTree ResourceTree)> FromCharacters(
-        IEnumerable<Dalamud.Game.ClientState.Objects.Types.Character> characters, Flags flags)
+    public IEnumerable<(ICharacter Character, ResourceTree ResourceTree)> FromCharacters(
+        IEnumerable<ICharacter> characters, Flags flags)
     {
         var cache = CreateTreeBuildCache();
         foreach (var character in characters)
@@ -67,10 +60,10 @@ public class ResourceTreeFactory
         }
     }
 
-    public ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, Flags flags)
+    public ResourceTree? FromCharacter(ICharacter character, Flags flags)
         => FromCharacter(character, CreateTreeBuildCache(), flags);
 
-    private unsafe ResourceTree? FromCharacter(Dalamud.Game.ClientState.Objects.Types.Character character, TreeBuildCache cache, Flags flags)
+    private unsafe ResourceTree? FromCharacter(ICharacter character, TreeBuildCache cache, Flags flags)
     {
         if (!character.IsValid())
             return null;
@@ -80,18 +73,18 @@ public class ResourceTreeFactory
         if (drawObjStruct == null)
             return null;
 
-        var collectionResolveData = _collectionResolver.IdentifyCollection(gameObjStruct, true);
+        var collectionResolveData = resolver.IdentifyCollection(gameObjStruct, true);
         if (!collectionResolveData.Valid)
             return null;
 
         var localPlayerRelated = cache.IsLocalPlayerRelated(character);
-        var (name, related) = GetCharacterName(character, cache);
-        var networked = character.ObjectId != Dalamud.Game.ClientState.Objects.Types.GameObject.InvalidGameObjectId;
-        var tree = new ResourceTree(name, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
-            networked, collectionResolveData.ModCollection.Name);
-        var globalContext = new GlobalResolveContext(_identifier, collectionResolveData.ModCollection,
+        var (name, anonymizedName, related) = GetCharacterName(character);
+        var networked = character.EntityId != 0xE0000000;
+        var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
+            networked, collectionResolveData.ModCollection.Name, collectionResolveData.ModCollection.AnonymizedName);
+        var globalContext = new GlobalResolveContext(metaFileManager, objectIdentifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
-        using (var _ = _pathState.EnterInternalResolve())
+        using (var _ = pathState.EnterInternalResolve())
         {
             tree.LoadResources(globalContext);
         }
@@ -102,55 +95,14 @@ public class ResourceTreeFactory
         // This is currently unneeded as we can resolve all paths by querying the draw object:
         // ResolveGamePaths(tree, collectionResolveData.ModCollection);
         if (globalContext.WithUiData)
+        {
             ResolveUiData(tree);
-        FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) != 0 ? _config.ModDirectory : null);
+            ResolveModData(tree);
+        }
+        FilterFullPaths(tree, (flags & Flags.RedactExternalPaths) != 0 ? config.ModDirectory : null);
         Cleanup(tree);
 
         return tree;
-    }
-
-    private static void ResolveGamePaths(ResourceTree tree, ModCollection collection)
-    {
-        var forwardDictionary = new Dictionary<Utf8GamePath, FullPath?>();
-        var reverseDictionary = new Dictionary<string, HashSet<Utf8GamePath>>();
-        foreach (var node in tree.FlatNodes)
-        {
-            if (node.PossibleGamePaths.Length == 0 && !node.FullPath.InternalName.IsEmpty)
-                reverseDictionary.TryAdd(node.FullPath.ToPath(), null!);
-            else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
-                forwardDictionary.TryAdd(node.GamePath, null);
-        }
-
-        foreach (var key in forwardDictionary.Keys)
-            forwardDictionary[key] = collection.ResolvePath(key);
-
-        var reverseResolvedArray = collection.ReverseResolvePaths(reverseDictionary.Keys);
-        foreach (var (key, set) in reverseDictionary.Keys.Zip(reverseResolvedArray))
-            reverseDictionary[key] = set;
-
-        foreach (var node in tree.FlatNodes)
-        {
-            if (node.PossibleGamePaths.Length == 0 && !node.FullPath.InternalName.IsEmpty)
-            {
-                if (!reverseDictionary.TryGetValue(node.FullPath.ToPath(), out var resolvedSet))
-                    continue;
-
-                if (resolvedSet.Count != 1)
-                {
-                    Penumbra.Log.Debug(
-                        $"Found {resolvedSet.Count} game paths while reverse-resolving {node.FullPath} in {collection.Name}:");
-                    foreach (var gamePath in resolvedSet)
-                        Penumbra.Log.Debug($"Game path: {gamePath}");
-                }
-
-                node.PossibleGamePaths = resolvedSet.ToArray();
-            }
-            else if (node.FullPath.InternalName.IsEmpty && node.PossibleGamePaths.Length == 1)
-            {
-                if (forwardDictionary.TryGetValue(node.GamePath, out var resolved))
-                    node.FullPath = resolved ?? new FullPath(node.GamePath);
-            }
-        }
     }
 
     private static void ResolveUiData(ResourceTree tree)
@@ -173,14 +125,31 @@ public class ResourceTreeFactory
         {
             if (node.Name == parent?.Name)
                 node.Name = null;
-
-            if (parent != null)
-                parent.DescendentIcons |= node.Icon | node.DescendentIcons;
         });
+    }
+
+    private void ResolveModData(ResourceTree tree)
+    {
+        foreach (var node in tree.FlatNodes)
+        {
+            if (node.FullPath.IsRooted && modManager.TryIdentifyPath(node.FullPath.FullName, out var mod, out var relativePath))
+            {
+                node.ModName         = mod.Name;
+                node.ModRelativePath = relativePath;
+            }
+        }
     }
 
     private static void FilterFullPaths(ResourceTree tree, string? onlyWithinPath)
     {
+        foreach (var node in tree.FlatNodes)
+        {
+            if (!ShallKeepPath(node.FullPath, onlyWithinPath))
+                node.FullPath = FullPath.Empty;
+        }
+
+        return;
+
         static bool ShallKeepPath(FullPath fullPath, string? onlyWithinPath)
         {
             if (!fullPath.IsRooted)
@@ -195,12 +164,6 @@ public class ResourceTreeFactory
 
             return fullPath.Exists;
         }
-
-        foreach (var node in tree.FlatNodes)
-        {
-            if (!ShallKeepPath(node.FullPath, onlyWithinPath))
-                node.FullPath = FullPath.Empty;
-        }
     }
 
     private static void Cleanup(ResourceTree tree)
@@ -214,26 +177,29 @@ public class ResourceTreeFactory
         }
     }
 
-    private unsafe (string Name, bool PlayerRelated) GetCharacterName(Dalamud.Game.ClientState.Objects.Types.Character character,
-        TreeBuildCache cache)
+    private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(ICharacter character)
     {
-        var identifier = _actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
-        switch (identifier.Type)
-        {
-            case IdentifierType.Player: return (identifier.PlayerName.ToString(), true);
-            case IdentifierType.Owned:
-                var ownerChara = _objects.CreateObjectReference((nint)owner) as Dalamud.Game.ClientState.Objects.Types.Character;
-                if (ownerChara != null)
-                {
-                    var ownerName = GetCharacterName(ownerChara, cache);
-                    return ($"[{ownerName.Name}] {character.Name} ({identifier.Kind.ToName()})", ownerName.PlayerRelated);
-                }
-
-                break;
-        }
-
-        return ($"{character.Name} ({identifier.Kind.ToName()})", false);
+        var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
+        var identifierStr = identifier.ToString();
+        return (identifierStr, identifier.Incognito(identifierStr), IsPlayerRelated(identifier, owner));
     }
+
+    private unsafe bool IsPlayerRelated(ICharacter? character)
+    {
+        if (character == null)
+            return false;
+
+        var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
+        return IsPlayerRelated(identifier, owner);
+    }
+
+    private bool IsPlayerRelated(ActorIdentifier identifier, Actor owner)
+        => identifier.Type switch
+        {
+            IdentifierType.Player => true,
+            IdentifierType.Owned  => IsPlayerRelated(objects.Objects.CreateObjectReference(owner) as ICharacter),
+            _                     => false,
+        };
 
     [Flags]
     public enum Flags

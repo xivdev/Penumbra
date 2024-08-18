@@ -18,8 +18,8 @@ public enum RecordType : byte
 internal unsafe struct Record
 {
     public DateTime             Time;
-    public ByteString           Path;
-    public ByteString           OriginalPath;
+    public CiByteString         Path;
+    public CiByteString         OriginalPath;
     public string               AssociatedGameObject;
     public ModCollection?       Collection;
     public ResourceHandle*      Handle;
@@ -32,12 +32,12 @@ internal unsafe struct Record
     public OptionalBool         CustomLoad;
     public LoadState            LoadState;
 
-    public static Record CreateRequest(ByteString path, bool sync)
+    public static Record CreateRequest(CiByteString path, bool sync)
         => new()
         {
             Time                 = DateTime.UtcNow,
             Path                 = path.IsOwned ? path : path.Clone(),
-            OriginalPath         = ByteString.Empty,
+            OriginalPath         = CiByteString.Empty,
             Collection           = null,
             Handle               = null,
             ResourceType         = ResourceExtensions.Type(path).ToFlag(),
@@ -51,7 +51,7 @@ internal unsafe struct Record
             LoadState            = LoadState.None,
         };
 
-    public static Record CreateDefaultLoad(ByteString path, ResourceHandle* handle, ModCollection collection, string associatedGameObject)
+    public static Record CreateDefaultLoad(CiByteString path, ResourceHandle* handle, ModCollection collection, string associatedGameObject)
     {
         path = path.IsOwned ? path : path.Clone();
         return new Record
@@ -73,7 +73,7 @@ internal unsafe struct Record
         };
     }
 
-    public static Record CreateLoad(ByteString path, ByteString originalPath, ResourceHandle* handle, ModCollection collection,
+    public static Record CreateLoad(CiByteString path, CiByteString originalPath, ResourceHandle* handle, ModCollection collection,
         string associatedGameObject)
         => new()
         {
@@ -100,7 +100,7 @@ internal unsafe struct Record
         {
             Time                 = DateTime.UtcNow,
             Path                 = path,
-            OriginalPath         = ByteString.Empty,
+            OriginalPath         = CiByteString.Empty,
             Collection           = null,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),
@@ -115,12 +115,12 @@ internal unsafe struct Record
         };
     }
 
-    public static Record CreateFileLoad(ByteString path, ResourceHandle* handle, bool ret, bool custom)
+    public static Record CreateFileLoad(CiByteString path, ResourceHandle* handle, bool ret, bool custom)
         => new()
         {
             Time                 = DateTime.UtcNow,
             Path                 = path.IsOwned ? path : path.Clone(),
-            OriginalPath         = ByteString.Empty,
+            OriginalPath         = CiByteString.Empty,
             Collection           = null,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),

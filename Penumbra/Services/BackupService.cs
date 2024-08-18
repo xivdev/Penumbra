@@ -7,6 +7,10 @@ namespace Penumbra.Services;
 
 public class BackupService : IAsyncService
 {
+    private readonly Logger                  _logger;
+    private readonly DirectoryInfo           _configDirectory;
+    private readonly IReadOnlyList<FileInfo> _fileNames;
+
     /// <inheritdoc/>
     public Task Awaiter { get; }
 
@@ -17,9 +21,15 @@ public class BackupService : IAsyncService
     /// <summary> Start a backup process on the collected files. </summary>
     public BackupService(Logger logger, FilenameService fileNames)
     {
-        var files = PenumbraFiles(fileNames);
-        Awaiter = Task.Run(() => Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), files));
+        _logger          = logger;
+        _fileNames       = PenumbraFiles(fileNames);
+        _configDirectory = new DirectoryInfo(fileNames.ConfigDirectory);
+        Awaiter          = Task.Run(() => Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), _fileNames));
     }
+
+    /// <summary> Create a permanent backup with a given name for migrations. </summary>
+    public void CreateMigrationBackup(string name)
+        => Backup.CreatePermanentBackup(_logger, _configDirectory, _fileNames, name);
 
     /// <summary> Collect all relevant files for penumbra configuration. </summary>
     private static IReadOnlyList<FileInfo> PenumbraFiles(FilenameService fileNames)
@@ -29,6 +39,7 @@ public class BackupService : IAsyncService
         list.Add(new FileInfo(fileNames.ConfigFile));
         list.Add(new FileInfo(fileNames.FilesystemFile));
         list.Add(new FileInfo(fileNames.ActiveCollectionsFile));
+        list.Add(new FileInfo(fileNames.PredefinedTagFile));
         return list;
     }
 

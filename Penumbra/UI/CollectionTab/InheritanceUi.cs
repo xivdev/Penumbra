@@ -2,30 +2,21 @@ using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.CollectionTab;
 
-public class InheritanceUi
+public class InheritanceUi(CollectionManager collectionManager, IncognitoService incognito) : IUiService
 {
     private const int    InheritedCollectionHeight = 9;
     private const string InheritanceDragDropLabel  = "##InheritanceMove";
 
-    private readonly CollectionStorage  _collections;
-    private readonly ActiveCollections  _active;
-    private readonly InheritanceManager _inheritance;
-    private readonly CollectionSelector _selector;
-
-    public InheritanceUi(CollectionManager collectionManager, CollectionSelector selector)
-    {
-        _selector    = selector;
-        _collections = collectionManager.Storage;
-        _active      = collectionManager.Active;
-        _inheritance = collectionManager.Inheritances;
-    }
-
+    private readonly CollectionStorage  _collections = collectionManager.Storage;
+    private readonly ActiveCollections  _active      = collectionManager.Active;
+    private readonly InheritanceManager _inheritance = collectionManager.Inheritances;
 
     /// <summary> Draw the whole inheritance block. </summary>
     public void Draw()
@@ -59,7 +50,7 @@ public class InheritanceUi
     private (int, int)?    _inheritanceAction;
     private ModCollection? _newCurrentCollection;
 
-    private void DrawRightText()
+    private static void DrawRightText()
     {
         using var group = ImRaii.Group();
         ImGuiUtil.TextWrapped(
@@ -68,7 +59,7 @@ public class InheritanceUi
             "You can select inheritances from the combo below to add them.\nSince the order of inheritances is important, you can reorder them here via drag and drop.\nYou can also delete inheritances by dragging them onto the trash can.");
     }
 
-    private void DrawHelpPopup()
+    private static void DrawHelpPopup()
         => ImGuiUtil.HelpPopup("InheritanceHelp", new Vector2(1000 * UiHelpers.Scale, 20 * ImGui.GetTextLineHeightWithSpacing()), () =>
         {
             ImGui.NewLine();
@@ -123,7 +114,7 @@ public class InheritanceUi
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
-            ImRaii.TreeNode($"{Name(inheritance)}###{inheritance.Name}",
+            ImRaii.TreeNode($"{Name(inheritance)}###{inheritance.Id}",
                 ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet);
             var (minRect, maxRect) = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());
             DrawInheritanceTreeClicks(inheritance, false);
@@ -134,7 +125,7 @@ public class InheritanceUi
 
             // Draw the notch and increase the line length.
             var midPoint = (minRect.Y + maxRect.Y) / 2f - 1f;
-            drawList.AddLine(new Vector2(lineStart.X, midPoint), new Vector2(lineStart.X + lineSize, midPoint), Colors.MetaInfoText,
+            drawList.AddLine(lineStart with { Y = midPoint }, new Vector2(lineStart.X + lineSize, midPoint), Colors.MetaInfoText,
                 UiHelpers.Scale);
             lineEnd.Y = midPoint;
         }
@@ -321,5 +312,5 @@ public class InheritanceUi
     }
 
     private string Name(ModCollection collection)
-        => _selector.IncognitoMode ? collection.AnonymizedName : collection.Name;
+        => incognito.IncognitoMode ? collection.AnonymizedName : collection.Name;
 }

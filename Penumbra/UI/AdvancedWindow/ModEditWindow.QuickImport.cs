@@ -8,13 +8,14 @@ using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
+    private readonly FileDialogService                                         _fileDialog;
     private readonly ResourceTreeFactory                                       _resourceTreeFactory;
     private readonly ResourceTreeViewer                                        _quickImportViewer;
     private readonly Dictionary<FullPath, IWritable?>                          _quickImportWritables = new();
@@ -25,8 +26,8 @@ public partial class ModEditWindow
         var resources = ResourceTreeApiHelper
             .GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
             .Values
-            .SelectMany(resources => resources.Values)
-            .Select(resource => resource.Item1);
+            .SelectMany(r => r.Values)
+            .Select(r => r.Item1);
 
         return new HashSet<string>(resources, StringComparer.OrdinalIgnoreCase);
     }
@@ -187,19 +188,19 @@ public partial class ModEditWindow
             if (editor == null)
                 return new QuickImportAction(owner._editor, FallbackOptionName, gamePath);
 
-            var subMod     = editor.Option;
-            var optionName = subMod!.FullName;
+            var subMod     = editor.Option!;
+            var optionName = subMod is IModOption o ? o.FullName : FallbackOptionName;
             if (gamePath.IsEmpty || file == null || editor.FileEditor.Changes)
                 return new QuickImportAction(editor, optionName, gamePath);
 
             if (subMod.Files.ContainsKey(gamePath) || subMod.FileSwaps.ContainsKey(gamePath))
                 return new QuickImportAction(editor, optionName, gamePath);
 
-            var mod = owner._mod;
+            var mod = owner.Mod;
             if (mod == null)
                 return new QuickImportAction(editor, optionName, gamePath);
 
-            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod, owner._config.ReplaceNonAsciiOnImport);
+            var (preferredPath, subDirs) = GetPreferredPath(mod, subMod as IModOption, owner._config.ReplaceNonAsciiOnImport);
             var targetPath = new FullPath(Path.Combine(preferredPath.FullName, gamePath.ToString())).FullName;
             if (File.Exists(targetPath))
                 return new QuickImportAction(editor, optionName, gamePath);
@@ -222,16 +223,16 @@ public partial class ModEditWindow
             {
                 fileRegistry,
             }, _subDirs);
-            _editor.FileEditor.Apply(_editor.Mod!, (SubMod)_editor.Option!);
+            _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
 
             return fileRegistry;
         }
 
-        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, ISubMod subMod, bool replaceNonAscii)
+        private static (DirectoryInfo, int) GetPreferredPath(Mod mod, IModOption? subMod, bool replaceNonAscii)
         {
             var path    = mod.ModPath;
             var subDirs = 0;
-            if (subMod == mod.Default)
+            if (subMod == null)
                 return (path, subDirs);
 
             var name     = subMod.Name;

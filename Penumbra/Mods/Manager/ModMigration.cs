@@ -2,7 +2,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Api.Enums;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -61,10 +63,9 @@ public static partial class ModMigration
         if (fileVersion > 0)
             return false;
 
-        var swaps = json["FileSwaps"]?.ToObject<Dictionary<Utf8GamePath, FullPath>>()
-         ?? new Dictionary<Utf8GamePath, FullPath>();
-        var groups        = json["Groups"]?.ToObject<Dictionary<string, OptionGroupV0>>() ?? new Dictionary<string, OptionGroupV0>();
-        var priority      = 1;
+        var swaps         = json["FileSwaps"]?.ToObject<Dictionary<Utf8GamePath, FullPath>>() ?? [];
+        var groups        = json["Groups"]?.ToObject<Dictionary<string, OptionGroupV0>>() ?? [];
+        var priority      = new ModPriority(1);
         var seenMetaFiles = new HashSet<FullPath>();
         foreach (var group in groups.Values)
             ConvertGroup(creator, mod, group, ref priority, seenMetaFiles);
@@ -72,18 +73,18 @@ public static partial class ModMigration
         foreach (var unusedFile in mod.FindUnusedFiles().Where(f => !seenMetaFiles.Contains(f)))
         {
             if (unusedFile.ToGamePath(mod.ModPath, out var gamePath)
-             && !mod.Default.FileData.TryAdd(gamePath, unusedFile))
-                Penumbra.Log.Error($"Could not add {gamePath} because it already points to {mod.Default.FileData[gamePath]}.");
+             && !mod.Default.Files.TryAdd(gamePath, unusedFile))
+                Penumbra.Log.Error($"Could not add {gamePath} because it already points to {mod.Default.Files[gamePath]}.");
         }
 
-        mod.Default.FileSwapData.Clear();
-        mod.Default.FileSwapData.EnsureCapacity(swaps.Count);
+        mod.Default.FileSwaps.Clear();
+        mod.Default.FileSwaps.EnsureCapacity(swaps.Count);
         foreach (var (gamePath, swapPath) in swaps)
-            mod.Default.FileSwapData.Add(gamePath, swapPath);
+            mod.Default.FileSwaps.Add(gamePath, swapPath);
 
         creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true);
-        foreach (var (_, index) in mod.Groups.WithIndex())
-            saveService.ImmediateSave(new ModSaveGroup(mod, index, creator.Config.ReplaceNonAsciiOnImport));
+        foreach (var group in mod.Groups)
+            saveService.ImmediateSave(new ModSaveGroup(group, creator.Config.ReplaceNonAsciiOnImport));
 
         // Delete meta files.
         foreach (var file in seenMetaFiles.Where(f => f.Exists))
@@ -111,12 +112,13 @@ public static partial class ModMigration
             }
 
         fileVersion = 1;
-        saveService.ImmediateSave(new ModSaveGroup(mod, -1, creator.Config.ReplaceNonAsciiOnImport));
+        saveService.ImmediateSave(new ModSaveGroup(mod.ModPath, mod.Default, creator.Config.ReplaceNonAsciiOnImport));
 
         return true;
     }
 
-    private static void ConvertGroup(ModCreator creator, Mod mod, OptionGroupV0 group, ref int priority, HashSet<FullPath> seenMetaFiles)
+    private static void ConvertGroup(ModCreator creator, Mod mod, OptionGroupV0 group, ref ModPriority priority,
+        HashSet<FullPath> seenMetaFiles)
     {
         if (group.Options.Count == 0)
             return;
@@ -125,8 +127,8 @@ public static partial class ModMigration
         {
             case GroupType.Multi:
 
-                var optionPriority = 0;
-                var newMultiGroup = new MultiModGroup()
+                var optionPriority = ModPriority.Default;
+                var newMultiGroup = new MultiModGroup(mod)
                 {
                     Name        = group.GroupName,
                     Priority    = priority++,
@@ -134,7 +136,7 @@ public static partial class ModMigration
                 };
                 mod.Groups.Add(newMultiGroup);
                 foreach (var option in group.Options)
-                    newMultiGroup.PrioritizedOptions.Add((SubModFromOption(creator, mod, option, seenMetaFiles), optionPriority++));
+                    newMultiGroup.OptionData.Add(SubModFromOption(creator, mod, newMultiGroup, option, optionPriority++, seenMetaFiles));
 
                 break;
             case GroupType.Single:
@@ -144,7 +146,7 @@ public static partial class ModMigration
                     return;
                 }
 
-                var newSingleGroup = new SingleModGroup()
+                var newSingleGroup = new SingleModGroup(mod)
                 {
                     Name        = group.GroupName,
                     Priority    = priority++,
@@ -152,28 +154,47 @@ public static partial class ModMigration
                 };
                 mod.Groups.Add(newSingleGroup);
                 foreach (var option in group.Options)
-                    newSingleGroup.OptionData.Add(SubModFromOption(creator, mod, option, seenMetaFiles));
+                    newSingleGroup.OptionData.Add(SubModFromOption(creator, mod, newSingleGroup, option, seenMetaFiles));
 
                 break;
         }
     }
 
-    private static void AddFilesToSubMod(SubMod mod, DirectoryInfo basePath, OptionV0 option, HashSet<FullPath> seenMetaFiles)
+    private static void AddFilesToSubMod(IModDataContainer mod, DirectoryInfo basePath, OptionV0 option, HashSet<FullPath> seenMetaFiles)
     {
         foreach (var (relPath, gamePaths) in option.OptionFiles)
         {
             var fullPath = new FullPath(basePath, relPath);
             foreach (var gamePath in gamePaths)
-                mod.FileData.TryAdd(gamePath, fullPath);
+                mod.Files.TryAdd(gamePath, fullPath);
 
             if (fullPath.Extension is ".meta" or ".rgsp")
                 seenMetaFiles.Add(fullPath);
         }
     }
 
-    private static SubMod SubModFromOption(ModCreator creator, Mod mod, OptionV0 option, HashSet<FullPath> seenMetaFiles)
+    private static SingleSubMod SubModFromOption(ModCreator creator, Mod mod, SingleModGroup group, OptionV0 option,
+        HashSet<FullPath> seenMetaFiles)
     {
-        var subMod = new SubMod(mod) { Name = option.OptionName };
+        var subMod = new SingleSubMod(group)
+        {
+            Name        = option.OptionName,
+            Description = option.OptionDesc,
+        };
+        AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
+        return subMod;
+    }
+
+    private static MultiSubMod SubModFromOption(ModCreator creator, Mod mod, MultiModGroup group, OptionV0 option,
+        ModPriority priority, HashSet<FullPath> seenMetaFiles)
+    {
+        var subMod = new MultiSubMod(group)
+        {
+            Name        = option.OptionName,
+            Description = option.OptionDesc,
+            Priority    = priority,
+        };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
         creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
         return subMod;
@@ -198,7 +219,7 @@ public static partial class ModMigration
         [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public GroupType SelectionType = GroupType.Single;
 
-        public List<OptionV0> Options = new();
+        public List<OptionV0> Options = [];
 
         public OptionGroupV0()
         { }
@@ -215,12 +236,12 @@ public static partial class ModMigration
             var token = JToken.Load(reader);
 
             if (token.Type == JTokenType.Array)
-                return token.ToObject<HashSet<T>>() ?? new HashSet<T>();
+                return token.ToObject<HashSet<T>>() ?? [];
 
             var tmp = token.ToObject<T>();
             return tmp != null
                 ? new HashSet<T> { tmp }
-                : new HashSet<T>();
+                : [];
         }
 
         public override bool CanWrite

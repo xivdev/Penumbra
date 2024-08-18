@@ -1,3 +1,4 @@
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Interop.Services;
 using Penumbra.String;
@@ -5,7 +6,7 @@ using Penumbra.String;
 namespace Penumbra.Interop.PathResolving;
 
 public sealed class PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility)
-    : IDisposable
+    : IDisposable, IService
 {
     public readonly CollectionResolver CollectionResolver = collectionResolver;
     public readonly MetaState          MetaState          = metaState;
@@ -27,7 +28,7 @@ public sealed class PathState(CollectionResolver collectionResolver, MetaState m
         _internalResolve.Dispose();
     }
 
-    public bool Consume(ByteString _, out ResolveData collection)
+    public bool Consume(CiByteString _, out ResolveData collection)
     {
         if (_resolveData.IsValueCreated)
         {

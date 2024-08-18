@@ -1,16 +1,16 @@
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
 public class FileRegistry : IEquatable<FileRegistry>
 {
-    public readonly List<(ISubMod, Utf8GamePath)> SubModUsage = [];
-    public          FullPath                      File     { get; private init; }
-    public          Utf8RelPath                   RelPath  { get; private init; }
-    public          long                          FileSize { get; private init; }
-    public          int                           CurrentUsage;
-    public          bool                          IsOnPlayer;
+    public readonly List<(IModDataContainer, Utf8GamePath)> SubModUsage = [];
+    public          FullPath                                File     { get; private init; }
+    public          Utf8RelPath                             RelPath  { get; private init; }
+    public          long                                    FileSize { get; private init; }
+    public          int                                     CurrentUsage;
+    public          bool                                    IsOnPlayer;
 
     public static bool FromFile(DirectoryInfo modPath, FileInfo file, [NotNullWhen(true)] out FileRegistry? registry)
     {

@@ -12,7 +12,7 @@ and there's reason to overhaul the export pipeline.
 public struct VertexColorFfxiv : IVertexCustom
 {
     // NOTE: We only realistically require UNSIGNED_BYTE for this, however Blender 3.6 errors on that (fixed in 4.0).
-    [VertexAttribute("_FFXIV_COLOR", EncodingType.UNSIGNED_SHORT, false)]
+    [VertexAttribute("_FFXIV_COLOR", EncodingType.UNSIGNED_SHORT, true)]
     public Vector4 FfxivColor;
 
     public int MaxColors => 0;
@@ -81,7 +81,7 @@ public struct VertexTexture1ColorFfxiv : IVertexCustom
     [VertexAttribute("TEXCOORD_0")]
     public Vector2 TexCoord0;
 
-    [VertexAttribute("_FFXIV_COLOR", EncodingType.UNSIGNED_SHORT, false)]
+    [VertexAttribute("_FFXIV_COLOR", EncodingType.UNSIGNED_SHORT, true)]
     public Vector4 FfxivColor;
 
     public int MaxColors => 0;
@@ -163,7 +163,7 @@ public struct VertexTexture2ColorFfxiv : IVertexCustom
     [VertexAttribute("TEXCOORD_1")]
     public Vector2 TexCoord1;
 
-    [VertexAttribute("_FFXIV_COLOR", EncodingType.UNSIGNED_SHORT, false)]
+    [VertexAttribute("_FFXIV_COLOR", EncodingType.UNSIGNED_SHORT, true)]
     public Vector4 FfxivColor;
 
     public int MaxColors => 0;

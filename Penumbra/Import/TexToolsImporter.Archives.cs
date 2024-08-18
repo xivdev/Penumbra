@@ -15,6 +15,12 @@ namespace Penumbra.Import;
 
 public partial class TexToolsImporter
 {
+    private static readonly ExtractionOptions _extractionOptions = new()
+    {
+        ExtractFullPath = true,
+        Overwrite       = true,
+    };
+
     /// <summary>
     /// Extract regular compressed archives that are folders containing penumbra-formatted mods.
     /// The mod has to either contain a meta.json at top level, or one folder deep.
@@ -45,11 +51,7 @@ public partial class TexToolsImporter
         Penumbra.Log.Information($"    -> Importing {archive.Type} Archive.");
 
         _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, Path.GetRandomFileName(), _config.ReplaceNonAsciiOnImport, true);
-        var options = new ExtractionOptions()
-        {
-            ExtractFullPath = true,
-            Overwrite       = true,
-        };
+
 
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
@@ -86,7 +88,7 @@ public partial class TexToolsImporter
             }
             else
             {
-                reader.WriteEntryToDirectory(_currentModDirectory.FullName, options);
+                HandleFileMigrationsAndWrite(reader);
             }
 
             ++_currentFileIdx;
@@ -109,10 +111,27 @@ public partial class TexToolsImporter
 
         _currentModDirectory.Refresh();
         _modManager.Creator.SplitMultiGroups(_currentModDirectory);
+        _editor.ModNormalizer.NormalizeUi(_currentModDirectory);
 
         return _currentModDirectory;
     }
 
+
+    private void HandleFileMigrationsAndWrite(IReader reader)
+    {
+        switch (Path.GetExtension(reader.Entry.Key))
+        {
+            case ".mdl":
+                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                break;
+            case ".mtrl":
+                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                break;
+            default:
+                reader.WriteEntryToDirectory(_currentModDirectory!.FullName, _extractionOptions);
+                break;
+        }
+    }
 
     // Search the archive for the meta.json file which needs to exist.
     private static string FindArchiveModMeta(IArchive archive, out bool leadDir)

@@ -1,7 +1,11 @@
 using OtterGui;
 using OtterGui.Classes;
+using Penumbra.GameData.Data;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
@@ -12,7 +16,7 @@ public sealed class Mod : IMod
     {
         Name     = "Forced Files",
         Index    = -1,
-        Priority = int.MaxValue,
+        Priority = ModPriority.MaxValue,
     };
 
     // Main Data
@@ -26,14 +30,17 @@ public sealed class Mod : IMod
     public bool IsTemporary
         => Index < 0;
 
-    /// <summary>Unused if Index < 0 but used for special temporary mods.</summary>
-    public int Priority
-        => 0;
+    /// <summary>Unused if Index is less than 0 but used for special temporary mods.</summary>
+    public ModPriority Priority
+        => ModPriority.Default;
+
+    IReadOnlyList<IModGroup> IMod.Groups
+        => Groups;
 
     internal Mod(DirectoryInfo modPath)
     {
         ModPath = modPath;
-        Default = new SubMod(this);
+        Default = new DefaultSubMod(this);
     }
 
     public override string ToString()
@@ -45,32 +52,44 @@ public sealed class Mod : IMod
     public string                Description { get; internal set; } = string.Empty;
     public string                Version     { get; internal set; } = string.Empty;
     public string                Website     { get; internal set; } = string.Empty;
-    public IReadOnlyList<string> ModTags     { get; internal set; } = Array.Empty<string>();
+    public string                Image       { get; internal set; } = string.Empty;
+    public IReadOnlyList<string> ModTags     { get; internal set; } = [];
 
 
     // Local Data
     public long                  ImportDate { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
-    public IReadOnlyList<string> LocalTags  { get; internal set; } = Array.Empty<string>();
+    public IReadOnlyList<string> LocalTags  { get; internal set; } = [];
     public string                Note       { get; internal set; } = string.Empty;
     public bool                  Favorite   { get; internal set; } = false;
 
 
     // Options
-    public readonly SubMod          Default;
-    public readonly List<IModGroup> Groups = new();
+    public readonly DefaultSubMod   Default;
+    public readonly List<IModGroup> Groups = [];
 
-    ISubMod IMod.Default
-        => Default;
+    public AppliedModData GetData(ModSettings? settings = null)
+    {
+        if (settings is not { Enabled: true })
+            return AppliedModData.Empty;
 
-    IReadOnlyList<IModGroup> IMod.Groups
-        => Groups;
+        var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
+        var setManips        = new MetaDictionary();
+        foreach (var (group, groupIndex) in Groups.WithIndex().Reverse().OrderByDescending(g => g.Value.Priority))
+        {
+            var config = settings.Settings[groupIndex];
+            group.AddData(config, dictRedirections, setManips);
+        }
 
-    public IEnumerable<SubMod> AllSubMods
-        => Groups.SelectMany(o => o).OfType<SubMod>().Prepend(Default);
+        Default.AddTo(dictRedirections, setManips);
+        return new AppliedModData(dictRedirections, setManips);
+    }
+
+    public IEnumerable<IModDataContainer> AllDataContainers
+        => Groups.SelectMany(o => o.DataContainers).Prepend(Default);
 
     public List<FullPath> FindUnusedFiles()
     {
-        var modFiles = AllSubMods.SelectMany(o => o.Files)
+        var modFiles = AllDataContainers.SelectMany(o => o.Files)
             .Select(p => p.Value)
             .ToHashSet();
         return ModPath.EnumerateDirectories()
@@ -82,7 +101,7 @@ public sealed class Mod : IMod
     }
 
     // Cache
-    public readonly IReadOnlyDictionary<string, object?> ChangedItems = new SortedList<string, object?>();
+    public readonly SortedList<string, IIdentifiedObjectData?> ChangedItems = new();
 
     public string LowerChangedItemsString { get; internal set; } = string.Empty;
     public string AllTagsLower            { get; internal set; } = string.Empty;

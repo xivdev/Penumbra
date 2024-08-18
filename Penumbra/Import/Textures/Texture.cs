@@ -1,4 +1,4 @@
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using OtterTex;
 
 namespace Penumbra.Import.Textures;

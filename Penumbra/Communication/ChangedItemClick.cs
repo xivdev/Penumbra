@@ -1,5 +1,7 @@
 using OtterGui.Classes;
+using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Data;
 
 namespace Penumbra.Communication;
 
@@ -10,11 +12,11 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the clicked object data if any. </item>
 /// </list>
 /// </summary>
-public sealed class ChangedItemClick() : EventWrapper<MouseButton, object?, ChangedItemClick.Priority>(nameof(ChangedItemClick))
+public sealed class ChangedItemClick() : EventWrapper<MouseButton, IIdentifiedObjectData?, ChangedItemClick.Priority>(nameof(ChangedItemClick))
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.ChangedItemClicked"/>
+        /// <seealso cref="UiApi.OnChangedItemClick"/>
         Default = 0,
 
         /// <seealso cref="Penumbra.SetupApi"/>

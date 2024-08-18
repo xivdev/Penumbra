@@ -1,4 +1,5 @@
 using ImGuiNET;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
@@ -8,7 +9,7 @@ using Watcher = Penumbra.UI.ResourceWatcher.ResourceWatcher;
 
 namespace Penumbra.UI.Tabs;
 
-public class ConfigTabBar : IDisposable
+public class ConfigTabBar : IDisposable, IUiService
 {
     private readonly CommunicatorService _communicator;
 
@@ -44,8 +45,8 @@ public class ConfigTabBar : IDisposable
         Watcher      = watcher;
         OnScreen     = onScreen;
         Messages     = messages;
-        Tabs = new ITab[]
-        {
+        Tabs =
+        [
             Settings,
             Collections,
             Mods,
@@ -56,7 +57,7 @@ public class ConfigTabBar : IDisposable
             Resource,
             Watcher,
             Messages,
-        };
+        ];
         _communicator.SelectTab.Subscribe(OnSelectTab, Communication.SelectTab.Priority.ConfigTabBar);
     }
 

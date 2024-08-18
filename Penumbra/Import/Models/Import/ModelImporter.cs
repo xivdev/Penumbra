@@ -1,6 +1,7 @@
 using Lumina.Data.Parsing;
 using OtterGui;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
@@ -14,10 +15,11 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
     }
 
     // NOTE: This is intended to match TexTool's grouping regex, ".*[_ ^]([0-9]+)[\\.\\-]?([0-9]+)?$"
-    [GeneratedRegex(@"[_ ^](?'Mesh'[0-9]+)[.-]?(?'SubMesh'[0-9]+)?$", RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture)]
+    [GeneratedRegex(@"[_ ^](?'Mesh'[0-9]+)[.-]?(?'SubMesh'[0-9]+)?$",
+        RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture)]
     private static partial Regex MeshNameGroupingRegex();
 
-    private readonly List<MdlStructs.MeshStruct>    _meshes    = [];
+    private readonly List<MeshStruct>               _meshes    = [];
     private readonly List<MdlStructs.SubmeshStruct> _subMeshes = [];
 
     private readonly List<string> _materials = [];
@@ -27,10 +29,10 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
 
     private readonly List<ushort> _indices = [];
 
-    private readonly List<string>                     _bones      = [];
-    private readonly List<MdlStructs.BoneTableStruct> _boneTables = [];
+    private readonly List<string>          _bones      = [];
+    private readonly List<BoneTableStruct> _boneTables = [];
 
-    private readonly BoundingBox _boundingBox = new BoundingBox();
+    private readonly BoundingBox _boundingBox = new();
 
     private readonly List<string> _metaAttributes = [];
 
@@ -95,15 +97,14 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
                     IndexBufferSize  = (uint)indexBuffer.Length,
                 },
             ],
-
-            Materials = [.. materials],
-
+            Materials     = [.. materials],
             BoundingBoxes = _boundingBox.ToStruct(),
 
             // TODO: Would be good to calculate all of this up the tree.
             Radius            = 1,
             BoneBoundingBoxes = Enumerable.Repeat(MdlFile.EmptyBoundingBox, _bones.Count).ToArray(),
             RemainingData     = [.._vertexBuffer, ..indexBuffer],
+            Valid             = true,
         };
     }
 
@@ -132,9 +133,9 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
     private void BuildMeshForGroup(IEnumerable<Node> subMeshNodes, int index)
     {
         // Record some offsets we'll be using later, before they get mutated with mesh values.
-        var subMeshOffset    = _subMeshes.Count;
-        var vertexOffset     = _vertexBuffer.Count;
-        var indexOffset      = _indices.Count;
+        var subMeshOffset = _subMeshes.Count;
+        var vertexOffset  = _vertexBuffer.Count;
+        var indexOffset   = _indices.Count;
 
         var mesh           = MeshImporter.Import(subMeshNodes, notifier.WithContext($"Mesh {index}"));
         var meshStartIndex = (uint)(mesh.MeshStruct.StartIndex + indexOffset);
@@ -154,9 +155,9 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             SubMeshIndex = (ushort)(mesh.MeshStruct.SubMeshIndex + subMeshOffset),
             BoneTableIndex = boneTableIndex,
             StartIndex = meshStartIndex,
-            VertexBufferOffset = mesh.MeshStruct.VertexBufferOffset
-                .Select(offset => (uint)(offset + vertexOffset))
-                .ToArray(),
+            VertexBufferOffset1 = (uint)(mesh.MeshStruct.VertexBufferOffset1 + vertexOffset),
+            VertexBufferOffset2 = (uint)(mesh.MeshStruct.VertexBufferOffset2 + vertexOffset),
+            VertexBufferOffset3 = (uint)(mesh.MeshStruct.VertexBufferOffset3 + vertexOffset),
         });
 
         _boundingBox.Merge(mesh.BoundingBox);
@@ -196,7 +197,8 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         // arrays, values is practically guaranteed to be the highest of the
         // group, so a failure on any of them will be a failure on it.
         if (_shapeValues.Count > ushort.MaxValue)
-            throw notifier.Exception($"Importing this file would require more than the maximum of {ushort.MaxValue} shape values.\nTry removing or applying shape keys that do not need to be changed at runtime in-game.");
+            throw notifier.Exception(
+                $"Importing this file would require more than the maximum of {ushort.MaxValue} shape values.\nTry removing or applying shape keys that do not need to be changed at runtime in-game.");
     }
 
     private ushort GetMaterialIndex(string materialName)
@@ -216,6 +218,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         return (ushort)count;
     }
 
+    // #TODO @ackwell fix for V6 Models
     private ushort BuildBoneTable(List<string> boneNames)
     {
         var boneIndices = new List<ushort>();
@@ -238,7 +241,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         Array.Copy(boneIndices.ToArray(), boneIndicesArray, boneIndices.Count);
 
         var boneTableIndex = _boneTables.Count;
-        _boneTables.Add(new MdlStructs.BoneTableStruct()
+        _boneTables.Add(new BoneTableStruct()
         {
             BoneIndex = boneIndicesArray,
             BoneCount = (byte)boneIndices.Count,

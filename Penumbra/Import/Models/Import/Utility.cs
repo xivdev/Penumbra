@@ -1,4 +1,5 @@
 using Lumina.Data.Parsing;
+using Penumbra.GameData.Files;
 
 namespace Penumbra.Import.Models.Import;
 
@@ -43,15 +44,15 @@ public static class Utility
             throw notifier.Exception(
                 $"""
                  All sub-meshes of a mesh must have equivalent vertex declarations.
-                                 Current: {FormatVertexDeclaration(current)}
-                                 New:     {FormatVertexDeclaration(@new)}
+                 Current: {FormatVertexDeclaration(current)}
+                 New:     {FormatVertexDeclaration(@new)}
                  """
             );
     }
 
     private static string FormatVertexDeclaration(MdlStructs.VertexDeclarationStruct vertexDeclaration)
         => string.Join(", ",
-            vertexDeclaration.VertexElements.Select(element => $"{element.Usage} ({element.Type}@{element.Stream}:{element.Offset})"));
+            vertexDeclaration.VertexElements.Select(element => $"{(MdlFile.VertexUsage)element.Usage} ({(MdlFile.VertexType)element.Type}@{element.Stream}:{element.Offset})"));
 
     private static bool VertexDeclarationMismatch(MdlStructs.VertexDeclarationStruct a, MdlStructs.VertexDeclarationStruct b)
     {

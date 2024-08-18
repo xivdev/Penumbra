@@ -1,3 +1,5 @@
+using OtterGui.Services;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -5,6 +7,7 @@ using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Api;
 
@@ -16,12 +19,12 @@ public enum RedirectResult
     FilteredGamePath        = 3,
 }
 
-public class TempModManager : IDisposable
+public class TempModManager : IDisposable, IService
 {
     private readonly CommunicatorService _communicator;
 
-    private readonly Dictionary<ModCollection, List<TemporaryMod>> _mods                  = new();
-    private readonly List<TemporaryMod>                            _modsForAllCollections = new();
+    private readonly Dictionary<ModCollection, List<TemporaryMod>> _mods                  = [];
+    private readonly List<TemporaryMod>                            _modsForAllCollections = [];
 
     public TempModManager(CommunicatorService communicator)
     {
@@ -41,7 +44,7 @@ public class TempModManager : IDisposable
         => _modsForAllCollections;
 
     public RedirectResult Register(string tag, ModCollection? collection, Dictionary<Utf8GamePath, FullPath> dict,
-        HashSet<MetaManipulation> manips, int priority)
+        MetaDictionary manips, ModPriority priority)
     {
         var mod = GetOrCreateMod(tag, collection, priority, out var created);
         Penumbra.Log.Verbose($"{(created ? "Created" : "Changed")} temporary Mod {mod.Name}.");
@@ -50,10 +53,10 @@ public class TempModManager : IDisposable
         return RedirectResult.Success;
     }
 
-    public RedirectResult Unregister(string tag, ModCollection? collection, int? priority)
+    public RedirectResult Unregister(string tag, ModCollection? collection, ModPriority? priority)
     {
         Penumbra.Log.Verbose($"Removing temporary mod with tag {tag}...");
-        var list = collection == null ? _modsForAllCollections : _mods.TryGetValue(collection, out var l) ? l : null;
+        var list = collection == null ? _modsForAllCollections : _mods.GetValueOrDefault(collection);
         if (list == null)
             return RedirectResult.NotRegistered;
 
@@ -84,11 +87,13 @@ public class TempModManager : IDisposable
             {
                 Penumbra.Log.Verbose($"Removing temporary Mod {mod.Name} from {collection.AnonymizedName}.");
                 collection.Remove(mod);
+                _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, Setting.False, 0, false);
             }
             else
             {
                 Penumbra.Log.Verbose($"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.AnonymizedName}.");
                 collection.Apply(mod, created);
+                _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, Setting.True, 0, false);
             }
         }
         else
@@ -113,7 +118,7 @@ public class TempModManager : IDisposable
 
     // Find or create a mod with the given tag as name and the given priority, for the given collection (or all collections).
     // Returns the found or created mod and whether it was newly created.
-    private TemporaryMod GetOrCreateMod(string tag, ModCollection? collection, int priority, out bool created)
+    private TemporaryMod GetOrCreateMod(string tag, ModCollection? collection, ModPriority priority, out bool created)
     {
         List<TemporaryMod> list;
         if (collection == null)
@@ -126,14 +131,14 @@ public class TempModManager : IDisposable
         }
         else
         {
-            list = new List<TemporaryMod>();
+            list = [];
             _mods.Add(collection, list);
         }
 
         var mod = list.Find(m => m.Priority == priority && m.Name == tag);
         if (mod == null)
         {
-            mod = new TemporaryMod()
+            mod = new TemporaryMod
             {
                 Name     = tag,
                 Priority = priority,

@@ -5,16 +5,24 @@ namespace Penumbra.Interop.Structs;
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct CharacterUtilityData
 {
-    public const int IndexTransparentTex = 72;
-    public const int IndexDecalTex       = 73;
-    public const int IndexSkinShpk       = 76;
+    public const int IndexHumanPbd               = 63;
+    public const int IndexTransparentTex         = 79;
+    public const int IndexDecalTex               = 80;
+    public const int IndexTileOrbArrayTex        = 81;
+    public const int IndexTileNormArrayTex       = 82;
+    public const int IndexSkinShpk               = 83;
+    public const int IndexCharacterStockingsShpk = 84;
+    public const int IndexCharacterLegacyShpk    = 85;
+    public const int IndexGudStm                 = 94;
+    public const int IndexLegacyStm              = 95;
+    public const int IndexSphereDArrayTex        = 96;
 
     public static readonly MetaIndex[] EqdpIndices = Enum.GetNames<MetaIndex>()
         .Zip(Enum.GetValues<MetaIndex>())
         .Where(n => n.First.StartsWith("Eqdp"))
         .Select(n => n.Second).ToArray();
 
-    public const int TotalNumResources = 87;
+    public const int TotalNumResources = 114;
 
     /// <summary> Obtain the index for the eqdp file corresponding to the given race code and accessory. </summary>
     public static MetaIndex EqdpIdx(GenderRace raceCode, bool accessory)
@@ -35,7 +43,7 @@ public unsafe struct CharacterUtilityData
             1301 => accessory ? MetaIndex.Eqdp1301Acc : MetaIndex.Eqdp1301,
             1401 => accessory ? MetaIndex.Eqdp1401Acc : MetaIndex.Eqdp1401,
             1501 => accessory ? MetaIndex.Eqdp1501Acc : MetaIndex.Eqdp1501,
-            //1601 => accessory ? MetaIndex.Eqdp1601Acc : MetaIndex.Eqdp1601, Female Hrothgar
+            1601 => accessory ? MetaIndex.Eqdp1601Acc : MetaIndex.Eqdp1601,
             1701 => accessory ? MetaIndex.Eqdp1701Acc : MetaIndex.Eqdp1701,
             1801 => accessory ? MetaIndex.Eqdp1801Acc : MetaIndex.Eqdp1801,
             0104 => accessory ? MetaIndex.Eqdp0104Acc : MetaIndex.Eqdp0104,
@@ -72,6 +80,9 @@ public unsafe struct CharacterUtilityData
     public ResourceHandle* EqdpResource(GenderRace raceCode, bool accessory)
         => Resource((int)EqdpIdx(raceCode, accessory));
 
+    [FieldOffset(8 + IndexHumanPbd * 8)]
+    public ResourceHandle* HumanPbdResource;
+
     [FieldOffset(8 + (int)MetaIndex.HumanCmp * 8)]
     public ResourceHandle* HumanCmpResource;
 
@@ -93,8 +104,29 @@ public unsafe struct CharacterUtilityData
     [FieldOffset(8 + IndexDecalTex * 8)]
     public TextureResourceHandle* DecalTexResource;
 
+    [FieldOffset(8 + IndexTileOrbArrayTex * 8)]
+    public TextureResourceHandle* TileOrbArrayTexResource;
+
+    [FieldOffset(8 + IndexTileNormArrayTex * 8)]
+    public TextureResourceHandle* TileNormArrayTexResource;
+
     [FieldOffset(8 + IndexSkinShpk * 8)]
     public ResourceHandle* SkinShpkResource;
+
+    [FieldOffset(8 + IndexCharacterStockingsShpk * 8)]
+    public ResourceHandle* CharacterStockingsShpkResource;
+
+    [FieldOffset(8 + IndexCharacterLegacyShpk * 8)]
+    public ResourceHandle* CharacterLegacyShpkResource;
+
+    [FieldOffset(8 + IndexGudStm * 8)]
+    public ResourceHandle* GudStmResource;
+
+    [FieldOffset(8 + IndexLegacyStm * 8)]
+    public ResourceHandle* LegacyStmResource;
+
+    [FieldOffset(8 + IndexSphereDArrayTex * 8)]
+    public TextureResourceHandle* SphereDArrayTexResource;
 
     // not included resources have no known use case.
 }

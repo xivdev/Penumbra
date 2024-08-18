@@ -138,16 +138,42 @@ public class VertexAttribute
 
         return new VertexAttribute(
             element,
-            index => BuildNByte4(values[index])
+            index => {
+                // Blend weights are _very_ sensitive to float imprecision - a vertex sum being off
+                // by one, such as 256, is enough to cause a visible defect. To avoid this, we tweak
+                // the converted values to have the expected sum, preferencing values with minimal differences.
+                var originalValues = values[index];
+                var byteValues = BuildNByte4(originalValues);
+
+                var adjustment = 255 - byteValues.Select(value => (int)value).Sum();
+                while (adjustment != 0)
+                {
+                    var convertedValues = byteValues.Select(value => value * (1f / 255f)).ToArray();
+                    var closestIndex = Enumerable.Range(0, 4)
+                        .Where(index => {
+                            var byteValue = byteValues[index];
+                            if (adjustment < 0) return byteValue > 0;
+                            if (adjustment > 0) return byteValue < 255;
+                            return true;
+                        })
+                        .Select(index => (index, delta: Math.Abs(originalValues[index] - convertedValues[index])))
+                        .MinBy(x => x.delta)
+                        .index;
+                    byteValues[closestIndex] = (byte)(byteValues[closestIndex] + Math.CopySign(1, adjustment));
+                    adjustment = 255 - byteValues.Select(value => (int)value).Sum();
+                }
+                
+                return byteValues;
+            }
         );
     }
 
     public static VertexAttribute? BlendIndex(Accessors accessors, IDictionary<ushort, ushort>? boneMap, IoNotifier notifier)
     {
-        if (!accessors.TryGetValue("JOINTS_0", out var accessor))
+        if (!accessors.TryGetValue("JOINTS_0", out var jointsAccessor))
             return null;
 
-        if (!accessors.ContainsKey("WEIGHTS_0"))
+        if (!accessors.TryGetValue("WEIGHTS_0", out var weightsAccessor))
             throw notifier.Exception("Mesh contained JOINTS_0 attribute but no corresponding WEIGHTS_0 attribute.");
 
         if (boneMap == null)
@@ -160,18 +186,21 @@ public class VertexAttribute
             Usage  = (byte)MdlFile.VertexUsage.BlendIndices,
         };
 
-        var values = accessor.AsVector4Array();
+        var joints = jointsAccessor.AsVector4Array();
+        var weights = weightsAccessor.AsVector4Array();
 
         return new VertexAttribute(
             element,
             index =>
             {
-                var gltfIndices = values[index];
+                var gltfIndices = joints[index];
+                var gltfWeights = weights[index]; 
+
                 return BuildUByte4(new Vector4(
-                    boneMap[(ushort)gltfIndices.X],
-                    boneMap[(ushort)gltfIndices.Y],
-                    boneMap[(ushort)gltfIndices.Z],
-                    boneMap[(ushort)gltfIndices.W]
+                    gltfWeights.X == 0 ? 0 : boneMap[(ushort)gltfIndices.X],
+                    gltfWeights.Y == 0 ? 0 : boneMap[(ushort)gltfIndices.Y],
+                    gltfWeights.Z == 0 ? 0 : boneMap[(ushort)gltfIndices.Z],
+                    gltfWeights.W == 0 ? 0 : boneMap[(ushort)gltfIndices.W]
                 ));
             }
         );

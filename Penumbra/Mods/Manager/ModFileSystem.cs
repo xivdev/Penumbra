@@ -1,23 +1,26 @@
-using Newtonsoft.Json.Linq;
+using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
+public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, IService
 {
     private readonly ModManager          _modManager;
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
+    private readonly Configuration       _config;
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
-    public ModFileSystem(ModManager modManager, CommunicatorService communicator, SaveService saveService)
+    public ModFileSystem(ModManager modManager, CommunicatorService communicator, SaveService saveService, Configuration config)
     {
         _modManager   = modManager;
         _communicator = communicator;
         _saveService  = saveService;
+        _config       = config;
         Reload();
         Changed += OnChange;
         _communicator.ModDiscoveryFinished.Subscribe(Reload, ModDiscoveryFinished.Priority.ModFileSystem);
@@ -92,7 +95,20 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
         switch (type)
         {
             case ModPathChangeType.Added:
-                CreateDuplicateLeaf(Root, mod.Name.Text, mod);
+                var parent = Root;
+                if (_config.DefaultImportFolder.Length != 0)
+                    try
+                    {
+                        parent = FindOrCreateAllFolders(_config.DefaultImportFolder);
+                    }
+                    catch (Exception e)
+                    {
+                        Penumbra.Messager.NotificationMessage(e,
+                            $"Could not move newly imported mod {mod.Name} to default import folder {_config.DefaultImportFolder}.",
+                            NotificationType.Warning);
+                    }
+
+                CreateDuplicateLeaf(parent, mod.Name.Text, mod);
                 break;
             case ModPathChangeType.Deleted:
                 if (FindLeaf(mod, out var leaf))

@@ -1,8 +1,9 @@
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
@@ -11,7 +12,7 @@ using Penumbra.UI;
 
 namespace Penumbra.Collections.Manager;
 
-public class ActiveCollectionData
+public class ActiveCollectionData : IService
 {
     public ModCollection Current   { get; internal set; } = ModCollection.Empty;
     public ModCollection Default   { get; internal set; } = ModCollection.Empty;
@@ -20,9 +21,9 @@ public class ActiveCollectionData
     public readonly ModCollection?[] SpecialCollections = new ModCollection?[Enum.GetValues<Api.Enums.ApiCollectionType>().Length - 3];
 }
 
-public class ActiveCollections : ISavable, IDisposable
+public class ActiveCollections : ISavable, IDisposable, IService
 {
-    public const int Version = 1;
+    public const int Version = 2;
 
     private readonly CollectionStorage    _storage;
     private readonly CommunicatorService  _communicator;
@@ -261,16 +262,17 @@ public class ActiveCollections : ISavable, IDisposable
         var jObj = new JObject
         {
             { nameof(Version), Version },
-            { nameof(Default), Default.Name },
-            { nameof(Interface), Interface.Name },
-            { nameof(Current), Current.Name },
+            { nameof(Default), Default.Id },
+            { nameof(Interface), Interface.Id },
+            { nameof(Current), Current.Id },
         };
         foreach (var (type, collection) in SpecialCollections.WithIndex().Where(p => p.Value != null)
                      .Select(p => ((CollectionType)p.Index, p.Value!)))
-            jObj.Add(type.ToString(), collection.Name);
+            jObj.Add(type.ToString(), collection.Id);
 
         jObj.Add(nameof(Individuals), Individuals.ToJObject());
-        using var j = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        using var j = new JsonTextWriter(writer);
+        j.Formatting = Formatting.Indented;
         jObj.WriteTo(j);
     }
 
@@ -319,22 +321,16 @@ public class ActiveCollections : ISavable, IDisposable
         }
     }
 
-    /// <summary>
-    /// Load default, current, special, and character collections from config.
-    /// If a collection does not exist anymore, reset it to an appropriate default.
-    /// </summary>
-    private void LoadCollections()
+    private bool LoadCollectionsV1(JObject jObject)
     {
-        Penumbra.Log.Debug("[Collections] Reading collection assignments...");
-        var configChanged = !Load(_saveService.FileNames, out var jObject);
-
-        // Load the default collection. If the string does not exist take the Default name if no file existed or the Empty name if one existed.
-        var defaultName = jObject[nameof(Default)]?.ToObject<string>()
-         ?? (configChanged ? ModCollection.DefaultCollectionName : ModCollection.Empty.Name);
+        var configChanged = false;
+        // Load the default collection. If the name does not exist take the empty collection.
+        var defaultName = jObject[nameof(Default)]?.ToObject<string>() ?? ModCollection.Empty.Name;
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Name}.", NotificationType.Warning);
+                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Name}.",
+                NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
         }
@@ -348,7 +344,8 @@ public class ActiveCollections : ISavable, IDisposable
         if (!_storage.ByName(interfaceName, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Name}.", NotificationType.Warning);
+                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Name}.",
+                NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
         }
@@ -362,7 +359,8 @@ public class ActiveCollections : ISavable, IDisposable
         if (!_storage.ByName(currentName, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollection.DefaultCollectionName}.", NotificationType.Warning);
+                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollection.DefaultCollectionName}.",
+                NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
         }
@@ -393,11 +391,124 @@ public class ActiveCollections : ISavable, IDisposable
         Penumbra.Log.Debug("[Collections] Loaded non-individual collection assignments.");
 
         configChanged |= ActiveCollectionMigration.MigrateIndividualCollections(_storage, Individuals, jObject);
-        configChanged |= Individuals.ReadJObject(_saveService, this, jObject[nameof(Individuals)] as JArray, _storage);
+        configChanged |= Individuals.ReadJObject(_saveService, this, jObject[nameof(Individuals)] as JArray, _storage, 1);
 
-        // Save any changes.
-        if (configChanged)
-            _saveService.ImmediateSave(this);
+        return configChanged;
+    }
+
+    private bool LoadCollectionsV2(JObject jObject)
+    {
+        var configChanged = false;
+        // Load the default collection. If the guid does not exist take the empty collection.
+        var defaultId = jObject[nameof(Default)]?.ToObject<Guid>() ?? Guid.Empty;
+        if (!_storage.ById(defaultId, out var defaultCollection))
+        {
+            Penumbra.Messager.NotificationMessage(
+                $"Last choice of {TutorialService.DefaultCollection} {defaultId} is not available, reset to {ModCollection.Empty.Name}.",
+                NotificationType.Warning);
+            Default       = ModCollection.Empty;
+            configChanged = true;
+        }
+        else
+        {
+            Default = defaultCollection;
+        }
+
+        // Load the interface collection. If no string is set, use the name of whatever was set as Default.
+        var interfaceId = jObject[nameof(Interface)]?.ToObject<Guid>() ?? Default.Id;
+        if (!_storage.ById(interfaceId, out var interfaceCollection))
+        {
+            Penumbra.Messager.NotificationMessage(
+                $"Last choice of {TutorialService.InterfaceCollection} {interfaceId} is not available, reset to {ModCollection.Empty.Name}.",
+                NotificationType.Warning);
+            Interface     = ModCollection.Empty;
+            configChanged = true;
+        }
+        else
+        {
+            Interface = interfaceCollection;
+        }
+
+        // Load the current collection.
+        var currentId = jObject[nameof(Current)]?.ToObject<Guid>() ?? _storage.DefaultNamed.Id;
+        if (!_storage.ById(currentId, out var currentCollection))
+        {
+            Penumbra.Messager.NotificationMessage(
+                $"Last choice of {TutorialService.SelectedCollection} {currentId} is not available, reset to {ModCollection.DefaultCollectionName}.",
+                NotificationType.Warning);
+            Current       = _storage.DefaultNamed;
+            configChanged = true;
+        }
+        else
+        {
+            Current = currentCollection;
+        }
+
+        // Load special collections.
+        foreach (var (type, name, _) in CollectionTypeExtensions.Special)
+        {
+            var typeId = jObject[type.ToString()]?.ToObject<Guid>();
+            if (typeId == null)
+                continue;
+
+            if (!_storage.ById(typeId.Value, out var typeCollection))
+            {
+                Penumbra.Messager.NotificationMessage($"Last choice of {name} Collection {typeId.Value} is not available, removed.",
+                    NotificationType.Warning);
+                configChanged = true;
+            }
+            else
+            {
+                SpecialCollections[(int)type] = typeCollection;
+            }
+        }
+
+        Penumbra.Log.Debug("[Collections] Loaded non-individual collection assignments.");
+
+        configChanged |= ActiveCollectionMigration.MigrateIndividualCollections(_storage, Individuals, jObject);
+        configChanged |= Individuals.ReadJObject(_saveService, this, jObject[nameof(Individuals)] as JArray, _storage, 2);
+
+        return configChanged;
+    }
+
+    private bool LoadCollectionsNew()
+    {
+        Current   = _storage.DefaultNamed;
+        Default   = _storage.DefaultNamed;
+        Interface = _storage.DefaultNamed;
+        return true;
+    }
+
+    /// <summary>
+    /// Load default, current, special, and character collections from config.
+    /// If a collection does not exist anymore, reset it to an appropriate default.
+    /// </summary>
+    private void LoadCollections()
+    {
+        Penumbra.Log.Debug("[Collections] Reading collection assignments...");
+        var configChanged = !Load(_saveService.FileNames, out var jObject);
+        var version       = jObject["Version"]?.ToObject<int>() ?? 0;
+        var changed       = false;
+        switch (version)
+        {
+            case 1:
+                changed = LoadCollectionsV1(jObject);
+                break;
+            case 2:
+                changed = LoadCollectionsV2(jObject);
+                break;
+            case 0 when configChanged:
+                changed = LoadCollectionsNew();
+                break;
+            case 0:
+                Penumbra.Messager.NotificationMessage("Active Collections File has unknown version and will be reset.",
+                    NotificationType.Warning);
+                changed = LoadCollectionsNew();
+                break;
+        }
+
+        if (changed)
+            _saveService.ImmediateSaveSync(this);
     }
 
     /// <summary>
@@ -410,7 +521,7 @@ public class ActiveCollections : ISavable, IDisposable
         var jObj = BackupService.GetJObjectForFile(fileNames, file);
         if (jObj == null)
         {
-            ret = new JObject();
+            ret = [];
             return false;
         }
 

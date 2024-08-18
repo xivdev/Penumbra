@@ -1,14 +1,17 @@
+using OtterGui.Classes;
+using OtterGui.Services;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config)
+public class DuplicateManager(ModManager modManager, SaveService saveService, Configuration config) : IService
 {
-    private readonly SHA256                                           _hasher      = SHA256.Create();
-    private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates  = [];
+    private readonly SHA256                                           _hasher     = SHA256.Create();
+    private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = [];
 
     public IReadOnlyList<(FullPath[] Paths, long Size, byte[] Hash)> Duplicates
         => _duplicates;
@@ -28,7 +31,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
         Worker                   = Task.Run(() => CheckDuplicates(filesTmp, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
-    public void DeleteDuplicates(ModFileCollection files, Mod mod, ISubMod option, bool useModManager)
+    public void DeleteDuplicates(ModFileCollection files, Mod mod, IModDataContainer option, bool useModManager)
     {
         if (!Worker.IsCompleted || _duplicates.Count == 0)
             return;
@@ -58,7 +61,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
     private void HandleDuplicate(Mod mod, FullPath duplicate, FullPath remaining, bool useModManager)
     {
-        ModEditor.ApplyToAllOptions(mod, HandleSubMod);
+        ModEditor.ApplyToAllContainers(mod, HandleSubMod);
 
         try
         {
@@ -71,7 +74,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
         return;
 
-        void HandleSubMod(ISubMod subMod, int groupIdx, int optionIdx)
+        void HandleSubMod(IModDataContainer subMod)
         {
             var changes = false;
             var dict = subMod.Files.ToDictionary(kvp => kvp.Key,
@@ -81,13 +84,12 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
 
             if (useModManager)
             {
-                modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict);
+                modManager.OptionEditor.SetFiles(subMod, dict, SaveType.ImmediateSync);
             }
             else
             {
-                var sub = (SubMod)subMod;
-                sub.FileData = dict;
-                saveService.ImmediateSaveSync(new ModSaveGroup(mod, groupIdx, config.ReplaceNonAsciiOnImport));
+                subMod.Files = dict;
+                saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, subMod, config.ReplaceNonAsciiOnImport));
             }
         }
     }
@@ -164,17 +166,17 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
     }
 
     /// <summary> Check if two files are identical on a binary level. Returns true if they are identical. </summary>
+    [SkipLocalsInit]
     public static unsafe bool CompareFilesDirectly(FullPath f1, FullPath f2)
     {
+        const int size = 256;
         if (!f1.Exists || !f2.Exists)
             return false;
 
-        using var s1      = File.OpenRead(f1.FullName);
-        using var s2      = File.OpenRead(f2.FullName);
-        var       buffer1 = stackalloc byte[256];
-        var       buffer2 = stackalloc byte[256];
-        var       span1   = new Span<byte>(buffer1, 256);
-        var       span2   = new Span<byte>(buffer2, 256);
+        using var  s1    = File.OpenRead(f1.FullName);
+        using var  s2    = File.OpenRead(f2.FullName);
+        Span<byte> span1 = stackalloc byte[size];
+        Span<byte> span2 = stackalloc byte[size];
 
         while (true)
         {
@@ -186,7 +188,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
             if (!span1[..bytes1].SequenceEqual(span2[..bytes2]))
                 return false;
 
-            if (bytes1 < 256)
+            if (bytes1 < size)
                 return true;
         }
     }
@@ -216,18 +218,21 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
     }
 
     /// <summary> Deduplicate a mod simply by its directory without any confirmation or waiting time. </summary>
-    internal void DeduplicateMod(DirectoryInfo modDirectory)
+    internal void DeduplicateMod(DirectoryInfo modDirectory, bool useModManager = false)
     {
         try
         {
-            var mod = new Mod(modDirectory);
-            modManager.Creator.ReloadMod(mod, true, out _);
+            if (!useModManager || !modManager.TryGetMod(modDirectory.Name, string.Empty, out var mod))
+            {
+                mod = new Mod(modDirectory);
+                modManager.Creator.ReloadMod(mod, true, out _);
+            }
 
             Clear();
             var files = new ModFileCollection();
             files.UpdateAll(mod, mod.Default);
-            CheckDuplicates(files.Available.OrderByDescending(f => f.FileSize).ToArray(), CancellationToken.None);
-            DeleteDuplicates(files, mod, mod.Default, false);
+            CheckDuplicates([.. files.Available.OrderByDescending(f => f.FileSize)], CancellationToken.None);
+            DeleteDuplicates(files, mod, mod.Default, useModManager);
         }
         catch (Exception e)
         {

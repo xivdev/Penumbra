@@ -1,16 +1,14 @@
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Import;
 using Penumbra.Mods.Editor;
+using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModImportManager : IDisposable
+public class ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor, MigrationManager migrationManager) : IDisposable, IService
 {
-    private readonly ModManager    _modManager;
-    private readonly Configuration _config;
-    private readonly ModEditor     _modEditor;
-
     private readonly ConcurrentQueue<string[]> _modsToUnpack = new();
 
     /// <summary> Mods need to be added thread-safely outside of iteration. </summary>
@@ -26,13 +24,6 @@ public class ModImportManager : IDisposable
         => _modsToAdd;
 
 
-    public ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor)
-    {
-        _modManager = modManager;
-        _config     = config;
-        _modEditor  = modEditor;
-    }
-
     public void TryUnpacking()
     {
         if (Importing || !_modsToUnpack.TryDequeue(out var newMods))
@@ -43,7 +34,8 @@ public class ModImportManager : IDisposable
             if (File.Exists(s))
                 return true;
 
-            Penumbra.Messager.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", NotificationType.Warning, false);
+            Penumbra.Messager.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", NotificationType.Warning,
+                false);
             return false;
         }).Select(s => new FileInfo(s)).ToArray();
 
@@ -51,7 +43,7 @@ public class ModImportManager : IDisposable
         if (files.Length == 0)
             return;
 
-        _import = new TexToolsImporter(files.Length, files, AddNewMod, _config, _modEditor, _modManager, _modEditor.Compactor);
+        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, modEditor, modManager, modEditor.Compactor, migrationManager);
     }
 
     public bool Importing
@@ -87,8 +79,8 @@ public class ModImportManager : IDisposable
             return false;
         }
 
-        _modManager.AddMod(directory);
-        mod = _modManager.LastOrDefault();
+        modManager.AddMod(directory);
+        mod = modManager.LastOrDefault();
         return mod != null && mod.ModPath == directory;
     }
 

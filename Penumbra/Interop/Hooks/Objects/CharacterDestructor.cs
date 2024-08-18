@@ -19,7 +19,7 @@ public sealed unsafe class CharacterDestructor : EventWrapperPtr<Character, Char
 
     public CharacterDestructor(HookManager hooks)
         : base("Character Destructor")
-        => _task = hooks.CreateHook<Delegate>(Name, Sigs.CharacterDestructor, Detour, true);
+        => _task = hooks.CreateHook<Delegate>(Name, Sigs.CharacterDestructor, Detour, !HookOverrides.Instance.Objects.CharacterDestructor);
 
     private readonly Task<Hook<Delegate>> _task;
 

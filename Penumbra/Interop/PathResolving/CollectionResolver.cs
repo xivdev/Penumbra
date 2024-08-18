@@ -1,11 +1,15 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Interop;
+using Penumbra.GameData.Structs;
+using Penumbra.String;
 using Penumbra.Util;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
@@ -17,6 +21,7 @@ public sealed unsafe class CollectionResolver(
     PerformanceTracker performance,
     IdentifiedCollectionCache cache,
     IClientState clientState,
+    ObjectManager objects,
     IGameGui gameGui,
     ActorManager actors,
     CutsceneService cutscenes,
@@ -34,8 +39,8 @@ public sealed unsafe class CollectionResolver(
     public ModCollection PlayerCollection()
     {
         using var performance1 = performance.Measure(PerformanceType.IdentifyCollection);
-        var       gameObject   = (GameObject*)(clientState.LocalPlayer?.Address ?? nint.Zero);
-        if (gameObject == null)
+        var       gameObject   = objects[0];
+        if (!gameObject.Valid)
             return collectionManager.Active.ByType(CollectionType.Yourself)
              ?? collectionManager.Active.Default;
 
@@ -92,14 +97,8 @@ public sealed unsafe class CollectionResolver(
     public bool IsModelHuman(uint modelCharaId)
         => humanModels.IsHuman(modelCharaId);
 
-    /// <summary> Return whether the given character has a human model. </summary>
-    public bool IsModelHuman(Character* character)
-        => character != null && IsModelHuman((uint)character->CharacterData.ModelCharaId);
-
     /// <summary>
-    /// Used if on the Login screen. Names are populated after actors are drawn,
-    /// so it is not possible to fetch names from the ui list.
-    /// Actors are also not named. So use Yourself > Players > Racial > Default.
+    /// Used if on the Login screen.
     /// </summary>
     private bool LoginScreen(GameObject* gameObject, out ResolveData ret)
     {
@@ -111,7 +110,34 @@ public sealed unsafe class CollectionResolver(
             return false;
         }
 
+        if (!config.ShowModsInLobby)
+        {
+            ret = ModCollection.Empty.ToResolveData(gameObject);
+            return true;
+        }
+
         var notYetReady = false;
+        var lobby       = AgentLobby.Instance();
+        if (lobby != null)
+        {
+            var span = lobby->LobbyData.CharaSelectEntries.AsSpan();
+            // The lobby uses the first 8 cutscene actors.
+            var idx = gameObject->ObjectIndex - ObjectIndex.CutsceneStart.Index;
+            if (idx >= 0 && idx < span.Length && span[idx].Value != null)
+            {
+                var item       = span[idx].Value;
+                var identifier = actors.CreatePlayer(new ByteString(item->Name), item->HomeWorldId);
+                Penumbra.Log.Verbose(
+                    $"Identified {identifier.Incognito(null)} in cutscene for actor {idx + 200} at 0x{(ulong)gameObject:X} of race {(gameObject->IsCharacter() ? ((Character*)gameObject)->DrawData.CustomizeData.Race.ToString() : "Unknown")}.");
+                if (identifier.IsValid && CollectionByIdentifier(identifier) is { } coll)
+                {
+                    // Do not add this to caches because game objects are reused for different draw objects.
+                    ret = coll.ToResolveData(gameObject);
+                    return true;
+                }
+            }
+        }
+
         var collection = collectionManager.Active.ByType(CollectionType.Yourself)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? collectionManager.Active.Default;
@@ -122,10 +148,16 @@ public sealed unsafe class CollectionResolver(
     /// <summary> Used if at the aesthetician. The relevant actor is yourself, so use player collection when possible. </summary>
     private bool Aesthetician(GameObject* gameObject, out ResolveData ret)
     {
-        if (gameGui.GetAddonByName("ScreenLog") != IntPtr.Zero)
+        if (gameGui.GetAddonByName("ScreenLog") != nint.Zero)
         {
             ret = ResolveData.Invalid;
             return false;
+        }
+
+        if (!config.ShowModsInLobby)
+        {
+            ret = ModCollection.Empty.ToResolveData(gameObject);
+            return true;
         }
 
         var player      = actors.GetCurrentPlayer();
@@ -170,10 +202,10 @@ public sealed unsafe class CollectionResolver(
                 : null;
 
     /// <summary> Check for the Yourself collection. </summary>
-    private ModCollection? CheckYourself(ActorIdentifier identifier, GameObject* actor)
+    private ModCollection? CheckYourself(ActorIdentifier identifier, Actor actor)
     {
-        if (actor->ObjectIndex == 0
-         || cutscenes.GetParentIndex(actor->ObjectIndex) == 0
+        if (actor.Index == 0
+         || cutscenes.GetParentIndex(actor.Index.Index) == 0
          || identifier.Equals(actors.GetCurrentPlayer()))
             return collectionManager.Active.ByType(CollectionType.Yourself);
 
@@ -181,23 +213,26 @@ public sealed unsafe class CollectionResolver(
     }
 
     /// <summary> Check special collections given the actor. Returns notYetReady if the customize array is not filled. </summary>
-    private ModCollection? CollectionByAttributes(GameObject* actor, ref bool notYetReady)
+    private ModCollection? CollectionByAttributes(Actor actor, ref bool notYetReady)
     {
-        if (!actor->IsCharacter())
+        if (!actor.IsCharacter)
+        {
+            Penumbra.Log.Excessive($"Actor to be identified was not yet a Character.");
+            notYetReady = true;
             return null;
+        }
 
         // Only handle human models.
-        var character = (Character*)actor;
-        if (!IsModelHuman((uint)character->CharacterData.ModelCharaId))
+        if (!IsModelHuman((uint)actor.AsCharacter->CharacterData.ModelCharaId))
             return null;
 
-        if (character->DrawData.CustomizeData[0] == 0)
+        if (actor.Customize->Data[0] == 0)
         {
             notYetReady = true;
             return null;
         }
 
-        var bodyType = character->DrawData.CustomizeData[2];
+        var bodyType = actor.Customize->Data[2];
         var collection = bodyType switch
         {
             3 => collectionManager.Active.ByType(CollectionType.NonPlayerElderly),
@@ -207,9 +242,9 @@ public sealed unsafe class CollectionResolver(
         if (collection != null)
             return collection;
 
-        var race   = (SubRace)character->DrawData.CustomizeData[4];
-        var gender = (Gender)(character->DrawData.CustomizeData[1] + 1);
-        var isNpc  = actor->ObjectKind != (byte)ObjectKind.Player;
+        var race   = (SubRace)actor.Customize->Data[4];
+        var gender = (Gender)(actor.Customize->Data[1] + 1);
+        var isNpc  = !actor.IsPlayer;
 
         var type = CollectionTypeExtensions.FromParts(race, gender, isNpc);
         collection =   collectionManager.Active.ByType(type);
@@ -218,15 +253,14 @@ public sealed unsafe class CollectionResolver(
     }
 
     /// <summary> Get the collection applying to the owner if it is available. </summary>
-    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, GameObject* owner, ref bool notYetReady)
+    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, Actor owner, ref bool notYetReady)
     {
-        if (identifier.Type != IdentifierType.Owned || !config.UseOwnerNameForCharacterCollection || owner == null)
+        if (identifier.Type != IdentifierType.Owned || !config.UseOwnerNameForCharacterCollection || !owner.Valid)
             return null;
 
         var id = actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld.Id,
             ObjectKind.None,
             uint.MaxValue);
-        return CheckYourself(id, owner)
-         ?? CollectionByAttributes(owner, ref notYetReady);
+        return CheckYourself(id, owner) ?? CollectionByAttributes(owner, ref notYetReady);
     }
 }

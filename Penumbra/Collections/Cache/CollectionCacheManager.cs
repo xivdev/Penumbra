@@ -1,18 +1,24 @@
 using Dalamud.Plugin.Services;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
-public class CollectionCacheManager : IDisposable
+public class CollectionCacheManager : IDisposable, IService
 {
     private readonly  FrameworkManager    _framework;
     private readonly  CommunicatorService _communicator;
@@ -20,9 +26,10 @@ public class CollectionCacheManager : IDisposable
     private readonly  ModStorage          _modStorage;
     private readonly  CollectionStorage   _storage;
     private readonly  ActiveCollections   _active;
+    internal readonly Configuration       Config;
     internal readonly ResolvedFileChanged ResolvedFileChanged;
-
-    internal readonly MetaFileManager MetaFileManager;
+    internal readonly MetaFileManager     MetaFileManager;
+    internal readonly ResourceLoader      ResourceLoader;
 
     private readonly ConcurrentQueue<CollectionCache.ChangeData> _changeQueue = new();
 
@@ -35,7 +42,8 @@ public class CollectionCacheManager : IDisposable
         => _storage.Where(c => c.HasCache);
 
     public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator, TempModManager tempMods, ModStorage modStorage,
-        MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage)
+        MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage, ResourceLoader resourceLoader,
+        Configuration config)
     {
         _framework          = framework;
         _communicator       = communicator;
@@ -44,6 +52,8 @@ public class CollectionCacheManager : IDisposable
         MetaFileManager     = metaFileManager;
         _active             = active;
         _storage            = storage;
+        ResourceLoader      = resourceLoader;
+        Config              = config;
         ResolvedFileChanged = _communicator.ResolvedFileChanged;
 
         if (!_active.Individuals.IsLoaded)
@@ -74,6 +84,12 @@ public class CollectionCacheManager : IDisposable
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnCollectionInheritanceChange);
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
+
+        foreach (var collection in _storage)
+        {
+            collection._cache?.Dispose();
+            collection._cache = null;
+        }
     }
 
     public void AddChange(CollectionCache.ChangeData data)
@@ -116,7 +132,7 @@ public class CollectionCacheManager : IDisposable
     /// Does not create caches.
     /// </summary>
     public void CalculateEffectiveFileList(ModCollection collection)
-        => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Name,
+        => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Identifier,
             () => CalculateEffectiveFileListInternal(collection));
 
     private void CalculateEffectiveFileListInternal(ModCollection collection)
@@ -170,8 +186,6 @@ public class CollectionCacheManager : IDisposable
 
             foreach (var mod in _modStorage)
                 cache.AddModSync(mod, false);
-
-            cache.AddMetaFiles(true);
 
             collection.IncrementCounter();
 
@@ -254,7 +268,8 @@ public class CollectionCacheManager : IDisposable
     }
 
     /// <summary> Prepare Changes by removing mods from caches with collections or add or reload mods. </summary>
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
+        int movedToIdx)
     {
         if (type is ModOptionChangeType.PrepareChange)
         {
@@ -264,17 +279,17 @@ public class CollectionCacheManager : IDisposable
             return;
         }
 
-        type.HandlingInfo(out _, out var recomputeList, out var reload);
+        type.HandlingInfo(out _, out var recomputeList, out var justAdd);
 
         if (!recomputeList)
             return;
 
         foreach (var collection in _storage.Where(collection => collection.HasCache && collection[mod.Index].Settings is { Enabled: true }))
         {
-            if (reload)
-                collection._cache!.ReloadMod(mod, true);
-            else
+            if (justAdd)
                 collection._cache!.AddMod(mod, true);
+            else
+                collection._cache!.ReloadMod(mod, true);
         }
     }
 
@@ -286,7 +301,7 @@ public class CollectionCacheManager : IDisposable
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
-    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool _)
+    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool _)
     {
         if (!collection.HasCache)
             return;
@@ -298,9 +313,9 @@ public class CollectionCacheManager : IDisposable
                 cache.ReloadMod(mod!, true);
                 break;
             case ModSettingChange.EnableState:
-                if (oldValue == 0)
+                if (oldValue == Setting.False)
                     cache.AddMod(mod!, true);
-                else if (oldValue == 1)
+                else if (oldValue == Setting.True)
                     cache.RemoveMod(mod!, true);
                 else if (collection[mod!.Index].Settings?.Enabled == true)
                     cache.ReloadMod(mod!, true);
@@ -321,6 +336,10 @@ public class CollectionCacheManager : IDisposable
             case ModSettingChange.MultiInheritance:
             case ModSettingChange.MultiEnableState:
                 FullRecalculation(collection);
+                break;
+            case ModSettingChange.TemporaryMod:
+            case ModSettingChange.Edited:
+                // handled otherwise
                 break;
         }
     }

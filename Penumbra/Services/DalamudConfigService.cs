@@ -10,9 +10,9 @@ public class DalamudConfigService : IService
         try
         {
             var serviceType =
-                typeof(DalamudPluginInterface).Assembly.DefinedTypes.FirstOrDefault(t => t.Name == "Service`1" && t.IsGenericType);
-            var configType    = typeof(DalamudPluginInterface).Assembly.DefinedTypes.FirstOrDefault(t => t.Name == "DalamudConfiguration");
-            var interfaceType = typeof(DalamudPluginInterface).Assembly.DefinedTypes.FirstOrDefault(t => t.Name == "DalamudInterface");
+                typeof(IDalamudPluginInterface).Assembly.DefinedTypes.FirstOrDefault(t => t.Name == "Service`1" && t.IsGenericType);
+            var configType    = typeof(IDalamudPluginInterface).Assembly.DefinedTypes.FirstOrDefault(t => t.Name == "DalamudConfiguration");
+            var interfaceType = typeof(IDalamudPluginInterface).Assembly.DefinedTypes.FirstOrDefault(t => t.Name == "DalamudInterface");
             if (serviceType == null || configType == null || interfaceType == null)
                 return;
 

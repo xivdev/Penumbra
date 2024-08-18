@@ -1,26 +1,24 @@
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using ImGuiNET;
-using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.UI.Classes;
 using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
-public sealed class CollectionsTab : IDisposable, ITab
+public sealed class CollectionsTab : IDisposable, ITab, IUiService
 {
     private readonly EphemeralConfig    _config;
     private readonly CollectionSelector _selector;
     private readonly CollectionPanel    _panel;
     private readonly TutorialService    _tutorial;
+    private readonly IncognitoService   _incognito;
 
     public enum PanelMode
     {
@@ -40,13 +38,14 @@ public sealed class CollectionsTab : IDisposable, ITab
         }
     }
 
-    public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator,
-        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial)
+    public CollectionsTab(IDalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
+        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, SaveService saveService)
     {
-        _config   = configuration.Ephemeral;
-        _tutorial = tutorial;
-        _selector = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial);
-        _panel    = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage);
+        _config    = configuration.Ephemeral;
+        _tutorial  = tutorial;
+        _incognito = incognito;
+        _selector  = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial, incognito);
+        _panel     = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage, saveService, incognito);
     }
 
     public void Dispose()
@@ -116,18 +115,7 @@ public sealed class CollectionsTab : IDisposable, ITab
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionDetails);
         ImGui.SameLine();
 
-        style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
-        color.Push(ImGuiCol.Text, ColorId.FolderExpanded.Value())
-            .Push(ImGuiCol.Border, ColorId.FolderExpanded.Value());
-        if (ImGuiUtil.DrawDisabledButton(
-                $"{(_selector.IncognitoMode ? FontAwesomeIcon.Eye : FontAwesomeIcon.EyeSlash).ToIconString()}###IncognitoMode",
-                buttonSize with { X = withSpacing }, string.Empty, false, true))
-            _selector.IncognitoMode = !_selector.IncognitoMode;
-        var hovered = ImGui.IsItemHovered();
-        _tutorial.OpenTutorial(BasicTutorialSteps.Incognito);
-        color.Pop(2);
-        if (hovered)
-            ImGui.SetTooltip(_selector.IncognitoMode ? "Toggle incognito mode off." : "Toggle incognito mode on.");
+        _incognito.DrawToggle(withSpacing);
     }
 
     private void DrawPanel()

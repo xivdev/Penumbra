@@ -1,32 +1,22 @@
 using OtterGui;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
 
-public class CollectionEditor
+public class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : IService
 {
-    private readonly CommunicatorService _communicator;
-    private readonly SaveService         _saveService;
-    private readonly ModStorage          _modStorage;
-
-    public CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage)
-    {
-        _saveService  = saveService;
-        _communicator = communicator;
-        _modStorage   = modStorage;
-    }
-
     /// <summary> Enable or disable the mod inheritance of mod idx. </summary>
     public bool SetModInheritance(ModCollection collection, Mod mod, bool inherit)
     {
         if (!FixInheritance(collection, mod, inherit))
             return false;
 
-        InvokeChange(collection, ModSettingChange.Inheritance, mod, inherit ? 0 : 1, 0);
+        InvokeChange(collection, ModSettingChange.Inheritance, mod, inherit ? Setting.False : Setting.True, 0);
         return true;
     }
 
@@ -42,7 +32,8 @@ public class CollectionEditor
 
         var inheritance = FixInheritance(collection, mod, false);
         ((List<ModSettings?>)collection.Settings)[mod.Index]!.Enabled = newValue;
-        InvokeChange(collection, ModSettingChange.EnableState, mod, inheritance ? -1 : newValue ? 0 : 1, 0);
+        InvokeChange(collection, ModSettingChange.EnableState, mod, inheritance ? Setting.Indefinite : newValue ? Setting.False : Setting.True,
+            0);
         return true;
     }
 
@@ -52,7 +43,7 @@ public class CollectionEditor
         if (!mods.Aggregate(false, (current, mod) => current | FixInheritance(collection, mod, inherit)))
             return;
 
-        InvokeChange(collection, ModSettingChange.MultiInheritance, null, -1, 0);
+        InvokeChange(collection, ModSettingChange.MultiInheritance, null, Setting.Indefinite, 0);
     }
 
     /// <summary>
@@ -76,22 +67,22 @@ public class CollectionEditor
         if (!changes)
             return;
 
-        InvokeChange(collection, ModSettingChange.MultiEnableState, null, -1, 0);
+        InvokeChange(collection, ModSettingChange.MultiEnableState, null, Setting.Indefinite, 0);
     }
 
     /// <summary>
     /// Set the priority of mod idx to newValue if it differs from the current priority.
     /// If the mod is currently inherited, stop the inheritance.
     /// </summary>
-    public bool SetModPriority(ModCollection collection, Mod mod, int newValue)
+    public bool SetModPriority(ModCollection collection, Mod mod, ModPriority newValue)
     {
-        var oldValue = collection.Settings[mod.Index]?.Priority ?? collection[mod.Index].Settings?.Priority ?? 0;
+        var oldValue = collection.Settings[mod.Index]?.Priority ?? collection[mod.Index].Settings?.Priority ?? ModPriority.Default;
         if (newValue == oldValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
         ((List<ModSettings?>)collection.Settings)[mod.Index]!.Priority = newValue;
-        InvokeChange(collection, ModSettingChange.Priority, mod, inheritance ? -1 : oldValue, 0);
+        InvokeChange(collection, ModSettingChange.Priority, mod, inheritance ? Setting.Indefinite : oldValue.AsSetting, 0);
         return true;
     }
 
@@ -99,7 +90,7 @@ public class CollectionEditor
     /// Set a given setting group settingName of mod idx to newValue if it differs from the current value and fix it if necessary.
     /// /// If the mod is currently inherited, stop the inheritance.
     /// </summary>
-    public bool SetModSetting(ModCollection collection, Mod mod, int groupIdx, uint newValue)
+    public bool SetModSetting(ModCollection collection, Mod mod, int groupIdx, Setting newValue)
     {
         var settings = collection.Settings[mod.Index] != null
             ? collection.Settings[mod.Index]!.Settings
@@ -110,7 +101,7 @@ public class CollectionEditor
 
         var inheritance = FixInheritance(collection, mod, false);
         ((List<ModSettings?>)collection.Settings)[mod.Index]!.SetValue(mod, groupIdx, newValue);
-        InvokeChange(collection, ModSettingChange.Setting, mod, inheritance ? -1 : (int)oldValue, groupIdx);
+        InvokeChange(collection, ModSettingChange.Setting, mod, inheritance ? Setting.Indefinite : oldValue, groupIdx);
         return true;
     }
 
@@ -158,33 +149,15 @@ public class CollectionEditor
             if (savedSettings != null)
             {
                 ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings)[targetName] = savedSettings.Value;
-                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+                saveService.QueueSave(new ModCollectionSave(modStorage, collection));
             }
             else if (((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(targetName))
             {
-                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+                saveService.QueueSave(new ModCollectionSave(modStorage, collection));
             }
         }
 
         return true;
-    }
-
-    /// <summary>
-    /// Change one of the available mod settings for mod idx discerned by type.
-    /// If type == Setting, settingName should be a valid setting for that mod, otherwise it will be ignored.
-    /// The setting will also be automatically fixed if it is invalid for that setting group.
-    /// For boolean parameters, newValue == 0 will be treated as false and != 0 as true.
-    /// </summary>
-    public bool ChangeModSetting(ModCollection collection, ModSettingChange type, Mod mod, int newValue, int groupIdx)
-    {
-        return type switch
-        {
-            ModSettingChange.Inheritance => SetModInheritance(collection, mod, newValue != 0),
-            ModSettingChange.EnableState => SetModState(collection, mod, newValue != 0),
-            ModSettingChange.Priority    => SetModPriority(collection, mod, newValue),
-            ModSettingChange.Setting     => SetModSetting(collection, mod, groupIdx, (uint)newValue),
-            _                            => throw new ArgumentOutOfRangeException(nameof(type), type, null),
-        };
     }
 
     /// <summary>
@@ -204,16 +177,16 @@ public class CollectionEditor
 
     /// <summary> Queue saves and trigger changes for any non-inherited change in a collection, then trigger changes for all inheritors. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void InvokeChange(ModCollection changedCollection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx)
+    private void InvokeChange(ModCollection changedCollection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx)
     {
-        _saveService.QueueSave(new ModCollectionSave(_modStorage, changedCollection));
-        _communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
+        saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
+        communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
         RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
 
     /// <summary> Trigger changes in all inherited collections. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void RecurseInheritors(ModCollection directParent, ModSettingChange type, Mod? mod, int oldValue, int groupIdx)
+    private void RecurseInheritors(ModCollection directParent, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx)
     {
         foreach (var directInheritor in directParent.DirectParentOf)
         {
@@ -221,11 +194,11 @@ public class CollectionEditor
             {
                 case ModSettingChange.MultiInheritance:
                 case ModSettingChange.MultiEnableState:
-                    _communicator.ModSettingChanged.Invoke(directInheritor, type, null, oldValue, groupIdx, true);
+                    communicator.ModSettingChanged.Invoke(directInheritor, type, null, oldValue, groupIdx, true);
                     break;
                 default:
                     if (directInheritor.Settings[mod!.Index] == null)
-                        _communicator.ModSettingChanged.Invoke(directInheritor, type, mod, oldValue, groupIdx, true);
+                        communicator.ModSettingChanged.Invoke(directInheritor, type, mod, oldValue, groupIdx, true);
                     break;
             }
 

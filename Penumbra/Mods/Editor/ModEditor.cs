@@ -1,6 +1,7 @@
-using OtterGui;
 using OtterGui.Compression;
-using Penumbra.Mods.Subclasses;
+using OtterGui.Services;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Editor;
 
@@ -13,7 +14,7 @@ public class ModEditor(
     ModSwapEditor swapEditor,
     MdlMaterialEditor mdlMaterialEditor,
     FileCompactor compactor)
-    : IDisposable
+    : IDisposable, IService
 {
     public readonly ModNormalizer     ModNormalizer     = modNormalizer;
     public readonly ModMetaEditor     MetaEditor        = metaEditor;
@@ -24,20 +25,20 @@ public class ModEditor(
     public readonly MdlMaterialEditor MdlMaterialEditor = mdlMaterialEditor;
     public readonly FileCompactor     Compactor         = compactor;
 
-    public Mod? Mod       { get; private set; }
-    public int  GroupIdx  { get; private set; }
-    public int  OptionIdx { get; private set; }
+    public Mod? Mod      { get; private set; }
+    public int  GroupIdx { get; private set; }
+    public int  DataIdx  { get; private set; }
 
-    public IModGroup? Group  { get; private set; }
-    public ISubMod?   Option { get; private set; }
+    public IModGroup?         Group  { get; private set; }
+    public IModDataContainer? Option { get; private set; }
 
     public void LoadMod(Mod mod)
         => LoadMod(mod, -1, 0);
 
-    public void LoadMod(Mod mod, int groupIdx, int optionIdx)
+    public void LoadMod(Mod mod, int groupIdx, int dataIdx)
     {
         Mod = mod;
-        LoadOption(groupIdx, optionIdx, true);
+        LoadOption(groupIdx, dataIdx, true);
         Files.UpdateAll(mod, Option!);
         SwapEditor.Revert(Option!);
         MetaEditor.Load(Mod!, Option!);
@@ -45,9 +46,9 @@ public class ModEditor(
         MdlMaterialEditor.ScanModels(Mod!);
     }
 
-    public void LoadOption(int groupIdx, int optionIdx)
+    public void LoadOption(int groupIdx, int dataIdx)
     {
-        LoadOption(groupIdx, optionIdx, true);
+        LoadOption(groupIdx, dataIdx, true);
         SwapEditor.Revert(Option!);
         Files.UpdatePaths(Mod!, Option!);
         MetaEditor.Load(Mod!, Option!);
@@ -56,38 +57,38 @@ public class ModEditor(
     }
 
     /// <summary> Load the correct option by indices for the currently loaded mod if possible, unload if not.  </summary>
-    private void LoadOption(int groupIdx, int optionIdx, bool message)
+    private void LoadOption(int groupIdx, int dataIdx, bool message)
     {
         if (Mod != null && Mod.Groups.Count > groupIdx)
         {
-            if (groupIdx == -1 && optionIdx == 0)
+            if (groupIdx == -1 && dataIdx == 0)
             {
-                Group     = null;
-                Option    = Mod.Default;
-                GroupIdx  = groupIdx;
-                OptionIdx = optionIdx;
+                Group    = null;
+                Option   = Mod.Default;
+                GroupIdx = groupIdx;
+                DataIdx  = dataIdx;
                 return;
             }
 
             if (groupIdx >= 0)
             {
                 Group = Mod.Groups[groupIdx];
-                if (optionIdx >= 0 && optionIdx < Group.Count)
+                if (dataIdx >= 0 && dataIdx < Group.DataContainers.Count)
                 {
-                    Option    = Group[optionIdx];
-                    GroupIdx  = groupIdx;
-                    OptionIdx = optionIdx;
+                    Option   = Group.DataContainers[dataIdx];
+                    GroupIdx = groupIdx;
+                    DataIdx  = dataIdx;
                     return;
                 }
             }
         }
 
-        Group     = null;
-        Option    = Mod?.Default;
-        GroupIdx  = -1;
-        OptionIdx = 0;
+        Group    = null;
+        Option   = Mod?.Default;
+        GroupIdx = -1;
+        DataIdx  = 0;
         if (message)
-            Penumbra.Log.Error($"Loading invalid option {groupIdx} {optionIdx} for Mod {Mod?.Name ?? "Unknown"}.");
+            Penumbra.Log.Error($"Loading invalid option {groupIdx} {dataIdx} for Mod {Mod?.Name ?? "Unknown"}.");
     }
 
     public void Clear()
@@ -104,14 +105,11 @@ public class ModEditor(
         => Clear();
 
     /// <summary> Apply a option action to all available option in a mod, including the default option. </summary>
-    public static void ApplyToAllOptions(Mod mod, Action<ISubMod, int, int> action)
+    public static void ApplyToAllContainers(Mod mod, Action<IModDataContainer> action)
     {
-        action(mod.Default, -1, 0);
-        foreach (var (group, groupIdx) in mod.Groups.WithIndex())
-        {
-            for (var optionIdx = 0; optionIdx < group.Count; ++optionIdx)
-                action(group[optionIdx], groupIdx, optionIdx);
-        }
+        action(mod.Default);
+        foreach (var container in mod.Groups.SelectMany(g => g.DataContainers))
+            action(container);
     }
 
     // Does not delete the base directory itself even if it is completely empty at the end.

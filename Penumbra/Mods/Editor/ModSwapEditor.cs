@@ -1,28 +1,28 @@
-using Penumbra.Mods;
+using OtterGui.Services;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-public class ModSwapEditor(ModManager modManager)
+public class ModSwapEditor(ModManager modManager) : IService
 {
     private readonly Dictionary<Utf8GamePath, FullPath> _swaps = [];
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> Swaps
         => _swaps;
 
-    public void Revert(ISubMod option)
+    public void Revert(IModDataContainer option)
     {
         _swaps.SetTo(option.FileSwaps);
         Changes = false;
     }
 
-    public void Apply(Mod mod, int groupIdx, int optionIdx)
+    public void Apply(IModDataContainer container)
     {
         if (!Changes)
             return;
 
-        modManager.OptionEditor.OptionSetFileSwaps(mod, groupIdx, optionIdx, _swaps);
+        modManager.OptionEditor.SetFileSwaps(container, _swaps);
         Changes = false;
     }
 

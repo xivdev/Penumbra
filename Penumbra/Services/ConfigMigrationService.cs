@@ -10,7 +10,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
@@ -22,7 +22,7 @@ namespace Penumbra.Services;
 /// Contains everything to migrate from older versions of the config to the current,
 /// including deprecated fields.
 /// </summary>
-public class ConfigMigrationService(SaveService saveService) : IService
+public class ConfigMigrationService(SaveService saveService, BackupService backupService) : IService
 {
     private Configuration _config = null!;
     private JObject       _data   = null!;
@@ -73,7 +73,21 @@ public class ConfigMigrationService(SaveService saveService) : IService
         Version5To6();
         Version6To7();
         Version7To8();
+        Version8To9();
         AddColors(config, true);
+    }
+
+    // Migrate to ephemeral config.
+    private void Version8To9()
+    {
+        if (_config.Version != 8)
+            return;
+
+        backupService.CreateMigrationBackup("pre_collection_identifiers");
+        _config.Version           = 9;
+        _config.Ephemeral.Version = 9;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     // Migrate to ephemeral config.
@@ -101,7 +115,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
             _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Ephemeral.ResourceWatcherRecordTypes;
         _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionsTab.PanelMode>() ?? _config.Ephemeral.CollectionPanel;
         _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
-        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemDrawer.ChangedItemIcon>()
+        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
          ?? _config.Ephemeral.ChangedItemFilter;
         _config.Ephemeral.FixMainWindow = _data["FixMainWindow"]?.ToObject<bool>() ?? _config.Ephemeral.FixMainWindow;
         _config.Ephemeral.Save();
@@ -223,7 +237,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
             try
             {
                 var jObject = JObject.Parse(File.ReadAllText(collection.FullName));
-                if (jObject[nameof(ModCollection.Name)]?.ToObject<string>() == ForcedCollection)
+                if (jObject["Name"]?.ToObject<string>() == ForcedCollection)
                     continue;
 
                 jObject[nameof(ModCollection.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
@@ -341,15 +355,15 @@ public class ConfigMigrationService(SaveService saveService) : IService
             var text = File.ReadAllText(collectionJson.FullName);
             var data = JArray.Parse(text);
 
-            var maxPriority = 0;
+            var maxPriority = ModPriority.Default;
             var dict        = new Dictionary<string, ModSettings.SavedSettings>();
             foreach (var setting in data.Cast<JObject>())
             {
-                var modName  = (string)setting["FolderName"]!;
-                var enabled  = (bool)setting["Enabled"]!;
-                var priority = (int)setting["Priority"]!;
-                var settings = setting["Settings"]!.ToObject<Dictionary<string, long>>()
-                 ?? setting["Conf"]!.ToObject<Dictionary<string, long>>();
+                var modName  = setting["FolderName"]?.ToObject<string>()!;
+                var enabled  = setting["Enabled"]?.ToObject<bool>() ?? false;
+                var priority = setting["Priority"]?.ToObject<ModPriority>() ?? ModPriority.Default;
+                var settings = setting["Settings"]!.ToObject<Dictionary<string, Setting>>()
+                 ?? setting["Conf"]!.ToObject<Dictionary<string, Setting>>();
 
                 dict[modName] = new ModSettings.SavedSettings()
                 {
@@ -357,7 +371,7 @@ public class ConfigMigrationService(SaveService saveService) : IService
                     Priority = priority,
                     Settings = settings!,
                 };
-                maxPriority = Math.Max(maxPriority, priority);
+                maxPriority = maxPriority.Max(priority);
             }
 
             InvertModListOrder = _data[nameof(InvertModListOrder)]?.ToObject<bool>() ?? InvertModListOrder;
@@ -365,8 +379,8 @@ public class ConfigMigrationService(SaveService saveService) : IService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection = ModCollection.CreateFromData(saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict,
-                Array.Empty<string>());
+            // Only used for saving and immediately discarded, so the local collection id here is irrelevant.
+            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, Guid.NewGuid(), ModCollection.DefaultCollectionName, LocalCollectionId.Zero, 0, 1, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

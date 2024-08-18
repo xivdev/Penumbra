@@ -1,3 +1,4 @@
+using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -5,8 +6,10 @@ using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.Meta;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.Settings;
+using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.ItemSwap;
 
@@ -15,14 +18,13 @@ public class ItemSwapContainer
     private readonly MetaFileManager      _manager;
     private readonly ObjectIdentification _identifier;
 
-    private Dictionary<Utf8GamePath, FullPath> _modRedirections  = [];
-    private HashSet<MetaManipulation>          _modManipulations = [];
+    private AppliedModData _appliedModData = AppliedModData.Empty;
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> ModRedirections
-        => _modRedirections;
+        => _appliedModData.FileRedirections;
 
-    public IReadOnlySet<MetaManipulation> ModManipulations
-        => _modManipulations;
+    public MetaDictionary ModManipulations
+        => _appliedModData.Manipulations;
 
     public readonly List<Swap> Swaps = [];
 
@@ -40,10 +42,10 @@ public class ItemSwapContainer
         NoSwaps,
     }
 
-    public bool WriteMod(ModManager manager, Mod mod, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null,
-        int groupIndex = -1, int optionIndex = 0)
+    public bool WriteMod(ModManager manager, Mod mod, IModDataContainer container, WriteType writeType = WriteType.NoSwaps,
+        DirectoryInfo? directory = null)
     {
-        var convertedManips = new HashSet<MetaManipulation>(Swaps.Count);
+        var convertedManips = new MetaDictionary();
         var convertedFiles  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
         var convertedSwaps  = new Dictionary<Utf8GamePath, FullPath>(Swaps.Count);
         directory ??= mod.ModPath;
@@ -51,38 +53,45 @@ public class ItemSwapContainer
         {
             foreach (var swap in Swaps.SelectMany(s => s.WithChildren()))
             {
-                switch (swap)
+                if (swap is FileSwap file)
                 {
-                    case FileSwap file:
-                        // Skip, nothing to do
-                        if (file.SwapToModdedEqualsOriginal)
-                            continue;
+                    // Skip, nothing to do
+                    if (file.SwapToModdedEqualsOriginal)
+                        continue;
 
-                        if (writeType == WriteType.UseSwaps && file.SwapToModdedExistsInGame && !file.DataWasChanged)
-                        {
-                            convertedSwaps.TryAdd(file.SwapFromRequestPath, file.SwapToModded);
-                        }
-                        else
-                        {
-                            var path  = file.GetNewPath(directory.FullName);
-                            var bytes = file.FileData.Write();
-                            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                            _manager.Compactor.WriteAllBytes(path, bytes);
-                            convertedFiles.TryAdd(file.SwapFromRequestPath, new FullPath(path));
-                        }
-
-                        break;
-                    case MetaSwap meta:
-                        if (!meta.SwapAppliedIsDefault)
-                            convertedManips.Add(meta.SwapApplied);
-
-                        break;
+                    if (writeType == WriteType.UseSwaps && file.SwapToModdedExistsInGame && !file.DataWasChanged)
+                    {
+                        convertedSwaps.TryAdd(file.SwapFromRequestPath, file.SwapToModded);
+                    }
+                    else
+                    {
+                        var path  = file.GetNewPath(directory.FullName);
+                        var bytes = file.FileData.Write();
+                        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                        _manager.Compactor.WriteAllBytes(path, bytes);
+                        convertedFiles.TryAdd(file.SwapFromRequestPath, new FullPath(path));
+                    }
+                }
+                else if (swap is IMetaSwap { SwapAppliedIsDefault: false })
+                {
+                    // @formatter:off
+                    _ = swap switch
+                    {
+                        MetaSwap<EstIdentifier, EstEntry> meta           => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EqpIdentifier, EqpEntryInternal> meta   => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<EqdpIdentifier, EqdpEntryInternal> meta => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<ImcIdentifier, ImcEntry>meta            => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        MetaSwap<GmpIdentifier, GmpEntry>meta            => convertedManips.TryAdd(meta.SwapFromIdentifier, meta.SwapToModdedEntry),
+                        _ => false,
+                    };
+                    // @formatter:on
                 }
             }
 
-            manager.OptionEditor.OptionSetFiles(mod, groupIndex, optionIndex, convertedFiles);
-            manager.OptionEditor.OptionSetFileSwaps(mod, groupIndex, optionIndex, convertedSwaps);
-            manager.OptionEditor.OptionSetManipulations(mod, groupIndex, optionIndex, convertedManips);
+            manager.OptionEditor.SetFiles(container, convertedFiles, SaveType.None);
+            manager.OptionEditor.SetFileSwaps(container, convertedSwaps, SaveType.None);
+            manager.OptionEditor.SetManipulations(container, convertedManips, SaveType.None);
+            manager.OptionEditor.ForceSave(container, SaveType.ImmediateSync);
             return true;
         }
         catch (Exception e)
@@ -96,14 +105,9 @@ public class ItemSwapContainer
     {
         Clear();
         if (mod == null || mod.Index < 0)
-        {
-            _modRedirections  = [];
-            _modManipulations = [];
-        }
+            _appliedModData = AppliedModData.Empty;
         else
-        {
-            (_modRedirections, _modManipulations) = ModSettings.GetResolveData(mod, settings);
-        }
+            _appliedModData = ModSettings.GetResolveData(mod, settings);
     }
 
     public ItemSwapContainer(MetaFileManager manager, ObjectIdentification identifier)
@@ -118,11 +122,10 @@ public class ItemSwapContainer
             ? p => collection.ResolvePath(p) ?? new FullPath(p)
             : p => ModRedirections.TryGetValue(p, out var path) ? path : new FullPath(p);
 
-    private Func<MetaManipulation, MetaManipulation> MetaResolver(ModCollection? collection)
-    {
-        var set = collection?.MetaCache?.Manipulations.ToHashSet() ?? _modManipulations;
-        return m => set.TryGetValue(m, out var a) ? a : m;
-    }
+    private MetaDictionary MetaResolver(ModCollection? collection)
+        => collection?.MetaCache is { } cache
+            ? new MetaDictionary(cache)
+            : _appliedModData.Manipulations;
 
     public EquipItem[] LoadEquipment(EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true,
         bool useLeftRing = true)
@@ -152,13 +155,13 @@ public class ItemSwapContainer
         var mdl          = CustomizationSwap.CreateMdl(manager, pathResolver, slot, race, from, to);
         var type = slot switch
         {
-            BodySlot.Hair => EstManipulation.EstType.Hair,
-            BodySlot.Face => EstManipulation.EstType.Face,
-            _             => (EstManipulation.EstType)0,
+            BodySlot.Hair => EstType.Hair,
+            BodySlot.Face => EstType.Face,
+            _             => (EstType)0,
         };
 
-        var metaResolver = MetaResolver(collection);
-        var est          = ItemSwap.CreateEst(manager, pathResolver, metaResolver, type, race, from, to, true);
+        var estResolver = MetaResolver(collection);
+        var est         = ItemSwap.CreateEst(manager, pathResolver, estResolver, type, race, from, to, true);
 
         Swaps.Add(mdl);
         if (est != null)

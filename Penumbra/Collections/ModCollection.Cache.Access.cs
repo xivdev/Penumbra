@@ -1,12 +1,8 @@
 using OtterGui.Classes;
-using Penumbra.GameData.Enums;
 using Penumbra.Mods;
-using Penumbra.Interop.Structs;
-using Penumbra.Meta.Files;
-using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Cache;
-using Penumbra.Interop.Services;
+using Penumbra.GameData.Data;
 using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections;
@@ -47,71 +43,15 @@ public partial class ModCollection
     internal MetaCache? MetaCache
         => _cache?.Meta;
 
-    public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
-    {
-        if (_cache != null)
-            return _cache.Meta.GetImcFile(path, out file);
-
-        file = null;
-        return false;
-    }
-
     internal IReadOnlyDictionary<Utf8GamePath, ModPath> ResolvedFiles
         => _cache?.ResolvedFiles ?? new ConcurrentDictionary<Utf8GamePath, ModPath>();
 
-    internal IReadOnlyDictionary<string, (SingleArray<IMod>, object?)> ChangedItems
-        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, object?)>();
+    internal IReadOnlyDictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)> ChangedItems
+        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)>();
 
     internal IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => _cache?.AllConflicts ?? Array.Empty<SingleArray<ModConflicts>>();
 
     internal SingleArray<ModConflicts> Conflicts(Mod mod)
         => _cache?.Conflicts(mod) ?? new SingleArray<ModConflicts>();
-
-    public void SetFiles(CharacterUtility utility)
-    {
-        if (_cache == null)
-        {
-            utility.ResetAll();
-        }
-        else
-        {
-            _cache.Meta.SetFiles();
-            Penumbra.Log.Debug($"Set CharacterUtility resources for collection {Name}.");
-        }
-    }
-
-    public void SetMetaFile(CharacterUtility utility, MetaIndex idx)
-    {
-        if (_cache == null)
-            utility.ResetResource(idx);
-        else
-            _cache.Meta.SetFile(idx);
-    }
-
-    // Used for short periods of changed files.
-    public MetaList.MetaReverter? TemporarilySetEqdpFile(CharacterUtility utility, GenderRace genderRace, bool accessory)
-    {
-        if (_cache != null)
-            return _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory);
-
-        var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
-        return idx >= 0 ? utility.TemporarilyResetResource(idx) : null;
-    }
-
-    public MetaList.MetaReverter TemporarilySetEqpFile(CharacterUtility utility)
-        => _cache?.Meta.TemporarilySetEqpFile()
-         ?? utility.TemporarilyResetResource(MetaIndex.Eqp);
-
-    public MetaList.MetaReverter TemporarilySetGmpFile(CharacterUtility utility)
-        => _cache?.Meta.TemporarilySetGmpFile()
-         ?? utility.TemporarilyResetResource(MetaIndex.Gmp);
-
-    public MetaList.MetaReverter TemporarilySetCmpFile(CharacterUtility utility)
-        => _cache?.Meta.TemporarilySetCmpFile()
-         ?? utility.TemporarilyResetResource(MetaIndex.HumanCmp);
-
-    public MetaList.MetaReverter TemporarilySetEstFile(CharacterUtility utility, EstManipulation.EstType type)
-        => _cache?.Meta.TemporarilySetEstFile(type)
-         ?? utility.TemporarilyResetResource((MetaIndex)type);
 }

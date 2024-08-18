@@ -1,5 +1,6 @@
 using OtterGui.Classes;
 using Penumbra.Api;
+using Penumbra.Api.Api;
 using Penumbra.Collections;
 
 namespace Penumbra.Communication;

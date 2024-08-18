@@ -20,47 +20,48 @@ public partial class TexToolsImporter
     private string _currentOptionName = string.Empty;
     private string _currentFileName   = string.Empty;
 
-    public void DrawProgressInfo(Vector2 size)
+    public bool DrawProgressInfo(Vector2 size)
     {
         if (_modPackCount == 0)
         {
             ImGuiUtil.Center("Nothing to extract.");
+            return true;
         }
-        else if (_modPackCount == _currentModPackIdx)
+
+        if (_modPackCount == _currentModPackIdx)
         {
             DrawEndState();
+            return true;
         }
-        else
+
+        ImGui.NewLine();
+        var percentage = (float)_currentModPackIdx / _modPackCount;
+        ImGui.ProgressBar(percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}");
+        ImGui.NewLine();
+        ImGui.TextUnformatted(State == ImporterState.DeduplicatingFiles
+            ? $"Deduplicating {_currentModName}..."
+            : $"Extracting {_currentModName}...");
+
+        if (_currentNumOptions > 1)
         {
             ImGui.NewLine();
-            var percentage = (float)_currentModPackIdx / _modPackCount;
-            ImGui.ProgressBar(percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}");
             ImGui.NewLine();
-            if (State == ImporterState.DeduplicatingFiles)
-                ImGui.TextUnformatted($"Deduplicating {_currentModName}...");
-            else
-                ImGui.TextUnformatted($"Extracting {_currentModName}...");
-
-            if (_currentNumOptions > 1)
-            {
-                ImGui.NewLine();
-                ImGui.NewLine();
-                percentage = _currentNumOptions == 0 ? 1f : _currentOptionIdx / (float)_currentNumOptions;
-                ImGui.ProgressBar(percentage, size, $"Option {_currentOptionIdx + 1} / {_currentNumOptions}");
-                ImGui.NewLine();
-                if (State != ImporterState.DeduplicatingFiles)
-                    ImGui.TextUnformatted(
-                        $"Extracting option {(_currentGroupName.Length == 0 ? string.Empty : $"{_currentGroupName} - ")}{_currentOptionName}...");
-            }
-
-            ImGui.NewLine();
-            ImGui.NewLine();
-            percentage = _currentNumFiles == 0 ? 1f : _currentFileIdx / (float)_currentNumFiles;
-            ImGui.ProgressBar(percentage, size, $"File {_currentFileIdx + 1} / {_currentNumFiles}");
+            percentage = _currentNumOptions == 0 ? 1f : _currentOptionIdx / (float)_currentNumOptions;
+            ImGui.ProgressBar(percentage, size, $"Option {_currentOptionIdx + 1} / {_currentNumOptions}");
             ImGui.NewLine();
             if (State != ImporterState.DeduplicatingFiles)
-                ImGui.TextUnformatted($"Extracting file {_currentFileName}...");
+                ImGui.TextUnformatted(
+                    $"Extracting option {(_currentGroupName.Length == 0 ? string.Empty : $"{_currentGroupName} - ")}{_currentOptionName}...");
         }
+
+        ImGui.NewLine();
+        ImGui.NewLine();
+        percentage = _currentNumFiles == 0 ? 1f : _currentFileIdx / (float)_currentNumFiles;
+        ImGui.ProgressBar(percentage, size, $"File {_currentFileIdx + 1} / {_currentNumFiles}");
+        ImGui.NewLine();
+        if (State != ImporterState.DeduplicatingFiles)
+            ImGui.TextUnformatted($"Extracting file {_currentFileName}...");
+        return false;
     }
 
 

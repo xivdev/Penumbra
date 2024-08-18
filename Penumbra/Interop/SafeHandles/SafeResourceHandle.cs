@@ -1,8 +1,8 @@
-﻿using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 
 namespace Penumbra.Interop.SafeHandles;
 
-public unsafe class SafeResourceHandle : SafeHandle
+public unsafe class SafeResourceHandle : SafeHandle, ICloneable
 {
     public ResourceHandle* ResourceHandle
         => (ResourceHandle*)handle;
@@ -20,6 +20,12 @@ public unsafe class SafeResourceHandle : SafeHandle
             handle->IncRef();
         SetHandle((nint)handle);
     }
+
+    public SafeResourceHandle Clone()
+        => new(ResourceHandle, true);
+
+    object ICloneable.Clone()
+        => Clone();
 
     public static SafeResourceHandle CreateInvalid()
         => new(null, false);

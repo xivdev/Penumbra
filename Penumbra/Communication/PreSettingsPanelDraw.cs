@@ -1,4 +1,5 @@
 using OtterGui.Classes;
+using Penumbra.Api.Api;
 
 namespace Penumbra.Communication;
 
@@ -12,7 +13,7 @@ public sealed class PreSettingsPanelDraw() : EventWrapper<string, PreSettingsPan
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.PreSettingsPanelDraw"/>
+        /// <seealso cref="PenumbraApi.PreSettingsPanelDraw"/>
         Default = 0,
     }
 }

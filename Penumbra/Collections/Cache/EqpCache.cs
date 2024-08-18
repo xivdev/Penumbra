@@ -1,60 +1,66 @@
-using OtterGui.Filesystem;
-using Penumbra.Interop.Services;
-using Penumbra.Interop.Structs;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
 
-public struct EqpCache : IDisposable
+public sealed class EqpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<EqpIdentifier, EqpEntry>(manager, collection)
 {
-    private          ExpandedEqpFile?      _eqpFile          = null;
-    private readonly List<EqpManipulation> _eqpManipulations = new();
+    public unsafe EqpEntry GetValues(CharacterArmor* armor)
+    {
+        var bodyEntry = GetSingleValue(armor[1].Set, EquipSlot.Body);
+        var headEntry = bodyEntry.HasFlag(EqpEntry.BodyShowHead)
+            ? GetSingleValue(armor[0].Set, EquipSlot.Head)
+            : GetSingleValue(armor[1].Set, EquipSlot.Head);
+        var handEntry = bodyEntry.HasFlag(EqpEntry.BodyShowHand)
+            ? GetSingleValue(armor[2].Set, EquipSlot.Hands)
+            : GetSingleValue(armor[1].Set, EquipSlot.Hands);
+        var (legsEntry, legsId) = bodyEntry.HasFlag(EqpEntry.BodyShowLeg)
+            ? (GetSingleValue(armor[3].Set, EquipSlot.Legs), 3)
+            : (GetSingleValue(armor[1].Set, EquipSlot.Legs), 1);
+        var footEntry = legsEntry.HasFlag(EqpEntry.LegsShowFoot)
+            ? GetSingleValue(armor[4].Set,      EquipSlot.Feet)
+            : GetSingleValue(armor[legsId].Set, EquipSlot.Feet);
 
-    public EqpCache()
-    { }
+        var combined = bodyEntry | headEntry | handEntry | legsEntry | footEntry;
+        return PostProcessFeet(PostProcessHands(combined));
+    }
 
-    public void SetFiles(MetaFileManager manager)
-        => manager.SetFile(_eqpFile, MetaIndex.Eqp);
-
-    public static void ResetFiles(MetaFileManager manager)
-        => manager.SetFile(null, MetaIndex.Eqp);
-
-    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
-        => manager.TemporarilySetFile(_eqpFile, MetaIndex.Eqp);
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private EqpEntry GetSingleValue(PrimaryId id, EquipSlot slot)
+        => TryGetValue(new EqpIdentifier(id, slot), out var pair) ? pair.Entry : ExpandedEqpFile.GetDefault(Manager, id) & Eqp.Mask(slot);
 
     public void Reset()
-    {
-        if (_eqpFile == null)
-            return;
+        => Clear();
 
-        _eqpFile.Reset(_eqpManipulations.Select(m => m.SetId));
-        _eqpManipulations.Clear();
+    protected override void Dispose(bool _)
+        => Clear();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static EqpEntry PostProcessHands(EqpEntry entry)
+    {
+        if (!entry.HasFlag(EqpEntry.HandsHideForearm))
+            return entry;
+
+        var testFlag = entry.HasFlag(EqpEntry.HandsHideElbow)
+            ? entry.HasFlag(EqpEntry.BodyHideGlovesL)
+            : entry.HasFlag(EqpEntry.BodyHideGlovesM);
+        return testFlag
+            ? (entry | EqpEntry._4) & ~EqpEntry.BodyHideGlovesS
+            : entry & ~(EqpEntry._4 | EqpEntry.BodyHideGlovesS);
     }
 
-    public bool ApplyMod(MetaFileManager manager, EqpManipulation manip)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static EqpEntry PostProcessFeet(EqpEntry entry)
     {
-        _eqpManipulations.AddOrReplace(manip);
-        _eqpFile ??= new ExpandedEqpFile(manager);
-        return manip.Apply(_eqpFile);
-    }
+        if (!entry.HasFlag(EqpEntry.FeetHideCalf))
+            return entry;
 
-    public bool RevertMod(MetaFileManager manager, EqpManipulation manip)
-    {
-        var idx = _eqpManipulations.FindIndex(manip.Equals);
-        if (idx < 0)
-            return false;
+        if (entry.HasFlag(EqpEntry.FeetHideKnee) || !entry.HasFlag(EqpEntry._20))
+            return entry & ~(EqpEntry.LegsHideBootsS | EqpEntry.LegsHideBootsM);
 
-        var def = ExpandedEqpFile.GetDefault(manager, manip.SetId);
-        manip = new EqpManipulation(def, manip.Slot, manip.SetId);
-        return manip.Apply(_eqpFile!);
-    }
-
-    public void Dispose()
-    {
-        _eqpFile?.Dispose();
-        _eqpFile = null;
-        _eqpManipulations.Clear();
+        return (entry | EqpEntry.LegsHideBootsM) & ~EqpEntry.LegsHideBootsS;
     }
 }

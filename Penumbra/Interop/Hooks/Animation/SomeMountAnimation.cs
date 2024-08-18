@@ -15,7 +15,7 @@ public sealed unsafe class SomeMountAnimation : FastHook<SomeMountAnimation.Dele
     {
         _state              = state;
         _collectionResolver = collectionResolver;
-        Task                = hooks.CreateHook<Delegate>("Some Mount Animation", Sigs.UnkMountAnimation, Detour, true);
+        Task                = hooks.CreateHook<Delegate>("Some Mount Animation", Sigs.UnkMountAnimation, Detour, !HookOverrides.Instance.Animation.SomeMountAnimation);
     }
 
     public delegate void Delegate(DrawObject* drawObject, uint unk1, byte unk2, uint unk3);

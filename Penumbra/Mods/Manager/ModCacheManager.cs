@@ -1,29 +1,34 @@
+using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
-using Penumbra.GameData.Enums;
-using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Groups;
+using Penumbra.Mods.Manager.OptionEditor;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable
+public class ModCacheManager : IDisposable, IService
 {
+    private readonly Configuration        _config;
     private readonly CommunicatorService  _communicator;
     private readonly ObjectIdentification _identifier;
     private readonly ModStorage           _modManager;
     private          bool                 _updatingItems = false;
 
-    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage)
+    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config)
     {
         _communicator = communicator;
         _identifier   = identifier;
         _modManager   = modStorage;
+        _config       = config;
 
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ModCacheManager);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
-        identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation());
+        identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation(), TaskScheduler.Default);
         OnModDiscoveryFinished();
     }
 
@@ -35,75 +40,8 @@ public class ModCacheManager : IDisposable
         _communicator.ModDiscoveryFinished.Unsubscribe(OnModDiscoveryFinished);
     }
 
-    /// <summary> Compute the items changed by a given meta manipulation and put them into the changedItems dictionary. </summary>
-    public static void ComputeChangedItems(ObjectIdentification identifier, IDictionary<string, object?> changedItems, MetaManipulation manip)
-    {
-        switch (manip.ManipulationType)
-        {
-            case MetaManipulation.Type.Imc:
-                switch (manip.Imc.ObjectType)
-                {
-                    case ObjectType.Equipment:
-                    case ObjectType.Accessory:
-                        identifier.Identify(changedItems,
-                            GamePaths.Equipment.Mtrl.Path(manip.Imc.PrimaryId, GenderRace.MidlanderMale, manip.Imc.EquipSlot, manip.Imc.Variant,
-                                "a"));
-                        break;
-                    case ObjectType.Weapon:
-                        identifier.Identify(changedItems,
-                            GamePaths.Weapon.Mtrl.Path(manip.Imc.PrimaryId, manip.Imc.SecondaryId, manip.Imc.Variant, "a"));
-                        break;
-                    case ObjectType.DemiHuman:
-                        identifier.Identify(changedItems,
-                            GamePaths.DemiHuman.Mtrl.Path(manip.Imc.PrimaryId, manip.Imc.SecondaryId, manip.Imc.EquipSlot, manip.Imc.Variant,
-                                "a"));
-                        break;
-                    case ObjectType.Monster:
-                        identifier.Identify(changedItems,
-                            GamePaths.Monster.Mtrl.Path(manip.Imc.PrimaryId, manip.Imc.SecondaryId, manip.Imc.Variant, "a"));
-                        break;
-                }
-
-                break;
-            case MetaManipulation.Type.Eqdp:
-                identifier.Identify(changedItems,
-                    GamePaths.Equipment.Mdl.Path(manip.Eqdp.SetId, Names.CombinedRace(manip.Eqdp.Gender, manip.Eqdp.Race), manip.Eqdp.Slot));
-                break;
-            case MetaManipulation.Type.Eqp:
-                identifier.Identify(changedItems, GamePaths.Equipment.Mdl.Path(manip.Eqp.SetId, GenderRace.MidlanderMale, manip.Eqp.Slot));
-                break;
-            case MetaManipulation.Type.Est:
-                switch (manip.Est.Slot)
-                {
-                    case EstManipulation.EstType.Hair:
-                        changedItems.TryAdd($"Customization: {manip.Est.Race} {manip.Est.Gender} Hair (Hair) {manip.Est.SetId}", null);
-                        break;
-                    case EstManipulation.EstType.Face:
-                        changedItems.TryAdd($"Customization: {manip.Est.Race} {manip.Est.Gender} Face (Face) {manip.Est.SetId}", null);
-                        break;
-                    case EstManipulation.EstType.Body:
-                        identifier.Identify(changedItems,
-                            GamePaths.Equipment.Mdl.Path(manip.Est.SetId, Names.CombinedRace(manip.Est.Gender, manip.Est.Race),
-                                EquipSlot.Body));
-                        break;
-                    case EstManipulation.EstType.Head:
-                        identifier.Identify(changedItems,
-                            GamePaths.Equipment.Mdl.Path(manip.Est.SetId, Names.CombinedRace(manip.Est.Gender, manip.Est.Race),
-                                EquipSlot.Head));
-                        break;
-                }
-
-                break;
-            case MetaManipulation.Type.Gmp:
-                identifier.Identify(changedItems, GamePaths.Equipment.Mdl.Path(manip.Gmp.SetId, GenderRace.MidlanderMale, EquipSlot.Head));
-                break;
-            case MetaManipulation.Type.Rsp:
-                changedItems.TryAdd($"{manip.Rsp.SubRace.ToName()} {manip.Rsp.Attribute.ToFullString()}", null);
-                break;
-        }
-    }
-
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2)
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
+        int fromIdx)
     {
         switch (type)
         {
@@ -175,13 +113,13 @@ public class ModCacheManager : IDisposable
     }
 
     private static void UpdateFileCount(Mod mod)
-        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count);
+        => mod.TotalFileCount = mod.AllDataContainers.Sum(s => s.Files.Count);
 
     private static void UpdateSwapCount(Mod mod)
-        => mod.TotalSwapCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count);
+        => mod.TotalSwapCount = mod.AllDataContainers.Sum(s => s.FileSwaps.Count);
 
     private static void UpdateMetaCount(Mod mod)
-        => mod.TotalManipulations = mod.AllSubMods.Sum(s => s.Manipulations.Count);
+        => mod.TotalManipulations = mod.AllDataContainers.Sum(s => s.Manipulations.Count);
 
     private static void UpdateHasOptions(Mod mod)
         => mod.HasOptions = mod.Groups.Any(o => o.IsOption);
@@ -191,13 +129,14 @@ public class ModCacheManager : IDisposable
 
     private void UpdateChangedItems(Mod mod)
     {
-        var changedItems = (SortedList<string, object?>)mod.ChangedItems;
-        changedItems.Clear();
-        foreach (var gamePath in mod.AllSubMods.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
-            _identifier.Identify(changedItems, gamePath.ToString());
+        mod.ChangedItems.Clear();
 
-        foreach (var manip in mod.AllSubMods.SelectMany(m => m.Manipulations))
-            ComputeChangedItems(_identifier, changedItems, manip);
+        _identifier.AddChangedItems(mod.Default, mod.ChangedItems);
+        foreach (var group in mod.Groups)
+            group.AddChangedItems(_identifier, mod.ChangedItems);
+
+        if (_config.HideMachinistOffhandFromChangedItems)
+            mod.ChangedItems.RemoveMachinistOffhands();
 
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
     }
@@ -210,13 +149,11 @@ public class ModCacheManager : IDisposable
         mod.HasOptions         = false;
         foreach (var group in mod.Groups)
         {
-            mod.HasOptions |= group.IsOption;
-            foreach (var s in group)
-            {
-                mod.TotalFileCount     += s.Files.Count;
-                mod.TotalSwapCount     += s.FileSwaps.Count;
-                mod.TotalManipulations += s.Manipulations.Count;
-            }
+            mod.HasOptions             |= group.IsOption;
+            var (files, swaps, manips) =  group.GetCounts();
+            mod.TotalFileCount         += files;
+            mod.TotalSwapCount         += swaps;
+            mod.TotalManipulations     += manips;
         }
     }
 

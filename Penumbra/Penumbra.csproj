@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net7.0-windows</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <LangVersion>preview</LangVersion>
         <PlatformTarget>x64</PlatformTarget>
         <AssemblyTitle>Penumbra</AssemblyTitle>
@@ -22,6 +22,12 @@
         <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
         <DefineConstants>PROFILING;</DefineConstants>
     </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="Mods\Subclasses\**" />
+      <EmbeddedResource Remove="Mods\Subclasses\**" />
+      <None Remove="Mods\Subclasses\**" />
+    </ItemGroup>
 
     <ItemGroup>
         <Content Include="tsmLogo.png">
@@ -62,6 +68,18 @@
             <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="Iced">
+            <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SharpDX">
+            <HintPath>$(DalamudLibPath)SharpDX.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SharpDX.Direct3D11">
+            <HintPath>$(DalamudLibPath)SharpDX.Direct3D11.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="OtterTex.dll">
             <HintPath>lib\OtterTex.dll</HintPath>
         </Reference>
@@ -69,18 +87,19 @@
 
     <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.3" />
-        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="2.1.2" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
         <PackageReference Include="SharpCompress" Version="0.33.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
         <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0030" />
         <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0030" />
+        <PackageReference Include="PeNet" Version="4.0.5" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
+        <ProjectReference Include="..\Penumbra.CrashHandler\Penumbra.CrashHandler.csproj" />
         <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
         <ProjectReference Include="..\Penumbra.Api\Penumbra.Api.csproj" />
+        <ProjectReference Include="..\Penumbra.String\Penumbra.String.csproj" />
     </ItemGroup>
 
     <ItemGroup>

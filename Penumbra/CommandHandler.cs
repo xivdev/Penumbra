@@ -3,6 +3,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui.Classes;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -10,12 +11,12 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI;
+using Penumbra.UI.Knowledge;
 
 namespace Penumbra;
 
-public class CommandHandler : IDisposable
+public class CommandHandler : IDisposable, IApiService
 {
     private const string CommandName = "/penumbra";
 
@@ -29,11 +30,12 @@ public class CommandHandler : IDisposable
     private readonly CollectionManager _collectionManager;
     private readonly Penumbra          _penumbra;
     private readonly CollectionEditor  _collectionEditor;
+    private readonly KnowledgeWindow   _knowledgeWindow;
 
     public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService,
-        Configuration config,
-        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors, Penumbra penumbra,
-        CollectionEditor collectionEditor)
+        Configuration config, ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors,
+        Penumbra penumbra,
+        CollectionEditor collectionEditor, KnowledgeWindow knowledgeWindow)
     {
         _commandManager    = commandManager;
         _redrawService     = redrawService;
@@ -45,6 +47,7 @@ public class CommandHandler : IDisposable
         _chat              = chat;
         _penumbra          = penumbra;
         _collectionEditor  = collectionEditor;
+        _knowledgeWindow   = knowledgeWindow;
         framework.RunOnFrameworkThread(() =>
         {
             if (_commandManager.Commands.ContainsKey(CommandName))
@@ -69,7 +72,7 @@ public class CommandHandler : IDisposable
         var argumentList = arguments.Split(' ', 2);
         arguments = argumentList.Length == 2 ? argumentList[1] : string.Empty;
 
-        var _ = argumentList[0].ToLowerInvariant() switch
+        _ = argumentList[0].ToLowerInvariant() switch
         {
             "window"     => ToggleWindow(arguments),
             "enable"     => SetPenumbraState(arguments, true),
@@ -83,6 +86,7 @@ public class CommandHandler : IDisposable
             "collection" => SetCollection(arguments),
             "mod"        => SetMod(arguments),
             "bulktag"    => SetTag(arguments),
+            "knowledge"  => HandleKnowledge(arguments),
             _            => PrintHelp(argumentList[0]),
         };
     }
@@ -304,7 +308,7 @@ public class CommandHandler : IDisposable
                     identifiers = _actors.FromUserString(split[2], false);
                 }
             }
-            catch (ActorManager.IdentifierParseError e)
+            catch (ActorIdentifierFactory.IdentifierParseError e)
             {
                 _chat.Print(new SeStringBuilder().AddText("The argument ").AddRed(split[2], true)
                     .AddText($" could not be converted to an identifier. {e.Message}")
@@ -513,7 +517,7 @@ public class CommandHandler : IDisposable
 
         collection = string.Equals(lowerName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase)
             ? ModCollection.Empty
-            : _collectionManager.Storage.ByName(lowerName, out var c)
+            : _collectionManager.Storage.ByIdentifier(lowerName, out var c)
                 ? c
                 : null;
         if (collection != null)
@@ -618,5 +622,11 @@ public class CommandHandler : IDisposable
     {
         if (_config.PrintSuccessfulCommandsToChat)
             _chat.Print(text());
+    }
+
+    private bool HandleKnowledge(string arguments)
+    {
+        _knowledgeWindow.Toggle();
+        return true;
     }
 }

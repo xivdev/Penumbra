@@ -3,44 +3,38 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Settings;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelConflictsTab : ITab
+public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab, IUiService
 {
-    private readonly ModFileSystemSelector _selector;
-    private readonly CollectionManager     _collectionManager;
-
-    public ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector)
-    {
-        _collectionManager = collectionManager;
-        _selector          = selector;
-    }
-
-    private int? _currentPriority = null;
+    private int? _currentPriority;
 
     public ReadOnlySpan<byte> Label
         => "Conflicts"u8;
 
     public bool IsVisible
-        => _collectionManager.Active.Current.Conflicts(_selector.Selected!).Count > 0;
+        => collectionManager.Active.Current.Conflicts(selector.Selected!).Count > 0;
 
-    private readonly ConditionalWeakTable<IMod, object> _expandedMods = new();
+    private readonly ConditionalWeakTable<IMod, object> _expandedMods = [];
 
-    private int GetPriority(ModConflicts conflicts)
+    private ModPriority GetPriority(ModConflicts conflicts)
     {
         if (conflicts.Mod2.Index < 0)
             return conflicts.Mod2.Priority;
 
-        return _collectionManager.Active.Current[conflicts.Mod2.Index].Settings?.Priority ?? 0;
+        return collectionManager.Active.Current[conflicts.Mod2.Index].Settings?.Priority ?? ModPriority.Default;
     }
 
     public void DrawContent()
@@ -63,8 +57,8 @@ public class ModPanelConflictsTab : ITab
         DrawCurrentRow(priorityWidth);
 
         // Can not be null because otherwise the tab bar is never drawn.
-        var mod = _selector.Selected!;
-        foreach (var (conflict, index) in _collectionManager.Active.Current.Conflicts(mod).OrderByDescending(GetPriority)
+        var mod = selector.Selected!;
+        foreach (var (conflict, index) in collectionManager.Active.Current.Conflicts(mod).OrderByDescending(GetPriority)
                      .ThenBy(c => c.Mod2.Name.Lower).WithIndex())
         {
             using var id = ImRaii.PushId(index);
@@ -77,18 +71,18 @@ public class ModPanelConflictsTab : ITab
         ImGui.TableNextColumn();
         using var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderLine.Value());
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(_selector.Selected!.Name);
+        ImGui.TextUnformatted(selector.Selected!.Name);
         ImGui.TableNextColumn();
-        var priority = _collectionManager.Active.Current[_selector.Selected!.Index].Settings!.Priority;
+        var priority = collectionManager.Active.Current[selector.Selected!.Index].Settings!.Priority.Value;
         ImGui.SetNextItemWidth(priorityWidth);
         if (ImGui.InputInt("##priority", ref priority, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
             _currentPriority = priority;
 
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {
-            if (_currentPriority != _collectionManager.Active.Current[_selector.Selected!.Index].Settings!.Priority)
-                _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, (Mod)_selector.Selected!,
-                    _currentPriority.Value);
+            if (_currentPriority != collectionManager.Active.Current[selector.Selected!.Index].Settings!.Priority.Value)
+                collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selector.Selected!,
+                    new ModPriority(_currentPriority.Value));
 
             _currentPriority = null;
         }
@@ -104,7 +98,7 @@ public class ModPanelConflictsTab : ITab
     {
         ImGui.AlignTextToFramePadding();
         if (ImGui.Selectable(conflict.Mod2.Name) && conflict.Mod2 is Mod otherMod)
-            _selector.SelectByValue(otherMod);
+            selector.SelectByValue(otherMod);
         var hovered      = ImGui.IsItemHovered();
         var rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);
         if (conflict.Mod2 is Mod otherMod2)
@@ -112,7 +106,7 @@ public class ModPanelConflictsTab : ITab
             if (hovered)
                 ImGui.SetTooltip("Click to jump to mod, Control + Right-Click to disable mod.");
             if (rightClicked && ImGui.GetIO().KeyCtrl)
-                _collectionManager.Editor.SetModState(_collectionManager.Active.Current, otherMod2, false);
+                collectionManager.Editor.SetModState(collectionManager.Active.Current, otherMod2, false);
         }
     }
 
@@ -124,15 +118,12 @@ public class ModPanelConflictsTab : ITab
         using var indent = ImRaii.PushIndent(30f);
         foreach (var data in conflict.Conflicts)
         {
-            unsafe
+            _ = data switch
             {
-                var _ = data switch
-                {
-                    Utf8GamePath p     => ImGuiNative.igSelectable_Bool(p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero) > 0,
-                    MetaManipulation m => ImGui.Selectable(m.Manipulation?.ToString() ?? string.Empty),
-                    _                  => false,
-                };
-            }
+                Utf8GamePath p    => ImUtf8.Selectable(p.Path.Span,  false),
+                IMetaIdentifier m => ImUtf8.Selectable(m.ToString(), false),
+                _                 => false,
+            };
         }
 
         return true;
@@ -146,7 +137,7 @@ public class ModPanelConflictsTab : ITab
         ImGui.TableNextColumn();
         var conflictPriority = DrawPriorityInput(conflict, priorityWidth);
         ImGui.SameLine();
-        var selectedPriority = _collectionManager.Active.Current[_selector.Selected!.Index].Settings!.Priority;
+        var selectedPriority = collectionManager.Active.Current[selector.Selected!.Index].Settings!.Priority.Value;
         DrawPriorityButtons(conflict.Mod2 as Mod, conflictPriority, selectedPriority, buttonSize);
         ImGui.TableNextColumn();
         DrawExpandButton(conflict.Mod2, expanded, buttonSize);
@@ -171,7 +162,7 @@ public class ModPanelConflictsTab : ITab
         using var color = ImRaii.PushColor(ImGuiCol.Text,
             conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value());
         using var disabled = ImRaii.Disabled(conflict.Mod2.Index < 0);
-        var       priority = _currentPriority ?? GetPriority(conflict);
+        var       priority = _currentPriority ?? GetPriority(conflict).Value;
 
         ImGui.SetNextItemWidth(priorityWidth);
         if (ImGui.InputInt("##priority", ref priority, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
@@ -179,8 +170,9 @@ public class ModPanelConflictsTab : ITab
 
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {
-            if (_currentPriority != GetPriority(conflict))
-                _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, (Mod)conflict.Mod2, _currentPriority.Value);
+            if (_currentPriority != GetPriority(conflict).Value)
+                collectionManager.Editor.SetModPriority(collectionManager.Active.Current, (Mod)conflict.Mod2,
+                    new ModPriority(_currentPriority.Value));
 
             _currentPriority = null;
         }
@@ -195,12 +187,14 @@ public class ModPanelConflictsTab : ITab
     private void DrawPriorityButtons(Mod? conflict, int conflictPriority, int selectedPriority, Vector2 buttonSize)
     {
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.SortNumericUpAlt.ToIconString(), buttonSize,
-                $"Set the priority of the currently selected mod to this mods priority plus one. ({selectedPriority} -> {conflictPriority + 1})", selectedPriority > conflictPriority, true))
-            _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, _selector.Selected!, conflictPriority + 1);
+                $"Set the priority of the currently selected mod to this mods priority plus one. ({selectedPriority} -> {conflictPriority + 1})",
+                selectedPriority > conflictPriority, true))
+            collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selector.Selected!,
+                new ModPriority(conflictPriority + 1));
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.SortNumericDownAlt.ToIconString(), buttonSize,
                 $"Set the priority of this mod to the currently selected mods priority minus one. ({conflictPriority} -> {selectedPriority - 1})",
                 selectedPriority > conflictPriority || conflict == null, true))
-            _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, conflict!, selectedPriority - 1);
+            collectionManager.Editor.SetModPriority(collectionManager.Active.Current, conflict!, new ModPriority(selectedPriority - 1));
     }
 }

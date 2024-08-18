@@ -34,26 +34,26 @@ public sealed unsafe class EstFile : MetaBaseFile
         Removed,
     }
 
-    public ushort this[GenderRace genderRace, ushort setId]
+    public EstEntry this[GenderRace genderRace, PrimaryId setId]
     {
         get
         {
             var (idx, exists) = FindEntry(genderRace, setId);
             if (!exists)
-                return 0;
+                return EstEntry.Zero;
 
-            return *(ushort*)(Data + EntryDescSize * (Count + 1) + EntrySize * idx);
+            return *(EstEntry*)(Data + EntryDescSize * (Count + 1) + EntrySize * idx);
         }
         set => SetEntry(genderRace, setId, value);
     }
 
-    private void InsertEntry(int idx, GenderRace genderRace, ushort setId, ushort skeletonId)
+    private void InsertEntry(int idx, GenderRace genderRace, PrimaryId setId, EstEntry skeletonId)
     {
         if (Length < Size + EntryDescSize + EntrySize)
             ResizeResources(Length + IncreaseSize);
 
         var control = (Info*)(Data + 4);
-        var entries = (ushort*)(control + Count);
+        var entries = (EstEntry*)(control + Count);
 
         for (var i = Count - 1; i >= idx; --i)
             entries[i + 3] = entries[i];
@@ -94,10 +94,10 @@ public sealed unsafe class EstFile : MetaBaseFile
     [StructLayout(LayoutKind.Sequential, Size = 4)]
     private struct Info : IComparable<Info>
     {
-        public readonly ushort     SetId;
+        public readonly PrimaryId  SetId;
         public readonly GenderRace GenderRace;
 
-        public Info(GenderRace gr, ushort setId)
+        public Info(GenderRace gr, PrimaryId setId)
         {
             GenderRace = gr;
             SetId      = setId;
@@ -106,42 +106,42 @@ public sealed unsafe class EstFile : MetaBaseFile
         public int CompareTo(Info other)
         {
             var genderRaceComparison = GenderRace.CompareTo(other.GenderRace);
-            return genderRaceComparison != 0 ? genderRaceComparison : SetId.CompareTo(other.SetId);
+            return genderRaceComparison != 0 ? genderRaceComparison : SetId.Id.CompareTo(other.SetId.Id);
         }
     }
 
-    private static (int, bool) FindEntry(ReadOnlySpan<Info> data, GenderRace genderRace, ushort setId)
+    private static (int, bool) FindEntry(ReadOnlySpan<Info> data, GenderRace genderRace, PrimaryId setId)
     {
         var idx = data.BinarySearch(new Info(genderRace, setId));
         return idx < 0 ? (~idx, false) : (idx, true);
     }
 
-    private (int, bool) FindEntry(GenderRace genderRace, ushort setId)
+    private (int, bool) FindEntry(GenderRace genderRace, PrimaryId setId)
     {
         var span = new ReadOnlySpan<Info>(Data + 4, Count);
         return FindEntry(span, genderRace, setId);
     }
 
-    public EstEntryChange SetEntry(GenderRace genderRace, ushort setId, ushort skeletonId)
+    public EstEntryChange SetEntry(GenderRace genderRace, PrimaryId setId, EstEntry skeletonId)
     {
         var (idx, exists) = FindEntry(genderRace, setId);
         if (exists)
         {
-            var value = *(ushort*)(Data + 4 * (Count + 1) + 2 * idx);
+            var value = *(EstEntry*)(Data + 4 * (Count + 1) + 2 * idx);
             if (value == skeletonId)
                 return EstEntryChange.Unchanged;
 
-            if (skeletonId == 0)
+            if (skeletonId == EstEntry.Zero)
             {
                 RemoveEntry(idx);
                 return EstEntryChange.Removed;
             }
 
-            *(ushort*)(Data + 4 * (Count + 1) + 2 * idx) = skeletonId;
+            *(EstEntry*)(Data + 4 * (Count + 1) + 2 * idx) = skeletonId;
             return EstEntryChange.Changed;
         }
 
-        if (skeletonId == 0)
+        if (skeletonId == EstEntry.Zero)
             return EstEntryChange.Unchanged;
 
         InsertEntry(idx, genderRace, setId, skeletonId);
@@ -156,32 +156,35 @@ public sealed unsafe class EstFile : MetaBaseFile
         MemoryUtility.MemSet(Data + length, 0, Length - length);
     }
 
-    public EstFile(MetaFileManager manager, EstManipulation.EstType estType)
-        : base(manager, (MetaIndex)estType)
+    public EstFile(MetaFileManager manager, EstType estType)
+        : base(manager, manager.MarshalAllocator, (MetaIndex)estType)
     {
         var length = DefaultData.Length;
         AllocateData(length + IncreaseSize);
         Reset();
     }
 
-    public ushort GetDefault(GenderRace genderRace, ushort setId)
+    public EstEntry GetDefault(GenderRace genderRace, PrimaryId setId)
         => GetDefault(Manager, Index, genderRace, setId);
 
-    public static ushort GetDefault(MetaFileManager manager, CharacterUtility.InternalIndex index, GenderRace genderRace, PrimaryId primaryId)
+    public static EstEntry GetDefault(MetaFileManager manager, CharacterUtility.InternalIndex index, GenderRace genderRace, PrimaryId primaryId)
     {
         var data  = (byte*)manager.CharacterUtility.DefaultResource(index).Address;
         var count = *(int*)data;
         var span  = new ReadOnlySpan<Info>(data + 4, count);
         var (idx, found) = FindEntry(span, genderRace, primaryId.Id);
         if (!found)
-            return 0;
+            return EstEntry.Zero;
 
-        return *(ushort*)(data + 4 + count * EntryDescSize + idx * EntrySize);
+        return *(EstEntry*)(data + 4 + count * EntryDescSize + idx * EntrySize);
     }
 
-    public static ushort GetDefault(MetaFileManager manager, MetaIndex metaIndex, GenderRace genderRace, PrimaryId primaryId)
+    public static EstEntry GetDefault(MetaFileManager manager, MetaIndex metaIndex, GenderRace genderRace, PrimaryId primaryId)
         => GetDefault(manager, CharacterUtility.ReverseIndices[(int)metaIndex], genderRace, primaryId);
 
-    public static ushort GetDefault(MetaFileManager manager, EstManipulation.EstType estType, GenderRace genderRace, PrimaryId primaryId)
+    public static EstEntry GetDefault(MetaFileManager manager, EstType estType, GenderRace genderRace, PrimaryId primaryId)
         => GetDefault(manager, (MetaIndex)estType, genderRace, primaryId);
+
+    public static EstEntry GetDefault(MetaFileManager manager, EstIdentifier identifier)
+        => GetDefault(manager, identifier.FileIndex(), identifier.GenderRace, identifier.SetId);
 }

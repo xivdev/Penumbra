@@ -7,6 +7,7 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -14,52 +15,53 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
-using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Subclasses;
+using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.UI.AdvancedWindow.Materials;
+using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public partial class ModEditWindow : Window, IDisposable
+public partial class ModEditWindow : Window, IDisposable, IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly PerformanceTracker      _performance;
-    private readonly ModEditor               _editor;
-    private readonly Configuration           _config;
-    private readonly ItemSwapTab             _itemSwapTab;
-    private readonly MetaFileManager         _metaFileManager;
-    private readonly ActiveCollections       _activeCollections;
-    private readonly StainService            _stainService;
-    private readonly ModMergeTab             _modMergeTab;
-    private readonly CommunicatorService     _communicator;
-    private readonly IDragDropManager        _dragDropManager;
-    private readonly IDataManager            _gameData;
-    private readonly IFramework              _framework;
-    private readonly IObjectTable            _objects;
-    private readonly CharacterBaseDestructor _characterBaseDestructor;
+    public readonly MigrationManager MigrationManager;
 
-    private Mod?    _mod;
+    private readonly PerformanceTracker  _performance;
+    private readonly ModEditor           _editor;
+    private readonly Configuration       _config;
+    private readonly ItemSwapTab         _itemSwapTab;
+    private readonly MetaFileManager     _metaFileManager;
+    private readonly ActiveCollections   _activeCollections;
+    private readonly ModMergeTab         _modMergeTab;
+    private readonly CommunicatorService _communicator;
+    private readonly IDragDropManager    _dragDropManager;
+    private readonly IDataManager        _gameData;
+    private readonly IFramework          _framework;
+
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
 
+    public Mod? Mod { get; private set; }
+
     public void ChangeMod(Mod mod)
     {
-        if (mod == _mod)
+        if (mod == Mod)
             return;
 
         _editor.LoadMod(mod, -1, 0);
-        _mod = mod;
+        Mod = mod;
 
         SizeConstraints = new WindowSizeConstraints
         {
@@ -75,17 +77,20 @@ public partial class ModEditWindow : Window, IDisposable
         _forceTextureStartPath = true;
     }
 
-    public void ChangeOption(SubMod? subMod)
-        => _editor.LoadOption(subMod?.GroupIdx ?? -1, subMod?.OptionIdx ?? 0);
+    public void ChangeOption(IModDataContainer? subMod)
+    {
+        var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
+        _editor.LoadOption(groupIdx, dataIdx);
+    }
 
     public void UpdateModels()
     {
-        if (_mod != null)
-            _editor.MdlMaterialEditor.ScanModels(_mod);
+        if (Mod != null)
+            _editor.MdlMaterialEditor.ScanModels(Mod);
     }
 
     public override bool DrawConditions()
-        => _mod != null;
+        => Mod != null;
 
     public override void PreDraw()
     {
@@ -106,13 +111,13 @@ public partial class ModEditWindow : Window, IDisposable
         });
         var manipulations = 0;
         var subMods       = 0;
-        var swaps = _mod!.AllSubMods.Sum(m =>
+        var swaps = Mod!.AllDataContainers.Sum(m =>
         {
             ++subMods;
             manipulations += m.Manipulations.Count;
             return m.FileSwaps.Count;
         });
-        sb.Append(_mod!.Name);
+        sb.Append(Mod!.Name);
         if (subMods > 1)
             sb.Append($"   |   {subMods} Options");
 
@@ -123,7 +128,7 @@ public partial class ModEditWindow : Window, IDisposable
             sb.Append($"   |   {unused} Unused Files");
 
         if (_editor.Files.Missing.Count > 0)
-            sb.Append($"   |   {_editor.Files.Available.Count} Missing Files");
+            sb.Append($"   |   {_editor.Files.Missing.Count} Missing Files");
 
         if (redirections > 0)
             sb.Append($"   |   {redirections} Redirections");
@@ -170,7 +175,6 @@ public partial class ModEditWindow : Window, IDisposable
         DrawSwapTab();
         _modMergeTab.Draw();
         DrawDuplicatesTab();
-        DrawMaterialReassignmentTab();
         DrawQuickImportTab();
         _modelTab.Draw();
         _materialTab.Draw();
@@ -183,6 +187,7 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         DrawMissingFilesTab();
+        DrawMaterialReassignmentTab();
     }
 
     /// <summary> A row of three buttonSizes and a help marker that can be used for material suffix changing. </summary>
@@ -271,7 +276,7 @@ public partial class ModEditWindow : Window, IDisposable
 
         ImGui.NewLine();
         if (ImGui.Button("Remove Missing Files from Mod"))
-            _editor.FileEditor.RemoveMissingPaths(_mod!, _editor.Option!);
+            _editor.FileEditor.RemoveMissingPaths(Mod!, _editor.Option!);
 
         using var child = ImRaii.Child("##unusedFiles", -Vector2.One, true);
         if (!child)
@@ -324,8 +329,8 @@ public partial class ModEditWindow : Window, IDisposable
         }
         else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
-            _editor.ModNormalizer.Normalize(_mod!);
-            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(_mod!, _editor.GroupIdx, _editor.OptionIdx));
+            _editor.ModNormalizer.Normalize(Mod!);
+            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.DataIdx), TaskScheduler.Default);
         }
 
         if (!_editor.Duplicates.Worker.IsCompleted)
@@ -363,7 +368,7 @@ public partial class ModEditWindow : Window, IDisposable
         foreach (var (set, size, hash) in _editor.Duplicates.Duplicates.Where(s => s.Paths.Length > 1))
         {
             ImGui.TableNextColumn();
-            using var tree = ImRaii.TreeNode(set[0].FullName[(_mod!.ModPath.FullName.Length + 1)..],
+            using var tree = ImRaii.TreeNode(set[0].FullName[(Mod!.ModPath.FullName.Length + 1)..],
                 ImGuiTreeNodeFlags.NoTreePushOnOpen);
             ImGui.TableNextColumn();
             ImGuiUtil.RightAlign(Functions.HumanReadableSize(size));
@@ -384,7 +389,7 @@ public partial class ModEditWindow : Window, IDisposable
             {
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
-                using var node = ImRaii.TreeNode(duplicate.FullName[(_mod!.ModPath.FullName.Length + 1)..], ImGuiTreeNodeFlags.Leaf);
+                using var node = ImRaii.TreeNode(duplicate.FullName[(Mod!.ModPath.FullName.Length + 1)..], ImGuiTreeNodeFlags.Leaf);
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
                 ImGui.TableNextColumn();
@@ -400,7 +405,7 @@ public partial class ModEditWindow : Window, IDisposable
         var          width         = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
         var          ret           = false;
         if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
-                _editor.Option!.IsDefault))
+                _editor.Option is DefaultSubMod))
         {
             _editor.LoadOption(-1, 0);
             ret = true;
@@ -409,7 +414,7 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
         {
-            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
+            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
             ret = true;
         }
 
@@ -417,16 +422,17 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.SetNextItemWidth(width.X);
         style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
         using var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value());
-        using var combo = ImRaii.Combo("##optionSelector", _editor.Option.FullName);
+        using var combo = ImRaii.Combo("##optionSelector", _editor.Option!.GetFullName());
         if (!combo)
             return ret;
 
-        foreach (var (option, idx) in _mod!.AllSubMods.WithIndex())
+        foreach (var (option, idx) in Mod!.AllDataContainers.WithIndex())
         {
             using var id = ImRaii.PushId(idx);
-            if (ImGui.Selectable(option.FullName, option == _editor.Option))
+            if (ImGui.Selectable(option.GetFullName(), option == _editor.Option))
             {
-                _editor.LoadOption(option.GroupIdx, option.OptionIdx);
+                var (groupIdx, dataIdx) = option.GetDataIndices();
+                _editor.LoadOption(groupIdx, dataIdx);
                 ret = true;
             }
         }
@@ -445,11 +451,11 @@ public partial class ModEditWindow : Window, IDisposable
 
         DrawOptionSelectHeader();
 
-        var setsEqual = !_editor!.SwapEditor.Changes;
+        var setsEqual = !_editor.SwapEditor.Changes;
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
         ImGui.NewLine();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
-            _editor.SwapEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
+            _editor.SwapEditor.Apply(_editor.Option!);
 
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
@@ -531,25 +537,28 @@ public partial class ModEditWindow : Window, IDisposable
     /// If none exists, goes through all options in the currently selected mod (if any) in order of priority and resolves in them. 
     /// If no redirection is found in either of those options, returns the original path.
     /// </remarks>
-    private FullPath FindBestMatch(Utf8GamePath path)
+    internal FullPath FindBestMatch(Utf8GamePath path)
     {
         var currentFile = _activeCollections.Current.ResolvePath(path);
         if (currentFile != null)
             return currentFile.Value;
 
-        if (_mod != null)
-            foreach (var option in _mod.Groups.OrderByDescending(g => g.Priority)
-                         .SelectMany(g => g.WithIndex().OrderByDescending(o => g.OptionPriority(o.Index)).Select(g => g.Value))
-                         .Append(_mod.Default))
+        if (Mod != null)
+        {
+            foreach (var option in Mod.Groups.OrderByDescending(g => g.Priority))
             {
-                if (option.Files.TryGetValue(path, out var value) || option.FileSwaps.TryGetValue(path, out value))
-                    return value;
+                if (option.FindBestMatch(path) is { } fullPath)
+                    return fullPath;
             }
+
+            if (Mod.Default.Files.TryGetValue(path, out var value) || Mod.Default.FileSwaps.TryGetValue(path, out value))
+                return value;
+        }
 
         return new FullPath(path);
     }
 
-    private HashSet<Utf8GamePath> FindPathsStartingWith(ByteString prefix)
+    internal HashSet<Utf8GamePath> FindPathsStartingWith(CiByteString prefix)
     {
         var ret = new HashSet<Utf8GamePath>();
 
@@ -559,8 +568,8 @@ public partial class ModEditWindow : Window, IDisposable
                 ret.Add(path);
         }
 
-        if (_mod != null)
-            foreach (var option in _mod.Groups.SelectMany(g => g).Append(_mod.Default))
+        if (Mod != null)
+            foreach (var option in Mod.AllDataContainers)
             {
                 foreach (var path in option.Files.Keys)
                 {
@@ -574,43 +583,43 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections, ModMergeTab modMergeTab,
+        ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
-        ChangedItemDrawer changedItemDrawer, IObjectTable objects, IFramework framework, CharacterBaseDestructor characterBaseDestructor)
+        ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
+        MetaDrawers metaDrawers, MigrationManager migrationManager,
+        MtrlTabFactory mtrlTabFactory)
         : base(WindowBaseLabel)
     {
-        _performance             = performance;
-        _itemSwapTab             = itemSwapTab;
-        _gameData                = gameData;
-        _config                  = config;
-        _editor                  = editor;
-        _metaFileManager         = metaFileManager;
-        _stainService            = stainService;
-        _activeCollections       = activeCollections;
-        _modMergeTab             = modMergeTab;
-        _communicator            = communicator;
-        _dragDropManager         = dragDropManager;
-        _textures                = textures;
-        _models                  = models;
-        _fileDialog              = fileDialog;
-        _objects                 = objects;
-        _framework               = framework;
-        _characterBaseDestructor = characterBaseDestructor;
-        _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
-            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
-        _modelTab = new FileEditor<MdlTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
-            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty,
+        _performance       = performance;
+        _itemSwapTab       = itemSwapTab;
+        _gameData          = gameData;
+        _config            = config;
+        _editor            = editor;
+        _metaFileManager   = metaFileManager;
+        _activeCollections = activeCollections;
+        _modMergeTab       = modMergeTab;
+        _communicator      = communicator;
+        _dragDropManager   = dragDropManager;
+        _textures          = textures;
+        _models            = models;
+        _fileDialog        = fileDialog;
+        _framework         = framework;
+        MigrationManager   = migrationManager;
+        _metaDrawers       = metaDrawers;
+        _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
+            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
+            (bytes, path, writable) => mtrlTabFactory.Create(this, new MtrlFile(bytes), path, writable));
+        _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
+            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new MdlTab(this, bytes, path));
-        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
+        _shaderPackageTab = new FileEditor<ShpkTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
-            () => _mod?.ModPath.FullName ?? string.Empty,
-            (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
+            () => Mod?.ModPath.FullName ?? string.Empty,
+            (bytes, path, _) => new ShpkTab(_fileDialog, bytes, path));
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;
-        _quickImportViewer =
-            new ResourceTreeViewer(_config, resourceTreeFactory, changedItemDrawer, 2, OnQuickImportRefresh, DrawQuickImportActions);
+        _quickImportViewer   = resourceTreeViewerFactory.Create(2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
         IsOpen = _config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true };
     }
@@ -618,7 +627,7 @@ public partial class ModEditWindow : Window, IDisposable
     public void Dispose()
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
-        _editor?.Dispose();
+        _editor.Dispose();
         _materialTab.Dispose();
         _modelTab.Dispose();
         _shaderPackageTab.Dispose();
@@ -629,7 +638,10 @@ public partial class ModEditWindow : Window, IDisposable
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
     {
-        if (type is ModPathChangeType.Reloaded or ModPathChangeType.Moved)
-            ChangeMod(mod);
+        if (type is not (ModPathChangeType.Reloaded or ModPathChangeType.Moved) || mod != Mod)
+            return;
+
+        Mod = null;
+        ChangeMod(mod);
     }
 }

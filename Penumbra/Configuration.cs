@@ -1,9 +1,10 @@
 using Dalamud.Configuration;
-using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
@@ -11,13 +12,14 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
+using Penumbra.UI.ModsTab;
 using Penumbra.UI.ResourceWatcher;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
 [Serializable]
-public class Configuration : IPluginConfiguration, ISavable
+public class Configuration : IPluginConfiguration, ISavable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;
@@ -29,28 +31,45 @@ public class Configuration : IPluginConfiguration, ISavable
 
     public ChangeLogDisplayType ChangeLogDisplayType { get; set; } = ChangeLogDisplayType.New;
 
-    public bool   EnableMods      { get; set; } = true;
+    public event Action<bool>? ModsEnabled;
+
+    [JsonIgnore]
+    private bool _enableMods = true;
+
+    public bool EnableMods
+    {
+        get => _enableMods;
+        set
+        {
+            _enableMods = value;
+            ModsEnabled?.Invoke(value);
+        }
+    }
+
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
 
-    public bool OpenWindowAtStart              { get; set; } = false;
-    public bool HideUiInGPose                  { get; set; } = false;
-    public bool HideUiInCutscenes              { get; set; } = true;
-    public bool HideUiWhenUiHidden             { get; set; } = false;
-    public bool UseDalamudUiTextureRedirection { get; set; } = true;
+    public bool? UseCrashHandler                { get; set; } = null;
+    public bool  OpenWindowAtStart              { get; set; } = false;
+    public bool  HideUiInGPose                  { get; set; } = false;
+    public bool  HideUiInCutscenes              { get; set; } = true;
+    public bool  HideUiWhenUiHidden             { get; set; } = false;
+    public bool  UseDalamudUiTextureRedirection { get; set; } = true;
 
-    public bool UseCharacterCollectionInMainWindow { get; set; } = true;
-    public bool UseCharacterCollectionsInCards     { get; set; } = true;
-    public bool UseCharacterCollectionInInspect    { get; set; } = true;
-    public bool UseCharacterCollectionInTryOn      { get; set; } = true;
-    public bool UseOwnerNameForCharacterCollection { get; set; } = true;
-    public bool UseNoModsInInspect                 { get; set; } = false;
-    public bool HideChangedItemFilters             { get; set; } = false;
-    public bool ReplaceNonAsciiOnImport            { get; set; } = false;
-
-    public bool HidePrioritiesInSelector  { get; set; } = false;
-    public bool HideRedrawBar             { get; set; } = false;
-    public int  OptionGroupCollapsibleMin { get; set; } = 5;
+    public bool        ShowModsInLobby                      { get; set; } = true;
+    public bool        UseCharacterCollectionInMainWindow   { get; set; } = true;
+    public bool        UseCharacterCollectionsInCards       { get; set; } = true;
+    public bool        UseCharacterCollectionInInspect      { get; set; } = true;
+    public bool        UseCharacterCollectionInTryOn        { get; set; } = true;
+    public bool        UseOwnerNameForCharacterCollection   { get; set; } = true;
+    public bool        UseNoModsInInspect                   { get; set; } = false;
+    public bool        HideChangedItemFilters               { get; set; } = false;
+    public bool        ReplaceNonAsciiOnImport              { get; set; } = false;
+    public bool        HidePrioritiesInSelector             { get; set; } = false;
+    public bool        HideRedrawBar                        { get; set; } = false;
+    public bool        HideMachinistOffhandFromChangedItems { get; set; } = true;
+    public RenameField ShowRename                           { get; set; } = RenameField.BothDataPrio;
+    public int         OptionGroupCollapsibleMin            { get; set; } = 5;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 
@@ -77,13 +96,18 @@ public class Configuration : IPluginConfiguration, ISavable
     public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
     public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool           AutoDeduplicateOnImport       { get; set; } = true;
+    public bool           AutoReduplicateUiOnImport     { get; set; } = true;
     public bool           UseFileSystemCompression      { get; set; } = true;
     public bool           EnableHttpApi                 { get; set; } = true;
+
+    public bool MigrateImportedModelsToV6 { get; set; } = true;
+    public bool MigrateImportedMaterialsToLegacy { get; set; } = true;
 
     public string DefaultModImportPath    { get; set; } = string.Empty;
     public bool   AlwaysOpenDefaultImport { get; set; } = false;
     public bool   KeepDefaultMetaChanges  { get; set; } = false;
     public string DefaultModAuthor        { get; set; } = DefaultTexToolsData.Author;
+    public bool   EditRawTileTransforms   { get; set; } = false;
 
     public Dictionary<ColorId, uint> Colors { get; set; }
         = Enum.GetValues<ColorId>().ToDictionary(c => c, c => c.Data().DefaultColor);
@@ -134,7 +158,7 @@ public class Configuration : IPluginConfiguration, ISavable
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
-        public const int   CurrentVersion      = 8;
+        public const int   CurrentVersion      = 9;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;

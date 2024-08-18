@@ -1,11 +1,13 @@
+using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Base;
+
 namespace Penumbra.Interop.Structs;
 
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct ClipScheduler
 {
     [FieldOffset(0)]
-    public IntPtr* VTable;
+    public nint* VTable;
 
     [FieldOffset(0x38)]
-    public IntPtr SchedulerTimeline;
+    public SchedulerTimeline* SchedulerTimeline;
 }

@@ -1,6 +1,7 @@
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
+using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -9,7 +10,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Classes;
 
-public class CollectionSelectHeader
+public class CollectionSelectHeader : IUiService
 {
     private readonly CollectionCombo       _collectionCombo;
     private readonly ActiveCollections     _activeCollections;
@@ -36,9 +37,9 @@ public class CollectionSelectHeader
         var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
         using (var _ = ImRaii.Group())
         {
-            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo(), 1);
+            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo(),   1);
             DrawCollectionButton(buttonSize, GetInterfaceCollectionInfo(), 2);
-            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(), 3);
+            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(),    3);
             DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
 
             _collectionCombo.Draw("##collectionSelector", comboWidth, ColorId.SelectedCollection.Value());
@@ -89,7 +90,7 @@ public class CollectionSelectHeader
         var collection = _resolver.PlayerCollection();
         return CheckCollection(collection) switch
         {
-            CollectionState.Empty => (collection, "None", "The base collection is configured to use no mods.", true),
+            CollectionState.Empty => (collection, "None", "The loaded player character is configured to use no mods.", true),
             CollectionState.Selected => (collection, collection.Name,
                 "The collection configured to apply to the loaded player character is already selected as the current collection.", true),
             CollectionState.Available => (collection, collection.Name,

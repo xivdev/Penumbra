@@ -1,9 +1,9 @@
+using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Hooks.Resources;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
-using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.PathResolving;
@@ -13,7 +13,7 @@ namespace Penumbra.Interop.PathResolving;
 /// Those are loaded synchronously.
 /// Thus, we need to ensure the correct files are loaded when a material is loaded.
 /// </summary>
-public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>
+public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>, IService
 {
     private readonly GameState                _gameState;
     private readonly ResourceLoader           _loader;
@@ -64,24 +64,6 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
 
         collection = ResolveData.Invalid;
         return false;
-    }
-
-    /// <summary> Materials, TMB, and AVFX need to be set per collection so they can load their sub files independently from each other. </summary>
-    public static void HandleCollection(ResolveData resolveData, ByteString path, bool nonDefault, ResourceType type, FullPath? resolved,
-        out (FullPath?, ResolveData) data)
-    {
-        if (nonDefault)
-            switch (type)
-            {
-                case ResourceType.Mtrl:
-                case ResourceType.Avfx:
-                case ResourceType.Tmb:
-                    var fullPath = new FullPath($"|{resolveData.ModCollection.Name}_{resolveData.ModCollection.ChangeCounter}|{path}");
-                    data = (fullPath, resolveData);
-                    return;
-            }
-
-        data = (resolved, resolveData);
     }
 
     public void Dispose()

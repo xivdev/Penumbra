@@ -1,10 +1,11 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using OtterGui.Services;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ResidentResourceManager
+public unsafe class ResidentResourceManager : IService
 {
     // A static pointer to the resident resource manager address.
     [Signature(Sigs.ResidentResourceManager, ScanType = ScanType.StaticAddress)]
