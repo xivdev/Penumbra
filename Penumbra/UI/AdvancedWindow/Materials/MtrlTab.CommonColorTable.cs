@@ -50,9 +50,9 @@ public partial class MtrlTab
 
         ret |= Mtrl.Table switch
         {
-            LegacyColorTable legacyTable => DrawLegacyColorTable(legacyTable, Mtrl.DyeTable as LegacyColorDyeTable, disabled),
+            LegacyColorTable legacyTable => DrawLegacyColorTable(legacyTable, Mtrl.DyeTable as LegacyColorDyeTable, disabled, uiState),
             ColorTable table when Mtrl.ShaderPackage.Name is "characterlegacy.shpk" => DrawLegacyColorTable(table,
-                Mtrl.DyeTable as ColorDyeTable, disabled),
+                Mtrl.DyeTable as ColorDyeTable, disabled, uiState),
             ColorTable table => DrawColorTable(table, Mtrl.DyeTable as ColorDyeTable, disabled, uiState),
             _                => false,
         };

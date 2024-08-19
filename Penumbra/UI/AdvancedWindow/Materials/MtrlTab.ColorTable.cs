@@ -252,7 +252,8 @@ public partial class MtrlTab
         return ret;
     }
 
-    private static bool DrawColors(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
+    private static bool DrawColors<TRow, TDyeRow, TDyePack>(IColorTable<TRow> table, IColorDyeTable<TDyeRow>? dyeTable, TDyePack? dyePack, int rowIdx)
+        where TRow : unmanaged, IColorRow where TDyeRow : unmanaged, IColorDyeRow where TDyePack : unmanaged, IDyePack
     {
         var dyeOffset = ImGui.GetContentRegionAvail().X
           + ImGui.GetStyle().ItemSpacing.X
