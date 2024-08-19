@@ -367,7 +367,7 @@ public partial class MtrlTab
             ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() with { Y = cursor.Y });
             ImGui.SetNextItemWidth(scalarSize + itemSpacing + 64.0f);
             using var dis = ImRaii.Disabled();
-            CtSphereMapIndexPicker("###SphereMapIndexDye"u8, "Dye Preview for Sphere Map"u8, dyePack?.SphereMapIndex ?? ushort.MaxValue, false,
+            CtSphereMapIndexPicker("###dyePreviewSphereMapIndex"u8, "Dye Preview for Sphere Map"u8, dyePack?.SphereMapIndex ?? ushort.MaxValue, false,
                 Nop);
         }
 
@@ -384,7 +384,7 @@ public partial class MtrlTab
                 b => dyeTable[rowIdx].SphereMapMask = b);
             ImUtf8.SameLineInner();
             ImGui.SetNextItemWidth(scalarSize);
-            CtDragScalar("##dyeSphereMapMask"u8, "Dye Preview for Sphere Map Intensity"u8, (float?)dyePack?.SphereMapMask * 100.0f, "%.0f%%"u8);
+            CtDragScalar("##dyePreviewSphereMapMask"u8, "Dye Preview for Sphere Map Intensity"u8, (float?)dyePack?.SphereMapMask * 100.0f, "%.0f%%"u8);
         }
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
