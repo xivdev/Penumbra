@@ -202,8 +202,6 @@ public sealed unsafe class MaterialTemplatePickers : IUiService
 
     private abstract class ArraySliceList(int textureCapacity) : IReadOnlyList<int>
     {
-        public readonly int TextureCapacity = textureCapacity;
-
         private readonly Pointer<TextureResourceHandle>[] _textures = new Pointer<TextureResourceHandle>[textureCapacity];
 
         public int Count
