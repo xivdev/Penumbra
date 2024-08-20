@@ -430,19 +430,21 @@ public partial class MtrlTab
         CtDragScalar(label, description, valueOrDefault, value.HasValue ? format : "-"u8, valueOrDefault, valueOrDefault, 0.0f, Nop);
     }
 
-    private bool CtTileIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact, Action<ushort> setter)
+    private bool CtTileIndexPicker(string label, string description, int value, bool compact, Action<int> setter)
     {
-        if (!_materialTemplatePickers.DrawTileIndexPicker(label, description, ref value, compact))
+        _materialTemplatePickers.TileCombo.Compact = compact;
+        if (!_materialTemplatePickers.TileCombo.Draw(label, description, ref value))
             return false;
 
         setter(value);
         return true;
     }
 
-    private bool CtSphereMapIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ushort value, bool compact,
-        Action<ushort> setter)
+    private bool CtSphereMapIndexPicker(string label, string description, int value, bool compact,
+        Action<int> setter)
     {
-        if (!_materialTemplatePickers.DrawSphereMapIndexPicker(label, description, ref value, compact))
+        _materialTemplatePickers.SphereMapCombo.Compact = compact;
+        if (!_materialTemplatePickers.SphereMapCombo.Draw(label, description, ref value))
             return false;
 
         setter(value);

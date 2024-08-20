@@ -6,6 +6,7 @@ using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Text.Widget.Editors;
+using OtterGui.Widgets;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 
@@ -15,155 +16,280 @@ public sealed unsafe class MaterialTemplatePickers : IUiService
 {
     private const float MaximumTextureSize = 64.0f;
 
-    private readonly TextureArraySlicer _textureArraySlicer;
-    private readonly CharacterUtility   _characterUtility;
+    public readonly FilterComboSlices TileCombo;
+    public readonly FilterComboSlices SphereMapCombo;
 
     public readonly IEditor<byte> TileIndexPicker;
     public readonly IEditor<byte> SphereMapIndexPicker;
 
     public MaterialTemplatePickers(TextureArraySlicer textureArraySlicer, CharacterUtility characterUtility)
     {
-        _textureArraySlicer = textureArraySlicer;
-        _characterUtility   = characterUtility;
+        TileCombo      = CreateCombo(new TileList(characterUtility), textureArraySlicer);
+        SphereMapCombo = CreateCombo(new SphereMapList(characterUtility), textureArraySlicer);
 
-        TileIndexPicker      = new Editor(DrawTileIndexPicker).AsByteEditor();
-        SphereMapIndexPicker = new Editor(DrawSphereMapIndexPicker).AsByteEditor();
+        TileIndexPicker      = new Editor(TileCombo).AsByteEditor();
+        SphereMapIndexPicker = new Editor(SphereMapCombo).AsByteEditor();
     }
 
-    public bool DrawTileIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref ushort value, bool compact)
-        => _characterUtility.Address != null
-            && DrawTextureArrayIndexPicker(label, description, ref value, compact, [
-                _characterUtility.Address->TileOrbArrayTexResource,
-                _characterUtility.Address->TileNormArrayTexResource,
-            ]);
+    private static FilterComboSlices CreateCombo(ArraySliceList list, TextureArraySlicer textureArraySlicer)
+        => new(list, textureArraySlicer, list.GetTextures);
 
-    public bool DrawSphereMapIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref ushort value, bool compact)
-        => _characterUtility.Address != null
-            && DrawTextureArrayIndexPicker(label, description, ref value, compact, [
-                _characterUtility.Address->SphereDArrayTexResource,
-            ]);
-
-    public bool DrawTextureArrayIndexPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref ushort value, bool compact, ReadOnlySpan<Pointer<TextureResourceHandle>> textureRHs)
+    public sealed class FilterComboSlices(IReadOnlyList<int> list, TextureArraySlicer textureArraySlicer,
+        Func<ReadOnlyMemory<Pointer<TextureResourceHandle>>> getTextures) : FilterComboBase<int>(list, false, Penumbra.Log)
     {
-        TextureResourceHandle* firstNonNullTextureRH = null;
-        foreach (var texture in textureRHs)
+        public bool Compact;
+
+        private ReadOnlyMemory<Pointer<TextureResourceHandle>> _textures;
+        private TextureResourceHandle*                         _firstNonNullTexture;
+
+        private Vector2 _textureSize;
+        private Vector2 _framePadding;
+        private Vector2 _itemSpacing;
+        private int     _spaces;
+        private float   _itemHeight;
+        private bool    _mustPopFont;
+        private bool    _mustPopPadding;
+
+        public bool Draw(string label, string tooltip, ref int currentSelection)
+            => Draw(label, currentSelection < 0 ? "-" : currentSelection.ToString(), tooltip, ref currentSelection, float.NaN, float.NaN, ImGuiComboFlags.NoArrowButton);
+
+        public override bool Draw(string label, string preview, string tooltip, ref int currentSelection, float previewWidth, float itemHeight, ImGuiComboFlags flags = ImGuiComboFlags.None)
         {
-            if (texture.Value != null && texture.Value->CsHandle.Texture != null)
+            if (float.IsNaN(previewWidth))
+                previewWidth = ImGui.CalcItemWidth();
+
+            _framePadding = ImGui.GetStyle().FramePadding;
+            _itemSpacing  = ImGui.GetStyle().ItemSpacing;
+
+            _textures            = getTextures();
+            _firstNonNullTexture = ArraySliceList.GetFirstNonNullTexture(_textures.Span);
+
+            _textureSize = _firstNonNullTexture switch
             {
-                firstNonNullTextureRH = texture;
-                break;
-            }
+                null => Vector2.Zero,
+                _    => new Vector2(_firstNonNullTexture->CsHandle.Texture->Width, _firstNonNullTexture->CsHandle.Texture->Height).Contain(new Vector2(MaximumTextureSize)),
+            };
+
+            if (float.IsNaN(itemHeight))
+                itemHeight = Math.Max(ImGui.GetTextLineHeightWithSpacing(), _framePadding.Y * 2.0f + _textureSize.Y);
+
+            return base.Draw(label, preview, tooltip, ref currentSelection, previewWidth, itemHeight, flags);
         }
-        var firstNonNullTexture = firstNonNullTextureRH != null ? firstNonNullTextureRH->CsHandle.Texture : null;
 
-        var textureSize = firstNonNullTexture != null ? new Vector2(firstNonNullTexture->Width, firstNonNullTexture->Height).Contain(new Vector2(MaximumTextureSize)) : Vector2.Zero;
-        var count       = firstNonNullTexture != null ? firstNonNullTexture->ArraySize : 0;
-
-        var ret = false;
-
-        var framePadding = ImGui.GetStyle().FramePadding;
-        var itemSpacing  = ImGui.GetStyle().ItemSpacing;
-        using (var font = ImRaii.PushFont(UiBuilder.MonoFont))
+        protected override void DrawCombo(string label, string preview, string tooltip, int currentSelected, float previewWidth, float itemHeight, ImGuiComboFlags flags)
         {
-            var spaceSize     = ImUtf8.CalcTextSize(" "u8).X;
-            var spaces        = (int)((ImGui.CalcItemWidth() - framePadding.X * 2.0f - (compact ? 0.0f : (textureSize.X + itemSpacing.X) * textureRHs.Length)) / spaceSize);
-            using var padding = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, framePadding + new Vector2(0.0f, Math.Max(textureSize.Y - ImGui.GetFrameHeight() + itemSpacing.Y, 0.0f) * 0.5f), !compact);
-            using var combo   = ImUtf8.Combo(label, (value == ushort.MaxValue ? "-" : value.ToString()).PadLeft(spaces), ImGuiComboFlags.NoArrowButton | ImGuiComboFlags.HeightLarge);
-            if (combo.Success && firstNonNullTextureRH != null)
+            ImGui.PushFont(UiBuilder.MonoFont);
+            _mustPopFont = true;
+            try
             {
-                var lineHeight    = Math.Max(ImGui.GetTextLineHeightWithSpacing(), framePadding.Y * 2.0f + textureSize.Y);
-                var itemWidth     = Math.Max(ImGui.GetContentRegionAvail().X, ImUtf8.CalcTextSize("MMM"u8).X + (itemSpacing.X + textureSize.X) * textureRHs.Length + framePadding.X * 2.0f);
-                using var center  = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0, 0.5f));
-                using var clipper = ImUtf8.ListClipper(count, lineHeight);
-                while (clipper.Step())
+                var spaceSize = ImUtf8.CalcTextSize(" "u8).X;
+                _spaces       = (int)((ImGui.CalcItemWidth() - _framePadding.X * 2.0f - (Compact ? 0.0f : (_textureSize.X + _itemSpacing.X) * _textures.Length)) / spaceSize);
+
+                if (Compact)
+                    _mustPopPadding = false;
+                else
                 {
-                    for (var i = clipper.DisplayStart; i < clipper.DisplayEnd && i < count; i++)
-                    {
-                        if (ImUtf8.Selectable($"{i,3}", i == value, size: new(itemWidth, lineHeight)))
-                        {
-                            ret   = value != i;
-                            value = (ushort)i;
-                        }
-                        var rectMin = ImGui.GetItemRectMin();
-                        var rectMax = ImGui.GetItemRectMax();
-                        var textureRegionStart = new Vector2(
-                            rectMax.X - framePadding.X - textureSize.X * textureRHs.Length - itemSpacing.X * (textureRHs.Length - 1),
-                            rectMin.Y + framePadding.Y);
-                        var maxSize = new Vector2(textureSize.X, rectMax.Y - framePadding.Y - textureRegionStart.Y);
-                        DrawTextureSlices(textureRegionStart, maxSize, itemSpacing.X, textureRHs, (byte)i);
-                    }
+                    ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, _framePadding + new Vector2(0.0f, Math.Max(_textureSize.Y - ImGui.GetFrameHeight() + _itemSpacing.Y, 0.0f) * 0.5f));
+                    _mustPopPadding = true;
+                }
+
+                try
+                {
+                    base.DrawCombo(label, preview.PadLeft(_spaces), tooltip, currentSelected, previewWidth, itemHeight, flags);
+                }
+                finally
+                {
+                    PopPadding();
                 }
             }
-        }
-        if (!compact && value != ushort.MaxValue)
-        {
-            var cbRectMin            = ImGui.GetItemRectMin();
-            var cbRectMax            = ImGui.GetItemRectMax();
-            var cbTextureRegionStart = new Vector2(cbRectMax.X - framePadding.X - textureSize.X * textureRHs.Length - itemSpacing.X * (textureRHs.Length - 1), cbRectMin.Y + framePadding.Y);
-            var cbMaxSize            = new Vector2(textureSize.X, cbRectMax.Y - framePadding.Y - cbTextureRegionStart.Y);
-            DrawTextureSlices(cbTextureRegionStart, cbMaxSize, itemSpacing.X, textureRHs, (byte)value);
-        }
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) && (description.Length > 0 || compact && value != ushort.MaxValue))
-        {
-            using var disabled = ImRaii.Enabled();
-            using var tt       = ImUtf8.Tooltip();
-            if (description.Length > 0)
-                ImUtf8.Text(description);
-            if (compact && value != ushort.MaxValue)
+            finally
             {
-                ImGui.Dummy(new Vector2(textureSize.X * textureRHs.Length + itemSpacing.X * (textureRHs.Length - 1), textureSize.Y));
+                PopFont();
+            }
+
+            currentSelected = NewSelection ?? currentSelected;
+            if (!Compact && currentSelected >= 0)
+            {
+                var cbRectMin            = ImGui.GetItemRectMin();
+                var cbRectMax            = ImGui.GetItemRectMax();
+                var cbTextureRegionStart = new Vector2(cbRectMax.X - _framePadding.X - _textureSize.X * _textures.Length - _itemSpacing.X * (_textures.Length - 1), cbRectMin.Y + _framePadding.Y);
+                var cbMaxSize            = new Vector2(_textureSize.X, cbRectMax.Y - _framePadding.Y - cbTextureRegionStart.Y);
+                DrawTextureSlices(cbTextureRegionStart, cbMaxSize, _itemSpacing.X, _textures.Span, (byte)currentSelected);
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) && Compact && currentSelected >= 0)
+            {
+                using var disabled = ImRaii.Enabled();
+                using var tt       = ImUtf8.Tooltip();
+                ImGui.Dummy(new Vector2(_textureSize.X * _textures.Length + _itemSpacing.X * (_textures.Length - 1), _textureSize.Y));
                 var rectMin = ImGui.GetItemRectMin();
                 var rectMax = ImGui.GetItemRectMax();
-                DrawTextureSlices(rectMin, textureSize, itemSpacing.X, textureRHs, (byte)value);
+                DrawTextureSlices(rectMin, _textureSize, _itemSpacing.X, _textures.Span, (byte)currentSelected);
             }
         }
 
-        return ret;
-    }
-
-    public void DrawTextureSlices(Vector2 regionStart, Vector2 itemSize, float itemSpacing, ReadOnlySpan<Pointer<TextureResourceHandle>> textureRHs, byte sliceIndex)
-    {
-        for (var j = 0; j < textureRHs.Length; ++j)
+        protected override void PostCombo(float previewWidth)
         {
-            if (textureRHs[j].Value == null)
-                continue;
-            var texture = textureRHs[j].Value->CsHandle.Texture;
-            if (texture == null)
-                continue;
-            var handle = _textureArraySlicer.GetImGuiHandle(texture, sliceIndex);
-            if (handle == 0)
-                continue;
+            PopPadding();
+            PopFont();
+        }
 
-            var position =  regionStart with { X = regionStart.X + (itemSize.X + itemSpacing) * j };
-            var size     =  new Vector2(texture->Width, texture->Height).Contain(itemSize);
-            position     += (itemSize - size) * 0.5f;
-            ImGui.GetWindowDrawList().AddImage(handle, position, position + size, Vector2.Zero,
-                new Vector2(texture->Width / (float)texture->Width2, texture->Height / (float)texture->Height2));
+        protected override float GetFilterWidth()
+            => MathF.Max(base.GetFilterWidth(), ImUtf8.CalcTextSize("MMM"u8).X + (_itemSpacing.X + _textureSize.X) * _textures.Length + _framePadding.X * 2.0f + ImGui.GetStyle().ScrollbarSize);
+
+        protected override void DrawList(float width, float itemHeight)
+        {
+            using var font   = ImRaii.PushFont(UiBuilder.MonoFont);
+            using var center = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0, 0.5f));
+
+            _itemHeight = itemHeight;
+
+            base.DrawList(width, itemHeight);
+        }
+
+        protected override bool DrawSelectable(int globalIdx, bool selected)
+        {
+            var ret     = ImUtf8.Selectable($"{globalIdx,3}", selected, size: new Vector2(ImGui.GetWindowWidth() - ImGui.GetStyle().ScrollbarSize - _framePadding.X, _itemHeight));
+            var rectMin = ImGui.GetItemRectMin();
+            var rectMax = ImGui.GetItemRectMax();
+            var textureRegionStart = new Vector2(
+                rectMax.X - _framePadding.X - _textureSize.X * _textures.Length - _itemSpacing.X * (_textures.Length - 1),
+                rectMin.Y + _framePadding.Y);
+            var maxSize = new Vector2(_textureSize.X, rectMax.Y - _framePadding.Y - textureRegionStart.Y);
+            DrawTextureSlices(textureRegionStart, maxSize, _itemSpacing.X, _textures.Span, (byte)globalIdx);
+            return ret;
+        }
+
+        private void PopPadding()
+        {
+            if (!_mustPopPadding)
+                return;
+
+            ImGui.PopStyleVar();
+            _mustPopPadding = false;
+        }
+
+        private void PopFont()
+        {
+            if (!_mustPopFont)
+                return;
+
+            ImGui.PopFont();
+            _mustPopFont = false;
+        }
+
+        private void DrawTextureSlices(Vector2 regionStart, Vector2 itemSize, float itemSpacing,
+            ReadOnlySpan<Pointer<TextureResourceHandle>> textures, byte sliceIndex)
+        {
+            for (var j = 0; j < textures.Length; ++j)
+            {
+                if (textures[j].Value == null)
+                    continue;
+                var texture = textures[j].Value->CsHandle.Texture;
+                if (texture == null)
+                    continue;
+                var handle = textureArraySlicer.GetImGuiHandle(texture, sliceIndex);
+                if (handle == 0)
+                    continue;
+
+                var position = regionStart with { X = regionStart.X + (itemSize.X + itemSpacing) * j };
+                var size = new Vector2(texture->Width, texture->Height).Contain(itemSize);
+                position += (itemSize - size) * 0.5f;
+                ImGui.GetWindowDrawList().AddImage(handle, position, position + size, Vector2.Zero,
+                    new Vector2(texture->Width / (float)texture->Width2, texture->Height / (float)texture->Height2));
+            }
         }
     }
 
-    private delegate bool DrawEditor(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, ref ushort value, bool compact);
+    private abstract class ArraySliceList(int textureCapacity) : IReadOnlyList<int>
+    {
+        public readonly int TextureCapacity = textureCapacity;
 
-    private sealed class Editor(DrawEditor draw) : IEditor<float>
+        private readonly Pointer<TextureResourceHandle>[] _textures = new Pointer<TextureResourceHandle>[textureCapacity];
+
+        public int Count
+            => GetFirstNonNullTexture(GetTextures().Span) switch
+            {
+                null        => 0,
+                var texture => texture->CsHandle.Texture->ArraySize,
+            };
+
+        public int this[int index]
+            => index;
+
+        public IEnumerator<int> GetEnumerator()
+            => Enumerable.Range(0, Count).GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+            => Enumerable.Range(0, Count).GetEnumerator();
+
+        protected abstract int GetTextures([Out] Span<Pointer<TextureResourceHandle>> textures);
+
+        public ReadOnlyMemory<Pointer<TextureResourceHandle>> GetTextures()
+        {
+            var textureCount = GetTextures(_textures);
+            return _textures.AsMemory(0, textureCount);
+        }
+
+        public static TextureResourceHandle* GetFirstNonNullTexture(ReadOnlySpan<Pointer<TextureResourceHandle>> textures)
+        {
+            foreach (var texture in textures)
+            {
+                if (texture.Value != null && texture.Value->CsHandle.Texture != null)
+                    return texture;
+            }
+
+            return null;
+        }
+    }
+
+    private sealed class TileList(CharacterUtility characterUtility) : ArraySliceList(2)
+    {
+        protected override int GetTextures([Out] Span<Pointer<TextureResourceHandle>> textures)
+        {
+            var characterUtilityData = characterUtility.Address;
+            if (characterUtilityData == null)
+                return 0;
+
+            textures[0] = characterUtilityData->TileOrbArrayTexResource;
+            textures[1] = characterUtilityData->TileNormArrayTexResource;
+            return 2;
+        }
+    }
+
+    private sealed class SphereMapList(CharacterUtility characterUtility) : ArraySliceList(1)
+    {
+        protected override int GetTextures([Out] Span<Pointer<TextureResourceHandle>> textures)
+        {
+            var characterUtilityData = characterUtility.Address;
+            if (characterUtilityData == null)
+                return 0;
+
+            textures[0] = characterUtilityData->SphereDArrayTexResource;
+            return 1;
+        }
+    }
+
+    private sealed class Editor(FilterComboSlices combo) : IEditor<float>
     {
         public bool Draw(Span<float> values, bool disabled)
         {
             var helper = Editors.PrepareMultiComponent(values.Length);
             var ret = false;
 
+            combo.Compact = true;
             for (var valueIdx = 0; valueIdx < values.Length; ++valueIdx)
             {
                 helper.SetupComponent(valueIdx);
 
-                var value = ushort.CreateSaturating(MathF.Round(values[valueIdx]));
+                var value = int.CreateSaturating(MathF.Round(values[valueIdx]));
                 if (disabled)
                 {
                     using var _ = ImRaii.Disabled();
-                    draw(helper.Id, default, ref value, true);
+                    combo.Draw($"###{valueIdx}", string.Empty, ref value);
                 }
                 else
                 {
-                    if (draw(helper.Id, default, ref value, true))
+                    if (combo.Draw($"###{valueIdx}", string.Empty, ref value))
                     {
                         values[valueIdx] = value;
                         ret              = true;

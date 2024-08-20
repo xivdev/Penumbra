@@ -350,8 +350,8 @@ public partial class MtrlTab
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
         ImGui.SetNextItemWidth(scalarSize + itemSpacing + 64.0f);
-        ret |= CtSphereMapIndexPicker("###SphereMapIndex"u8, default, row.SphereMapIndex, false,
-            v => table[rowIdx].SphereMapIndex = v);
+        ret |= CtSphereMapIndexPicker("###SphereMapIndex", string.Empty, row.SphereMapIndex, false,
+            v => table[rowIdx].SphereMapIndex = (ushort)v);
         ImUtf8.SameLineInner();
         ImUtf8.Text("Sphere Map"u8);
         if (dyeTable != null)
@@ -367,7 +367,7 @@ public partial class MtrlTab
             ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() with { Y = cursor.Y });
             ImGui.SetNextItemWidth(scalarSize + itemSpacing + 64.0f);
             using var dis = ImRaii.Disabled();
-            CtSphereMapIndexPicker("###dyePreviewSphereMapIndex"u8, "Dye Preview for Sphere Map"u8, dyePack?.SphereMapIndex ?? ushort.MaxValue, false,
+            CtSphereMapIndexPicker("###dyePreviewSphereMapIndex", "Dye Preview for Sphere Map", dyePack?.SphereMapIndex ?? -1, false,
                 Nop);
         }
 
@@ -409,8 +409,8 @@ public partial class MtrlTab
         var cursorPos       = ImGui.GetCursorScreenPos();
         ImGui.SetCursorScreenPos(cursorPos + new Vector2(0.0f, (lineHeight - leftLineHeight) * 0.5f));
         ImGui.SetNextItemWidth(scalarSize + (itemSpacing + 64.0f) * 2.0f);
-        ret |= CtTileIndexPicker("###TileIndex"u8, default, row.TileIndex, false,
-            v => table[rowIdx].TileIndex = v);
+        ret |= CtTileIndexPicker("###TileIndex", string.Empty, row.TileIndex, false,
+            v => table[rowIdx].TileIndex = (ushort)v);
         ImUtf8.SameLineInner();
         ImUtf8.Text("Tile"u8);
 
