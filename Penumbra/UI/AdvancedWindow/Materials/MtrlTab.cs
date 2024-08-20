@@ -83,7 +83,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         return true;
     }
 
-    public bool DrawPanel(bool disabled)
+    public bool DrawPanel(bool disabled, MtrlTabUiState uiState)
     {
         if (_updateOnNextFrame)
         {
@@ -100,7 +100,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         ret |= DrawShaderSection(disabled);
 
         ret |= DrawTextureSection(disabled);
-        ret |= DrawColorTableSection(disabled);
+        ret |= DrawColorTableSection(disabled, uiState);
         ret |= DrawConstantsSection(disabled);
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
