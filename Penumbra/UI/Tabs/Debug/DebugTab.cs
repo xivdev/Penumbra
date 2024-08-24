@@ -1,5 +1,4 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
@@ -43,7 +42,6 @@ using Penumbra.Api.IpcTester;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
-using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.AdvancedWindow.Materials;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -721,7 +719,8 @@ public class DebugTab : Window, ITab, IUiService
             if (!tree)
                 continue;
 
-            using var table = Table("##table", data.Colors.Length + data.Scalars.Length, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+            using var table = Table("##table", data.Colors.Length + data.Scalars.Length,
+                ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
             if (!table)
                 continue;
 
