@@ -86,11 +86,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="EmbedIO" Version="3.4.3" />
+        <PackageReference Include="EmbedIO" Version="3.5.2" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
-        <PackageReference Include="SharpCompress" Version="0.33.0" />
-        <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0030" />
-        <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0030" />
+        <PackageReference Include="SharpCompress" Version="0.37.2" />
+        <PackageReference Include="SharpGLTF.Core" Version="1.0.1" />
+        <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.1" />
         <PackageReference Include="PeNet" Version="4.0.5" />
     </ItemGroup>
 

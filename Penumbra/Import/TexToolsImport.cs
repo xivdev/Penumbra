@@ -148,7 +148,7 @@ public partial class TexToolsImporter : IDisposable
 
     // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
     private static ZipArchiveEntry? FindZipEntry(ZipArchive file, string fileName)
-        => file.Entries.FirstOrDefault(e => !e.IsDirectory && e.Key.Contains(fileName));
+        => file.Entries.FirstOrDefault(e => e is { IsDirectory: false, Key: not null } && e.Key.Contains(fileName));
 
     private static string GetStringFromZipEntry(ZipArchiveEntry entry, Encoding encoding)
     {
