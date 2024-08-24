@@ -47,7 +47,10 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
     }
 
     protected override IEnumerable<(GlobalEqpManipulation, byte)> Enumerate()
-        => Editor.GlobalEqp.Select(identifier => (identifier, (byte)0));
+        => Editor.GlobalEqp
+            .OrderBy(identifier => identifier.Type)
+            .ThenBy(identifier => identifier.Condition)
+            .Select(identifier => (identifier, (byte)0));
 
     private static void DrawIdentifierInput(ref GlobalEqpManipulation identifier)
     {
