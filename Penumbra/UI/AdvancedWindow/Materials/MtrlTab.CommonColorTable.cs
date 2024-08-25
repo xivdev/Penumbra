@@ -132,11 +132,12 @@ public partial class MtrlTab
             var data     = Convert.FromBase64String(text);
             var table    = Mtrl.Table.AsBytes();
             var dyeTable = Mtrl.DyeTable != null ? Mtrl.DyeTable.AsBytes() : [];
-            if (data.Length != table.Length && data.Length != table.Length + dyeTable.Length)
+            if (data.Length < table.Length)
                 return false;
 
             data.AsSpan(0, table.Length).TryCopyTo(table);
-            data.AsSpan(table.Length).TryCopyTo(dyeTable);
+            if (data.Length >= table.Length + dyeTable.Length)
+                data.AsSpan(table.Length, dyeTable.Length).TryCopyTo(dyeTable);
 
             UpdateColorTablePreview();
 
@@ -212,11 +213,12 @@ public partial class MtrlTab
             var data   = Convert.FromBase64String(text);
             var row    = Mtrl.Table.RowAsBytes(rowIdx);
             var dyeRow = Mtrl.DyeTable != null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
-            if (data.Length != row.Length && data.Length != row.Length + dyeRow.Length)
+            if (data.Length < row.Length)
                 return false;
 
             data.AsSpan(0, row.Length).TryCopyTo(row);
-            data.AsSpan(row.Length).TryCopyTo(dyeRow);
+            if (data.Length >= row.Length + dyeRow.Length)
+                data.AsSpan(row.Length, dyeRow.Length).TryCopyTo(dyeRow);
 
             UpdateColorTableRowPreview(rowIdx);
 
