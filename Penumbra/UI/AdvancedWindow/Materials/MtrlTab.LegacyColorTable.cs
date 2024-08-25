@@ -9,6 +9,8 @@ namespace Penumbra.UI.AdvancedWindow.Materials;
 
 public partial class MtrlTab
 {
+    private static readonly float EffectiveMaxShininess = (float)LegacyColorTableRow.EffectiveMaxShininess;
+
     private bool DrawLegacyColorTable<TRow, TDyeRow>(IColorTable<TRow> table, IColorDyeTable<TDyeRow>? dyeTable, bool disabled, MtrlTabUiState uiState)
         where TRow : unmanaged, ILegacyColorRow where TDyeRow : unmanaged, ILegacyColorDyeRow
     {
@@ -147,7 +149,7 @@ public partial class MtrlTab
         ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
         var shininessMin = ImGui.GetIO().KeyCtrl ? 0.0f : HalfEpsilon;
-        ret |= CtDragHalf("Gloss"u8, default, row.Shininess, "%.1f"u8, shininessMin, HalfMaxValue,
+        ret |= CtDragHalf("Gloss"u8, default, row.Shininess, "%.1f"u8, shininessMin, EffectiveMaxShininess,
             Math.Max(0.1f, (float)row.Shininess * 0.025f),
             v => table[rowIdx].Shininess = v);
         if (dyeTable != null)

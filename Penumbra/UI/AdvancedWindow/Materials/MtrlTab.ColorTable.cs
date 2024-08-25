@@ -456,8 +456,8 @@ public partial class MtrlTab
         var     dye = dyeTable?[rowIdx] ?? default;
 
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Roughness"u8, default, (float)row.Roughness * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f,
-            1.0f,
+        ret |= CtDragScalar("Roughness"u8, default, (float)row.Roughness * 100.0f, "%.0f%%"u8, 0.0f, 100.0f,
+            0.25f,
             v => table[rowIdx].Roughness = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
@@ -471,8 +471,8 @@ public partial class MtrlTab
 
         ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
-        ret |= CtDragScalar("Metalness"u8, default, (float)row.Metalness * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f, HalfMaxValue * 100.0f,
-            1.0f,
+        ret |= CtDragScalar("Metalness"u8, default, (float)row.Metalness * 100.0f, "%.0f%%"u8, 0.0f, 100.0f,
+            0.25f,
             v => table[rowIdx].Metalness = (Half)(v * 0.01f));
         if (dyeTable != null)
         {
