@@ -329,5 +329,6 @@ public partial class ModEditWindow
         ".png",
         ".dds",
         ".tex",
+        ".tga",
     };
 }

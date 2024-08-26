@@ -165,11 +165,13 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                     return;
             }
 
+            var imageTypeBehaviour = image.Type.ReduceToBehaviour();
             var dds = _type switch
             {
-                CombinedTexture.TextureSaveType.AsIs when image.Type is TextureType.Png => ConvertToRgbaDds(image, _mipMaps, cancel, rgba,
+                CombinedTexture.TextureSaveType.AsIs when imageTypeBehaviour is TextureType.Png => ConvertToRgbaDds(image, _mipMaps,
+                    cancel, rgba,
                     width, height),
-                CombinedTexture.TextureSaveType.AsIs when image.Type is TextureType.Dds => AddMipMaps(image.AsDds!, _mipMaps),
+                CombinedTexture.TextureSaveType.AsIs when imageTypeBehaviour is TextureType.Dds => AddMipMaps(image.AsDds!, _mipMaps),
                 CombinedTexture.TextureSaveType.Bitmap => ConvertToRgbaDds(image, _mipMaps, cancel, rgba, width, height),
                 CombinedTexture.TextureSaveType.BC3 => ConvertToCompressedDds(image, _mipMaps, false, cancel, rgba, width, height),
                 CombinedTexture.TextureSaveType.BC7 => ConvertToCompressedDds(image, _mipMaps, true, cancel, rgba, width, height),
@@ -218,7 +220,9 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
         => Path.GetExtension(path).ToLowerInvariant() switch
         {
             ".dds" => (LoadDds(path), TextureType.Dds),
-            ".png" => (LoadPng(path), TextureType.Png),
+            ".png" => (LoadImageSharp(path), TextureType.Png),
+            ".tga" => (LoadImageSharp(path), TextureType.Targa),
+            ".bmp" => (LoadImageSharp(path), TextureType.Bitmap),
             ".tex" => (LoadTex(path), TextureType.Tex),
             _      => throw new Exception($"Extension {Path.GetExtension(path)} unknown."),
         };
@@ -234,17 +238,17 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     public BaseImage LoadDds(string path)
         => ScratchImage.LoadDDS(path);
 
-    /// <summary> Load a .png file from drive using ImageSharp. </summary>
-    public BaseImage LoadPng(string path)
+    /// <summary> Load a supported file type from drive using ImageSharp. </summary>
+    public BaseImage LoadImageSharp(string path)
     {
         using var stream = File.OpenRead(path);
         return Image.Load<Rgba32>(stream);
     }
 
-    /// <summary> Convert an existing image to .png. Does not create a deep copy of an existing .png and just returns the existing one. </summary>
+    /// <summary> Convert an existing image to ImageSharp. Does not create a deep copy of an existing ImageSharp file and just returns the existing one. </summary>
     public static BaseImage ConvertToPng(BaseImage input, CancellationToken cancel, byte[]? rgba = null, int width = 0, int height = 0)
     {
-        switch (input.Type)
+        switch (input.Type.ReduceToBehaviour())
         {
             case TextureType.Png: return input;
             case TextureType.Dds:
@@ -261,7 +265,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     public static BaseImage ConvertToRgbaDds(BaseImage input, bool mipMaps, CancellationToken cancel, byte[]? rgba = null, int width = 0,
         int height = 0)
     {
-        switch (input.Type)
+        switch (input.Type.ReduceToBehaviour())
         {
             case TextureType.Png:
             {
@@ -291,7 +295,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     public static BaseImage ConvertToCompressedDds(BaseImage input, bool mipMaps, bool bc7, CancellationToken cancel, byte[]? rgba = null,
         int width = 0, int height = 0)
     {
-        switch (input.Type)
+        switch (input.Type.ReduceToBehaviour())
         {
             case TextureType.Png:
             {
@@ -470,6 +474,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                     TextureType.Dds     => $"Custom {_width} x {_height} {_image.Format} Image",
                     TextureType.Tex     => $"Custom {_width} x {_height} {_image.Format} Image",
                     TextureType.Png     => $"Custom {_width} x {_height} .png Image",
+                    TextureType.Targa     => $"Custom {_width} x {_height} .tga Image",
                     TextureType.Bitmap  => $"Custom {_width} x {_height} RGBA Image",
                     _                   => "Unknown Image",
                 };
