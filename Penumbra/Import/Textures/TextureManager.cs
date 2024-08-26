@@ -474,7 +474,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                     TextureType.Dds     => $"Custom {_width} x {_height} {_image.Format} Image",
                     TextureType.Tex     => $"Custom {_width} x {_height} {_image.Format} Image",
                     TextureType.Png     => $"Custom {_width} x {_height} .png Image",
-                    TextureType.Targa     => $"Custom {_width} x {_height} .tga Image",
+                    TextureType.Targa   => $"Custom {_width} x {_height} .tga Image",
                     TextureType.Bitmap  => $"Custom {_width} x {_height} RGBA Image",
                     _                   => "Unknown Image",
                 };
