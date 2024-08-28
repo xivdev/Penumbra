@@ -86,6 +86,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- This reference is only there to silence a vulnerability warning caused by transitive inclusion of a lower version through PeNet and System.Security.Cryptography.Pkcs. -->
+        <PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
         <PackageReference Include="EmbedIO" Version="3.5.2" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
         <PackageReference Include="SharpCompress" Version="0.37.2" />
