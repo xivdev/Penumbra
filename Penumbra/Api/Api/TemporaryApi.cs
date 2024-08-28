@@ -1,10 +1,8 @@
-using OtterGui;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Interop;
-using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Settings;
 using Penumbra.String.Classes;
 
@@ -62,7 +60,7 @@ public class TemporaryApi(
         if (!ConvertPaths(paths, out var p))
             return ApiHelpers.Return(PenumbraApiEc.InvalidGamePath, args);
 
-        if (!ConvertManips(manipString, out var m))
+        if (!MetaApi.ConvertManips(manipString, out var m))
             return ApiHelpers.Return(PenumbraApiEc.InvalidManipulation, args);
 
         var ret = tempMods.Register(tag, null, p, m, new ModPriority(priority)) switch
@@ -88,7 +86,7 @@ public class TemporaryApi(
         if (!ConvertPaths(paths, out var p))
             return ApiHelpers.Return(PenumbraApiEc.InvalidGamePath, args);
 
-        if (!ConvertManips(manipString, out var m))
+        if (!MetaApi.ConvertManips(manipString, out var m))
             return ApiHelpers.Return(PenumbraApiEc.InvalidManipulation, args);
 
         var ret = tempMods.Register(tag, collection, p, m, new ModPriority(priority)) switch
@@ -152,25 +150,5 @@ public class TemporaryApi(
         }
 
         return true;
-    }
-
-    /// <summary>
-    /// Convert manipulations from a transmitted base64 string to actual manipulations.
-    /// The empty string is treated as an empty set.
-    /// Only returns true if all conversions are successful and distinct. 
-    /// </summary>
-    private static bool ConvertManips(string manipString, [NotNullWhen(true)] out MetaDictionary? manips)
-    {
-        if (manipString.Length == 0)
-        {
-            manips = new MetaDictionary();
-            return true;
-        }
-
-        if (Functions.FromCompressedBase64(manipString, out manips!) == MetaApi.CurrentVersion)
-            return true;
-
-        manips = null;
-        return false;
     }
 }
