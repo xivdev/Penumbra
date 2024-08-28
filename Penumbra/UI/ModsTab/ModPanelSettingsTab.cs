@@ -3,9 +3,9 @@ using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Services;
 using OtterGui.Widgets;
-using Penumbra.Collections;
 using Penumbra.UI.Classes;
 using Penumbra.Collections.Manager;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Mods.Settings;
@@ -16,16 +16,14 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelSettingsTab(
     CollectionManager collectionManager,
     ModManager modManager,
-    ModFileSystemSelector selector,
+    ModSelection selection,
     TutorialService tutorial,
     CommunicatorService communicator,
     ModGroupDrawer modGroupDrawer)
     : ITab, IUiService
 {
-    private bool          _inherited;
-    private ModSettings   _settings   = null!;
-    private ModCollection _collection = null!;
-    private int?          _currentPriority;
+    private bool _inherited;
+    private int? _currentPriority;
 
     public ReadOnlySpan<byte> Label
         => "Settings"u8;
@@ -42,12 +40,10 @@ public class ModPanelSettingsTab(
         if (!child)
             return;
 
-        _settings   = selector.SelectedSettings;
-        _collection = selector.SelectedSettingCollection;
-        _inherited  = _collection != collectionManager.Active.Current;
+        _inherited  = selection.Collection != collectionManager.Active.Current;
         DrawInheritedWarning();
         UiHelpers.DefaultLineSpace();
-        communicator.PreSettingsPanelDraw.Invoke(selector.Selected!.Identifier);
+        communicator.PreSettingsPanelDraw.Invoke(selection.Mod!.Identifier);
         DrawEnabledInput();
         tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
         ImGui.SameLine();
@@ -55,11 +51,11 @@ public class ModPanelSettingsTab(
         tutorial.OpenTutorial(BasicTutorialSteps.Priority);
         DrawRemoveSettings();
 
-        communicator.PostEnabledDraw.Invoke(selector.Selected!.Identifier);
+        communicator.PostEnabledDraw.Invoke(selection.Mod!.Identifier);
 
-        modGroupDrawer.Draw(selector.Selected!, _settings);
+        modGroupDrawer.Draw(selection.Mod!, selection.Settings);
         UiHelpers.DefaultLineSpace();
-        communicator.PostSettingsPanelDraw.Invoke(selector.Selected!.Identifier);
+        communicator.PostSettingsPanelDraw.Invoke(selection.Mod!.Identifier);
     }
 
     /// <summary> Draw a big red bar if the current setting is inherited. </summary>
@@ -70,8 +66,8 @@ public class ModPanelSettingsTab(
 
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
-        if (ImGui.Button($"These settings are inherited from {_collection.Name}.", width))
-            collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selector.Selected!, false);
+        if (ImGui.Button($"These settings are inherited from {selection.Collection.Name}.", width))
+            collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod!, false);
 
         ImGuiUtil.HoverTooltip("You can click this button to copy the current settings to the current selection.\n"
           + "You can also just change any setting, which will copy the settings with the single setting changed to the current selection.");
@@ -80,12 +76,12 @@ public class ModPanelSettingsTab(
     /// <summary> Draw a checkbox for the enabled status of the mod. </summary>
     private void DrawEnabledInput()
     {
-        var enabled = _settings.Enabled;
+        var enabled = selection.Settings.Enabled;
         if (!ImGui.Checkbox("Enabled", ref enabled))
             return;
 
-        modManager.SetKnown(selector.Selected!);
-        collectionManager.Editor.SetModState(collectionManager.Active.Current, selector.Selected!, enabled);
+        modManager.SetKnown(selection.Mod!);
+        collectionManager.Editor.SetModState(collectionManager.Active.Current, selection.Mod!, enabled);
     }
 
     /// <summary>
@@ -95,15 +91,16 @@ public class ModPanelSettingsTab(
     private void DrawPriorityInput()
     {
         using var group    = ImRaii.Group();
-        var       priority = _currentPriority ?? _settings.Priority.Value;
+        var       settings = selection.Settings;
+        var       priority = _currentPriority ?? settings.Priority.Value;
         ImGui.SetNextItemWidth(50 * UiHelpers.Scale);
         if (ImGui.InputInt("##Priority", ref priority, 0, 0))
             _currentPriority = priority;
 
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {
-            if (_currentPriority != _settings.Priority.Value)
-                collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selector.Selected!,
+            if (_currentPriority != settings.Priority.Value)
+                collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selection.Mod!,
                     new ModPriority(_currentPriority.Value));
 
             _currentPriority = null;
@@ -120,13 +117,13 @@ public class ModPanelSettingsTab(
     private void DrawRemoveSettings()
     {
         const string text = "Inherit Settings";
-        if (_inherited || _settings == ModSettings.Empty)
+        if (_inherited || selection.Settings == ModSettings.Empty)
             return;
 
         var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0;
         ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.CalcTextSize(text).X - ImGui.GetStyle().FramePadding.X * 2 - scroll);
         if (ImGui.Button(text))
-            collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selector.Selected!, true);
+            collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod!, true);
 
         ImGuiUtil.HoverTooltip("Remove current settings from this collection so that it can inherit them.\n"
           + "If no inherited collection has settings for this mod, it will be disabled.");

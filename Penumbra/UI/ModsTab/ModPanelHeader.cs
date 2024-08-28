@@ -18,7 +18,8 @@ public class ModPanelHeader : IDisposable
     private readonly IFontHandle _nameFont;
 
     private readonly CommunicatorService _communicator;
-    private          float               _lastPreSettingsHeight = 0;
+    private          float               _lastPreSettingsHeight;
+    private          bool                _dirty                 = true;
 
     public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator)
     {
@@ -33,6 +34,7 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     public void Draw()
     {
+        UpdateModData();
         var height     = ImGui.GetContentRegionAvail().Y;
         var maxHeight = 3 * height / 4;
         using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
@@ -49,16 +51,25 @@ public class ModPanelHeader : IDisposable
         _lastPreSettingsHeight = ImGui.GetCursorPosY();
     }
 
+    public void ChangeMod(Mod mod)
+    {
+        _mod   = mod;
+        _dirty = true;
+    }
+
     /// <summary>
     /// Update all mod header data. Should someone change frame padding or item spacing,
     /// or his default font, this will break, but he will just have to select a different mod to restore.
     /// </summary>
-    public void UpdateModData(Mod mod)
+    private void UpdateModData()
     {
+        if (!_dirty)
+            return;
+
+        _dirty                 = false;
         _lastPreSettingsHeight = 0;
-        _mod = mod;
         // Name
-        var name = $" {mod.Name} ";
+        var name = $" {_mod.Name} ";
         if (name != _modName)
         {
             using var f = _nameFont.Push();
@@ -67,16 +78,16 @@ public class ModPanelHeader : IDisposable
         }
 
         // Author
-        if (mod.Author != _modAuthor)
+        if (_mod.Author != _modAuthor)
         {
-            var author = mod.Author.IsEmpty ? string.Empty : $"by  {mod.Author}";
-            _modAuthor      = mod.Author.Text;
+            var author = _mod.Author.IsEmpty ? string.Empty : $"by  {_mod.Author}";
+            _modAuthor      = _mod.Author.Text;
             _modAuthorWidth = ImGui.CalcTextSize(author).X;
             _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
         }
 
         // Version
-        var version = mod.Version.Length > 0 ? $"({mod.Version})" : string.Empty;
+        var version = _mod.Version.Length > 0 ? $"({_mod.Version})" : string.Empty;
         if (version != _modVersion)
         {
             _modVersion      = version;
@@ -84,9 +95,9 @@ public class ModPanelHeader : IDisposable
         }
 
         // Website
-        if (_modWebsite != mod.Website)
+        if (_modWebsite != _mod.Website)
         {
-            _modWebsite = mod.Website;
+            _modWebsite = _mod.Website;
             _websiteValid = Uri.TryCreate(_modWebsite, UriKind.Absolute, out var uriResult)
              && (uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp);
             _modWebsiteButton = _websiteValid ? "Open Website" : _modWebsite.Length == 0 ? string.Empty : $"from  {_modWebsite}";
@@ -253,7 +264,6 @@ public class ModPanelHeader : IDisposable
     {
         const ModDataChangeType relevantChanges =
             ModDataChangeType.Author | ModDataChangeType.Name | ModDataChangeType.Website | ModDataChangeType.Version;
-        if ((changeType & relevantChanges) != 0)
-            UpdateModData(mod);
+        _dirty     = (changeType & relevantChanges) != 0;
     }
 }

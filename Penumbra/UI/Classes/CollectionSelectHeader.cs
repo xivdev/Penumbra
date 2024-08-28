@@ -5,24 +5,24 @@ using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Mods;
 using Penumbra.UI.CollectionTab;
-using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Classes;
 
 public class CollectionSelectHeader : IUiService
 {
-    private readonly CollectionCombo       _collectionCombo;
-    private readonly ActiveCollections     _activeCollections;
-    private readonly TutorialService       _tutorial;
-    private readonly ModFileSystemSelector _selector;
-    private readonly CollectionResolver    _resolver;
+    private readonly CollectionCombo    _collectionCombo;
+    private readonly ActiveCollections  _activeCollections;
+    private readonly TutorialService    _tutorial;
+    private readonly ModSelection       _selection;
+    private readonly CollectionResolver _resolver;
 
-    public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModFileSystemSelector selector,
+    public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModSelection selection,
         CollectionResolver resolver)
     {
         _tutorial          = tutorial;
-        _selector          = selector;
+        _selection         = selection;
         _resolver          = resolver;
         _activeCollections = collectionManager.Active;
         _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Name).ToList());
@@ -115,7 +115,7 @@ public class CollectionSelectHeader : IUiService
 
     private (ModCollection?, string, string, bool) GetInheritedCollectionInfo()
     {
-        var collection = _selector.Selected == null ? null : _selector.SelectedSettingCollection;
+        var collection = _selection.Mod == null ? null : _selection.Collection;
         return CheckCollection(collection, true) switch
         {
             CollectionState.Unavailable => (null, "Not Inherited",

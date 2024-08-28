@@ -36,8 +36,6 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    public readonly MigrationManager MigrationManager;
-
     private readonly PerformanceTracker  _performance;
     private readonly ModEditor           _editor;
     private readonly Configuration       _config;
@@ -587,7 +585,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
         MetaDrawers metaDrawers, MigrationManager migrationManager,
-        MtrlTabFactory mtrlTabFactory)
+        MtrlTabFactory mtrlTabFactory, ModSelection selection)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -604,7 +602,6 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _models            = models;
         _fileDialog        = fileDialog;
         _framework         = framework;
-        MigrationManager   = migrationManager;
         _metaDrawers       = metaDrawers;
         _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
@@ -622,6 +619,8 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _quickImportViewer   = resourceTreeViewerFactory.Create(2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
         IsOpen = _config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true };
+        if (IsOpen && selection.Mod != null)
+            ChangeMod(selection.Mod);
     }
 
     public void Dispose()
