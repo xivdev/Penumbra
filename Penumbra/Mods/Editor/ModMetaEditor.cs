@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using OtterGui.Services;
-using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -65,64 +64,100 @@ public class ModMetaEditor(ModManager modManager, MetaFileManager metaFileManage
         Changes = false;
     }
 
-    public void DeleteDefaultValues()
+    public bool DeleteDefaultValues(MetaDictionary dict)
     {
-        var clone = Clone();
-        Clear();
+        var clone = dict.Clone();
+        dict.Clear();
+        var ret = false;
         foreach (var (key, value) in clone.Imc)
         {
             var defaultEntry = imcChecker.GetDefaultEntry(key, false);
             if (!defaultEntry.Entry.Equals(value))
-                TryAdd(key, value);
+            {
+                dict.TryAdd(key, value);
+            }
             else
-                Changes = true;
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ret = true;
+            }
         }
 
         foreach (var (key, value) in clone.Eqp)
         {
             var defaultEntry = new EqpEntryInternal(ExpandedEqpFile.GetDefault(metaFileManager, key.SetId), key.Slot);
             if (!defaultEntry.Equals(value))
-                TryAdd(key, value);
+            {
+                dict.TryAdd(key, value);
+            }
             else
-                Changes = true;
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ret = true;
+            }
         }
 
         foreach (var (key, value) in clone.Eqdp)
         {
             var defaultEntry = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(metaFileManager, key), key.Slot);
             if (!defaultEntry.Equals(value))
-                TryAdd(key, value);
+            {
+                dict.TryAdd(key, value);
+            }
             else
-                Changes = true;
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ret = true;
+            }
         }
 
         foreach (var (key, value) in clone.Est)
         {
             var defaultEntry = EstFile.GetDefault(metaFileManager, key);
             if (!defaultEntry.Equals(value))
-                TryAdd(key, value);
+            {
+                dict.TryAdd(key, value);
+            }
             else
-                Changes = true;
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ret = true;
+            }
         }
 
         foreach (var (key, value) in clone.Gmp)
         {
             var defaultEntry = ExpandedGmpFile.GetDefault(metaFileManager, key);
             if (!defaultEntry.Equals(value))
-                TryAdd(key, value);
+            {
+                dict.TryAdd(key, value);
+            }
             else
-                Changes = true;
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ret = true;
+            }
         }
 
         foreach (var (key, value) in clone.Rsp)
         {
             var defaultEntry = CmpFile.GetDefault(metaFileManager, key.SubRace, key.Attribute);
             if (!defaultEntry.Equals(value))
-                TryAdd(key, value);
+            {
+                dict.TryAdd(key, value);
+            }
             else
-                Changes = true;
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ret = true;
+            }
         }
+
+        return ret;
     }
+
+    public void DeleteDefaultValues()
+        => Changes = DeleteDefaultValues(this);
 
     public void Apply(IModDataContainer container)
     {
