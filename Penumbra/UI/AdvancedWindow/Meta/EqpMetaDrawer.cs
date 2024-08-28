@@ -60,7 +60,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override IEnumerable<(EqpIdentifier, EqpEntryInternal)> Enumerate()
         => Editor.Eqp
-            .OrderBy(kvp => kvp.Key.SetId)
+            .OrderBy(kvp => kvp.Key.SetId.Id)
             .ThenBy(kvp => kvp.Key.Slot)
             .Select(kvp => (kvp.Key, kvp.Value));
 

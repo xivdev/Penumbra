@@ -59,7 +59,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override IEnumerable<(EstIdentifier, EstEntry)> Enumerate()
         => Editor.Est
-            .OrderBy(kvp => kvp.Key.SetId)
+            .OrderBy(kvp => kvp.Key.SetId.Id)
             .ThenBy(kvp => kvp.Key.GenderRace)
             .ThenBy(kvp => kvp.Key.Slot)
             .Select(kvp => (kvp.Key, kvp.Value));
