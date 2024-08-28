@@ -64,6 +64,9 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Slot)
             .Select(kvp => (kvp.Key, kvp.Value));
 
+    protected override int Count
+        => Editor.Est.Count;
+
     private static bool DrawIdentifierInput(ref EstIdentifier identifier)
     {
         ImGui.TableNextColumn();

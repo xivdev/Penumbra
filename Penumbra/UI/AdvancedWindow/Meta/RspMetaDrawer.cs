@@ -63,6 +63,9 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Attribute)
             .Select(kvp => (kvp.Key, kvp.Value));
 
+    protected override int Count
+        => Editor.Rsp.Count;
+
     private static bool DrawIdentifierInput(ref RspIdentifier identifier)
     {
         ImGui.TableNextColumn();

@@ -64,6 +64,9 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Slot)
             .Select(kvp => (kvp.Key, kvp.Value));
 
+    protected override int Count
+        => Editor.Eqp.Count;
+
     private static bool DrawIdentifierInput(ref EqpIdentifier identifier)
     {
         ImGui.TableNextColumn();

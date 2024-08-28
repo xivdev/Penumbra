@@ -149,6 +149,9 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .ThenBy(kvp => kvp.Key.Variant.Id)
             .Select(kvp => (kvp.Key, kvp.Value));
 
+    protected override int Count
+        => Editor.Imc.Count;
+
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
         var ret = Combos.ImcType("##imcType", identifier.ObjectType, out var type, width);

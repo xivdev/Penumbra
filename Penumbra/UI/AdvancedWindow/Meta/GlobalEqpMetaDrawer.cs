@@ -52,6 +52,9 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
             .ThenBy(identifier => identifier.Condition.Id)
             .Select(identifier => (identifier, (byte)0));
 
+    protected override int Count
+        => Editor.GlobalEqp.Count;
+
     private static void DrawIdentifierInput(ref GlobalEqpManipulation identifier)
     {
         ImGui.TableNextColumn();

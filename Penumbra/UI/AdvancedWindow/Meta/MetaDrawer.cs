@@ -41,12 +41,14 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
 
         using var id = ImUtf8.PushId((int)Identifier.Type);
         DrawNew();
-        foreach (var ((identifier, entry), idx) in Enumerate().WithIndex())
-        {
-            id.Push(idx);
-            DrawEntry(identifier, entry);
-            id.Pop();
-        }
+
+        var height    = ImUtf8.FrameHeightSpacing;
+        var skips     = ImGuiClip.GetNecessarySkipsAtPos(height, ImGui.GetCursorPosY());
+        var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
+        ImGuiClip.DrawEndDummy(remainder, height);
+
+        void DrawLine((TIdentifier Identifier, TEntry Value) pair)
+            => DrawEntry(pair.Identifier, pair.Value);
     }
 
     public abstract ReadOnlySpan<byte> Label      { get; }
@@ -57,6 +59,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected abstract void DrawEntry(TIdentifier identifier, TEntry entry);
 
     protected abstract IEnumerable<(TIdentifier, TEntry)> Enumerate();
+    protected abstract int                                Count { get; }
 
 
     /// <summary>
