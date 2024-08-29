@@ -9,6 +9,8 @@ using OtterGui.Filesystem;
 using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
+using OtterGui.Text.Widget;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -703,8 +705,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
             ImGui.GetStyle().ItemSpacing with { Y = 3 * UiHelpers.Scale });
-        var flags = (int)_stateFilter;
-
 
         if (ImGui.Checkbox("Everything", ref everything))
         {
@@ -713,12 +713,19 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         }
 
         ImGui.Dummy(new Vector2(0, 5 * UiHelpers.Scale));
-        foreach (ModFilter flag in Enum.GetValues(typeof(ModFilter)))
+        foreach (var (onFlag, offFlag, name) in ModFilterExtensions.TriStatePairs)
         {
-            if (ImGui.CheckboxFlags(flag.ToName(), ref flags, (int)flag))
-            {
-                _stateFilter = (ModFilter)flags;
+            if (TriStateCheckbox.Instance.Draw(name, ref _stateFilter, onFlag, offFlag))
                 SetFilterDirty();
+        }
+
+        foreach (var group in ModFilterExtensions.Groups)
+        {
+            ImGui.Separator();
+            foreach (var (flag, name) in group)
+            {
+                if (ImUtf8.Checkbox(name, ref _stateFilter, flag))
+                    SetFilterDirty();
             }
         }
 

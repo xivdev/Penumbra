@@ -204,7 +204,7 @@ public static class TexFileParser
             TexFile.TextureFormat.BC1           => DXGIFormat.BC1UNorm,
             TexFile.TextureFormat.BC2           => DXGIFormat.BC2UNorm,
             TexFile.TextureFormat.BC3           => DXGIFormat.BC3UNorm,
-            (TexFile.TextureFormat)0x6120       => DXGIFormat.BC4UNorm,  // TODO: upstream to Lumina
+            (TexFile.TextureFormat)0x6120       => DXGIFormat.BC4UNorm, // TODO: upstream to Lumina
             TexFile.TextureFormat.BC5           => DXGIFormat.BC5UNorm,
             (TexFile.TextureFormat)0x6330       => DXGIFormat.BC6HUF16, // TODO: upstream to Lumina
             TexFile.TextureFormat.BC7           => DXGIFormat.BC7UNorm,
