@@ -91,7 +91,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
         if (_config.UseFileSystemCompression)
             new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
-                CompressionAlgorithm.Xpress8K);
+                CompressionAlgorithm.Xpress8K, false);
 
         return ApiHelpers.Return(PenumbraApiEc.Success, args);
     }
