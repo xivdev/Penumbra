@@ -8,6 +8,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -51,34 +52,68 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
 
-    public Mod? Mod { get; private set; }
+    public Mod?   Mod { get; private set; }
+
+
+    public bool IsLoading
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _editor.IsLoading || _loadingMod is { IsCompleted: false };
+            }
+        }
+    }
+
+    private readonly object _lock = new();
+    private          Task?  _loadingMod;
+
+
+    private void AppendTask(Action run)
+    {
+        lock (_lock)
+        {
+            if (_loadingMod == null || _loadingMod.IsCompleted)
+                _loadingMod = Task.Run(run);
+            else
+                _loadingMod = _loadingMod.ContinueWith(_ => run());
+        }
+    }
 
     public void ChangeMod(Mod mod)
     {
         if (mod == Mod)
             return;
 
-        _editor.LoadMod(mod, -1, 0);
-        Mod = mod;
-
-        SizeConstraints = new WindowSizeConstraints
+        WindowName = $"{mod.Name} (LOADING){WindowBaseLabel}";
+        AppendTask(() =>
         {
-            MinimumSize = new Vector2(1240, 600),
-            MaximumSize = 4000 * Vector2.One,
-        };
-        _selectedFiles.Clear();
-        _modelTab.Reset();
-        _materialTab.Reset();
-        _shaderPackageTab.Reset();
-        _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
-        UpdateModels();
-        _forceTextureStartPath = true;
+            _editor.LoadMod(mod, -1, 0).Wait();
+            Mod = mod;
+
+            SizeConstraints = new WindowSizeConstraints
+            {
+                MinimumSize = new Vector2(1240, 600),
+                MaximumSize = 4000 * Vector2.One,
+            };
+            _selectedFiles.Clear();
+            _modelTab.Reset();
+            _materialTab.Reset();
+            _shaderPackageTab.Reset();
+            _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
+            UpdateModels();
+            _forceTextureStartPath = true;
+        });
     }
 
     public void ChangeOption(IModDataContainer? subMod)
     {
-        var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
-        _editor.LoadOption(groupIdx, dataIdx);
+        AppendTask(() =>
+        {
+            var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
+            _editor.LoadOption(groupIdx, dataIdx).Wait();
+        });
     }
 
     public void UpdateModels()
@@ -92,6 +127,9 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 
     public override void PreDraw()
     {
+        if (IsLoading)
+            return;
+
         using var performance = _performance.Measure(PerformanceType.UiAdvancedWindow);
 
         var sb = new StringBuilder(256);
@@ -144,13 +182,16 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 
     public override void OnClose()
     {
-        _left.Dispose();
-        _right.Dispose();
-        _materialTab.Reset();
-        _modelTab.Reset();
-        _shaderPackageTab.Reset();
         _config.Ephemeral.AdvancedEditingOpen = false;
         _config.Ephemeral.Save();
+        AppendTask(() =>
+        {
+            _left.Dispose();
+            _right.Dispose();
+            _materialTab.Reset();
+            _modelTab.Reset();
+            _shaderPackageTab.Reset();
+        });
     }
 
     public override void Draw()
@@ -161,6 +202,17 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         {
             _config.Ephemeral.AdvancedEditingOpen = true;
             _config.Ephemeral.Save();
+        }
+
+        if (IsLoading)
+        {
+            var radius    = 100 * ImUtf8.GlobalScale;
+            var thickness = (int) (20 * ImUtf8.GlobalScale);
+            var offsetX   = ImGui.GetContentRegionAvail().X / 2 - radius;
+            var offsetY   = ImGui.GetContentRegionAvail().Y / 2 - radius;
+            ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(offsetX, offsetY));
+            ImUtf8.Spinner("##spinner"u8, radius, thickness, ImGui.GetColorU32(ImGuiCol.Text));
+            return;
         }
 
         using var tabBar = ImRaii.TabBar("##tabs");
@@ -405,14 +457,14 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
                 _editor.Option is DefaultSubMod))
         {
-            _editor.LoadOption(-1, 0);
+            _editor.LoadOption(-1, 0).Wait();
             ret = true;
         }
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
         {
-            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx);
+            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx).Wait();
             ret = true;
         }
 
@@ -430,7 +482,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
             if (ImGui.Selectable(option.GetFullName(), option == _editor.Option))
             {
                 var (groupIdx, dataIdx) = option.GetDataIndices();
-                _editor.LoadOption(groupIdx, dataIdx);
+                _editor.LoadOption(groupIdx, dataIdx).Wait();
                 ret = true;
             }
         }

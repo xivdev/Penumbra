@@ -25,6 +25,21 @@ public class ModEditor(
     public readonly MdlMaterialEditor MdlMaterialEditor = mdlMaterialEditor;
     public readonly FileCompactor     Compactor         = compactor;
 
+
+    public bool IsLoading
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _loadingMod is { IsCompleted: false };
+            }
+        }
+    }
+
+    private readonly object _lock = new();
+    private          Task?  _loadingMod;
+
     public Mod? Mod      { get; private set; }
     public int  GroupIdx { get; private set; }
     public int  DataIdx  { get; private set; }
@@ -32,28 +47,42 @@ public class ModEditor(
     public IModGroup?         Group  { get; private set; }
     public IModDataContainer? Option { get; private set; }
 
-    public void LoadMod(Mod mod)
-        => LoadMod(mod, -1, 0);
-
-    public void LoadMod(Mod mod, int groupIdx, int dataIdx)
+    public async Task LoadMod(Mod mod, int groupIdx, int dataIdx)
     {
-        Mod = mod;
-        LoadOption(groupIdx, dataIdx, true);
-        Files.UpdateAll(mod, Option!);
-        SwapEditor.Revert(Option!);
-        MetaEditor.Load(Mod!, Option!);
-        Duplicates.Clear();
-        MdlMaterialEditor.ScanModels(Mod!);
+        await AppendTask(() =>
+        {
+            Mod = mod;
+            LoadOption(groupIdx, dataIdx, true);
+            Files.UpdateAll(mod, Option!);
+            SwapEditor.Revert(Option!);
+            MetaEditor.Load(Mod!, Option!);
+            Duplicates.Clear();
+            MdlMaterialEditor.ScanModels(Mod!);
+        });
     }
 
-    public void LoadOption(int groupIdx, int dataIdx)
+    private Task AppendTask(Action run)
     {
-        LoadOption(groupIdx, dataIdx, true);
-        SwapEditor.Revert(Option!);
-        Files.UpdatePaths(Mod!, Option!);
-        MetaEditor.Load(Mod!, Option!);
-        FileEditor.Clear();
-        Duplicates.Clear();
+        lock (_lock)
+        {
+            if (_loadingMod == null || _loadingMod.IsCompleted)
+                return _loadingMod = Task.Run(run);
+
+            return _loadingMod = _loadingMod.ContinueWith(_ => run());
+        }
+    }
+
+    public async Task LoadOption(int groupIdx, int dataIdx)
+    {
+        await AppendTask(() =>
+        {
+            LoadOption(groupIdx, dataIdx, true);
+            SwapEditor.Revert(Option!);
+            Files.UpdatePaths(Mod!, Option!);
+            MetaEditor.Load(Mod!, Option!);
+            FileEditor.Clear();
+            Duplicates.Clear();
+        });
     }
 
     /// <summary> Load the correct option by indices for the currently loaded mod if possible, unload if not.  </summary>
