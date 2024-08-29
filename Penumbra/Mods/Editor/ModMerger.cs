@@ -256,7 +256,7 @@ public class ModMerger : IDisposable, IService
             if (dir == null)
                 throw new Exception($"Could not split off mods, unable to create new mod with name {modName}.");
 
-            _mods.AddMod(dir);
+            _mods.AddMod(dir, false);
             result = _mods[^1];
             if (mods.Count == 1)
             {

@@ -79,7 +79,7 @@ public class ModImportManager(ModManager modManager, Configuration config, ModEd
             return false;
         }
 
-        modManager.AddMod(directory);
+        modManager.AddMod(directory, true);
         mod = modManager.LastOrDefault();
         return mod != null && mod.ModPath == directory;
     }

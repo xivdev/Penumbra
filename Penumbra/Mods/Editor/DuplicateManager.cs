@@ -225,7 +225,7 @@ public class DuplicateManager(ModManager modManager, SaveService saveService, Co
             if (!useModManager || !modManager.TryGetMod(modDirectory.Name, string.Empty, out var mod))
             {
                 mod = new Mod(modDirectory);
-                modManager.Creator.ReloadMod(mod, true, out _);
+                modManager.Creator.ReloadMod(mod, true, true, out _);
             }
 
             Clear();

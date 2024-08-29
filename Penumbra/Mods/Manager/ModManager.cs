@@ -81,13 +81,13 @@ public sealed class ModManager : ModStorage, IDisposable, IService
     }
 
     /// <summary> Load a new mod and add it to the manager if successful. </summary>
-    public void AddMod(DirectoryInfo modFolder)
+    public void AddMod(DirectoryInfo modFolder, bool deleteDefaultMeta)
     {
         if (this.Any(m => m.ModPath.Name == modFolder.Name))
             return;
 
         Creator.SplitMultiGroups(modFolder);
-        var mod = Creator.LoadMod(modFolder, true);
+        var mod = Creator.LoadMod(modFolder, true, deleteDefaultMeta);
         if (mod == null)
             return;
 
@@ -141,7 +141,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         var oldName = mod.Name;
 
         _communicator.ModPathChanged.Invoke(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath);
-        if (!Creator.ReloadMod(mod, true, out var metaChange))
+        if (!Creator.ReloadMod(mod, true, false, out var metaChange))
         {
             Penumbra.Log.Warning(mod.Name.Length == 0
                 ? $"Reloading mod {oldName} has failed, new name is empty. Removing from loaded mods instead."
@@ -206,7 +206,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
 
         dir.Refresh();
         mod.ModPath = dir;
-        if (!Creator.ReloadMod(mod, false, out var metaChange))
+        if (!Creator.ReloadMod(mod, false, false, out var metaChange))
         {
             Penumbra.Log.Error($"Error reloading moved mod {mod.Name}.");
             return;
@@ -332,7 +332,7 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             var queue = new ConcurrentQueue<Mod>();
             Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
             {
-                var mod = Creator.LoadMod(dir, false);
+                var mod = Creator.LoadMod(dir, false, false);
                 if (mod != null)
                     queue.Enqueue(mod);
             });

@@ -180,7 +180,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName);
             if (newDir != null)
             {
-                _modManager.AddMod(newDir);
+                _modManager.AddMod(newDir, false);
                 _newModName = string.Empty;
             }
         }

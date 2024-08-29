@@ -82,7 +82,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
          != Path.TrimEndingDirectorySeparator(Path.GetFullPath(dir.Parent.FullName)))
             return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
 
-        _modManager.AddMod(dir);
+        _modManager.AddMod(dir, true);
         if (_config.MigrateImportedModelsToV6)
         {
             _migrationManager.MigrateMdlDirectory(dir.FullName, false);

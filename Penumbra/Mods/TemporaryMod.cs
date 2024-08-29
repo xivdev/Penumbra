@@ -97,7 +97,7 @@ public class TemporaryMod : IMod
             defaultMod.Manipulations.UnionWith(manips);
 
             saveService.ImmediateSaveSync(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
-            modManager.AddMod(dir);
+            modManager.AddMod(dir, false);
             Penumbra.Log.Information(
                 $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identifier}.");
         }
