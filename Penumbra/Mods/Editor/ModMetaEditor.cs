@@ -156,7 +156,7 @@ public class ModMetaEditor(
             }
         }
 
-        if (count <= 0)
+        if (count == 0)
             return false;
 
         Penumbra.Log.Debug($"Deleted {count} default-valued meta-entries from a mod option.");
