@@ -69,6 +69,7 @@ public class MetaDictionary
 
     public void Clear()
     {
+        Count = 0;
         _imc.Clear();
         _eqp.Clear();
         _eqdp.Clear();
