@@ -39,6 +39,7 @@ public class MaterialExporter
             "character.shpk"       => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
             "characterlegacy.shpk" => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
             "characterglass.shpk"  => BuildCharacter(material, name).WithAlpha(AlphaMode.BLEND),
+            "charactertattoo.shpk" => BuildCharacterTattoo(material, name),
             "hair.shpk"            => BuildHair(material, name),
             "iris.shpk"            => BuildIris(material, name),
             "skin.shpk"            => BuildSkin(material, name),
@@ -242,6 +243,37 @@ public class MaterialExporter
             for (var x = 0; x < targetSpan.Length; x++)
                 targetSpan[x].FromVector4(targetSpan[x].ToVector4() * multiplierSpan[x].ToVector4());
         }
+    }
+
+    private static readonly Vector4 DefaultTattooColor = new Vector4(38, 112, 102, 255) / new Vector4(255);
+
+    private static MaterialBuilder BuildCharacterTattoo(Material material, string name)
+    {
+        var normal = material.Textures[TextureUsage.SamplerNormal];
+        var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
+
+        normal.ProcessPixelRows(baseColor, (normalAccessor, baseColorAccessor) =>
+        {
+            for (var y = 0; y < normalAccessor.Height; y++)
+            {
+                var normalSpan    = normalAccessor.GetRowSpan(y);
+                var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+
+                for (var x = 0; x < normalSpan.Length; x++)
+                {
+                    baseColorSpan[x].FromVector4(DefaultTattooColor);
+                    baseColorSpan[x].A = normalSpan[x].A;
+
+                    normalSpan[x].B = byte.MaxValue;
+                    normalSpan[x].A = byte.MaxValue;
+                }
+            }
+        });
+
+        return BuildSharedBase(material, name)
+            .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
+            .WithNormal(BuildImage(normal,       name, "normal"))
+            .WithAlpha(AlphaMode.BLEND);
     }
 
     // TODO: These are hardcoded colours - I'm not keen on supporting highly customizable exports, but there's possibly some more sensible values to use here.
