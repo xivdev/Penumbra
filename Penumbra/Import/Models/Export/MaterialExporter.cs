@@ -340,21 +340,7 @@ public class MaterialExporter
         var diffuse = material.Textures[TextureUsage.SamplerDiffuse];
         var normal  = material.Textures[TextureUsage.SamplerNormal];
 
-        // Create a copy of the normal that's the same size as the diffuse for purposes of copying the opacity across.
-        var resizedNormal = normal.Clone(context => context.Resize(diffuse.Width, diffuse.Height));
-        diffuse.ProcessPixelRows(resizedNormal, (diffuseAccessor, normalAccessor) =>
-        {
-            for (var y = 0; y < diffuseAccessor.Height; y++)
-            {
-                var diffuseSpan = diffuseAccessor.GetRowSpan(y);
-                var normalSpan  = normalAccessor.GetRowSpan(y);
-
-                for (var x = 0; x < diffuseSpan.Length; x++)
-                    diffuseSpan[x].A = normalSpan[x].B;
-            }
-        });
-
-        // Clear the blue channel out of the normal now that we're done with it.
+        // The normal also stores the skin color influence (.b) and wetness mask (.a) - remove.
         normal.ProcessPixelRows(normalAccessor =>
         {
             for (var y = 0; y < normalAccessor.Height; y++)
@@ -362,7 +348,10 @@ public class MaterialExporter
                 var normalSpan = normalAccessor.GetRowSpan(y);
 
                 for (var x = 0; x < normalSpan.Length; x++)
+                {
                     normalSpan[x].B = byte.MaxValue;
+                    normalSpan[x].A = byte.MaxValue;
+                }
             }
         });
 
