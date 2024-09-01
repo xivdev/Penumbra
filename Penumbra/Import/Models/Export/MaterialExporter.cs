@@ -306,10 +306,11 @@ public class MaterialExporter
 
                 for (var x = 0; x < normalSpan.Length; x++)
                 {
-                    var color = Vector4.Lerp(DefaultHairColor, DefaultHighlightColor, maskSpan[x].A / 255f);
-                    baseColorSpan[x].FromVector4(color * new Vector4(maskSpan[x].R / 255f));
+                    var color = Vector4.Lerp(DefaultHairColor, DefaultHighlightColor, normalSpan[x].B / 255f);
+                    baseColorSpan[x].FromVector4(color * new Vector4(maskSpan[x].A / 255f));
                     baseColorSpan[x].A = normalSpan[x].A;
 
+                    normalSpan[x].B = byte.MaxValue;
                     normalSpan[x].A = byte.MaxValue;
                 }
             }
