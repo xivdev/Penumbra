@@ -327,26 +327,23 @@ public class MaterialExporter
     // NOTE: This is largely the same as the hair material, but is also missing a few features that would cause it to diverge. Keeping separate for now.
     private static MaterialBuilder BuildIris(Material material, string name)
     {
-        var normal = material.Textures[TextureUsage.SamplerNormal];
-        var mask   = material.Textures[TextureUsage.SamplerMask];
+        var normal    = material.Textures[TextureUsage.SamplerNormal];
+        var mask      = material.Textures[TextureUsage.SamplerMask];
+        var baseColor = material.Textures[TextureUsage.SamplerDiffuse];
 
-        mask.Mutate(context => context.Resize(normal.Width, normal.Height));
+        mask.Mutate(context => context.Resize(baseColor.Width, baseColor.Height));
 
-        var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
-        normal.ProcessPixelRows(mask, baseColor, (normalAccessor, maskAccessor, baseColorAccessor) =>
+        baseColor.ProcessPixelRows(mask, (baseColorAccessor, maskAccessor) =>
         {
-            for (var y = 0; y < normalAccessor.Height; y++)
+            for (var y = 0; y < baseColor.Height; y++)
             {
-                var normalSpan    = normalAccessor.GetRowSpan(y);
-                var maskSpan      = maskAccessor.GetRowSpan(y);
                 var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+                var maskSpan      = maskAccessor.GetRowSpan(y);
 
-                for (var x = 0; x < normalSpan.Length; x++)
+                for (var x = 0; x < baseColorSpan.Length; x++)
                 {
-                    baseColorSpan[x].FromVector4(DefaultEyeColor * new Vector4(maskSpan[x].R / 255f));
-                    baseColorSpan[x].A = normalSpan[x].A;
-
-                    normalSpan[x].A = byte.MaxValue;
+                    var eyeColor = Vector4.Lerp(Vector4.One, DefaultEyeColor, maskSpan[x].B / 255f);
+                    baseColorSpan[x].FromVector4(baseColorSpan[x].ToVector4() * eyeColor);
                 }
             }
         });
