@@ -16,21 +16,21 @@ public partial class ModEditWindow
 
     private void DrawMetaTab()
     {
-        using var tab = ImRaii.TabItem("Meta Manipulations");
+        using var tab = ImUtf8.TabItem("Meta Manipulations"u8);
         if (!tab)
             return;
 
         DrawOptionSelectHeader();
 
         var setsEqual = !_editor.MetaEditor.Changes;
-        var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
+        var tt        = setsEqual ? "No changes staged."u8 : "Apply the currently staged changes to the option."u8;
         ImGui.NewLine();
-        if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
+        if (ImUtf8.ButtonEx("Apply Changes"u8, tt, Vector2.Zero, setsEqual))
             _editor.MetaEditor.Apply(_editor.Option!);
 
         ImGui.SameLine();
-        tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
-        if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
+        tt = setsEqual ? "No changes staged."u8 : "Revert all currently staged changes."u8;
+        if (ImUtf8.ButtonEx("Revert Changes"u8, tt, Vector2.Zero, setsEqual))
             _editor.MetaEditor.Load(_editor.Mod!, _editor.Option!);
 
         ImGui.SameLine();
@@ -40,8 +40,11 @@ public partial class ModEditWindow
         ImGui.SameLine();
         CopyToClipboardButton("Copy all current manipulations to clipboard.", _iconSize, _editor.MetaEditor);
         ImGui.SameLine();
-        if (ImGui.Button("Write as TexTools Files"))
+        if (ImUtf8.Button("Write as TexTools Files"u8))
             _metaFileManager.WriteAllTexToolsMeta(Mod!);
+        ImGui.SameLine();
+        if (ImUtf8.ButtonEx("Remove All Default-Values", "Delete any entries from all lists that set the value to its default value."u8))
+            _editor.MetaEditor.DeleteDefaultValues();
 
         using var child = ImRaii.Child("##meta", -Vector2.One, true);
         if (!child)

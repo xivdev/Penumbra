@@ -3,7 +3,6 @@ using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
@@ -16,6 +15,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     public readonly RspCache       Rsp       = new(manager, collection);
     public readonly ImcCache       Imc       = new(manager, collection);
     public readonly GlobalEqpCache GlobalEqp = new();
+    public          bool           IsDisposed { get; private set; }
 
     public int Count
         => Eqp.Count + Eqdp.Count + Est.Count + Gmp.Count + Rsp.Count + Imc.Count + GlobalEqp.Count;
@@ -42,6 +42,10 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
 
     public void Dispose()
     {
+        if (IsDisposed)
+            return;
+
+        IsDisposed = true;
         Eqp.Dispose();
         Eqdp.Dispose();
         Est.Dispose();

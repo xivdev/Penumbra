@@ -82,7 +82,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
          != Path.TrimEndingDirectorySeparator(Path.GetFullPath(dir.Parent.FullName)))
             return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
 
-        _modManager.AddMod(dir);
+        _modManager.AddMod(dir, true);
         if (_config.MigrateImportedModelsToV6)
         {
             _migrationManager.MigrateMdlDirectory(dir.FullName, false);
@@ -91,7 +91,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
         if (_config.UseFileSystemCompression)
             new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
-                CompressionAlgorithm.Xpress8K);
+                CompressionAlgorithm.Xpress8K, false);
 
         return ApiHelpers.Return(PenumbraApiEc.Success, args);
     }

@@ -29,29 +29,28 @@ public static class ModFilterExtensions
 {
     public const ModFilter UnfilteredStateMods = (ModFilter)((1 << 20) - 1);
 
-    public static string ToName(this ModFilter filter)
-        => filter switch
-        {
-            ModFilter.Enabled                => "Enabled",
-            ModFilter.Disabled               => "Disabled",
-            ModFilter.Favorite               => "Favorite",
-            ModFilter.NotFavorite            => "No Favorite",
-            ModFilter.NoConflict             => "No Conflicts",
-            ModFilter.SolvedConflict         => "Solved Conflicts",
-            ModFilter.UnsolvedConflict       => "Unsolved Conflicts",
-            ModFilter.HasNoMetaManipulations => "No Meta Manipulations",
-            ModFilter.HasMetaManipulations   => "Meta Manipulations",
-            ModFilter.HasNoFileSwaps         => "No File Swaps",
-            ModFilter.HasFileSwaps           => "File Swaps",
-            ModFilter.HasNoConfig            => "No Configuration",
-            ModFilter.HasConfig              => "Configuration",
-            ModFilter.HasNoFiles             => "No Files",
-            ModFilter.HasFiles               => "Files",
-            ModFilter.IsNew                  => "Newly Imported",
-            ModFilter.NotNew                 => "Not Newly Imported",
-            ModFilter.Inherited              => "Inherited Configuration",
-            ModFilter.Uninherited            => "Own Configuration",
-            ModFilter.Undefined              => "Not Configured",
-            _                                => throw new ArgumentOutOfRangeException(nameof(filter), filter, null),
-        };
+    public static IReadOnlyList<(ModFilter On, ModFilter Off, string Name)> TriStatePairs =
+    [
+        (ModFilter.Enabled, ModFilter.Disabled, "Enabled"),
+        (ModFilter.IsNew, ModFilter.NotNew, "Newly Imported"),
+        (ModFilter.Favorite, ModFilter.NotFavorite, "Favorite"),
+        (ModFilter.HasConfig, ModFilter.HasNoConfig, "Has Options"),
+        (ModFilter.HasFiles, ModFilter.HasNoFiles, "Has Redirections"),
+        (ModFilter.HasMetaManipulations, ModFilter.HasNoMetaManipulations, "Has Meta Manipulations"),
+        (ModFilter.HasFileSwaps, ModFilter.HasNoFileSwaps, "Has File Swaps"),
+    ];
+
+    public static IReadOnlyList<IReadOnlyList<(ModFilter Filter, string Name)>> Groups =
+    [
+        [
+            (ModFilter.NoConflict, "Has No Conflicts"),
+            (ModFilter.SolvedConflict, "Has Solved Conflicts"),
+            (ModFilter.UnsolvedConflict, "Has Unsolved Conflicts"),
+        ],
+        [
+            (ModFilter.Undefined, "Not Configured"),
+            (ModFilter.Inherited, "Inherited Configuration"),
+            (ModFilter.Uninherited, "Own Configuration"),
+        ],
+    ];
 }

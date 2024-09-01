@@ -10,6 +10,7 @@ using Penumbra.GameData.Data;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
@@ -20,11 +21,12 @@ using Penumbra.String.Classes;
 namespace Penumbra.Mods;
 
 public partial class ModCreator(
-    SaveService _saveService,
+    SaveService saveService,
     Configuration config,
-    ModDataEditor _dataEditor,
-    MetaFileManager _metaFileManager,
-    GamePathParser _gamePathParser) : IService
+    ModDataEditor dataEditor,
+    MetaFileManager metaFileManager,
+    GamePathParser gamePathParser,
+    ImcChecker imcChecker) : IService
 {
     public readonly Configuration Config = config;
 
@@ -34,7 +36,7 @@ public partial class ModCreator(
         try
         {
             var newDir = CreateModFolder(basePath, newName, Config.ReplaceNonAsciiOnImport, true);
-            _dataEditor.CreateMeta(newDir, newName, Config.DefaultModAuthor, description, "1.0", string.Empty);
+            dataEditor.CreateMeta(newDir, newName, Config.DefaultModAuthor, description, "1.0", string.Empty);
             CreateDefaultFiles(newDir);
             return newDir;
         }
@@ -46,7 +48,7 @@ public partial class ModCreator(
     }
 
     /// <summary> Load a mod by its directory. </summary>
-    public Mod? LoadMod(DirectoryInfo modPath, bool incorporateMetaChanges)
+    public Mod? LoadMod(DirectoryInfo modPath, bool incorporateMetaChanges, bool deleteDefaultMetaChanges)
     {
         modPath.Refresh();
         if (!modPath.Exists)
@@ -56,7 +58,7 @@ public partial class ModCreator(
         }
 
         var mod = new Mod(modPath);
-        if (ReloadMod(mod, incorporateMetaChanges, out _))
+        if (ReloadMod(mod, incorporateMetaChanges, deleteDefaultMetaChanges, out _))
             return mod;
 
         // Can not be base path not existing because that is checked before.
@@ -65,21 +67,29 @@ public partial class ModCreator(
     }
 
     /// <summary> Reload a mod from its mod path. </summary>
-    public bool ReloadMod(Mod mod, bool incorporateMetaChanges, out ModDataChangeType modDataChange)
+    public bool ReloadMod(Mod mod, bool incorporateMetaChanges, bool deleteDefaultMetaChanges, out ModDataChangeType modDataChange)
     {
         modDataChange = ModDataChangeType.Deletion;
         if (!Directory.Exists(mod.ModPath.FullName))
             return false;
 
-        modDataChange = _dataEditor.LoadMeta(this, mod);
+        modDataChange = dataEditor.LoadMeta(this, mod);
         if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length == 0)
             return false;
 
-        _dataEditor.LoadLocalData(mod);
+        dataEditor.LoadLocalData(mod);
         LoadDefaultOption(mod);
         LoadAllGroups(mod);
         if (incorporateMetaChanges)
             IncorporateAllMetaChanges(mod, true);
+        if (deleteDefaultMetaChanges && !Config.KeepDefaultMetaChanges)
+        {
+            foreach (var container in mod.AllDataContainers)
+            {
+                if (ModMetaEditor.DeleteDefaultValues(metaFileManager, imcChecker, container.Manipulations))
+                    saveService.ImmediateSaveSync(new ModSaveGroup(container, Config.ReplaceNonAsciiOnImport));
+            }
+        }
 
         return true;
     }
@@ -89,13 +99,13 @@ public partial class ModCreator(
     {
         mod.Groups.Clear();
         var changes = false;
-        foreach (var file in _saveService.FileNames.GetOptionGroupFiles(mod))
+        foreach (var file in saveService.FileNames.GetOptionGroupFiles(mod))
         {
             var group = LoadModGroup(mod, file);
             if (group != null && mod.Groups.All(g => g.Name != group.Name))
             {
                 changes = changes
-                 || _saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
+                 || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
                  != Path.Combine(file.DirectoryName!, ReplaceBadXivSymbols(file.Name, true));
                 mod.Groups.Add(group);
             }
@@ -106,13 +116,13 @@ public partial class ModCreator(
         }
 
         if (changes)
-            _saveService.SaveAllOptionGroups(mod, true, Config.ReplaceNonAsciiOnImport);
+            saveService.SaveAllOptionGroups(mod, true, Config.ReplaceNonAsciiOnImport);
     }
 
     /// <summary> Load the default option for a given mod.</summary>
     public void LoadDefaultOption(Mod mod)
     {
-        var defaultFile = _saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
+        var defaultFile = saveService.FileNames.OptionGroupFile(mod, -1, Config.ReplaceNonAsciiOnImport);
         try
         {
             var jObject = File.Exists(defaultFile) ? JObject.Parse(File.ReadAllText(defaultFile)) : new JObject();
@@ -157,7 +167,7 @@ public partial class ModCreator(
         List<string> deleteList = new();
         foreach (var subMod in mod.AllDataContainers)
         {
-            var (localChanges, localDeleteList) =  IncorporateMetaChanges(subMod, mod.ModPath, false);
+            var (localChanges, localDeleteList) =  IncorporateMetaChanges(subMod, mod.ModPath, false, true);
             changes                             |= localChanges;
             if (delete)
                 deleteList.AddRange(localDeleteList);
@@ -168,8 +178,8 @@ public partial class ModCreator(
         if (!changes)
             return;
 
-        _saveService.SaveAllOptionGroups(mod, false, Config.ReplaceNonAsciiOnImport);
-        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
+        saveService.SaveAllOptionGroups(mod, false, Config.ReplaceNonAsciiOnImport);
+        saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
     }
 
 
@@ -177,7 +187,7 @@ public partial class ModCreator(
     /// If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
     /// If delete is true, the files are deleted afterwards.
     /// </summary>
-    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(IModDataContainer option, DirectoryInfo basePath, bool delete)
+    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(IModDataContainer option, DirectoryInfo basePath, bool delete, bool deleteDefault)
     {
         var deleteList   = new List<string>();
         var oldSize      = option.Manipulations.Count;
@@ -194,7 +204,7 @@ public partial class ModCreator(
                     if (!file.Exists)
                         continue;
 
-                    var meta = new TexToolsMeta(_metaFileManager, _gamePathParser, File.ReadAllBytes(file.FullName),
+                    var meta = new TexToolsMeta(metaFileManager, gamePathParser, File.ReadAllBytes(file.FullName),
                         Config.KeepDefaultMetaChanges);
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
@@ -207,7 +217,7 @@ public partial class ModCreator(
                     if (!file.Exists)
                         continue;
 
-                    var rgsp = TexToolsMeta.FromRgspFile(_metaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
+                    var rgsp = TexToolsMeta.FromRgspFile(metaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
                         Config.KeepDefaultMetaChanges);
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
@@ -223,7 +233,11 @@ public partial class ModCreator(
         }
 
         DeleteDeleteList(deleteList, delete);
-        return (oldSize < option.Manipulations.Count, deleteList);
+        var changes = oldSize < option.Manipulations.Count;
+        if (deleteDefault && !Config.KeepDefaultMetaChanges)
+            changes |= ModMetaEditor.DeleteDefaultValues(metaFileManager, imcChecker, option.Manipulations);
+
+        return (changes, deleteList);
     }
 
     /// <summary>
@@ -250,7 +264,7 @@ public partial class ModCreator(
                 group.Priority        = priority;
                 group.DefaultSettings = defaultSettings;
                 group.OptionData.AddRange(subMods.Select(s => s.Clone(group)));
-                _saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
+                saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
             case GroupType.Single:
@@ -260,7 +274,7 @@ public partial class ModCreator(
                 group.Priority        = priority;
                 group.DefaultSettings = defaultSettings;
                 group.OptionData.AddRange(subMods.Select(s => s.ConvertToSingle(group)));
-                _saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
+                saveService.ImmediateSaveSync(ModSaveGroup.WithoutMod(baseFolder, group, index, Config.ReplaceNonAsciiOnImport));
                 break;
             }
         }
@@ -277,7 +291,8 @@ public partial class ModCreator(
         foreach (var (_, gamePath, file) in list)
             mod.Files.TryAdd(gamePath, file);
 
-        IncorporateMetaChanges(mod, baseFolder, true);
+        IncorporateMetaChanges(mod, baseFolder, true, true);
+
         return mod;
     }
 
@@ -288,15 +303,15 @@ public partial class ModCreator(
     internal void CreateDefaultFiles(DirectoryInfo directory)
     {
         var mod = new Mod(directory);
-        ReloadMod(mod, false, out _);
+        ReloadMod(mod, false, false, out _);
         foreach (var file in mod.FindUnusedFiles())
         {
             if (Utf8GamePath.FromFile(new FileInfo(file.FullName), directory, out var gamePath))
                 mod.Default.Files.TryAdd(gamePath, file);
         }
 
-        IncorporateMetaChanges(mod.Default, directory, true);
-        _saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
+        IncorporateMetaChanges(mod.Default, directory, true, true);
+        saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
     }
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
@@ -333,7 +348,7 @@ public partial class ModCreator(
     {
         var mod = new Mod(baseDir);
 
-        var files   = _saveService.FileNames.GetOptionGroupFiles(mod).ToList();
+        var files   = saveService.FileNames.GetOptionGroupFiles(mod).ToList();
         var idx     = 0;
         var reorder = false;
         foreach (var groupFile in files)

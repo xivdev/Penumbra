@@ -281,7 +281,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (newDir == null)
             return;
 
-        _modManager.AddMod(newDir);
+        _modManager.AddMod(newDir, false);
         var mod = _modManager[^1];
         if (!_swapData.WriteMod(_modManager, mod, mod.Default,
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))

@@ -23,5 +23,8 @@ public sealed class CollectionInheritanceChanged()
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnInheritanceChange"/>
         ModFileSystemSelector = 0,
+
+        /// <seealso cref="Mods.ModSelection.OnInheritanceChange"/>
+        ModSelection = 10,
     }
 }

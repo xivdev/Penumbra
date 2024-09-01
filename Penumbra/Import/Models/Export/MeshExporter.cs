@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Lumina.Extensions;
 using OtterGui;
 using Penumbra.GameData.Files;
@@ -23,11 +25,11 @@ public class MeshExporter
                     ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, [.. skeleton.Value.Joints])
                     : scene.AddRigidMesh(data.Mesh, Matrix4x4.Identity);
 
-                var extras = new Dictionary<string, object>(data.Attributes.Length);
+                var node = new JsonObject();
                 foreach (var attribute in data.Attributes)
-                    extras.Add(attribute, true);
+                    node[attribute] = true;
 
-                instance.WithExtras(JsonContent.CreateFrom(extras));
+                instance.WithExtras(node);
             }
         }
     }
@@ -233,10 +235,7 @@ public class MeshExporter
 
         // Named morph targets aren't part of the specification, however `MESH.extras.targetNames`
         // is a commonly-accepted means of providing the data.
-        meshBuilder.Extras = JsonContent.CreateFrom(new Dictionary<string, object>()
-        {
-            { "targetNames", shapeNames },
-        });
+        meshBuilder.Extras = new JsonObject { ["targetNames"] = JsonSerializer.SerializeToNode(shapeNames) };
 
         string[] attributes   = [];
         var      maxAttribute = 31 - BitOperations.LeadingZeroCount(attributeMask);

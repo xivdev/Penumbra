@@ -10,22 +10,23 @@ namespace Penumbra.UI.ModsTab;
 
 public class ModPanel : IDisposable, IUiService
 {
-    private readonly MultiModPanel         _multiModPanel;
-    private readonly ModFileSystemSelector _selector;
-    private readonly ModEditWindow         _editWindow;
-    private readonly ModPanelHeader        _header;
-    private readonly ModPanelTabBar        _tabs;
-    private          bool                  _resetCursor;
+    private readonly MultiModPanel  _multiModPanel;
+    private readonly ModSelection   _selection;
+    private readonly ModEditWindow  _editWindow;
+    private readonly ModPanelHeader _header;
+    private readonly ModPanelTabBar _tabs;
+    private          bool           _resetCursor;
 
-    public ModPanel(IDalamudPluginInterface pi, ModFileSystemSelector selector, ModEditWindow editWindow, ModPanelTabBar tabs,
+    public ModPanel(IDalamudPluginInterface pi, ModSelection selection, ModEditWindow editWindow, ModPanelTabBar tabs,
         MultiModPanel multiModPanel, CommunicatorService communicator)
     {
-        _selector                  =  selector;
-        _editWindow                =  editWindow;
-        _tabs                      =  tabs;
-        _multiModPanel             =  multiModPanel;
-        _header                    =  new ModPanelHeader(pi, communicator);
-        _selector.SelectionChanged += OnSelectionChange;
+        _selection     = selection;
+        _editWindow    = editWindow;
+        _tabs          = tabs;
+        _multiModPanel = multiModPanel;
+        _header        = new ModPanelHeader(pi, communicator);
+        _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModPanel);
+        OnSelectionChange(null, _selection.Mod);
     }
 
     public void Draw()
@@ -52,17 +53,17 @@ public class ModPanel : IDisposable, IUiService
 
     public void Dispose()
     {
-        _selector.SelectionChanged -= OnSelectionChange;
+        _selection.Unsubscribe(OnSelectionChange);
         _header.Dispose();
     }
 
     private bool _valid;
     private Mod  _mod = null!;
 
-    private void OnSelectionChange(Mod? old, Mod? mod, in ModFileSystemSelector.ModState _)
+    private void OnSelectionChange(Mod? old, Mod? mod)
     {
         _resetCursor = true;
-        if (mod == null || _selector.Selected == null)
+        if (mod == null || _selection.Mod == null)
         {
             _editWindow.IsOpen = false;
             _valid             = false;
@@ -73,7 +74,7 @@ public class ModPanel : IDisposable, IUiService
                 _editWindow.ChangeMod(mod);
             _valid = true;
             _mod   = mod;
-            _header.UpdateModData(_mod);
+            _header.ChangeMod(_mod);
             _tabs.Settings.Reset();
             _tabs.Edit.Reset();
         }

@@ -4,11 +4,11 @@
     "net8.0-windows7.0": {
       "EmbedIO": {
         "type": "Direct",
-        "requested": "[3.4.3, )",
-        "resolved": "3.4.3",
-        "contentHash": "YM6hpZNAfvbbixfG9T4lWDGfF0D/TqutbTROL4ogVcHKwPF1hp+xS3ABwd3cxxTxvDFkj/zZl57QgWuFA8Igxw==",
+        "requested": "[3.5.2, )",
+        "resolved": "3.5.2",
+        "contentHash": "YU4j+3XvuO8/VPkNf7KWOF1TpMhnyVhXnPsG1mvnDhTJ9D5BZOFXVDvCpE/SkQ1AJ0Aa+dXOVSW3ntgmLL7aJg==",
         "dependencies": {
-          "Unosquare.Swan.Lite": "3.0.0"
+          "Unosquare.Swan.Lite": "3.1.0"
         }
       },
       "PeNet": {
@@ -23,23 +23,26 @@
       },
       "SharpCompress": {
         "type": "Direct",
-        "requested": "[0.33.0, )",
-        "resolved": "0.33.0",
-        "contentHash": "FlHfpTAADzaSlVCBF33iKJk9UhOr3Xj+r5LXbW2GzqYr0SrhiOf6shLX2LC2fqs7g7d+YlwKbBXqWFtb+e7icw=="
+        "requested": "[0.37.2, )",
+        "resolved": "0.37.2",
+        "contentHash": "cFBpTct57aubLQXkdqMmgP8GGTFRh7fnRWP53lgE/EYUpDZJ27SSvTkdjB4OYQRZ20SJFpzczUquKLbt/9xkhw==",
+        "dependencies": {
+          "ZstdSharp.Port": "0.8.0"
+        }
       },
       "SharpGLTF.Core": {
         "type": "Direct",
-        "requested": "[1.0.0-alpha0030, )",
-        "resolved": "1.0.0-alpha0030",
-        "contentHash": "HVL6PcrM0H/uEk96nRZfhtPeYvSFGHnni3g1aIckot2IWVp0jLMH5KWgaWfsatEz4Yds3XcdSLUWmJZivDBUPA=="
+        "requested": "[1.0.1, )",
+        "resolved": "1.0.1",
+        "contentHash": "ykeV1oNHcJrEJE7s0pGAsf/nYGYY7wqF9nxCMxJUjp/WdW+UUgR1cGdbAa2lVZPkiXEwLzWenZ5wPz7yS0Gj9w=="
       },
       "SharpGLTF.Toolkit": {
         "type": "Direct",
-        "requested": "[1.0.0-alpha0030, )",
-        "resolved": "1.0.0-alpha0030",
-        "contentHash": "nsoJWAFhXgEky9bVCY0zLeZVDx+S88u7VjvuebvMb6dJiNyFOGF6FrrMHiJe+x5pcVBxxlc3VoXliBF7r/EqYA==",
+        "requested": "[1.0.1, )",
+        "resolved": "1.0.1",
+        "contentHash": "LYBjHdHW5Z8R1oT1iI04si3559tWdZ3jTdHfDEu0jqhuyU8w3oJRLFUoDfVeCOI5zWXlVQPtlpjhH9XTfFFAcA==",
         "dependencies": {
-          "SharpGLTF.Runtime": "1.0.0-alpha0030"
+          "SharpGLTF.Runtime": "1.0.1"
         }
       },
       "SixLabors.ImageSharp": {
@@ -48,10 +51,16 @@
         "resolved": "3.1.5",
         "contentHash": "lNtlq7dSI/QEbYey+A0xn48z5w4XHSffF8222cC4F4YwTXfEImuiBavQcWjr49LThT/pRmtWJRcqA/PlL+eJ6g=="
       },
+      "System.Formats.Asn1": {
+        "type": "Direct",
+        "requested": "[8.0.1, )",
+        "resolved": "8.0.1",
+        "contentHash": "XqKba7Mm/koKSjKMfW82olQdmfbI5yqeoLV/tidRp7fbh5rmHAQ5raDI/7SU0swTzv+jgqtUGkzmFxuUg0it1A=="
+      },
       "JetBrains.Annotations": {
         "type": "Transitive",
-        "resolved": "2023.3.0",
-        "contentHash": "PHfnvdBUdGaTVG9bR/GEfxgTwWM0Z97Y6X3710wiljELBISipSfF5okn/vz+C2gfO+ihoEyVPjaJwn8ZalVukA=="
+        "resolved": "2024.2.0",
+        "contentHash": "GNnqCFW/163p1fOehKx0CnAqjmpPrUSqrgfHM6qca+P+RN39C9rhlfZHQpJhxmQG/dkOYe/b3Z0P8b6Kv5m1qw=="
       },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "Transitive",
@@ -73,16 +82,11 @@
       },
       "SharpGLTF.Runtime": {
         "type": "Transitive",
-        "resolved": "1.0.0-alpha0030",
-        "contentHash": "Ysn+fyj9EVXj6mfG0BmzSTBGNi/QvcnTrMd54dBMOlI/TsMRvnOY3JjTn0MpeH2CgHXX4qogzlDt4m+rb3n4Og==",
+        "resolved": "1.0.1",
+        "contentHash": "KsgEBKLfsEnu2IPeKaWp4Ih97+kby17IohrAB6Ev8gET18iS80nKMW/APytQWpenMmcWU06utInpANqyrwRlDg==",
         "dependencies": {
-          "SharpGLTF.Core": "1.0.0-alpha0030"
+          "SharpGLTF.Core": "1.0.1"
         }
-      },
-      "System.Formats.Asn1": {
-        "type": "Transitive",
-        "resolved": "8.0.0",
-        "contentHash": "AJukBuLoe3QeAF+mfaRKQb2dgyrvt340iMBHYv+VdBzCUM06IxGlvl0o/uPOS7lHnXPN6u8fFRHSHudx5aTi8w=="
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
@@ -99,16 +103,21 @@
       },
       "Unosquare.Swan.Lite": {
         "type": "Transitive",
-        "resolved": "3.0.0",
-        "contentHash": "noPwJJl1Q9uparXy1ogtkmyAPGNfSGb0BLT1292nFH1jdMKje6o2kvvrQUvF9Xklj+IoiAI0UzF6Aqxlvo10lw==",
+        "resolved": "3.1.0",
+        "contentHash": "X3s5QE/KMj3WAPFqFve7St+Ds10BB50u8kW8PmKIn7FVkn7yEXe9Yxr2htt1WV85DRqfFR0MN/BUNHkGHtL4OQ==",
         "dependencies": {
           "System.ValueTuple": "4.5.0"
         }
       },
+      "ZstdSharp.Port": {
+        "type": "Transitive",
+        "resolved": "0.8.0",
+        "contentHash": "Z62eNBIu8E8YtbqlMy57tK3dV1+m2b9NhPeaYovB5exmLKvrGCqOhJTzrEUH5VyUWU6vwX3c1XHJGhW5HVs8dA=="
+      },
       "ottergui": {
         "type": "Project",
         "dependencies": {
-          "JetBrains.Annotations": "[2023.3.0, )",
+          "JetBrains.Annotations": "[2024.2.0, )",
           "Microsoft.Extensions.DependencyInjection": "[8.0.0, )"
         }
       },
@@ -122,7 +131,7 @@
         "type": "Project",
         "dependencies": {
           "OtterGui": "[1.0.0, )",
-          "Penumbra.Api": "[5.2.0, )",
+          "Penumbra.Api": "[5.3.0, )",
           "Penumbra.String": "[1.0.4, )"
         }
       },

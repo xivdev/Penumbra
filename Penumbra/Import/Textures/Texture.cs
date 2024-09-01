@@ -10,6 +10,21 @@ public enum TextureType
     Tex,
     Png,
     Bitmap,
+    Targa,
+}
+
+internal static class TextureTypeExtensions
+{
+    public static TextureType ReduceToBehaviour(this TextureType type)
+        => type switch
+        {
+            TextureType.Dds    => TextureType.Dds,
+            TextureType.Tex    => TextureType.Tex,
+            TextureType.Png    => TextureType.Png,
+            TextureType.Bitmap => TextureType.Png,
+            TextureType.Targa  => TextureType.Png,
+            _                  => TextureType.Unknown,
+        };
 }
 
 public sealed class Texture : IDisposable

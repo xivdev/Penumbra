@@ -58,7 +58,13 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     }
 
     protected override IEnumerable<(RspIdentifier, RspEntry)> Enumerate()
-        => Editor.Rsp.Select(kvp => (kvp.Key, kvp.Value));
+        => Editor.Rsp
+            .OrderBy(kvp => kvp.Key.SubRace)
+            .ThenBy(kvp => kvp.Key.Attribute)
+            .Select(kvp => (kvp.Key, kvp.Value));
+
+    protected override int Count
+        => Editor.Rsp.Count;
 
     private static bool DrawIdentifierInput(ref RspIdentifier identifier)
     {

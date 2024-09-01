@@ -4,7 +4,6 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Text.Widget;
-using OtterGui.Widgets;
 using OtterGuiInternal.Utility;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;

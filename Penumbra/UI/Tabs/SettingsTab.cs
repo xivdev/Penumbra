@@ -816,13 +816,13 @@ public class SettingsTab : ITab, IUiService
         if (ImGuiUtil.DrawDisabledButton("Compress Existing Files", Vector2.Zero,
                 "Try to compress all files in your root directory. This will take a while.",
                 _compactor.MassCompactRunning || !_modManager.Valid))
-            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K);
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K, true);
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Decompress Existing Files", Vector2.Zero,
                 "Try to decompress all files in your root directory. This will take a while.",
                 _compactor.MassCompactRunning || !_modManager.Valid))
-            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.None);
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.None, true);
 
         if (_compactor.MassCompactRunning)
         {

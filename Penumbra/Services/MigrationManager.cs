@@ -242,7 +242,7 @@ public class MigrationManager(Configuration config) : IService
             return;
         }
 
-        var       path = Path.Combine(directory, reader.Entry.Key);
+        var       path = Path.Combine(directory, reader.Entry.Key!);
         using var s    = new MemoryStream();
         using var e    = reader.OpenEntryStream();
         e.CopyTo(s);

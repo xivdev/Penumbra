@@ -2,7 +2,6 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Services;
 using Penumbra.GameData.Structs;
-using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;

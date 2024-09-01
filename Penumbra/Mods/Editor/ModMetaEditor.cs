@@ -1,12 +1,17 @@
 using System.Collections.Frozen;
 using OtterGui.Services;
+using Penumbra.Meta;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods.Manager;
+using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModMetaEditor(ModManager modManager) : MetaDictionary, IService
+public class ModMetaEditor(
+    ModGroupEditor groupEditor,
+    MetaFileManager metaFileManager,
+    ImcChecker imcChecker) : MetaDictionary, IService
 {
     public sealed class OtherOptionData : HashSet<string>
     {
@@ -62,12 +67,111 @@ public class ModMetaEditor(ModManager modManager) : MetaDictionary, IService
         Changes = false;
     }
 
+    public static bool DeleteDefaultValues(MetaFileManager metaFileManager, ImcChecker imcChecker, MetaDictionary dict)
+    {
+        var clone = dict.Clone();
+        dict.Clear();
+        var count = 0;
+        foreach (var (key, value) in clone.Imc)
+        {
+            var defaultEntry = imcChecker.GetDefaultEntry(key, false);
+            if (!defaultEntry.Entry.Equals(value))
+            {
+                dict.TryAdd(key, value);
+            }
+            else
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ++count;
+            }
+        }
+
+        foreach (var (key, value) in clone.Eqp)
+        {
+            var defaultEntry = new EqpEntryInternal(ExpandedEqpFile.GetDefault(metaFileManager, key.SetId), key.Slot);
+            if (!defaultEntry.Equals(value))
+            {
+                dict.TryAdd(key, value);
+            }
+            else
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ++count;
+            }
+        }
+
+        foreach (var (key, value) in clone.Eqdp)
+        {
+            var defaultEntry = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(metaFileManager, key), key.Slot);
+            if (!defaultEntry.Equals(value))
+            {
+                dict.TryAdd(key, value);
+            }
+            else
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ++count;
+            }
+        }
+
+        foreach (var (key, value) in clone.Est)
+        {
+            var defaultEntry = EstFile.GetDefault(metaFileManager, key);
+            if (!defaultEntry.Equals(value))
+            {
+                dict.TryAdd(key, value);
+            }
+            else
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ++count;
+            }
+        }
+
+        foreach (var (key, value) in clone.Gmp)
+        {
+            var defaultEntry = ExpandedGmpFile.GetDefault(metaFileManager, key);
+            if (!defaultEntry.Equals(value))
+            {
+                dict.TryAdd(key, value);
+            }
+            else
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ++count;
+            }
+        }
+
+        foreach (var (key, value) in clone.Rsp)
+        {
+            var defaultEntry = CmpFile.GetDefault(metaFileManager, key.SubRace, key.Attribute);
+            if (!defaultEntry.Equals(value))
+            {
+                dict.TryAdd(key, value);
+            }
+            else
+            {
+                Penumbra.Log.Verbose($"Deleted default-valued meta-entry {key}.");
+                ++count;
+            }
+        }
+
+        if (count == 0)
+            return false;
+
+        Penumbra.Log.Debug($"Deleted {count} default-valued meta-entries from a mod option.");
+        return true;
+    }
+
+    public void DeleteDefaultValues()
+        => Changes = DeleteDefaultValues(metaFileManager, imcChecker, this);
+
     public void Apply(IModDataContainer container)
     {
         if (!Changes)
             return;
 
-        modManager.OptionEditor.SetManipulations(container, this);
+        groupEditor.SetManipulations(container, this);
         Changes = false;
     }
 }

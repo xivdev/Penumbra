@@ -55,6 +55,14 @@ public partial class CombinedTexture : IDisposable
         SaveTask = textures.SavePng(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width, _current.TextureWrap!.Height);
     }
 
+    public void SaveAsTarga(TextureManager textures, string path)
+    {
+        if (!IsLoaded || _current == null)
+            return;
+
+        SaveTask = textures.SaveTga(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width, _current.TextureWrap!.Height);
+    }
+
     private void SaveAs(TextureManager textures, string path, TextureSaveType type, bool mipMaps, bool writeTex)
     {
         if (!IsLoaded || _current == null)
@@ -72,6 +80,7 @@ public partial class CombinedTexture : IDisposable
                 ".tex" => TextureType.Tex,
                 ".dds" => TextureType.Dds,
                 ".png" => TextureType.Png,
+                ".tga" => TextureType.Targa,
                 _      => TextureType.Unknown,
             };
 
@@ -85,6 +94,9 @@ public partial class CombinedTexture : IDisposable
                 break;
             case TextureType.Png:
                 SaveAsPng(textures, path);
+                break;
+            case TextureType.Targa:
+                SaveAsTarga(textures, path);
                 break;
             default:
                 throw new ArgumentException(

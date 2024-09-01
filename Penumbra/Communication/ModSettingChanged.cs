@@ -1,5 +1,4 @@
 using OtterGui.Classes;
-using Penumbra.Api;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -35,5 +34,8 @@ public sealed class ModSettingChanged()
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnSettingChange"/>
         ModFileSystemSelector = 0,
+
+        /// <seealso cref="Mods.ModSelection.OnSettingChange"/>
+        ModSelection = 10,
     }
 }

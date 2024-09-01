@@ -82,7 +82,7 @@ public partial class TexToolsImporter
                 if (name.Length == 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
-                using var f = File.OpenWrite(Path.Combine(_currentModDirectory.FullName, reader.Entry.Key));
+                using var f = File.OpenWrite(Path.Combine(_currentModDirectory.FullName, reader.Entry.Key!));
                 s.Seek(0, SeekOrigin.Begin);
                 s.WriteTo(f);
             }
@@ -155,13 +155,9 @@ public partial class TexToolsImporter
 
             ret = directory;
             // Check that all other files are also contained in the top-level directory.
-            if (ret.IndexOfAny(new[]
-                {
-                    '/',
-                    '\\',
-                })
-             >= 0
-             || !archive.Entries.All(e => e.Key.StartsWith(ret) && (e.Key.Length == ret.Length || e.Key[ret.Length] is '/' or '\\')))
+            if (ret.IndexOfAny(['/', '\\']) >= 0
+             || !archive.Entries.All(e
+                    => e.Key != null && e.Key.StartsWith(ret) && (e.Key.Length == ret.Length || e.Key[ret.Length] is '/' or '\\')))
                 throw new Exception(
                     "Invalid mod archive: meta.json in wrong location. It needs to be either at root or one directory deep, in which all other files must be nested too.");
         }
