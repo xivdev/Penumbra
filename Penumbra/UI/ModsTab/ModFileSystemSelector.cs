@@ -447,16 +447,15 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void OnModDataChange(ModDataChangeType type, Mod mod, string? oldName)
     {
-        switch (type)
-        {
-            case ModDataChangeType.Name:
-            case ModDataChangeType.Author:
-            case ModDataChangeType.ModTags:
-            case ModDataChangeType.LocalTags:
-            case ModDataChangeType.Favorite:
-                SetFilterDirty();
-                break;
-        }
+        const ModDataChangeType relevantFlags =
+            ModDataChangeType.Name
+          | ModDataChangeType.Author
+          | ModDataChangeType.ModTags
+          | ModDataChangeType.LocalTags
+          | ModDataChangeType.Favorite
+          | ModDataChangeType.ImportDate;
+        if ((type & relevantFlags) != 0)
+            SetFilterDirty();
     }
 
     private void OnInheritanceChange(ModCollection collection, bool _)

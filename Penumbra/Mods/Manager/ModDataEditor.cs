@@ -249,6 +249,17 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
 
+    public void ResetModImportDate(Mod mod)
+    {
+        var newDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (mod.ImportDate == newDate)
+            return;
+
+        mod.ImportDate = newDate;
+        saveService.QueueSave(new ModLocalData(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.ImportDate, mod, null);
+    }
+
     public void ChangeModNote(Mod mod, string newNote)
     {
         if (mod.Note == newNote)

@@ -77,7 +77,7 @@ public partial class ModCreator(
         if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length == 0)
             return false;
 
-        dataEditor.LoadLocalData(mod);
+        modDataChange |= dataEditor.LoadLocalData(mod);
         LoadDefaultOption(mod);
         LoadAllGroups(mod);
         if (incorporateMetaChanges)
