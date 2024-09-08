@@ -24,14 +24,21 @@ public interface IModGroup
 {
     public const int MaxMultiOptions = 32;
 
-    public Mod                Mod             { get; }
-    public string             Name            { get; set; }
-    public string             Description     { get; set; }
-    public string             Image           { get; set; }
-    public GroupType          Type            { get; }
-    public GroupDrawBehaviour Behaviour       { get; }
-    public ModPriority        Priority        { get; set; }
-    public Setting            DefaultSettings { get; set; }
+    public Mod    Mod         { get; }
+    public string Name        { get; set; }
+    public string Description { get; set; }
+
+    /// <summary> Unused in Penumbra but for better TexTools interop. </summary>
+    public string Image { get; set; }
+
+    public GroupType          Type      { get; }
+    public GroupDrawBehaviour Behaviour { get; }
+    public ModPriority        Priority  { get; set; }
+
+    /// <summary> Unused in Penumbra but for better TexTools interop. </summary>
+    public int Page { get; set; }
+
+    public Setting DefaultSettings { get; set; }
 
     public FullPath?   FindBestMatch(Utf8GamePath gamePath);
     public IModOption? AddOption(string name, string description = "");

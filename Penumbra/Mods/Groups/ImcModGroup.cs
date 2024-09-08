@@ -29,6 +29,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         => GroupDrawBehaviour.MultiSelection;
 
     public ModPriority Priority        { get; set; } = ModPriority.Default;
+    public int         Page            { get; set; }
     public Setting     DefaultSettings { get; set; } = Setting.Zero;
 
     public ImcIdentifier Identifier;

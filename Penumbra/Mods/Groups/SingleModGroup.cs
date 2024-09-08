@@ -26,6 +26,7 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public string      Description     { get; set; } = string.Empty;
     public string      Image           { get; set; } = string.Empty;
     public ModPriority Priority        { get; set; }
+    public int         Page            { get; set; }
     public Setting     DefaultSettings { get; set; }
 
     public readonly List<SingleSubMod> OptionData = [];
