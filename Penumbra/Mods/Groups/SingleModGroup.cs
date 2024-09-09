@@ -63,15 +63,8 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
     public static SingleModGroup? Load(Mod mod, JObject json)
     {
         var options = json["Options"];
-        var ret = new SingleModGroup(mod)
-        {
-            Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
-            Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Image           = json[nameof(Image)]?.ToObject<string>() ?? string.Empty,
-            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
-            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
-        };
-        if (ret.Name.Length == 0)
+        var ret     = new SingleModGroup(mod);
+        if (!ModSaveGroup.ReadJsonBase(json, ret))
             return null;
 
         if (options != null)
@@ -92,6 +85,8 @@ public sealed class SingleModGroup(Mod mod) : IModGroup, ITexToolsGroup
             Name            = Name,
             Description     = Description,
             Priority        = Priority,
+            Image           = Image,
+            Page            = Page,
             DefaultSettings = Setting.Multi((int)DefaultSettings.Value),
         };
         multi.OptionData.AddRange(OptionData.Select((o, i) => o.ConvertToMulti(multi, new ModPriority(i))));

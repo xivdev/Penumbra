@@ -170,14 +170,10 @@ public class ImcModGroup(Mod mod) : IModGroup
         var identifier = ImcIdentifier.FromJson(json[nameof(Identifier)] as JObject);
         var ret = new ImcModGroup(mod)
         {
-            Name         = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
-            Description  = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Image        = json[nameof(Image)]?.ToObject<string>() ?? string.Empty,
-            Priority     = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
             DefaultEntry = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
             AllVariants  = json[nameof(AllVariants)]?.ToObject<bool>() ?? false,
         };
-        if (ret.Name.Length == 0)
+        if (!ModSaveGroup.ReadJsonBase(json, ret))
             return null;
 
         if (!identifier.HasValue || ret.DefaultEntry.MaterialId == 0)
@@ -216,7 +212,6 @@ public class ImcModGroup(Mod mod) : IModGroup
             }
 
         ret.Identifier      = identifier.Value;
-        ret.DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero;
         ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
         return ret;
     }

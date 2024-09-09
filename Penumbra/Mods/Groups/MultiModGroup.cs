@@ -67,15 +67,8 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public static MultiModGroup? Load(Mod mod, JObject json)
     {
-        var ret = new MultiModGroup(mod)
-        {
-            Name            = json[nameof(Name)]?.ToObject<string>() ?? string.Empty,
-            Description     = json[nameof(Description)]?.ToObject<string>() ?? string.Empty,
-            Image           = json[nameof(Image)]?.ToObject<string>() ?? string.Empty,
-            Priority        = json[nameof(Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default,
-            DefaultSettings = json[nameof(DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero,
-        };
-        if (ret.Name.Length == 0)
+        var ret = new MultiModGroup(mod);
+        if (!ModSaveGroup.ReadJsonBase(json, ret))
             return null;
 
         var options = json["Options"];
@@ -106,6 +99,8 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
             Name            = Name,
             Description     = Description,
             Priority        = Priority,
+            Image           = Image,
+            Page            = Page,
             DefaultSettings = DefaultSettings.TurnMulti(OptionData.Count),
         };
         single.OptionData.AddRange(OptionData.Select(o => o.ConvertToSingle(single)));
