@@ -4,6 +4,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Table;
+using OtterGui.Text;
 using Penumbra.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -52,36 +53,41 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
     private static unsafe void DrawByteString(CiByteString path, float length)
     {
-        Vector2 vec;
-        ImGuiNative.igCalcTextSize(&vec, path.Path, path.Path + path.Length, 0, 0);
-        if (vec.X <= length)
+        if (path.IsEmpty)
+            return;
+
+        var size    = ImUtf8.CalcTextSize(path.Span);
+        var clicked = false;
+        if (size.X <= length)
         {
-            ImGuiNative.igTextUnformatted(path.Path, path.Path + path.Length);
+            clicked = ImUtf8.Selectable(path.Span);
         }
         else
         {
-            var        fileName = path.LastIndexOf((byte)'/');
-            CiByteString shortPath;
-            if (fileName != -1)
+            var fileName = path.LastIndexOf((byte)'/');
+            using (ImRaii.Group())
             {
-                using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(2 * UiHelpers.Scale));
-                using var font  = ImRaii.PushFont(UiBuilder.IconFont);
-                ImGui.TextUnformatted(FontAwesomeIcon.EllipsisH.ToIconString());
-                ImGui.SameLine();
-                shortPath = path.Substring(fileName, path.Length - fileName);
-            }
-            else
-            {
-                shortPath = path;
+                CiByteString shortPath;
+                if (fileName != -1)
+                {
+                    using var font = ImRaii.PushFont(UiBuilder.IconFont);
+                    clicked = ImUtf8.Selectable(FontAwesomeIcon.EllipsisH.ToIconString());
+                    ImUtf8.SameLineInner();
+                    shortPath = path.Substring(fileName, path.Length - fileName);
+                }
+                else
+                {
+                    shortPath = path;
+                }
+
+                clicked |= ImUtf8.Selectable(shortPath.Span, false, ImGuiSelectableFlags.AllowItemOverlap);
             }
 
-            ImGuiNative.igTextUnformatted(shortPath.Path, shortPath.Path + shortPath.Length);
-            if (ImGui.IsItemClicked())
-                ImGuiNative.igSetClipboardText(path.Path);
-
-            if (ImGui.IsItemHovered())
-                ImGuiNative.igSetTooltip(path.Path);
+            ImUtf8.HoverTooltip(path.Span);
         }
+
+        if (clicked)
+            ImUtf8.SetClipboardText(path.Span);
     }
 
     private sealed class RecordTypeColumn : ColumnFlags<RecordType, Record>
