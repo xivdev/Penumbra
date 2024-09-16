@@ -25,8 +25,7 @@ public partial class ModCreator(
     Configuration config,
     ModDataEditor dataEditor,
     MetaFileManager metaFileManager,
-    GamePathParser gamePathParser,
-    ImcChecker imcChecker) : IService
+    GamePathParser gamePathParser) : IService
 {
     public readonly Configuration Config = config;
 
@@ -86,7 +85,7 @@ public partial class ModCreator(
         {
             foreach (var container in mod.AllDataContainers)
             {
-                if (ModMetaEditor.DeleteDefaultValues(metaFileManager, imcChecker, container.Manipulations))
+                if (ModMetaEditor.DeleteDefaultValues(metaFileManager, container.Manipulations))
                     saveService.ImmediateSaveSync(new ModSaveGroup(container, Config.ReplaceNonAsciiOnImport));
             }
         }
@@ -235,7 +234,7 @@ public partial class ModCreator(
         DeleteDeleteList(deleteList, delete);
         var changes = oldSize < option.Manipulations.Count;
         if (deleteDefault && !Config.KeepDefaultMetaChanges)
-            changes |= ModMetaEditor.DeleteDefaultValues(metaFileManager, imcChecker, option.Manipulations);
+            changes |= ModMetaEditor.DeleteDefaultValues(metaFileManager, option.Manipulations);
 
         return (changes, deleteList);
     }

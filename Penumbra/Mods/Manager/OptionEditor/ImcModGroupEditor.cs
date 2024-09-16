@@ -89,6 +89,16 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
     }
 
+    public void ChangeOnlyAttributes(ImcModGroup group, bool onlyAttributes, SaveType saveType = SaveType.Queue)
+    {
+        if (group.OnlyAttributes == onlyAttributes)
+            return;
+
+        group.OnlyAttributes = onlyAttributes;
+        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+    }
+
     public void ChangeCanBeDisabled(ImcModGroup group, bool canBeDisabled, SaveType saveType = SaveType.Queue)
     {
         if (group.CanBeDisabled == canBeDisabled)

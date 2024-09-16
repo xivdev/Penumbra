@@ -6,9 +6,9 @@ namespace Penumbra.Meta;
 
 public class ImcChecker
 {
-    private static readonly Dictionary<ImcIdentifier, int> VariantCounts = [];
-    private static          MetaFileManager?               _dataManager;
-
+    private static readonly Dictionary<ImcIdentifier, int>                   VariantCounts = [];
+    private static          MetaFileManager?                                 _dataManager;
+    private static readonly ConcurrentDictionary<ImcIdentifier, CachedEntry> GlobalCachedDefaultEntries = [];
 
     public static int GetVariantCount(ImcIdentifier identifier)
     {
@@ -26,23 +26,20 @@ public class ImcChecker
 
     public readonly record struct CachedEntry(ImcEntry Entry, bool FileExists, bool VariantExists);
 
-    private readonly Dictionary<ImcIdentifier, CachedEntry> _cachedDefaultEntries = new();
-    private readonly MetaFileManager                        _metaFileManager;
-
     public ImcChecker(MetaFileManager metaFileManager)
-    {
-        _metaFileManager = metaFileManager;
-        _dataManager     = metaFileManager;
-    }
+        => _dataManager = metaFileManager;
 
-    public CachedEntry GetDefaultEntry(ImcIdentifier identifier, bool storeCache)
+    public static CachedEntry GetDefaultEntry(ImcIdentifier identifier, bool storeCache)
     {
-        if (_cachedDefaultEntries.TryGetValue(identifier, out var entry))
+        if (GlobalCachedDefaultEntries.TryGetValue(identifier, out var entry))
             return entry;
+
+        if (_dataManager == null)
+            return new CachedEntry(default, false, false);
 
         try
         {
-            var e = ImcFile.GetDefault(_metaFileManager, identifier.GamePath(), identifier.EquipSlot, identifier.Variant, out var entryExists);
+            var e = ImcFile.GetDefault(_dataManager, identifier.GamePath(), identifier.EquipSlot, identifier.Variant, out var entryExists);
             entry = new CachedEntry(e, true, entryExists);
         }
         catch (Exception)
@@ -51,7 +48,7 @@ public class ImcChecker
         }
 
         if (storeCache)
-            _cachedDefaultEntries.Add(identifier, entry);
+            GlobalCachedDefaultEntries.TryAdd(identifier, entry);
         return entry;
     }
 

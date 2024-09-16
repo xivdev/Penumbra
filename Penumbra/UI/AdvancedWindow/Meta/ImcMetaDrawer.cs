@@ -30,7 +30,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     }
 
     private void UpdateEntry()
-        => (Entry, _fileExists, _) = MetaFiles.ImcChecker.GetDefaultEntry(Identifier, true);
+        => (Entry, _fileExists, _) = ImcChecker.GetDefaultEntry(Identifier, true);
 
     protected override void DrawNew()
     {
@@ -54,7 +54,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         DrawMetaButtons(identifier, entry);
         DrawIdentifier(identifier);
 
-        var defaultEntry = MetaFiles.ImcChecker.GetDefaultEntry(identifier, true).Entry;
+        var defaultEntry = ImcChecker.GetDefaultEntry(identifier, true).Entry;
         if (DrawEntry(defaultEntry, ref entry, true))
             Editor.Changes |= Editor.Update(identifier, entry);
     }

@@ -10,8 +10,7 @@ namespace Penumbra.Mods.Editor;
 
 public class ModMetaEditor(
     ModGroupEditor groupEditor,
-    MetaFileManager metaFileManager,
-    ImcChecker imcChecker) : MetaDictionary, IService
+    MetaFileManager metaFileManager) : MetaDictionary, IService
 {
     public sealed class OtherOptionData : HashSet<string>
     {
@@ -67,14 +66,14 @@ public class ModMetaEditor(
         Changes = false;
     }
 
-    public static bool DeleteDefaultValues(MetaFileManager metaFileManager, ImcChecker imcChecker, MetaDictionary dict)
+    public static bool DeleteDefaultValues(MetaFileManager metaFileManager, MetaDictionary dict)
     {
         var clone = dict.Clone();
         dict.Clear();
         var count = 0;
         foreach (var (key, value) in clone.Imc)
         {
-            var defaultEntry = imcChecker.GetDefaultEntry(key, false);
+            var defaultEntry = ImcChecker.GetDefaultEntry(key, false);
             if (!defaultEntry.Entry.Equals(value))
             {
                 dict.TryAdd(key, value);
@@ -164,7 +163,7 @@ public class ModMetaEditor(
     }
 
     public void DeleteDefaultValues()
-        => Changes = DeleteDefaultValues(metaFileManager, imcChecker, this);
+        => Changes = DeleteDefaultValues(metaFileManager, this);
 
     public void Apply(IModDataContainer container)
     {

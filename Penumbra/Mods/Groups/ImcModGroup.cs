@@ -35,6 +35,7 @@ public class ImcModGroup(Mod mod) : IModGroup
     public ImcIdentifier Identifier;
     public ImcEntry      DefaultEntry;
     public bool          AllVariants;
+    public bool          OnlyAttributes;
 
 
     public FullPath? FindBestMatch(Utf8GamePath gamePath)
@@ -97,28 +98,36 @@ public class ImcModGroup(Mod mod) : IModGroup
     public IModGroupEditDrawer EditDrawer(ModGroupEditDrawer editDrawer)
         => new ImcModGroupEditDrawer(editDrawer, this);
 
-    public ImcEntry GetEntry(ushort mask)
-        => DefaultEntry with { AttributeMask = mask };
+    private ImcEntry GetEntry(Variant variant, ushort mask)
+    {
+        if (!OnlyAttributes)
+            return DefaultEntry with { AttributeMask = mask };
+
+        var defaultEntry = ImcChecker.GetDefaultEntry(Identifier with { Variant = variant }, true);
+        if (defaultEntry.VariantExists)
+            return defaultEntry.Entry with { AttributeMask = mask };
+
+        return DefaultEntry with { AttributeMask = mask };
+    }
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
         if (IsDisabled(setting))
             return;
 
-        var mask  = GetCurrentMask(setting);
-        var entry = GetEntry(mask);
+        var mask = GetCurrentMask(setting);
         if (AllVariants)
         {
             var count = ImcChecker.GetVariantCount(Identifier);
             if (count == 0)
-                manipulations.TryAdd(Identifier, entry);
+                manipulations.TryAdd(Identifier, GetEntry(Identifier.Variant, mask));
             else
                 for (var i = 0; i <= count; ++i)
-                    manipulations.TryAdd(Identifier with { Variant = (Variant)i }, entry);
+                    manipulations.TryAdd(Identifier with { Variant = (Variant)i }, GetEntry((Variant)i, mask));
         }
         else
         {
-            manipulations.TryAdd(Identifier, entry);
+            manipulations.TryAdd(Identifier, GetEntry(Identifier.Variant, mask));
         }
     }
 
@@ -138,6 +147,8 @@ public class ImcModGroup(Mod mod) : IModGroup
         serializer.Serialize(jWriter, DefaultEntry);
         jWriter.WritePropertyName(nameof(AllVariants));
         jWriter.WriteValue(AllVariants);
+        jWriter.WritePropertyName(nameof(OnlyAttributes));
+        jWriter.WriteValue(OnlyAttributes);
         jWriter.WritePropertyName("Options");
         jWriter.WriteStartArray();
         foreach (var option in OptionData)
@@ -170,8 +181,9 @@ public class ImcModGroup(Mod mod) : IModGroup
         var identifier = ImcIdentifier.FromJson(json[nameof(Identifier)] as JObject);
         var ret = new ImcModGroup(mod)
         {
-            DefaultEntry = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
-            AllVariants  = json[nameof(AllVariants)]?.ToObject<bool>() ?? false,
+            DefaultEntry   = json[nameof(DefaultEntry)]?.ToObject<ImcEntry>() ?? new ImcEntry(),
+            AllVariants    = json[nameof(AllVariants)]?.ToObject<bool>() ?? false,
+            OnlyAttributes = json[nameof(OnlyAttributes)]?.ToObject<bool>() ?? false,
         };
         if (!ModSaveGroup.ReadJsonBase(json, ret))
             return null;
