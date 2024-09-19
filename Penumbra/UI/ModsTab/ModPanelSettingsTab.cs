@@ -2,6 +2,7 @@ using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.UI.Classes;
 using Penumbra.Collections.Manager;
@@ -96,6 +97,9 @@ public class ModPanelSettingsTab(
         ImGui.SetNextItemWidth(50 * UiHelpers.Scale);
         if (ImGui.InputInt("##Priority", ref priority, 0, 0))
             _currentPriority = priority;
+        if (new ModPriority(priority).IsHidden)
+            ImUtf8.HoverTooltip($"This priority is special-cased to hide this mod in conflict tabs ({ModPriority.HiddenMin}, {ModPriority.HiddenMax}).");
+
 
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {

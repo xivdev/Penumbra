@@ -25,7 +25,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         => "Conflicts"u8;
 
     public bool IsVisible
-        => collectionManager.Active.Current.Conflicts(selector.Selected!).Count > 0;
+        => collectionManager.Active.Current.Conflicts(selector.Selected!).Any(c => !GetPriority(c).IsHidden);
 
     private readonly ConditionalWeakTable<IMod, object> _expandedMods = [];
 
@@ -58,7 +58,8 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
 
         // Can not be null because otherwise the tab bar is never drawn.
         var mod = selector.Selected!;
-        foreach (var (conflict, index) in collectionManager.Active.Current.Conflicts(mod).OrderByDescending(GetPriority)
+        foreach (var (conflict, index) in collectionManager.Active.Current.Conflicts(mod).Where(c => !c.Mod2.Priority.IsHidden)
+                     .OrderByDescending(GetPriority)
                      .ThenBy(c => c.Mod2.Name.Lower).WithIndex())
         {
             using var id = ImRaii.PushId(index);

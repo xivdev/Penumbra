@@ -66,4 +66,10 @@ public readonly record struct ModPriority(int Value) :
 
     public int CompareTo(ModPriority other)
         => Value.CompareTo(other.Value);
+
+    public const int HiddenMin = -84037;
+    public const int HiddenMax = HiddenMin + 1000;
+
+    public bool IsHidden
+        => Value is > HiddenMin and < HiddenMax;
 }
