@@ -56,7 +56,7 @@ public sealed unsafe class MaterialTemplatePickers : IUiService
         }
         var firstNonNullTexture = firstNonNullTextureRH != null ? firstNonNullTextureRH->CsHandle.Texture : null;
 
-        var textureSize = firstNonNullTexture != null ? new Vector2(firstNonNullTexture->Width, firstNonNullTexture->Height).Contain(new Vector2(MaximumTextureSize)) : Vector2.Zero;
+        var textureSize = firstNonNullTexture != null ? new Vector2(firstNonNullTexture->ActualWidth, firstNonNullTexture->ActualHeight).Contain(new Vector2(MaximumTextureSize)) : Vector2.Zero;
         var count       = firstNonNullTexture != null ? firstNonNullTexture->ArraySize : 0;
 
         var ret = false;
@@ -135,10 +135,10 @@ public sealed unsafe class MaterialTemplatePickers : IUiService
                 continue;
 
             var position =  regionStart with { X = regionStart.X + (itemSize.X + itemSpacing) * j };
-            var size     =  new Vector2(texture->Width, texture->Height).Contain(itemSize);
+            var size     =  new Vector2(texture->ActualWidth, texture->ActualHeight).Contain(itemSize);
             position     += (itemSize - size) * 0.5f;
             ImGui.GetWindowDrawList().AddImage(handle, position, position + size, Vector2.Zero,
-                new Vector2(texture->Width / (float)texture->Width2, texture->Height / (float)texture->Height2));
+                new Vector2(texture->ActualWidth / (float)texture->AllocatedWidth, texture->ActualHeight / (float)texture->AllocatedHeight));
         }
     }
 
