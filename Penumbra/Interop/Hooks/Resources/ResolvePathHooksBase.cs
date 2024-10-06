@@ -3,6 +3,8 @@ using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Resources;
@@ -212,25 +214,39 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         return ret;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    private struct ChangedEquipData
+    {
+        [FieldOffset(0)]
+        public PrimaryId Model;
+
+        [FieldOffset(2)]
+        public Variant Variant;
+
+        [FieldOffset(20)]
+        public ushort VfxId;
+
+        [FieldOffset(22)]
+        public GenderRace GenderRace;
+    }
+
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
     {
         if (slotIndex is <= 4 or >= 10)
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        var changedEquipData = ((Human*)drawObject)->ChangedEquipData;
+        var changedEquipData = (ChangedEquipData*)((Human*)drawObject)->ChangedEquipData;
         // Enable vfxs for accessories
         if (changedEquipData == null)
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        var slot    = (ushort*)(changedEquipData + 12 * (nint)slotIndex);
-        var model   = slot[0];
-        var variant = slot[1];
-        var vfxId   = slot[4];
+        ref var slot = ref changedEquipData[slotIndex];
 
-        if (model == 0 || variant == 0 || vfxId == 0)
+        if (slot.Model == 0 || slot.Variant == 0 || slot.VfxId == 0)
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), $"chara/accessory/a{model:D4}/vfx/eff/va{vfxId:D4}.avfx\0",
+        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize),
+                $"chara/accessory/a{slot.Model.Id:D4}/vfx/eff/va{slot.VfxId:D4}.avfx\0",
                 out _))
             return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
