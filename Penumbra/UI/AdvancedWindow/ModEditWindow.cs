@@ -236,6 +236,8 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
                 _itemSwapTab.DrawContent();
         }
 
+        _pbdTab.Draw();
+
         DrawMissingFilesTab();
         DrawMaterialReassignmentTab();
     }
@@ -665,6 +667,10 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
             () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new ShpkTab(_fileDialog, bytes, path));
+        _pbdTab = new FileEditor<PbdTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Deformers", ".pbd",
+            () => _editor.Files.Pbd, DrawDeformerPanel,
+            () => Mod?.ModPath.FullName ?? string.Empty,
+            (bytes, path, _) => new PbdTab(bytes, path));
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;

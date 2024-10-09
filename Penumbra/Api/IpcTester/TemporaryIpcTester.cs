@@ -9,7 +9,6 @@ using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Collections.Manager;
-using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -27,6 +26,8 @@ public class TemporaryIpcTester(
     : IUiService
 {
     public Guid LastCreatedCollectionId = Guid.Empty;
+
+    private readonly bool _debug = Assembly.GetAssembly(typeof(TemporaryIpcTester))?.GetName().Version?.Major >= 9;
 
     private Guid?         _tempGuid;
     private string        _tempCollectionName     = string.Empty;
@@ -48,9 +49,9 @@ public class TemporaryIpcTester(
         ImGui.InputTextWithHint("##tempCollection", "Collection Name...", ref _tempCollectionName, 128);
         ImGuiUtil.GuidInput("##guid", "Collection GUID...", string.Empty, ref _tempGuid, ref _tempCollectionGuidName);
         ImGui.InputInt("##tempActorIndex", ref _tempActorIndex, 0, 0);
-        ImGui.InputTextWithHint("##tempMod",   "Temporary Mod Name...",         ref _tempModName,      32);
-        ImGui.InputTextWithHint("##tempGame",  "Game Path...",                  ref _tempGamePath,     256);
-        ImGui.InputTextWithHint("##tempFile",  "File Path...",                  ref _tempFilePath,     256);
+        ImGui.InputTextWithHint("##tempMod",  "Temporary Mod Name...", ref _tempModName,  32);
+        ImGui.InputTextWithHint("##tempGame", "Game Path...",          ref _tempGamePath, 256);
+        ImGui.InputTextWithHint("##tempFile", "File Path...",          ref _tempFilePath, 256);
         ImUtf8.InputText("##tempManip"u8, ref _tempManipulation, "Manipulation Base64 String..."u8);
         ImGui.Checkbox("Force Character Collection Overwrite", ref _forceOverwrite);
 
@@ -102,7 +103,7 @@ public class TemporaryIpcTester(
                 !collections.Storage.ByName(_tempModName, out var copyCollection))
          && copyCollection is { HasCache: true })
         {
-            var files = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
+            var files  = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
             var manips = MetaApi.CompressMetaManipulations(copyCollection);
             _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid, files, manips, 999);
         }
@@ -124,11 +125,11 @@ public class TemporaryIpcTester(
 
     public void DrawCollections()
     {
-        using var collTree = ImRaii.TreeNode("Temporary Collections##TempCollections");
+        using var collTree = ImUtf8.TreeNode("Temporary Collections##TempCollections"u8);
         if (!collTree)
             return;
 
-        using var table = ImRaii.Table("##collTree", 6, ImGuiTableFlags.SizingFixedFit);
+        using var table = ImUtf8.Table("##collTree"u8, 6, ImGuiTableFlags.SizingFixedFit);
         if (!table)
             return;
 
@@ -139,7 +140,7 @@ public class TemporaryIpcTester(
             var character = tempCollections.Collections.Where(p => p.Collection == collection).Select(p => p.DisplayName)
                     .FirstOrDefault()
              ?? "Unknown";
-            if (ImGui.Button("Save##Collection"))
+            if (_debug && ImUtf8.Button("Save##Collection"u8))
                 TemporaryMod.SaveTempCollection(config, saveService, modManager, collection, character);
 
             using (ImRaii.PushFont(UiBuilder.MonoFont))

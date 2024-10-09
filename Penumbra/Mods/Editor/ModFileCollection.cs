@@ -12,6 +12,7 @@ public class ModFileCollection : IDisposable, IService
     private readonly List<FileRegistry> _mdl       = [];
     private readonly List<FileRegistry> _tex       = [];
     private readonly List<FileRegistry> _shpk      = [];
+    private readonly List<FileRegistry> _pbd       = [];
 
     private readonly SortedSet<FullPath>   _missing   = [];
     private readonly HashSet<Utf8GamePath> _usedPaths = [];
@@ -23,19 +24,22 @@ public class ModFileCollection : IDisposable, IService
         => Ready ? _usedPaths : [];
 
     public IReadOnlyList<FileRegistry> Available
-        => Ready ? _available : Array.Empty<FileRegistry>();
+        => Ready ? _available : [];
 
     public IReadOnlyList<FileRegistry> Mtrl
-        => Ready ? _mtrl : Array.Empty<FileRegistry>();
+        => Ready ? _mtrl : [];
 
     public IReadOnlyList<FileRegistry> Mdl
-        => Ready ? _mdl : Array.Empty<FileRegistry>();
+        => Ready ? _mdl : [];
 
     public IReadOnlyList<FileRegistry> Tex
-        => Ready ? _tex : Array.Empty<FileRegistry>();
+        => Ready ? _tex : [];
 
     public IReadOnlyList<FileRegistry> Shpk
-        => Ready ? _shpk : Array.Empty<FileRegistry>();
+        => Ready ? _shpk : [];
+
+    public IReadOnlyList<FileRegistry> Pbd
+        => Ready ? _pbd : [];
 
     public bool Ready { get; private set; } = true;
 
@@ -128,6 +132,9 @@ public class ModFileCollection : IDisposable, IService
                 case ".shpk":
                     _shpk.Add(registry);
                     break;
+                case ".pbd":
+                    _pbd.Add(registry);
+                    break;
             }
         }
     }
@@ -139,6 +146,7 @@ public class ModFileCollection : IDisposable, IService
         _mdl.Clear();
         _tex.Clear();
         _shpk.Clear();
+        _pbd.Clear();
     }
 
     private void ClearPaths(bool clearRegistries, CancellationToken tok)
