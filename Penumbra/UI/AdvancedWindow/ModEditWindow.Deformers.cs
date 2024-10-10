@@ -38,7 +38,8 @@ public partial class ModEditWindow
             ImUtf8.InputText("##grFilter"u8, ref _pbdData.RaceCodeFilter, "Filter..."u8);
         }
 
-        using var child = ImUtf8.Child("GenderRace"u8, new Vector2(width, ImGui.GetContentRegionMax().Y), true);
+        using var child = ImUtf8.Child("GenderRace"u8,
+            new Vector2(width, ImGui.GetContentRegionMax().Y - ImGui.GetFrameHeight() - ImGui.GetStyle().WindowPadding.Y), true);
         if (!child)
             return;
 
@@ -76,7 +77,8 @@ public partial class ModEditWindow
             ImUtf8.InputText("##boneFilter"u8, ref _pbdData.BoneFilter, "Filter..."u8);
         }
 
-        using var child = ImUtf8.Child("Bone"u8, new Vector2(width, ImGui.GetContentRegionMax().Y), true);
+        using var child = ImUtf8.Child("Bone"u8,
+            new Vector2(width, ImGui.GetContentRegionMax().Y - ImGui.GetFrameHeight() - ImGui.GetStyle().WindowPadding.Y), true);
         if (!child)
             return;
 
@@ -104,7 +106,8 @@ public partial class ModEditWindow
 
     private bool DrawBoneData(PbdTab tab, bool disabled)
     {
-        using var child = ImUtf8.Child("Data"u8, ImGui.GetContentRegionMax() with { X = ImGui.GetContentRegionAvail().X}, true);
+        using var child = ImUtf8.Child("Data"u8,
+            ImGui.GetContentRegionAvail() with { Y = ImGui.GetContentRegionMax().Y - ImGui.GetStyle().WindowPadding.Y }, true);
         if (!child)
             return false;
 
@@ -116,7 +119,7 @@ public partial class ModEditWindow
 
         var width       = UiBuilder.MonoFont.GetCharAdvance('0') * 12 + ImGui.GetStyle().FramePadding.X * 2;
         var dummyHeight = ImGui.GetTextLineHeight() / 2;
-        var ret         = DrawAddNewBone(tab, disabled, width);
+        var ret         = DrawAddNewBone(tab, disabled, matrix, width);
 
         ImUtf8.Dummy(0, dummyHeight);
         ImGui.Separator();
@@ -134,7 +137,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawAddNewBone(PbdTab tab, bool disabled, float width)
+    private bool DrawAddNewBone(PbdTab tab, bool disabled, in TransformMatrix matrix, float width)
     {
         var ret = false;
         ImUtf8.TextFrameAligned("Copy the values of the bone "u8);
@@ -143,6 +146,7 @@ public partial class ModEditWindow
         {
             ImUtf8.TextFrameAligned(_pbdData.SelectedBone);
         }
+
         ImGui.SameLine(0, 0);
         ImUtf8.TextFrameAligned(" to a new bone of name"u8);
 
@@ -151,26 +155,36 @@ public partial class ModEditWindow
         ImUtf8.InputText("##newBone"u8, ref _pbdData.NewBoneName, "New Bone Name..."u8);
         ImUtf8.TextFrameAligned("for all races that have a corresponding bone."u8);
         ImGui.SameLine(0, fullWidth - width - ImGui.GetItemRectSize().X);
-        if (!ImUtf8.ButtonEx("Apply"u8, ""u8, new Vector2(width, 0),
+        if (ImUtf8.ButtonEx("Apply"u8, ""u8, new Vector2(width, 0),
                 disabled || _pbdData.NewBoneName.Length == 0 || _pbdData.SelectedBone == null))
-            return ret;
-
-        foreach (var deformer in tab.File.Deformers)
         {
-            if (!deformer.RacialDeformer.DeformMatrices.TryGetValue(_pbdData.SelectedBone!, out var existingMatrix))
-                continue;
+            foreach (var deformer in tab.File.Deformers)
+            {
+                if (!deformer.RacialDeformer.DeformMatrices.TryGetValue(_pbdData.SelectedBone!, out var existingMatrix))
+                    continue;
 
-            if (!deformer.RacialDeformer.DeformMatrices.TryAdd(_pbdData.NewBoneName, existingMatrix)
-             && deformer.RacialDeformer.DeformMatrices.TryGetValue(_pbdData.NewBoneName, out var newBoneMatrix)
-             && !newBoneMatrix.Equals(existingMatrix))
-                Penumbra.Messager.AddMessage(new Notification(
-                    $"Could not add deformer matrix to {deformer.GenderRace.ToName()}, Bone {_pbdData.NewBoneName} because it already has a deformer that differs from the intended one.",
-                    NotificationType.Warning));
-            else
-                ret = true;
+                if (!deformer.RacialDeformer.DeformMatrices.TryAdd(_pbdData.NewBoneName, existingMatrix)
+                 && deformer.RacialDeformer.DeformMatrices.TryGetValue(_pbdData.NewBoneName, out var newBoneMatrix)
+                 && !newBoneMatrix.Equals(existingMatrix))
+                    Penumbra.Messager.AddMessage(new Notification(
+                        $"Could not add deformer matrix to {deformer.GenderRace.ToName()}, Bone {_pbdData.NewBoneName} because it already has a deformer that differs from the intended one.",
+                        NotificationType.Warning));
+                else
+                    ret = true;
+            }
+
+            _pbdData.NewBoneName = string.Empty;
         }
 
-        _pbdData.NewBoneName = string.Empty;
+        if (ImUtf8.ButtonEx("Copy Values to Single New Bone Entry"u8, ""u8, new Vector2(fullWidth, 0),
+                disabled || _pbdData.NewBoneName.Length == 0 || _pbdData.SelectedDeformer!.DeformMatrices.ContainsKey(_pbdData.NewBoneName)))
+        {
+            _pbdData.SelectedDeformer!.DeformMatrices[_pbdData.NewBoneName] = matrix;
+            ret                                                             = true;
+            _pbdData.NewBoneName                                            = string.Empty;
+        }
+
+
         return ret;
     }
 
@@ -209,13 +223,29 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
 
+        var ret = false;
         if (ImUtf8.ButtonEx("Paste Values"u8, ""u8, size, disabled || !_pbdData.CopiedMatrix.HasValue))
         {
             _pbdData.SelectedDeformer!.DeformMatrices[_pbdData.SelectedBone!] = _pbdData.CopiedMatrix!.Value;
-            return true;
+            ret                                                               = true;
         }
 
-        return false;
+        var modifier = _config.DeleteModModifier.IsActive();
+        ImGui.SameLine();
+        if (modifier)
+        {
+            if (ImUtf8.ButtonEx("Delete"u8, "Delete this bone entry."u8, size, disabled))
+            {
+                ret                   |= _pbdData.SelectedDeformer!.DeformMatrices.Remove(_pbdData.SelectedBone!);
+                _pbdData.SelectedBone =  null;
+            }
+        }
+        else
+        {
+            ImUtf8.ButtonEx("Delete"u8, $"Delete this bone entry. Hold {_config.DeleteModModifier} to delete.", size, true);
+        }
+
+        return ret;
     }
 
     private bool DrawDecomposedData(bool disabled, in TransformMatrix matrix, float width)
