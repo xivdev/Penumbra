@@ -36,13 +36,13 @@ internal partial record ResolveContext
     private Utf8GamePath ResolveEquipmentModelPath()
     {
         var path = IsEquipmentSlot(SlotIndex)
-            ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot)
-            : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot);
+            ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot.ToSlot())
+            : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot.ToSlot());
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
     private GenderRace ResolveModelRaceCode()
-        => ResolveEqdpRaceCode(Slot, Equipment.Set);
+        => ResolveEqdpRaceCode(Slot.ToSlot(), Equipment.Set);
 
     private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, PrimaryId primaryId)
     {
@@ -161,7 +161,7 @@ internal partial record ResolveContext
             return variant.Id;
         }
 
-        var entry = ImcFile.GetEntry(imcFileData, Slot, variant, out var exists);
+        var entry = ImcFile.GetEntry(imcFileData, Slot.ToSlot(), variant, out var exists);
         if (!exists)
             return variant.Id;
 

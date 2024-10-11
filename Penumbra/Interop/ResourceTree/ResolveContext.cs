@@ -30,7 +30,7 @@ internal record GlobalResolveContext(
     public readonly Dictionary<(Utf8GamePath, nint), ResourceNode> Nodes = new(128);
 
     public unsafe ResolveContext CreateContext(CharaBase* characterBase, uint slotIndex = 0xFFFFFFFFu,
-        EquipSlot slot = EquipSlot.Unknown, CharacterArmor equipment = default, SecondaryId secondaryId = default)
+        FullEquipType slot = FullEquipType.Unknown, CharacterArmor equipment = default, SecondaryId secondaryId = default)
         => new(this, characterBase, slotIndex, slot, equipment, secondaryId);
 }
 
@@ -38,7 +38,7 @@ internal unsafe partial record ResolveContext(
     GlobalResolveContext Global,
     Pointer<CharaBase> CharacterBasePointer,
     uint SlotIndex,
-    EquipSlot Slot,
+    FullEquipType Slot,
     CharacterArmor Equipment,
     SecondaryId SecondaryId)
 {
@@ -346,13 +346,14 @@ internal unsafe partial record ResolveContext(
         if (isEquipment)
             foreach (var item in Global.Identifier.Identify(Equipment.Set, 0, Equipment.Variant, Slot.ToSlot()))
             {
-                var name = Slot switch
+                var name = item.Name;
+                if (Slot is FullEquipType.Finger)
+                    name = SlotIndex switch
                     {
-                        EquipSlot.RFinger => "R: ",
-                        EquipSlot.LFinger => "L: ",
-                        _                 => string.Empty,
-                    }
-                  + item.Name;
+                        8 => "R: " + name,
+                        9 => "L: " + name,
+                        _ => name,
+                    };
                 return new ResourceNode.UiData(name, item.Type.GetCategoryIcon().ToFlag());
             }
 
@@ -361,7 +362,7 @@ internal unsafe partial record ResolveContext(
             return dataFromPath;
 
         return isEquipment
-            ? new ResourceNode.UiData(Slot.ToName(), Slot.ToEquipType().GetCategoryIcon().ToFlag())
+            ? new ResourceNode.UiData(Slot.ToName(), Slot.GetCategoryIcon().ToFlag())
             : new ResourceNode.UiData(null,          ChangedItemIconFlag.Unknown);
     }
 
