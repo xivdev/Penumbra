@@ -37,7 +37,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Description = description ?? mod.Description;
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
-        saveService.ImmediateSave(new ModMeta(mod));
+        saveService.ImmediateSaveSync(new ModMeta(mod));
     }
 
     public ModDataChangeType LoadLocalData(Mod mod)
