@@ -340,9 +340,9 @@ internal unsafe partial record ResolveContext(
 
     internal ResourceNode.UiData GuessModelUiData(Utf8GamePath gamePath)
     {
-        var path = gamePath.ToString().Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var path = gamePath.Path.Split((byte)'/');
         // Weapons intentionally left out.
-        var isEquipment = SafeGet(path, 0) == "chara" && SafeGet(path, 1) is "accessory" or "equipment";
+        var isEquipment = path.Count >= 2 && path[0].Span.SequenceEqual("chara"u8) && (path[1].Span.SequenceEqual("accessory"u8) || path[1].Span.SequenceEqual("equipment"u8));
         if (isEquipment)
             foreach (var item in Global.Identifier.Identify(Equipment.Set, 0, Equipment.Variant, Slot.ToSlot()))
             {

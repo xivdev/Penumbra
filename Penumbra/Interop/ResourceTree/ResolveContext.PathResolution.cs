@@ -37,7 +37,7 @@ internal partial record ResolveContext
     {
         var path = IsEquipmentSlot(SlotIndex)
             ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot.ToSlot())
-            : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot.ToSlot());
+            : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot());
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 

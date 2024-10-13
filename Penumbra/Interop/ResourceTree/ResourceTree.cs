@@ -81,8 +81,8 @@ public class ResourceTree
                 ModelType.Human => i switch
                 {
                     < 10 => globalContext.CreateContext(model, i, i.ToEquipSlot().ToEquipType(), equipment[(int)i]),
-                    16   => globalContext.CreateContext(model, i, FullEquipType.Glasses,           equipment[10]),
-                    17   => globalContext.CreateContext(model, i, FullEquipType.Unknown,           equipment[11]),
+                    16   => globalContext.CreateContext(model, i, FullEquipType.Glasses,         equipment[10]),
+                    17   => globalContext.CreateContext(model, i, FullEquipType.Unknown,         equipment[11]),
                     _    => globalContext.CreateContext(model, i),
                 },
                 _ => i < equipment.Length
@@ -185,7 +185,7 @@ public class ResourceTree
                 {
                     pbdNode              = pbdNode.Clone();
                     pbdNode.FallbackName = "Racial Deformer";
-                    pbdNode.IconFlag         = ChangedItemIconFlag.Customization;
+                    pbdNode.IconFlag     = ChangedItemIconFlag.Customization;
                 }
 
                 Nodes.Add(pbdNode);
@@ -203,7 +203,7 @@ public class ResourceTree
             {
                 decalNode              = decalNode.Clone();
                 decalNode.FallbackName = "Face Decal";
-                decalNode.IconFlag         = ChangedItemIconFlag.Customization;
+                decalNode.IconFlag     = ChangedItemIconFlag.Customization;
             }
 
             Nodes.Add(decalNode);
@@ -220,7 +220,7 @@ public class ResourceTree
             {
                 legacyDecalNode              = legacyDecalNode.Clone();
                 legacyDecalNode.FallbackName = "Legacy Body Decal";
-                legacyDecalNode.IconFlag         = ChangedItemIconFlag.Customization;
+                legacyDecalNode.IconFlag     = ChangedItemIconFlag.Customization;
             }
 
             Nodes.Add(legacyDecalNode);

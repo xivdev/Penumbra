@@ -7,20 +7,20 @@ namespace Penumbra.Interop.ResourceTree;
 
 public class ResourceNode : ICloneable
 {
-    public          string?            Name;
-    public          string?            FallbackName;
-    public          ChangedItemIconFlag    IconFlag;
-    public readonly ResourceType       Type;
-    public readonly nint               ObjectAddress;
-    public readonly nint               ResourceHandle;
-    public          Utf8GamePath[]     PossibleGamePaths;
-    public          FullPath           FullPath;
-    public          string?            ModName;
-    public          string?            ModRelativePath;
-    public          CiByteString       AdditionalData;
-    public readonly ulong              Length;
-    public readonly List<ResourceNode> Children;
-    internal        ResolveContext?    ResolveContext;
+    public          string?             Name;
+    public          string?             FallbackName;
+    public          ChangedItemIconFlag IconFlag;
+    public readonly ResourceType        Type;
+    public readonly nint                ObjectAddress;
+    public readonly nint                ResourceHandle;
+    public          Utf8GamePath[]      PossibleGamePaths;
+    public          FullPath            FullPath;
+    public          string?             ModName;
+    public          string?             ModRelativePath;
+    public          CiByteString        AdditionalData;
+    public readonly ulong               Length;
+    public readonly List<ResourceNode>  Children;
+    internal        ResolveContext?     ResolveContext;
 
     public Utf8GamePath GamePath
     {
@@ -53,7 +53,7 @@ public class ResourceNode : ICloneable
     {
         Name              = other.Name;
         FallbackName      = other.FallbackName;
-        IconFlag              = other.IconFlag;
+        IconFlag          = other.IconFlag;
         Type              = other.Type;
         ObjectAddress     = other.ObjectAddress;
         ResourceHandle    = other.ResourceHandle;
@@ -82,7 +82,7 @@ public class ResourceNode : ICloneable
 
     public void SetUiData(UiData uiData)
     {
-        Name = uiData.Name;
+        Name     = uiData.Name;
         IconFlag = uiData.IconFlag;
     }
 
