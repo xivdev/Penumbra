@@ -40,7 +40,7 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
             original |= EqpEntry.HeadShowHrothgarHat;
 
         if (_doNotHideEarrings.Contains(armor[5].Set))
-            original |= EqpEntry.HeadShowEarrings | EqpEntry.HeadShowEarringsAura | EqpEntry.HeadShowEarringsHuman;
+            original |= EqpEntry.HeadShowEarringsHyurRoe | EqpEntry.HeadShowEarringsLalaElezen | EqpEntry.HeadShowEarringsMiqoHrothViera | EqpEntry.HeadShowEarringsAura;
 
         if (_doNotHideNecklace.Contains(armor[6].Set))
             original |= EqpEntry.BodyShowNecklace | EqpEntry.HeadShowNecklace;
