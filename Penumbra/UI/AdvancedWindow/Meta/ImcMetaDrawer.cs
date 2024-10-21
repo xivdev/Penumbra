@@ -30,7 +30,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     }
 
     private void UpdateEntry()
-        => (Entry, _fileExists, _) = MetaFiles.ImcChecker.GetDefaultEntry(Identifier, true);
+        => (Entry, _fileExists, _) = ImcChecker.GetDefaultEntry(Identifier, true);
 
     protected override void DrawNew()
     {
@@ -54,7 +54,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         DrawMetaButtons(identifier, entry);
         DrawIdentifier(identifier);
 
-        var defaultEntry = MetaFiles.ImcChecker.GetDefaultEntry(identifier, true).Entry;
+        var defaultEntry = ImcChecker.GetDefaultEntry(identifier, true).Entry;
         if (DrawEntry(defaultEntry, ref entry, true))
             Editor.Changes |= Editor.Update(identifier, entry);
     }
@@ -140,7 +140,17 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
 
     protected override IEnumerable<(ImcIdentifier, ImcEntry)> Enumerate()
-        => Editor.Imc.Select(kvp => (kvp.Key, kvp.Value));
+        => Editor.Imc
+            .OrderBy(kvp => kvp.Key.ObjectType)
+            .ThenBy(kvp => kvp.Key.PrimaryId.Id)
+            .ThenBy(kvp => kvp.Key.EquipSlot)
+            .ThenBy(kvp => kvp.Key.BodySlot)
+            .ThenBy(kvp => kvp.Key.SecondaryId.Id)
+            .ThenBy(kvp => kvp.Key.Variant.Id)
+            .Select(kvp => (kvp.Key, kvp.Value));
+
+    protected override int Count
+        => Editor.Imc.Count;
 
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
@@ -149,18 +159,18 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
         if (ret)
         {
-            var equipSlot = type switch
+            var (equipSlot, secondaryId) = type switch
             {
-                ObjectType.Equipment => identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head,
-                ObjectType.DemiHuman => identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head,
-                ObjectType.Accessory => identifier.EquipSlot.IsAccessory() ? identifier.EquipSlot : EquipSlot.Ears,
-                _                    => EquipSlot.Unknown,
+                ObjectType.Equipment => (identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head, (SecondaryId) 0),
+                ObjectType.DemiHuman => (identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head, identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId),
+                ObjectType.Accessory => (identifier.EquipSlot.IsAccessory() ? identifier.EquipSlot : EquipSlot.Ears, (SecondaryId)0),
+                _                    => (EquipSlot.Unknown, identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId),
             };
             identifier = identifier with
             {
                 ObjectType = type,
                 EquipSlot = equipSlot,
-                SecondaryId = identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId,
+                SecondaryId = secondaryId,
             };
         }
 

@@ -61,7 +61,7 @@ public class SubMeshImporter
 
         try
         {
-            _morphNames = node.Mesh.Extras.GetNode("targetNames").Deserialize<List<string>>();
+            _morphNames = node.Mesh.Extras["targetNames"].Deserialize<List<string>>();
         }
         catch
         {

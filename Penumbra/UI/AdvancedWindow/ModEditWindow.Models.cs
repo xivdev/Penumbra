@@ -97,9 +97,7 @@ public partial class ModEditWindow
 
     private void DrawImportExport(MdlTab tab, bool disabled)
     {
-        // TODO: Enable when functional.
-        using var dawntrailDisabled = ImRaii.Disabled();
-        if (!ImGui.CollapsingHeader("Import / Export (currently disabled due to Dawntrail format changes)") || true)
+        if (!ImGui.CollapsingHeader("Import / Export"))
             return;
 
         var childSize = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);

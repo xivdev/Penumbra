@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Lumina.Extensions;
 using OtterGui;
 using Penumbra.GameData.Files;
@@ -23,11 +25,11 @@ public class MeshExporter
                     ? scene.AddSkinnedMesh(data.Mesh, Matrix4x4.Identity, [.. skeleton.Value.Joints])
                     : scene.AddRigidMesh(data.Mesh, Matrix4x4.Identity);
 
-                var extras = new Dictionary<string, object>(data.Attributes.Length);
+                var node = new JsonObject();
                 foreach (var attribute in data.Attributes)
-                    extras.Add(attribute, true);
+                    node[attribute] = true;
 
-                instance.WithExtras(JsonContent.CreateFrom(extras));
+                instance.WithExtras(node);
             }
         }
     }
@@ -233,10 +235,7 @@ public class MeshExporter
 
         // Named morph targets aren't part of the specification, however `MESH.extras.targetNames`
         // is a commonly-accepted means of providing the data.
-        meshBuilder.Extras = JsonContent.CreateFrom(new Dictionary<string, object>()
-        {
-            { "targetNames", shapeNames },
-        });
+        meshBuilder.Extras = new JsonObject { ["targetNames"] = JsonSerializer.SerializeToNode(shapeNames) };
 
         string[] attributes   = [];
         var      maxAttribute = 31 - BitOperations.LeadingZeroCount(attributeMask);
@@ -312,12 +311,10 @@ public class MeshExporter
             MdlFile.VertexType.Single3 => new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.Single4 => new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()),
             MdlFile.VertexType.UByte4  => reader.ReadBytes(4),
-            MdlFile.VertexType.NByte4 => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f,
-                reader.ReadByte() / 255f),
+            MdlFile.VertexType.NByte4 => new Vector4(reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f, reader.ReadByte() / 255f),
             MdlFile.VertexType.Half2 => new Vector2((float)reader.ReadHalf(), (float)reader.ReadHalf()),
-            MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(),
-                (float)reader.ReadHalf()),
-
+            MdlFile.VertexType.Half4 => new Vector4((float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf(), (float)reader.ReadHalf()),
+            MdlFile.VertexType.UShort4 => reader.ReadBytes(8),
             var other => throw _notifier.Exception<ArgumentOutOfRangeException>($"Unhandled vertex type {other}"),
         };
     }
@@ -445,7 +442,16 @@ public class MeshExporter
     private static Type GetSkinningType(IReadOnlyDictionary<MdlFile.VertexUsage, MdlFile.VertexType> usages)
     {
         if (usages.ContainsKey(MdlFile.VertexUsage.BlendWeights) && usages.ContainsKey(MdlFile.VertexUsage.BlendIndices))
-            return typeof(VertexJoints4);
+        {
+            if (usages[MdlFile.VertexUsage.BlendWeights] == MdlFile.VertexType.UShort4)
+            {
+                return typeof(VertexJoints8);
+            }
+            else
+            {
+                return typeof(VertexJoints4);
+            }
+        }
 
         return typeof(VertexEmpty);
     }
@@ -456,15 +462,17 @@ public class MeshExporter
         if (_skinningType == typeof(VertexEmpty))
             return new VertexEmpty();
 
-        if (_skinningType == typeof(VertexJoints4))
+        if (_skinningType == typeof(VertexJoints4) || _skinningType == typeof(VertexJoints8))
         {
             if (_boneIndexMap == null)
                 throw _notifier.Exception("Tried to build skinned vertex but no bone mappings are available.");
 
-            var indices = ToByteArray(attributes[MdlFile.VertexUsage.BlendIndices]);
-            var weights = ToVector4(attributes[MdlFile.VertexUsage.BlendWeights]);
-
-            var bindings = Enumerable.Range(0, 4)
+            var indiciesData = attributes[MdlFile.VertexUsage.BlendIndices];
+            var weightsData  = attributes[MdlFile.VertexUsage.BlendWeights];
+            var indices      = ToByteArray(indiciesData);
+            var weights      = ToFloatArray(weightsData);
+            
+            var bindings = Enumerable.Range(0, indices.Length)
                 .Select(bindingIndex =>
                 {
                     // NOTE: I've not seen any files that throw this error that aren't completely broken.
@@ -475,7 +483,13 @@ public class MeshExporter
                     return (jointIndex, weights[bindingIndex]);
                 })
                 .ToArray();
-            return new VertexJoints4(bindings);
+            
+            return bindings.Length switch
+            {
+                4 => new VertexJoints4(bindings),
+                8 => new VertexJoints8(bindings),
+                _ => throw _notifier.Exception($"Invalid number of bone bindings {bindings.Length}.")
+            };
         }
 
         throw _notifier.Exception($"Unknown skinning type {_skinningType}");
@@ -518,4 +532,13 @@ public class MeshExporter
             byte[] value => value,
             _            => throw new ArgumentOutOfRangeException($"Invalid byte[] input {data}"),
         };
+    
+    private static float[] ToFloatArray(object data)
+        => data switch
+        {
+            byte[] value   => value.Select(x => x / 255f).ToArray(),
+            Vector4 v4     => new[] { v4.X, v4.Y, v4.Z, v4.W },
+            _              => throw new ArgumentOutOfRangeException($"Invalid float[] input {data}"),
+        };
 }
+

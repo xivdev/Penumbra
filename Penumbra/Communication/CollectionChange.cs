@@ -46,5 +46,8 @@ public sealed class CollectionChange()
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnCollectionChange"/>
         ModFileSystemSelector = 0,
+
+        /// <seealso cref="Mods.ModSelection.OnCollectionChange"/>
+        ModSelection = 10,
     }
 }

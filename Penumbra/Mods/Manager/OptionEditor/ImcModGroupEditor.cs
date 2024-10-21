@@ -2,7 +2,6 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Services;
 using Penumbra.GameData.Structs;
-using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -86,6 +85,16 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         group.AllVariants = allVariants;
+        SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
+        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+    }
+
+    public void ChangeOnlyAttributes(ImcModGroup group, bool onlyAttributes, SaveType saveType = SaveType.Queue)
+    {
+        if (group.OnlyAttributes == onlyAttributes)
+            return;
+
+        group.OnlyAttributes = onlyAttributes;
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
         Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
     }

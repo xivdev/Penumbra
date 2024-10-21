@@ -53,9 +53,41 @@ public class PenumbraChangelog : IUiService
         Add1_1_0_0(Changelog);
         Add1_1_1_0(Changelog);
         Add1_2_1_0(Changelog);
+        Add1_3_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_3_0_0(Changelog log)
+        => log.NextVersion("Version 1.3.0.0")
+
+            .RegisterHighlight("The textures tab in the advanced editing window can now import and export .tga files.")
+            .RegisterEntry("BC4 and BC6 textures can now also be imported.", 1)
+            .RegisterHighlight("Added item swapping from and to the Glasses slot.")
+            .RegisterEntry("Reworked quite a bit of things around face wear / bonus items. Please let me know if anything broke.", 1)
+            .RegisterEntry("The import date of a mod is now shown in the Edit Mod tab, and can be reset via button.")
+            .RegisterEntry("A button to open the file containing local mod data for a mod was also added.", 1)
+            .RegisterHighlight("IMC groups can now be configured to only apply the attribute flags for their entry, and take the other values from the default value.")
+            .RegisterEntry("This allows keeping the material index of every IMC entry of a group, while setting the attributes.", 1)
+            .RegisterHighlight("Model Import/Export was fixed and re-enabled (thanks ackwell and ramen).")
+            .RegisterHighlight("Added a hack to allow bonus items (face wear, glasses) to have VFX.")
+            .RegisterEntry("Also fixed the hack that allowed accessories to have VFX not working anymore.", 1)
+            .RegisterHighlight("Added rudimentary options to edit PBD files in the advanced editing window.")
+            .RegisterEntry("Preparing the advanced editing window for a mod now does not freeze the game until it is ready.")
+            .RegisterEntry("Meta Manipulations in the advanced editing window are now ordered and do not eat into performance as much when drawn.")
+            .RegisterEntry("Added a button to the advanced editing window to remove all default-valued meta manipulations from a mod")
+            .RegisterEntry("Default-valued manipulations will now also be removed on import from archives and .pmps, not just .ttmps, if not configured otherwise.", 1)
+            .RegisterEntry("Checkbox-based mod filters are now tri-state checkboxes instead of two disjoint checkboxes.")
+            .RegisterEntry("Paths from the resource logger can now be copied.")
+            .RegisterEntry("Silenced some redundant error logs when updating mods via Heliosphere.")
+            .RegisterEntry("Added 'Page' to imported mod data for TexTools interop. The value is not used in Penumbra, just persisted.")
+            .RegisterEntry("Updated all external dependencies.")
+            .RegisterEntry("Fixed issue with Demihuman IMC entries.")
+            .RegisterEntry("Fixed some off-by-one errors on the mod import window.")
+            .RegisterEntry("Fixed a race-condition concerning the first-time creation of mod-meta files.")
+            .RegisterEntry("Fixed an issue with long mod titles in the merge mods tab.")
+            .RegisterEntry("A bunch of other miscellaneous fixes.");
+
 
     private static void Add1_2_1_0(Changelog log)
         => log.NextVersion("Version 1.2.1.0")

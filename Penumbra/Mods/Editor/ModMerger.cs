@@ -10,22 +10,21 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Mods.Editor;
 
 public class ModMerger : IDisposable, IService
 {
-    private readonly Configuration         _config;
-    private readonly CommunicatorService   _communicator;
-    private readonly ModGroupEditor        _editor;
-    private readonly ModFileSystemSelector _selector;
-    private readonly DuplicateManager      _duplicates;
-    private readonly ModManager            _mods;
-    private readonly ModCreator            _creator;
+    private readonly Configuration       _config;
+    private readonly CommunicatorService _communicator;
+    private readonly ModGroupEditor      _editor;
+    private readonly ModSelection        _selection;
+    private readonly DuplicateManager    _duplicates;
+    private readonly ModManager          _mods;
+    private readonly ModCreator          _creator;
 
     public Mod? MergeFromMod
-        => _selector.Selected;
+        => _selection.Mod;
 
     public Mod?   MergeToMod;
     public string OptionGroupName = "Merges";
@@ -41,23 +40,23 @@ public class ModMerger : IDisposable, IService
     public readonly IReadOnlyList<string> Warnings = new List<string>();
     public          Exception?            Error { get; private set; }
 
-    public ModMerger(ModManager mods, ModGroupEditor editor, ModFileSystemSelector selector, DuplicateManager duplicates,
+    public ModMerger(ModManager mods, ModGroupEditor editor, ModSelection selection, DuplicateManager duplicates,
         CommunicatorService communicator, ModCreator creator, Configuration config)
     {
-        _editor                    =  editor;
-        _selector                  =  selector;
-        _duplicates                =  duplicates;
-        _communicator              =  communicator;
-        _creator                   =  creator;
-        _config                    =  config;
-        _mods                      =  mods;
-        _selector.SelectionChanged += OnSelectionChange;
+        _editor                     =  editor;
+        _selection                  =  selection;
+        _duplicates                 =  duplicates;
+        _communicator               =  communicator;
+        _creator                    =  creator;
+        _config                     =  config;
+        _mods                       =  mods;
+        _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModMerger);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModMerger);
     }
 
     public void Dispose()
     {
-        _selector.SelectionChanged -= OnSelectionChange;
+        _selection.Unsubscribe(OnSelectionChange);
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
     }
 
@@ -257,7 +256,7 @@ public class ModMerger : IDisposable, IService
             if (dir == null)
                 throw new Exception($"Could not split off mods, unable to create new mod with name {modName}.");
 
-            _mods.AddMod(dir);
+            _mods.AddMod(dir, false);
             result = _mods[^1];
             if (mods.Count == 1)
             {
@@ -390,7 +389,7 @@ public class ModMerger : IDisposable, IService
         }
     }
 
-    private void OnSelectionChange(Mod? oldSelection, Mod? newSelection, in ModFileSystemSelector.ModState state)
+    private void OnSelectionChange(Mod? oldSelection, Mod? newSelection)
     {
         if (OptionGroupName == "Merges" && OptionName.Length == 0 || OptionName == oldSelection?.Name.Text)
             OptionName = newSelection?.Name.Text ?? string.Empty;

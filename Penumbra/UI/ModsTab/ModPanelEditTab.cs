@@ -7,6 +7,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using OtterGui.Classes;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
@@ -49,6 +50,8 @@ public class ModPanelEditTab(
 
         EditButtons();
         EditRegularMeta();
+        UiHelpers.DefaultLineSpace();
+        EditLocalData();
         UiHelpers.DefaultLineSpace();
 
         if (Input.Text("Mod Path", Input.Path, Input.None, _leaf.FullName(), out var newPath, 256, UiHelpers.InputTextWidth.X))
@@ -180,6 +183,40 @@ public class ModPanelEditTab(
             Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });
 
         DrawOpenDefaultMod();
+    }
+
+    private void EditLocalData()
+    {
+        DrawImportDate();
+        DrawOpenLocalData();
+    }
+
+    private void DrawImportDate()
+    {
+        ImUtf8.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
+            ImGui.GetColorU32(ImGuiCol.FrameBg, 0.5f), new Vector2(UiHelpers.InputTextMinusButton3, 0));
+        ImGui.SameLine(0, 3 * ImUtf8.GlobalScale);
+
+        var canRefresh = config.DeleteModModifier.IsActive();
+        var tt = canRefresh
+            ? "Reset the import date to the current date and time."
+            : $"Reset the import date to the current date and time.\nHold {config.DeleteModModifier} while clicking to refresh.";
+
+        if (ImUtf8.IconButton(FontAwesomeIcon.Sync, tt, disabled: !canRefresh))
+            modManager.DataEditor.ResetModImportDate(_mod);
+        ImUtf8.SameLineInner();
+        ImUtf8.Text("Import Date"u8);
+    }
+
+    private void DrawOpenLocalData()
+    {
+        var file       = filenames.LocalDataFile(_mod);
+        var fileExists = File.Exists(file);
+        var tt = fileExists
+            ? "Open the local mod data file in the text editor of your choice."u8
+            : "The local mod data file does not exist."u8;
+        if (ImUtf8.ButtonEx("Open Local Data"u8, tt, UiHelpers.InputTextWidth, !fileExists))
+            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true });
     }
 
     private void DrawOpenDefaultMod()

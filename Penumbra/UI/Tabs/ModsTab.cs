@@ -82,8 +82,7 @@ public class ModsTab(
               + $"{selector.SortMode.Name} Sort Mode\n"
               + $"{selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
               + $"{selector.Selected?.Name ?? "NULL"} Selected Mod\n"
-              + $"{string.Join(", ", _activeCollections.Current.DirectlyInheritsFrom.Select(c => c.AnonymizedName))} Inheritances\n"
-              + $"{selector.SelectedSettingCollection.AnonymizedName} Collection\n");
+              + $"{string.Join(", ", _activeCollections.Current.DirectlyInheritsFrom.Select(c => c.AnonymizedName))} Inheritances\n");
         }
     }
 

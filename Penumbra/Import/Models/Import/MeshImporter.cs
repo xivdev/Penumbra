@@ -194,24 +194,34 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
         foreach (var (primitive, primitiveIndex) in node.Mesh.Primitives.WithIndex())
         {
             // Per glTF specification, an asset with a skin MUST contain skinning attributes on its meshes.
-            var jointsAccessor = primitive.GetVertexAccessor("JOINTS_0")?.AsVector4Array();
-            var weightsAccessor = primitive.GetVertexAccessor("WEIGHTS_0")?.AsVector4Array();
-
-            if (jointsAccessor == null || weightsAccessor == null)
+            var joints0Accessor = primitive.GetVertexAccessor("JOINTS_0")?.AsVector4Array();
+            var weights0Accessor = primitive.GetVertexAccessor("WEIGHTS_0")?.AsVector4Array();
+            var joints1Accessor  = primitive.GetVertexAccessor("JOINTS_1")?.AsVector4Array();
+            var weights1Accessor = primitive.GetVertexAccessor("WEIGHTS_1")?.AsVector4Array();
+            
+            if (joints0Accessor == null || weights0Accessor == null)
                 throw notifier.Exception($"Primitive {primitiveIndex} is skinned but does not contain skinning vertex attributes.");
 
             // Build a set of joints that are referenced by this mesh.
-            for (var i = 0; i < jointsAccessor.Count; i++) 
+            for (var i = 0; i < joints0Accessor.Count; i++) 
             {
-                var joints = jointsAccessor[i];
-                var weights = weightsAccessor[i];
+                var joints0 = joints0Accessor[i];
+                var weights0 = weights0Accessor[i];
+                var joints1 = joints1Accessor?[i];
+                var weights1 = weights1Accessor?[i];
                 for (var index = 0; index < 4; index++)
                 {
                     // If a joint has absolutely no weight, we omit the bone entirely.
-                    if (weights[index] == 0)
-                        continue;
+                    if (weights0[index] != 0)
+                    {
+                        usedJoints.Add((ushort)joints0[index]);
+                    }
 
-                    usedJoints.Add((ushort)joints[index]);
+                        
+                    if (joints1 != null && weights1 != null && weights1.Value[index] != 0)
+                    {
+                        usedJoints.Add((ushort)joints1.Value[index]);
+                    }
                 }
             }
         }

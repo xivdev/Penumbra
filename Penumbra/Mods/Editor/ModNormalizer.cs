@@ -46,7 +46,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
         if (!config.AutoReduplicateUiOnImport)
             return;
 
-        if (modManager.Creator.LoadMod(modDirectory, false) is not { } mod)
+        if (modManager.Creator.LoadMod(modDirectory, false, false) is not { } mod)
             return;
 
         Dictionary<FullPath, List<(IModDataContainer, Utf8GamePath)>> paths      = [];

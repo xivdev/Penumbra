@@ -1,3 +1,4 @@
+using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -5,7 +6,7 @@ using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
-public class GlobalEqpCache : Dictionary<GlobalEqpManipulation, IMod>, IService
+public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, IService
 {
     private readonly HashSet<PrimaryId> _doNotHideEarrings  = [];
     private readonly HashSet<PrimaryId> _doNotHideNecklace  = [];
@@ -39,7 +40,7 @@ public class GlobalEqpCache : Dictionary<GlobalEqpManipulation, IMod>, IService
             original |= EqpEntry.HeadShowHrothgarHat;
 
         if (_doNotHideEarrings.Contains(armor[5].Set))
-            original |= EqpEntry.HeadShowEarrings | EqpEntry.HeadShowEarringsAura | EqpEntry.HeadShowEarringsHuman;
+            original |= EqpEntry.HeadShowEarringsHyurRoe | EqpEntry.HeadShowEarringsLalaElezen | EqpEntry.HeadShowEarringsMiqoHrothViera | EqpEntry.HeadShowEarringsAura;
 
         if (_doNotHideNecklace.Contains(armor[6].Set))
             original |= EqpEntry.BodyShowNecklace | EqpEntry.HeadShowNecklace;

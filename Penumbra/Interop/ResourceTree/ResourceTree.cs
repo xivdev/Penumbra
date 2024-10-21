@@ -80,12 +80,13 @@ public class ResourceTree
             {
                 ModelType.Human => i switch
                 {
-                    < 10     => globalContext.CreateContext(model, i, i.ToEquipSlot(), equipment[(int)i]),
-                    16 or 17 => globalContext.CreateContext(model, i, EquipSlot.Head,  equipment[(int)(i - 6)]),
-                    _        => globalContext.CreateContext(model, i),
+                    < 10 => globalContext.CreateContext(model, i, i.ToEquipSlot().ToEquipType(), equipment[(int)i]),
+                    16   => globalContext.CreateContext(model, i, FullEquipType.Glasses,         equipment[10]),
+                    17   => globalContext.CreateContext(model, i, FullEquipType.Unknown,         equipment[11]),
+                    _    => globalContext.CreateContext(model, i),
                 },
                 _ => i < equipment.Length
-                    ? globalContext.CreateContext(model, i, i.ToEquipSlot(), equipment[(int)i])
+                    ? globalContext.CreateContext(model, i, i.ToEquipSlot().ToEquipType(), equipment[(int)i])
                     : globalContext.CreateContext(model, i),
             };
 
@@ -133,7 +134,7 @@ public class ResourceTree
             var weapon = (Weapon*)subObject;
 
             // This way to tell apart MainHand and OffHand is not always accurate, but seems good enough for what we're doing with it.
-            var slot       = weaponIndex > 0 ? EquipSlot.OffHand : EquipSlot.MainHand;
+            var slot       = weaponIndex > 0 ? FullEquipType.UnknownOffhand : FullEquipType.UnknownMainhand;
             var equipment  = new CharacterArmor(weapon->ModelSetId, (byte)weapon->Variant, new StainIds(weapon->Stain0, weapon->Stain1));
             var weaponType = weapon->SecondaryId;
 
@@ -184,7 +185,7 @@ public class ResourceTree
                 {
                     pbdNode              = pbdNode.Clone();
                     pbdNode.FallbackName = "Racial Deformer";
-                    pbdNode.IconFlag         = ChangedItemIconFlag.Customization;
+                    pbdNode.IconFlag     = ChangedItemIconFlag.Customization;
                 }
 
                 Nodes.Add(pbdNode);
@@ -202,7 +203,7 @@ public class ResourceTree
             {
                 decalNode              = decalNode.Clone();
                 decalNode.FallbackName = "Face Decal";
-                decalNode.IconFlag         = ChangedItemIconFlag.Customization;
+                decalNode.IconFlag     = ChangedItemIconFlag.Customization;
             }
 
             Nodes.Add(decalNode);
@@ -219,7 +220,7 @@ public class ResourceTree
             {
                 legacyDecalNode              = legacyDecalNode.Clone();
                 legacyDecalNode.FallbackName = "Legacy Body Decal";
-                legacyDecalNode.IconFlag         = ChangedItemIconFlag.Customization;
+                legacyDecalNode.IconFlag     = ChangedItemIconFlag.Customization;
             }
 
             Nodes.Add(legacyDecalNode);

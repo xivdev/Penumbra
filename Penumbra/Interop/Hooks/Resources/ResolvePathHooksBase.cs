@@ -3,7 +3,10 @@ using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
+using static FFXIVClientStructs.FFXIV.Client.Game.Character.ActionEffectHandler;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
@@ -212,30 +215,74 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         return ret;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    private struct ChangedEquipData
+    {
+        [FieldOffset(0)]
+        public PrimaryId Model;
+
+        [FieldOffset(2)]
+        public Variant Variant;
+
+        [FieldOffset(8)]
+        public PrimaryId BonusModel;
+
+        [FieldOffset(10)]
+        public Variant BonusVariant;
+
+        [FieldOffset(20)]
+        public ushort VfxId;
+
+        [FieldOffset(22)]
+        public GenderRace GenderRace;
+    }
+
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
     {
-        if (slotIndex is <= 4 or >= 10)
-            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+        switch (slotIndex)
+        {
+            case <= 4: return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+            case <= 10:
+            {
+                // Enable vfxs for accessories
+                var changedEquipData = (ChangedEquipData*)((Human*)drawObject)->ChangedEquipData;
+                if (changedEquipData == null)
+                    return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        var changedEquipData = ((Human*)drawObject)->ChangedEquipData;
-        // Enable vfxs for accessories
-        if (changedEquipData == null)
-            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+                ref var slot = ref changedEquipData[slotIndex];
 
-        var slot    = (ushort*)(changedEquipData + 12 * (nint)slotIndex);
-        var model   = slot[0];
-        var variant = slot[1];
-        var vfxId   = slot[4];
+                if (slot.Model == 0 || slot.Variant == 0 || slot.VfxId == 0)
+                    return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        if (model == 0 || variant == 0 || vfxId == 0)
-            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+                if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize),
+                        $"chara/accessory/a{slot.Model.Id:D4}/vfx/eff/va{slot.VfxId:D4}.avfx\0",
+                        out _))
+                    return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), $"chara/accessory/a{model:D4}/vfx/eff/va{vfxId:D4}.avfx\0",
-                out _))
-            return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+                *(ulong*)unkOutParam = 4;
+                return ResolvePath(drawObject, pathBuffer);
+            }
+            case 16:
+            {
+                // Enable vfxs for glasses
+                var changedEquipData = (ChangedEquipData*)((Human*)drawObject)->ChangedEquipData;
+                if (changedEquipData == null)
+                    return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
 
-        *(ulong*)unkOutParam = 4;
-        return ResolvePath(drawObject, pathBuffer);
+                ref var slot = ref changedEquipData[slotIndex - 6];
+
+                if (slot.BonusModel == 0 || slot.BonusVariant == 0 || slot.VfxId == 0)
+                    return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+                if (!Utf8.TryWrite(new Span<byte>((void*)pathBuffer, (int)pathBufferSize),
+                        $"chara/equipment/e{slot.BonusModel.Id:D4}/vfx/eff/ve{slot.VfxId:D4}.avfx\0",
+                        out _))
+                    return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+
+                *(ulong*)unkOutParam = 4;
+                return ResolvePath(drawObject, pathBuffer);
+            }
+            default: return ResolveVfx(drawObject, pathBuffer, pathBufferSize, slotIndex, unkOutParam);
+        }
     }
 
     private nint VFunc81(nint drawObject, int estType, nint unk)

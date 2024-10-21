@@ -24,13 +24,11 @@ public class AddGroupDrawer : IUiService
     private          bool          _imcFileExists;
     private          bool          _entryExists;
     private          bool          _entryInvalid;
-    private readonly ImcChecker    _imcChecker;
     private readonly ModManager    _modManager;
 
-    public AddGroupDrawer(ModManager modManager, ImcChecker imcChecker)
+    public AddGroupDrawer(ModManager modManager)
     {
         _modManager = modManager;
-        _imcChecker = imcChecker;
         UpdateEntry();
     }
 
@@ -142,7 +140,7 @@ public class AddGroupDrawer : IUiService
 
     private void UpdateEntry()
     {
-        (_defaultEntry, _imcFileExists, _entryExists) = _imcChecker.GetDefaultEntry(_imcIdentifier, false);
+        (_defaultEntry, _imcFileExists, _entryExists) = ImcChecker.GetDefaultEntry(_imcIdentifier, false);
         _entryInvalid                                 = !_imcIdentifier.Validate() || _defaultEntry.MaterialId == 0 || !_entryExists;
     }
 }

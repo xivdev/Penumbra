@@ -58,7 +58,14 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     }
 
     protected override IEnumerable<(EstIdentifier, EstEntry)> Enumerate()
-        => Editor.Est.Select(kvp => (kvp.Key, kvp.Value));
+        => Editor.Est
+            .OrderBy(kvp => kvp.Key.SetId.Id)
+            .ThenBy(kvp => kvp.Key.GenderRace)
+            .ThenBy(kvp => kvp.Key.Slot)
+            .Select(kvp => (kvp.Key, kvp.Value));
+
+    protected override int Count
+        => Editor.Est.Count;
 
     private static bool DrawIdentifierInput(ref EstIdentifier identifier)
     {

@@ -68,9 +68,13 @@ public readonly record struct ImcIdentifier(
         => (MetaIndex)(-1);
 
     public override string ToString()
-        => ObjectType is ObjectType.Equipment or ObjectType.Accessory
-            ? $"Imc - {PrimaryId} - {EquipSlot.ToName()} - {Variant}"
-            : $"Imc - {PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}";
+        => ObjectType switch
+        {
+            ObjectType.Equipment or ObjectType.Accessory => $"Imc - {PrimaryId} - {EquipSlot.ToName()} - {Variant}",
+            ObjectType.DemiHuman => $"Imc - {PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
+            _ => $"Imc - {PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
+        };
+
 
     public bool Validate()
     {
@@ -102,6 +106,7 @@ public readonly record struct ImcIdentifier(
                     return false;
                 if (ItemData.AdaptOffhandImc(PrimaryId, out _))
                     return false;
+
                 break;
         }
 
@@ -163,7 +168,7 @@ public readonly record struct ImcIdentifier(
             case ObjectType.DemiHuman:
             {
                 var secondaryId = new SecondaryId(jObj["SecondaryId"]?.ToObject<ushort>() ?? 0);
-                var slot        = jObj["Slot"]?.ToObject<EquipSlot>() ?? EquipSlot.Unknown;
+                var slot        = jObj["EquipSlot"]?.ToObject<EquipSlot>() ?? EquipSlot.Unknown;
                 ret = new ImcIdentifier(primaryId, (Variant)variant, objectType, secondaryId, slot, BodySlot.Unknown);
                 break;
             }

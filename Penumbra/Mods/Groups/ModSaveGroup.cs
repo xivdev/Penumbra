@@ -1,4 +1,7 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Files.ShaderStructs;
+using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
@@ -90,11 +93,25 @@ public readonly struct ModSaveGroup : ISavable
         jWriter.WriteValue(group.Description);
         jWriter.WritePropertyName(nameof(group.Image));
         jWriter.WriteValue(group.Image);
+        jWriter.WritePropertyName(nameof(group.Page));
+        jWriter.WriteValue(group.Page);
         jWriter.WritePropertyName(nameof(group.Priority));
         jWriter.WriteValue(group.Priority.Value);
         jWriter.WritePropertyName(nameof(group.Type));
         jWriter.WriteValue(group.Type.ToString());
         jWriter.WritePropertyName(nameof(group.DefaultSettings));
         jWriter.WriteValue(group.DefaultSettings.Value);
+    }
+
+    public static bool ReadJsonBase(JObject json, IModGroup group)
+    {
+        group.Name            = json[nameof(IModGroup.Name)]?.ToObject<string>() ?? string.Empty;
+        group.Description     = json[nameof(IModGroup.Description)]?.ToObject<string>() ?? string.Empty;
+        group.Image           = json[nameof(IModGroup.Image)]?.ToObject<string>() ?? string.Empty;
+        group.Page            = json[nameof(IModGroup.Page)]?.ToObject<int>() ?? 0;
+        group.Priority        = json[nameof(IModGroup.Priority)]?.ToObject<ModPriority>() ?? ModPriority.Default;
+        group.DefaultSettings = json[nameof(IModGroup.DefaultSettings)]?.ToObject<Setting>() ?? Setting.Zero;
+
+        return group.Name.Length > 0;
     }
 }

@@ -37,7 +37,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Description = description ?? mod.Description;
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
-        saveService.ImmediateSave(new ModMeta(mod));
+        saveService.ImmediateSaveSync(new ModMeta(mod));
     }
 
     public ModDataChangeType LoadLocalData(Mod mod)
@@ -247,6 +247,17 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Favorite = state;
         saveService.QueueSave(new ModLocalData(mod));
         communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
+    }
+
+    public void ResetModImportDate(Mod mod)
+    {
+        var newDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        if (mod.ImportDate == newDate)
+            return;
+
+        mod.ImportDate = newDate;
+        saveService.QueueSave(new ModLocalData(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.ImportDate, mod, null);
     }
 
     public void ChangeModNote(Mod mod, string newNote)

@@ -177,7 +177,9 @@ public static class TexFileParser
             DXGIFormat.BC1UNorm             => TexFile.TextureFormat.BC1,
             DXGIFormat.BC2UNorm             => TexFile.TextureFormat.BC2,
             DXGIFormat.BC3UNorm             => TexFile.TextureFormat.BC3,
+            DXGIFormat.BC4UNorm             => (TexFile.TextureFormat)0x6120, // TODO: upstream to Lumina
             DXGIFormat.BC5UNorm             => TexFile.TextureFormat.BC5,
+            DXGIFormat.BC6HSF16             => (TexFile.TextureFormat)0x6330, // TODO: upstream to Lumina
             DXGIFormat.BC7UNorm             => TexFile.TextureFormat.BC7,
             DXGIFormat.R16G16B16A16Typeless => TexFile.TextureFormat.D16,
             DXGIFormat.R24G8Typeless        => TexFile.TextureFormat.D24S8,
@@ -202,7 +204,9 @@ public static class TexFileParser
             TexFile.TextureFormat.BC1           => DXGIFormat.BC1UNorm,
             TexFile.TextureFormat.BC2           => DXGIFormat.BC2UNorm,
             TexFile.TextureFormat.BC3           => DXGIFormat.BC3UNorm,
+            (TexFile.TextureFormat)0x6120       => DXGIFormat.BC4UNorm, // TODO: upstream to Lumina
             TexFile.TextureFormat.BC5           => DXGIFormat.BC5UNorm,
+            (TexFile.TextureFormat)0x6330       => DXGIFormat.BC6HSF16, // TODO: upstream to Lumina
             TexFile.TextureFormat.BC7           => DXGIFormat.BC7UNorm,
             TexFile.TextureFormat.D16           => DXGIFormat.R16G16B16A16Typeless,
             TexFile.TextureFormat.D24S8         => DXGIFormat.R24G8Typeless,

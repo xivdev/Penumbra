@@ -128,7 +128,8 @@ public partial class ModEditWindow
                 ? "This saves the texture in place. This is not revertible."
                 : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.";
 
-            var buttonSize2 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
+            var buttonSize2 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2,     0);
+            var buttonSize3 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
             if (ImGuiUtil.DrawDisabledButton("Save in place", buttonSize2,
                     tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
@@ -141,17 +142,18 @@ public partial class ModEditWindow
             if (ImGui.Button("Save as TEX", buttonSize2))
                 OpenSaveAsDialog(".tex");
 
-            if (ImGui.Button("Export as PNG", buttonSize2))
+            if (ImGui.Button("Export as TGA", buttonSize3))
+                OpenSaveAsDialog(".tga");
+            ImGui.SameLine();
+            if (ImGui.Button("Export as PNG", buttonSize3))
                 OpenSaveAsDialog(".png");
             ImGui.SameLine();
-            if (ImGui.Button("Export as DDS", buttonSize2))
+            if (ImGui.Button("Export as DDS", buttonSize3))
                 OpenSaveAsDialog(".dds");
-
             ImGui.NewLine();
 
             var canConvertInPlace = canSaveInPlace && _left.Type is TextureType.Tex && _center.IsLeftCopy;
 
-            var buttonSize3 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
             if (ImGuiUtil.DrawDisabledButton("Convert to BC7", buttonSize3,
                     "This converts the texture to BC7 format in place. This is not revertible.",
                     !canConvertInPlace || _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
@@ -226,7 +228,8 @@ public partial class ModEditWindow
     private void OpenSaveAsDialog(string defaultExtension)
     {
         var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
-        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, defaultExtension,
+        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS, PNG or TGA...", "Textures{.png,.dds,.tex,.tga},.tex,.dds,.png,.tga", fileName,
+            defaultExtension,
             (a, b) =>
             {
                 if (a)
@@ -329,5 +332,6 @@ public partial class ModEditWindow
         ".png",
         ".dds",
         ".tex",
+        ".tga",
     };
 }

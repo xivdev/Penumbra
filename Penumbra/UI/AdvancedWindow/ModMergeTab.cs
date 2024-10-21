@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
@@ -45,9 +46,30 @@ public class ModMergeTab(ModMerger modMerger) : IUiService
 
     private void DrawMergeInto(float size)
     {
-        using var bigGroup = ImRaii.Group();
+        using var bigGroup     = ImRaii.Group();
+        var       minComboSize = 300 * ImGuiHelpers.GlobalScale;
+        var       textSize     = ImUtf8.CalcTextSize($"Merge {modMerger.MergeFromMod!.Name} into ").X;
+
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted($"Merge {modMerger.MergeFromMod!.Name} into ");
+
+        using (ImRaii.Group())
+        {
+            ImUtf8.Text("Merge "u8);
+            ImGui.SameLine(0, 0);
+            if (size - textSize < minComboSize)
+            {
+                ImUtf8.Text("selected mod"u8, ColorId.FolderLine.Value());
+                ImUtf8.HoverTooltip(modMerger.MergeFromMod!.Name.Text);
+            }
+            else
+            {
+                ImUtf8.Text(modMerger.MergeFromMod!.Name.Text, ColorId.FolderLine.Value());
+            }
+
+            ImGui.SameLine(0, 0);
+            ImUtf8.Text(" into"u8);
+        }
+
         ImGui.SameLine();
         DrawCombo(size - ImGui.GetItemRectSize().X - ImGui.GetStyle().ItemSpacing.X);
 

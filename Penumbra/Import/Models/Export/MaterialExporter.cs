@@ -36,12 +36,14 @@ public class MaterialExporter
         return material.Mtrl.ShaderPackage.Name switch
         {
             // NOTE: this isn't particularly precise to game behavior (it has some fade around high opacity), but good enough for now.
-            "character.shpk"      => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
-            "characterglass.shpk" => BuildCharacter(material, name).WithAlpha(AlphaMode.BLEND),
-            "hair.shpk"           => BuildHair(material, name),
-            "iris.shpk"           => BuildIris(material, name),
-            "skin.shpk"           => BuildSkin(material, name),
-            _                     => BuildFallback(material, name, notifier),
+            "character.shpk"       => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
+            "characterlegacy.shpk" => BuildCharacter(material, name).WithAlpha(AlphaMode.MASK, 0.5f),
+            "characterglass.shpk"  => BuildCharacter(material, name).WithAlpha(AlphaMode.BLEND),
+            "charactertattoo.shpk" => BuildCharacterTattoo(material, name),
+            "hair.shpk"            => BuildHair(material, name),
+            "iris.shpk"            => BuildIris(material, name),
+            "skin.shpk"            => BuildSkin(material, name),
+            _                      => BuildFallback(material, name, notifier),
         };
     }
 
@@ -49,70 +51,65 @@ public class MaterialExporter
     private static MaterialBuilder BuildCharacter(Material material, string name)
     {
         // Build the textures from the color table.
-        var table = new LegacyColorTable(material.Mtrl.Table!);
+        var table = new ColorTable(material.Mtrl.Table!);
+        var indexTexture = material.Textures[(TextureUsage)1449103320];
+        var indexOperation = new ProcessCharacterIndexOperation(indexTexture, table);
+        ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, indexTexture.Bounds, in indexOperation);
 
-        var normal = material.Textures[TextureUsage.SamplerNormal];
+        var normalTexture = material.Textures[TextureUsage.SamplerNormal];
+        var normalOperation = new ProcessCharacterNormalOperation(normalTexture);
+        ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normalTexture.Bounds, in normalOperation);
 
-        var operation = new ProcessCharacterNormalOperation(normal, table);
-        ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, normal.Bounds, in operation);
+        // Merge in opacity from the normal.
+        var baseColor = indexOperation.BaseColor;
+        MultiplyOperation.Execute(baseColor, normalOperation.BaseColorOpacity);
 
-        // Check if full textures are provided, and merge in if available.
-        var baseColor = operation.BaseColor;
+        // Check if a full diffuse is provided, and merge in if available.
         if (material.Textures.TryGetValue(TextureUsage.SamplerDiffuse, out var diffuse))
         {
-            MultiplyOperation.Execute(diffuse, operation.BaseColor);
+            MultiplyOperation.Execute(diffuse, indexOperation.BaseColor);
             baseColor = diffuse;
         }
 
-        Image specular = operation.Specular;
+        var specular = indexOperation.Specular;
         if (material.Textures.TryGetValue(TextureUsage.SamplerSpecular, out var specularTexture))
         {
-            MultiplyOperation.Execute(specularTexture, operation.Specular);
+            MultiplyOperation.Execute(specularTexture, indexOperation.Specular);
             specular = specularTexture;
         }
 
         // Pull further information from the mask.
         if (material.Textures.TryGetValue(TextureUsage.SamplerMask, out var maskTexture))
         {
-            // Extract the red channel for "ambient occlusion".
-            maskTexture.Mutate(context => context.Resize(baseColor.Width, baseColor.Height));
-            maskTexture.ProcessPixelRows(baseColor, (maskAccessor, baseColorAccessor) =>
-            {
-                for (var y = 0; y < maskAccessor.Height; y++)
-                {
-                    var maskSpan      = maskAccessor.GetRowSpan(y);
-                    var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+            var maskOperation = new ProcessCharacterMaskOperation(maskTexture);
+            ParallelRowIterator.IterateRows(ImageSharpConfiguration.Default, maskTexture.Bounds, in maskOperation);
 
-                    for (var x = 0; x < maskSpan.Length; x++)
-                        baseColorSpan[x].FromVector4(baseColorSpan[x].ToVector4() * new Vector4(maskSpan[x].R / 255f));
-                }
-            });
-            // TODO: handle other textures stored in the mask?
+            // TODO: consider using the occusion gltf material property.
+            MultiplyOperation.Execute(baseColor, maskOperation.Occlusion);
+
+            // Similar to base color's alpha, this is a pretty wasteful operation for a single channel.
+            MultiplyOperation.Execute(specular, maskOperation.SpecularFactor);
         }
 
         // Specular extension puts colour on RGB and factor on A. We're already packing like that, so we can reuse the texture.
         var specularImage = BuildImage(specular, name, "specular");
 
         return BuildSharedBase(material, name)
-            .WithBaseColor(BuildImage(baseColor,         name, "basecolor"))
-            .WithNormal(BuildImage(operation.Normal,     name, "normal"))
-            .WithEmissive(BuildImage(operation.Emissive, name, "emissive"), Vector3.One, 1)
+            .WithBaseColor(BuildImage(baseColor,              name, "basecolor"))
+            .WithNormal(BuildImage(normalOperation.Normal,    name, "normal"))
+            .WithEmissive(BuildImage(indexOperation.Emissive, name, "emissive"), Vector3.One, 1)
             .WithSpecularFactor(specularImage, 1)
             .WithSpecularColor(specularImage);
     }
 
-    // TODO: It feels a little silly to request the entire normal here when extracting the normal only needs some of the components.
-    //       As a future refactor, it would be neat to accept a single-channel field here, and then do composition of other stuff later.
-    // TODO(Dawntrail): Use the dedicated index (_id) map, that is not embedded in the normal map's alpha channel anymore.
-    private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal, LegacyColorTable table) : IRowOperation
+    private readonly struct ProcessCharacterIndexOperation(Image<Rgba32> index, ColorTable table) : IRowOperation
     {
-        public Image<Rgba32> Normal    { get; } = normal.Clone();
-        public Image<Rgba32> BaseColor { get; } = new(normal.Width, normal.Height);
-        public Image<Rgba32> Specular  { get; } = new(normal.Width, normal.Height);
-        public Image<Rgb24>  Emissive  { get; } = new(normal.Width, normal.Height);
+        public Image<Rgba32> BaseColor { get; } = new(index.Width, index.Height);
+        public Image<Rgba32> Specular  { get; } = new(index.Width, index.Height);
+        public Image<Rgb24>  Emissive  { get; } = new(index.Width, index.Height);
 
-        private Buffer2D<Rgba32> NormalBuffer
-            => Normal.Frames.RootFrame.PixelBuffer;
+        private Buffer2D<Rgba32> IndexBuffer
+            => index.Frames.RootFrame.PixelBuffer;
 
         private Buffer2D<Rgba32> BaseColorBuffer
             => BaseColor.Frames.RootFrame.PixelBuffer;
@@ -125,66 +122,96 @@ public class MaterialExporter
 
         public void Invoke(int y)
         {
-            var normalSpan    = NormalBuffer.DangerousGetRowSpan(y);
+            var indexSpan = IndexBuffer.DangerousGetRowSpan(y);
             var baseColorSpan = BaseColorBuffer.DangerousGetRowSpan(y);
             var specularSpan  = SpecularBuffer.DangerousGetRowSpan(y);
             var emissiveSpan  = EmissiveBuffer.DangerousGetRowSpan(y);
+
+            for (var x = 0; x < indexSpan.Length; x++)
+            {
+                ref var indexPixel = ref indexSpan[x];
+
+                // Calculate and fetch the color table rows being used for this pixel.
+                var tablePair = (int) Math.Round(indexPixel.R / 17f);
+                var rowBlend = 1.0f - indexPixel.G / 255f;
+
+                var prevRow = table[tablePair * 2];
+                var nextRow = table[Math.Min(tablePair * 2 + 1, ColorTable.NumRows)];
+
+                // Lerp between table row values to fetch final pixel values for each subtexture.
+                var lerpedDiffuse = Vector3.Lerp((Vector3)prevRow.DiffuseColor, (Vector3)nextRow.DiffuseColor, rowBlend);
+                baseColorSpan[x].FromVector4(new Vector4(lerpedDiffuse, 1));
+
+                var lerpedSpecularColor = Vector3.Lerp((Vector3)prevRow.SpecularColor, (Vector3)nextRow.SpecularColor, rowBlend);
+                specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, 1));
+
+                var lerpedEmissive = Vector3.Lerp((Vector3)prevRow.EmissiveColor, (Vector3)nextRow.EmissiveColor, rowBlend);
+                emissiveSpan[x].FromVector4(new Vector4(lerpedEmissive, 1));
+            }
+        }
+    }
+    
+    private readonly struct ProcessCharacterNormalOperation(Image<Rgba32> normal) : IRowOperation
+    {
+        // TODO: Consider omitting the alpha channel here.
+        public Image<Rgba32> Normal { get; } = normal.Clone();
+        // TODO: We only really need the alpha here, however using A8 will result in the multiply later zeroing out the RGB channels.
+        public Image<Rgba32> BaseColorOpacity { get; } = new(normal.Width, normal.Height);
+
+        private Buffer2D<Rgba32> NormalBuffer
+            => Normal.Frames.RootFrame.PixelBuffer;
+
+        private Buffer2D<Rgba32> BaseColorOpacityBuffer
+            => BaseColorOpacity.Frames.RootFrame.PixelBuffer;
+
+        public void Invoke(int y)
+        {
+            var normalSpan = NormalBuffer.DangerousGetRowSpan(y);
+            var baseColorOpacitySpan = BaseColorOpacityBuffer.DangerousGetRowSpan(y);
 
             for (var x = 0; x < normalSpan.Length; x++)
             {
                 ref var normalPixel = ref normalSpan[x];
 
-                // Table row data (.a)
-                var tableRow = GetTableRowIndices(normalPixel.A / 255f);
-                var prevRow  = table[tableRow.Previous];
-                var nextRow  = table[tableRow.Next];
+                baseColorOpacitySpan[x].FromVector4(Vector4.One);
+                baseColorOpacitySpan[x].A = normalPixel.B;
 
-                // Base colour (table, .b)
-                var lerpedDiffuse = Vector3.Lerp((Vector3)prevRow.DiffuseColor, (Vector3)nextRow.DiffuseColor, tableRow.Weight);
-                baseColorSpan[x].FromVector4(new Vector4(lerpedDiffuse, 1));
-                baseColorSpan[x].A = normalPixel.B;
-
-                // Specular (table)
-                var lerpedSpecularColor = Vector3.Lerp((Vector3)prevRow.SpecularColor, (Vector3)nextRow.SpecularColor, tableRow.Weight);
-                var lerpedSpecularFactor = float.Lerp((float)prevRow.SpecularMask, (float)nextRow.SpecularMask, tableRow.Weight);
-                specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, lerpedSpecularFactor));
-
-                // Emissive (table)
-                var lerpedEmissive = Vector3.Lerp((Vector3)prevRow.EmissiveColor, (Vector3)nextRow.EmissiveColor, tableRow.Weight);
-                emissiveSpan[x].FromVector4(new Vector4(lerpedEmissive, 1));
-
-                // Normal (.rg)
-                // TODO: we don't actually need alpha at all for normal, but _not_ using the existing rgba texture means I'll need a new one, with a new accessor. Think about it.
                 normalPixel.B = byte.MaxValue;
                 normalPixel.A = byte.MaxValue;
             }
         }
     }
 
-    private static TableRow GetTableRowIndices(float input)
+    private readonly struct ProcessCharacterMaskOperation(Image<Rgba32> mask) : IRowOperation
     {
-        // These calculations are ported from character.shpk.
-        var smoothed = MathF.Floor(input * 7.5f % 1.0f * 2)
-          * (-input * 15 + MathF.Floor(input * 15 + 0.5f))
-          + input * 15;
+        public Image<Rgba32> Occlusion { get; } = new(mask.Width, mask.Height);
+        public Image<Rgba32> SpecularFactor { get; } = new(mask.Width, mask.Height);
 
-        var stepped = MathF.Floor(smoothed + 0.5f);
+        private Buffer2D<Rgba32> MaskBuffer
+            => mask.Frames.RootFrame.PixelBuffer;
 
-        return new TableRow
+        private Buffer2D<Rgba32> OcclusionBuffer
+            => Occlusion.Frames.RootFrame.PixelBuffer;
+
+        private Buffer2D<Rgba32> SpecularFactorBuffer
+            => SpecularFactor.Frames.RootFrame.PixelBuffer;
+
+        public void Invoke(int y)
         {
-            Stepped  = (int)stepped,
-            Previous = (int)MathF.Floor(smoothed),
-            Next     = (int)MathF.Ceiling(smoothed),
-            Weight   = smoothed % 1,
-        };
-    }
+            var maskSpan = MaskBuffer.DangerousGetRowSpan(y);
+            var occlusionSpan = OcclusionBuffer.DangerousGetRowSpan(y);
+            var specularFactorSpan = SpecularFactorBuffer.DangerousGetRowSpan(y);
 
-    private ref struct TableRow
-    {
-        public int   Stepped;
-        public int   Previous;
-        public int   Next;
-        public float Weight;
+            for (var x = 0; x < maskSpan.Length; x++)
+            {
+                ref var maskPixel = ref maskSpan[x];
+
+                occlusionSpan[x].FromL8(new L8(maskPixel.B));
+                
+                specularFactorSpan[x].FromVector4(Vector4.One);
+                specularFactorSpan[x].A = maskPixel.R;
+            }
+        }
     }
 
     private readonly struct MultiplyOperation
@@ -218,6 +245,37 @@ public class MaterialExporter
         }
     }
 
+    private static readonly Vector4 DefaultTattooColor = new Vector4(38, 112, 102, 255) / new Vector4(255);
+
+    private static MaterialBuilder BuildCharacterTattoo(Material material, string name)
+    {
+        var normal = material.Textures[TextureUsage.SamplerNormal];
+        var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
+
+        normal.ProcessPixelRows(baseColor, (normalAccessor, baseColorAccessor) =>
+        {
+            for (var y = 0; y < normalAccessor.Height; y++)
+            {
+                var normalSpan    = normalAccessor.GetRowSpan(y);
+                var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+
+                for (var x = 0; x < normalSpan.Length; x++)
+                {
+                    baseColorSpan[x].FromVector4(DefaultTattooColor);
+                    baseColorSpan[x].A = normalSpan[x].A;
+
+                    normalSpan[x].B = byte.MaxValue;
+                    normalSpan[x].A = byte.MaxValue;
+                }
+            }
+        });
+
+        return BuildSharedBase(material, name)
+            .WithBaseColor(BuildImage(baseColor, name, "basecolor"))
+            .WithNormal(BuildImage(normal,       name, "normal"))
+            .WithAlpha(AlphaMode.BLEND);
+    }
+
     // TODO: These are hardcoded colours - I'm not keen on supporting highly customizable exports, but there's possibly some more sensible values to use here.
     private static readonly Vector4 DefaultHairColor      = new Vector4(130, 64,  13,  255) / new Vector4(255);
     private static readonly Vector4 DefaultHighlightColor = new Vector4(77,  126, 240, 255) / new Vector4(255);
@@ -248,10 +306,11 @@ public class MaterialExporter
 
                 for (var x = 0; x < normalSpan.Length; x++)
                 {
-                    var color = Vector4.Lerp(DefaultHairColor, DefaultHighlightColor, maskSpan[x].A / 255f);
-                    baseColorSpan[x].FromVector4(color * new Vector4(maskSpan[x].R / 255f));
+                    var color = Vector4.Lerp(DefaultHairColor, DefaultHighlightColor, normalSpan[x].B / 255f);
+                    baseColorSpan[x].FromVector4(color * new Vector4(maskSpan[x].A / 255f));
                     baseColorSpan[x].A = normalSpan[x].A;
 
+                    normalSpan[x].B = byte.MaxValue;
                     normalSpan[x].A = byte.MaxValue;
                 }
             }
@@ -269,26 +328,23 @@ public class MaterialExporter
     // NOTE: This is largely the same as the hair material, but is also missing a few features that would cause it to diverge. Keeping separate for now.
     private static MaterialBuilder BuildIris(Material material, string name)
     {
-        var normal = material.Textures[TextureUsage.SamplerNormal];
-        var mask   = material.Textures[TextureUsage.SamplerMask];
+        var normal    = material.Textures[TextureUsage.SamplerNormal];
+        var mask      = material.Textures[TextureUsage.SamplerMask];
+        var baseColor = material.Textures[TextureUsage.SamplerDiffuse];
 
-        mask.Mutate(context => context.Resize(normal.Width, normal.Height));
+        mask.Mutate(context => context.Resize(baseColor.Width, baseColor.Height));
 
-        var baseColor = new Image<Rgba32>(normal.Width, normal.Height);
-        normal.ProcessPixelRows(mask, baseColor, (normalAccessor, maskAccessor, baseColorAccessor) =>
+        baseColor.ProcessPixelRows(mask, (baseColorAccessor, maskAccessor) =>
         {
-            for (var y = 0; y < normalAccessor.Height; y++)
+            for (var y = 0; y < baseColor.Height; y++)
             {
-                var normalSpan    = normalAccessor.GetRowSpan(y);
-                var maskSpan      = maskAccessor.GetRowSpan(y);
                 var baseColorSpan = baseColorAccessor.GetRowSpan(y);
+                var maskSpan      = maskAccessor.GetRowSpan(y);
 
-                for (var x = 0; x < normalSpan.Length; x++)
+                for (var x = 0; x < baseColorSpan.Length; x++)
                 {
-                    baseColorSpan[x].FromVector4(DefaultEyeColor * new Vector4(maskSpan[x].R / 255f));
-                    baseColorSpan[x].A = normalSpan[x].A;
-
-                    normalSpan[x].A = byte.MaxValue;
+                    var eyeColor = Vector4.Lerp(Vector4.One, DefaultEyeColor, maskSpan[x].B / 255f);
+                    baseColorSpan[x].FromVector4(baseColorSpan[x].ToVector4() * eyeColor);
                 }
             }
         });
@@ -314,21 +370,7 @@ public class MaterialExporter
         var diffuse = material.Textures[TextureUsage.SamplerDiffuse];
         var normal  = material.Textures[TextureUsage.SamplerNormal];
 
-        // Create a copy of the normal that's the same size as the diffuse for purposes of copying the opacity across.
-        var resizedNormal = normal.Clone(context => context.Resize(diffuse.Width, diffuse.Height));
-        diffuse.ProcessPixelRows(resizedNormal, (diffuseAccessor, normalAccessor) =>
-        {
-            for (var y = 0; y < diffuseAccessor.Height; y++)
-            {
-                var diffuseSpan = diffuseAccessor.GetRowSpan(y);
-                var normalSpan  = normalAccessor.GetRowSpan(y);
-
-                for (var x = 0; x < diffuseSpan.Length; x++)
-                    diffuseSpan[x].A = normalSpan[x].B;
-            }
-        });
-
-        // Clear the blue channel out of the normal now that we're done with it.
+        // The normal also stores the skin color influence (.b) and wetness mask (.a) - remove.
         normal.ProcessPixelRows(normalAccessor =>
         {
             for (var y = 0; y < normalAccessor.Height; y++)
@@ -336,7 +378,10 @@ public class MaterialExporter
                 var normalSpan = normalAccessor.GetRowSpan(y);
 
                 for (var x = 0; x < normalSpan.Length; x++)
+                {
                     normalSpan[x].B = byte.MaxValue;
+                    normalSpan[x].A = byte.MaxValue;
+                }
             }
         });
 

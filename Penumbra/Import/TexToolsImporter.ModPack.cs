@@ -151,6 +151,7 @@ public partial class TexToolsImporter
             _currentGroupName  = string.Empty;
             _currentOptionName = "Default";
             ExtractSimpleModList(_currentModDirectory, modList.SimpleModsList);
+            ++_currentOptionIdx;
         }
 
         // Iterate through all pages
@@ -208,6 +209,7 @@ public partial class TexToolsImporter
                             options.Insert(idx, MultiSubMod.WithoutGroup(option.Name, option.Description, ModPriority.Default));
                             if (option.IsChecked)
                                 defaultSettings = Setting.Single(idx);
+                            ++_currentOptionIdx;
                         }
                     }
 

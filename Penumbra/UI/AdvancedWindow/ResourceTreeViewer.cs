@@ -190,52 +190,6 @@ public class ResourceTreeViewer
         var frameHeight = ImGui.GetFrameHeight();
         var cellHeight  = _actionCapacity > 0 ? frameHeight : 0.0f;
 
-        bool MatchesFilter(ResourceNode node, ChangedItemIconFlag filterIcon)
-        {
-            if (!_typeFilter.HasFlag(filterIcon))
-                return false;
-
-            if (_nodeFilter.Length == 0)
-                return true;
-
-            return node.Name != null && node.Name.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-             || node.FullPath.FullName.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-             || node.FullPath.InternalName.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-             || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
-        }
-
-        NodeVisibility CalculateNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
-        {
-            if (node.Internal && !debugMode)
-                return NodeVisibility.Hidden;
-
-            var filterIcon = node.IconFlag != 0 ? node.IconFlag : parentFilterIcon;
-            if (MatchesFilter(node, filterIcon))
-                return NodeVisibility.Visible;
-
-            foreach (var child in node.Children)
-            {
-                if (GetNodeVisibility(unchecked(nodePathHash * 31 + child.ResourceHandle), child, filterIcon) != NodeVisibility.Hidden)
-                    return NodeVisibility.DescendentsOnly;
-            }
-
-            return NodeVisibility.Hidden;
-        }
-
-        NodeVisibility GetNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
-        {
-            if (!_filterCache.TryGetValue(nodePathHash, out var visibility))
-            {
-                visibility = CalculateNodeVisibility(nodePathHash, node, parentFilterIcon);
-                _filterCache.Add(nodePathHash, visibility);
-            }
-
-            return visibility;
-        }
-
-        string GetAdditionalDataSuffix(CiByteString data)
-            => !debugMode || data.IsEmpty ? string.Empty : $"\n\nAdditional Data: {data}";
-
         foreach (var (resourceNode, index) in resourceNodes.WithIndex())
         {
             var nodePathHash = unchecked(pathHash + resourceNode.ResourceHandle);
@@ -345,6 +299,54 @@ public class ResourceTreeViewer
 
             if (unfolded)
                 DrawNodes(resourceNode.Children, level + 1, unchecked(nodePathHash * 31), filterIcon);
+        }
+
+        return;
+
+        string GetAdditionalDataSuffix(CiByteString data)
+            => !debugMode || data.IsEmpty ? string.Empty : $"\n\nAdditional Data: {data}";
+
+        NodeVisibility GetNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
+        {
+            if (!_filterCache.TryGetValue(nodePathHash, out var visibility))
+            {
+                visibility = CalculateNodeVisibility(nodePathHash, node, parentFilterIcon);
+                _filterCache.Add(nodePathHash, visibility);
+            }
+
+            return visibility;
+        }
+
+        NodeVisibility CalculateNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
+        {
+            if (node.Internal && !debugMode)
+                return NodeVisibility.Hidden;
+
+            var filterIcon = node.IconFlag != 0 ? node.IconFlag : parentFilterIcon;
+            if (MatchesFilter(node, filterIcon))
+                return NodeVisibility.Visible;
+
+            foreach (var child in node.Children)
+            {
+                if (GetNodeVisibility(unchecked(nodePathHash * 31 + child.ResourceHandle), child, filterIcon) != NodeVisibility.Hidden)
+                    return NodeVisibility.DescendentsOnly;
+            }
+
+            return NodeVisibility.Hidden;
+        }
+
+        bool MatchesFilter(ResourceNode node, ChangedItemIconFlag filterIcon)
+        {
+            if (!_typeFilter.HasFlag(filterIcon))
+                return false;
+
+            if (_nodeFilter.Length == 0)
+                return true;
+
+            return node.Name != null && node.Name.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
+             || node.FullPath.FullName.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
+             || node.FullPath.InternalName.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
+             || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
         }
     }
 

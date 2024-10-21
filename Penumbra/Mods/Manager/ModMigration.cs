@@ -82,7 +82,7 @@ public static partial class ModMigration
         foreach (var (gamePath, swapPath) in swaps)
             mod.Default.FileSwaps.Add(gamePath, swapPath);
 
-        creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true);
+        creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true, true);
         foreach (var group in mod.Groups)
             saveService.ImmediateSave(new ModSaveGroup(group, creator.Config.ReplaceNonAsciiOnImport));
 
@@ -182,7 +182,7 @@ public static partial class ModMigration
             Description = option.OptionDesc,
         };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
-        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false, true);
         return subMod;
     }
 
@@ -196,7 +196,7 @@ public static partial class ModMigration
             Priority    = priority,
         };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
-        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false, true);
         return subMod;
     }
 

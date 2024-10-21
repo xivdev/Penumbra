@@ -66,7 +66,7 @@ public static class TextureDrawer
                     current.Load(textures, paths[0]);
             }
 
-            fileDialog.OpenFilePicker("Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath, false);
+            fileDialog.OpenFilePicker("Open Image...", "Textures{.png,.dds,.tex,.tga}", UpdatePath, 1, startPath, false);
         }
 
         ImGui.SameLine();
