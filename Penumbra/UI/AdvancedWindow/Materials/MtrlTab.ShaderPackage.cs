@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
+using FFXIVClientStructs.FFXIV.Common.Lua;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
 using OtterGui;
@@ -9,6 +10,7 @@ using OtterGui.Text;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
@@ -327,6 +329,7 @@ public partial class MtrlTab
             DrawCustomAssociations();
             ret |= DrawMaterialShaderKeys(disabled);
             DrawMaterialShaders();
+            ret |= DrawShaderQuickActions(disabled);
         }
 
         if (!_shpkLoading && (_associatedShpk == null || _associatedShpkDevkit == null))
@@ -362,14 +365,19 @@ public partial class MtrlTab
                 if (!ImGui.Selectable(value, value == Mtrl.ShaderPackage.Name))
                     continue;
 
-                Mtrl.ShaderPackage.Name = value;
-                ret                     = true;
-                _associatedShpk         = null;
-                _loadedShpkPath         = FullPath.Empty;
-                LoadShpk(FindAssociatedShpk(out _, out _));
+                ret = true;
+                SwitchToShaderPackage(value);
             }
 
         return ret;
+    }
+
+    private void SwitchToShaderPackage(string shPkName)
+    {
+        Mtrl.ShaderPackage.Name = shPkName;
+        _associatedShpk         = null;
+        _loadedShpkPath         = FullPath.Empty;
+        LoadShpk(FindAssociatedShpk(out _, out _));
     }
 
     private bool DrawShaderFlagsInput(bool disabled)
@@ -503,5 +511,36 @@ public partial class MtrlTab
             ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
             ImUtf8.Text(_shaderComment);
         }
+    }
+
+    private bool DrawShaderQuickActions(bool disabled)
+    {
+        if (disabled)
+            return false;
+
+        var ret = false;
+        if (Mtrl.ShaderPackage.Name is "characterlegacy.shpk")
+        {
+            using var _ = ImRaii.Disabled(!ImGui.GetIO().KeyCtrl);
+            if (ImUtf8.Button("[Experimental] Convert to New character.shpk"u8))
+                ret |= ConvertToNewCharacterShader();
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "This operation will switch this material to character.shpk and convert its color table accordingly.\nThis conversion is experimental and will require further manual edits to this material, and may also require edits to the model and/or textures.\n\nHold Ctrl to unlock."u8);
+        }
+
+        return ret;
+    }
+
+    private bool ConvertToNewCharacterShader()
+    {
+        if (Mtrl.ShaderPackage.Name is not "characterlegacy.shpk")
+            return false;
+
+        SwitchToShaderPackage("character.shpk");
+        if (Mtrl.Table is ColorTable colorTable)
+            colorTable.ConvertFromCharacterLegacy();
+        if (Mtrl.DyeTable is ColorDyeTable colorDyeTable)
+            colorDyeTable.ConvertFromCharacterLegacy();
+
+        return true;
     }
 }

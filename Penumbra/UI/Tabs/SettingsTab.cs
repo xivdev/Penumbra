@@ -733,6 +733,10 @@ public class SettingsTab : ITab, IUiService
         Checkbox("Advanced Editing: Edit Raw Tile UV Transforms",
             "Edit the raw matrix components of tile UV transforms, instead of having them decomposed into scale, rotation and shear.",
             _config.EditRawTileTransforms, v => _config.EditRawTileTransforms = v);
+
+        Checkbox("Advanced Editing: Always Highlight Color Row Pair when Hovering Selection Button",
+            "Make the whole color row pair selection button highlight the pair in game, instead of just the crosshair, even without holding Ctrl.",
+            _config.WholePairSelectorAlwaysHighlights, v => _config.WholePairSelectorAlwaysHighlights = v);
     }
 
     #endregion
