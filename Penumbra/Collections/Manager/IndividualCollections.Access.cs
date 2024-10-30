@@ -48,8 +48,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
 
                 // Handle generic NPC
                 var npcIdentifier = _actors.CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty,
-                    ushort.MaxValue,
-                    identifier.Kind, identifier.DataId);
+                    ushort.MaxValue, identifier.Kind, identifier.DataId);
                 if (npcIdentifier.IsValid && _individuals.TryGetValue(npcIdentifier, out collection))
                     return true;
 
@@ -58,8 +57,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                     return false;
 
                 identifier = _actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
-                    identifier.HomeWorld.Id,
-                    ObjectKind.None, uint.MaxValue);
+                    identifier.HomeWorld.Id, ObjectKind.None, uint.MaxValue);
                 return CheckWorlds(identifier, out collection);
             }
             case IdentifierType.Npc:     return _individuals.TryGetValue(identifier, out collection);
