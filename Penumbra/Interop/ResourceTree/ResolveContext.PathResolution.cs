@@ -36,17 +36,16 @@ internal partial record ResolveContext
     private Utf8GamePath ResolveEquipmentModelPath()
     {
         var path = IsEquipmentSlot(SlotIndex)
-            ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), Slot.ToSlot())
+            ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot())
             : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot());
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
     private GenderRace ResolveModelRaceCode()
-        => ResolveEqdpRaceCode(Slot.ToSlot(), Equipment.Set);
+        => ResolveEqdpRaceCode(SlotIndex, Equipment.Set);
 
-    private unsafe GenderRace ResolveEqdpRaceCode(EquipSlot slot, PrimaryId primaryId)
+    private unsafe GenderRace ResolveEqdpRaceCode(uint slotIndex, PrimaryId primaryId)
     {
-        var slotIndex = slot.ToIndex();
         if (!IsEquipmentOrAccessorySlot(slotIndex) || ModelType != ModelType.Human)
             return GenderRace.MidlanderMale;
 
@@ -61,6 +60,7 @@ internal partial record ResolveContext
         var metaCache = Global.Collection.MetaCache;
         var entry = metaCache?.GetEqdpEntry(characterRaceCode, accessory, primaryId)
          ?? ExpandedEqdpFile.GetDefault(Global.MetaFileManager, characterRaceCode, accessory, primaryId);
+        var slot = slotIndex.ToEquipSlot();
         if (entry.ToBits(slot).Item2)
             return characterRaceCode;
 
@@ -272,7 +272,7 @@ internal partial record ResolveContext
     {
         var human     = (Human*)CharacterBase;
         var equipment = ((CharacterArmor*)&human->Head)[slot.ToIndex()];
-        return ResolveHumanExtraSkeletonData(ResolveEqdpRaceCode(slot, equipment.Set), type, equipment.Set);
+        return ResolveHumanExtraSkeletonData(ResolveEqdpRaceCode(slot.ToIndex(), equipment.Set), type, equipment.Set);
     }
 
     private (GenderRace RaceCode, string Slot, PrimaryId Set) ResolveHumanExtraSkeletonData(GenderRace raceCode, EstType type,
