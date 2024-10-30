@@ -126,7 +126,7 @@ public sealed unsafe class CollectionResolver(
             // The lobby uses the first 8 cutscene actors.
             var idx = gameObject->ObjectIndex - ObjectIndex.CutsceneStart.Index;
             if (characterList->CharacterMapping.FindFirst(m => m.ClientObjectIndex == idx, out var mapping)
-                && lobby->LobbyData.CharaSelectEntries.FindFirst(e => e.Value->ContentId == mapping.ContentId, out var charaEntry))
+             && lobby->LobbyData.CharaSelectEntries.FindFirst(e => e.Value->ContentId == mapping.ContentId, out var charaEntry))
             {
                 var item       = charaEntry.Value;
                 var identifier = actors.CreatePlayer(new ByteString(item->Name), item->HomeWorldId);
@@ -199,10 +199,24 @@ public sealed unsafe class CollectionResolver(
 
     /// <summary> Check both temporary and permanent character collections. Temporary first. </summary>
     private ModCollection? CollectionByIdentifier(ActorIdentifier identifier)
-        => tempCollections.Collections.TryGetCollection(identifier, out var collection)
-         || collectionManager.Active.Individuals.TryGetCollection(identifier, out collection)
-                ? collection
-                : null;
+    {
+        if (tempCollections.Collections.TryGetCollection(identifier, out var collection))
+            return collection;
+
+        // Always inherit ownership for temporary collections.
+        if (identifier.Type is IdentifierType.Owned)
+        {
+            var playerIdentifier = actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
+                identifier.HomeWorld.Id, ObjectKind.None, uint.MaxValue);
+            if (tempCollections.Collections.TryGetCollection(playerIdentifier, out collection))
+                return collection;
+        }
+
+        if (collectionManager.Active.Individuals.TryGetCollection(identifier, out collection))
+            return collection;
+
+        return null;
+    }
 
     /// <summary> Check for the Yourself collection. </summary>
     private ModCollection? CheckYourself(ActorIdentifier identifier, Actor actor)
