@@ -36,7 +36,9 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     private readonly Hook<PerSlotResolveDelegate> _resolveMdlPathHook;
     private readonly Hook<NamedResolveDelegate>   _resolveMtrlPathHook;
     private readonly Hook<NamedResolveDelegate>   _resolvePapPathHook;
+    private readonly Hook<PerSlotResolveDelegate> _resolveKdbPathHook;
     private readonly Hook<PerSlotResolveDelegate> _resolvePhybPathHook;
+    private readonly Hook<PerSlotResolveDelegate> _resolveBnmbPathHook;
     private readonly Hook<PerSlotResolveDelegate> _resolveSklbPathHook;
     private readonly Hook<PerSlotResolveDelegate> _resolveSkpPathHook;
     private readonly Hook<TmbResolveDelegate>     _resolveTmbPathHook;
@@ -54,11 +56,10 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveMdlPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveMdl)}",   hooks, vTable[77], type, ResolveMdl, ResolveMdlHuman);
         _resolveSkpPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveSkp)}",   hooks, vTable[78], type, ResolveSkp, ResolveSkpHuman);
         _resolvePhybPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolvePhyb)}",  hooks, vTable[79], type, ResolvePhyb, ResolvePhybHuman);
-
+        _resolveKdbPathHook   = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveKdb)}",   hooks, vTable[80], type, ResolveKdb, ResolveKdbHuman);
         _vFunc81Hook          = Create<SkeletonVFuncDelegate>( $"{name}.{nameof(VFunc81)}",      hooks, vTable[81], type, null, VFunc81);
-
+        _resolveBnmbPathHook  = Create<PerSlotResolveDelegate>($"{name}.{nameof(ResolveBnmb)}",  hooks, vTable[82], type, ResolveBnmb, ResolveBnmbHuman);
         _vFunc83Hook          = Create<SkeletonVFuncDelegate>( $"{name}.{nameof(VFunc83)}",      hooks, vTable[83], type, null, VFunc83);
-
         _resolvePapPathHook   = Create<NamedResolveDelegate>(  $"{name}.{nameof(ResolvePap)}",   hooks, vTable[84], type, ResolvePap, ResolvePapHuman);
         _resolveTmbPathHook   = Create<TmbResolveDelegate>(    $"{name}.{nameof(ResolveTmb)}",   hooks, vTable[85], ResolveTmb);
         _resolveMPapPathHook  = Create<MPapResolveDelegate>(   $"{name}.{nameof(ResolveMPap)}",  hooks, vTable[87], ResolveMPap);
@@ -83,7 +84,9 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveMdlPathHook.Enable();
         _resolveMtrlPathHook.Enable();
         _resolvePapPathHook.Enable();
+        _resolveKdbPathHook.Enable();
         _resolvePhybPathHook.Enable();
+        _resolveBnmbPathHook.Enable();
         _resolveSklbPathHook.Enable();
         _resolveSkpPathHook.Enable();
         _resolveTmbPathHook.Enable();
@@ -101,7 +104,9 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveMdlPathHook.Disable();
         _resolveMtrlPathHook.Disable();
         _resolvePapPathHook.Disable();
+        _resolveKdbPathHook.Disable();
         _resolvePhybPathHook.Disable();
+        _resolveBnmbPathHook.Disable();
         _resolveSklbPathHook.Disable();
         _resolveSkpPathHook.Disable();
         _resolveTmbPathHook.Disable();
@@ -119,7 +124,9 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         _resolveMdlPathHook.Dispose();
         _resolveMtrlPathHook.Dispose();
         _resolvePapPathHook.Dispose();
+        _resolveKdbPathHook.Dispose();
         _resolvePhybPathHook.Dispose();
+        _resolveBnmbPathHook.Dispose();
         _resolveSklbPathHook.Dispose();
         _resolveSkpPathHook.Dispose();
         _resolveTmbPathHook.Dispose();
@@ -149,8 +156,14 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     private nint ResolvePap(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
         => ResolvePath(drawObject, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));
 
+    private nint ResolveKdb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
+        => ResolvePath(drawObject, _resolveKdbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+
     private nint ResolvePhyb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
         => ResolvePath(drawObject, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+
+    private nint ResolveBnmb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
+        => ResolvePath(drawObject, _resolveBnmbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
 
     private nint ResolveSklb(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
         => ResolvePath(drawObject, _resolveSklbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
@@ -188,11 +201,29 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         return ret;
     }
 
+    private nint ResolveKdbHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
+    {
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolveKdbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
+    }
+
     private nint ResolvePhybHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
     {
         var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         _parent.MetaState.EstCollection.Push(collection);
         var ret = ResolvePath(collection, _resolvePhybPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
+        _parent.MetaState.EstCollection.Pop();
+        return ret;
+    }
+
+    private nint ResolveBnmbHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint partialSkeletonIndex)
+    {
+        var collection = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+        _parent.MetaState.EstCollection.Push(collection);
+        var ret = ResolvePath(collection, _resolveBnmbPathHook.Original(drawObject, pathBuffer, pathBufferSize, partialSkeletonIndex));
         _parent.MetaState.EstCollection.Pop();
         return ret;
     }
