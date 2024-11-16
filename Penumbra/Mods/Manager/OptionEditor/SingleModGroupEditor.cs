@@ -48,7 +48,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
 
     protected override bool MoveOption(SingleModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!group.OptionData.Move(optionIdxFrom, optionIdxTo))
+        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveSingle(optionIdxFrom, optionIdxTo);

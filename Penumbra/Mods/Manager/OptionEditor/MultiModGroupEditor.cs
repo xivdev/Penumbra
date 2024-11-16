@@ -75,7 +75,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 
     protected override bool MoveOption(MultiModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!group.OptionData.Move(optionIdxFrom, optionIdxTo))
+        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);

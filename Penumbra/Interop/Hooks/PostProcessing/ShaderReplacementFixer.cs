@@ -401,7 +401,6 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     private void ModelRendererUnkFuncDetour(CSModelRenderer* modelRenderer, ModelRendererStructs.UnkPayload* unkPayload, uint unk2, uint unk3,
         uint unk4, uint unk5)
     {
-        // If we don't have any on-screen instances of modded iris.shpk or others, we don't need the slow path at all.
         if (!Enabled || GetTotalMaterialCountForModelRendererUnk() == 0)
         {
             _modelRendererUnkFuncHook.Original(modelRenderer, unkPayload, unk2, unk3, unk4, unk5);

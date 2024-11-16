@@ -1,6 +1,5 @@
 using Dalamud.Plugin;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Log;
 using OtterGui.Services;
@@ -20,6 +19,7 @@ using OtterGui.Tasks;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Dalamud.Plugin.Services;
+using Lumina.Excel.Sheets;
 using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.ResourceLoading;
@@ -111,7 +111,7 @@ public class Penumbra : IDalamudPlugin
     private void SetupApi()
     {
         _services.GetService<IpcProviders>();
-        var itemSheet = _services.GetService<IDataManager>().GetExcelSheet<Item>()!;
+        var itemSheet = _services.GetService<IDataManager>().GetExcelSheet<Item>();
         _communicatorService.ChangedItemHover.Subscribe(it =>
         {
             if (it is IdentifiedItem { Item.Id.IsItem: true })

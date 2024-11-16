@@ -43,7 +43,7 @@ public unsafe class FontReloader : IService
                 return;
 
             _atkModule       = &atkModule->AtkModule;
-            _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->VirtualTable)[Offsets.ReloadFontsVfunc];
+            _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->VirtualTable)[VolatileOffsets.FontReloader.ReloadFontsVFunc];
         });
     }
 }

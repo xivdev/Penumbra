@@ -54,6 +54,9 @@ public class Diagnostics(ServiceManager provider) : IUiService
             return;
 
         using var table = ImRaii.Table("##data", 4, ImGuiTableFlags.RowBg);
+        if (!table)
+            return;
+
         foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
