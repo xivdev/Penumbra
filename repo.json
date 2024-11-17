@@ -10,7 +10,7 @@
     "RepoUrl": "https://github.com/xivdev/Penumbra",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 10,
-    "TestingDalamudApiLevel": 10,
+    "TestingDalamudApiLevel": 11,
     "IsHide": "False",
     "IsTestingExclusive": "False",
     "DownloadCount": 0,
