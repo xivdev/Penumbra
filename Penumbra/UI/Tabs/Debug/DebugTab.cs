@@ -102,6 +102,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly CrashHandlerPanel         _crashHandlerPanel;
     private readonly TexHeaderDrawer           _texHeaderDrawer;
     private readonly HookOverrideDrawer        _hookOverrides;
+    private readonly TexMdlScdService          _texMdlScdService;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState,
@@ -112,7 +113,7 @@ public class DebugTab : Window, ITab, IUiService
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides)
+        HookOverrideDrawer hookOverrides, TexMdlScdService texMdlScdService)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -150,6 +151,7 @@ public class DebugTab : Window, ITab, IUiService
         _crashHandlerPanel         = crashHandlerPanel;
         _texHeaderDrawer           = texHeaderDrawer;
         _hookOverrides             = hookOverrides;
+        _texMdlScdService          = texMdlScdService;
         _objects                   = objects;
         _clientState               = clientState;
     }
@@ -183,6 +185,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawDebugCharacterUtility();
         DrawShaderReplacementFixer();
         DrawData();
+        DrawCrcCache();
         DrawResourceProblems();
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
@@ -1019,6 +1022,30 @@ public class DebugTab : Window, ITab, IUiService
         DrawCopyableAddress("ResidentResourceManager", _residentResources.Address);
         DrawCopyableAddress("Device",                  Device.Instance());
         DrawDebugResidentResources();
+    }
+
+    private unsafe void DrawCrcCache()
+    {
+        var header = ImUtf8.CollapsingHeader("CRC Cache"u8);
+        if (!header)
+            return;
+
+        using var table = ImUtf8.Table("table"u8, 2);
+        if (!table)
+            return;
+
+        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
+        ImUtf8.TableSetupColumn("Hash"u8, ImGuiTableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        ImUtf8.TableSetupColumn("Type"u8, ImGuiTableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        ImGui.TableHeadersRow();
+
+        foreach (var (hash, type) in _texMdlScdService.CustomCache)
+        {
+            ImGui.TableNextColumn();
+            ImUtf8.Text($"{hash:X16}");
+            ImGui.TableNextColumn();
+            ImUtf8.Text($"{type}");
+        }
     }
 
     /// <summary> Draw resources with unusual reference count. </summary>

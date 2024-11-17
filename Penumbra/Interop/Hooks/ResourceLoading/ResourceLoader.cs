@@ -15,18 +15,18 @@ public unsafe class ResourceLoader : IDisposable, IService
 {
     private readonly ResourceService _resources;
     private readonly FileReadService _fileReadService;
-    private readonly TexMdlService   _texMdlService;
+    private readonly TexMdlScdService   _texMdlScdService;
     private readonly PapHandler      _papHandler;
     private readonly Configuration   _config;
 
     private ResolveData                                        _resolvedData = ResolveData.Invalid;
     public event Action<Utf8GamePath, FullPath?, ResolveData>? PapRequested;
 
-    public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService, Configuration config)
+    public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlScdService texMdlScdService, Configuration config)
     {
         _resources       = resources;
         _fileReadService = fileReadService;
-        _texMdlService   = texMdlService;
+        _texMdlScdService   = texMdlScdService;
         _config          = config;
         ResetResolvePath();
 
@@ -140,7 +140,7 @@ public unsafe class ResourceLoader : IDisposable, IService
             return;
         }
 
-        _texMdlService.AddCrc(type, resolvedPath);
+        _texMdlScdService.AddCrc(type, resolvedPath);
         // Replace the hash and path with the correct one for the replacement.
         hash = ComputeHash(resolvedPath.Value.InternalName, parameters);
         var oldPath = path;
