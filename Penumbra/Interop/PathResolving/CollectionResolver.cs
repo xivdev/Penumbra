@@ -240,7 +240,7 @@ public sealed unsafe class CollectionResolver(
         }
 
         // Only handle human models.
-        if (!IsModelHuman((uint)actor.AsCharacter->ModelCharaId))
+        if (!IsModelHuman((uint)actor.AsCharacter->ModelContainer.ModelCharaId))
             return null;
 
         if (actor.Customize->Data[0] == 0)
