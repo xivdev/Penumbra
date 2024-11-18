@@ -98,6 +98,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly Diagnostics               _diagnostics;
     private readonly ObjectManager             _objects;
     private readonly IClientState              _clientState;
+    private readonly IDataManager              _dataManager;
     private readonly IpcTester                 _ipcTester;
     private readonly CrashHandlerPanel         _crashHandlerPanel;
     private readonly TexHeaderDrawer           _texHeaderDrawer;
@@ -105,7 +106,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly TexMdlScdService          _texMdlScdService;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
-        IClientState clientState,
+        IClientState clientState, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, CollectionResolver collectionResolver,
@@ -154,6 +155,7 @@ public class DebugTab : Window, ITab, IUiService
         _texMdlScdService          = texMdlScdService;
         _objects                   = objects;
         _clientState               = clientState;
+        _dataManager               = dataManager;
     }
 
     public ReadOnlySpan<byte> Label
@@ -665,10 +667,35 @@ public class DebugTab : Window, ITab, IUiService
 
         DrawEmotes();
         DrawStainTemplates();
+        DrawAtch();
     }
 
     private string _emoteSearchFile = string.Empty;
     private string _emoteSearchName = string.Empty;
+
+
+    private AtchFile? _atchFile;
+
+    private void DrawAtch()
+    {
+        try
+        {
+            _atchFile ??= new AtchFile(_dataManager.GetFile("chara/xls/attachOffset/c0101.atch")!.Data);
+        }
+        catch
+        {
+            // ignored
+        }
+
+        if (_atchFile == null)
+            return;
+
+        using var mainTree = ImUtf8.TreeNode("Atch File C0101"u8);
+        if (!mainTree)
+            return;
+
+        AtchDrawer.Draw(_atchFile);
+    }
 
     private void DrawEmotes()
     {
