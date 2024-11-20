@@ -31,7 +31,7 @@ public static class AtchDrawer
         foreach (var (entry, index) in file.Entries.WithIndex())
         {
             using var id   = ImUtf8.PushId(index);
-            using var tree = ImUtf8.TreeNode(entry.Name.Span);
+            using var tree = ImUtf8.TreeNode($"{index:D3}: {entry.Name.Span}");
             if (tree)
             {
                 ImUtf8.TreeNode(entry.Accessory ? "Accessory"u8 : "Weapon"u8, ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();

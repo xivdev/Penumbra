@@ -42,6 +42,7 @@ using Penumbra.Api.IpcTester;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -196,7 +197,7 @@ public class DebugTab : Window, ITab, IUiService
     }
 
 
-    private void DrawCollectionCaches()
+    private unsafe void DrawCollectionCaches()
     {
         if (!ImGui.CollapsingHeader(
                 $"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1} Caches)###Collections"))
@@ -207,25 +208,35 @@ public class DebugTab : Window, ITab, IUiService
             if (collection.HasCache)
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})");
+                using var node  = TreeNode($"{collection.Name} (Change Counter {collection.ChangeCounter})###{collection.Name}");
                 if (!node)
                     continue;
 
                 color.Pop();
-                foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
+                using (var resourceNode = ImUtf8.TreeNode("Custom Resources"u8))
                 {
-                    using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
-                    using var node2 = TreeNode(mod.Name.Text);
-                    if (!node2)
-                        continue;
-
-                    foreach (var path in paths)
-
-                        TreeNode(path.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-
-                    foreach (var manip in manips)
-                        TreeNode(manip.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                    if (resourceNode)
+                        foreach (var (path, resource) in collection._cache!.CustomResources)
+                            ImUtf8.TreeNode($"{path} -> 0x{(ulong)resource.ResourceHandle:X}",
+                                ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
                 }
+
+                using var modNode = ImUtf8.TreeNode("Enabled Mods"u8);
+                if (modNode)
+                    foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
+                    {
+                        using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
+                        using var node2 = TreeNode(mod.Name.Text);
+                        if (!node2)
+                            continue;
+
+                        foreach (var path in paths)
+
+                            TreeNode(path.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+
+                        foreach (var manip in manips)
+                            TreeNode(manip.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                    }
             }
             else
             {
@@ -1051,17 +1062,27 @@ public class DebugTab : Window, ITab, IUiService
         DrawDebugResidentResources();
     }
 
+    private string   _crcInput = string.Empty;
+    private FullPath _crcPath  = FullPath.Empty;
+
     private unsafe void DrawCrcCache()
     {
         var header = ImUtf8.CollapsingHeader("CRC Cache"u8);
         if (!header)
             return;
 
+        if (ImUtf8.InputText("##crcInput"u8, ref _crcInput, "Input path for CRC..."u8))
+            _crcPath = new FullPath(_crcInput);
+
+        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
+        ImUtf8.Text($"   CRC32: {_crcPath.InternalName.CiCrc32:X8}");
+        ImUtf8.Text($"CI CRC32: {_crcPath.InternalName.Crc32:X8}");
+        ImUtf8.Text($"   CRC64: {_crcPath.Crc64:X16}");
+
         using var table = ImUtf8.Table("table"u8, 2);
         if (!table)
             return;
 
-        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
         ImUtf8.TableSetupColumn("Hash"u8, ImGuiTableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
         ImUtf8.TableSetupColumn("Type"u8, ImGuiTableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
         ImGui.TableHeadersRow();
