@@ -79,6 +79,17 @@ public class MetaDictionary
         _globalEqp.Clear();
     }
 
+    public void ClearForDefault()
+    {
+        Count = _globalEqp.Count;
+        _imc.Clear();
+        _eqp.Clear();
+        _eqdp.Clear();
+        _est.Clear();
+        _rsp.Clear();
+        _gmp.Clear();
+    }
+
     public bool Equals(MetaDictionary other)
         => Count == other.Count
          && _imc.SetEquals(other._imc)

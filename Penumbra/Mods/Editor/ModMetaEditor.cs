@@ -69,7 +69,8 @@ public class ModMetaEditor(
     public static bool DeleteDefaultValues(MetaFileManager metaFileManager, MetaDictionary dict)
     {
         var clone = dict.Clone();
-        dict.Clear();
+        dict.ClearForDefault();
+
         var count = 0;
         foreach (var (key, value) in clone.Imc)
         {
