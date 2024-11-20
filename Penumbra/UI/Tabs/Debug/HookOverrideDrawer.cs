@@ -34,28 +34,49 @@ public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : IUiSe
                 Penumbra.Log.Error($"Could not delete hook override file at {path}:\n{ex}");
             }
 
+        bool? allVisible = null;
+        ImGui.SameLine();
+        if (ImUtf8.Button("Disable All Visible Hooks"u8))
+            allVisible = true;
+        ImGui.SameLine();
+        if (ImUtf8.Button("Enable All VisibleHooks"u8))
+            allVisible = false;
+
         bool? all = null;
         ImGui.SameLine();
-        if (ImUtf8.Button("Disable All Hooks"u8))
+        if (ImUtf8.Button("Disable All Hooks"))
             all = true;
         ImGui.SameLine();
-        if (ImUtf8.Button("Enable All Hooks"u8))
+        if (ImUtf8.Button("Enable All Hooks"))
             all = false;
 
         foreach (var propertyField in typeof(HookOverrides).GetFields().Where(f => f is { IsStatic: false, FieldType.IsValueType: true }))
         {
             using var tree = ImUtf8.TreeNode(propertyField.Name);
             if (!tree)
-                continue;
-
-            var property = propertyField.GetValue(_overrides);
-            foreach (var valueField in propertyField.FieldType.GetFields())
             {
-                var value = valueField.GetValue(property) as bool? ?? false;
-                if (ImUtf8.Checkbox($"Disable {valueField.Name}", ref value) || all.HasValue)
+                if (all.HasValue)
                 {
-                    valueField.SetValue(property, all ?? value);
-                    propertyField.SetValue(_overrides, property);
+                    var property = propertyField.GetValue(_overrides);
+                    foreach (var valueField in propertyField.FieldType.GetFields())
+                    {
+                        valueField.SetValue(property, all.Value);
+                        propertyField.SetValue(_overrides, property);
+                    }
+                }
+            }
+            else
+            {
+                allVisible ??= all;
+                var property = propertyField.GetValue(_overrides);
+                foreach (var valueField in propertyField.FieldType.GetFields())
+                {
+                    var value = valueField.GetValue(property) as bool? ?? false;
+                    if (ImUtf8.Checkbox($"Disable {valueField.Name}", ref value) || allVisible.HasValue)
+                    {
+                        valueField.SetValue(property, allVisible ?? value);
+                        propertyField.SetValue(_overrides, property);
+                    }
                 }
             }
         }

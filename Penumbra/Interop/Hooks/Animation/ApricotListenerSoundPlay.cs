@@ -33,25 +33,27 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
     private nint Detour(nint a1, nint unused, float timeOffset)
     {
         // Short-circuiting and sanity checks done by game.
-        var playTime = a1 == nint.Zero ? -1 : *(float*)(a1 + 0x250);
+        var playTime = a1 == nint.Zero ? -1 : *(float*)(a1 + VolatileOffsets.ApricotListenerSoundPlayCaller.PlayTimeOffset);
         if (playTime < 0)
             return Task.Result.Original(a1, unused, timeOffset);
 
-        var someIntermediate = *(nint*)(a1 + 0x1F8);
-        var flags            = someIntermediate == nint.Zero ? (ushort)0 : *(ushort*)(someIntermediate + 0x49C);
-        if (((flags >> 13) & 1) == 0)
+        var someIntermediate = *(nint*)(a1 + VolatileOffsets.ApricotListenerSoundPlayCaller.SomeIntermediate);
+        var flags = someIntermediate == nint.Zero
+            ? (ushort)0
+            : *(ushort*)(someIntermediate + VolatileOffsets.ApricotListenerSoundPlayCaller.Flags);
+        if (((flags >> VolatileOffsets.ApricotListenerSoundPlayCaller.BitShift) & 1) == 0)
             return Task.Result.Original(a1, unused, timeOffset);
 
         Penumbra.Log.Excessive(
             $"[Apricot Listener Sound Play Caller] Invoked on 0x{a1:X} with {unused}, {timeOffset}.");
         // Fetch the IInstanceListenner (sixth argument to inlined call of SoundPlay)
-        var apricotIInstanceListenner = *(nint*)(someIntermediate + 0x270);
+        var apricotIInstanceListenner = *(nint*)(someIntermediate + VolatileOffsets.ApricotListenerSoundPlayCaller.IInstanceListenner);
         if (apricotIInstanceListenner == nint.Zero)
             return Task.Result.Original(a1, unused, timeOffset);
 
         // In some cases we can obtain the associated caster via vfunc 1.
         var newData    = ResolveData.Invalid;
-        var gameObject = (*(delegate* unmanaged<nint, GameObject*>**)apricotIInstanceListenner)[1](apricotIInstanceListenner);
+        var gameObject = (*(delegate* unmanaged<nint, GameObject*>**)apricotIInstanceListenner)[VolatileOffsets.ApricotListenerSoundPlayCaller.CasterVFunc](apricotIInstanceListenner);
         if (gameObject != null)
         {
             newData = _collectionResolver.IdentifyCollection(gameObject, true);

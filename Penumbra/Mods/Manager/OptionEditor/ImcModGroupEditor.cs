@@ -138,7 +138,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
     protected override bool MoveOption(ImcModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!group.OptionData.Move(optionIdxFrom, optionIdxTo))
+        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);

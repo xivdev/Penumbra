@@ -90,7 +90,7 @@ public class ModGroupEditor(
     {
         var mod     = group.Mod;
         var idxFrom = group.GetIndex();
-        if (!mod.Groups.Move(idxFrom, groupIdxTo))
+        if (!mod.Groups.Move(ref idxFrom, ref groupIdxTo))
             return;
 
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);

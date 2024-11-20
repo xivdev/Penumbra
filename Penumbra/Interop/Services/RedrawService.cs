@@ -38,10 +38,10 @@ public unsafe partial class RedrawService : IService
 
     // VFuncs that disable and enable draw, used only for GPose actors.
     private static void DisableDraw(IGameObject actor)
-        => ((delegate* unmanaged<nint, void >**)actor.Address)[0][Offsets.DisableDrawVfunc](actor.Address);
+        => ((delegate* unmanaged<nint, void >**)actor.Address)[0][VolatileOffsets.RedrawService.DisableDrawVFunc](actor.Address);
 
     private static void EnableDraw(IGameObject actor)
-        => ((delegate* unmanaged<nint, void >**)actor.Address)[0][Offsets.EnableDrawVfunc](actor.Address);
+        => ((delegate* unmanaged<nint, void >**)actor.Address)[0][VolatileOffsets.RedrawService.EnableDrawVFunc](actor.Address);
 
     // Check whether we currently are in GPose.
     // Also clear the name list.

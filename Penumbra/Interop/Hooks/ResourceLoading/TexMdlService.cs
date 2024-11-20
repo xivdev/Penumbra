@@ -10,7 +10,7 @@ using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.Re
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class TexMdlService : IDisposable, IRequiredService
+public unsafe class TexMdlScdService : IDisposable, IRequiredService
 {
     /// <summary>
     /// We need to be able to obtain the requested LoD level.
@@ -42,7 +42,7 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
 
     private readonly LodService _lodService;
 
-    public TexMdlService(IGameInteropProvider interop)
+    public TexMdlScdService(IGameInteropProvider interop)
     {
         interop.InitializeFromAttributes(this);
         _lodService = new LodService(interop);
@@ -52,6 +52,7 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
             _loadMdlFileExternHook.Enable();
         if (!HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)
             _textureOnLoadHook.Enable();
+        _soundOnLoadHook.Enable();
     }
 
     /// <summary> Add CRC64 if the given file is a model or texture file and has an associated path. </summary>
@@ -59,8 +60,9 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
     {
         _ = type switch
         {
-            ResourceType.Mdl when path.HasValue => _customMdlCrc.Add(path.Value.Crc64),
-            ResourceType.Tex when path.HasValue => _customTexCrc.Add(path.Value.Crc64),
+            ResourceType.Mdl when path.HasValue => _customFileCrc.TryAdd(path.Value.Crc64, ResourceType.Mdl),
+            ResourceType.Tex when path.HasValue => _customFileCrc.TryAdd(path.Value.Crc64, ResourceType.Tex),
+            ResourceType.Scd when path.HasValue => _customFileCrc.TryAdd(path.Value.Crc64, ResourceType.Scd),
             _                                   => false,
         };
     }
@@ -70,15 +72,16 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
         _checkFileStateHook.Dispose();
         _loadMdlFileExternHook.Dispose();
         _textureOnLoadHook.Dispose();
+        _soundOnLoadHook.Dispose();
     }
 
     /// <summary>
     /// We need to keep a list of all CRC64 hash values of our replaced Mdl and Tex files,
     /// i.e. CRC32 of filename in the lower bytes, CRC32 of parent path in the upper bytes.
     /// </summary>
-    private readonly HashSet<ulong> _customMdlCrc = [];
-
-    private readonly HashSet<ulong> _customTexCrc = [];
+    private readonly Dictionary<ulong, ResourceType> _customFileCrc = [];
+    public IReadOnlyDictionary<ulong, ResourceType> CustomCache
+        => _customFileCrc;
 
     private delegate nint CheckFileStatePrototype(nint unk1, ulong crc64);
 
@@ -86,11 +89,33 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
     private readonly Hook<CheckFileStatePrototype> _checkFileStateHook = null!;
 
     private readonly ThreadLocal<bool> _texReturnData = new(() => default);
+    private readonly ThreadLocal<bool> _scdReturnData = new(() => default);
 
     private delegate void UpdateCategoryDelegate(TextureResourceHandle* resourceHandle);
 
     [Signature(Sigs.TexHandleUpdateCategory)]
     private readonly UpdateCategoryDelegate _updateCategory = null!;
+
+    private delegate byte SoundOnLoadDelegate(ResourceHandle* handle, SeFileDescriptor* descriptor, byte unk);
+
+    [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 30 8B 79 ?? 48 8B DA 8B D7")]
+    private readonly delegate* unmanaged<ResourceHandle*, SeFileDescriptor*, byte, byte> _loadScdFileLocal = null!;
+
+    [Signature("40 56 57 41 54 48 81 EC 90 00 00 00 80 3A 0B 45 0F B6 E0 48 8B F2", DetourName = nameof(OnScdLoadDetour))]
+    private readonly Hook<SoundOnLoadDelegate> _soundOnLoadHook = null!;
+
+    private byte OnScdLoadDetour(ResourceHandle* handle, SeFileDescriptor* descriptor, byte unk)
+    {
+        var ret = _soundOnLoadHook.Original(handle, descriptor, unk);
+        if (!_scdReturnData.Value)
+            return ret;
+
+        // Function failed on a replaced scd, call local.
+        _scdReturnData.Value = false;
+        ret                  = _loadScdFileLocal(handle, descriptor, unk);
+        _updateCategory((TextureResourceHandle*)handle);
+        return ret;
+    }
 
     /// <summary>
     /// The function that checks a files CRC64 to determine whether it is 'protected'.
@@ -100,14 +125,17 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
     /// </summary>
     private nint CheckFileStateDetour(nint ptr, ulong crc64)
     {
-        if (_customMdlCrc.Contains(crc64))
-            return CustomFileFlag;
-
-        if (_customTexCrc.Contains(crc64))
-        {
-            _texReturnData.Value = true;
-            return nint.Zero;
-        }
+        if (_customFileCrc.TryGetValue(crc64, out var type))
+            switch (type)
+            {
+                case ResourceType.Mdl: return CustomFileFlag;
+                case ResourceType.Tex:
+                    _texReturnData.Value = true;
+                    return nint.Zero;
+                case ResourceType.Scd:
+                    _scdReturnData.Value = true;
+                    return nint.Zero;
+            }
 
         var ret = _checkFileStateHook.Original(ptr, crc64);
         Penumbra.Log.Excessive($"[CheckFileState] Called on 0x{ptr:X} with CRC {crc64:X16}, returned 0x{ret:X}.");
@@ -128,10 +156,10 @@ public unsafe class TexMdlService : IDisposable, IRequiredService
 
     private delegate byte TexResourceHandleOnLoadPrototype(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2);
 
-    [Signature(Sigs.TexHandleOnLoad, DetourName = nameof(OnLoadDetour))]
+    [Signature(Sigs.TexHandleOnLoad, DetourName = nameof(OnTexLoadDetour))]
     private readonly Hook<TexResourceHandleOnLoadPrototype> _textureOnLoadHook = null!;
 
-    private byte OnLoadDetour(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2)
+    private byte OnTexLoadDetour(TextureResourceHandle* handle, SeFileDescriptor* descriptor, byte unk2)
     {
         var ret = _textureOnLoadHook.Original(handle, descriptor, unk2);
         if (!_texReturnData.Value)

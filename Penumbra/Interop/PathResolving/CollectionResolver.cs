@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using OtterGui;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -62,10 +63,11 @@ public sealed unsafe class CollectionResolver(
 
         try
         {
-            if (useCache && cache.TryGetValue(gameObject, out var data))
+            // Login screen reuses the same actors and can not be cached.
+            if (LoginScreen(gameObject, out var data))
                 return data;
 
-            if (LoginScreen(gameObject, out data))
+            if (useCache && cache.TryGetValue(gameObject, out data))
                 return data;
 
             if (Aesthetician(gameObject, out data))
@@ -116,16 +118,17 @@ public sealed unsafe class CollectionResolver(
             return true;
         }
 
-        var notYetReady = false;
-        var lobby       = AgentLobby.Instance();
-        if (lobby != null)
+        var notYetReady   = false;
+        var lobby         = AgentLobby.Instance();
+        var characterList = CharaSelectCharacterList.Instance();
+        if (lobby != null && characterList != null)
         {
-            var span = lobby->LobbyData.CharaSelectEntries.AsSpan();
             // The lobby uses the first 8 cutscene actors.
             var idx = gameObject->ObjectIndex - ObjectIndex.CutsceneStart.Index;
-            if (idx >= 0 && idx < span.Length && span[idx].Value != null)
+            if (characterList->CharacterMapping.FindFirst(m => m.ClientObjectIndex == idx, out var mapping)
+             && lobby->LobbyData.CharaSelectEntries.FindFirst(e => e.Value->ContentId == mapping.ContentId, out var charaEntry))
             {
-                var item       = span[idx].Value;
+                var item       = charaEntry.Value;
                 var identifier = actors.CreatePlayer(new ByteString(item->Name), item->HomeWorldId);
                 Penumbra.Log.Verbose(
                     $"Identified {identifier.Incognito(null)} in cutscene for actor {idx + 200} at 0x{(ulong)gameObject:X} of race {(gameObject->IsCharacter() ? ((Character*)gameObject)->DrawData.CustomizeData.Race.ToString() : "Unknown")}.");
@@ -141,7 +144,7 @@ public sealed unsafe class CollectionResolver(
         var collection = collectionManager.Active.ByType(CollectionType.Yourself)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? collectionManager.Active.Default;
-        ret = notYetReady ? collection.ToResolveData(gameObject) : cache.Set(collection, ActorIdentifier.Invalid, gameObject);
+        ret = collection.ToResolveData(gameObject);
         return true;
     }
 
@@ -196,10 +199,24 @@ public sealed unsafe class CollectionResolver(
 
     /// <summary> Check both temporary and permanent character collections. Temporary first. </summary>
     private ModCollection? CollectionByIdentifier(ActorIdentifier identifier)
-        => tempCollections.Collections.TryGetCollection(identifier, out var collection)
-         || collectionManager.Active.Individuals.TryGetCollection(identifier, out collection)
-                ? collection
-                : null;
+    {
+        if (tempCollections.Collections.TryGetCollection(identifier, out var collection))
+            return collection;
+
+        // Always inherit ownership for temporary collections.
+        if (identifier.Type is IdentifierType.Owned)
+        {
+            var playerIdentifier = actors.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName,
+                identifier.HomeWorld.Id, ObjectKind.None, uint.MaxValue);
+            if (tempCollections.Collections.TryGetCollection(playerIdentifier, out collection))
+                return collection;
+        }
+
+        if (collectionManager.Active.Individuals.TryGetCollection(identifier, out collection))
+            return collection;
+
+        return null;
+    }
 
     /// <summary> Check for the Yourself collection. </summary>
     private ModCollection? CheckYourself(ActorIdentifier identifier, Actor actor)
@@ -223,7 +240,7 @@ public sealed unsafe class CollectionResolver(
         }
 
         // Only handle human models.
-        if (!IsModelHuman((uint)actor.AsCharacter->CharacterData.ModelCharaId))
+        if (!IsModelHuman((uint)actor.AsCharacter->ModelContainer.ModelCharaId))
             return null;
 
         if (actor.Customize->Data[0] == 0)

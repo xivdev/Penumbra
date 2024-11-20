@@ -31,7 +31,7 @@ public sealed unsafe class SomePapLoad : FastHook<SomePapLoad.Delegate>
     private void Detour(nint a1, int a2, nint a3, int a4)
     {
         Penumbra.Log.Excessive($"[Some PAP Load] Invoked on 0x{a1:X} with {a2}, {a3}, {a4}.");
-        var timelinePtr = a1 + Offsets.TimeLinePtr;
+        var timelinePtr = a1 + VolatileOffsets.AnimationState.TimeLinePtr;
         if (timelinePtr != nint.Zero)
         {
             var actorIdx = (int)(*(*(ulong**)timelinePtr + 1) >> 3);

@@ -68,7 +68,7 @@ public class ResourceTree
                 Unsafe.AsPointer(ref character->DrawData.EquipmentModelIds[0]), 10),
             _ => [],
         };
-        ModelId       = character->CharacterData.ModelCharaId;
+        ModelId       = character->ModelContainer.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
         RaceCode      = human != null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
 

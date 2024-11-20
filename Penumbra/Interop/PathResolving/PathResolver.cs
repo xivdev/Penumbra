@@ -52,6 +52,10 @@ public class PathResolver : IDisposable, IService
         if (resourceType is ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb)
             return (null, ResolveData.Invalid);
 
+        // Prevent .atch loading to prevent crashes on outdated .atch files. TODO: handle atch modding differently.
+        if (resourceType is ResourceType.Atch)
+            return (null, ResolveData.Invalid);
+
         return category switch
         {
             // Only Interface collection.

@@ -4,7 +4,7 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.Sheets;
 using OtterGui.Log;
 using OtterGui.Services;
 using Penumbra.Mods.Manager;
@@ -16,7 +16,7 @@ namespace Penumbra.Services;
 public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INotificationManager notificationManager)
     : OtterGui.Classes.MessageService(log, builder, chat, notificationManager), IService
 {
-    public void LinkItem(Item item)
+    public void LinkItem(in Item item)
     {
         // @formatter:off
         var payloadList = new List<Payload>
@@ -29,7 +29,7 @@ public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INoti
             new TextPayload($"{(char)SeIconChar.LinkMarker}"),
             new UIForegroundPayload(0),
             new UIGlowPayload(0),
-            new TextPayload(item.Name),
+            new TextPayload(item.Name.ExtractText()),
             new RawPayload([0x02, 0x27, 0x07, 0xCF, 0x01, 0x01, 0x01, 0xFF, 0x01, 0x03]),
             new RawPayload([0x02, 0x13, 0x02, 0xEC, 0x03]),
         };

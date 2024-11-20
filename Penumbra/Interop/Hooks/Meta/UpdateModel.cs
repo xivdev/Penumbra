@@ -25,7 +25,7 @@ public sealed unsafe class UpdateModel : FastHook<UpdateModel.Delegate>
     {
         // Shortcut because this is called all the time.
         // Same thing is checked at the beginning of the original function.
-        if (*(int*)((nint)drawObject + Offsets.UpdateModelSkip) == 0)
+        if (*(int*)((nint)drawObject + VolatileOffsets.UpdateModel.ShortCircuit) == 0)
             return;
 
         Penumbra.Log.Excessive($"[Update Model] Invoked on {(nint)drawObject:X}.");

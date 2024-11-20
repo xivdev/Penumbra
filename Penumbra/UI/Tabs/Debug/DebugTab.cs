@@ -42,6 +42,7 @@ using Penumbra.Api.IpcTester;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -54,6 +55,9 @@ public class Diagnostics(ServiceManager provider) : IUiService
             return;
 
         using var table = ImRaii.Table("##data", 4, ImGuiTableFlags.RowBg);
+        if (!table)
+            return;
+
         foreach (var type in typeof(ActorManager).Assembly.GetTypes()
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
@@ -95,13 +99,15 @@ public class DebugTab : Window, ITab, IUiService
     private readonly Diagnostics               _diagnostics;
     private readonly ObjectManager             _objects;
     private readonly IClientState              _clientState;
+    private readonly IDataManager              _dataManager;
     private readonly IpcTester                 _ipcTester;
     private readonly CrashHandlerPanel         _crashHandlerPanel;
     private readonly TexHeaderDrawer           _texHeaderDrawer;
     private readonly HookOverrideDrawer        _hookOverrides;
+    private readonly TexMdlScdService          _texMdlScdService;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
-        IClientState clientState,
+        IClientState clientState, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, CollectionResolver collectionResolver,
@@ -109,7 +115,7 @@ public class DebugTab : Window, ITab, IUiService
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides)
+        HookOverrideDrawer hookOverrides, TexMdlScdService texMdlScdService)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -147,8 +153,10 @@ public class DebugTab : Window, ITab, IUiService
         _crashHandlerPanel         = crashHandlerPanel;
         _texHeaderDrawer           = texHeaderDrawer;
         _hookOverrides             = hookOverrides;
+        _texMdlScdService          = texMdlScdService;
         _objects                   = objects;
         _clientState               = clientState;
+        _dataManager               = dataManager;
     }
 
     public ReadOnlySpan<byte> Label
@@ -180,6 +188,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawDebugCharacterUtility();
         DrawShaderReplacementFixer();
         DrawData();
+        DrawCrcCache();
         DrawResourceProblems();
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
@@ -188,7 +197,7 @@ public class DebugTab : Window, ITab, IUiService
     }
 
 
-    private void DrawCollectionCaches()
+    private unsafe void DrawCollectionCaches()
     {
         if (!ImGui.CollapsingHeader(
                 $"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1} Caches)###Collections"))
@@ -199,25 +208,35 @@ public class DebugTab : Window, ITab, IUiService
             if (collection.HasCache)
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})");
+                using var node  = TreeNode($"{collection.Name} (Change Counter {collection.ChangeCounter})###{collection.Name}");
                 if (!node)
                     continue;
 
                 color.Pop();
-                foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
+                using (var resourceNode = ImUtf8.TreeNode("Custom Resources"u8))
                 {
-                    using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
-                    using var node2 = TreeNode(mod.Name.Text);
-                    if (!node2)
-                        continue;
-
-                    foreach (var path in paths)
-
-                        TreeNode(path.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-
-                    foreach (var manip in manips)
-                        TreeNode(manip.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                    if (resourceNode)
+                        foreach (var (path, resource) in collection._cache!.CustomResources)
+                            ImUtf8.TreeNode($"{path} -> 0x{(ulong)resource.ResourceHandle:X}",
+                                ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
                 }
+
+                using var modNode = ImUtf8.TreeNode("Enabled Mods"u8);
+                if (modNode)
+                    foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
+                    {
+                        using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
+                        using var node2 = TreeNode(mod.Name.Text);
+                        if (!node2)
+                            continue;
+
+                        foreach (var path in paths)
+
+                            TreeNode(path.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+
+                        foreach (var manip in manips)
+                            TreeNode(manip.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                    }
             }
             else
             {
@@ -659,10 +678,35 @@ public class DebugTab : Window, ITab, IUiService
 
         DrawEmotes();
         DrawStainTemplates();
+        DrawAtch();
     }
 
     private string _emoteSearchFile = string.Empty;
     private string _emoteSearchName = string.Empty;
+
+
+    private AtchFile? _atchFile;
+
+    private void DrawAtch()
+    {
+        try
+        {
+            _atchFile ??= new AtchFile(_dataManager.GetFile("chara/xls/attachOffset/c0101.atch")!.Data);
+        }
+        catch
+        {
+            // ignored
+        }
+
+        if (_atchFile == null)
+            return;
+
+        using var mainTree = ImUtf8.TreeNode("Atch File C0101"u8);
+        if (!mainTree)
+            return;
+
+        AtchDrawer.Draw(_atchFile);
+    }
 
     private void DrawEmotes()
     {
@@ -1016,6 +1060,40 @@ public class DebugTab : Window, ITab, IUiService
         DrawCopyableAddress("ResidentResourceManager", _residentResources.Address);
         DrawCopyableAddress("Device",                  Device.Instance());
         DrawDebugResidentResources();
+    }
+
+    private string   _crcInput = string.Empty;
+    private FullPath _crcPath  = FullPath.Empty;
+
+    private unsafe void DrawCrcCache()
+    {
+        var header = ImUtf8.CollapsingHeader("CRC Cache"u8);
+        if (!header)
+            return;
+
+        if (ImUtf8.InputText("##crcInput"u8, ref _crcInput, "Input path for CRC..."u8))
+            _crcPath = new FullPath(_crcInput);
+
+        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
+        ImUtf8.Text($"   CRC32: {_crcPath.InternalName.CiCrc32:X8}");
+        ImUtf8.Text($"CI CRC32: {_crcPath.InternalName.Crc32:X8}");
+        ImUtf8.Text($"   CRC64: {_crcPath.Crc64:X16}");
+
+        using var table = ImUtf8.Table("table"u8, 2);
+        if (!table)
+            return;
+
+        ImUtf8.TableSetupColumn("Hash"u8, ImGuiTableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        ImUtf8.TableSetupColumn("Type"u8, ImGuiTableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        ImGui.TableHeadersRow();
+
+        foreach (var (hash, type) in _texMdlScdService.CustomCache)
+        {
+            ImGui.TableNextColumn();
+            ImUtf8.Text($"{hash:X16}");
+            ImGui.TableNextColumn();
+            ImUtf8.Text($"{type}");
+        }
     }
 
     /// <summary> Draw resources with unusual reference count. </summary>
