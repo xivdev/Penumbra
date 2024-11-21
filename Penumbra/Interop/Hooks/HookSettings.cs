@@ -96,6 +96,7 @@ public class HookOverrides
         public bool CheckFileState;
         public bool TexResourceHandleOnLoad;
         public bool LoadMdlFileExtern;
+        public bool SoundOnLoad;
     }
 
     public struct ResourceHooks
