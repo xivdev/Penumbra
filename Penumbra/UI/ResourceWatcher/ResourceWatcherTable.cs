@@ -29,7 +29,8 @@ internal sealed class ResourceWatcherTable : Table<Record>
             new HandleColumn { Label                   = "Resource" },
             new LoadStateColumn { Label                = "State" },
             new RefCountColumn { Label                 = "#Ref" },
-            new DateColumn { Label                     = "Time" }
+            new DateColumn { Label                     = "Time" },
+            new Crc64Column { Label                    = "Crc64" }
         )
     { }
 
@@ -142,6 +143,21 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
         public override void DrawColumn(Record item, int _)
             => ImGui.TextUnformatted($"{item.Time.ToLongTimeString()}.{item.Time.Millisecond:D4}");
+    }
+
+    private sealed class Crc64Column : ColumnString<Record>
+    {
+        public override float Width
+            => UiBuilder.MonoFont.GetCharAdvance('0') * 17;
+
+        public override unsafe string ToName(Record item)
+            => item.Crc64 != 0 ? $"{item.Crc64:X16}" : string.Empty;
+
+        public override unsafe void DrawColumn(Record item, int _)
+        {
+            using var font = ImRaii.PushFont(UiBuilder.MonoFont, item.Handle != null);
+            ImUtf8.Text(ToName(item));
+        }
     }
 
 

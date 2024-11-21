@@ -44,6 +44,11 @@ public static class PathDataHandler
     public static FullPath CreateAvfx(CiByteString path, ModCollection collection)
         => CreateBase(path, collection);
 
+    /// <summary> Create the encoding path for an ATCH file. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static FullPath CreateAtch(CiByteString path, ModCollection collection)
+        => new($"|{collection.LocalId.Id}_{collection.AtchChangeCounter}_{DiscriminatorString}|{path}");
+
     /// <summary> Create the encoding path for a MTRL file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static FullPath CreateMtrl(CiByteString path, ModCollection collection, Utf8GamePath originalPath)

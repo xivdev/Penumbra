@@ -250,7 +250,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
 
         var record = manipulatedPath == null
             ? Record.CreateDefaultLoad(path.Path, handle, data.ModCollection, Name(data))
-            : Record.CreateLoad(manipulatedPath.Value.InternalName, path.Path, handle, data.ModCollection, Name(data));
+            : Record.CreateLoad(manipulatedPath.Value, path.Path, handle, data.ModCollection, Name(data));
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }

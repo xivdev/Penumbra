@@ -11,7 +11,7 @@ using TextureResourceHandle = Penumbra.Interop.Structs.TextureResourceHandle;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class TexMdlScdService : IDisposable, IRequiredService
+public unsafe class RsfService : IDisposable, IRequiredService
 {
     /// <summary>
     /// We need to be able to obtain the requested LoD level.
@@ -43,7 +43,7 @@ public unsafe class TexMdlScdService : IDisposable, IRequiredService
 
     private readonly LodService _lodService;
 
-    public TexMdlScdService(IGameInteropProvider interop)
+    public RsfService(IGameInteropProvider interop)
     {
         interop.InitializeFromAttributes(this);
         _lodService = new LodService(interop);
