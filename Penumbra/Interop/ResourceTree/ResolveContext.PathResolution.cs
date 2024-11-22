@@ -53,7 +53,7 @@ internal partial record ResolveContext
         if (characterRaceCode == GenderRace.MidlanderMale)
             return GenderRace.MidlanderMale;
 
-        var accessory = slotIndex >= 5;
+        var accessory = IsEquipmentSlot(slotIndex);
         if ((ushort)characterRaceCode % 10 != 1 && accessory)
             return GenderRace.MidlanderMale;
 
