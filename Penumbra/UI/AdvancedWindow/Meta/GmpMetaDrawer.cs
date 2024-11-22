@@ -8,6 +8,7 @@ using Penumbra.Meta.Files;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
+using Newtonsoft.Json.Linq;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
@@ -32,7 +33,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy all current Gmp manipulations to clipboard."u8, MetaDictionary.SerializeTo([], Editor.Gmp));
+        CopyToClipboardButton("Copy all current Gmp manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Gmp)));
 
         ImGui.TableNextColumn();
         var canAdd = !Editor.Contains(Identifier);

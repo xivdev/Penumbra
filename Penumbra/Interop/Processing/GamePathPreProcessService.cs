@@ -25,8 +25,7 @@ public class GamePathPreProcessService : IService
 
 
     public (FullPath? Path, ResolveData Data) PreProcess(ResolveData resolveData, CiByteString path, bool nonDefault, ResourceType type,
-        FullPath? resolved,
-        Utf8GamePath originalPath)
+        FullPath? resolved, Utf8GamePath originalPath)
     {
         if (!_processors.TryGetValue(type, out var processor))
             return (resolved, resolveData);

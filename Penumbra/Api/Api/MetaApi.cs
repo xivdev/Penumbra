@@ -5,6 +5,7 @@ using OtterGui;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
+using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.GameData.Files.Utility;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
@@ -66,6 +67,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             MetaDictionary.SerializeTo(array, cache.Est.Select(kvp => new KeyValuePair<EstIdentifier, EstEntry>(kvp.Key, kvp.Value.Entry)));
             MetaDictionary.SerializeTo(array, cache.Rsp.Select(kvp => new KeyValuePair<RspIdentifier, RspEntry>(kvp.Key, kvp.Value.Entry)));
             MetaDictionary.SerializeTo(array, cache.Gmp.Select(kvp => new KeyValuePair<GmpIdentifier, GmpEntry>(kvp.Key, kvp.Value.Entry)));
+            MetaDictionary.SerializeTo(array, cache.Atch.Select(kvp => new KeyValuePair<AtchIdentifier, AtchEntry>(kvp.Key, kvp.Value.Entry)));
         }
 
         return Functions.ToCompressedBase64(array, 0);
@@ -97,6 +99,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
                 WriteCache(zipStream, cache.Est);
                 WriteCache(zipStream, cache.Rsp);
                 WriteCache(zipStream, cache.Gmp);
+                WriteCache(zipStream, cache.Atch);
                 cache.GlobalEqp.EnterReadLock();
 
                 try
@@ -242,6 +245,15 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
         {
             var identifier = r.Read<GmpIdentifier>();
             var value      = r.Read<GmpEntry>();
+            if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                return false;
+        }
+
+        var atchCount = r.ReadInt32();
+        for (var i = 0; i < atchCount; ++i)
+        {
+            var identifier = r.Read<AtchIdentifier>();
+            var value      = r.Read<AtchEntry>();
             if (!identifier.Validate() || !manips.TryAdd(identifier, value))
                 return false;
         }

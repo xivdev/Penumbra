@@ -14,8 +14,9 @@ namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public interface IMetaDrawer
 {
-    public ReadOnlySpan<byte> Label      { get; }
-    public int                NumColumns { get; }
+    public ReadOnlySpan<byte> Label        { get; }
+    public int                NumColumns   { get; }
+    public float              ColumnHeight { get; }
     public void               Draw();
 }
 
@@ -42,7 +43,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         using var id = ImUtf8.PushId((int)Identifier.Type);
         DrawNew();
 
-        var height    = ImUtf8.FrameHeightSpacing;
+        var height    = ColumnHeight;
         var skips     = ImGuiClip.GetNecessarySkipsAtPos(height, ImGui.GetCursorPosY());
         var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
         ImGuiClip.DrawEndDummy(remainder, height);
@@ -53,6 +54,9 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
 
     public abstract ReadOnlySpan<byte> Label      { get; }
     public abstract int                NumColumns { get; }
+
+    public virtual float ColumnHeight
+        => ImUtf8.FrameHeightSpacing;
 
     protected abstract void DrawNew();
     protected abstract void Initialize();
@@ -138,14 +142,14 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected void DrawMetaButtons(TIdentifier identifier, TEntry entry)
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy this manipulation to clipboard."u8, new JArray { MetaDictionary.Serialize(identifier, entry)! });
+        CopyToClipboardButton("Copy this manipulation to clipboard."u8, new Lazy<JToken?>(() => new JArray { MetaDictionary.Serialize(identifier, entry)! }));
 
         ImGui.TableNextColumn();
         if (ImUtf8.IconButton(FontAwesomeIcon.Trash, "Delete this meta manipulation."u8))
             Editor.Changes |= Editor.Remove(identifier);
     }
 
-    protected void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, JToken? manipulations)
+    protected void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, Lazy<JToken?> manipulations)
     {
         if (!ImUtf8.IconButton(FontAwesomeIcon.Clipboard, tooltip))
             return;

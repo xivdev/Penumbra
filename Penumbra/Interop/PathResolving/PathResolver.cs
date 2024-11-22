@@ -1,3 +1,4 @@
+using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
@@ -54,7 +55,7 @@ public class PathResolver : IDisposable, IService
 
         // Prevent .atch loading to prevent crashes on outdated .atch files. TODO: handle atch modding differently.
         if (resourceType is ResourceType.Atch)
-            return (null, ResolveData.Invalid);
+            return ResolveAtch(path);
 
         return category switch
         {
@@ -142,4 +143,10 @@ public class PathResolver : IDisposable, IService
     private (FullPath?, ResolveData) ResolveUi(Utf8GamePath path)
         => (_collectionManager.Active.Interface.ResolvePath(path),
             _collectionManager.Active.Interface.ToResolveData());
+
+    public (FullPath?, ResolveData) ResolveAtch(Utf8GamePath gamePath)
+    {
+        _metaState.AtchCollection.TryPeek(out var resolveData);
+        return _preprocessor.PreProcess(resolveData, gamePath.Path, false, ResourceType.Atch, null, gamePath);
+    }
 }

@@ -5,6 +5,7 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
+using Penumbra.Interop.Hooks.Meta;
 using Penumbra.Interop.Services;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
@@ -25,13 +26,14 @@ public class MetaFileManager : IService
     internal readonly ObjectIdentification    Identifier;
     internal readonly FileCompactor           Compactor;
     internal readonly ImcChecker              ImcChecker;
+    internal readonly AtchManager             AtchManager;
     internal readonly IFileAllocator          MarshalAllocator = new MarshalAllocator();
     internal readonly IFileAllocator          XivAllocator;
 
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
         ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, ObjectIdentification identifier,
-        FileCompactor compactor, IGameInteropProvider interop)
+        FileCompactor compactor, IGameInteropProvider interop, AtchManager atchManager)
     {
         CharacterUtility  = characterUtility;
         ResidentResources = residentResources;
@@ -41,6 +43,7 @@ public class MetaFileManager : IService
         ValidityChecker   = validityChecker;
         Identifier        = identifier;
         Compactor         = compactor;
+        AtchManager       = atchManager;
         ImcChecker        = new ImcChecker(this);
         XivAllocator      = new XivFileAllocator(interop);
         interop.InitializeFromAttributes(this);

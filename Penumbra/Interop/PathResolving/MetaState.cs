@@ -49,6 +49,7 @@ public sealed unsafe class MetaState : IDisposable, IService
     public readonly Stack<ResolveData> EqdpCollection            = [];
     public readonly Stack<ResolveData> EstCollection             = [];
     public readonly Stack<ResolveData> RspCollection             = [];
+    public readonly Stack<ResolveData> AtchCollection            = [];
 
     public readonly Stack<(ResolveData Collection, PrimaryId Id)> GmpCollection = [];
 

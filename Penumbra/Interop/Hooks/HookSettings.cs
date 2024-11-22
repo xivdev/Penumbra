@@ -62,6 +62,8 @@ public class HookOverrides
         public bool SetupVisor;
         public bool UpdateModel;
         public bool UpdateRender;
+        public bool AtchCaller1;
+        public bool AtchCaller2;
     }
 
     public struct ObjectHooks

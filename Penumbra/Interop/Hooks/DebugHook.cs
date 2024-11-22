@@ -1,5 +1,6 @@
 using Dalamud.Hooking;
 using OtterGui.Services;
+using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Hooks;
 
@@ -31,12 +32,13 @@ public sealed unsafe class DebugHook : IHookService
     public bool Finished
         => _task?.IsCompletedSuccessfully ?? true;
 
-    private delegate void Delegate(nint a, int b, nint c, float* d);
+    private delegate nint Delegate(ResourceHandle* a, int b, int c);
 
-    private void Detour(nint a, int b, nint c, float* d)
+    private nint Detour(ResourceHandle* a, int b, int c)
     {
-        _task!.Result.Original(a,        b, c, d);
-        Penumbra.Log.Information($"[Debug Hook] Results with 0x{a:X} {b} {c:X} {d[0]} {d[1]} {d[2]} {d[3]}.");
+        var ret = _task!.Result.Original(a, b, c);
+        Penumbra.Log.Information($"[Debug Hook] Results with 0x{(nint)a:X}, {b}, {c} -> 0x{ret:X}.");
+        return ret;
     }
 }
 #endif

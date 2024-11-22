@@ -228,20 +228,25 @@ public sealed class CollectionCache : IDisposable
         foreach (var (path, file) in files.FileRedirections)
             AddFile(path, file, mod);
 
-        foreach (var (identifier, entry) in files.Manipulations.Eqp)
-            AddManipulation(mod, identifier, entry);
-        foreach (var (identifier, entry) in files.Manipulations.Eqdp)
-            AddManipulation(mod, identifier, entry);
-        foreach (var (identifier, entry) in files.Manipulations.Est)
-            AddManipulation(mod, identifier, entry);
-        foreach (var (identifier, entry) in files.Manipulations.Gmp)
-            AddManipulation(mod, identifier, entry);
-        foreach (var (identifier, entry) in files.Manipulations.Rsp)
-            AddManipulation(mod, identifier, entry);
-        foreach (var (identifier, entry) in files.Manipulations.Imc)
-            AddManipulation(mod, identifier, entry);
-        foreach (var identifier in files.Manipulations.GlobalEqp)
-            AddManipulation(mod, identifier, null!);
+        if (files.Manipulations.Count > 0)
+        {
+            foreach (var (identifier, entry) in files.Manipulations.Eqp)
+                AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Eqdp)
+                AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Est)
+                AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Gmp)
+                AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Rsp)
+                AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Imc)
+                AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Atch)
+                AddManipulation(mod, identifier, entry);
+            foreach (var identifier in files.Manipulations.GlobalEqp)
+                AddManipulation(mod, identifier, null!);
+        }
 
         if (addMetaChanges)
         {

@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using Newtonsoft.Json.Linq;
 using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
@@ -33,7 +34,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy all current EST manipulations to clipboard."u8, MetaDictionary.SerializeTo([], Editor.Est));
+        CopyToClipboardButton("Copy all current EST manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Est)));
 
         ImGui.TableNextColumn();
         var canAdd = !Editor.Contains(Identifier);

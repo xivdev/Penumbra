@@ -21,6 +21,7 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using Penumbra.GameData.Data;
+using Penumbra.GameData.Files;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.ResourceLoading;
 
