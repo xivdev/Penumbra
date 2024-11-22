@@ -12,12 +12,18 @@ public partial class ModEditWindow
 {
     private readonly FileEditor<MtrlTab> _materialTab;
 
+    private readonly MtrlTabUiState _materialTabRwUiState = new();
+    private readonly MtrlTabUiState _materialTabRoUiState = new();
+
     private bool DrawMaterialPanel(MtrlTab tab, bool disabled)
     {
+        // This depends on the current inner workings of FileEditor<T>.
+        var uiState = disabled ? _materialTabRoUiState : _materialTabRwUiState;
+
         if (tab.DrawVersionUpdate(disabled))
             _materialTab.SaveFile();
 
-        return tab.DrawPanel(disabled);
+        return tab.DrawPanel(disabled, uiState);
     }
 
     private void DrawMaterialReassignmentTab()
