@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.JobGauge.Types;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -24,7 +25,7 @@ public sealed class ImcFilePostProcessor(CollectionStorage collections) : IFileP
             return;
 
         file.Replace(resource);
-        Penumbra.Log.Information(
+        Penumbra.Log.Verbose(
             $"[ResourceLoader] Loaded {originalGamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
     }
 }

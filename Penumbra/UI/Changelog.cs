@@ -54,9 +54,27 @@ public class PenumbraChangelog : IUiService
         Add1_1_1_0(Changelog);
         Add1_2_1_0(Changelog);
         Add1_3_0_0(Changelog);
+        Add1_3_1_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_3_1_0(Changelog log)
+        => log.NextVersion("Version 1.3.1.0")
+            .RegisterEntry("Penumbra has been updated for Dalamud API 11 and patch 7.1.")
+            .RegisterImportant("There are some known issues with potential crashes using certain VFX/SFX mods, probably related to sound files.")
+            .RegisterEntry("If you encounter those issues, please report them in the discord and potentially disable the corresponding mods for the time being.", 1)
+            .RegisterImportant("The modding of .atch files has been disabled. Outdated modded versions of these files cause crashes when loaded.")
+            .RegisterEntry("A better way for modular modding of .atch files via meta changes will release to the testing branch soonish.", 1)
+            .RegisterHighlight("Temporary collections (as created by Mare) will now always respect ownership.")
+            .RegisterEntry("This means that you can toggle this setting off if you do not want it, and Mare will still work for minions and mounts of other players.", 1)
+            .RegisterEntry("The new physics and animation engine files (.kdb and .bnmb) should now be correctly redirected and respect EST changes.")
+            .RegisterEntry("Fixed issues with EQP entries being labeled wrongly and global EQP not changing all required values for earrings.")
+            .RegisterEntry("Fixed an issue with global EQP changes of a mod being reset upon reloading the mod.")
+            .RegisterEntry("Fixed another issue with left rings and mare synchronization / the on-screen tab.")
+            .RegisterEntry("Maybe fixed some issues with characters appearing in the login screen being misidentified.")
+            .RegisterEntry("Some improvements for debug visualization have been made.");
+            
 
     private static void Add1_3_0_0(Changelog log)
         => log.NextVersion("Version 1.3.0.0")

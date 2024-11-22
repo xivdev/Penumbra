@@ -104,7 +104,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly CrashHandlerPanel         _crashHandlerPanel;
     private readonly TexHeaderDrawer           _texHeaderDrawer;
     private readonly HookOverrideDrawer        _hookOverrides;
-    private readonly TexMdlScdService          _texMdlScdService;
+    private readonly RsfService          _rsfService;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -115,7 +115,7 @@ public class DebugTab : Window, ITab, IUiService
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides, TexMdlScdService texMdlScdService)
+        HookOverrideDrawer hookOverrides, RsfService rsfService)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -153,7 +153,7 @@ public class DebugTab : Window, ITab, IUiService
         _crashHandlerPanel         = crashHandlerPanel;
         _texHeaderDrawer           = texHeaderDrawer;
         _hookOverrides             = hookOverrides;
-        _texMdlScdService          = texMdlScdService;
+        _rsfService          = rsfService;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -1087,7 +1087,7 @@ public class DebugTab : Window, ITab, IUiService
         ImUtf8.TableSetupColumn("Type"u8, ImGuiTableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
         ImGui.TableHeadersRow();
 
-        foreach (var (hash, type) in _texMdlScdService.CustomCache)
+        foreach (var (hash, type) in _rsfService.CustomCache)
         {
             ImGui.TableNextColumn();
             ImUtf8.Text($"{hash:X16}");

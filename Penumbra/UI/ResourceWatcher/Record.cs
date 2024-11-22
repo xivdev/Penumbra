@@ -3,6 +3,7 @@ using Penumbra.Collections;
 using Penumbra.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
@@ -24,13 +25,15 @@ internal unsafe struct Record
     public ModCollection?       Collection;
     public ResourceHandle*      Handle;
     public ResourceTypeFlag     ResourceType;
-    public ResourceCategoryFlag Category;
+    public ulong                Crc64;
     public uint                 RefCount;
+    public ResourceCategoryFlag Category;
     public RecordType           RecordType;
     public OptionalBool         Synchronously;
     public OptionalBool         ReturnValue;
     public OptionalBool         CustomLoad;
     public LoadState            LoadState;
+
 
     public static Record CreateRequest(CiByteString path, bool sync)
         => new()
@@ -49,6 +52,7 @@ internal unsafe struct Record
             CustomLoad           = OptionalBool.Null,
             AssociatedGameObject = string.Empty,
             LoadState            = LoadState.None,
+            Crc64                = 0,
         };
 
     public static Record CreateDefaultLoad(CiByteString path, ResourceHandle* handle, ModCollection collection, string associatedGameObject)
@@ -70,15 +74,16 @@ internal unsafe struct Record
             CustomLoad           = false,
             AssociatedGameObject = associatedGameObject,
             LoadState            = handle->LoadState,
+            Crc64                = 0,
         };
     }
 
-    public static Record CreateLoad(CiByteString path, CiByteString originalPath, ResourceHandle* handle, ModCollection collection,
+    public static Record CreateLoad(FullPath path, CiByteString originalPath, ResourceHandle* handle, ModCollection collection,
         string associatedGameObject)
         => new()
         {
             Time                 = DateTime.UtcNow,
-            Path                 = path.IsOwned ? path : path.Clone(),
+            Path                 = path.InternalName.IsOwned ? path.InternalName : path.InternalName.Clone(),
             OriginalPath         = originalPath.IsOwned ? originalPath : originalPath.Clone(),
             Collection           = collection,
             Handle               = handle,
@@ -91,6 +96,7 @@ internal unsafe struct Record
             CustomLoad           = true,
             AssociatedGameObject = associatedGameObject,
             LoadState            = handle->LoadState,
+            Crc64                = path.Crc64,
         };
 
     public static Record CreateDestruction(ResourceHandle* handle)
@@ -112,6 +118,7 @@ internal unsafe struct Record
             CustomLoad           = OptionalBool.Null,
             AssociatedGameObject = string.Empty,
             LoadState            = handle->LoadState,
+            Crc64                = 0,
         };
     }
 
@@ -132,5 +139,6 @@ internal unsafe struct Record
             CustomLoad           = custom,
             AssociatedGameObject = string.Empty,
             LoadState            = handle->LoadState,
+            Crc64                = 0,
         };
 }

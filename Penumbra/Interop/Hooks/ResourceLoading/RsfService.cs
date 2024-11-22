@@ -7,10 +7,11 @@ using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Classes;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
+using TextureResourceHandle = Penumbra.Interop.Structs.TextureResourceHandle;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class TexMdlScdService : IDisposable, IRequiredService
+public unsafe class RsfService : IDisposable, IRequiredService
 {
     /// <summary>
     /// We need to be able to obtain the requested LoD level.
@@ -42,7 +43,7 @@ public unsafe class TexMdlScdService : IDisposable, IRequiredService
 
     private readonly LodService _lodService;
 
-    public TexMdlScdService(IGameInteropProvider interop)
+    public RsfService(IGameInteropProvider interop)
     {
         interop.InitializeFromAttributes(this);
         _lodService = new LodService(interop);
@@ -52,7 +53,8 @@ public unsafe class TexMdlScdService : IDisposable, IRequiredService
             _loadMdlFileExternHook.Enable();
         if (!HookOverrides.Instance.ResourceLoading.TexResourceHandleOnLoad)
             _textureOnLoadHook.Enable();
-        _soundOnLoadHook.Enable();
+        if (!HookOverrides.Instance.ResourceLoading.SoundOnLoad)
+            _soundOnLoadHook.Enable();
     }
 
     /// <summary> Add CRC64 if the given file is a model or texture file and has an associated path. </summary>
@@ -80,6 +82,7 @@ public unsafe class TexMdlScdService : IDisposable, IRequiredService
     /// i.e. CRC32 of filename in the lower bytes, CRC32 of parent path in the upper bytes.
     /// </summary>
     private readonly Dictionary<ulong, ResourceType> _customFileCrc = [];
+
     public IReadOnlyDictionary<ulong, ResourceType> CustomCache
         => _customFileCrc;
 
@@ -98,15 +101,31 @@ public unsafe class TexMdlScdService : IDisposable, IRequiredService
 
     private delegate byte SoundOnLoadDelegate(ResourceHandle* handle, SeFileDescriptor* descriptor, byte unk);
 
-    [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 30 8B 79 ?? 48 8B DA 8B D7")]
+    [Signature(Sigs.LoadScdFileLocal)]
     private readonly delegate* unmanaged<ResourceHandle*, SeFileDescriptor*, byte, byte> _loadScdFileLocal = null!;
 
-    [Signature("40 56 57 41 54 48 81 EC 90 00 00 00 80 3A 0B 45 0F B6 E0 48 8B F2", DetourName = nameof(OnScdLoadDetour))]
+    [Signature(Sigs.SoundOnLoad, DetourName = nameof(OnScdLoadDetour))]
     private readonly Hook<SoundOnLoadDelegate> _soundOnLoadHook = null!;
+
+    [Signature(Sigs.RsfServiceAddress, ScanType = ScanType.StaticAddress)]
+    private readonly nint* _rsfService = null;
 
     private byte OnScdLoadDetour(ResourceHandle* handle, SeFileDescriptor* descriptor, byte unk)
     {
-        var ret = _soundOnLoadHook.Original(handle, descriptor, unk);
+        byte ret;
+        if (*_rsfService == nint.Zero)
+        {
+            Penumbra.Log.Debug(
+                $"Resource load of {handle->FileName} before FFXIV RSF-service was instantiated, workaround by setting pointer.");
+            *_rsfService = 1;
+            ret          = _soundOnLoadHook.Original(handle, descriptor, unk);
+            *_rsfService = nint.Zero;
+        }
+        else
+        {
+            ret = _soundOnLoadHook.Original(handle, descriptor, unk);
+        }
+
         if (!_scdReturnData.Value)
             return ret;
 
