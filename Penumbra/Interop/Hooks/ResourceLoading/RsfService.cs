@@ -132,7 +132,6 @@ public unsafe class RsfService : IDisposable, IRequiredService
         // Function failed on a replaced scd, call local.
         _scdReturnData.Value = false;
         ret                  = _loadScdFileLocal(handle, descriptor, unk);
-        _updateCategory((TextureResourceHandle*)handle);
         return ret;
     }
 
