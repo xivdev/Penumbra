@@ -18,7 +18,7 @@ public unsafe class AtchCallerHook2 : FastHook<AtchCallerHook2.Delegate>, IDispo
         _metaState          = metaState;
         _collectionResolver = collectionResolver;
         Task = hooks.CreateHook<Delegate>("AtchCaller2", Sigs.AtchCaller2, Detour,
-            metaState.Config.EnableMods && HookOverrides.Instance.Meta.AtchCaller2);
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.AtchCaller2);
         if (!HookOverrides.Instance.Meta.AtchCaller2)
             _metaState.Config.ModsEnabled += Toggle;
     }

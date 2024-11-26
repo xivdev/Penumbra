@@ -1,4 +1,3 @@
-using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Services;
 using Penumbra.GameData;
@@ -19,7 +18,7 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
         _metaState          = metaState;
         _collectionResolver = collectionResolver;
         Task = hooks.CreateHook<Delegate>("AtchCaller1", Sigs.AtchCaller1, Detour,
-            metaState.Config.EnableMods && HookOverrides.Instance.Meta.AtchCaller1);
+            metaState.Config.EnableMods && !HookOverrides.Instance.Meta.AtchCaller1);
         if (!HookOverrides.Instance.Meta.AtchCaller1)
             _metaState.Config.ModsEnabled += Toggle;
     }
@@ -30,7 +29,7 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
         _metaState.AtchCollection.Push(collection);
         Task.Result.Original(data, slot, unk, playerModel);
         _metaState.AtchCollection.Pop();
-        Penumbra.Log.Excessive(
+        Penumbra.Log.Information(
             $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, identified to {collection.ModCollection.AnonymizedName}.");
     }
 
