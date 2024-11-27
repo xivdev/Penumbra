@@ -29,7 +29,7 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
         _metaState.AtchCollection.Push(collection);
         Task.Result.Original(data, slot, unk, playerModel);
         _metaState.AtchCollection.Pop();
-        Penumbra.Log.Information(
+        Penumbra.Log.Excessive(
             $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, identified to {collection.ModCollection.AnonymizedName}.");
     }
 
