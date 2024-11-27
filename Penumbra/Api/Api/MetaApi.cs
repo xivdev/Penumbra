@@ -51,7 +51,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
     }
 
     internal static string CompressMetaManipulations(ModCollection collection)
-        => CompressMetaManipulationsV1(collection);
+        => CompressMetaManipulationsV0(collection);
 
     private static string CompressMetaManipulationsV0(ModCollection collection)
     {
