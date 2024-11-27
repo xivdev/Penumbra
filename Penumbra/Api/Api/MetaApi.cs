@@ -16,8 +16,6 @@ namespace Penumbra.Api.Api;
 public class MetaApi(IFramework framework, CollectionResolver collectionResolver, ApiHelpers helpers)
     : IPenumbraApiMeta, IApiService
 {
-    public const int CurrentVersion = 1;
-
     public string GetPlayerMetaManipulations()
     {
         var collection = collectionResolver.PlayerCollection();
@@ -99,7 +97,6 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
                 WriteCache(zipStream, cache.Est);
                 WriteCache(zipStream, cache.Rsp);
                 WriteCache(zipStream, cache.Gmp);
-                WriteCache(zipStream, cache.Atch);
                 cache.GlobalEqp.EnterReadLock();
 
                 try
@@ -112,6 +109,8 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
                 {
                     cache.GlobalEqp.ExitReadLock();
                 }
+
+                WriteCache(zipStream, cache.Atch);
             }
         }
 
@@ -251,21 +250,25 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
                 return false;
         }
 
-        var atchCount = r.ReadInt32();
-        for (var i = 0; i < atchCount; ++i)
-        {
-            var identifier = r.Read<AtchIdentifier>();
-            var value      = r.Read<AtchEntry>();
-            if (!identifier.Validate() || !manips.TryAdd(identifier, value))
-                return false;
-        }
-
         var globalEqpCount = r.ReadInt32();
         for (var i = 0; i < globalEqpCount; ++i)
         {
             var manip = r.Read<GlobalEqpManipulation>();
             if (!manip.Validate() || !manips.TryAdd(manip))
                 return false;
+        }
+
+        // Atch was added after there were already some V1 around, so check for size here.
+        if (r.Position < r.Count)
+        {
+            var atchCount = r.ReadInt32();
+            for (var i = 0; i < atchCount; ++i)
+            {
+                var identifier = r.Read<AtchIdentifier>();
+                var value      = r.Read<AtchEntry>();
+                if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                    return false;
+            }
         }
 
         return true;

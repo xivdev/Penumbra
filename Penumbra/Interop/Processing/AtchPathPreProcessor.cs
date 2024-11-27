@@ -20,7 +20,7 @@ public sealed class AtchPathPreProcessor : IPathPreProcessor
         if (!TryGetAtchGenderRace(path, out var gr))
             return resolved;
 
-        Penumbra.Log.Information($"Pre-Processed {path} with {resolveData.ModCollection} for {gr.ToName()}.");
+        Penumbra.Log.Excessive($"Pre-Processed {path} with {resolveData.ModCollection} for {gr.ToName()}.");
         if (resolveData.ModCollection.MetaCache?.Atch.GetFile(gr, out var file) == true)
             return PathDataHandler.CreateAtch(path, resolveData.ModCollection);
 

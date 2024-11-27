@@ -24,7 +24,7 @@ public class MetaIpcTester(IDalamudPluginInterface pi) : IUiService
 
         ImGui.InputInt("##metaIdx", ref _gameObjectIndex, 0, 0);
         if (ImUtf8.InputText("##metaText"u8, ref _metaBase64, "Base64 Metadata..."u8))
-            if (!MetaApi.ConvertManips(_metaBase64, out _metaDict, out _parsedVersion))
+            if (!MetaApi.ConvertManips(_metaBase64, out _metaDict!, out _parsedVersion))
                 _metaDict ??= new MetaDictionary();
 
 
