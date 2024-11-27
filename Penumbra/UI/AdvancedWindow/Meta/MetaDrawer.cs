@@ -154,7 +154,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         if (!ImUtf8.IconButton(FontAwesomeIcon.Clipboard, tooltip))
             return;
 
-        var text = Functions.ToCompressedBase64(manipulations, MetaApi.CurrentVersion);
+        var text = Functions.ToCompressedBase64(manipulations.Value, MetaApi.CurrentVersion);
         if (text.Length > 0)
             ImGui.SetClipboardText(text);
     }
