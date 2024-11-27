@@ -60,7 +60,7 @@ public class TemporaryApi(
         if (!ConvertPaths(paths, out var p))
             return ApiHelpers.Return(PenumbraApiEc.InvalidGamePath, args);
 
-        if (!MetaApi.ConvertManips(manipString, out var m))
+        if (!MetaApi.ConvertManips(manipString, out var m, out _))
             return ApiHelpers.Return(PenumbraApiEc.InvalidManipulation, args);
 
         var ret = tempMods.Register(tag, null, p, m, new ModPriority(priority)) switch
@@ -86,7 +86,7 @@ public class TemporaryApi(
         if (!ConvertPaths(paths, out var p))
             return ApiHelpers.Return(PenumbraApiEc.InvalidGamePath, args);
 
-        if (!MetaApi.ConvertManips(manipString, out var m))
+        if (!MetaApi.ConvertManips(manipString, out var m, out _))
             return ApiHelpers.Return(PenumbraApiEc.InvalidManipulation, args);
 
         var ret = tempMods.Register(tag, collection, p, m, new ModPriority(priority)) switch

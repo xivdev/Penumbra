@@ -146,11 +146,12 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
     /// The empty string is treated as an empty set.
     /// Only returns true if all conversions are successful and distinct. 
     /// </summary>
-    internal static bool ConvertManips(string manipString, [NotNullWhen(true)] out MetaDictionary? manips)
+    internal static bool ConvertManips(string manipString, [NotNullWhen(true)] out MetaDictionary? manips, out byte version)
     {
         if (manipString.Length == 0)
         {
-            manips = new MetaDictionary();
+            manips  = new MetaDictionary();
+            version = byte.MaxValue;
             return true;
         }
 
@@ -163,9 +164,9 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             zipStream.CopyTo(resultStream);
             resultStream.Flush();
             resultStream.Position = 0;
-            var data    = resultStream.GetBuffer().AsSpan(0, (int)resultStream.Length);
-            var version = data[0];
-            data = data[1..];
+            var data = resultStream.GetBuffer().AsSpan(0, (int)resultStream.Length);
+            version = data[0];
+            data    = data[1..];
             switch (version)
             {
                 case 0: return ConvertManipsV0(data, out manips);
@@ -179,7 +180,8 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
         catch (Exception ex)
         {
             Penumbra.Log.Debug($"Error decompressing manipulations:\n{ex}");
-            manips = null;
+            manips  = null;
+            version = byte.MaxValue;
             return false;
         }
     }
@@ -291,11 +293,11 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
         var v1Time = watch.ElapsedMilliseconds;
 
         watch.Restart();
-        var v1Success       = ConvertManips(v1, out var v1Roundtrip);
+        var v1Success       = ConvertManips(v1, out var v1Roundtrip, out _);
         var v1RoundtripTime = watch.ElapsedMilliseconds;
 
         watch.Restart();
-        var v0Success       = ConvertManips(v0, out var v0Roundtrip);
+        var v0Success       = ConvertManips(v0, out var v0Roundtrip, out _);
         var v0RoundtripTime = watch.ElapsedMilliseconds;
 
         Penumbra.Log.Information($"Version | Count | Time | Length | Success | ReCount | ReTime | Equal");
