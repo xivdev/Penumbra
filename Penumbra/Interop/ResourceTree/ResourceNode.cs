@@ -1,4 +1,5 @@
 using Penumbra.Api.Enums;
+using Penumbra.Mods;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
@@ -16,6 +17,7 @@ public class ResourceNode : ICloneable
     public          Utf8GamePath[]      PossibleGamePaths;
     public          FullPath            FullPath;
     public          string?             ModName;
+    public readonly WeakReference<Mod>  Mod = new(null!);
     public          string?             ModRelativePath;
     public          CiByteString        AdditionalData;
     public readonly ulong               Length;
@@ -60,6 +62,7 @@ public class ResourceNode : ICloneable
         PossibleGamePaths = other.PossibleGamePaths;
         FullPath          = other.FullPath;
         ModName           = other.ModName;
+        Mod               = other.Mod;
         ModRelativePath   = other.ModRelativePath;
         AdditionalData    = other.AdditionalData;
         Length            = other.Length;

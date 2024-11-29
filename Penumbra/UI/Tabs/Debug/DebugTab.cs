@@ -461,7 +461,7 @@ public class DebugTab : Window, ITab, IUiService
         if (!ImGui.CollapsingHeader("Actors"))
             return;
 
-        using var table = Table("##actors", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        using var table = Table("##actors", 8, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
@@ -485,6 +485,9 @@ public class DebugTab : Window, ITab, IUiService
                 ? $"{identifier.DataId} | {obj.AsObject->BaseId}"
                 : identifier.DataId.ToString();
             ImGuiUtil.DrawTableColumn(id);
+            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{(*(nint*)obj.Address):X}" : "NULL");
+            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{obj.AsObject->EntityId:X}" : "NULL");
+            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? obj.AsObject->IsCharacter() ? $"Character: {obj.AsCharacter->ObjectKind}" : "No Character" : "NULL");
         }
 
         return;
@@ -498,6 +501,9 @@ public class DebugTab : Window, ITab, IUiService
             ImGuiUtil.DrawTableColumn(string.Empty);
             ImGuiUtil.DrawTableColumn(string.Empty);
             ImGuiUtil.DrawTableColumn(_actors.ToString(id));
+            ImGuiUtil.DrawTableColumn(string.Empty);
+            ImGuiUtil.DrawTableColumn(string.Empty);
+            ImGuiUtil.DrawTableColumn(string.Empty);
             ImGuiUtil.DrawTableColumn(string.Empty);
         }
     }

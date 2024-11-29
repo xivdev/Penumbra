@@ -135,6 +135,7 @@ public class ResourceTreeFactory(
             if (node.FullPath.IsRooted && modManager.TryIdentifyPath(node.FullPath.FullName, out var mod, out var relativePath))
             {
                 node.ModName         = mod.Name;
+                node.Mod.SetTarget(mod);
                 node.ModRelativePath = relativePath;
             }
         }

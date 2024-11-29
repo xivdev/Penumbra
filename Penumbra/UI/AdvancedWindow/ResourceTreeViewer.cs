@@ -3,54 +3,39 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
+using OtterGui.Text;
+using Penumbra.Api.Enums;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.String;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ResourceTreeViewer
+public class ResourceTreeViewer(
+    Configuration config,
+    ResourceTreeFactory treeFactory,
+    ChangedItemDrawer changedItemDrawer,
+    IncognitoService incognito,
+    int actionCapacity,
+    Action onRefresh,
+    Action<ResourceNode, Vector2> drawActions,
+    CommunicatorService communicator)
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
         ResourceTreeFactory.Flags.RedactExternalPaths | ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
 
-    private readonly Configuration                 _config;
-    private readonly ResourceTreeFactory           _treeFactory;
-    private readonly ChangedItemDrawer             _changedItemDrawer;
-    private readonly IncognitoService              _incognito;
-    private readonly int                           _actionCapacity;
-    private readonly Action                        _onRefresh;
-    private readonly Action<ResourceNode, Vector2> _drawActions;
-    private readonly HashSet<nint>                 _unfolded;
+    private readonly CommunicatorService _communicator = communicator;
+    private readonly HashSet<nint>       _unfolded     = [];
 
-    private readonly Dictionary<nint, NodeVisibility> _filterCache;
+    private readonly Dictionary<nint, NodeVisibility> _filterCache = [];
 
-    private TreeCategory                      _categoryFilter;
-    private ChangedItemIconFlag _typeFilter;
-    private string                            _nameFilter;
-    private string                            _nodeFilter;
+    private TreeCategory        _categoryFilter = AllCategories;
+    private ChangedItemIconFlag _typeFilter     = ChangedItemFlagExtensions.AllFlags;
+    private string              _nameFilter     = string.Empty;
+    private string              _nodeFilter     = string.Empty;
 
     private Task<ResourceTree[]>? _task;
-
-    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, ChangedItemDrawer changedItemDrawer,
-        IncognitoService incognito, int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
-    {
-        _config            = config;
-        _treeFactory       = treeFactory;
-        _changedItemDrawer = changedItemDrawer;
-        _incognito         = incognito;
-        _actionCapacity    = actionCapacity;
-        _onRefresh         = onRefresh;
-        _drawActions       = drawActions;
-        _unfolded          = [];
-
-        _filterCache = [];
-
-        _categoryFilter = AllCategories;
-        _typeFilter     = ChangedItemFlagExtensions.AllFlags;
-        _nameFilter     = string.Empty;
-        _nodeFilter     = string.Empty;
-    }
 
     public void Draw()
     {
@@ -74,7 +59,7 @@ public class ResourceTreeViewer
         }
         else if (_task.IsCompletedSuccessfully)
         {
-            var debugMode = _config.DebugMode;
+            var debugMode = config.DebugMode;
             foreach (var (tree, index) in _task.Result.WithIndex())
             {
                 var category = Classify(tree);
@@ -83,7 +68,7 @@ public class ResourceTreeViewer
 
                 using (var c = ImRaii.PushColor(ImGuiCol.Text, CategoryColor(category).Value()))
                 {
-                    var isOpen = ImGui.CollapsingHeader($"{(_incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
+                    var isOpen = ImGui.CollapsingHeader($"{(incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
                         index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
                     if (debugMode)
                     {
@@ -98,9 +83,9 @@ public class ResourceTreeViewer
 
                 using var id = ImRaii.PushId(index);
 
-                ImGui.TextUnformatted($"Collection: {(_incognito.IncognitoMode ? tree.AnonymizedCollectionName : tree.CollectionName)}");
+                ImGui.TextUnformatted($"Collection: {(incognito.IncognitoMode ? tree.AnonymizedCollectionName : tree.CollectionName)}");
 
-                using var table = ImRaii.Table("##ResourceTree", _actionCapacity > 0 ? 4 : 3,
+                using var table = ImRaii.Table("##ResourceTree", actionCapacity > 0 ? 4 : 3,
                     ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
                 if (!table)
                     continue;
@@ -108,9 +93,9 @@ public class ResourceTreeViewer
                 ImGui.TableSetupColumn(string.Empty,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
                 ImGui.TableSetupColumn("Game Path",   ImGuiTableColumnFlags.WidthStretch, 0.3f);
                 ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
-                if (_actionCapacity > 0)
+                if (actionCapacity > 0)
                     ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed,
-                        (_actionCapacity - 1) * 3 * ImGuiHelpers.GlobalScale + _actionCapacity * ImGui.GetFrameHeight());
+                        (actionCapacity - 1) * 3 * ImGuiHelpers.GlobalScale + actionCapacity * ImGui.GetFrameHeight());
                 ImGui.TableHeadersRow();
 
                 DrawNodes(tree.Nodes, 0, unchecked(tree.DrawObjectAddress * 31), 0);
@@ -150,7 +135,7 @@ public class ResourceTreeViewer
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - yOffset);
         using (ImRaii.Child("##typeFilter", new Vector2(ImGui.GetContentRegionAvail().X, ChangedItemDrawer.TypeFilterIconSize.Y)))
         {
-            filterChanged |= _changedItemDrawer.DrawTypeFilter(ref _typeFilter);
+            filterChanged |= changedItemDrawer.DrawTypeFilter(ref _typeFilter);
         }
 
         var fieldWidth = (ImGui.GetContentRegionAvail().X - checkSpacing * 2.0f - ImGui.GetFrameHeightWithSpacing()) / 2.0f;
@@ -160,7 +145,7 @@ public class ResourceTreeViewer
         ImGui.SetNextItemWidth(fieldWidth);
         filterChanged |= ImGui.InputTextWithHint("##NodeFilter", "Filter by Item/Part Name or Path...", ref _nodeFilter, 128);
         ImGui.SameLine(0, checkSpacing);
-        _incognito.DrawToggle(ImGui.GetFrameHeightWithSpacing());
+        incognito.DrawToggle(ImGui.GetFrameHeightWithSpacing());
 
         if (filterChanged)
             _filterCache.Clear();
@@ -171,7 +156,7 @@ public class ResourceTreeViewer
         {
             try
             {
-                return _treeFactory.FromObjectTable(ResourceTreeFactoryFlags)
+                return treeFactory.FromObjectTable(ResourceTreeFactoryFlags)
                     .Select(entry => entry.ResourceTree)
                     .ToArray();
             }
@@ -179,16 +164,16 @@ public class ResourceTreeViewer
             {
                 _filterCache.Clear();
                 _unfolded.Clear();
-                _onRefresh();
+                onRefresh();
             }
         });
 
     private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level, nint pathHash,
         ChangedItemIconFlag parentFilterIconFlag)
     {
-        var debugMode   = _config.DebugMode;
+        var debugMode   = config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
-        var cellHeight  = _actionCapacity > 0 ? frameHeight : 0.0f;
+        var cellHeight  = actionCapacity > 0 ? frameHeight : 0.0f;
 
         foreach (var (resourceNode, index) in resourceNodes.WithIndex())
         {
@@ -231,7 +216,7 @@ public class ResourceTreeViewer
                     ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 }
 
-                _changedItemDrawer.DrawCategoryIcon(resourceNode.IconFlag);
+                changedItemDrawer.DrawCategoryIcon(resourceNode.IconFlag);
                 ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 ImGui.TableHeader(resourceNode.Name);
                 if (ImGui.IsItemClicked() && unfoldable)
@@ -270,14 +255,33 @@ public class ResourceTreeViewer
             ImGui.TableNextColumn();
             if (resourceNode.FullPath.FullName.Length > 0)
             {
-                var uiFullPathStr = resourceNode.ModName != null && resourceNode.ModRelativePath != null
-                    ? $"[{resourceNode.ModName}] {resourceNode.ModRelativePath}"
-                    : resourceNode.FullPath.ToPath();
-                ImGui.Selectable(uiFullPathStr, false, 0, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                var hasMod = resourceNode.Mod.TryGetTarget(out var mod);
+                if (resourceNode is { ModName: not null, ModRelativePath: not null })
+                {
+                    var       modName = $"[{(hasMod ? mod!.Name : resourceNode.ModName)}]";
+                    var       textPos = ImGui.GetCursorPosX() + ImUtf8.CalcTextSize(modName).X + ImGui.GetStyle().ItemInnerSpacing.X;
+                    using var group   = ImUtf8.Group();
+                    using (var color = ImRaii.PushColor(ImGuiCol.Text, (hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
+                    {
+                        ImUtf8.Selectable(modName, false, ImGuiSelectableFlags.AllowItemOverlap, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.SetCursorPosX(textPos);
+                    ImUtf8.Text(resourceNode.ModRelativePath);
+                }
+                else
+                {
+                    ImGui.Selectable(resourceNode.FullPath.ToPath(), false, ImGuiSelectableFlags.AllowItemOverlap, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                }
+
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
+                if (hasMod && ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)
+                    _communicator.SelectTab.Invoke(TabType.Mods, mod);
+
                 ImGuiUtil.HoverTooltip(
-                    $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
+                    $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
             else
             {
@@ -289,12 +293,12 @@ public class ResourceTreeViewer
 
             mutedColor.Dispose();
 
-            if (_actionCapacity > 0)
+            if (actionCapacity > 0)
             {
                 ImGui.TableNextColumn();
                 using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
                     ImGui.GetStyle().ItemSpacing with { X = 3 * ImGuiHelpers.GlobalScale });
-                _drawActions(resourceNode, new Vector2(frameHeight));
+                drawActions(resourceNode, new Vector2(frameHeight));
             }
 
             if (unfolded)
