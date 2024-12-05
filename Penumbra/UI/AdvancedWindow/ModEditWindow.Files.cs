@@ -1,4 +1,3 @@
-using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
@@ -15,6 +14,7 @@ namespace Penumbra.UI.AdvancedWindow;
 public partial class ModEditWindow
 {
     private readonly HashSet<FileRegistry> _selectedFiles = new(256);
+    private readonly HashSet<Utf8GamePath> _cutPaths      = [];
     private          LowerString           _fileFilter    = LowerString.Empty;
     private          bool                  _showGamePaths = true;
     private          string                _gamePathEdit  = string.Empty;
@@ -125,7 +125,7 @@ public partial class ModEditWindow
             using var id = ImRaii.PushId(i);
             ImGui.TableNextColumn();
 
-            DrawSelectable(registry);
+            DrawSelectable(registry, i);
 
             if (!_showGamePaths)
                 continue;
@@ -177,24 +177,63 @@ public partial class ModEditWindow
         }
     }
 
-    private void DrawSelectable(FileRegistry registry)
+    private void DrawSelectable(FileRegistry registry, int i)
     {
         var selected = _selectedFiles.Contains(registry);
         var color = registry.SubModUsage.Count == 0             ? ColorId.ConflictingMod :
             registry.CurrentUsage == registry.SubModUsage.Count ? ColorId.NewMod : ColorId.InheritedMod;
-        using var c = ImRaii.PushColor(ImGuiCol.Text, color.Value());
-        if (UiHelpers.Selectable(registry.RelPath.Path, selected))
+        using (ImRaii.PushColor(ImGuiCol.Text, color.Value()))
         {
-            if (selected)
-                _selectedFiles.Remove(registry);
-            else
-                _selectedFiles.Add(registry);
+            if (UiHelpers.Selectable(registry.RelPath.Path, selected))
+            {
+                if (selected)
+                    _selectedFiles.Remove(registry);
+                else
+                    _selectedFiles.Add(registry);
+            }
+
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                ImUtf8.OpenPopup("context"u8);
+
+            var rightText = DrawFileTooltip(registry, color);
+
+            ImGui.SameLine();
+            ImGuiUtil.RightAlign(rightText);
         }
 
-        var rightText = DrawFileTooltip(registry, color);
+        DrawContextMenu(registry, i);
+    }
 
-        ImGui.SameLine();
-        ImGuiUtil.RightAlign(rightText);
+    private void DrawContextMenu(FileRegistry registry, int i)
+    {
+        using var context = ImUtf8.Popup("context"u8);
+        if (!context)
+            return;
+
+        using (ImRaii.Disabled(registry.CurrentUsage == 0))
+        {
+            if (ImUtf8.Selectable("Cut Game Paths"u8))
+            {
+                _cutPaths.Clear();
+                for (var j = 0; j < registry.SubModUsage.Count; ++j)
+                {
+                    if (registry.SubModUsage[j].Item1 != _editor.Option)
+                        continue;
+
+                    _cutPaths.Add(registry.SubModUsage[j].Item2);
+                    _editor.FileEditor.SetGamePath(_editor.Option, i, j--, Utf8GamePath.Empty);
+                }
+            }
+        }
+
+        using (ImRaii.Disabled(_cutPaths.Count == 0))
+        {
+            if (ImUtf8.Selectable("Paste Game Paths"u8))
+            {
+                foreach (var path in _cutPaths)
+                    _editor.FileEditor.SetGamePath(_editor.Option!, i, -1, path);
+            }
+        }
     }
 
     private void PrintGamePath(int i, int j, FileRegistry registry, IModDataContainer subMod, Utf8GamePath gamePath)
