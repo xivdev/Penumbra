@@ -6,7 +6,6 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
@@ -35,8 +34,6 @@ using Penumbra.UI.Classes;
 using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
-using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
-using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
 using Penumbra.Interop.Hooks.PostProcessing;
@@ -80,8 +77,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly HttpApi                   _httpApi;
     private readonly ActorManager              _actors;
     private readonly StainService              _stains;
-    private readonly CharacterUtility          _characterUtility;
-    private readonly ResidentResourceManager   _residentResources;
+    private readonly GlobalVariablesDrawer     _globalVariablesDrawer;
     private readonly ResourceManagerService    _resourceManager;
     private readonly CollectionResolver        _collectionResolver;
     private readonly DrawObjectState           _drawObjectState;
@@ -104,18 +100,17 @@ public class DebugTab : Window, ITab, IUiService
     private readonly CrashHandlerPanel         _crashHandlerPanel;
     private readonly TexHeaderDrawer           _texHeaderDrawer;
     private readonly HookOverrideDrawer        _hookOverrides;
-    private readonly RsfService          _rsfService;
+    private readonly RsfService                _rsfService;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
-        CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides, RsfService rsfService)
+        HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -132,8 +127,6 @@ public class DebugTab : Window, ITab, IUiService
         _httpApi                   = httpApi;
         _actors                    = actors;
         _stains                    = stains;
-        _characterUtility          = characterUtility;
-        _residentResources         = residentResources;
         _resourceManager           = resourceManager;
         _collectionResolver        = collectionResolver;
         _drawObjectState           = drawObjectState;
@@ -153,7 +146,8 @@ public class DebugTab : Window, ITab, IUiService
         _crashHandlerPanel         = crashHandlerPanel;
         _texHeaderDrawer           = texHeaderDrawer;
         _hookOverrides             = hookOverrides;
-        _rsfService          = rsfService;
+        _rsfService                = rsfService;
+        _globalVariablesDrawer     = globalVariablesDrawer;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -185,14 +179,13 @@ public class DebugTab : Window, ITab, IUiService
         DrawActorsDebug();
         DrawCollectionCaches();
         _texHeaderDrawer.Draw();
-        DrawDebugCharacterUtility();
         DrawShaderReplacementFixer();
         DrawData();
         DrawCrcCache();
         DrawResourceProblems();
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
-        DrawGlobalVariableInfo();
+        _globalVariablesDrawer.Draw();
         DrawDebugTabIpc();
     }
 
@@ -217,8 +210,10 @@ public class DebugTab : Window, ITab, IUiService
                 {
                     if (resourceNode)
                         foreach (var (path, resource) in collection._cache!.CustomResources)
+                        {
                             ImUtf8.TreeNode($"{path} -> 0x{(ulong)resource.ResourceHandle:X}",
                                 ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                        }
                 }
 
                 using var modNode = ImUtf8.TreeNode("Enabled Mods"u8);
@@ -485,9 +480,11 @@ public class DebugTab : Window, ITab, IUiService
                 ? $"{identifier.DataId} | {obj.AsObject->BaseId}"
                 : identifier.DataId.ToString();
             ImGuiUtil.DrawTableColumn(id);
-            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{(*(nint*)obj.Address):X}" : "NULL");
+            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{*(nint*)obj.Address:X}" : "NULL");
             ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{obj.AsObject->EntityId:X}" : "NULL");
-            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? obj.AsObject->IsCharacter() ? $"Character: {obj.AsCharacter->ObjectKind}" : "No Character" : "NULL");
+            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero
+                ? obj.AsObject->IsCharacter() ? $"Character: {obj.AsCharacter->ObjectKind}" : "No Character"
+                : "NULL");
         }
 
         return;
@@ -795,68 +792,6 @@ public class DebugTab : Window, ITab, IUiService
         }
     }
 
-    /// <summary>
-    /// Draw information about the character utility class from SE,
-    /// displaying all files, their sizes, the default files and the default sizes.
-    /// </summary>
-    private unsafe void DrawDebugCharacterUtility()
-    {
-        if (!ImGui.CollapsingHeader("Character Utility"))
-            return;
-
-        using var table = Table("##CharacterUtility", 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
-            -Vector2.UnitX);
-        if (!table)
-            return;
-
-        for (var idx = 0; idx < CharacterUtility.ReverseIndices.Length; ++idx)
-        {
-            var intern   = CharacterUtility.ReverseIndices[idx];
-            var resource = _characterUtility.Address->Resource(idx);
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"[{idx}]");
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"0x{(ulong)resource:X}");
-            ImGui.TableNextColumn();
-            if (resource == null)
-            {
-                ImGui.TableNextRow();
-                continue;
-            }
-
-            UiHelpers.Text(resource);
-            ImGui.TableNextColumn();
-            var data   = (nint)resource->CsHandle.GetData();
-            var length = resource->CsHandle.GetLength();
-            if (ImGui.Selectable($"0x{data:X}"))
-                if (data != nint.Zero && length > 0)
-                    ImGui.SetClipboardText(string.Join("\n",
-                        new ReadOnlySpan<byte>((byte*)data, (int)length).ToArray().Select(b => b.ToString("X2"))));
-
-            ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(length.ToString());
-
-            ImGui.TableNextColumn();
-            if (intern.Value != -1)
-            {
-                ImGui.Selectable($"0x{_characterUtility.DefaultResource(intern).Address:X}");
-                if (ImGui.IsItemClicked())
-                    ImGui.SetClipboardText(string.Join("\n",
-                        new ReadOnlySpan<byte>((byte*)_characterUtility.DefaultResource(intern).Address,
-                            _characterUtility.DefaultResource(intern).Size).ToArray().Select(b => b.ToString("X2"))));
-
-                ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
-
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted($"{_characterUtility.DefaultResource(intern).Size}");
-            }
-            else
-            {
-                ImGui.TableNextColumn();
-            }
-        }
-    }
 
     private void DrawShaderReplacementFixer()
     {
@@ -946,45 +881,6 @@ public class DebugTab : Window, ITab, IUiService
         ImGui.TextUnformatted($"{slowPathCallDeltas.Skin}");
     }
 
-    /// <summary> Draw information about the resident resource files. </summary>
-    private unsafe void DrawDebugResidentResources()
-    {
-        using var tree = TreeNode("Resident Resources");
-        if (!tree)
-            return;
-
-        if (_residentResources.Address == null || _residentResources.Address->NumResources == 0)
-            return;
-
-        using var table = Table("##ResidentResources", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
-            -Vector2.UnitX);
-        if (!table)
-            return;
-
-        for (var i = 0; i < _residentResources.Address->NumResources; ++i)
-        {
-            var resource = _residentResources.Address->ResourceList[i];
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"0x{(ulong)resource:X}");
-            ImGui.TableNextColumn();
-            UiHelpers.Text(resource);
-        }
-    }
-
-    private static void DrawCopyableAddress(string label, nint address)
-    {
-        using (var _ = PushFont(UiBuilder.MonoFont))
-        {
-            if (ImGui.Selectable($"0x{address:X16}    {label}"))
-                ImGui.SetClipboardText($"{address:X16}");
-        }
-
-        ImGuiUtil.HoverTooltip("Click to copy address to clipboard.");
-    }
-
-    private static unsafe void DrawCopyableAddress(string label, void* address)
-        => DrawCopyableAddress(label, (nint)address);
-
     /// <summary> Draw information about the models, materials and resources currently loaded by the local player. </summary>
     private unsafe void DrawPlayerModelInfo()
     {
@@ -993,13 +889,13 @@ public class DebugTab : Window, ITab, IUiService
         if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || player == null)
             return;
 
-        DrawCopyableAddress("PlayerCharacter", player.Address);
+        DrawCopyableAddress("PlayerCharacter"u8, player.Address);
 
         var model = (CharacterBase*)((Character*)player.Address)->GameObject.GetDrawObject();
         if (model == null)
             return;
 
-        DrawCopyableAddress("CharacterBase", model);
+        DrawCopyableAddress("CharacterBase"u8, model);
 
         using (var t1 = Table("##table", 2, ImGuiTableFlags.SizingFixedFit))
         {
@@ -1052,20 +948,6 @@ public class DebugTab : Window, ITab, IUiService
                 UiHelpers.Text(mdl->ResourceHandle);
             }
         }
-    }
-
-    /// <summary> Draw information about some game global variables. </summary>
-    private unsafe void DrawGlobalVariableInfo()
-    {
-        var header = ImGui.CollapsingHeader("Global Variables");
-        ImGuiUtil.HoverTooltip("Draw information about global variables. Can provide useful starting points for a memory viewer.");
-        if (!header)
-            return;
-
-        DrawCopyableAddress("CharacterUtility",        _characterUtility.Address);
-        DrawCopyableAddress("ResidentResourceManager", _residentResources.Address);
-        DrawCopyableAddress("Device",                  Device.Instance());
-        DrawDebugResidentResources();
     }
 
     private string   _crcInput = string.Empty;
@@ -1169,4 +1051,18 @@ public class DebugTab : Window, ITab, IUiService
         _config.Ephemeral.DebugSeparateWindow = false;
         _config.Ephemeral.Save();
     }
+
+    public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, void* address)
+    {
+        using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
+        {
+            if (ImUtf8.Selectable($"0x{(nint)address:X16}    {label}"))
+                ImUtf8.SetClipboardText($"0x{(nint)address:X16}");
+        }
+
+        ImUtf8.HoverTooltip("Click to copy address to clipboard."u8);
+    }
+
+    public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, nint address)
+        => DrawCopyableAddress(label, (void*)address);
 }
