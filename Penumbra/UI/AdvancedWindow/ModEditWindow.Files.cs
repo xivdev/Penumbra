@@ -212,6 +212,21 @@ public partial class ModEditWindow
 
         using (ImRaii.Disabled(registry.CurrentUsage == 0))
         {
+            if (ImUtf8.Selectable("Copy Game Paths"u8))
+            {
+                _cutPaths.Clear();
+                for (var j = 0; j < registry.SubModUsage.Count; ++j)
+                {
+                    if (registry.SubModUsage[j].Item1 != _editor.Option)
+                        continue;
+
+                    _cutPaths.Add(registry.SubModUsage[j].Item2);
+                }
+            }
+        }
+
+        using (ImRaii.Disabled(registry.CurrentUsage == 0))
+        {
             if (ImUtf8.Selectable("Cut Game Paths"u8))
             {
                 _cutPaths.Clear();
