@@ -380,7 +380,7 @@ public class CommandHandler : IDisposable, IApiService
         if (arguments.Length == 0)
         {
             var seString = new SeStringBuilder()
-                .AddText("Use with /penumbra mod ").AddBlue("[enable|disable|inherit|toggle|setting]").AddText("  ")
+                .AddText("Use with /penumbra mod ").AddBlue("[enable|disable|inherit|toggle|").AddGreen("setting").AddBlue("]").AddText("  ")
                 .AddYellow("[Collection Name]")
                 .AddText(" | ")
                 .AddPurple("[Mod Name or Mod Directory Name]")
@@ -416,7 +416,7 @@ public class CommandHandler : IDisposable, IApiService
             var split2 = nameSplit[1].Split('|', 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             if (split2.Length < 2)
             {
-                _chat.Print("Not enough arguments for changing settings provided.");
+                _chat.Print("Not enough arguments for changing settings provided. Please add a group name and a list of setting names - which can be empty for multi options.");
                 return false;
             }
 
