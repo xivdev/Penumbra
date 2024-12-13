@@ -55,9 +55,23 @@ public class PenumbraChangelog : IUiService
         Add1_2_1_0(Changelog);
         Add1_3_0_0(Changelog);
         Add1_3_1_0(Changelog);
+        Add1_3_2_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_3_2_0(Changelog log)
+        => log.NextVersion("Version 1.3.2.0")
+            .RegisterHighlight("Added ATCH meta manipulations that allow the composite editing of attachment points across multiple mods.")
+            .RegisterEntry("Those ATCH manipulations should be shared via Mare Synchronos.", 1)
+            .RegisterEntry("This is an early implementation and might be bug-prone. Let me know of any issues. It was in testing for quite a while without reports.", 1)
+            .RegisterEntry("Added jumping to identified mods in the On-Screen tab via Control + Right-Click and improved their display slightly.")
+            .RegisterEntry("Added some right-click context menu copy options in the File Redirections editor for paths.")
+            .RegisterHighlight("Added the option to change a specific mod's settings via chat commands by using '/penumbra mod settings'.")
+            .RegisterEntry("Fixed issues with the copy-pasting of meta manipulations.")
+            .RegisterEntry("Fixed some other issues related to meta manipulations.")
+            .RegisterEntry("Updated available NPC names and fixed an issue with some supposedly invisible characters in names showing in ImGui.");
+
 
     private static void Add1_3_1_0(Changelog log)
         => log.NextVersion("Version 1.3.1.0")
