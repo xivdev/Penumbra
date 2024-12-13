@@ -4,6 +4,7 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui.Classes;
 using OtterGui.Services;
+using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -379,16 +380,18 @@ public class CommandHandler : IDisposable, IApiService
         if (arguments.Length == 0)
         {
             var seString = new SeStringBuilder()
-                .AddText("Use with /penumbra mod ").AddBlue("[enable|disable|inherit|toggle]").AddText("  ").AddYellow("[Collection Name]")
+                .AddText("Use with /penumbra mod ").AddBlue("[enable|disable|inherit|toggle|setting]").AddText("  ")
+                .AddYellow("[Collection Name]")
                 .AddText(" | ")
-                .AddPurple("[Mod Name or Mod Directory Name]");
+                .AddPurple("[Mod Name or Mod Directory Name]")
+                .AddGreen(" <| [Option Group Name] | [Option1;Option2;...]>");
             _chat.Print(seString.BuiltString);
             return true;
         }
 
         var split = arguments.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         var nameSplit = split.Length != 2
-            ? Array.Empty<string>()
+            ? []
             : split[1].Split('|', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (nameSplit.Length != 2)
         {
@@ -406,6 +409,23 @@ public class CommandHandler : IDisposable, IApiService
         if (!GetModCollection(nameSplit[0], out var collection) || collection == ModCollection.Empty)
             return false;
 
+        var groupName   = string.Empty;
+        var optionNames = Array.Empty<string>();
+        if (state is 4)
+        {
+            var split2 = nameSplit[1].Split('|', 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (split2.Length < 2)
+            {
+                _chat.Print("Not enough arguments for changing settings provided.");
+                return false;
+            }
+
+            nameSplit[1] = split2[0];
+            groupName    = split2[1];
+            if (split2.Length == 3)
+                optionNames = split2[2].Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        }
+
         if (!_modManager.TryGetMod(nameSplit[1], nameSplit[1], out var mod))
         {
             _chat.Print(new SeStringBuilder().AddText("The mod ").AddRed(nameSplit[1], true).AddText(" does not exist.")
@@ -413,12 +433,35 @@ public class CommandHandler : IDisposable, IApiService
             return false;
         }
 
-        if (HandleModState(state, collection!, mod))
-            return true;
+        if (state < 4)
+        {
+            if (HandleModState(state, collection!, mod))
+                return true;
 
-        _chat.Print(new SeStringBuilder().AddText("Mod ").AddPurple(mod.Name, true)
-            .AddText("already had the desired state in collection ")
-            .AddYellow(collection!.Name, true).AddText(".").BuiltString);
+            _chat.Print(new SeStringBuilder().AddText("Mod ").AddPurple(mod.Name, true)
+                .AddText("already had the desired state in collection ")
+                .AddYellow(collection!.Name, true).AddText(".").BuiltString);
+            return false;
+        }
+
+        switch (ModSettingsApi.ConvertModSetting(mod, groupName, optionNames, out var groupIndex, out var setting))
+        {
+            case PenumbraApiEc.OptionGroupMissing:
+                _chat.Print(new SeStringBuilder().AddText("The mod ").AddRed(nameSplit[1], true).AddText(" has no group ")
+                    .AddGreen(groupName, true).AddText(".").BuiltString);
+                return false;
+            case PenumbraApiEc.OptionMissing:
+                _chat.Print(new SeStringBuilder().AddText("Not all set options in the mod ").AddRed(nameSplit[1], true)
+                    .AddText(" could be found in group ").AddGreen(groupName, true).AddText(".").BuiltString);
+                return false;
+            case PenumbraApiEc.Success:
+                _collectionEditor.SetModSetting(collection!, mod, groupIndex, setting);
+                Print(() => new SeStringBuilder().AddText("Changed settings of group ").AddGreen(groupName, true).AddText(" in mod ")
+                    .AddPurple(mod.Name, true).AddText(" in collection ")
+                    .AddYellow(collection!.Name, true).AddText(".").BuiltString);
+                return true;
+        }
+
         return false;
     }
 
@@ -556,6 +599,8 @@ public class CommandHandler : IDisposable, IApiService
             "toggle"    => 2,
             "inherit"   => 3,
             "inherited" => 3,
+            "setting"   => 4,
+            "settings"  => 4,
             _           => -1,
         };
 

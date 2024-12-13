@@ -184,36 +184,9 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
             return ApiHelpers.Return(PenumbraApiEc.ModMissing, args);
 
-        var groupIdx = mod.Groups.IndexOf(g => g.Name == optionGroupName);
-        if (groupIdx < 0)
-            return ApiHelpers.Return(PenumbraApiEc.OptionGroupMissing, args);
-
-        var setting = Setting.Zero;
-        switch (mod.Groups[groupIdx])
-        {
-            case { Behaviour: GroupDrawBehaviour.SingleSelection } single:
-            {
-                var optionIdx = optionNames.Count == 0 ? -1 : single.Options.IndexOf(o => o.Name == optionNames[^1]);
-                if (optionIdx < 0)
-                    return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
-
-                setting = Setting.Single(optionIdx);
-                break;
-            }
-            case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
-            {
-                foreach (var name in optionNames)
-                {
-                    var optionIdx = multi.Options.IndexOf(o => o.Name == name);
-                    if (optionIdx < 0)
-                        return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
-
-                    setting |= Setting.Multi(optionIdx);
-                }
-
-                break;
-            }
-        }
+        var settingSuccess = ConvertModSetting(mod, optionGroupName, optionNames, out var groupIdx, out var setting);
+        if (settingSuccess is not PenumbraApiEc.Success)
+            return ApiHelpers.Return(settingSuccess, args);
 
         var ret = _collectionEditor.SetModSetting(collection, mod, groupIdx, setting)
             ? PenumbraApiEc.Success
@@ -282,5 +255,42 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             return;
 
         TriggerSettingEdited(mod);
+    }
+
+    public static PenumbraApiEc ConvertModSetting(Mod mod, string groupName, IReadOnlyList<string> optionNames, out int groupIndex,
+        out Setting setting)
+    {
+        groupIndex = mod.Groups.IndexOf(g => g.Name.Equals(groupName, StringComparison.OrdinalIgnoreCase));
+        setting    = Setting.Zero;
+        if (groupIndex < 0)
+            return PenumbraApiEc.OptionGroupMissing;
+
+        switch (mod.Groups[groupIndex])
+        {
+            case { Behaviour: GroupDrawBehaviour.SingleSelection } single:
+            {
+                var optionIdx = optionNames.Count == 0 ? -1 : single.Options.IndexOf(o => o.Name == optionNames[^1]);
+                if (optionIdx < 0)
+                    return PenumbraApiEc.OptionMissing;
+
+                setting = Setting.Single(optionIdx);
+                break;
+            }
+            case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
+            {
+                foreach (var name in optionNames)
+                {
+                    var optionIdx = multi.Options.IndexOf(o => o.Name == name);
+                    if (optionIdx < 0)
+                        return PenumbraApiEc.OptionMissing;
+
+                    setting |= Setting.Multi(optionIdx);
+                }
+
+                break;
+            }
+        }
+
+        return PenumbraApiEc.Success;
     }
 }
