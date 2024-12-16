@@ -7,6 +7,7 @@ using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using OtterGui.Log;
 using OtterGui.Services;
+using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 using Notification = OtterGui.Classes.Notification;
@@ -29,7 +30,7 @@ public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INoti
             new TextPayload($"{(char)SeIconChar.LinkMarker}"),
             new UIForegroundPayload(0),
             new UIGlowPayload(0),
-            new TextPayload(item.Name.ExtractText()),
+            new TextPayload(item.Name.ExtractTextExtended()),
             new RawPayload([0x02, 0x27, 0x07, 0xCF, 0x01, 0x01, 0x01, 0xFF, 0x01, 0x03]),
             new RawPayload([0x02, 0x13, 0x02, 0xEC, 0x03]),
         };
