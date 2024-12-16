@@ -235,7 +235,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         }
 
         if (boneIndices.Count > 128)
-            throw notifier.Exception("XIV does not support meshes weighted to a total of more than 64 bones.");
+            throw notifier.Exception("XIV does not support meshes weighted to a total of more than 128 bones.");
 
         var boneIndicesArray = new ushort[128];
         Array.Copy(boneIndices.ToArray(), boneIndicesArray, boneIndices.Count);
