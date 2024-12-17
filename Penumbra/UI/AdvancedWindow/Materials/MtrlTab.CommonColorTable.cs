@@ -202,24 +202,74 @@ public partial class MtrlTab
         if (Mtrl.Table == null)
             return false;
 
-        if (!ImUtf8.IconButton(FontAwesomeIcon.Paste, "Import an exported row from your clipboard onto this row."u8,
+        if (ImUtf8.IconButton(FontAwesomeIcon.Paste,
+                "Import an exported row from your clipboard onto this row.\n\nRight-Click for more options."u8,
                 ImGui.GetFrameHeight() * Vector2.One, disabled))
+            try
+            {
+                var text   = ImGui.GetClipboardText();
+                var data   = Convert.FromBase64String(text);
+                var row    = Mtrl.Table.RowAsBytes(rowIdx);
+                var dyeRow = Mtrl.DyeTable != null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
+                if (data.Length != row.Length && data.Length != row.Length + dyeRow.Length)
+                    return false;
+
+                data.AsSpan(0, row.Length).TryCopyTo(row);
+                data.AsSpan(row.Length).TryCopyTo(dyeRow);
+
+                UpdateColorTableRowPreview(rowIdx);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+
+        return ColorTablePasteFromClipboardContext(rowIdx, disabled);
+    }
+
+    private unsafe bool ColorTablePasteFromClipboardContext(int rowIdx, bool disabled)
+    {
+        if (!disabled && ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            ImUtf8.OpenPopup("context"u8);
+
+        using var context = ImUtf8.Popup("context"u8);
+        if (!context)
+            return false;
+
+        using var _ = ImRaii.Disabled(disabled);
+
+        IColorTable.ValueTypes    copy    = 0;
+        IColorDyeTable.ValueTypes dyeCopy = 0;
+        if (ImUtf8.Selectable("Import Colors Only"u8))
+        {
+            copy    = IColorTable.ValueTypes.Colors;
+            dyeCopy = IColorDyeTable.ValueTypes.Colors;
+        }
+
+        if (ImUtf8.Selectable("Import Other Values Only"u8))
+        {
+            copy    = ~IColorTable.ValueTypes.Colors;
+            dyeCopy = ~IColorDyeTable.ValueTypes.Colors;
+        }
+
+        if (copy == 0)
             return false;
 
         try
         {
             var text   = ImGui.GetClipboardText();
             var data   = Convert.FromBase64String(text);
-            var row    = Mtrl.Table.RowAsBytes(rowIdx);
+            var row    = Mtrl.Table!.RowAsHalves(rowIdx);
+            var halves = new Span<Half>(Unsafe.AsPointer(ref data[0]), row.Length);
             var dyeRow = Mtrl.DyeTable != null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
-            if (data.Length != row.Length && data.Length != row.Length + dyeRow.Length)
+            if (!Mtrl.Table.MergeSpecificValues(row, halves, copy))
                 return false;
 
-            data.AsSpan(0, row.Length).TryCopyTo(row);
-            data.AsSpan(row.Length).TryCopyTo(dyeRow);
+            Mtrl.DyeTable?.MergeSpecificValues(dyeRow, data.AsSpan(row.Length * 2), dyeCopy);
 
             UpdateColorTableRowPreview(rowIdx);
-
             return true;
         }
         catch
