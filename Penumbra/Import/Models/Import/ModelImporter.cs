@@ -208,10 +208,10 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         if (index >= 0)
             return (ushort)index;
 
-        // If there's already 4 materials, we can't add any more.
+        // If there's already 10 materials, we can't add any more.
         // TODO: permit, with a warning to reduce, and validation in MdlTab.
         var count = _materials.Count;
-        if (count >= 4)
+        if (count >= 10)
             return 0;
 
         _materials.Add(materialName);
@@ -234,10 +234,10 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             boneIndices.Add((ushort)boneIndex);
         }
 
-        if (boneIndices.Count > 64)
-            throw notifier.Exception("XIV does not support meshes weighted to a total of more than 64 bones.");
+        if (boneIndices.Count > 128)
+            throw notifier.Exception("XIV does not support meshes weighted to a total of more than 128 bones.");
 
-        var boneIndicesArray = new ushort[64];
+        var boneIndicesArray = new ushort[128];
         Array.Copy(boneIndices.ToArray(), boneIndicesArray, boneIndices.Count);
 
         var boneTableIndex = _boneTables.Count;
