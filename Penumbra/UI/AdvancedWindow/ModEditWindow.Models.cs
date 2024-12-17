@@ -16,7 +16,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private const int MdlMaterialMaximum = 4;
+    private const int MdlMaterialMaximum = 10;
 
     private const string MdlImportDocumentation =
         @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-9b49d296-23ab-410a-845b-a3be769b71ea";
