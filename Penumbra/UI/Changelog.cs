@@ -92,7 +92,6 @@ public class PenumbraChangelog : IUiService
 
     private static void Add1_3_0_0(Changelog log)
         => log.NextVersion("Version 1.3.0.0")
-
             .RegisterHighlight("The textures tab in the advanced editing window can now import and export .tga files.")
             .RegisterEntry("BC4 and BC6 textures can now also be imported.", 1)
             .RegisterHighlight("Added item swapping from and to the Glasses slot.")

@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api;
+using Penumbra.Collections;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -46,6 +47,7 @@ public class SettingsTab : ITab, IUiService
     private readonly PredefinedTagManager        _predefinedTagManager;
     private readonly CrashHandlerService         _crashService;
     private readonly MigrationSectionDrawer      _migrationDrawer;
+    private readonly CollectionAutoSelector      _autoSelector;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -57,7 +59,7 @@ public class SettingsTab : ITab, IUiService
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
-        MigrationSectionDrawer migrationDrawer)
+        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -80,6 +82,7 @@ public class SettingsTab : ITab, IUiService
         _predefinedTagManager = predefinedTagConfig;
         _crashService         = crashService;
         _migrationDrawer      = migrationDrawer;
+        _autoSelector         = autoSelector;
     }
 
     public void DrawHeader()
@@ -421,6 +424,10 @@ public class SettingsTab : ITab, IUiService
     /// <summary> Draw all settings that do not fit into other categories. </summary>
     private void DrawMiscSettings()
     {
+        Checkbox("Automatically Select Character-Associated Collection",
+            "On every login, automatically select the collection associated with the current character as the current collection for editing.",
+            _config.AutoSelectCollection, _autoSelector.SetAutomaticSelection);
+
         Checkbox("Print Chat Command Success Messages to Chat",
             "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here.",
             _config.PrintSuccessfulCommandsToChat, v => _config.PrintSuccessfulCommandsToChat = v);
@@ -816,13 +823,15 @@ public class SettingsTab : ITab, IUiService
         if (ImGuiUtil.DrawDisabledButton("Compress Existing Files", Vector2.Zero,
                 "Try to compress all files in your root directory. This will take a while.",
                 _compactor.MassCompactRunning || !_modManager.Valid))
-            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K, true);
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K,
+                true);
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Decompress Existing Files", Vector2.Zero,
                 "Try to decompress all files in your root directory. This will take a while.",
                 _compactor.MassCompactRunning || !_modManager.Valid))
-            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.None, true);
+            _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.None,
+                true);
 
         if (_compactor.MassCompactRunning)
         {
