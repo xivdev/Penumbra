@@ -1,6 +1,5 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 
@@ -33,5 +32,8 @@ public sealed class ResolvedFileChanged()
     {
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnResolvedFileChange"/>
         DalamudSubstitutionProvider = 0,
+
+        /// <seealso cref="Interop.Services.SchedulerResourceManagementService.OnResolvedFileChange"/>
+        SchedulerResourceManagementService = 0,
     }
 }

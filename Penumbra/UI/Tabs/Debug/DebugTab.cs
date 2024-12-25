@@ -69,38 +69,39 @@ public class Diagnostics(ServiceManager provider) : IUiService
 
 public class DebugTab : Window, ITab, IUiService
 {
-    private readonly PerformanceTracker        _performance;
-    private readonly Configuration             _config;
-    private readonly CollectionManager         _collectionManager;
-    private readonly ModManager                _modManager;
-    private readonly ValidityChecker           _validityChecker;
-    private readonly HttpApi                   _httpApi;
-    private readonly ActorManager              _actors;
-    private readonly StainService              _stains;
-    private readonly GlobalVariablesDrawer     _globalVariablesDrawer;
-    private readonly ResourceManagerService    _resourceManager;
-    private readonly CollectionResolver        _collectionResolver;
-    private readonly DrawObjectState           _drawObjectState;
-    private readonly PathState                 _pathState;
-    private readonly SubfileHelper             _subfileHelper;
-    private readonly IdentifiedCollectionCache _identifiedCollectionCache;
-    private readonly CutsceneService           _cutsceneService;
-    private readonly ModImportManager          _modImporter;
-    private readonly ImportPopup               _importPopup;
-    private readonly FrameworkManager          _framework;
-    private readonly TextureManager            _textureManager;
-    private readonly ShaderReplacementFixer    _shaderReplacementFixer;
-    private readonly RedrawService             _redraws;
-    private readonly DictEmote                 _emotes;
-    private readonly Diagnostics               _diagnostics;
-    private readonly ObjectManager             _objects;
-    private readonly IClientState              _clientState;
-    private readonly IDataManager              _dataManager;
-    private readonly IpcTester                 _ipcTester;
-    private readonly CrashHandlerPanel         _crashHandlerPanel;
-    private readonly TexHeaderDrawer           _texHeaderDrawer;
-    private readonly HookOverrideDrawer        _hookOverrides;
-    private readonly RsfService                _rsfService;
+    private readonly PerformanceTracker                 _performance;
+    private readonly Configuration                      _config;
+    private readonly CollectionManager                  _collectionManager;
+    private readonly ModManager                         _modManager;
+    private readonly ValidityChecker                    _validityChecker;
+    private readonly HttpApi                            _httpApi;
+    private readonly ActorManager                       _actors;
+    private readonly StainService                       _stains;
+    private readonly GlobalVariablesDrawer              _globalVariablesDrawer;
+    private readonly ResourceManagerService             _resourceManager;
+    private readonly CollectionResolver                 _collectionResolver;
+    private readonly DrawObjectState                    _drawObjectState;
+    private readonly PathState                          _pathState;
+    private readonly SubfileHelper                      _subfileHelper;
+    private readonly IdentifiedCollectionCache          _identifiedCollectionCache;
+    private readonly CutsceneService                    _cutsceneService;
+    private readonly ModImportManager                   _modImporter;
+    private readonly ImportPopup                        _importPopup;
+    private readonly FrameworkManager                   _framework;
+    private readonly TextureManager                     _textureManager;
+    private readonly ShaderReplacementFixer             _shaderReplacementFixer;
+    private readonly RedrawService                      _redraws;
+    private readonly DictEmote                          _emotes;
+    private readonly Diagnostics                        _diagnostics;
+    private readonly ObjectManager                      _objects;
+    private readonly IClientState                       _clientState;
+    private readonly IDataManager                       _dataManager;
+    private readonly IpcTester                          _ipcTester;
+    private readonly CrashHandlerPanel                  _crashHandlerPanel;
+    private readonly TexHeaderDrawer                    _texHeaderDrawer;
+    private readonly HookOverrideDrawer                 _hookOverrides;
+    private readonly RsfService                         _rsfService;
+    private readonly SchedulerResourceManagementService _schedulerService;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -110,7 +111,8 @@ public class DebugTab : Window, ITab, IUiService
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer)
+        HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
+        SchedulerResourceManagementService schedulerService)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -148,6 +150,7 @@ public class DebugTab : Window, ITab, IUiService
         _hookOverrides             = hookOverrides;
         _rsfService                = rsfService;
         _globalVariablesDrawer     = globalVariablesDrawer;
+        _schedulerService          = schedulerService;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -672,6 +675,22 @@ public class DebugTab : Window, ITab, IUiService
                 }
             }
         }
+
+        using (var tmbCache = TreeNode("TMB Cache"))
+        {
+            if (tmbCache)
+            {
+                using var table = Table("###TmbTable", 2, ImGuiTableFlags.SizingFixedFit);
+                if (table)
+                {
+                    foreach (var (id, name) in _schedulerService.ListedTmbs.OrderBy(kvp => kvp.Key))
+                    {
+                        ImUtf8.DrawTableColumn($"{id:D6}");
+                        ImUtf8.DrawTableColumn(name.Span);
+                    }
+                }
+            }
+        }
     }
 
     private void DrawData()
@@ -680,6 +699,7 @@ public class DebugTab : Window, ITab, IUiService
             return;
 
         DrawEmotes();
+        DrawActionTmbs();
         DrawStainTemplates();
         DrawAtch();
     }
@@ -735,6 +755,27 @@ public class DebugTab : Window, ITab, IUiService
                 ImGui.TextUnformatted(p.Key);
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(string.Join(", ", p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
+            });
+        ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
+    }
+
+    private void DrawActionTmbs()
+    {
+        using var mainTree = TreeNode("Action TMBs");
+        if (!mainTree)
+            return;
+
+        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit,
+            new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
+        if (!table)
+            return;
+
+        var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
+        var dummy = ImGuiClip.ClippedDraw(_schedulerService.ActionTmbs.OrderBy(r => r.Value), skips,
+            p =>
+            {
+                ImUtf8.DrawTableColumn($"{p.Value}");
+                ImUtf8.DrawTableColumn(p.Key.Span);
             });
         ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
     }
