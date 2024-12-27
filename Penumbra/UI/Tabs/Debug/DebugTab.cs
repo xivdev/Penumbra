@@ -204,7 +204,7 @@ public class DebugTab : Window, ITab, IUiService
             if (collection.HasCache)
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode($"{collection.Name} (Change Counter {collection.ChangeCounter})###{collection.Name}");
+                using var node  = TreeNode($"{collection.Name} (Change Counter {collection.Counters.Change})###{collection.Name}");
                 if (!node)
                     continue;
 
@@ -239,7 +239,7 @@ public class DebugTab : Window, ITab, IUiService
             else
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})",
+                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.Counters.Change})",
                     ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
             }
         }

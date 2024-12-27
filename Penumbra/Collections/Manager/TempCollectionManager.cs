@@ -75,7 +75,7 @@ public class TempCollectionManager : IDisposable, IService
 
         _storage.Delete(collection);
         Penumbra.Log.Debug($"Deleted temporary collection {collection.Id}.");
-        GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
+        GlobalChangeCounter += Math.Max(collection.Counters.Change + 1 - GlobalChangeCounter, 0);
         for (var i = 0; i < Collections.Count; ++i)
         {
             if (Collections[i].Collection != collection)

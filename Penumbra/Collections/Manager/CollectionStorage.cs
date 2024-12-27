@@ -372,7 +372,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         {
             var (settings, _) = collection[mod.Index];
             if (settings is { Enabled: true })
-                collection.IncrementCounter();
+                collection.Counters.IncrementChange();
         }
     }
 }

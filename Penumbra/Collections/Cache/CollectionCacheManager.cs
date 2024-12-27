@@ -187,7 +187,7 @@ public class CollectionCacheManager : IDisposable, IService
             foreach (var mod in _modStorage)
                 cache.AddModSync(mod, false);
 
-            collection.IncrementCounter();
+            collection.Counters.IncrementChange();
 
             MetaFileManager.ApplyDefaultFiles(collection);
             ResolvedFileChanged.Invoke(collection, ResolvedFileChanged.Type.FullRecomputeFinished, Utf8GamePath.Empty, FullPath.Empty,
@@ -297,7 +297,7 @@ public class CollectionCacheManager : IDisposable, IService
     private void IncrementCounters()
     {
         foreach (var collection in _storage.Where(c => c.HasCache))
-            collection.IncrementCounter();
+            collection.Counters.IncrementChange();
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 

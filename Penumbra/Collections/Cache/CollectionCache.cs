@@ -177,7 +177,7 @@ public sealed class CollectionCache : IDisposable
         var (paths, manipulations) = ModData.RemoveMod(mod);
 
         if (addMetaChanges)
-            _collection.IncrementCounter();
+            _collection.Counters.IncrementChange();
 
         foreach (var path in paths)
         {
@@ -250,7 +250,7 @@ public sealed class CollectionCache : IDisposable
 
         if (addMetaChanges)
         {
-            _collection.IncrementCounter();
+            _collection.Counters.IncrementChange();
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
     }
@@ -408,12 +408,12 @@ public sealed class CollectionCache : IDisposable
     // Identify and record all manipulated objects for this entire collection.
     private void SetChangedItems()
     {
-        if (_changedItemsSaveCounter == _collection.ChangeCounter)
+        if (_changedItemsSaveCounter == _collection.Counters.Change)
             return;
 
         try
         {
-            _changedItemsSaveCounter = _collection.ChangeCounter;
+            _changedItemsSaveCounter = _collection.Counters.Change;
             _changedItems.Clear();
             // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.

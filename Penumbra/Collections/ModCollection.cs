@@ -50,18 +50,7 @@ public partial class ModCollection
     /// <summary> The index of the collection is set and kept up-to-date by the CollectionManager. </summary>
     public int Index { get; internal set; }
 
-    /// <summary>
-    /// Count the number of changes of the effective file list.
-    /// This is used for material and imc changes.
-    /// </summary>
-    public int ChangeCounter { get; private set; }
-
-    public uint ImcChangeCounter { get; set; }
-    public uint AtchChangeCounter { get; set; }
-
-    /// <summary> Increment the number of changes in the effective file list. </summary>
-    public int IncrementCounter()
-        => ++ChangeCounter;
+    public CollectionCounters Counters;
 
     /// <summary>
     /// If a ModSetting is null, it can be inherited from other collections.
@@ -213,7 +202,7 @@ public partial class ModCollection
         Id                   = id;
         LocalId              = localId;
         Index                = index;
-        ChangeCounter        = changeCounter;
+        Counters             = new CollectionCounters(changeCounter);
         Settings             = appliedSettings;
         UnusedSettings       = settings;
         DirectlyInheritsFrom = inheritsFrom;
