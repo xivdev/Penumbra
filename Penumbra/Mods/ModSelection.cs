@@ -36,17 +36,11 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
     }
 
-    public ModSettings   Settings    { get; private set; } = ModSettings.Empty;
-    public ModCollection Collection  { get; private set; } = ModCollection.Empty;
-    public Mod?          Mod         { get; private set; }
-    public ModSettings?  OwnSettings { get; private set; }
-
-    public bool IsTemporary
-        => OwnSettings != Settings;
-
-    public TemporaryModSettings? AsTemporarySettings
-        => Settings as TemporaryModSettings;
-
+    public ModSettings           Settings          { get; private set; } = ModSettings.Empty;
+    public ModCollection         Collection        { get; private set; } = ModCollection.Empty;
+    public Mod?                  Mod               { get; private set; }
+    public ModSettings?          OwnSettings       { get; private set; }
+    public TemporaryModSettings? TemporarySettings { get; private set; }
 
     public void SelectMod(Mod? mod)
     {
@@ -98,6 +92,7 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
         {
             (var settings, Collection) = _collections.Current.GetActualSettings(Mod.Index);
             OwnSettings                = _collections.Current.GetOwnSettings(Mod.Index);
+            TemporarySettings          = _collections.Current.GetTempSettings(Mod.Index);
             Settings                   = settings ?? ModSettings.Empty;
         }
     }

@@ -333,6 +333,9 @@ public class CollectionCacheManager : IDisposable, IService
                     cache.ReloadMod(mod, true);
 
                 break;
+            case ModSettingChange.TemporarySetting:
+                cache.ReloadMod(mod!, true);
+                break;
             case ModSettingChange.MultiInheritance:
             case ModSettingChange.MultiEnableState:
                 FullRecalculation(collection);

@@ -88,7 +88,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
 
     /// <summary>
     /// Set a given setting group settingName of mod idx to newValue if it differs from the current value and fix it if necessary.
-    /// /// If the mod is currently inherited, stop the inheritance.
+    /// If the mod is currently inherited, stop the inheritance.
     /// </summary>
     public bool SetModSetting(ModCollection collection, Mod mod, int groupIdx, Setting newValue)
     {
@@ -100,6 +100,18 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         var inheritance = FixInheritance(collection, mod, false);
         collection.GetOwnSettings(mod.Index)!.SetValue(mod, groupIdx, newValue);
         InvokeChange(collection, ModSettingChange.Setting, mod, inheritance ? Setting.Indefinite : oldValue, groupIdx);
+        return true;
+    }
+
+    public bool SetTemporarySettings(ModCollection collection, Mod mod, TemporaryModSettings? settings, int key = 0)
+    {
+        key = settings?.Lock ?? key;
+        var old = collection.GetTempSettings(mod.Index);
+        if (old != null && old.Lock != 0 && old.Lock != key)
+            return false;
+
+        collection.Settings.SetTemporary(mod.Index, settings);
+        InvokeChange(collection, ModSettingChange.TemporarySetting, mod, Setting.Indefinite, 0);
         return true;
     }
 
@@ -168,7 +180,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         if (inherit == (settings == null))
             return false;
 
-        ModSettings? settings1 = inherit ? null : collection.GetInheritedSettings(mod.Index).Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
+        var settings1 = inherit ? null : collection.GetInheritedSettings(mod.Index).Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
         collection.Settings.Set(mod.Index, settings1);
         return true;
     }
@@ -179,7 +191,8 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     {
         saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
         communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
-        RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
+        if (type is not ModSettingChange.TemporarySetting)
+            RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
 
     /// <summary> Trigger changes in all inherited collections. </summary>

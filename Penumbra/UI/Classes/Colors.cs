@@ -1,8 +1,9 @@
+using ImGuiNET;
 using OtterGui.Custom;
 
 namespace Penumbra.UI.Classes;
 
-public enum ColorId
+public enum ColorId : short
 {
     EnabledMod,
     DisabledMod,
@@ -10,6 +11,7 @@ public enum ColorId
     InheritedMod,
     InheritedDisabledMod,
     NewMod,
+    NewModTint,
     ConflictingMod,
     HandledConflictMod,
     FolderExpanded,
@@ -31,10 +33,8 @@ public enum ColorId
     ResTreeNonNetworked,
     PredefinedTagAdd,
     PredefinedTagRemove,
-    TemporaryEnabledMod,
-    TemporaryDisabledMod,
-    TemporaryInheritedMod,
-    TemporaryInheritedDisabledMod,
+    TemporaryModSettingsTint,
+    NoTint,
 }
 
 public static class Colors
@@ -51,6 +51,18 @@ public static class Colors
     public const uint ReniColorButton     = CustomGui.ReniColorButton;
     public const uint ReniColorHovered    = CustomGui.ReniColorHovered;
     public const uint ReniColorActive     = CustomGui.ReniColorActive;
+
+    public static uint Tinted(this ColorId color, ColorId tint)
+    {
+        var tintValue = ImGui.ColorConvertU32ToFloat4(tint.Value());
+        var value     = ImGui.ColorConvertU32ToFloat4(color.Value());
+        var negAlpha  = 1 - tintValue.W;
+        var newAlpha  = negAlpha * value.W + tintValue.W;
+        var newR      = (negAlpha * value.W * value.X + tintValue.W * tintValue.X) / newAlpha;
+        var newG      = (negAlpha * value.W * value.Y + tintValue.W * tintValue.Y) / newAlpha;
+        var newB      = (negAlpha * value.W * value.Z + tintValue.W * tintValue.Z) / newAlpha;
+        return ImGui.ColorConvertFloat4ToU32(new Vector4(newR, newG, newB, newAlpha));
+    }
 
     public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
         => color switch
@@ -83,10 +95,9 @@ public static class Colors
             ColorId.ResTreeNonNetworked           => ( 0xFFC0C0FF, "On-Screen: Non-Players (Local)",        "Non-player entities handled locally, in the On-Screen tab." ),
             ColorId.PredefinedTagAdd              => ( 0xFF44AA44, "Predefined Tags: Add Tag",              "A predefined tag that is not present on the current mod and can be added." ),
             ColorId.PredefinedTagRemove           => ( 0xFF2222AA, "Predefined Tags: Remove Tag",           "A predefined tag that is already present on the current mod and can be removed." ),
-            ColorId.TemporaryEnabledMod           => ( 0xFFFFC0A0, "Mod Enabled By Temporary Settings",     "A mod that is enabled by temporary settings in the currently selected collection." ),
-            ColorId.TemporaryDisabledMod          => ( 0xFFB08070, "Mod Disabled By Temporary Settings",    "A mod that is disabled by temporary settings in the currently selected collection." ),
-            ColorId.TemporaryInheritedMod         => ( 0xFFE8FFB0, "Mod Enabled By Temporary Inheritance",  "A mod that is forced to inherit by temporary settings in the currently selected collection." ),
-            ColorId.TemporaryInheritedDisabledMod => ( 0xFF90A080, "Mod Disabled By Temporary Inheritance", "A mod that is forced to inherit by temporary settings in the currently selected collection." ),
+            ColorId.TemporaryModSettingsTint      => ( 0x30FF0000, "Mod with Temporary Settings",           "A mod that has temporary settings. This color is used as a tint for the regular state colors." ),
+            ColorId.NewModTint                    => ( 0x8000FF00, "New Mod Tint",                          "A mod that was newly imported or created during this session and has not been enabled yet. This color is used as a tint for the regular state colors."),
+            ColorId.NoTint                        => ( 0x00000000, "No Tint",                               "The default tint for all mods."),
             _                                     => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

@@ -742,7 +742,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
 
     private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool inherited)
     {
-        if (collection != _collectionManager.Active.Current || mod != _mod)
+        if (collection != _collectionManager.Active.Current || mod != _mod || type is ModSettingChange.TemporarySetting)
             return;
 
         _swapData.LoadMod(_mod, _modSettings);
