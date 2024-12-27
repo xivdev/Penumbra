@@ -15,7 +15,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         => fileNames.CollectionFile(modCollection);
 
     public string LogName(string _)
-        => modCollection.AnonymizedName;
+        => modCollection.Identity.AnonymizedName;
 
     public string TypeName
         => "Collection";
@@ -28,10 +28,10 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteStartObject();
         j.WritePropertyName("Version");
         j.WriteValue(ModCollection.CurrentVersion);
-        j.WritePropertyName(nameof(ModCollection.Id));
-        j.WriteValue(modCollection.Identifier);
-        j.WritePropertyName(nameof(ModCollection.Name));
-        j.WriteValue(modCollection.Name);
+        j.WritePropertyName(nameof(ModCollectionIdentity.Id));
+        j.WriteValue(modCollection.Identity.Identifier);
+        j.WritePropertyName(nameof(ModCollectionIdentity.Name));
+        j.WriteValue(modCollection.Identity.Name);
         j.WritePropertyName(nameof(ModCollection.Settings));
 
         // Write all used and unused settings by mod directory name.
@@ -57,7 +57,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
 
         // Inherit by collection name.
         j.WritePropertyName("Inheritance");
-        x.Serialize(j, modCollection.InheritanceByName ?? modCollection.DirectlyInheritsFrom.Select(c => c.Identifier));
+        x.Serialize(j, modCollection.InheritanceByName ?? modCollection.DirectlyInheritsFrom.Select(c => c.Identity.Identifier));
         j.WriteEndObject();
     }
 
@@ -79,8 +79,8 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         {
             var obj = JObject.Parse(File.ReadAllText(file.FullName));
             version = obj["Version"]?.ToObject<int>() ?? 0;
-            name    = obj[nameof(ModCollection.Name)]?.ToObject<string>() ?? string.Empty;
-            id      = obj[nameof(ModCollection.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
+            name    = obj[nameof(ModCollectionIdentity.Name)]?.ToObject<string>() ?? string.Empty;
+            id      = obj[nameof(ModCollectionIdentity.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
             // Custom deserialization that is converted with the constructor. 
             settings    = obj[nameof(ModCollection.Settings)]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>() ?? settings;
             inheritance = obj["Inheritance"]?.ToObject<List<string>>() ?? inheritance;

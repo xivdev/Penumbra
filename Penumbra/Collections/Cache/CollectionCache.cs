@@ -31,7 +31,7 @@ public sealed class CollectionCache : IDisposable
     public int Calculating = -1;
 
     public string AnonymizedName
-        => _collection.AnonymizedName;
+        => _collection.Identity.AnonymizedName;
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => ConflictDict.Values;

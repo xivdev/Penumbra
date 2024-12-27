@@ -56,7 +56,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         foreach (var ((collection, parent, color, state), idx) in _cache.WithIndex())
         {
             using var id = ImUtf8.PushId(idx);
-            ImUtf8.DrawTableColumn(collection.Name);
+            ImUtf8.DrawTableColumn(collection.Identity.Name);
 
             ImGui.TableNextColumn();
             ImUtf8.Text(ToText(state), color);
@@ -65,7 +65,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
             {
                 if (context)
                 {
-                    ImUtf8.Text(collection.Name);
+                    ImUtf8.Text(collection.Identity.Name);
                     ImGui.Separator();
                     using (ImRaii.Disabled(state is ModState.Enabled && parent == collection))
                     {
@@ -95,7 +95,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                 }
             }
 
-            ImUtf8.DrawTableColumn(parent == collection ? string.Empty : parent.Name);
+            ImUtf8.DrawTableColumn(parent == collection ? string.Empty : parent.Identity.Name);
         }
     }
 

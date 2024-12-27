@@ -146,10 +146,10 @@ public class TemporaryIpcTester(
             using (ImRaii.PushFont(UiBuilder.MonoFont))
             {
                 ImGui.TableNextColumn();
-                ImGuiUtil.CopyOnClickSelectable(collection.Identifier);
+                ImGuiUtil.CopyOnClickSelectable(collection.Identity.Identifier);
             }
 
-            ImGuiUtil.DrawTableColumn(collection.Name);
+            ImGuiUtil.DrawTableColumn(collection.Identity.Name);
             ImGuiUtil.DrawTableColumn(collection.ResolvedFiles.Count.ToString());
             ImGuiUtil.DrawTableColumn(collection.MetaCache?.Count.ToString() ?? "0");
             ImGuiUtil.DrawTableColumn(string.Join(", ",
@@ -199,7 +199,7 @@ public class TemporaryIpcTester(
         {
             PrintList("All", tempMods.ModsForAllCollections);
             foreach (var (collection, list) in tempMods.Mods)
-                PrintList(collection.Name, list);
+                PrintList(collection.Identity.Name, list);
         }
     }
 }

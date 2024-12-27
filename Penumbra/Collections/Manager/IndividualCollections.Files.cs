@@ -18,7 +18,7 @@ public partial class IndividualCollections
         foreach (var (name, identifiers, collection) in Assignments)
         {
             var tmp = identifiers[0].ToJson();
-            tmp.Add("Collection", collection.Id);
+            tmp.Add("Collection", collection.Identity.Id);
             tmp.Add("Display",    name);
             ret.Add(tmp);
         }
@@ -182,7 +182,7 @@ public partial class IndividualCollections
                     Penumbra.Log.Information($"Migrated {name} ({kind.ToName()}) to NPC Identifiers [{ids}].");
                 else
                     Penumbra.Messager.NotificationMessage(
-                        $"Could not migrate {name} ({collection.AnonymizedName}) which was assumed to be a {kind.ToName()} with IDs [{ids}], please look through your individual collections.",
+                        $"Could not migrate {name} ({collection.Identity.AnonymizedName}) which was assumed to be a {kind.ToName()} with IDs [{ids}], please look through your individual collections.",
                         NotificationType.Error);
             }
             // If it is not a valid NPC name, check if it can be a player name.
@@ -192,16 +192,16 @@ public partial class IndividualCollections
                 var shortName = string.Join(" ", name.Split().Select(n => $"{n[0]}."));
                 // Try to migrate the player name without logging full names.
                 if (Add($"{name} ({_actors.Data.ToWorldName(identifier.HomeWorld)})", [identifier], collection))
-                    Penumbra.Log.Information($"Migrated {shortName} ({collection.AnonymizedName}) to Player Identifier.");
+                    Penumbra.Log.Information($"Migrated {shortName} ({collection.Identity.AnonymizedName}) to Player Identifier.");
                 else
                     Penumbra.Messager.NotificationMessage(
-                        $"Could not migrate {shortName} ({collection.AnonymizedName}), please look through your individual collections.",
+                        $"Could not migrate {shortName} ({collection.Identity.AnonymizedName}), please look through your individual collections.",
                         NotificationType.Error);
             }
             else
             {
                 Penumbra.Messager.NotificationMessage(
-                    $"Could not migrate {name} ({collection.AnonymizedName}), which can not be a player name nor is it a known NPC name, please look through your individual collections.",
+                    $"Could not migrate {name} ({collection.Identity.AnonymizedName}), which can not be a player name nor is it a known NPC name, please look through your individual collections.",
                     NotificationType.Error);
             }
         }

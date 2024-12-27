@@ -27,8 +27,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     private Configuration _config = null!;
     private JObject       _data   = null!;
 
-    public string                     CurrentCollection    = ModCollection.DefaultCollectionName;
-    public string                     DefaultCollection    = ModCollection.DefaultCollectionName;
+    public string                     CurrentCollection    = ModCollectionIdentity.DefaultCollectionName;
+    public string                     DefaultCollection    = ModCollectionIdentity.DefaultCollectionName;
     public string                     ForcedCollection     = string.Empty;
     public Dictionary<string, string> CharacterCollections = [];
     public Dictionary<string, string> ModSortOrder         = [];
@@ -346,7 +346,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         if (!collectionJson.Exists)
             return;
 
-        var defaultCollectionFile = new FileInfo(saveService.FileNames.CollectionFile(ModCollection.DefaultCollectionName));
+        var defaultCollectionFile = new FileInfo(saveService.FileNames.CollectionFile(ModCollectionIdentity.DefaultCollectionName));
         if (defaultCollectionFile.Exists)
             return;
 
@@ -380,7 +380,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
 
             var emptyStorage = new ModStorage();
             // Only used for saving and immediately discarded, so the local collection id here is irrelevant.
-            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, Guid.NewGuid(), ModCollection.DefaultCollectionName, LocalCollectionId.Zero, 0, 1, dict, []);
+            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, ModCollectionIdentity.New(ModCollectionIdentity.DefaultCollectionName, LocalCollectionId.Zero, 1), 0, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

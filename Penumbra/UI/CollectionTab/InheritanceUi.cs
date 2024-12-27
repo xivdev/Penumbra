@@ -93,7 +93,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     /// </summary>
     private void DrawInheritedChildren(ModCollection collection)
     {
-        using var id     = ImRaii.PushId(collection.Index);
+        using var id     = ImRaii.PushId(collection.Identity.Index);
         using var indent = ImRaii.PushIndent();
 
         // Get start point for the lines (top of the selector).
@@ -114,7 +114,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
-            ImRaii.TreeNode($"{Name(inheritance)}###{inheritance.Id}",
+            ImRaii.TreeNode($"{Name(inheritance)}###{inheritance.Identity.Id}",
                 ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet);
             var (minRect, maxRect) = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());
             DrawInheritanceTreeClicks(inheritance, false);
@@ -140,7 +140,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(),
             _seenInheritedCollections.Contains(collection));
         _seenInheritedCollections.Add(collection);
-        using var tree = ImRaii.TreeNode($"{Name(collection)}###{collection.Name}", ImGuiTreeNodeFlags.NoTreePushOnOpen);
+        using var tree = ImRaii.TreeNode($"{Name(collection)}###{collection.Identity.Name}", ImGuiTreeNodeFlags.NoTreePushOnOpen);
         color.Pop();
         DrawInheritanceTreeClicks(collection, true);
         DrawInheritanceDropSource(collection);
@@ -252,7 +252,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
 
         foreach (var collection in _collections
                      .Where(c => InheritanceManager.CheckValidInheritance(_active.Current, c) == InheritanceManager.ValidInheritance.Valid)
-                     .OrderBy(c => c.Name))
+                     .OrderBy(c => c.Identity.Name))
         {
             if (ImGui.Selectable(Name(collection), _newInheritance == collection))
                 _newInheritance = collection;
@@ -312,5 +312,5 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     }
 
     private string Name(ModCollection collection)
-        => incognito.IncognitoMode ? collection.AnonymizedName : collection.Name;
+        => incognito.IncognitoMode ? collection.Identity.AnonymizedName : collection.Identity.Name;
 }

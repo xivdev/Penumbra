@@ -8,7 +8,7 @@ namespace Penumbra.Api.Api;
 public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : IPenumbraApiCollection, IApiService
 {
     public Dictionary<Guid, string> GetCollections()
-        => collections.Storage.ToDictionary(c => c.Id, c => c.Name);
+        => collections.Storage.ToDictionary(c => c.Identity.Id, c => c.Identity.Name);
 
     public List<(Guid Id, string Name)> GetCollectionsByIdentifier(string identifier)
     {
@@ -17,14 +17,14 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
 
         var list = new List<(Guid Id, string Name)>(4);
         if (Guid.TryParse(identifier, out var guid) && collections.Storage.ById(guid, out var collection) && collection != ModCollection.Empty)
-            list.Add((collection.Id, collection.Name));
+            list.Add((collection.Identity.Id, collection.Identity.Name));
         else if (identifier.Length >= 8)
-            list.AddRange(collections.Storage.Where(c => c.Identifier.StartsWith(identifier, StringComparison.OrdinalIgnoreCase))
-                .Select(c => (c.Id, c.Name)));
+            list.AddRange(collections.Storage.Where(c => c.Identity.Identifier.StartsWith(identifier, StringComparison.OrdinalIgnoreCase))
+                .Select(c => (c.Identity.Id, c.Identity.Name)));
 
         list.AddRange(collections.Storage
-            .Where(c => string.Equals(c.Name, identifier, StringComparison.OrdinalIgnoreCase) && !list.Contains((c.Id, c.Name)))
-            .Select(c => (c.Id, c.Name)));
+            .Where(c => string.Equals(c.Identity.Name, identifier, StringComparison.OrdinalIgnoreCase) && !list.Contains((c.Identity.Id, c.Identity.Name)))
+            .Select(c => (c.Identity.Id, c.Identity.Name)));
         return list;
     }
 
@@ -54,7 +54,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
             return null;
 
         var collection = collections.Active.ByType((CollectionType)type);
-        return collection == null ? null : (collection.Id, collection.Name);
+        return collection == null ? null : (collection.Identity.Id, collection.Identity.Name);
     }
 
     internal (Guid Id, string Name)? GetCollection(byte type)
@@ -64,17 +64,17 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
     {
         var id = helpers.AssociatedIdentifier(gameObjectIdx);
         if (!id.IsValid)
-            return (false, false, (collections.Active.Default.Id, collections.Active.Default.Name));
+            return (false, false, (collections.Active.Default.Identity.Id, collections.Active.Default.Identity.Name));
 
         if (collections.Active.Individuals.TryGetValue(id, out var collection))
-            return (true, true, (collection.Id, collection.Name));
+            return (true, true, (collection.Identity.Id, collection.Identity.Name));
 
         helpers.AssociatedCollection(gameObjectIdx, out collection);
-        return (true, false, (collection.Id, collection.Name));
+        return (true, false, (collection.Identity.Id, collection.Identity.Name));
     }
 
     public Guid[] GetCollectionByName(string name)
-        => collections.Storage.Where(c => string.Equals(name, c.Name, StringComparison.OrdinalIgnoreCase)).Select(c => c.Id).ToArray();
+        => collections.Storage.Where(c => string.Equals(name, c.Identity.Name, StringComparison.OrdinalIgnoreCase)).Select(c => c.Identity.Id).ToArray();
 
     public (PenumbraApiEc, (Guid Id, string Name)? OldCollection) SetCollection(ApiCollectionType type, Guid? collectionId,
         bool allowCreateNew, bool allowDelete)
@@ -83,7 +83,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
             return (PenumbraApiEc.InvalidArgument, null);
 
         var oldCollection = collections.Active.ByType((CollectionType)type);
-        var old           = oldCollection != null ? (oldCollection.Id, oldCollection.Name) : new ValueTuple<Guid, string>?();
+        var old           = oldCollection != null ? (oldCollection.Identity.Id, oldCollection.Identity.Name) : new ValueTuple<Guid, string>?();
         if (collectionId == null)
         {
             if (old == null)
@@ -106,7 +106,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
 
             collections.Active.CreateSpecialCollection((CollectionType)type);
         }
-        else if (old.Value.Item1 == collection.Id)
+        else if (old.Value.Item1 == collection.Identity.Id)
         {
             return (PenumbraApiEc.NothingChanged, old);
         }
@@ -120,10 +120,10 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
     {
         var id = helpers.AssociatedIdentifier(gameObjectIdx);
         if (!id.IsValid)
-            return (PenumbraApiEc.InvalidIdentifier, (collections.Active.Default.Id, collections.Active.Default.Name));
+            return (PenumbraApiEc.InvalidIdentifier, (collections.Active.Default.Identity.Id, collections.Active.Default.Identity.Name));
 
         var oldCollection = collections.Active.Individuals.TryGetValue(id, out var c) ? c : null;
-        var old           = oldCollection != null ? (oldCollection.Id, oldCollection.Name) : new ValueTuple<Guid, string>?();
+        var old           = oldCollection != null ? (oldCollection.Identity.Id, oldCollection.Identity.Name) : new ValueTuple<Guid, string>?();
         if (collectionId == null)
         {
             if (old == null)
@@ -148,7 +148,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
             var ids = collections.Active.Individuals.GetGroup(id);
             collections.Active.CreateIndividualCollection(ids);
         }
-        else if (old.Value.Item1 == collection.Id)
+        else if (old.Value.Item1 == collection.Identity.Id)
         {
             return (PenumbraApiEc.NothingChanged, old);
         }

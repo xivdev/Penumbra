@@ -25,7 +25,7 @@ public class CollectionSelectHeader : IUiService
         _selection         = selection;
         _resolver          = resolver;
         _activeCollections = collectionManager.Active;
-        _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Name).ToList());
+        _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Identity.Name).ToList());
     }
 
     /// <summary> Draw the header line that can quick switch between collections. </summary>
@@ -77,10 +77,10 @@ public class CollectionSelectHeader : IUiService
         return CheckCollection(collection) switch
         {
             CollectionState.Empty => (collection, "None", "The base collection is configured to use no mods.", true),
-            CollectionState.Selected => (collection, collection.Name,
+            CollectionState.Selected => (collection, collection.Identity.Name,
                 "The configured base collection is already selected as the current collection.", true),
-            CollectionState.Available => (collection, collection.Name,
-                $"Select the configured base collection {collection.Name} as the current collection.", false),
+            CollectionState.Available => (collection, collection.Identity.Name,
+                $"Select the configured base collection {collection.Identity.Name} as the current collection.", false),
             _ => throw new Exception("Can not happen."),
         };
     }
@@ -91,10 +91,11 @@ public class CollectionSelectHeader : IUiService
         return CheckCollection(collection) switch
         {
             CollectionState.Empty => (collection, "None", "The loaded player character is configured to use no mods.", true),
-            CollectionState.Selected => (collection, collection.Name,
+            CollectionState.Selected => (collection, collection.Identity.Name,
                 "The collection configured to apply to the loaded player character is already selected as the current collection.", true),
-            CollectionState.Available => (collection, collection.Name,
-                $"Select the collection {collection.Name} that applies to the loaded player character as the current collection.", false),
+            CollectionState.Available => (collection, collection.Identity.Name,
+                $"Select the collection {collection.Identity.Name} that applies to the loaded player character as the current collection.",
+                false),
             _ => throw new Exception("Can not happen."),
         };
     }
@@ -105,10 +106,10 @@ public class CollectionSelectHeader : IUiService
         return CheckCollection(collection) switch
         {
             CollectionState.Empty => (collection, "None", "The interface collection is configured to use no mods.", true),
-            CollectionState.Selected => (collection, collection.Name,
+            CollectionState.Selected => (collection, collection.Identity.Name,
                 "The configured interface collection is already selected as the current collection.", true),
-            CollectionState.Available => (collection, collection.Name,
-                $"Select the configured interface collection {collection.Name} as the current collection.", false),
+            CollectionState.Available => (collection, collection.Identity.Name,
+                $"Select the configured interface collection {collection.Identity.Name} as the current collection.", false),
             _ => throw new Exception("Can not happen."),
         };
     }
@@ -120,8 +121,8 @@ public class CollectionSelectHeader : IUiService
         {
             CollectionState.Unavailable => (null, "Not Inherited",
                 "The settings of the selected mod are not inherited from another collection.", true),
-            CollectionState.Available => (collection, collection!.Name,
-                $"Select the collection {collection!.Name} from which the selected mod inherits its settings as the current collection.",
+            CollectionState.Available => (collection, collection!.Identity.Name,
+                $"Select the collection {collection!.Identity.Name} from which the selected mod inherits its settings as the current collection.",
                 false),
             _ => throw new Exception("Can not happen."),
         };

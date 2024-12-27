@@ -41,7 +41,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     public ModCollection CreateFromData(Guid id, string name, int version, Dictionary<string, ModSettings.SavedSettings> allSettings,
         IReadOnlyList<string> inheritances)
     {
-        var newCollection = ModCollection.CreateFromData(_saveService, _modStorage, id, name, CurrentCollectionId, version, Count, allSettings,
+        var newCollection = ModCollection.CreateFromData(_saveService, _modStorage, new ModCollectionIdentity(id, CurrentCollectionId, name, Count), version, allSettings,
             inheritances);
         _collectionsByLocal[CurrentCollectionId] =  newCollection;
         CurrentCollectionId                      += 1;
@@ -57,7 +57,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     }
 
     public void Delete(ModCollection collection)
-        => _collectionsByLocal.Remove(collection.LocalId);
+        => _collectionsByLocal.Remove(collection.Identity.LocalId);
 
     /// <remarks> The empty collection is always available at Index 0. </remarks>
     private readonly List<ModCollection> _collections =
@@ -92,7 +92,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     public bool ByName(string name, [NotNullWhen(true)] out ModCollection? collection)
     {
         if (name.Length != 0)
-            return _collections.FindFirst(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase), out collection);
+            return _collections.FindFirst(c => string.Equals(c.Identity.Name, name, StringComparison.OrdinalIgnoreCase), out collection);
 
         collection = ModCollection.Empty;
         return true;
@@ -102,7 +102,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     public bool ById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
     {
         if (id != Guid.Empty)
-            return _collections.FindFirst(c => c.Id == id, out collection);
+            return _collections.FindFirst(c => c.Identity.Id == id, out collection);
 
         collection = ModCollection.Empty;
         return true;
@@ -158,7 +158,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         var newCollection = Create(name, _collections.Count, duplicate);
         _collections.Add(newCollection);
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
-        Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", NotificationType.Success, false);
+        Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.Identity.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
         return true;
     }
@@ -168,13 +168,13 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// </summary>
     public bool RemoveCollection(ModCollection collection)
     {
-        if (collection.Index <= ModCollection.Empty.Index || collection.Index >= _collections.Count)
+        if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= _collections.Count)
         {
             Penumbra.Messager.NotificationMessage("Can not remove the empty collection.", NotificationType.Error, false);
             return false;
         }
 
-        if (collection.Index == DefaultNamed.Index)
+        if (collection.Identity.Index == DefaultNamed.Identity.Index)
         {
             Penumbra.Messager.NotificationMessage("Can not remove the default collection.", NotificationType.Error, false);
             return false;
@@ -182,13 +182,13 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
         Delete(collection);
         _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
-        _collections.RemoveAt(collection.Index);
+        _collections.RemoveAt(collection.Identity.Index);
         // Update indices.
-        for (var i = collection.Index; i < Count; ++i)
-            _collections[i].Index = i;
-        _collectionsByLocal.Remove(collection.LocalId);
+        for (var i = collection.Identity.Index; i < Count; ++i)
+            _collections[i].Identity.Index = i;
+        _collectionsByLocal.Remove(collection.Identity.LocalId);
 
-        Penumbra.Messager.NotificationMessage($"Deleted collection {collection.AnonymizedName}.", NotificationType.Success, false);
+        Penumbra.Messager.NotificationMessage($"Deleted collection {collection.Identity.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
         return true;
     }
@@ -246,13 +246,13 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
                         {
                             File.Move(file.FullName, correctName, false);
                             Penumbra.Messager.NotificationMessage(
-                                $"Collection {file.Name} does not correspond to {collection.Identifier}, renamed.",
+                                $"Collection {file.Name} does not correspond to {collection.Identity.Identifier}, renamed.",
                                 NotificationType.Warning);
                         }
                         catch (Exception ex)
                         {
                             Penumbra.Messager.NotificationMessage(
-                                $"Collection {file.Name} does not correspond to {collection.Identifier}, rename failed:\n{ex}",
+                                $"Collection {file.Name} does not correspond to {collection.Identity.Identifier}, rename failed:\n{ex}",
                                 NotificationType.Warning);
                         }
                     }
@@ -273,7 +273,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
                 catch (Exception e)
                 {
                     Penumbra.Messager.NotificationMessage(e,
-                        $"Collection {file.Name} does not correspond to {collection.Identifier}, but could not rename.",
+                        $"Collection {file.Name} does not correspond to {collection.Identity.Identifier}, but could not rename.",
                         NotificationType.Error);
                 }
 
@@ -291,14 +291,14 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// </summary>
     private ModCollection SetDefaultNamedCollection()
     {
-        if (ByName(ModCollection.DefaultCollectionName, out var collection))
+        if (ByName(ModCollectionIdentity.DefaultCollectionName, out var collection))
             return collection;
 
-        if (AddCollection(ModCollection.DefaultCollectionName, null))
+        if (AddCollection(ModCollectionIdentity.DefaultCollectionName, null))
             return _collections[^1];
 
         Penumbra.Messager.NotificationMessage(
-            $"Unknown problem creating a collection with the name {ModCollection.DefaultCollectionName}, which is required to exist.",
+            $"Unknown problem creating a collection with the name {ModCollectionIdentity.DefaultCollectionName}, which is required to exist.",
             NotificationType.Error);
         return Count > 1 ? _collections[1] : _collections[0];
     }

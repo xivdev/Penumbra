@@ -245,24 +245,24 @@ public class Penumbra : IDalamudPlugin
 
         void PrintCollection(ModCollection c, CollectionCache _)
             => sb.Append(
-                $"> **`Collection {c.AnonymizedName + ':',-18}`** Inheritances: `{c.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
+                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
 
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                `** {_collectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:           `** {_tempCollections.Count}\n");
         sb.Append($"> **`Active Collections:          `** {_collectionManager.Caches.Count}\n");
-        sb.Append($"> **`Base Collection:             `** {_collectionManager.Active.Default.AnonymizedName}\n");
-        sb.Append($"> **`Interface Collection:        `** {_collectionManager.Active.Interface.AnonymizedName}\n");
-        sb.Append($"> **`Selected Collection:         `** {_collectionManager.Active.Current.AnonymizedName}\n");
+        sb.Append($"> **`Base Collection:             `** {_collectionManager.Active.Default.Identity.AnonymizedName}\n");
+        sb.Append($"> **`Interface Collection:        `** {_collectionManager.Active.Interface.Identity.AnonymizedName}\n");
+        sb.Append($"> **`Selected Collection:         `** {_collectionManager.Active.Current.Identity.AnonymizedName}\n");
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
             var collection = _collectionManager.Active.ByType(type);
             if (collection != null)
-                sb.Append($"> **`{name,-29}`** {collection.AnonymizedName}\n");
+                sb.Append($"> **`{name,-29}`** {collection.Identity.AnonymizedName}\n");
         }
 
         foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
-            sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.AnonymizedName}\n");
+            sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.Identity.AnonymizedName}\n");
 
         foreach (var collection in _collectionManager.Caches.Active)
             PrintCollection(collection, collection._cache!);

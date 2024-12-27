@@ -221,16 +221,16 @@ public sealed class CollectionPanel(
         ImGui.SameLine();
         ImGui.BeginGroup();
         using var style      = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
-        var       name       = _newName ?? collection.Name;
-        var       identifier = collection.Identifier;
+        var       name       = _newName ?? collection.Identity.Name;
+        var       identifier = collection.Identity.Identifier;
         var       width      = ImGui.GetContentRegionAvail().X;
         var       fileName   = saveService.FileNames.CollectionFile(collection);
         ImGui.SetNextItemWidth(width);
         if (ImGui.InputText("##name", ref name, 128))
             _newName = name;
-        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Name)
+        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Identity.Name)
         {
-            collection.Name = _newName;
+            collection.Identity.Name = _newName;
             saveService.QueueSave(new ModCollectionSave(mods, collection));
             selector.RestoreCollections();
             _newName = null;
@@ -242,7 +242,7 @@ public sealed class CollectionPanel(
 
         using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
-            if (ImGui.Button(collection.Identifier, new Vector2(width, 0)))
+            if (ImGui.Button(collection.Identity.Identifier, new Vector2(width, 0)))
                 try
                 {
                     Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
@@ -289,9 +289,9 @@ public sealed class CollectionPanel(
                 _active.SetCollection(null, type, _active.Individuals.GetGroup(identifier));
         }
 
-        foreach (var coll in _collections.OrderBy(c => c.Name))
+        foreach (var coll in _collections.OrderBy(c => c.Identity.Name))
         {
-            if (coll != collection && ImGui.MenuItem($"Use {coll.Name}."))
+            if (coll != collection && ImGui.MenuItem($"Use {coll.Identity.Name}."))
                 _active.SetCollection(coll, type, _active.Individuals.GetGroup(identifier));
         }
     }
@@ -418,7 +418,7 @@ public sealed class CollectionPanel(
     private string Name(ModCollection? collection)
         => collection == null                 ? "Unassigned" :
             collection == ModCollection.Empty ? "Use No Mods" :
-            incognito.IncognitoMode           ? collection.AnonymizedName : collection.Name;
+            incognito.IncognitoMode           ? collection.Identity.AnonymizedName : collection.Identity.Name;
 
     private void DrawIndividualButton(string intro, Vector2 width, string tooltip, char suffix, params ActorIdentifier[] identifiers)
     {

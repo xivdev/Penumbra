@@ -63,10 +63,10 @@ public class TemporaryMod : IMod
         DirectoryInfo? dir = null;
         try
         {
-            dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Name, config.ReplaceNonAsciiOnImport, true);
+            dir = ModCreator.CreateModFolder(modManager.BasePath, collection.Identity.Name, config.ReplaceNonAsciiOnImport, true);
             var fileDir = Directory.CreateDirectory(Path.Combine(dir.FullName, "files"));
-            modManager.DataEditor.CreateMeta(dir, collection.Name, character ?? config.DefaultModAuthor,
-                $"Mod generated from temporary collection {collection.Id} for {character ?? "Unknown Character"} with name {collection.Name}.",
+            modManager.DataEditor.CreateMeta(dir, collection.Identity.Name, character ?? config.DefaultModAuthor,
+                $"Mod generated from temporary collection {collection.Identity.Id} for {character ?? "Unknown Character"} with name {collection.Identity.Name}.",
                 null, null);
             var mod        = new Mod(dir);
             var defaultMod = mod.Default;
@@ -99,11 +99,11 @@ public class TemporaryMod : IMod
             saveService.ImmediateSaveSync(new ModSaveGroup(dir, defaultMod, config.ReplaceNonAsciiOnImport));
             modManager.AddMod(dir, false);
             Penumbra.Log.Information(
-                $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identifier}.");
+                $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Identity.Identifier}.");
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not save temporary collection {collection.Identifier} to permanent Mod:\n{e}");
+            Penumbra.Log.Error($"Could not save temporary collection {collection.Identity.Identifier} to permanent Mod:\n{e}");
             if (dir != null && Directory.Exists(dir.FullName))
             {
                 try

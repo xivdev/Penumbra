@@ -77,7 +77,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         if (!_collectionManager.Storage.ById(collectionId, out var collection))
             return (PenumbraApiEc.CollectionMissing, null);
 
-        var settings = collection.Id == Guid.Empty
+        var settings = collection.Identity.Id == Guid.Empty
             ? null
             : ignoreInheritance
                 ? collection.Settings[mod.Index]
@@ -217,7 +217,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         var collection = _collectionResolver.PlayerCollection();
         var (settings, parent) = collection[mod.Index];
         if (settings is { Enabled: true })
-            ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Id, mod.Identifier, parent != collection);
+            ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Identity.Id, mod.Identifier, parent != collection);
     }
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
@@ -227,7 +227,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     }
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting _1, int _2, bool inherited)
-        => ModSettingChanged?.Invoke(type, collection.Id, mod?.ModPath.Name ?? string.Empty, inherited);
+        => ModSettingChanged?.Invoke(type, collection.Identity.Id, mod?.ModPath.Name ?? string.Empty, inherited);
 
     private void OnModOptionEdited(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
         int moveIndex)

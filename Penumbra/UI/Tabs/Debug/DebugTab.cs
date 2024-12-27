@@ -204,7 +204,7 @@ public class DebugTab : Window, ITab, IUiService
             if (collection.HasCache)
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode($"{collection.Name} (Change Counter {collection.Counters.Change})###{collection.Name}");
+                using var node  = TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
                 if (!node)
                     continue;
 
@@ -239,7 +239,7 @@ public class DebugTab : Window, ITab, IUiService
             else
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.Counters.Change})",
+                TreeNode($"{collection.Identity.AnonymizedName} (Change Counter {collection.Counters.Change})",
                     ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
             }
         }
@@ -265,9 +265,9 @@ public class DebugTab : Window, ITab, IUiService
             {
                 PrintValue("Penumbra Version",                 $"{_validityChecker.Version} {DebugVersionString}");
                 PrintValue("Git Commit Hash",                  _validityChecker.CommitHash);
-                PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Name);
+                PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Identity.Name);
                 PrintValue("    has Cache",                    _collectionManager.Active.Current.HasCache.ToString());
-                PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Name);
+                PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Identity.Name);
                 PrintValue("    has Cache",                    _collectionManager.Active.Default.HasCache.ToString());
                 PrintValue("Mod Manager BasePath",             _modManager.BasePath.Name);
                 PrintValue("Mod Manager BasePath-Full",        _modManager.BasePath.FullName);
@@ -518,7 +518,7 @@ public class DebugTab : Window, ITab, IUiService
             return;
 
         ImGui.TextUnformatted(
-            $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Name})");
+            $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Identity.Name})");
         using (var drawTree = TreeNode("Draw Object to Object"))
         {
             if (drawTree)
@@ -545,7 +545,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGui.TextUnformatted(name);
                         ImGui.TableNextColumn();
                         var collection = _collectionResolver.IdentifyCollection(gameObject, true);
-                        ImGui.TextUnformatted(collection.ModCollection.Name);
+                        ImGui.TextUnformatted(collection.ModCollection.Identity.Name);
                     }
             }
         }
@@ -561,7 +561,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted($"{data.AssociatedGameObject:X}");
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(data.ModCollection.Name);
+                        ImGui.TextUnformatted(data.ModCollection.Identity.Name);
                     }
             }
         }
@@ -574,12 +574,12 @@ public class DebugTab : Window, ITab, IUiService
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("Current Mtrl Data");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.MtrlData.ModCollection.Name);
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.MtrlData.ModCollection.Identity.Name);
                     ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.MtrlData.AssociatedGameObject:X}");
                     ImGui.TableNextColumn();
 
                     ImGuiUtil.DrawTableColumn("Current Avfx Data");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.AvfxData.ModCollection.Name);
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.AvfxData.ModCollection.Identity.Name);
                     ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.AvfxData.AssociatedGameObject:X}");
                     ImGui.TableNextColumn();
 
@@ -591,7 +591,7 @@ public class DebugTab : Window, ITab, IUiService
                     foreach (var (resource, resolve) in _subfileHelper)
                     {
                         ImGuiUtil.DrawTableColumn($"0x{resource:X}");
-                        ImGuiUtil.DrawTableColumn(resolve.ModCollection.Name);
+                        ImGuiUtil.DrawTableColumn(resolve.ModCollection.Identity.Name);
                         ImGuiUtil.DrawTableColumn($"0x{resolve.AssociatedGameObject:X}");
                         ImGuiUtil.DrawTableColumn($"{((ResourceHandle*)resource)->FileName()}");
                     }
@@ -611,7 +611,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGuiUtil.DrawTableColumn($"{((GameObject*)address)->ObjectIndex}");
                         ImGuiUtil.DrawTableColumn($"0x{address:X}");
                         ImGuiUtil.DrawTableColumn(identifier.ToString());
-                        ImGuiUtil.DrawTableColumn(collection.Name);
+                        ImGuiUtil.DrawTableColumn(collection.Identity.Name);
                     }
             }
         }

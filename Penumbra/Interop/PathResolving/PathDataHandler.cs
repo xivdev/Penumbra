@@ -32,7 +32,7 @@ public static class PathDataHandler
     /// <summary> Create the encoding path for an IMC file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static FullPath CreateImc(CiByteString path, ModCollection collection)
-        => new($"|{collection.LocalId.Id}_{collection.Counters.Imc}_{DiscriminatorString}|{path}");
+        => new($"|{collection.Identity.LocalId.Id}_{collection.Counters.Imc}_{DiscriminatorString}|{path}");
 
     /// <summary> Create the encoding path for a TMB file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -47,17 +47,17 @@ public static class PathDataHandler
     /// <summary> Create the encoding path for an ATCH file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static FullPath CreateAtch(CiByteString path, ModCollection collection)
-        => new($"|{collection.LocalId.Id}_{collection.Counters.Atch}_{DiscriminatorString}|{path}");
+        => new($"|{collection.Identity.LocalId.Id}_{collection.Counters.Atch}_{DiscriminatorString}|{path}");
 
     /// <summary> Create the encoding path for a MTRL file. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static FullPath CreateMtrl(CiByteString path, ModCollection collection, Utf8GamePath originalPath)
-        => new($"|{collection.LocalId.Id}_{collection.Counters.Change}_{originalPath.Path.Crc32:X8}_{DiscriminatorString}|{path}");
+        => new($"|{collection.Identity.LocalId.Id}_{collection.Counters.Change}_{originalPath.Path.Crc32:X8}_{DiscriminatorString}|{path}");
 
     /// <summary> The base function shared by most file types. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static FullPath CreateBase(CiByteString path, ModCollection collection)
-        => new($"|{collection.LocalId.Id}_{collection.Counters.Change}_{DiscriminatorString}|{path}");
+        => new($"|{collection.Identity.LocalId.Id}_{collection.Counters.Change}_{DiscriminatorString}|{path}");
 
     /// <summary> Read an additional data blurb and parse it into usable data for all file types but Materials. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

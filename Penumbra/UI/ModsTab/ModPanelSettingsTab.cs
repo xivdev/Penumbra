@@ -67,7 +67,7 @@ public class ModPanelSettingsTab(
 
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
-        if (ImGui.Button($"These settings are inherited from {selection.Collection.Name}.", width))
+        if (ImGui.Button($"These settings are inherited from {selection.Collection.Identity.Name}.", width))
             collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod!, false);
 
         ImGuiUtil.HoverTooltip("You can click this button to copy the current settings to the current selection.\n"

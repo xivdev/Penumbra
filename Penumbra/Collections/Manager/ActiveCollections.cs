@@ -219,7 +219,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
             _                                 => null,
         };
 
-        if (oldCollection == null || collection == oldCollection || collection.Index >= _storage.Count)
+        if (oldCollection == null || collection == oldCollection || collection.Identity.Index >= _storage.Count)
             return;
 
         switch (collectionType)
@@ -262,13 +262,13 @@ public class ActiveCollections : ISavable, IDisposable, IService
         var jObj = new JObject
         {
             { nameof(Version), Version },
-            { nameof(Default), Default.Id },
-            { nameof(Interface), Interface.Id },
-            { nameof(Current), Current.Id },
+            { nameof(Default), Default.Identity.Id },
+            { nameof(Interface), Interface.Identity.Id },
+            { nameof(Current), Current.Identity.Id },
         };
         foreach (var (type, collection) in SpecialCollections.WithIndex().Where(p => p.Value != null)
                      .Select(p => ((CollectionType)p.Index, p.Value!)))
-            jObj.Add(type.ToString(), collection.Id);
+            jObj.Add(type.ToString(), collection.Identity.Id);
 
         jObj.Add(nameof(Individuals), Individuals.ToJObject());
         using var j = new JsonTextWriter(writer);
@@ -300,7 +300,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                 if (oldCollection == Interface)
                     SetCollection(ModCollection.Empty, CollectionType.Interface);
                 if (oldCollection == Current)
-                    SetCollection(Default.Index > ModCollection.Empty.Index ? Default : _storage.DefaultNamed, CollectionType.Current);
+                    SetCollection(Default.Identity.Index > ModCollection.Empty.Identity.Index ? Default : _storage.DefaultNamed, CollectionType.Current);
 
                 for (var i = 0; i < SpecialCollections.Length; ++i)
                 {
@@ -325,11 +325,11 @@ public class ActiveCollections : ISavable, IDisposable, IService
     {
         var configChanged = false;
         // Load the default collection. If the name does not exist take the empty collection.
-        var defaultName = jObject[nameof(Default)]?.ToObject<string>() ?? ModCollection.Empty.Name;
+        var defaultName = jObject[nameof(Default)]?.ToObject<string>() ?? ModCollection.Empty.Identity.Name;
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Name}.",
+                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -340,11 +340,11 @@ public class ActiveCollections : ISavable, IDisposable, IService
         }
 
         // Load the interface collection. If no string is set, use the name of whatever was set as Default.
-        var interfaceName = jObject[nameof(Interface)]?.ToObject<string>() ?? Default.Name;
+        var interfaceName = jObject[nameof(Interface)]?.ToObject<string>() ?? Default.Identity.Name;
         if (!_storage.ByName(interfaceName, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Name}.",
+                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -355,11 +355,11 @@ public class ActiveCollections : ISavable, IDisposable, IService
         }
 
         // Load the current collection.
-        var currentName = jObject[nameof(Current)]?.ToObject<string>() ?? Default.Name;
+        var currentName = jObject[nameof(Current)]?.ToObject<string>() ?? Default.Identity.Name;
         if (!_storage.ByName(currentName, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollection.DefaultCollectionName}.",
+                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
                 NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
@@ -404,7 +404,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(defaultId, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultId} is not available, reset to {ModCollection.Empty.Name}.",
+                $"Last choice of {TutorialService.DefaultCollection} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -415,11 +415,11 @@ public class ActiveCollections : ISavable, IDisposable, IService
         }
 
         // Load the interface collection. If no string is set, use the name of whatever was set as Default.
-        var interfaceId = jObject[nameof(Interface)]?.ToObject<Guid>() ?? Default.Id;
+        var interfaceId = jObject[nameof(Interface)]?.ToObject<Guid>() ?? Default.Identity.Id;
         if (!_storage.ById(interfaceId, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceId} is not available, reset to {ModCollection.Empty.Name}.",
+                $"Last choice of {TutorialService.InterfaceCollection} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -430,11 +430,11 @@ public class ActiveCollections : ISavable, IDisposable, IService
         }
 
         // Load the current collection.
-        var currentId = jObject[nameof(Current)]?.ToObject<Guid>() ?? _storage.DefaultNamed.Id;
+        var currentId = jObject[nameof(Current)]?.ToObject<Guid>() ?? _storage.DefaultNamed.Identity.Id;
         if (!_storage.ById(currentId, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentId} is not available, reset to {ModCollection.DefaultCollectionName}.",
+                $"Last choice of {TutorialService.SelectedCollection} {currentId} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
                 NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
@@ -587,7 +587,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     case IdentifierType.Player when id.HomeWorld != ushort.MaxValue:
                     {
                         var global = ByType(CollectionType.Individual, _actors.CreatePlayer(id.PlayerName, ushort.MaxValue));
-                        return global?.Index == checkAssignment.Index
+                        return (global != null ? global.Identity.Index : null) == checkAssignment.Identity.Index
                             ? "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it."
                             : string.Empty;
                     }
@@ -596,12 +596,12 @@ public class ActiveCollections : ISavable, IDisposable, IService
                         {
                             var global = ByType(CollectionType.Individual,
                                 _actors.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
-                            if (global?.Index == checkAssignment.Index)
+                            if ((global != null ? global.Identity.Index : null) == checkAssignment.Identity.Index)
                                 return "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it.";
                         }
 
                         var unowned = ByType(CollectionType.Individual, _actors.CreateNpc(id.Kind, id.DataId));
-                        return unowned?.Index == checkAssignment.Index
+                        return (unowned != null ? unowned.Identity.Index : null) == checkAssignment.Identity.Index
                             ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
                             : string.Empty;
                 }
@@ -617,7 +617,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                 if (maleNpc == null)
                 {
                     maleNpc = Default;
-                    if (maleNpc.Index != checkAssignment.Index)
+                    if (maleNpc.Identity.Index != checkAssignment.Identity.Index)
                         return string.Empty;
 
                     collection1 = CollectionType.Default;
@@ -626,7 +626,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                 if (femaleNpc == null)
                 {
                     femaleNpc = Default;
-                    if (femaleNpc.Index != checkAssignment.Index)
+                    if (femaleNpc.Identity.Index != checkAssignment.Identity.Index)
                         return string.Empty;
 
                     collection2 = CollectionType.Default;
@@ -646,7 +646,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     if (assignment == null)
                         continue;
 
-                    if (assignment.Index == checkAssignment.Index)
+                    if (assignment.Identity.Index == checkAssignment.Identity.Index)
                         return
                             $"Assignment is currently redundant due to overwriting {parentType.ToName()} with an identical collection.\nYou can remove it.";
                 }

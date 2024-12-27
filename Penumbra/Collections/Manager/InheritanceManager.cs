@@ -89,7 +89,7 @@ public class InheritanceManager : IDisposable, IService
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
         _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
         RecurseInheritanceChanges(inheritor);
-        Penumbra.Log.Debug($"Removed {parent.AnonymizedName} from {inheritor.AnonymizedName} inheritances.");
+        Penumbra.Log.Debug($"Removed {parent.Identity.AnonymizedName} from {inheritor.Identity.AnonymizedName} inheritances.");
     }
 
     /// <summary> Order in the inheritance list is relevant. </summary>
@@ -101,7 +101,7 @@ public class InheritanceManager : IDisposable, IService
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
         _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
         RecurseInheritanceChanges(inheritor);
-        Penumbra.Log.Debug($"Moved {inheritor.AnonymizedName}s inheritance {from} to {to}.");
+        Penumbra.Log.Debug($"Moved {inheritor.Identity.AnonymizedName}s inheritance {from} to {to}.");
     }
 
     /// <inheritdoc cref="AddInheritance(ModCollection, ModCollection)"/>
@@ -119,7 +119,7 @@ public class InheritanceManager : IDisposable, IService
             RecurseInheritanceChanges(inheritor);
         }
 
-        Penumbra.Log.Debug($"Added {parent.AnonymizedName} to {inheritor.AnonymizedName} inheritances.");
+        Penumbra.Log.Debug($"Added {parent.Identity.AnonymizedName} to {inheritor.Identity.AnonymizedName} inheritances.");
         return true;
     }
 
@@ -143,23 +143,23 @@ public class InheritanceManager : IDisposable, IService
                         continue;
 
                     changes = true;
-                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.",
+                    Penumbra.Messager.NotificationMessage($"{collection.Identity.Name} can not inherit from {subCollection.Identity.Name}, removed.",
                         NotificationType.Warning);
                 }
                 else if (_storage.ByName(subCollectionName, out subCollection))
                 {
                     changes = true;
-                    Penumbra.Log.Information($"Migrating inheritance for {collection.AnonymizedName} from name to GUID.");
+                    Penumbra.Log.Information($"Migrating inheritance for {collection.Identity.AnonymizedName} from name to GUID.");
                     if (AddInheritance(collection, subCollection, false))
                         continue;
 
-                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.",
+                    Penumbra.Messager.NotificationMessage($"{collection.Identity.Name} can not inherit from {subCollection.Identity.Name}, removed.",
                         NotificationType.Warning);
                 }
                 else
                 {
                     Penumbra.Messager.NotificationMessage(
-                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.",
+                        $"Inherited collection {subCollectionName} for {collection.Identity.AnonymizedName} does not exist, it was removed.",
                         NotificationType.Warning);
                     changes = true;
                 }

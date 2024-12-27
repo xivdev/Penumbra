@@ -30,7 +30,7 @@ public unsafe class AtchCallerHook2 : FastHook<AtchCallerHook2.Delegate>, IDispo
         Task.Result.Original(data, slot, unk, playerModel, unk2);
         _metaState.AtchCollection.Pop();
         Penumbra.Log.Excessive(
-            $"[AtchCaller2] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, {unk2}, identified to {collection.ModCollection.AnonymizedName}.");
+            $"[AtchCaller2] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, {unk2}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
     }
 
     public void Dispose()

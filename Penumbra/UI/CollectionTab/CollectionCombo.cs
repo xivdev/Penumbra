@@ -29,13 +29,13 @@ public sealed class CollectionCombo(CollectionManager manager, Func<IReadOnlyLis
         }
 
         _color.Push(ImGuiCol.FrameBg, color).Push(ImGuiCol.FrameBgHovered, color);
-        if (Draw(label, current.Name, string.Empty, width, ImGui.GetTextLineHeightWithSpacing()) && CurrentSelection != null)
+        if (Draw(label, current.Identity.Name, string.Empty, width, ImGui.GetTextLineHeightWithSpacing()) && CurrentSelection != null)
             manager.Active.SetCollection(CurrentSelection, CollectionType.Current);
         _color.Dispose();
     }
 
     protected override string ToString(ModCollection obj)
-        => obj.Name;
+        => obj.Identity.Name;
 
     protected override void DrawCombo(string label, string preview, string tooltip, int currentSelected, float previewWidth, float itemHeight,
         ImGuiComboFlags flags)

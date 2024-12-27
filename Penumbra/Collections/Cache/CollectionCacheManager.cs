@@ -114,16 +114,16 @@ public class CollectionCacheManager : IDisposable, IService
     /// <summary> Only creates a new cache, does not update an existing one. </summary>
     public bool CreateCache(ModCollection collection)
     {
-        if (collection.Index == ModCollection.Empty.Index)
+        if (collection.Identity.Index == ModCollection.Empty.Identity.Index)
             return false;
 
         if (collection._cache != null)
             return false;
 
         collection._cache = new CollectionCache(this, collection);
-        if (collection.Index > 0)
+        if (collection.Identity.Index > 0)
             Interlocked.Increment(ref _count);
-        Penumbra.Log.Verbose($"Created new cache for collection {collection.AnonymizedName}.");
+        Penumbra.Log.Verbose($"Created new cache for collection {collection.Identity.AnonymizedName}.");
         return true;
     }
 
@@ -132,32 +132,32 @@ public class CollectionCacheManager : IDisposable, IService
     /// Does not create caches.
     /// </summary>
     public void CalculateEffectiveFileList(ModCollection collection)
-        => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Identifier,
+        => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Identity.Identifier,
             () => CalculateEffectiveFileListInternal(collection));
 
     private void CalculateEffectiveFileListInternal(ModCollection collection)
     {
         // Skip the empty collection.
-        if (collection.Index == 0)
+        if (collection.Identity.Index == 0)
             return;
 
-        Penumbra.Log.Debug($"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName}");
+        Penumbra.Log.Debug($"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.Identity.AnonymizedName}");
         if (!collection.HasCache)
         {
             Penumbra.Log.Error(
-                $"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName} failed, no cache exists.");
+                $"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.Identity.AnonymizedName} failed, no cache exists.");
         }
         else if (collection._cache!.Calculating != -1)
         {
             Penumbra.Log.Error(
-                $"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName} failed, already in calculation on [{collection._cache!.Calculating}].");
+                $"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.Identity.AnonymizedName} failed, already in calculation on [{collection._cache!.Calculating}].");
         }
         else
         {
             FullRecalculation(collection);
 
             Penumbra.Log.Debug(
-                $"[{Environment.CurrentManagedThreadId}] Recalculation of effective file list for {collection.AnonymizedName} finished.");
+                $"[{Environment.CurrentManagedThreadId}] Recalculation of effective file list for {collection.Identity.AnonymizedName} finished.");
         }
     }
 
@@ -213,7 +213,7 @@ public class CollectionCacheManager : IDisposable, IService
         else
         {
             RemoveCache(old);
-            if (type is not CollectionType.Inactive && newCollection != null && newCollection.Index != 0 && CreateCache(newCollection))
+            if (type is not CollectionType.Inactive && newCollection != null && newCollection.Identity.Index != 0 && CreateCache(newCollection))
                 CalculateEffectiveFileList(newCollection);
 
             if (type is CollectionType.Default)
@@ -258,12 +258,12 @@ public class CollectionCacheManager : IDisposable, IService
     private void RemoveCache(ModCollection? collection)
     {
         if (collection != null
-         && collection.Index > ModCollection.Empty.Index
-         && collection.Index != _active.Default.Index
-         && collection.Index != _active.Interface.Index
-         && collection.Index != _active.Current.Index
-         && _active.SpecialAssignments.All(c => c.Value.Index != collection.Index)
-         && _active.Individuals.All(c => c.Collection.Index != collection.Index))
+         && collection.Identity.Index > ModCollection.Empty.Identity.Index
+         && collection.Identity.Index != _active.Default.Identity.Index
+         && collection.Identity.Index != _active.Interface.Identity.Index
+         && collection.Identity.Index != _active.Current.Identity.Index
+         && _active.SpecialAssignments.All(c => c.Value.Identity.Index != collection.Identity.Index)
+         && _active.Individuals.All(c => c.Collection.Identity.Index != collection.Identity.Index))
             ClearCache(collection);
     }
 
@@ -359,9 +359,9 @@ public class CollectionCacheManager : IDisposable, IService
 
         collection._cache!.Dispose();
         collection._cache = null;
-        if (collection.Index > 0)
+        if (collection.Identity.Index > 0)
             Interlocked.Decrement(ref _count);
-        Penumbra.Log.Verbose($"Cleared cache of collection {collection.AnonymizedName}.");
+        Penumbra.Log.Verbose($"Cleared cache of collection {collection.Identity.AnonymizedName}.");
     }
 
     /// <summary>
