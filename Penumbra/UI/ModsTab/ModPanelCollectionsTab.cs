@@ -120,7 +120,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         var inheritedCount = 0;
         foreach (var collection in manager.Storage)
         {
-            var (settings, parent) = collection[mod.Index];
+            var (settings, parent) = collection.GetInheritedSettings(mod.Index);
             var (color, text) = settings == null
                 ? (undefined, ModState.Unconfigured)
                 : settings.Enabled

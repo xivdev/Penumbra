@@ -201,7 +201,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
         {
             _modManager.SetKnown(leaf.Value);
-            var (setting, collection) = _collectionManager.Active.Current[leaf.Value.Index];
+            var (setting, collection) = _collectionManager.Active.Current.GetActualSettings(leaf.Value.Index);
             if (_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {
                 _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, leaf.Value, true);
@@ -580,7 +580,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             return ColorId.UndefinedMod;
 
         if (!settings.Enabled)
-            return collection != _collectionManager.Active.Current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod;
+            return collection != _collectionManager.Active.Current 
+                ? ColorId.InheritedDisabledMod 
+                : settings is TemporaryModSettings 
+                    ? ColorId.TemporaryDisabledMod
+                    : ColorId.DisabledMod;
+
+        if (settings is TemporaryModSettings)
+            return ColorId.TemporaryEnabledMod;
 
         var conflicts = _collectionManager.Active.Current.Conflicts(mod);
         if (conflicts.Count == 0)
@@ -631,7 +638,11 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         }
         else if (!settings.Enabled)
         {
-            state.Color = collection == _collectionManager.Active.Current ? ColorId.DisabledMod : ColorId.InheritedDisabledMod;
+            state.Color = collection != _collectionManager.Active.Current
+                ? ColorId.InheritedDisabledMod
+                : settings is TemporaryModSettings
+                    ? ColorId.TemporaryDisabledMod
+                    : ColorId.DisabledMod;
             if (!_stateFilter.HasFlag(ModFilter.Disabled)
              || !_stateFilter.HasFlag(ModFilter.NoConflict))
                 return true;
@@ -640,6 +651,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         {
             if (!_stateFilter.HasFlag(ModFilter.Enabled))
                 return true;
+
+            if (settings is TemporaryModSettings)
+                state.Color = ColorId.TemporaryEnabledMod;
 
             // Conflicts can only be relevant if the mod is enabled.
             var conflicts = _collectionManager.Active.Current.Conflicts(mod);
@@ -650,14 +664,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                     if (!_stateFilter.HasFlag(ModFilter.UnsolvedConflict))
                         return true;
 
-                    state.Color = ColorId.ConflictingMod;
+                    state.Color = settings is TemporaryModSettings ? ColorId.TemporaryEnabledMod : ColorId.ConflictingMod;
                 }
                 else
                 {
                     if (!_stateFilter.HasFlag(ModFilter.SolvedConflict))
                         return true;
 
-                    state.Color = ColorId.HandledConflictMod;
+                    state.Color = settings is TemporaryModSettings ? ColorId.TemporaryEnabledMod : ColorId.HandledConflictMod;
                 }
             }
             else if (!_stateFilter.HasFlag(ModFilter.NoConflict))
@@ -677,7 +691,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private bool ApplyFiltersAndState(ModFileSystem.Leaf leaf, out ModState state)
     {
         var mod = leaf.Value;
-        var (settings, collection) = _collectionManager.Active.Current[mod.Index];
+        var (settings, collection) = _collectionManager.Active.Current.GetActualSettings(mod.Index);
 
         state = new ModState
         {

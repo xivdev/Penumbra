@@ -737,7 +737,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (collectionType is not CollectionType.Current || _mod == null || newCollection == null)
             return;
 
-        UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection[_mod.Index].Settings : null);
+        UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection.GetInheritedSettings(_mod.Index).Settings : null);
     }
 
     private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool inherited)
@@ -754,7 +754,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (collection != _collectionManager.Active.Current || _mod == null)
             return;
 
-        UpdateMod(_mod, collection[_mod.Index].Settings);
+        UpdateMod(_mod, collection.GetInheritedSettings(_mod.Index).Settings);
         _swapData.LoadMod(_mod, _modSettings);
         _dirty = true;
     }

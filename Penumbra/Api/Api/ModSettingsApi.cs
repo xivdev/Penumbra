@@ -1,4 +1,5 @@
 using OtterGui;
+using OtterGui.Log;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
@@ -24,18 +25,20 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     private readonly CollectionManager   _collectionManager;
     private readonly CollectionEditor    _collectionEditor;
     private readonly CommunicatorService _communicator;
+    private readonly ApiHelpers          _helpers;
 
     public ModSettingsApi(CollectionResolver collectionResolver,
         ModManager modManager,
         CollectionManager collectionManager,
         CollectionEditor collectionEditor,
-        CommunicatorService communicator)
+        CommunicatorService communicator, ApiHelpers helpers)
     {
         _collectionResolver = collectionResolver;
         _modManager         = modManager;
         _collectionManager  = collectionManager;
         _collectionEditor   = collectionEditor;
         _communicator       = communicator;
+        _helpers       = helpers;
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ApiModSettings);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange, Communication.ModSettingChanged.Priority.Api);
         _communicator.ModOptionChanged.Subscribe(OnModOptionEdited, ModOptionChanged.Priority.Api);
@@ -63,11 +66,6 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         return new AvailableModSettings(dict);
     }
 
-    public Dictionary<string, (string[], int)>? GetAvailableModSettingsBase(string modDirectory, string modName)
-        => _modManager.TryGetMod(modDirectory, modName, out var mod)
-            ? mod.Groups.ToDictionary(g => g.Name, g => (g.Options.Select(o => o.Name).ToArray(), (int)g.Type))
-            : null;
-
     public (PenumbraApiEc, (bool, int, Dictionary<string, List<string>>, bool)?) GetCurrentModSettings(Guid collectionId, string modDirectory,
         string modName, bool ignoreInheritance)
     {
@@ -80,14 +78,14 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         var settings = collection.Identity.Id == Guid.Empty
             ? null
             : ignoreInheritance
-                ? collection.Settings[mod.Index]
-                : collection[mod.Index].Settings;
+                ? collection.GetOwnSettings(mod.Index)
+                : collection.GetInheritedSettings(mod.Index).Settings;
         if (settings == null)
             return (PenumbraApiEc.Success, null);
 
         var (enabled, priority, dict) = settings.ConvertToShareable(mod);
         return (PenumbraApiEc.Success,
-            (enabled, priority.Value, dict, collection.Settings[mod.Index] == null));
+            (enabled, priority.Value, dict, collection.GetOwnSettings(mod.Index) is null));
     }
 
     public PenumbraApiEc TryInheritMod(Guid collectionId, string modDirectory, string modName, bool inherit)
@@ -211,11 +209,147 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         return ApiHelpers.Return(PenumbraApiEc.Success, args);
     }
 
+    public PenumbraApiEc SetTemporaryModSetting(Guid collectionId, string modDirectory, string modName, bool enabled, int priority,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
+    {
+        var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName, "Enabled", enabled,
+            "Priority", priority, "Options", options, "Source", source, "Key", key);
+        if (!_collectionManager.Storage.ById(collectionId, out var collection))
+            return ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args);
+
+        return SetTemporaryModSetting(args, collection, modDirectory, modName, enabled, priority, options, source, key);
+    }
+
+    public PenumbraApiEc TemporaryModSettingsPlayer(int objectIndex, string modDirectory, string modName, bool enabled, int priority,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
+    {
+        return PenumbraApiEc.Success;
+    }
+
+    private PenumbraApiEc SetTemporaryModSetting(in LazyString args, ModCollection collection, string modDirectory, string modName,
+        bool enabled, int priority,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
+    {
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
+            return ApiHelpers.Return(PenumbraApiEc.ModMissing, args);
+
+        if (collection.GetTempSettings(mod.Index) is { } settings && settings.Lock != 0 && settings.Lock != key)
+            return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
+
+        settings = new TemporaryModSettings
+        {
+            Enabled  = enabled,
+            Priority = new ModPriority(priority),
+            Lock     = key,
+            Source   = source,
+            Settings = SettingList.Default(mod),
+        };
+
+        foreach (var (groupName, optionNames) in options)
+        {
+            var groupIdx = mod.Groups.IndexOf(g => g.Name == groupName);
+            if (groupIdx < 0)
+                return ApiHelpers.Return(PenumbraApiEc.OptionGroupMissing, args);
+
+            var setting = Setting.Zero;
+            switch (mod.Groups[groupIdx])
+            {
+                case { Behaviour: GroupDrawBehaviour.SingleSelection } single:
+                {
+                    var optionIdx = optionNames.Count == 0 ? -1 : single.Options.IndexOf(o => o.Name == optionNames[^1]);
+                    if (optionIdx < 0)
+                        return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
+
+                    setting = Setting.Single(optionIdx);
+                    break;
+                }
+                case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
+                {
+                    foreach (var name in optionNames)
+                    {
+                        var optionIdx = multi.Options.IndexOf(o => o.Name == name);
+                        if (optionIdx < 0)
+                            return ApiHelpers.Return(PenumbraApiEc.OptionMissing, args);
+
+                        setting |= Setting.Multi(optionIdx);
+                    }
+
+                    break;
+                }
+            }
+
+            settings.Settings[groupIdx] = setting;
+        }
+
+        collection.Settings.SetTemporary(mod.Index, settings);
+        return ApiHelpers.Return(PenumbraApiEc.Success, args);
+    }
+
+    public PenumbraApiEc RemoveTemporaryModSettings(Guid collectionId, string modDirectory, string modName, int key)
+    {
+        var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName, "Key", key);
+        if (!_collectionManager.Storage.ById(collectionId, out var collection))
+            return ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args);
+
+        return RemoveTemporaryModSettings(args, collection, modDirectory, modName, key);
+    }
+
+    private PenumbraApiEc RemoveTemporaryModSettings(in LazyString args, ModCollection collection, string modDirectory, string modName, int key)
+    {
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
+            return ApiHelpers.Return(PenumbraApiEc.ModMissing, args);
+
+        if (collection.GetTempSettings(mod.Index) is not { } settings)
+            return ApiHelpers.Return(PenumbraApiEc.NothingChanged, args);
+
+        if (settings.Lock != 0 && settings.Lock != key)
+            return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
+
+        collection.Settings.SetTemporary(mod.Index, null);
+        return ApiHelpers.Return(PenumbraApiEc.Success, args);
+    }
+
+    public PenumbraApiEc RemoveTemporaryModSettingsPlayer(int objectIndex, string modDirectory, string modName, int key)
+    {
+        return PenumbraApiEc.Success;
+    }
+
+    public PenumbraApiEc RemoveAllTemporaryModSettings(Guid collectionId, int key)
+    {
+        var args = ApiHelpers.Args("CollectionId", collectionId, "Key", key);
+        if (!_collectionManager.Storage.ById(collectionId, out var collection))
+            return ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args);
+
+        return RemoveAllTemporaryModSettings(args, collection, key);
+    }
+
+    public PenumbraApiEc RemoveAllTemporaryModSettingsPlayer(int objectIndex, int key)
+    {
+        return PenumbraApiEc.Success;
+    }
+
+    private PenumbraApiEc RemoveAllTemporaryModSettings(in LazyString args, ModCollection collection, int key)
+    {
+        var numRemoved = 0;
+        for (var i = 0; i < collection.Settings.Count; ++i)
+        {
+            if (collection.GetTempSettings(i) is { } settings && (settings.Lock == 0 || settings.Lock == key))
+            {
+                collection.Settings.SetTemporary(i, null);
+                ++numRemoved;
+            }
+        }
+
+        return ApiHelpers.Return(numRemoved > 0 ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged, args);
+    }
+
+    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void TriggerSettingEdited(Mod mod)
     {
         var collection = _collectionResolver.PlayerCollection();
-        var (settings, parent) = collection[mod.Index];
+        var (settings, parent) = collection.GetActualSettings(mod.Index);
         if (settings is { Enabled: true })
             ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Identity.Id, mod.Identifier, parent != collection);
     }

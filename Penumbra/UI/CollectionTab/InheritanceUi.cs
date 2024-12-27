@@ -107,7 +107,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         var lineEnd = lineStart;
 
         // Skip the collection itself.
-        foreach (var inheritance in collection.GetFlattenedInheritance().Skip(1))
+        foreach (var inheritance in collection.Inheritance.FlatHierarchy.Skip(1))
         {
             // Draw the child, already seen collections are colored as conflicts.
             using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(),
@@ -150,7 +150,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
             DrawInheritedChildren(collection);
         else
             // We still want to keep track of conflicts.
-            _seenInheritedCollections.UnionWith(collection.GetFlattenedInheritance());
+            _seenInheritedCollections.UnionWith(collection.Inheritance.FlatHierarchy);
     }
 
     /// <summary> Draw the list box containing the current inheritance information. </summary>
@@ -163,7 +163,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
 
         _seenInheritedCollections.Clear();
         _seenInheritedCollections.Add(_active.Current);
-        foreach (var collection in _active.Current.DirectlyInheritsFrom.ToList())
+        foreach (var collection in _active.Current.Inheritance.DirectlyInheritsFrom.ToList())
             DrawInheritance(collection);
     }
 
@@ -180,7 +180,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
 
         using var target = ImRaii.DragDropTarget();
         if (target.Success && ImGuiUtil.IsDropping(InheritanceDragDropLabel))
-            _inheritanceAction = (_active.Current.DirectlyInheritsFrom.IndexOf(_movedInheritance!), -1);
+            _inheritanceAction = (_active.Current.Inheritance.DirectlyInheritsFrom.IndexOf(_movedInheritance!), -1);
     }
 
     /// <summary>
@@ -244,7 +244,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     {
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton);
         _newInheritance ??= _collections.FirstOrDefault(c
-                => c != _active.Current && !_active.Current.DirectlyInheritsFrom.Contains(c))
+                => c != _active.Current && !_active.Current.Inheritance.DirectlyInheritsFrom.Contains(c))
          ?? ModCollection.Empty;
         using var combo = ImRaii.Combo("##newInheritance", Name(_newInheritance));
         if (!combo)
@@ -271,8 +271,8 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
 
         if (_movedInheritance != null)
         {
-            var idx1 = _active.Current.DirectlyInheritsFrom.IndexOf(_movedInheritance);
-            var idx2 = _active.Current.DirectlyInheritsFrom.IndexOf(collection);
+            var idx1 = _active.Current.Inheritance.DirectlyInheritsFrom.IndexOf(_movedInheritance);
+            var idx2 = _active.Current.Inheritance.DirectlyInheritsFrom.IndexOf(collection);
             if (idx1 >= 0 && idx2 >= 0)
                 _inheritanceAction = (idx1, idx2);
         }
@@ -302,7 +302,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         if (ImGui.GetIO().KeyCtrl && ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
             if (withDelete && ImGui.GetIO().KeyShift)
-                _inheritanceAction = (_active.Current.DirectlyInheritsFrom.IndexOf(collection), -1);
+                _inheritanceAction = (_active.Current.Inheritance.DirectlyInheritsFrom.IndexOf(collection), -1);
             else
                 _newCurrentCollection = collection;
         }

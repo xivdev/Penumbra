@@ -98,6 +98,6 @@ public class ResourceNode : ICloneable
     public readonly record struct UiData(string? Name, ChangedItemIconFlag IconFlag)
     {
         public UiData PrependName(string prefix)
-            => Name == null ? this : new UiData(prefix + Name, IconFlag);
+            => Name == null ? this : this with { Name = prefix + Name };
     }
 }

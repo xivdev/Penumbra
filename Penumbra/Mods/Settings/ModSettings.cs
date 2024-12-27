@@ -12,7 +12,7 @@ namespace Penumbra.Mods.Settings;
 public class ModSettings
 {
     public static readonly ModSettings Empty = new();
-    public                 SettingList Settings { get; private init; } = [];
+    public                 SettingList Settings { get; internal init; } = [];
     public                 ModPriority Priority { get; set; }
     public                 bool        Enabled  { get; set; }
 

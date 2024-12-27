@@ -245,7 +245,7 @@ public class Penumbra : IDalamudPlugin
 
         void PrintCollection(ModCollection c, CollectionCache _)
             => sb.Append(
-                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
+                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.Inheritance.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
 
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                `** {_collectionManager.Storage.Count - 1}\n");

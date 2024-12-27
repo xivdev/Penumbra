@@ -231,11 +231,11 @@ public class CollectionCacheManager : IDisposable, IService
         {
             case ModPathChangeType.Deleted:
             case ModPathChangeType.StartingReload:
-                foreach (var collection in _storage.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
+                foreach (var collection in _storage.Where(c => c.HasCache && c.GetActualSettings(mod.Index).Settings?.Enabled == true))
                     collection._cache!.RemoveMod(mod, true);
                 break;
             case ModPathChangeType.Moved:
-                foreach (var collection in _storage.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
+                foreach (var collection in _storage.Where(c => c.HasCache && c.GetActualSettings(mod.Index).Settings?.Enabled == true))
                     collection._cache!.ReloadMod(mod, true);
                 break;
         }
@@ -246,7 +246,7 @@ public class CollectionCacheManager : IDisposable, IService
         if (type is not (ModPathChangeType.Added or ModPathChangeType.Reloaded))
             return;
 
-        foreach (var collection in _storage.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
+        foreach (var collection in _storage.Where(c => c.HasCache && c.GetActualSettings(mod.Index).Settings?.Enabled == true))
             collection._cache!.AddMod(mod, true);
     }
 
@@ -273,7 +273,7 @@ public class CollectionCacheManager : IDisposable, IService
     {
         if (type is ModOptionChangeType.PrepareChange)
         {
-            foreach (var collection in _storage.Where(collection => collection.HasCache && collection[mod.Index].Settings is { Enabled: true }))
+            foreach (var collection in _storage.Where(collection => collection.HasCache && collection.GetActualSettings(mod.Index).Settings is { Enabled: true }))
                 collection._cache!.RemoveMod(mod, false);
 
             return;
@@ -284,7 +284,7 @@ public class CollectionCacheManager : IDisposable, IService
         if (!recomputeList)
             return;
 
-        foreach (var collection in _storage.Where(collection => collection.HasCache && collection[mod.Index].Settings is { Enabled: true }))
+        foreach (var collection in _storage.Where(collection => collection.HasCache && collection.GetActualSettings(mod.Index).Settings is { Enabled: true }))
         {
             if (justAdd)
                 collection._cache!.AddMod(mod, true);
@@ -317,7 +317,7 @@ public class CollectionCacheManager : IDisposable, IService
                     cache.AddMod(mod!, true);
                 else if (oldValue == Setting.True)
                     cache.RemoveMod(mod!, true);
-                else if (collection[mod!.Index].Settings?.Enabled == true)
+                else if (collection.GetActualSettings(mod!.Index).Settings?.Enabled == true)
                     cache.ReloadMod(mod!, true);
                 else
                     cache.RemoveMod(mod!, true);
@@ -329,8 +329,8 @@ public class CollectionCacheManager : IDisposable, IService
 
                 break;
             case ModSettingChange.Setting:
-                if (collection[mod!.Index].Settings?.Enabled == true)
-                    cache.ReloadMod(mod!, true);
+                if (collection.GetActualSettings(mod!.Index).Settings?.Enabled == true)
+                    cache.ReloadMod(mod, true);
 
                 break;
             case ModSettingChange.MultiInheritance:

@@ -204,11 +204,45 @@ public class DebugTab : Window, ITab, IUiService
             if (collection.HasCache)
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
+                using var node =
+                    TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
                 if (!node)
                     continue;
 
                 color.Pop();
+                using (var inheritanceNode = ImUtf8.TreeNode("Inheritance"u8))
+                {
+                    if (inheritanceNode)
+                    {
+                        using var table = ImUtf8.Table("table"u8, 3,
+                            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
+                        if (table)
+                        {
+                            var max = Math.Max(
+                                Math.Max(collection.Inheritance.DirectlyInheritedBy.Count, collection.Inheritance.DirectlyInheritsFrom.Count),
+                                collection.Inheritance.FlatHierarchy.Count);
+                            for (var i = 0; i < max; ++i)
+                            {
+                                ImGui.TableNextColumn();
+                                if (i < collection.Inheritance.DirectlyInheritsFrom.Count)
+                                    ImUtf8.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
+                                else
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                ImGui.TableNextColumn();
+                                if (i < collection.Inheritance.DirectlyInheritedBy.Count)
+                                    ImUtf8.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
+                                else
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                ImGui.TableNextColumn();
+                                if (i < collection.Inheritance.FlatHierarchy.Count)
+                                    ImUtf8.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
+                                else
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                            }
+                        }
+                    }
+                }
+
                 using (var resourceNode = ImUtf8.TreeNode("Custom Resources"u8))
                 {
                     if (resourceNode)
@@ -239,7 +273,7 @@ public class DebugTab : Window, ITab, IUiService
             else
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode($"{collection.Identity.AnonymizedName} (Change Counter {collection.Counters.Change})",
+                TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})",
                     ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
             }
         }
@@ -682,13 +716,11 @@ public class DebugTab : Window, ITab, IUiService
             {
                 using var table = Table("###TmbTable", 2, ImGuiTableFlags.SizingFixedFit);
                 if (table)
-                {
                     foreach (var (id, name) in _schedulerService.ListedTmbs.OrderBy(kvp => kvp.Key))
                     {
                         ImUtf8.DrawTableColumn($"{id:D6}");
                         ImUtf8.DrawTableColumn(name.Span);
                     }
-                }
             }
         }
     }

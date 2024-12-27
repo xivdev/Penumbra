@@ -282,7 +282,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
             .Prepend(Interface)
             .Prepend(Default)
             .Concat(Individuals.Assignments.Select(kvp => kvp.Collection))
-            .SelectMany(c => c.GetFlattenedInheritance()).Contains(Current);
+            .SelectMany(c => c.Inheritance.FlatHierarchy).Contains(Current);
 
     /// <summary> Save if any of the active collections is changed and set new collections to Current. </summary>
     private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string _3)

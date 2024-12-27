@@ -41,8 +41,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     public ModCollection CreateFromData(Guid id, string name, int version, Dictionary<string, ModSettings.SavedSettings> allSettings,
         IReadOnlyList<string> inheritances)
     {
-        var newCollection = ModCollection.CreateFromData(_saveService, _modStorage, new ModCollectionIdentity(id, CurrentCollectionId, name, Count), version, allSettings,
-            inheritances);
+        var newCollection = ModCollection.CreateFromData(_saveService, _modStorage,
+            new ModCollectionIdentity(id, CurrentCollectionId, name, Count), version, allSettings, inheritances);
         _collectionsByLocal[CurrentCollectionId] =  newCollection;
         CurrentCollectionId                      += 1;
         return newCollection;
@@ -196,8 +196,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// <summary> Remove all settings for not currently-installed mods from the given collection. </summary>
     public void CleanUnavailableSettings(ModCollection collection)
     {
-        var any = collection.UnusedSettings.Count > 0;
-        ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Clear();
+        var any = collection.Settings.Unused.Count > 0;
+        ((Dictionary<string, ModSettings.SavedSettings>)collection.Settings.Unused).Clear();
         if (any)
             _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
     }
@@ -205,7 +205,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// <summary> Remove a specific setting for not currently-installed mods from the given collection. </summary>
     public void CleanUnavailableSetting(ModCollection collection, string? setting)
     {
-        if (setting != null && ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(setting))
+        if (setting != null && ((Dictionary<string, ModSettings.SavedSettings>)collection.Settings.Unused).Remove(setting))
             _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
     }
 
@@ -307,7 +307,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     private void OnModDiscoveryStarted()
     {
         foreach (var collection in this)
-            collection.PrepareModDiscovery(_modStorage);
+            collection.Settings.PrepareModDiscovery(_modStorage);
     }
 
     /// <summary> Restore all settings in all collections to mods. </summary>
@@ -315,7 +315,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     {
         // Re-apply all mod settings.
         foreach (var collection in this)
-            collection.ApplyModSettings(_saveService, _modStorage);
+            collection.Settings.ApplyModSettings(collection, _saveService, _modStorage);
     }
 
     /// <summary> Add or remove a mod from all collections, or re-save all collections where the mod has settings. </summary>
@@ -326,21 +326,22 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         {
             case ModPathChangeType.Added:
                 foreach (var collection in this)
-                    collection.AddMod(mod);
+                    collection.Settings.AddMod(mod);
                 break;
             case ModPathChangeType.Deleted:
                 foreach (var collection in this)
-                    collection.RemoveMod(mod);
+                    collection.Settings.RemoveMod(mod);
                 break;
             case ModPathChangeType.Moved:
-                foreach (var collection in this.Where(collection => collection.Settings[mod.Index] != null))
+                foreach (var collection in this.Where(collection => collection.GetOwnSettings(mod.Index) != null))
                     _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
                 break;
             case ModPathChangeType.Reloaded:
                 foreach (var collection in this)
                 {
-                    if (collection.Settings[mod.Index]?.Settings.FixAll(mod) ?? false)
+                    if (collection.GetOwnSettings(mod.Index)?.Settings.FixAll(mod) ?? false)
                         _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+                    collection.Settings.SetTemporary(mod.Index, null);
                 }
 
                 break;
@@ -357,8 +358,9 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
         foreach (var collection in this)
         {
-            if (collection.Settings[mod.Index]?.HandleChanges(type, mod, group, option, movedToIdx) ?? false)
+            if (collection.GetOwnSettings(mod.Index)?.HandleChanges(type, mod, group, option, movedToIdx) ?? false)
                 _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+            collection.Settings.SetTemporary(mod.Index, null);
         }
     }
 
@@ -370,7 +372,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
         foreach (var collection in this)
         {
-            var (settings, _) = collection[mod.Index];
+            var (settings, _) = collection.GetActualSettings(mod.Index);
             if (settings is { Enabled: true })
                 collection.Counters.IncrementChange();
         }

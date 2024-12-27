@@ -240,7 +240,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
                 if (jObject["Name"]?.ToObject<string>() == ForcedCollection)
                     continue;
 
-                jObject[nameof(ModCollection.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
+                jObject[nameof(ModCollectionInheritance.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
                 File.WriteAllText(collection.FullName, jObject.ToString());
             }
             catch (Exception e)

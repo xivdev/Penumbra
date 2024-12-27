@@ -606,7 +606,7 @@ public class CommandHandler : IDisposable, IApiService
 
     private bool HandleModState(int settingState, ModCollection collection, Mod mod)
     {
-        var settings = collection.Settings[mod.Index];
+        var settings = collection.GetOwnSettings(mod.Index);
         switch (settingState)
         {
             case 0:

@@ -260,7 +260,7 @@ public sealed class CollectionCache : IDisposable
         if (mod.Index < 0)
             return mod.GetData();
 
-        var settings = _collection[mod.Index].Settings;
+        var settings = _collection.GetActualSettings(mod.Index).Settings;
         return settings is not { Enabled: true }
             ? AppliedModData.Empty
             : mod.GetData(settings);
@@ -342,8 +342,8 @@ public sealed class CollectionCache : IDisposable
     // Returns if the added mod takes priority before the existing mod.
     private bool AddConflict(object data, IMod addedMod, IMod existingMod)
     {
-        var addedPriority    = addedMod.Index >= 0 ? _collection[addedMod.Index].Settings!.Priority : addedMod.Priority;
-        var existingPriority = existingMod.Index >= 0 ? _collection[existingMod.Index].Settings!.Priority : existingMod.Priority;
+        var addedPriority    = addedMod.Index >= 0 ? _collection.GetActualSettings(addedMod.Index).Settings!.Priority : addedMod.Priority;
+        var existingPriority = existingMod.Index >= 0 ? _collection.GetActualSettings(existingMod.Index).Settings!.Priority : existingMod.Priority;
 
         if (existingPriority < addedPriority)
         {
