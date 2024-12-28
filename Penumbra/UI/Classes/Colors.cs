@@ -56,12 +56,24 @@ public static class Colors
     {
         var tintValue = ImGui.ColorConvertU32ToFloat4(tint.Value());
         var value     = ImGui.ColorConvertU32ToFloat4(color.Value());
-        var negAlpha  = 1 - tintValue.W;
-        var newAlpha  = negAlpha * value.W + tintValue.W;
-        var newR      = (negAlpha * value.W * value.X + tintValue.W * tintValue.X) / newAlpha;
-        var newG      = (negAlpha * value.W * value.Y + tintValue.W * tintValue.Y) / newAlpha;
-        var newB      = (negAlpha * value.W * value.Z + tintValue.W * tintValue.Z) / newAlpha;
-        return ImGui.ColorConvertFloat4ToU32(new Vector4(newR, newG, newB, newAlpha));
+        return ImGui.ColorConvertFloat4ToU32(TintColor(value, tintValue));
+    }
+
+    public static unsafe uint Tinted(this ImGuiCol color, ColorId tint)
+    {
+        var     tintValue = ImGui.ColorConvertU32ToFloat4(tint.Value());
+        ref var value     = ref *ImGui.GetStyleColorVec4(color);
+        return ImGui.ColorConvertFloat4ToU32(TintColor(value, tintValue));
+    }
+
+    private static unsafe Vector4 TintColor(in Vector4 color, in Vector4 tint)
+    {
+        var negAlpha = 1 - tint.W;
+        var newAlpha = negAlpha * color.W + tint.W;
+        var newR     = (negAlpha * color.W * color.X + tint.W * tint.X) / newAlpha;
+        var newG     = (negAlpha * color.W * color.Y + tint.W * tint.Y) / newAlpha;
+        var newB     = (negAlpha * color.W * color.Z + tint.W * tint.Z) / newAlpha;
+        return new Vector4(newR, newG, newB, newAlpha);
     }
 
     public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)

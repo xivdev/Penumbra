@@ -16,6 +16,22 @@ public sealed class TemporaryModSettings : ModSettings
             Priority = ModPriority.Default,
             Settings = SettingList.Default(mod),
         };
+
+    public TemporaryModSettings()
+    { }
+
+    public TemporaryModSettings(ModSettings? clone, string source, int key = 0)
+    {
+        Source       = source;
+        Lock         = key;
+        ForceInherit = clone == null;
+        if (clone != null)
+        {
+            Enabled  = clone.Enabled;
+            Priority = clone.Priority;
+            Settings = clone.Settings.Clone();
+        }
+    }
 }
 
 public static class ModSettingsExtensions

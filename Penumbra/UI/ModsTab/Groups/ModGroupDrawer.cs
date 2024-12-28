@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -16,13 +17,19 @@ namespace Penumbra.UI.ModsTab.Groups;
 public sealed class ModGroupDrawer(Configuration config, CollectionManager collectionManager) : IUiService
 {
     private readonly List<(IModGroup, int)> _blockGroupCache = [];
+    private          bool                   _temporary;
+    private          bool                   _locked;
+    private          TemporaryModSettings?  _tempSettings;
 
-    public void Draw(Mod mod, ModSettings settings)
+    public void Draw(Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
         if (mod.Groups.Count <= 0)
             return;
 
         _blockGroupCache.Clear();
+        _tempSettings = tempSettings;
+        _temporary    = tempSettings != null;
+        _locked       = (tempSettings?.Lock ?? 0) != 0;
         var useDummy = true;
         foreach (var (group, idx) in mod.Groups.WithIndex())
         {
@@ -63,22 +70,23 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawSingleGroupCombo(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id = ImRaii.PushId(groupIdx);
-        var selectedOption = setting.AsIndex;
+        using var id             = ImUtf8.PushId(groupIdx);
+        var       selectedOption = setting.AsIndex;
+        using var disabled       = ImRaii.Disabled(_locked);
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X * 3 / 4);
         var options = group.Options;
-        using (var combo = ImRaii.Combo(string.Empty, options[selectedOption].Name))
+        using (var combo = ImUtf8.Combo(""u8, options[selectedOption].Name))
         {
             if (combo)
                 for (var idx2 = 0; idx2 < options.Count; ++idx2)
                 {
                     id.Push(idx2);
                     var option = options[idx2];
-                    if (ImGui.Selectable(option.Name, idx2 == selectedOption))
+                    if (ImUtf8.Selectable(option.Name, idx2 == selectedOption))
                         SetModSetting(group, groupIdx, Setting.Single(idx2));
 
                     if (option.Description.Length > 0)
-                        ImGuiUtil.SelectableHelpMarker(option.Description);
+                        ImUtf8.SelectableHelpMarker(option.Description);
 
                     id.Pop();
                 }
@@ -86,9 +94,9 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
 
         ImGui.SameLine();
         if (group.Description.Length > 0)
-            ImGuiUtil.LabeledHelpMarker(group.Name, group.Description);
+            ImUtf8.LabeledHelpMarker(group.Name, group.Description);
         else
-            ImGui.TextUnformatted(group.Name);
+            ImUtf8.Text(group.Name);
     }
 
     /// <summary>
@@ -97,10 +105,10 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawSingleGroupRadio(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id = ImRaii.PushId(groupIdx);
-        var selectedOption = setting.AsIndex;
-        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
-        var options = group.Options;
+        using var id             = ImUtf8.PushId(groupIdx);
+        var       selectedOption = setting.AsIndex;
+        var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
+        var       options        = group.Options;
         DrawCollapseHandling(options, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
@@ -108,11 +116,12 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
 
         void DrawOptions()
         {
+            using var disabled = ImRaii.Disabled(_locked);
             for (var idx = 0; idx < group.Options.Count; ++idx)
             {
-                using var i = ImRaii.PushId(idx);
-                var option = options[idx];
-                if (ImGui.RadioButton(option.Name, selectedOption == idx))
+                using var i      = ImUtf8.PushId(idx);
+                var       option = options[idx];
+                if (ImUtf8.RadioButton(option.Name, selectedOption == idx))
                     SetModSetting(group, groupIdx, Setting.Single(idx));
 
                 if (option.Description.Length <= 0)
@@ -130,28 +139,29 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     /// </summary>
     private void DrawMultiGroup(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id = ImRaii.PushId(groupIdx);
-        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
-        var options = group.Options;
+        using var id       = ImUtf8.PushId(groupIdx);
+        var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+        var       options  = group.Options;
         DrawCollapseHandling(options, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
         var label = $"##multi{groupIdx}";
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
-            ImGui.OpenPopup($"##multi{groupIdx}");
+            ImUtf8.OpenPopup($"##multi{groupIdx}");
 
         DrawMultiPopup(group, groupIdx, label);
         return;
 
         void DrawOptions()
         {
+            using var disabled = ImRaii.Disabled(_locked);
             for (var idx = 0; idx < options.Count; ++idx)
             {
-                using var i = ImRaii.PushId(idx);
-                var option = options[idx];
-                var enabled = setting.HasFlag(idx);
+                using var i       = ImUtf8.PushId(idx);
+                var       option  = options[idx];
+                var       enabled = setting.HasFlag(idx);
 
-                if (ImGui.Checkbox(option.Name, ref enabled))
+                if (ImUtf8.Checkbox(option.Name, ref enabled))
                     SetModSetting(group, groupIdx, setting.SetBit(idx, enabled));
 
                 if (option.Description.Length > 0)
@@ -171,11 +181,12 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
             return;
 
         ImGui.TextUnformatted(group.Name);
+        using var disabled = ImRaii.Disabled(_locked);
         ImGui.Separator();
-        if (ImGui.Selectable("Enable All"))
+        if (ImUtf8.Selectable("Enable All"u8))
             SetModSetting(group, groupIdx, Setting.AllBits(group.Options.Count));
 
-        if (ImGui.Selectable("Disable All"))
+        if (ImUtf8.Selectable("Disable All"u8))
             SetModSetting(group, groupIdx, Setting.Zero);
     }
 
@@ -187,11 +198,11 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         }
         else
         {
-            var collapseId = ImGui.GetID("Collapse");
-            var shown = ImGui.GetStateStorage().GetBool(collapseId, true);
+            var collapseId     = ImUtf8.GetId("Collapse");
+            var shown          = ImGui.GetStateStorage().GetBool(collapseId, true);
             var buttonTextShow = $"Show {options.Count} Options";
             var buttonTextHide = $"Hide {options.Count} Options";
-            var buttonWidth = Math.Max(ImGui.CalcTextSize(buttonTextShow).X, ImGui.CalcTextSize(buttonTextHide).X)
+            var buttonWidth = Math.Max(ImUtf8.CalcTextSize(buttonTextShow).X, ImUtf8.CalcTextSize(buttonTextHide).X)
               + 2 * ImGui.GetStyle().FramePadding.X;
             minWidth = Math.Max(buttonWidth, minWidth);
             if (shown)
@@ -204,22 +215,22 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
                 }
 
 
-                var width = Math.Max(ImGui.GetItemRectSize().X, minWidth);
+                var width  = Math.Max(ImGui.GetItemRectSize().X, minWidth);
                 var endPos = ImGui.GetCursorPos();
                 ImGui.SetCursorPos(pos);
-                if (ImGui.Button(buttonTextHide, new Vector2(width, 0)))
+                if (ImUtf8.Button(buttonTextHide, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);
 
                 ImGui.SetCursorPos(endPos);
             }
             else
             {
-                var optionWidth = options.Max(o => ImGui.CalcTextSize(o.Name).X)
+                var optionWidth = options.Max(o => ImUtf8.CalcTextSize(o.Name).X)
                   + ImGui.GetStyle().ItemInnerSpacing.X
                   + ImGui.GetFrameHeight()
                   + ImGui.GetStyle().FramePadding.X;
                 var width = Math.Max(optionWidth, minWidth);
-                if (ImGui.Button(buttonTextShow, new Vector2(width, 0)))
+                if (ImUtf8.Button(buttonTextShow, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);
             }
         }
@@ -228,6 +239,18 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     private ModCollection Current
         => collectionManager.Active.Current;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void SetModSetting(IModGroup group, int groupIdx, Setting setting)
-        => collectionManager.Editor.SetModSetting(Current, group.Mod, groupIdx, setting);
+    {
+        if (_temporary)
+        {
+            _tempSettings!.ForceInherit       = false;
+            _tempSettings!.Settings[groupIdx] = setting;
+            collectionManager.Editor.SetTemporarySettings(Current, group.Mod, _tempSettings);
+        }
+        else
+        {
+            collectionManager.Editor.SetModSetting(Current, group.Mod, groupIdx, setting);
+        }
+    }
 }

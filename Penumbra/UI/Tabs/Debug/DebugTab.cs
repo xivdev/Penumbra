@@ -791,19 +791,25 @@ public class DebugTab : Window, ITab, IUiService
         ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
     }
 
+    private string       _tmbKeyFilter   = string.Empty;
+    private CiByteString _tmbKeyFilterU8 = CiByteString.Empty;
+
     private void DrawActionTmbs()
     {
         using var mainTree = TreeNode("Action TMBs");
         if (!mainTree)
             return;
 
+        if (ImGui.InputText("Key", ref _tmbKeyFilter, 256))
+            _tmbKeyFilterU8 = CiByteString.FromString(_tmbKeyFilter, out var r, MetaDataComputation.All) ? r : CiByteString.Empty;
         using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit,
             new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
         if (!table)
             return;
 
         var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
-        var dummy = ImGuiClip.ClippedDraw(_schedulerService.ActionTmbs.OrderBy(r => r.Value), skips,
+        var dummy = ImGuiClip.FilteredClippedDraw(_schedulerService.ActionTmbs.OrderBy(r => r.Value), skips,
+            kvp => kvp.Key.Contains(_tmbKeyFilterU8),
             p =>
             {
                 ImUtf8.DrawTableColumn($"{p.Value}");

@@ -33,6 +33,7 @@ public class TemporaryIpcTester(
     private string        _tempCollectionName     = string.Empty;
     private string        _tempCollectionGuidName = string.Empty;
     private string        _tempModName            = string.Empty;
+    private string        _modDirectory           = string.Empty;
     private string        _tempGamePath           = "test/game/path.mtrl";
     private string        _tempFilePath           = "test/success.mtrl";
     private string        _tempManipulation       = string.Empty;
@@ -50,6 +51,7 @@ public class TemporaryIpcTester(
         ImGuiUtil.GuidInput("##guid", "Collection GUID...", string.Empty, ref _tempGuid, ref _tempCollectionGuidName);
         ImGui.InputInt("##tempActorIndex", ref _tempActorIndex, 0, 0);
         ImGui.InputTextWithHint("##tempMod",  "Temporary Mod Name...", ref _tempModName,  32);
+        ImGui.InputTextWithHint("##mod",  "Existing Mod Name...",  ref _modDirectory, 256);
         ImGui.InputTextWithHint("##tempGame", "Game Path...",          ref _tempGamePath, 256);
         ImGui.InputTextWithHint("##tempFile", "File Path...",          ref _tempFilePath, 256);
         ImUtf8.InputText("##tempManip"u8, ref _tempManipulation, "Manipulation Base64 String..."u8);
@@ -121,6 +123,44 @@ public class TemporaryIpcTester(
         IpcTester.DrawIntro(RemoveTemporaryModAll.Label, "Remove Temporary Mod from all Collections");
         if (ImGui.Button("Remove##ModAll"))
             _lastTempError = new RemoveTemporaryModAll(pi).Invoke(_tempModName, int.MaxValue);
+
+        IpcTester.DrawIntro(SetTemporaryModSettings.Label, "Set Temporary Mod Settings (to default) in specific Collection");
+        if (ImUtf8.Button("Set##SetTemporary"u8))
+            _lastTempError = new SetTemporaryModSettings(pi).Invoke(guid, _modDirectory, string.Empty, false, true, 1337, new Dictionary<string, IReadOnlyList<string>>(),
+                "IPC Tester", 1337);
+
+        IpcTester.DrawIntro(SetTemporaryModSettingsPlayer.Label, "Set Temporary Mod Settings (to default) in game object collection");
+        if (ImUtf8.Button("Set##SetTemporaryPlayer"u8))
+            _lastTempError = new SetTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, string.Empty, false, true, 1337, new Dictionary<string, IReadOnlyList<string>>(),
+                "IPC Tester", 1337);
+
+        IpcTester.DrawIntro(RemoveTemporaryModSettings.Label, "Remove Temporary Mod Settings from specific Collection");
+        if (ImUtf8.Button("Remove##RemoveTemporary"u8))
+            _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, string.Empty, 1337);
+        ImGui.SameLine();
+        if (ImUtf8.Button("Remove (Wrong Key)##RemoveTemporary"u8))
+            _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, string.Empty, 1338);
+
+        IpcTester.DrawIntro(RemoveTemporaryModSettingsPlayer.Label, "Remove Temporary Mod Settings from game object Collection");
+        if (ImUtf8.Button("Remove##RemoveTemporaryPlayer"u8))
+            _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, string.Empty, 1337);
+        ImGui.SameLine();
+        if (ImUtf8.Button("Remove (Wrong Key)##RemoveTemporaryPlayer"u8))
+            _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, string.Empty, 1338);
+
+        IpcTester.DrawIntro(RemoveAllTemporaryModSettings.Label, "Remove All Temporary Mod Settings from specific Collection");
+        if (ImUtf8.Button("Remove##RemoveAllTemporary"u8))
+            _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1337);
+        ImGui.SameLine();
+        if (ImUtf8.Button("Remove (Wrong Key)##RemoveAllTemporary"u8))
+            _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1338);
+
+        IpcTester.DrawIntro(RemoveAllTemporaryModSettingsPlayer.Label, "Remove All Temporary Mod Settings from game object Collection");
+        if (ImUtf8.Button("Remove##RemoveAllTemporaryPlayer"u8))
+            _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1337);
+        ImGui.SameLine();
+        if (ImUtf8.Button("Remove (Wrong Key)##RemoveAllTemporaryPlayer"u8))
+            _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1338);
     }
 
     public void DrawCollections()
