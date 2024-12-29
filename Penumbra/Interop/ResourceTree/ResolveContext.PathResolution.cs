@@ -161,7 +161,7 @@ internal partial record ResolveContext
             return variant.Id;
         }
 
-        var entry = ImcFile.GetEntry(imcFileData, Slot.ToSlot(), variant, out var exists);
+        var entry = ImcFile.GetEntry(imcFileData, SlotIndex.ToEquipSlot(), variant, out var exists);
         if (!exists)
             return variant.Id;
 
