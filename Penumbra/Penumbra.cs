@@ -187,7 +187,7 @@ public class Penumbra : IDalamudPlugin
         ReadOnlySpan<string> relevantPlugins =
         [
             "Glamourer", "MareSynchronos", "CustomizePlus", "SimpleHeels", "VfxEditor", "heliosphere-plugin", "Ktisis", "Brio", "DynamicBridge",
-            "IllusioVitae", "Aetherment", "LoporritSync", "GagSpeak", "RoleplayingVoiceDalamud",
+            "IllusioVitae", "Aetherment", "LoporritSync", "GagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn",
         ];
         var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)
