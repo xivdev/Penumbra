@@ -38,16 +38,19 @@ public class ModPanelSettingsTab(
 
     public void DrawContent()
     {
-        using var child = ImUtf8.Child("##settings"u8, default);
-        if (!child)
+        using var table = ImUtf8.Table("##settings"u8, 1, ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail());
+        if (!table)
             return;
 
         _inherited = selection.Collection != collectionManager.Active.Current;
         _temporary = selection.TemporarySettings != null;
         _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
+
+        ImGui.TableSetupScrollFreeze(0, 1);
+        ImGui.TableNextColumn();
         DrawTemporaryWarning();
         DrawInheritedWarning();
-        UiHelpers.DefaultLineSpace();
+        ImGui.Dummy(Vector2.Zero);
         communicator.PreSettingsPanelDraw.Invoke(selection.Mod!.Identifier);
         DrawEnabledInput();
         tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
@@ -56,6 +59,7 @@ public class ModPanelSettingsTab(
         tutorial.OpenTutorial(BasicTutorialSteps.Priority);
         DrawRemoveSettings();
 
+        ImGui.TableNextColumn();
         communicator.PostEnabledDraw.Invoke(selection.Mod!.Identifier);
 
         modGroupDrawer.Draw(selection.Mod!, selection.Settings, selection.TemporarySettings);
@@ -71,7 +75,8 @@ public class ModPanelSettingsTab(
 
         using var color = ImRaii.PushColor(ImGuiCol.Button, ImGuiCol.Button.Tinted(ColorId.TemporaryModSettingsTint));
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
-        if (ImUtf8.ButtonEx($"These settings are temporary from {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}", width,
+        if (ImUtf8.ButtonEx($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
+                width,
                 _locked))
             collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!, null);
 
@@ -174,23 +179,45 @@ public class ModPanelSettingsTab(
     /// </summary>
     private void DrawRemoveSettings()
     {
-        if (_inherited || selection.Settings == ModSettings.Empty)
+        var drawInherited = !_inherited && selection.Settings != ModSettings.Empty;
+        if (!drawInherited && _temporary)
             return;
 
-        var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0;
-        ImGui.SameLine(ImGui.GetWindowWidth() - ImUtf8.CalcTextSize("Inherit Settings"u8).X - ImGui.GetStyle().FramePadding.X * 2 - scroll);
-        if (!ImUtf8.ButtonEx("Inherit Settings"u8, "Remove current settings from this collection so that it can inherit them.\n"u8
-              + "If no inherited collection has settings for this mod, it will be disabled."u8, default, _locked))
-            return;
+        var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemInnerSpacing.X: 0;
+        var offset = (drawInherited, _temporary) switch
+        {
+            (true, true)   => ImUtf8.CalcTextSize("Inherit Settings"u8).X + ImGui.GetStyle().FramePadding.X * 2,
+            (false, false) => ImUtf8.CalcTextSize("Turn Temporary"u8).X + ImGui.GetStyle().FramePadding.X * 2,
+            (true, false) => ImUtf8.CalcTextSize("Inherit Settings"u8).X
+              + ImUtf8.CalcTextSize("Turn Temporary"u8).X
+              + ImGui.GetStyle().FramePadding.X * 4
+              + ImGui.GetStyle().ItemSpacing.X,
+            (false, true) => 0, // can not happen
+        };
 
-        if (_temporary)
+        ImGui.SameLine(ImGui.GetWindowWidth() - offset - scroll);
+        if (!_temporary
+         && ImUtf8.ButtonEx("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
+            collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
+                new TemporaryModSettings(selection.Settings, "yourself"));
+        if (drawInherited)
         {
-            selection.TemporarySettings!.ForceInherit = true;
-            collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!, selection.TemporarySettings);
-        }
-        else
-        {
-            collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod!, true);
+            if (!_temporary)
+                ImGui.SameLine(0, ImGui.GetStyle().ItemSpacing.X);
+            if (ImUtf8.ButtonEx("Inherit Settings"u8, "Remove current settings from this collection so that it can inherit them.\n"u8
+                  + "If no inherited collection has settings for this mod, it will be disabled."u8, default, _locked))
+            {
+                if (_temporary)
+                {
+                    selection.TemporarySettings!.ForceInherit = true;
+                    collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
+                        selection.TemporarySettings);
+                }
+                else
+                {
+                    collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod!, true);
+                }
+            }
         }
     }
 }
