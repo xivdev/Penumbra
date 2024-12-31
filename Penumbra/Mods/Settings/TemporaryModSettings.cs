@@ -7,10 +7,10 @@ public sealed class TemporaryModSettings : ModSettings
     public bool   ForceInherit;
 
     // Create default settings for a given mod.
-    public static TemporaryModSettings DefaultSettings(Mod mod, string source, int key = 0)
+    public static TemporaryModSettings DefaultSettings(Mod mod, string source, bool enabled = false, int key = 0)
         => new()
         {
-            Enabled  = false,
+            Enabled  = enabled,
             Source   = source,
             Lock     = key,
             Priority = ModPriority.Default,
