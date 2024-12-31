@@ -62,8 +62,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SubscribeRightClickFolder(f => SetQuickMove(f, 1, _config.QuickMoveFolder2, s => { _config.QuickMoveFolder2 = s; _config.Save(); }), 120);
         SubscribeRightClickFolder(f => SetQuickMove(f, 2, _config.QuickMoveFolder3, s => { _config.QuickMoveFolder3 = s; _config.Save(); }), 130);
         SubscribeRightClickLeaf(ToggleLeafFavorite);
-        SubscribeRightClickLeaf(RemoveTemporarySettings);
-        SubscribeRightClickLeaf(DisableTemporarily);
+        SubscribeRightClickLeaf(DrawTemporaryOptions);
         SubscribeRightClickLeaf(l => QuickMove(l, _config.QuickMoveFolder1, _config.QuickMoveFolder2, _config.QuickMoveFolder3));
         SubscribeRightClickMain(ClearDefaultImportFolder, 100);
         SubscribeRightClickMain(() => ClearQuickMove(0, _config.QuickMoveFolder1, () => {_config.QuickMoveFolder1 = string.Empty; _config.Save();}), 110);
@@ -135,7 +134,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         _dragDrop.CreateImGuiSource("ModDragDrop", m => m.Extensions.Any(e => ValidModExtensions.Contains(e.ToLowerInvariant())), m =>
         {
-            ImGui.TextUnformatted($"Dragging mods for import:\n\t{string.Join("\n\t", m.Files.Select(Path.GetFileName))}");
+            ImUtf8.Text($"Dragging mods for import:\n\t{string.Join("\n\t", m.Files.Select(Path.GetFileName))}");
             return true;
         });
         base.Draw(width);
@@ -198,8 +197,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         var flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
         using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Tinted(state.Tint))
             .Push(ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
-        using var id = ImRaii.PushId(leaf.Value.Index);
-        ImRaii.TreeNode(leaf.Value.Name, flags).Dispose();
+        using var id = ImUtf8.PushId(leaf.Value.Index);
+        ImUtf8.TreeNode(leaf.Value.Name.Text, flags).Dispose();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
         {
             _modManager.SetKnown(leaf.Value);
@@ -244,48 +243,58 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void DisableDescendants(ModFileSystem.Folder folder)
     {
-        if (ImGui.MenuItem("Disable Descendants"))
+        if (ImUtf8.MenuItem("Disable Descendants"u8))
             SetDescendants(folder, false);
     }
 
     private void InheritDescendants(ModFileSystem.Folder folder)
     {
-        if (ImGui.MenuItem("Inherit Descendants"))
+        if (ImUtf8.MenuItem("Inherit Descendants"u8))
             SetDescendants(folder, true, true);
     }
 
     private void OwnDescendants(ModFileSystem.Folder folder)
     {
-        if (ImGui.MenuItem("Stop Inheriting Descendants"))
+        if (ImUtf8.MenuItem("Stop Inheriting Descendants"u8))
             SetDescendants(folder, false, true);
     }
 
     private void ToggleLeafFavorite(FileSystem<Mod>.Leaf mod)
     {
-        if (ImGui.MenuItem(mod.Value.Favorite ? "Remove Favorite" : "Mark as Favorite"))
+        if (ImUtf8.MenuItem(mod.Value.Favorite ? "Remove Favorite"u8 : "Mark as Favorite"u8))
             _modManager.DataEditor.ChangeModFavorite(mod.Value, !mod.Value.Favorite);
     }
 
-    private void RemoveTemporarySettings(FileSystem<Mod>.Leaf mod)
+    private void DrawTemporaryOptions(FileSystem<Mod>.Leaf mod)
     {
-        var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
-        if (tempSettings is { Lock: <= 0 })
-            if (ImUtf8.MenuItem("Remove Temporary Settings"))
-                _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, null);
-    }
+        const string source       = "yourself";
+        var          tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
+        if (tempSettings is { Lock: > 0 })
+            return;
 
-    private void DisableTemporarily(FileSystem<Mod>.Leaf mod)
-    {
-        var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
-        if (tempSettings is not { Lock: > 0 })
-            if (ImUtf8.MenuItem("Disable Temporarily"))
-                _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
-                    TemporaryModSettings.DefaultSettings(mod.Value, "User Context-Menu"));
+        if (tempSettings is { Lock: <= 0 } && ImUtf8.MenuItem("Remove Temporary Settings"u8))
+            _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, null);
+        var actual = _collectionManager.Active.Current.GetActualSettings(mod.Value.Index).Settings;
+        if (actual?.Enabled is true && ImUtf8.MenuItem("Disable Temporarily"u8))
+            _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
+                new TemporaryModSettings(actual, source) { Enabled = false });
+
+        if (actual is not { Enabled: true } && ImUtf8.MenuItem("Enable Temporarily"u8))
+        {
+            var newSettings = actual is null
+                ? TemporaryModSettings.DefaultSettings(mod.Value, source, true)
+                : new TemporaryModSettings(actual, source) { Enabled = true };
+            _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, newSettings);
+        }
+
+        if (tempSettings is null && ImUtf8.MenuItem("Turn Temporary"u8))
+            _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
+                new TemporaryModSettings(actual, source));
     }
 
     private void SetDefaultImportFolder(ModFileSystem.Folder folder)
     {
-        if (!ImGui.MenuItem("Set As Default Import Folder"))
+        if (!ImUtf8.MenuItem("Set As Default Import Folder"u8))
             return;
 
         var newName = folder.FullName();
@@ -298,7 +307,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void ClearDefaultImportFolder()
     {
-        if (!ImGui.MenuItem("Clear Default Import Folder") || _config.DefaultImportFolder.Length <= 0)
+        if (!ImUtf8.MenuItem("Clear Default Import Folder"u8) || _config.DefaultImportFolder.Length <= 0)
             return;
 
         _config.DefaultImportFolder = string.Empty;
@@ -309,16 +318,15 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void AddNewModButton(Vector2 size)
     {
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), size, "Create a new, empty mod of a given name.",
-                !_modManager.Valid, true))
-            ImGui.OpenPopup("Create New Mod");
+        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, "Create a new, empty mod of a given name."u8, size, !_modManager.Valid))
+            ImUtf8.OpenPopup("Create New Mod"u8);
     }
 
     /// <summary> Add an import mods button that opens a file selector. </summary>
     private void AddImportModButton(Vector2 size)
     {
-        var button = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), size,
-            "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.", !_modManager.Valid, true);
+        var button = ImUtf8.IconButton(FontAwesomeIcon.FileImport,
+            "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files."u8, size, !_modManager.Valid);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModImport);
         if (!button)
             return;
@@ -351,14 +359,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         var currentName = leaf.Value.Name.Text;
         if (ImGui.IsWindowAppearing())
             ImGui.SetKeyboardFocusHere(0);
-        ImGui.TextUnformatted("Rename Mod:");
-        if (ImGui.InputText("##RenameMod", ref currentName, 256, ImGuiInputTextFlags.EnterReturnsTrue))
+        ImUtf8.Text("Rename Mod:"u8);
+        if (ImUtf8.InputText("##RenameMod"u8, ref currentName, flags: ImGuiInputTextFlags.EnterReturnsTrue))
         {
             _modManager.DataEditor.ChangeModName(leaf.Value, currentName);
             ImGui.CloseCurrentPopup();
         }
 
-        ImGuiUtil.HoverTooltip("Enter a new name here to rename the changed mod.");
+        ImUtf8.HoverTooltip("Enter a new name here to rename the changed mod."u8);
     }
 
     private void DeleteModButton(Vector2 size)
@@ -366,8 +374,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void AddHelpButton(Vector2 size)
     {
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.QuestionCircle.ToIconString(), size, "Open extended help.", false, true))
-            ImGui.OpenPopup("ExtendedHelp");
+        if (ImUtf8.IconButton(FontAwesomeIcon.QuestionCircle, "Open extended help."u8, size, false))
+            ImUtf8.OpenPopup("ExtendedHelp"u8);
 
         _tutorial.OpenTutorial(BasicTutorialSteps.AdvancedHelp);
     }
@@ -392,60 +400,61 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         ImGuiUtil.HelpPopup("ExtendedHelp", new Vector2(1000 * UiHelpers.Scale, 38.5f * ImGui.GetTextLineHeightWithSpacing()), () =>
         {
             ImGui.Dummy(Vector2.UnitY * ImGui.GetTextLineHeight());
-            ImGui.TextUnformatted("Mod Management");
-            ImGui.BulletText("You can create empty mods or import mods with the buttons in this row.");
+            ImUtf8.Text("Mod Management"u8);
+            ImUtf8.BulletText("You can create empty mods or import mods with the buttons in this row."u8);
             using var indent = ImRaii.PushIndent();
-            ImGui.BulletText("Supported formats for import are: .ttmp, .ttmp2, .pmp.");
-            ImGui.BulletText(
-                "You can also support .zip, .7z or .rar archives, but only if they already contain Penumbra-styled mods with appropriate metadata.");
+            ImUtf8.BulletText("Supported formats for import are: .ttmp, .ttmp2, .pmp."u8);
+            ImUtf8.BulletText(
+                "You can also support .zip, .7z or .rar archives, but only if they already contain Penumbra-styled mods with appropriate metadata."u8);
             indent.Pop(1);
-            ImGui.BulletText("You can also create empty mod folders and delete mods.");
-            ImGui.BulletText("For further editing of mods, select them and use the Edit Mod tab in the panel or the Advanced Editing popup.");
+            ImUtf8.BulletText("You can also create empty mod folders and delete mods."u8);
+            ImUtf8.BulletText(
+                "For further editing of mods, select them and use the Edit Mod tab in the panel or the Advanced Editing popup."u8);
             ImGui.Dummy(Vector2.UnitY * ImGui.GetTextLineHeight());
-            ImGui.TextUnformatted("Mod Selector");
-            ImGui.BulletText("Select a mod to obtain more information or change settings.");
-            ImGui.BulletText("Names are colored according to your config and their current state in the collection:");
+            ImUtf8.Text("Mod Selector"u8);
+            ImUtf8.BulletText("Select a mod to obtain more information or change settings."u8);
+            ImUtf8.BulletText("Names are colored according to your config and their current state in the collection:"u8);
             indent.Push();
-            ImGuiUtil.BulletTextColored(ColorId.EnabledMod.Value(),           "enabled in the current collection.");
-            ImGuiUtil.BulletTextColored(ColorId.DisabledMod.Value(),          "disabled in the current collection.");
-            ImGuiUtil.BulletTextColored(ColorId.InheritedMod.Value(),         "enabled due to inheritance from another collection.");
-            ImGuiUtil.BulletTextColored(ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection.");
-            ImGuiUtil.BulletTextColored(ColorId.UndefinedMod.Value(),         "unconfigured in all inherited collections.");
-            ImGuiUtil.BulletTextColored(ColorId.HandledConflictMod.Value(),
-                "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved).");
-            ImGuiUtil.BulletTextColored(ColorId.ConflictingMod.Value(),
-                "enabled and conflicting with another enabled Mod on the same priority.");
-            ImGuiUtil.BulletTextColored(ColorId.FolderExpanded.Value(),  "expanded mod folder.");
-            ImGuiUtil.BulletTextColored(ColorId.FolderCollapsed.Value(), "collapsed mod folder");
+            ImUtf8.BulletTextColored(ColorId.EnabledMod.Value(),           "enabled in the current collection."u8);
+            ImUtf8.BulletTextColored(ColorId.DisabledMod.Value(),          "disabled in the current collection."u8);
+            ImUtf8.BulletTextColored(ColorId.InheritedMod.Value(),         "enabled due to inheritance from another collection."u8);
+            ImUtf8.BulletTextColored(ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection."u8);
+            ImUtf8.BulletTextColored(ColorId.UndefinedMod.Value(),         "unconfigured in all inherited collections."u8);
+            ImUtf8.BulletTextColored(ColorId.HandledConflictMod.Value(),
+                "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)."u8);
+            ImUtf8.BulletTextColored(ColorId.ConflictingMod.Value(),
+                "enabled and conflicting with another enabled Mod on the same priority."u8);
+            ImUtf8.BulletTextColored(ColorId.FolderExpanded.Value(),  "expanded mod folder."u8);
+            ImUtf8.BulletTextColored(ColorId.FolderCollapsed.Value(), "collapsed mod folder"u8);
             indent.Pop(1);
-            ImGui.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled.");
+            ImUtf8.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled."u8);
             indent.Push();
-            ImGui.BulletText(
+            ImUtf8.BulletText(
                 $"Holding {_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
             indent.Pop(1);
-            ImGui.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number.");
+            ImUtf8.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number."u8);
             indent.Push();
-            ImGui.BulletText("A sort order differing from the mods name will not be displayed, it will just be used for ordering.");
-            ImGui.BulletText(
-                "If the sort order string contains Forward-Slashes ('/'), the preceding substring will be turned into folders automatically.");
+            ImUtf8.BulletText("A sort order differing from the mods name will not be displayed, it will just be used for ordering."u8);
+            ImUtf8.BulletText(
+                "If the sort order string contains Forward-Slashes ('/'), the preceding substring will be turned into folders automatically."u8);
             indent.Pop(1);
-            ImGui.BulletText(
-                "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod.");
+            ImUtf8.BulletText(
+                "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod."u8);
             indent.Push();
-            ImGui.BulletText(
-                "You can select multiple mods and folders by holding Control while clicking them, and then drag all of them at once.");
-            ImGui.BulletText(
-                "Selected mods inside an also selected folder will be ignored when dragging and move inside their folder instead of directly into the target.");
+            ImUtf8.BulletText(
+                "You can select multiple mods and folders by holding Control while clicking them, and then drag all of them at once."u8);
+            ImUtf8.BulletText(
+                "Selected mods inside an also selected folder will be ignored when dragging and move inside their folder instead of directly into the target."u8);
             indent.Pop(1);
-            ImGui.BulletText("Right-clicking a folder opens a context menu.");
-            ImGui.BulletText("Right-clicking empty space allows you to expand or collapse all folders at once.");
-            ImGui.BulletText("Use the Filter Mods... input at the top to filter the list for mods whose name or path contain the text.");
+            ImUtf8.BulletText("Right-clicking a folder opens a context menu."u8);
+            ImUtf8.BulletText("Right-clicking empty space allows you to expand or collapse all folders at once."u8);
+            ImUtf8.BulletText("Use the Filter Mods... input at the top to filter the list for mods whose name or path contain the text."u8);
             indent.Push();
-            ImGui.BulletText("You can enter n:[string] to filter only for names, without path.");
-            ImGui.BulletText("You can enter c:[string] to filter for Changed Items instead.");
-            ImGui.BulletText("You can enter a:[string] to filter for Mod Authors instead.");
+            ImUtf8.BulletText("You can enter n:[string] to filter only for names, without path."u8);
+            ImUtf8.BulletText("You can enter c:[string] to filter for Changed Items instead."u8);
+            ImUtf8.BulletText("You can enter a:[string] to filter for Mod Authors instead."u8);
             indent.Pop(1);
-            ImGui.BulletText("Use the expandable menu beside the input to filter for mods fulfilling specific criteria.");
+            ImUtf8.BulletText("Use the expandable menu beside the input to filter for mods fulfilling specific criteria."u8);
         });
     }
 
@@ -729,7 +738,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private bool DrawFilterCombo(ref bool everything)
     {
-        using var combo = ImRaii.Combo("##filterCombo", string.Empty,
+        using var combo = ImUtf8.Combo("##filterCombo"u8, ""u8,
             ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft | ImGuiComboFlags.HeightLargest);
         var ret = ImGui.IsItemClicked(ImGuiMouseButton.Right);
         if (!combo)
@@ -738,7 +747,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
             ImGui.GetStyle().ItemSpacing with { Y = 3 * UiHelpers.Scale });
 
-        if (ImGui.Checkbox("Everything", ref everything))
+        if (ImUtf8.Checkbox("Everything"u8, ref everything))
         {
             _stateFilter = everything ? ModFilterExtensions.UnfilteredStateMods : 0;
             SetFilterDirty();
@@ -784,7 +793,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             SetFilterDirty();
         }
 
-        ImGuiUtil.HoverTooltip("Filter mods for their activation status.\nRight-Click to clear all filters.");
+        ImUtf8.HoverTooltip("Filter mods for their activation status.\nRight-Click to clear all filters."u8);
         ImGui.SetCursorPos(pos);
         return (remainingWidth, rightClick);
     }
