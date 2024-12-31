@@ -69,7 +69,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     }
 
     protected override bool Filtered(int idx)
-        => !Items[idx].Name.Contains(Filter, StringComparison.OrdinalIgnoreCase);
+        => !Items[idx].Identity.Name.Contains(Filter, StringComparison.OrdinalIgnoreCase);
 
     private const string PayloadString = "Collection";
 
@@ -111,12 +111,12 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     }
 
     private string Name(ModCollection collection)
-        => _incognito.IncognitoMode || collection.Name.Length == 0 ? collection.AnonymizedName : collection.Name;
+        => _incognito.IncognitoMode || collection.Identity.Name.Length == 0 ? collection.Identity.AnonymizedName : collection.Identity.Name;
 
     public void RestoreCollections()
     {
         Items.Clear();
-        foreach (var c in _storage.OrderBy(c => c.Name))
+        foreach (var c in _storage.OrderBy(c => c.Identity.Name))
             Items.Add(c);
         SetFilterDirty();
         SetCurrent(_active.Current);

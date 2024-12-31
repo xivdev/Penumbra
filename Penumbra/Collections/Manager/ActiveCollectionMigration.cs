@@ -48,7 +48,7 @@ public static class ActiveCollectionMigration
             if (!storage.ByName(collectionName, out var collection))
             {
                 Penumbra.Messager.NotificationMessage(
-                    $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {ModCollection.Empty.Name}.", NotificationType.Warning);
+                    $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {ModCollection.Empty.Identity.Name}.", NotificationType.Warning);
                 dict.Add(player, ModCollection.Empty);
             }
             else

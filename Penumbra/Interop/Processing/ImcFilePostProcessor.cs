@@ -26,6 +26,6 @@ public sealed class ImcFilePostProcessor(CollectionStorage collections) : IFileP
 
         file.Replace(resource);
         Penumbra.Log.Verbose(
-            $"[ResourceLoader] Loaded {originalGamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
+            $"[ResourceLoader] Loaded {originalGamePath} from file and replaced with IMC from collection {collection.Identity.AnonymizedName}.");
     }
 }

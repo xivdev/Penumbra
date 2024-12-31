@@ -85,13 +85,13 @@ public class TempModManager : IDisposable, IService
         {
             if (removed)
             {
-                Penumbra.Log.Verbose($"Removing temporary Mod {mod.Name} from {collection.AnonymizedName}.");
+                Penumbra.Log.Verbose($"Removing temporary Mod {mod.Name} from {collection.Identity.AnonymizedName}.");
                 collection.Remove(mod);
                 _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, Setting.False, 0, false);
             }
             else
             {
-                Penumbra.Log.Verbose($"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.AnonymizedName}.");
+                Penumbra.Log.Verbose($"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.Identity.AnonymizedName}.");
                 collection.Apply(mod, created);
                 _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, Setting.True, 0, false);
             }

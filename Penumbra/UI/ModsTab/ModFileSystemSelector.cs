@@ -62,6 +62,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SubscribeRightClickFolder(f => SetQuickMove(f, 1, _config.QuickMoveFolder2, s => { _config.QuickMoveFolder2 = s; _config.Save(); }), 120);
         SubscribeRightClickFolder(f => SetQuickMove(f, 2, _config.QuickMoveFolder3, s => { _config.QuickMoveFolder3 = s; _config.Save(); }), 130);
         SubscribeRightClickLeaf(ToggleLeafFavorite);
+        SubscribeRightClickLeaf(RemoveTemporarySettings);
+        SubscribeRightClickLeaf(DisableTemporarily);
         SubscribeRightClickLeaf(l => QuickMove(l, _config.QuickMoveFolder1, _config.QuickMoveFolder2, _config.QuickMoveFolder3));
         SubscribeRightClickMain(ClearDefaultImportFolder, 100);
         SubscribeRightClickMain(() => ClearQuickMove(0, _config.QuickMoveFolder1, () => {_config.QuickMoveFolder1 = string.Empty; _config.Save();}), 110);
@@ -194,14 +196,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     protected override void DrawLeafName(FileSystem<Mod>.Leaf leaf, in ModState state, bool selected)
     {
         var flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
-        using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Value())
+        using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Tinted(state.Tint))
             .Push(ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
         using var id = ImRaii.PushId(leaf.Value.Index);
         ImRaii.TreeNode(leaf.Value.Name, flags).Dispose();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
         {
             _modManager.SetKnown(leaf.Value);
-            var (setting, collection) = _collectionManager.Active.Current[leaf.Value.Index];
+            var (setting, collection) = _collectionManager.Active.Current.GetActualSettings(leaf.Value.Index);
             if (_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {
                 _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, leaf.Value, true);
@@ -262,6 +264,23 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         if (ImGui.MenuItem(mod.Value.Favorite ? "Remove Favorite" : "Mark as Favorite"))
             _modManager.DataEditor.ChangeModFavorite(mod.Value, !mod.Value.Favorite);
+    }
+
+    private void RemoveTemporarySettings(FileSystem<Mod>.Leaf mod)
+    {
+        var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
+        if (tempSettings is { Lock: <= 0 })
+            if (ImUtf8.MenuItem("Remove Temporary Settings"))
+                _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, null);
+    }
+
+    private void DisableTemporarily(FileSystem<Mod>.Leaf mod)
+    {
+        var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
+        if (tempSettings is not { Lock: > 0 })
+            if (ImUtf8.MenuItem("Disable Temporarily"))
+                _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
+                    TemporaryModSettings.DefaultSettings(mod.Value, "User Context-Menu"));
     }
 
     private void SetDefaultImportFolder(ModFileSystem.Folder folder)
@@ -392,8 +411,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImGuiUtil.BulletTextColored(ColorId.InheritedMod.Value(),         "enabled due to inheritance from another collection.");
             ImGuiUtil.BulletTextColored(ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection.");
             ImGuiUtil.BulletTextColored(ColorId.UndefinedMod.Value(),         "unconfigured in all inherited collections.");
-            ImGuiUtil.BulletTextColored(ColorId.NewMod.Value(),
-                "newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded.");
             ImGuiUtil.BulletTextColored(ColorId.HandledConflictMod.Value(),
                 "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved).");
             ImGuiUtil.BulletTextColored(ColorId.ConflictingMod.Value(),
@@ -501,6 +518,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     public struct ModState
     {
         public ColorId     Color;
+        public ColorId     Tint;
         public ModPriority Priority;
     }
 
@@ -571,24 +589,31 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         => !_filter.IsVisible(leaf);
 
     /// <summary> Only get the text color for a mod if no filters are set. </summary>
-    private ColorId GetTextColor(Mod mod, ModSettings? settings, ModCollection collection)
+    private (ColorId Color, ColorId Tint) GetTextColor(Mod mod, ModSettings? settings, ModCollection collection)
     {
-        if (_modManager.IsNew(mod))
-            return ColorId.NewMod;
+        var tint = settings.IsTemporary()
+            ? ColorId.TemporaryModSettingsTint
+            : _modManager.IsNew(mod)
+                ? ColorId.NewModTint
+                : ColorId.NoTint;
+        if (settings.IsTemporary())
+            tint = ColorId.TemporaryModSettingsTint;
 
         if (settings == null)
-            return ColorId.UndefinedMod;
+            return (ColorId.UndefinedMod, tint);
 
         if (!settings.Enabled)
-            return collection != _collectionManager.Active.Current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod;
+            return (collection != _collectionManager.Active.Current
+                ? ColorId.InheritedDisabledMod
+                : ColorId.DisabledMod, tint);
 
         var conflicts = _collectionManager.Active.Current.Conflicts(mod);
         if (conflicts.Count == 0)
-            return collection != _collectionManager.Active.Current ? ColorId.InheritedMod : ColorId.EnabledMod;
+            return (collection != _collectionManager.Active.Current ? ColorId.InheritedMod : ColorId.EnabledMod, tint);
 
-        return conflicts.Any(c => !c.Solved)
+        return (conflicts.Any(c => !c.Solved)
             ? ColorId.ConflictingMod
-            : ColorId.HandledConflictMod;
+            : ColorId.HandledConflictMod, tint);
     }
 
     private bool CheckStateFilters(Mod mod, ModSettings? settings, ModCollection collection, ref ModState state)
@@ -620,6 +645,15 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                 return true;
         }
 
+        // isNew color takes precedence before other colors.
+        if (settings.IsTemporary())
+            state.Tint = ColorId.TemporaryModSettingsTint;
+        else if (isNew)
+            state.Tint = ColorId.NewModTint;
+        else
+            state.Tint = ColorId.NoTint;
+
+
         // Handle settings.
         if (settings == null)
         {
@@ -631,7 +665,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         }
         else if (!settings.Enabled)
         {
-            state.Color = collection == _collectionManager.Active.Current ? ColorId.DisabledMod : ColorId.InheritedDisabledMod;
+            state.Color = collection != _collectionManager.Active.Current
+                ? ColorId.InheritedDisabledMod
+                : ColorId.DisabledMod;
             if (!_stateFilter.HasFlag(ModFilter.Disabled)
              || !_stateFilter.HasFlag(ModFilter.NoConflict))
                 return true;
@@ -666,9 +702,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             }
         }
 
-        // isNew color takes precedence before other colors.
-        if (isNew)
-            state.Color = ColorId.NewMod;
 
         return false;
     }
@@ -677,7 +710,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private bool ApplyFiltersAndState(ModFileSystem.Leaf leaf, out ModState state)
     {
         var mod = leaf.Value;
-        var (settings, collection) = _collectionManager.Active.Current[mod.Index];
+        var (settings, collection) = _collectionManager.Active.Current.GetActualSettings(mod.Index);
 
         state = new ModState
         {
@@ -690,7 +723,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (_stateFilter != ModFilterExtensions.UnfilteredStateMods)
             return CheckStateFilters(mod, settings, collection, ref state);
 
-        state.Color = GetTextColor(mod, settings, collection);
+        (state.Color, state.Tint) = GetTextColor(mod, settings, collection);
         return false;
     }
 

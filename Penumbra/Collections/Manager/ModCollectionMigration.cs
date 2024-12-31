@@ -26,12 +26,12 @@ internal static class ModCollectionMigration
         // Remove all completely defaulted settings from active and inactive mods.
         for (var i = 0; i < collection.Settings.Count; ++i)
         {
-            if (SettingIsDefaultV0(collection.Settings[i]))
-                ((List<ModSettings?>)collection.Settings)[i] = null;
+            if (SettingIsDefaultV0(collection.GetOwnSettings(i)))
+                collection.Settings.SetAll(i, FullModSettings.Empty);
         }
 
-        foreach (var (key, _) in collection.UnusedSettings.Where(kvp => SettingIsDefaultV0(kvp.Value)).ToList())
-            ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(key);
+        foreach (var (key, _) in collection.Settings.Unused.Where(kvp => SettingIsDefaultV0(kvp.Value)).ToList())
+            collection.Settings.RemoveUnused(key);
 
         return true;
     }

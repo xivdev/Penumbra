@@ -326,7 +326,7 @@ public class CommandHandler : IDisposable, IApiService
             {
                 _chat.Print(collection == null
                     ? $"The {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}" : string.Empty)} is already unassigned"
-                    : $"{collection.Name} already is the {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
+                    : $"{collection.Identity.Name} already is the {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
                 continue;
             }
 
@@ -363,13 +363,13 @@ public class CommandHandler : IDisposable, IApiService
                 }
 
                 Print(
-                    $"Removed {oldCollection.Name} as {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
+                    $"Removed {oldCollection.Identity.Name} as {type.ToName()} Collection assignment {(identifier.IsValid ? $" for {identifier}." : ".")}");
                 anySuccess = true;
                 continue;
             }
 
             _collectionManager.Active.SetCollection(collection!, type, individualIndex);
-            Print($"Assigned {collection!.Name} as {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
+            Print($"Assigned {collection!.Identity.Name} as {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
         }
 
         return anySuccess;
@@ -440,7 +440,7 @@ public class CommandHandler : IDisposable, IApiService
 
             _chat.Print(new SeStringBuilder().AddText("Mod ").AddPurple(mod.Name, true)
                 .AddText("already had the desired state in collection ")
-                .AddYellow(collection!.Name, true).AddText(".").BuiltString);
+                .AddYellow(collection!.Identity.Name, true).AddText(".").BuiltString);
             return false;
         }
 
@@ -458,7 +458,7 @@ public class CommandHandler : IDisposable, IApiService
                 _collectionEditor.SetModSetting(collection!, mod, groupIndex, setting);
                 Print(() => new SeStringBuilder().AddText("Changed settings of group ").AddGreen(groupName, true).AddText(" in mod ")
                     .AddPurple(mod.Name, true).AddText(" in collection ")
-                    .AddYellow(collection!.Name, true).AddText(".").BuiltString);
+                    .AddYellow(collection!.Identity.Name, true).AddText(".").BuiltString);
                 return true;
         }
 
@@ -543,7 +543,7 @@ public class CommandHandler : IDisposable, IApiService
             changes |= HandleModState(state, collection!, mod);
 
         if (!changes)
-            Print(() => new SeStringBuilder().AddText("No mod states were changed in collection ").AddYellow(collection!.Name, true)
+            Print(() => new SeStringBuilder().AddText("No mod states were changed in collection ").AddYellow(collection!.Identity.Name, true)
                 .AddText(".").BuiltString);
 
         return true;
@@ -558,7 +558,7 @@ public class CommandHandler : IDisposable, IApiService
             return true;
         }
 
-        collection = string.Equals(lowerName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase)
+        collection = string.Equals(lowerName, ModCollection.Empty.Identity.Name, StringComparison.OrdinalIgnoreCase)
             ? ModCollection.Empty
             : _collectionManager.Storage.ByIdentifier(lowerName, out var c)
                 ? c
@@ -606,7 +606,7 @@ public class CommandHandler : IDisposable, IApiService
 
     private bool HandleModState(int settingState, ModCollection collection, Mod mod)
     {
-        var settings = collection.Settings[mod.Index];
+        var settings = collection.GetOwnSettings(mod.Index);
         switch (settingState)
         {
             case 0:
@@ -614,7 +614,7 @@ public class CommandHandler : IDisposable, IApiService
                     return false;
 
                 Print(() => new SeStringBuilder().AddText("Enabled mod ").AddPurple(mod.Name, true).AddText(" in collection ")
-                    .AddYellow(collection.Name, true)
+                    .AddYellow(collection.Identity.Name, true)
                     .AddText(".").BuiltString);
                 return true;
 
@@ -623,7 +623,7 @@ public class CommandHandler : IDisposable, IApiService
                     return false;
 
                 Print(() => new SeStringBuilder().AddText("Disabled mod ").AddPurple(mod.Name, true).AddText(" in collection ")
-                    .AddYellow(collection.Name, true)
+                    .AddYellow(collection.Identity.Name, true)
                     .AddText(".").BuiltString);
                 return true;
 
@@ -634,7 +634,7 @@ public class CommandHandler : IDisposable, IApiService
 
                 Print(() => new SeStringBuilder().AddText(setting ? "Enabled mod " : "Disabled mod ").AddPurple(mod.Name, true)
                     .AddText(" in collection ")
-                    .AddYellow(collection.Name, true)
+                    .AddYellow(collection.Identity.Name, true)
                     .AddText(".").BuiltString);
                 return true;
 
@@ -643,7 +643,7 @@ public class CommandHandler : IDisposable, IApiService
                     return false;
 
                 Print(() => new SeStringBuilder().AddText("Set mod ").AddPurple(mod.Name, true).AddText(" in collection ")
-                    .AddYellow(collection.Name, true)
+                    .AddYellow(collection.Identity.Name, true)
                     .AddText(" to inherit.").BuiltString);
                 return true;
         }

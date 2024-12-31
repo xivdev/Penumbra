@@ -15,6 +15,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
@@ -221,16 +222,16 @@ public sealed class CollectionPanel(
         ImGui.SameLine();
         ImGui.BeginGroup();
         using var style      = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
-        var       name       = _newName ?? collection.Name;
-        var       identifier = collection.Identifier;
+        var       name       = _newName ?? collection.Identity.Name;
+        var       identifier = collection.Identity.Identifier;
         var       width      = ImGui.GetContentRegionAvail().X;
         var       fileName   = saveService.FileNames.CollectionFile(collection);
         ImGui.SetNextItemWidth(width);
         if (ImGui.InputText("##name", ref name, 128))
             _newName = name;
-        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Name)
+        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Identity.Name)
         {
-            collection.Name = _newName;
+            collection.Identity.Name = _newName;
             saveService.QueueSave(new ModCollectionSave(mods, collection));
             selector.RestoreCollections();
             _newName = null;
@@ -242,7 +243,7 @@ public sealed class CollectionPanel(
 
         using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
-            if (ImGui.Button(collection.Identifier, new Vector2(width, 0)))
+            if (ImGui.Button(collection.Identity.Identifier, new Vector2(width, 0)))
                 try
                 {
                     Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
@@ -289,9 +290,9 @@ public sealed class CollectionPanel(
                 _active.SetCollection(null, type, _active.Individuals.GetGroup(identifier));
         }
 
-        foreach (var coll in _collections.OrderBy(c => c.Name))
+        foreach (var coll in _collections.OrderBy(c => c.Identity.Name))
         {
-            if (coll != collection && ImGui.MenuItem($"Use {coll.Name}."))
+            if (coll != collection && ImGui.MenuItem($"Use {coll.Identity.Name}."))
                 _active.SetCollection(coll, type, _active.Individuals.GetGroup(identifier));
         }
     }
@@ -418,7 +419,7 @@ public sealed class CollectionPanel(
     private string Name(ModCollection? collection)
         => collection == null                 ? "Unassigned" :
             collection == ModCollection.Empty ? "Use No Mods" :
-            incognito.IncognitoMode           ? collection.AnonymizedName : collection.Name;
+            incognito.IncognitoMode           ? collection.Identity.AnonymizedName : collection.Identity.Name;
 
     private void DrawIndividualButton(string intro, Vector2 width, string tooltip, char suffix, params ActorIdentifier[] identifiers)
     {
@@ -497,7 +498,7 @@ public sealed class CollectionPanel(
         ImGui.Separator();
 
         var buttonHeight = 2 * ImGui.GetTextLineHeightWithSpacing();
-        if (_inUseCache.Count == 0 && collection.DirectParentOf.Count == 0)
+        if (_inUseCache.Count == 0 && collection.Inheritance.DirectlyInheritedBy.Count == 0)
         {
             ImGui.Dummy(Vector2.One);
             using var f = _nameFont.Push();
@@ -559,7 +560,7 @@ public sealed class CollectionPanel(
 
     private void DrawInheritanceStatistics(ModCollection collection, Vector2 buttonWidth)
     {
-        if (collection.DirectParentOf.Count <= 0)
+        if (collection.Inheritance.DirectlyInheritedBy.Count <= 0)
             return;
 
         using (var _ = ImRaii.PushStyle(ImGuiStyleVar.FramePadding, Vector2.Zero))
@@ -570,11 +571,11 @@ public sealed class CollectionPanel(
         using var f     = _nameFont.Push();
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
         using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
-        ImGuiUtil.DrawTextButton(Name(collection.DirectParentOf[0]), Vector2.Zero, 0);
+        ImGuiUtil.DrawTextButton(Name(collection.Inheritance.DirectlyInheritedBy[0]), Vector2.Zero, 0);
         var constOffset = (ImGui.GetStyle().FramePadding.X + ImGuiHelpers.GlobalScale) * 2
           + ImGui.GetStyle().ItemSpacing.X
           + ImGui.GetStyle().WindowPadding.X;
-        foreach (var parent in collection.DirectParentOf.Skip(1))
+        foreach (var parent in collection.Inheritance.DirectlyInheritedBy.Skip(1))
         {
             var name = Name(parent);
             var size = ImGui.CalcTextSize(name).X;
@@ -602,7 +603,7 @@ public sealed class CollectionPanel(
         ImGui.TableSetupColumn("State",          ImGuiTableColumnFlags.WidthFixed, 1.75f * ImGui.GetFrameHeight());
         ImGui.TableSetupColumn("Priority",       ImGuiTableColumnFlags.WidthFixed, 2.5f * ImGui.GetFrameHeight());
         ImGui.TableHeadersRow();
-        foreach (var (mod, (settings, parent)) in mods.Select(m => (m, collection[m.Index]))
+        foreach (var (mod, (settings, parent)) in mods.Select(m => (m, collection.GetInheritedSettings(m.Index)))
                      .Where(t => t.Item2.Settings != null)
                      .OrderBy(t => t.m.Name))
         {
@@ -625,12 +626,12 @@ public sealed class CollectionPanel(
 
     private void DrawInactiveSettingsList(ModCollection collection)
     {
-        if (collection.UnusedSettings.Count == 0)
+        if (collection.Settings.Unused.Count == 0)
             return;
 
         ImGui.Dummy(Vector2.One);
-        var text = collection.UnusedSettings.Count > 1
-            ? $"Clear all {collection.UnusedSettings.Count} unused settings from deleted mods."
+        var text = collection.Settings.Unused.Count > 1
+            ? $"Clear all {collection.Settings.Unused.Count} unused settings from deleted mods."
             : "Clear the currently unused setting from a deleted mods.";
         if (ImGui.Button(text, new Vector2(ImGui.GetContentRegionAvail().X, 0)))
             _collections.CleanUnavailableSettings(collection);
@@ -638,7 +639,7 @@ public sealed class CollectionPanel(
         ImGui.Dummy(Vector2.One);
 
         var size = new Vector2(ImGui.GetContentRegionAvail().X,
-            Math.Min(10, collection.UnusedSettings.Count + 1) * ImGui.GetFrameHeightWithSpacing());
+            Math.Min(10, collection.Settings.Unused.Count + 1) * ImGui.GetFrameHeightWithSpacing());
         using var table = ImRaii.Table("##inactiveSettings", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY, size);
         if (!table)
             return;
@@ -650,7 +651,7 @@ public sealed class CollectionPanel(
         ImGui.TableSetupColumn("Priority",              ImGuiTableColumnFlags.WidthFixed, 2.5f * ImGui.GetFrameHeight());
         ImGui.TableHeadersRow();
         string? delete = null;
-        foreach (var (name, settings) in collection.UnusedSettings.OrderBy(n => n.Key))
+        foreach (var (name, settings) in collection.Settings.Unused.OrderBy(n => n.Key))
         {
             using var id = ImRaii.PushId(name);
             ImGui.TableNextColumn();

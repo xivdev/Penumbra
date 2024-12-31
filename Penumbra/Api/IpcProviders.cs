@@ -63,7 +63,7 @@ public sealed class IpcProviders : IDisposable, IApiService
 
             IpcSubscribers.ApiVersion.Provider(pi, api),
             new FuncProvider<(int Major, int Minor)>(pi, "Penumbra.ApiVersions", () => api.ApiVersion), // backward compatibility
-            new FuncProvider<int>(pi, "Penumbra.ApiVersion", () => api.ApiVersion.Breaking), // backward compatibility
+            new FuncProvider<int>(pi, "Penumbra.ApiVersion", () => api.ApiVersion.Breaking),            // backward compatibility
             IpcSubscribers.GetModDirectory.Provider(pi, api.PluginState),
             IpcSubscribers.GetConfiguration.Provider(pi, api.PluginState),
             IpcSubscribers.ModDirectoryChanged.Provider(pi, api.PluginState),
@@ -97,6 +97,12 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.AddTemporaryMod.Provider(pi, api.Temporary),
             IpcSubscribers.RemoveTemporaryModAll.Provider(pi, api.Temporary),
             IpcSubscribers.RemoveTemporaryMod.Provider(pi, api.Temporary),
+            IpcSubscribers.SetTemporaryModSettings.Provider(pi, api.Temporary),
+            IpcSubscribers.SetTemporaryModSettingsPlayer.Provider(pi, api.Temporary),
+            IpcSubscribers.RemoveTemporaryModSettings.Provider(pi, api.Temporary),
+            IpcSubscribers.RemoveTemporaryModSettingsPlayer.Provider(pi, api.Temporary),
+            IpcSubscribers.RemoveAllTemporaryModSettings.Provider(pi, api.Temporary),
+            IpcSubscribers.RemoveAllTemporaryModSettingsPlayer.Provider(pi, api.Temporary),
 
             IpcSubscribers.ChangedItemTooltip.Provider(pi, api.Ui),
             IpcSubscribers.ChangedItemClicked.Provider(pi, api.Ui),

@@ -101,7 +101,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
             _modelTab.Reset();
             _materialTab.Reset();
             _shaderPackageTab.Reset();
-            _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
+            _itemSwapTab.UpdateMod(mod, _activeCollections.Current.GetInheritedSettings(mod.Index).Settings);
             UpdateModels();
             _forceTextureStartPath = true;
         });

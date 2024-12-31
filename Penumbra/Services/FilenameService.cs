@@ -24,7 +24,7 @@ public class FilenameService(IDalamudPluginInterface pi) : IService
 
     /// <summary> Obtain the path of a collection file given its name.</summary>
     public string CollectionFile(ModCollection collection)
-        => CollectionFile(collection.Identifier);
+        => CollectionFile(collection.Identity.Identifier);
 
     /// <summary> Obtain the path of a collection file given its name. </summary>
     public string CollectionFile(string collectionName)

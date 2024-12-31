@@ -83,14 +83,14 @@ public class TutorialService : IUiService
               + "Go here after setting up your root folder to continue the tutorial!")
             .Register("Initial Setup, Step 4: Managing Collections",
                 "On the left, we have the collection selector. Here, we can create new collections - either empty ones or by duplicating existing ones - and delete any collections not needed anymore.\n"
-              + $"There will always be one collection called {ModCollection.DefaultCollectionName} that can not be deleted.")
+              + $"There will always be one collection called {ModCollectionIdentity.DefaultCollectionName} that can not be deleted.")
             .Register($"Initial Setup, Step 5: {SelectedCollection}",
                 $"The {SelectedCollection} is the one we highlighted in the selector. It is the collection we are currently looking at and editing.\nAny changes we make in our mod settings later in the next tab will edit this collection.\n"
-              + $"We should already have the collection named {ModCollection.DefaultCollectionName} selected, and for our simple setup, we do not need to do anything here.\n\n")
+              + $"We should already have the collection named {ModCollectionIdentity.DefaultCollectionName} selected, and for our simple setup, we do not need to do anything here.\n\n")
             .Register("Initial Setup, Step 6: Simple Assignments",
                 "Aside from being a collection of settings, we can also assign collections to different functions. This is used to make different mods apply to different characters.\n"
               + "The Simple Assignments panel shows you the possible assignments that are enough for most people along with descriptions.\n"
-              + $"If you are just starting, you can see that the {ModCollection.DefaultCollectionName} is currently assigned to {CollectionType.Default.ToName()} and {CollectionType.Interface.ToName()}.\n"
+              + $"If you are just starting, you can see that the {ModCollectionIdentity.DefaultCollectionName} is currently assigned to {CollectionType.Default.ToName()} and {CollectionType.Interface.ToName()}.\n"
               + "You can also assign 'Use No Mods' instead of a collection by clicking on the function buttons.")
             .Register("Individual Assignments",
                 "In the Individual Assignments panel, you can manually create assignments for very specific characters or monsters, not just yourself or ones you can currently target.")

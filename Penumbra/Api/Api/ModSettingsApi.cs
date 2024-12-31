@@ -63,11 +63,6 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         return new AvailableModSettings(dict);
     }
 
-    public Dictionary<string, (string[], int)>? GetAvailableModSettingsBase(string modDirectory, string modName)
-        => _modManager.TryGetMod(modDirectory, modName, out var mod)
-            ? mod.Groups.ToDictionary(g => g.Name, g => (g.Options.Select(o => o.Name).ToArray(), (int)g.Type))
-            : null;
-
     public (PenumbraApiEc, (bool, int, Dictionary<string, List<string>>, bool)?) GetCurrentModSettings(Guid collectionId, string modDirectory,
         string modName, bool ignoreInheritance)
     {
@@ -77,17 +72,17 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         if (!_collectionManager.Storage.ById(collectionId, out var collection))
             return (PenumbraApiEc.CollectionMissing, null);
 
-        var settings = collection.Id == Guid.Empty
+        var settings = collection.Identity.Id == Guid.Empty
             ? null
             : ignoreInheritance
-                ? collection.Settings[mod.Index]
-                : collection[mod.Index].Settings;
+                ? collection.GetOwnSettings(mod.Index)
+                : collection.GetInheritedSettings(mod.Index).Settings;
         if (settings == null)
             return (PenumbraApiEc.Success, null);
 
         var (enabled, priority, dict) = settings.ConvertToShareable(mod);
         return (PenumbraApiEc.Success,
-            (enabled, priority.Value, dict, collection.Settings[mod.Index] == null));
+            (enabled, priority.Value, dict, collection.GetOwnSettings(mod.Index) is null));
     }
 
     public PenumbraApiEc TryInheritMod(Guid collectionId, string modDirectory, string modName, bool inherit)
@@ -215,9 +210,9 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     private void TriggerSettingEdited(Mod mod)
     {
         var collection = _collectionResolver.PlayerCollection();
-        var (settings, parent) = collection[mod.Index];
+        var (settings, parent) = collection.GetActualSettings(mod.Index);
         if (settings is { Enabled: true })
-            ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Id, mod.Identifier, parent != collection);
+            ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Identity.Id, mod.Identifier, parent != collection);
     }
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
@@ -227,7 +222,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     }
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting _1, int _2, bool inherited)
-        => ModSettingChanged?.Invoke(type, collection.Id, mod?.ModPath.Name ?? string.Empty, inherited);
+        => ModSettingChanged?.Invoke(type, collection.Identity.Id, mod?.ModPath.Name ?? string.Empty, inherited);
 
     private void OnModOptionEdited(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
         int moveIndex)

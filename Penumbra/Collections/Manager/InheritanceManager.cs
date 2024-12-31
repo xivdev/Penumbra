@@ -1,7 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Filesystem;
 using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
@@ -63,10 +62,10 @@ public class InheritanceManager : IDisposable, IService
         if (ReferenceEquals(potentialParent, potentialInheritor))
             return ValidInheritance.Self;
 
-        if (potentialInheritor.DirectlyInheritsFrom.Contains(potentialParent))
+        if (potentialInheritor.Inheritance.DirectlyInheritsFrom.Contains(potentialParent))
             return ValidInheritance.Contained;
 
-        if (ModCollection.InheritedCollections(potentialParent).Any(c => ReferenceEquals(c, potentialInheritor)))
+        if (potentialParent.Inheritance.FlatHierarchy.Any(c => ReferenceEquals(c, potentialInheritor)))
             return ValidInheritance.Circle;
 
         return ValidInheritance.Valid;
@@ -83,25 +82,23 @@ public class InheritanceManager : IDisposable, IService
     /// <summary> Remove an existing inheritance from a collection. </summary>
     public void RemoveInheritance(ModCollection inheritor, int idx)
     {
-        var parent = inheritor.DirectlyInheritsFrom[idx];
-        ((List<ModCollection>)inheritor.DirectlyInheritsFrom).RemoveAt(idx);
-        ((List<ModCollection>)parent.DirectParentOf).Remove(inheritor);
+        var parent = inheritor.Inheritance.RemoveInheritanceAt(inheritor, idx);
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
         _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
-        RecurseInheritanceChanges(inheritor);
-        Penumbra.Log.Debug($"Removed {parent.AnonymizedName} from {inheritor.AnonymizedName} inheritances.");
+        RecurseInheritanceChanges(inheritor, true);
+        Penumbra.Log.Debug($"Removed {parent.Identity.AnonymizedName} from {inheritor.Identity.AnonymizedName} inheritances.");
     }
 
     /// <summary> Order in the inheritance list is relevant. </summary>
     public void MoveInheritance(ModCollection inheritor, int from, int to)
     {
-        if (!((List<ModCollection>)inheritor.DirectlyInheritsFrom).Move(from, to))
+        if (!inheritor.Inheritance.MoveInheritance(inheritor, from, to))
             return;
 
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
         _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
-        RecurseInheritanceChanges(inheritor);
-        Penumbra.Log.Debug($"Moved {inheritor.AnonymizedName}s inheritance {from} to {to}.");
+        RecurseInheritanceChanges(inheritor, true);
+        Penumbra.Log.Debug($"Moved {inheritor.Identity.AnonymizedName}s inheritance {from} to {to}.");
     }
 
     /// <inheritdoc cref="AddInheritance(ModCollection, ModCollection)"/>
@@ -110,16 +107,16 @@ public class InheritanceManager : IDisposable, IService
         if (CheckValidInheritance(inheritor, parent) != ValidInheritance.Valid)
             return false;
 
-        ((List<ModCollection>)inheritor.DirectlyInheritsFrom).Add(parent);
-        ((List<ModCollection>)parent.DirectParentOf).Add(inheritor);
+        inheritor.Inheritance.AddInheritance(inheritor, parent);
         if (invokeEvent)
         {
             _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
             _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
-            RecurseInheritanceChanges(inheritor);
         }
 
-        Penumbra.Log.Debug($"Added {parent.AnonymizedName} to {inheritor.AnonymizedName} inheritances.");
+        RecurseInheritanceChanges(inheritor, invokeEvent);
+
+        Penumbra.Log.Debug($"Added {parent.Identity.AnonymizedName} to {inheritor.Identity.AnonymizedName} inheritances.");
         return true;
     }
 
@@ -131,11 +128,11 @@ public class InheritanceManager : IDisposable, IService
     {
         foreach (var collection in _storage)
         {
-            if (collection.InheritanceByName == null)
+            if (collection.Inheritance.ConsumeNames() is not { } byName)
                 continue;
 
             var changes = false;
-            foreach (var subCollectionName in collection.InheritanceByName)
+            foreach (var subCollectionName in byName)
             {
                 if (Guid.TryParse(subCollectionName, out var guid) && _storage.ById(guid, out var subCollection))
                 {
@@ -143,29 +140,30 @@ public class InheritanceManager : IDisposable, IService
                         continue;
 
                     changes = true;
-                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.",
+                    Penumbra.Messager.NotificationMessage(
+                        $"{collection.Identity.Name} can not inherit from {subCollection.Identity.Name}, removed.",
                         NotificationType.Warning);
                 }
                 else if (_storage.ByName(subCollectionName, out subCollection))
                 {
                     changes = true;
-                    Penumbra.Log.Information($"Migrating inheritance for {collection.AnonymizedName} from name to GUID.");
+                    Penumbra.Log.Information($"Migrating inheritance for {collection.Identity.AnonymizedName} from name to GUID.");
                     if (AddInheritance(collection, subCollection, false))
                         continue;
 
-                    Penumbra.Messager.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.",
+                    Penumbra.Messager.NotificationMessage(
+                        $"{collection.Identity.Name} can not inherit from {subCollection.Identity.Name}, removed.",
                         NotificationType.Warning);
                 }
                 else
                 {
                     Penumbra.Messager.NotificationMessage(
-                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.",
+                        $"Inherited collection {subCollectionName} for {collection.Identity.AnonymizedName} does not exist, it was removed.",
                         NotificationType.Warning);
                     changes = true;
                 }
             }
 
-            collection.InheritanceByName = null;
             if (changes)
                 _saveService.ImmediateSave(new ModCollectionSave(_modStorage, collection));
         }
@@ -178,20 +176,22 @@ public class InheritanceManager : IDisposable, IService
 
         foreach (var c in _storage)
         {
-            var inheritedIdx = c.DirectlyInheritsFrom.IndexOf(old);
+            var inheritedIdx = c.Inheritance.DirectlyInheritsFrom.IndexOf(old);
             if (inheritedIdx >= 0)
                 RemoveInheritance(c, inheritedIdx);
 
-            ((List<ModCollection>)c.DirectParentOf).Remove(old);
+            c.Inheritance.RemoveChild(old);
         }
     }
 
-    private void RecurseInheritanceChanges(ModCollection newInheritor)
+    private void RecurseInheritanceChanges(ModCollection newInheritor, bool invokeEvent)
     {
-        foreach (var inheritor in newInheritor.DirectParentOf)
+        foreach (var inheritor in newInheritor.Inheritance.DirectlyInheritedBy)
         {
-            _communicator.CollectionInheritanceChanged.Invoke(inheritor, true);
-            RecurseInheritanceChanges(inheritor);
+            ModCollectionInheritance.UpdateFlattenedInheritance(inheritor);
+            RecurseInheritanceChanges(inheritor, invokeEvent);
+            if (invokeEvent)
+                _communicator.CollectionInheritanceChanged.Invoke(inheritor, true);
         }
     }
 }

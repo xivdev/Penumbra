@@ -69,7 +69,7 @@ public unsafe class SchedulerResourceManagementService : IService, IDisposable
         if (_actionTmbs.TryGetValue(tmb, out var rowId))
             _listedTmbIds[rowId] = tmb;
         else
-            Penumbra.Log.Debug($"Action TMB {gamePath} encountered with no corresponding row ID.");
+            Penumbra.Log.Verbose($"Action TMB {gamePath} encountered with no corresponding row ID.");
     }
 
     [Signature(Sigs.SchedulerResourceManagementInstance, ScanType = ScanType.StaticAddress)]
