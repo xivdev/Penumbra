@@ -117,7 +117,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     public bool CanSetTemporarySettings(ModCollection collection, Mod mod, int key)
     {
         var old = collection.GetTempSettings(mod.Index);
-        return old == null || old.Lock == 0 || old.Lock == key;
+        return old is not { Lock: > 0 } || old.Lock == key;
     }
 
     /// <summary> Copy the settings of an existing (sourceMod != null) or stored (sourceName) mod to another mod, if they exist. </summary>

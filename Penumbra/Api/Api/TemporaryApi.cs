@@ -163,7 +163,7 @@ public class TemporaryApi(
             return ApiHelpers.Return(PenumbraApiEc.ModMissing, args);
 
         if (!collectionManager.Editor.CanSetTemporarySettings(collection, mod, key))
-            if (collection.GetTempSettings(mod.Index) is { } oldSettings && oldSettings.Lock != 0 && oldSettings.Lock != key)
+            if (collection.GetTempSettings(mod.Index) is { Lock: > 0 } oldSettings && oldSettings.Lock != key)
                 return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
 
         var newSettings = new TemporaryModSettings()
@@ -254,7 +254,7 @@ public class TemporaryApi(
         var numRemoved = 0;
         for (var i = 0; i < collection.Settings.Count; ++i)
         {
-            if (collection.GetTempSettings(i) is not null
+            if (collection.GetTempSettings(i) is {} tempSettings && tempSettings.Lock == key
              && collectionManager.Editor.SetTemporarySettings(collection, modManager[i], null, key))
                 ++numRemoved;
         }

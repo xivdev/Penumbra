@@ -44,7 +44,7 @@ public class ModPanelSettingsTab(
 
         _inherited = selection.Collection != collectionManager.Active.Current;
         _temporary = selection.TemporarySettings != null;
-        _locked    = (selection.TemporarySettings?.Lock ?? 0) != 0;
+        _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
         DrawTemporaryWarning();
         DrawInheritedWarning();
         UiHelpers.DefaultLineSpace();

@@ -29,7 +29,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         _blockGroupCache.Clear();
         _tempSettings = tempSettings;
         _temporary    = tempSettings != null;
-        _locked       = (tempSettings?.Lock ?? 0) != 0;
+        _locked       = (tempSettings?.Lock ?? 0) > 0;
         var useDummy = true;
         foreach (var (group, idx) in mod.Groups.WithIndex())
         {

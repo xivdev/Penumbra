@@ -269,7 +269,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private void RemoveTemporarySettings(FileSystem<Mod>.Leaf mod)
     {
         var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
-        if (tempSettings is { Lock: 0 })
+        if (tempSettings is { Lock: <= 0 })
             if (ImUtf8.MenuItem("Remove Temporary Settings"))
                 _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, null);
     }
@@ -277,7 +277,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private void DisableTemporarily(FileSystem<Mod>.Leaf mod)
     {
         var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
-        if (tempSettings == null || tempSettings.Lock == 0)
+        if (tempSettings is not { Lock: > 0 })
             if (ImUtf8.MenuItem("Disable Temporarily"))
                 _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
                     TemporaryModSettings.DefaultSettings(mod.Value, "User Context-Menu"));
