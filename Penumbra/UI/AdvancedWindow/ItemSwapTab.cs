@@ -12,6 +12,7 @@ using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Import.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
@@ -275,14 +276,36 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
             case SwapType.Hair:
             case SwapType.Tail:
                 return
-                    $"Created by swapping {_lastTab} {_sourceId} onto {_lastTab} {_targetId} for {_currentRace.ToName()} {_currentGender.ToName()}s in {_mod!.Name}.";
+                    $"Created by swapping {_lastTab} {_sourceId} onto {_lastTab} {_targetId} for {_currentRace.ToName()} {_currentGender.ToName()}s in {_mod!.Name}{OriginalAuthor()}";
             case SwapType.BetweenSlots:
                 return
-                    $"Created by swapping {GetAccessorySelector(_slotFrom, true).Item3.CurrentSelection.Item.Name} onto {GetAccessorySelector(_slotTo, false).Item3.CurrentSelection.Item.Name} in {_mod!.Name}.";
+                    $"Created by swapping {GetAccessorySelector(_slotFrom, true).Item3.CurrentSelection.Item.Name} onto {GetAccessorySelector(_slotTo, false).Item3.CurrentSelection.Item.Name} in {_mod!.Name}{OriginalAuthor()}";
             default:
                 return
-                    $"Created by swapping {_selectors[_lastTab].Source.CurrentSelection.Item.Name} onto {_selectors[_lastTab].Target.CurrentSelection.Item.Name} in {_mod!.Name}.";
+                    $"Created by swapping {_selectors[_lastTab].Source.CurrentSelection.Item.Name} onto {_selectors[_lastTab].Target.CurrentSelection.Item.Name} in {_mod!.Name}{OriginalAuthor()}";
         }
+    }
+
+    private string OriginalAuthor()
+    {
+        if (_mod!.Author.IsEmpty || _mod!.Author.Text is "TexTools User" or DefaultTexToolsData.Author)
+            return ".";
+
+        return $" by {_mod!.Author}.";
+    }
+
+    private string CreateAuthor()
+    {
+        if (_mod!.Author.IsEmpty)
+            return _config.DefaultModAuthor;
+        if (_mod!.Author.Text == _config.DefaultModAuthor)
+            return _config.DefaultModAuthor;
+        if (_mod!.Author.Text is "TexTools User" or DefaultTexToolsData.Author)
+            return _config.DefaultModAuthor;
+        if (_config.DefaultModAuthor is DefaultTexToolsData.Author)
+            return _mod!.Author;
+
+        return $"{_mod!.Author} (Swap by {_config.DefaultModAuthor})";
     }
 
     private void UpdateOption()
@@ -296,7 +319,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
 
     private void CreateMod()
     {
-        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription());
+        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription(), CreateAuthor());
         if (newDir == null)
             return;
 

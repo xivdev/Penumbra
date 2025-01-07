@@ -30,12 +30,12 @@ public partial class ModCreator(
     public readonly Configuration Config = config;
 
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
-    public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "")
+    public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null)
     {
         try
         {
             var newDir = CreateModFolder(basePath, newName, Config.ReplaceNonAsciiOnImport, true);
-            dataEditor.CreateMeta(newDir, newName, Config.DefaultModAuthor, description, "1.0", string.Empty);
+            dataEditor.CreateMeta(newDir, newName, author ?? Config.DefaultModAuthor, description, "1.0", string.Empty);
             CreateDefaultFiles(newDir);
             return newDir;
         }
