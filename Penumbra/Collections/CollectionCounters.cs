@@ -24,5 +24,5 @@ public struct CollectionCounters(int changeCounter)
     /// <summary> Increment the number of ATCH-relevant changes in the effective file list. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int IncrementAtch()
-        => ++Imc;
+        => ++Atch;
 }
