@@ -1,4 +1,5 @@
 using ImGuiNET;
+using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
@@ -19,7 +20,8 @@ public class ModPanelSettingsTab(
     ModSelection selection,
     TutorialService tutorial,
     CommunicatorService communicator,
-    ModGroupDrawer modGroupDrawer)
+    ModGroupDrawer modGroupDrawer,
+    Configuration config)
     : ITab, IUiService
 {
     private bool _inherited;
@@ -180,32 +182,28 @@ public class ModPanelSettingsTab(
     private void DrawRemoveSettings()
     {
         var drawInherited = !_inherited && selection.Settings != ModSettings.Empty;
-        if (!drawInherited && _temporary)
-            return;
-
-        var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemInnerSpacing.X: 0;
-        var offset = (drawInherited, _temporary) switch
-        {
-            (true, true)   => ImUtf8.CalcTextSize("Inherit Settings"u8).X + ImGui.GetStyle().FramePadding.X * 2,
-            (false, false) => ImUtf8.CalcTextSize("Turn Temporary"u8).X + ImGui.GetStyle().FramePadding.X * 2,
-            (true, false) => ImUtf8.CalcTextSize("Inherit Settings"u8).X
-              + ImUtf8.CalcTextSize("Turn Temporary"u8).X
-              + ImGui.GetStyle().FramePadding.X * 4
-              + ImGui.GetStyle().ItemSpacing.X,
-            (false, true) => 0, // can not happen
-        };
-
+        var scroll        = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemInnerSpacing.X : 0;
+        var buttonSize    = ImUtf8.CalcTextSize("Turn Permanent_"u8).X;
+        var offset = drawInherited
+            ? buttonSize + ImUtf8.CalcTextSize("Inherit Settings"u8).X + ImGui.GetStyle().FramePadding.X * 4 + ImGui.GetStyle().ItemSpacing.X
+            : buttonSize + ImGui.GetStyle().FramePadding.X * 2;
         ImGui.SameLine(ImGui.GetWindowWidth() - offset - scroll);
-        if (!_temporary
-         && ImUtf8.ButtonEx("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
-            collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
-                new TemporaryModSettings(selection.Settings, "yourself"));
+        var enabled = config.DeleteModModifier.IsActive();
         if (drawInherited)
         {
-            if (!_temporary)
-                ImGui.SameLine(0, ImGui.GetStyle().ItemSpacing.X);
-            if (ImUtf8.ButtonEx("Inherit Settings"u8, "Remove current settings from this collection so that it can inherit them.\n"u8
-                  + "If no inherited collection has settings for this mod, it will be disabled."u8, default, _locked))
+            var inherit = (enabled, _locked) switch
+            {
+                (true, false) => ImUtf8.ButtonEx("Inherit Settings"u8,
+                    "Remove current settings from this collection so that it can inherit them.\n"u8
+                  + "If no inherited collection has settings for this mod, it will be disabled."u8, default, false),
+                (false, false) => ImUtf8.ButtonEx("Inherit Settings"u8,
+                    $"Remove current settings from this collection so that it can inherit them.\nHold {config.DeleteModModifier} to inherit.",
+                    default, true),
+                (_, true) => ImUtf8.ButtonEx("Inherit Settings"u8,
+                    "Remove current settings from this collection so that it can inherit them.\nThe settings are currently locked and can not be changed."u8,
+                    default, true),
+            };
+            if (inherit)
             {
                 if (_temporary)
                 {
@@ -218,6 +216,42 @@ public class ModPanelSettingsTab(
                     collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod!, true);
                 }
             }
+
+            ImGui.SameLine();
+        }
+
+        if (_temporary)
+        {
+            var overwrite = enabled
+                ? ImUtf8.ButtonEx("Turn Permanent"u8,
+                    "Overwrite the actual settings for this mod in this collection with the current temporary settings."u8,
+                    new Vector2(buttonSize, 0))
+                : ImUtf8.ButtonEx("Turn Permanent"u8,
+                    $"Overwrite the actual settings for this mod in this collection with the current temporary settings.\nHold {config.DeleteModModifier} to overwrite.",
+                    new Vector2(buttonSize, 0), true);
+            if (overwrite)
+            {
+                var settings = collectionManager.Active.Current.GetTempSettings(selection.Mod!.Index)!;
+                if (settings.ForceInherit)
+                {
+                    collectionManager.Editor.SetModInheritance(collectionManager.Active.Current, selection.Mod, true);
+                }
+                else
+                {
+                    collectionManager.Editor.SetModState(collectionManager.Active.Current, selection.Mod, settings.Enabled);
+                    collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selection.Mod, settings.Priority);
+                    foreach (var (setting, index) in settings.Settings.WithIndex())
+                        collectionManager.Editor.SetModSetting(collectionManager.Active.Current, selection.Mod, index, setting);
+                }
+
+                collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod, null);
+            }
+        }
+        else
+        {
+            if (ImUtf8.ButtonEx("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
+                collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
+                    new TemporaryModSettings(selection.Settings, "yourself"));
         }
     }
 }
