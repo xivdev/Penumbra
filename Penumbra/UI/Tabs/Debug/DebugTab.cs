@@ -36,6 +36,7 @@ using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
+using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
@@ -102,6 +103,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly HookOverrideDrawer                 _hookOverrides;
     private readonly RsfService                         _rsfService;
     private readonly SchedulerResourceManagementService _schedulerService;
+    private readonly ObjectIdentification               _objectIdentification;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -112,7 +114,7 @@ public class DebugTab : Window, ITab, IUiService
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
-        SchedulerResourceManagementService schedulerService)
+        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -151,6 +153,7 @@ public class DebugTab : Window, ITab, IUiService
         _rsfService                = rsfService;
         _globalVariablesDrawer     = globalVariablesDrawer;
         _schedulerService          = schedulerService;
+        _objectIdentification      = objectIdentification;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -734,7 +737,36 @@ public class DebugTab : Window, ITab, IUiService
         DrawActionTmbs();
         DrawStainTemplates();
         DrawAtch();
+        DrawChangedItemTest();
     }
+
+    private          string                                     _changedItemPath = string.Empty;
+    private readonly Dictionary<string, IIdentifiedObjectData?> _changedItems    = [];
+
+    private void DrawChangedItemTest()
+    {
+        using var node = TreeNode("Changed Item Test");
+        if (!node)
+            return;
+
+        if (ImUtf8.InputText("##ChangedItemTest"u8, ref _changedItemPath, "Changed Item File Path..."u8))
+        {
+            _changedItems.Clear();
+            _objectIdentification.Identify(_changedItems, _changedItemPath);
+        }
+
+        if (_changedItems.Count == 0)
+            return;
+
+        using var list = ImUtf8.ListBox("##ChangedItemList"u8,
+            new Vector2(ImGui.GetContentRegionAvail().X, 8 * ImGui.GetTextLineHeightWithSpacing()));
+        if (!list)
+            return;
+
+        foreach (var item in _changedItems)
+            ImUtf8.Selectable(item.Key);
+    }
+
 
     private string _emoteSearchFile = string.Empty;
     private string _emoteSearchName = string.Empty;
