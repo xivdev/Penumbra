@@ -86,6 +86,7 @@ public class HookOverrides
         public bool ModelRendererOnRenderMaterial;
         public bool ModelRendererUnkFunc;
         public bool PrepareColorTable;
+        public bool RenderTargetManagerInitialize;
     }
 
     public struct ResourceLoadingHooks

@@ -7,6 +7,7 @@ using OtterGui.Classes;
 using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData;
+using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
@@ -462,8 +463,16 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         return mtrlResource;
     }
 
+    private static int GetDataSetExpectedSize(uint dataFlags)
+        => (dataFlags & 4) != 0
+            ? ColorTable.Size + ((dataFlags & 8) != 0 ? ColorDyeTable.Size : 0)
+            : 0;
+
     private Texture* PrepareColorTableDetour(MaterialResourceHandle* thisPtr, byte stain0Id, byte stain1Id)
     {
+        if (thisPtr->DataSetSize < GetDataSetExpectedSize(thisPtr->DataFlags))
+            Penumbra.Log.Warning($"Material at {thisPtr->FileName} has data set of size {thisPtr->DataSetSize} bytes, but should have at least {GetDataSetExpectedSize(thisPtr->DataFlags)} bytes. This may cause crashes due to access violations.");
+
         // If we don't have any on-screen instances of modded characterlegacy.shpk, we don't need the slow path at all.
         if (!Enabled || GetTotalMaterialCountForColorTable() == 0)
             return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);

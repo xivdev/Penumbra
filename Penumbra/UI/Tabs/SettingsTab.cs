@@ -773,6 +773,7 @@ public class SettingsTab : ITab, IUiService
 
         DrawCrashHandler();
         DrawMinimumDimensionConfig();
+        DrawHdrRenderTargets();
         Checkbox("Auto Deduplicate on Import",
             "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
             _config.AutoDeduplicateOnImport, v => _config.AutoDeduplicateOnImport = v);
@@ -899,6 +900,22 @@ public class SettingsTab : ITab, IUiService
         _config.MinimumSize = new Vector2(x, y);
         _minimumX           = int.MaxValue;
         _minimumY           = int.MaxValue;
+        _config.Save();
+    }
+
+    private void DrawHdrRenderTargets()
+    {
+        var item = _config.HdrRenderTargets ? 1 : 0;
+        ImGui.SetNextItemWidth(ImGui.CalcTextSize("M").X * 5.0f + ImGui.GetFrameHeight());
+        var edited = ImGui.Combo("##hdrRenderTarget", ref item, "SDR\0HDR\0");
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("Diffuse Dynamic Range",
+            "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\nChanging this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled.");
+
+        if (!edited)
+            return;
+
+        _config.HdrRenderTargets = item != 0;
         _config.Save();
     }
 

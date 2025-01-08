@@ -110,6 +110,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool   KeepDefaultMetaChanges  { get; set; } = false;
     public string DefaultModAuthor        { get; set; } = DefaultTexToolsData.Author;
     public bool   EditRawTileTransforms   { get; set; } = false;
+    public bool   HdrRenderTargets        { get; set; } = true;
 
     public Dictionary<ColorId, uint> Colors { get; set; }
         = Enum.GetValues<ColorId>().ToDictionary(c => c, c => c.Data().DefaultColor);
