@@ -14,8 +14,8 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
     /// <remarks> This array must be sorted by CreationOrder ascending. </remarks>
     private static readonly ImmutableArray<ForcedTextureConfig> ForcedTextureConfigs =
     [
-        new(9,  TextureFormat.R16G16B16A16_FLOAT, "Main Diffuse GBuffer"),
-        new(10, TextureFormat.R16G16B16A16_FLOAT, "Hair Diffuse GBuffer"),
+        new(9,  TextureFormat.R16G16B16A16_FLOAT, "Opaque Diffuse GBuffer"),
+        new(10, TextureFormat.R16G16B16A16_FLOAT, "Semitransparent Diffuse GBuffer"),
     ];
 
     private static readonly IComparer<ForcedTextureConfig> ForcedTextureConfigComparer
