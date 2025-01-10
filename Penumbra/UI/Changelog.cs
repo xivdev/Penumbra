@@ -56,9 +56,27 @@ public class PenumbraChangelog : IUiService
         Add1_3_0_0(Changelog);
         Add1_3_1_0(Changelog);
         Add1_3_2_0(Changelog);
+        Add1_3_3_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_3_3_0(Changelog log)
+        => log.NextVersion("Version 1.3.3.0")
+            .RegisterHighlight("Added Temporary Settings to collections.")
+            .RegisterEntry("Settings can be manually turned temporary (and turned back) while editing mod settings via right-click context on the mod or buttons in the settings panel.", 1)
+            .RegisterEntry("This can be used to test mods or changes without saving those changes permanently or having to reinstate the old settings afterwards.", 1)
+            .RegisterEntry("More importantly, this can be set via IPC by other plugins, allowing Glamourer to only set and reset temporary settings when applying Mod Associations.", 1)
+            .RegisterEntry("As an extreme example, it would be possible to only enable the consistent mods for your character in the collection, and let Glamourer handle all outfit mods itself via temporary settings only.", 1)
+            .RegisterEntry("This required some pretty big changes that were in testing for a while now, but nobody talked about it much so it may still have some bugs or usability issues. Let me know!", 1)
+            .RegisterHighlight("Added an option to automatically select the collection assigned to the current character on login events. This is off by default.")
+            .RegisterEntry("Added partial copying of color tables in material editing via right-click context menu entries on the import buttons.")
+            .RegisterHighlight("Added handling for TMB files cached by the game that should resolve issues of leaky TMBs from animation and VFX mods.")
+            .RegisterEntry("The enabled checkbox, Priority and Inheriting buttons now stick at the top of the Mod Settings panel even when scrolling down for specific settings.")
+            .RegisterEntry("When creating new mods with Item Swap, the attributed author of the resulting mod was improved.")
+            .RegisterEntry("Fixed an issue with rings in the On-Screen tab and in the data sent over to other plugins via IPC.")
+            .RegisterEntry("Fixed some issues when writing material files that resulted in technically valid files that still caused some issues with the game for unknown reasons.")
+            .RegisterEntry("Fixed some ImGui assertions.");
 
     private static void Add1_3_2_0(Changelog log)
         => log.NextVersion("Version 1.3.2.0")
