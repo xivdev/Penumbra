@@ -37,6 +37,7 @@ public class ModGroupEditor(
     SingleModGroupEditor singleEditor,
     MultiModGroupEditor multiEditor,
     ImcModGroupEditor imcEditor,
+    CombiningModGroupEditor combiningEditor,
     CommunicatorService communicator,
     SaveService saveService,
     Configuration config) : IService
@@ -49,6 +50,9 @@ public class ModGroupEditor(
 
     public ImcModGroupEditor ImcEditor
         => imcEditor;
+
+    public CombiningModGroupEditor CombiningEditor
+        => combiningEditor;
 
     /// <summary> Change the settings stored as default options in a mod.</summary>
     public void ChangeModGroupDefaultOption(IModGroup group, Setting defaultOption)
@@ -223,52 +227,60 @@ public class ModGroupEditor(
             case ImcSubMod i:
                 ImcEditor.DeleteOption(i);
                 return;
+            case CombiningModGroup c:
+                CombiningEditor.DeleteOption(c);
+                return;
         }
     }
 
     public IModOption? AddOption(IModGroup group, IModOption option)
         => group switch
         {
-            SingleModGroup s => SingleEditor.AddOption(s, option),
-            MultiModGroup m  => MultiEditor.AddOption(m, option),
-            ImcModGroup i    => ImcEditor.AddOption(i, option),
-            _                => null,
+            SingleModGroup s    => SingleEditor.AddOption(s, option),
+            MultiModGroup m     => MultiEditor.AddOption(m, option),
+            ImcModGroup i       => ImcEditor.AddOption(i, option),
+            CombiningModGroup c => CombiningEditor.AddOption(c, option),
+            _                   => null,
         };
 
     public IModOption? AddOption(IModGroup group, string newName)
         => group switch
         {
-            SingleModGroup s => SingleEditor.AddOption(s, newName),
-            MultiModGroup m  => MultiEditor.AddOption(m, newName),
-            ImcModGroup i    => ImcEditor.AddOption(i, newName),
-            _                => null,
+            SingleModGroup s    => SingleEditor.AddOption(s, newName),
+            MultiModGroup m     => MultiEditor.AddOption(m, newName),
+            ImcModGroup i       => ImcEditor.AddOption(i, newName),
+            CombiningModGroup c => CombiningEditor.AddOption(c, newName),
+            _                   => null,
         };
 
     public IModGroup? AddModGroup(Mod mod, GroupType type, string newName, SaveType saveType = SaveType.ImmediateSync)
         => type switch
         {
-            GroupType.Single => SingleEditor.AddModGroup(mod, newName, saveType),
-            GroupType.Multi  => MultiEditor.AddModGroup(mod, newName, saveType),
-            GroupType.Imc    => ImcEditor.AddModGroup(mod, newName, default, default, saveType),
-            _                => null,
+            GroupType.Single    => SingleEditor.AddModGroup(mod, newName, saveType),
+            GroupType.Multi     => MultiEditor.AddModGroup(mod, newName, saveType),
+            GroupType.Imc       => ImcEditor.AddModGroup(mod, newName, default, default, saveType),
+            GroupType.Combining => CombiningEditor.AddModGroup(mod, newName, default, default, saveType),
+            _                   => null,
         };
 
     public (IModGroup?, int, bool) FindOrAddModGroup(Mod mod, GroupType type, string name, SaveType saveType = SaveType.ImmediateSync)
         => type switch
         {
-            GroupType.Single => SingleEditor.FindOrAddModGroup(mod, name, saveType),
-            GroupType.Multi  => MultiEditor.FindOrAddModGroup(mod, name, saveType),
-            GroupType.Imc    => ImcEditor.FindOrAddModGroup(mod, name, saveType),
-            _                => (null, -1, false),
+            GroupType.Single    => SingleEditor.FindOrAddModGroup(mod, name, saveType),
+            GroupType.Multi     => MultiEditor.FindOrAddModGroup(mod, name, saveType),
+            GroupType.Imc       => ImcEditor.FindOrAddModGroup(mod, name, saveType),
+            GroupType.Combining => CombiningEditor.FindOrAddModGroup(mod, name, saveType),
+            _                   => (null, -1, false),
         };
 
     public (IModOption?, int, bool) FindOrAddOption(IModGroup group, string name, SaveType saveType = SaveType.ImmediateSync)
         => group switch
         {
-            SingleModGroup s => SingleEditor.FindOrAddOption(s, name, saveType),
-            MultiModGroup m  => MultiEditor.FindOrAddOption(m, name, saveType),
-            ImcModGroup i    => ImcEditor.FindOrAddOption(i, name, saveType),
-            _                => (null, -1, false),
+            SingleModGroup s    => SingleEditor.FindOrAddOption(s, name, saveType),
+            MultiModGroup m     => MultiEditor.FindOrAddOption(m, name, saveType),
+            ImcModGroup i       => ImcEditor.FindOrAddOption(i, name, saveType),
+            CombiningModGroup c => CombiningEditor.FindOrAddOption(c, name, saveType),
+            _                   => (null, -1, false),
         };
 
     public void MoveOption(IModOption option, int toIdx)
@@ -283,6 +295,9 @@ public class ModGroupEditor(
                 return;
             case ImcSubMod i:
                 ImcEditor.MoveOption(i, toIdx);
+                return;
+            case CombiningSubMod c:
+                CombiningEditor.MoveOption(c, toIdx);
                 return;
         }
     }
