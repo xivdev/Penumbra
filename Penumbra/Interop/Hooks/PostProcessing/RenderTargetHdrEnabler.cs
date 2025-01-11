@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using OtterGui.Services;
 using Penumbra.GameData;
+using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
@@ -31,19 +32,23 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
 
     public TextureReportRecord[]? TextureReport { get; private set; }
 
-    [Signature(Sigs.RenderTargetManagerInitialize, DetourName = nameof(RenderTargetManagerInitializeDetour))]
-    private readonly Hook<RenderTargetManagerInitializeFunc> _renderTargetManagerInitialize = null!;
-
-    [Signature(Sigs.DeviceCreateTexture2D, DetourName = nameof(CreateTexture2DDetour))]
-    private readonly Hook<CreateTexture2DFunc> _createTexture2D = null!;
+    private readonly Hook<RenderTargetManagerInitializeFunc>? _renderTargetManagerInitialize;
+    private readonly Hook<CreateTexture2DFunc>?               _createTexture2D;
 
     public RenderTargetHdrEnabler(IGameInteropProvider interop, Configuration config, IDalamudPluginInterface pi,
-        DalamudConfigService dalamudConfig)
+        DalamudConfigService dalamudConfig, PeSigScanner peScanner)
     {
         _config = config;
-        interop.InitializeFromAttributes(this);
-        if (config.HdrRenderTargets && !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize)
-            _renderTargetManagerInitialize.Enable();
+        if (peScanner.TryScanText(Sigs.RenderTargetManagerInitialize, out var initializeAddress)
+         && peScanner.TryScanText(Sigs.DeviceCreateTexture2D,         out var createAddress))
+        {
+            _renderTargetManagerInitialize =
+                interop.HookFromAddress<RenderTargetManagerInitializeFunc>(initializeAddress, RenderTargetManagerInitializeDetour);
+            _createTexture2D = interop.HookFromAddress<CreateTexture2DFunc>(createAddress, CreateTexture2DDetour);
+
+            if (config.HdrRenderTargets && !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize)
+                _renderTargetManagerInitialize.Enable();
+        }
 
         _share = pi.GetOrCreateData("Penumbra.RenderTargetHDR.V1", () =>
         {
@@ -87,19 +92,19 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
 
     private void Dispose(bool _)
     {
-        _createTexture2D.Dispose();
-        _renderTargetManagerInitialize.Dispose();
+        _createTexture2D?.Dispose();
+        _renderTargetManagerInitialize?.Dispose();
     }
 
     private nint RenderTargetManagerInitializeDetour(RenderTargetManager* @this)
     {
-        _createTexture2D.Enable();
+        _createTexture2D!.Enable();
         _share.Item5[0]       = true;
         _textureIndices.Value = new TextureIndices(0, 0);
         _textures.Value       = _config.DebugMode ? [] : null;
         try
         {
-            return _renderTargetManagerInitialize.Original(@this);
+            return _renderTargetManagerInitialize!.Original(@this);
         }
         finally
         {
@@ -133,7 +138,7 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
             _textureIndices.Value = indices;
         }
 
-        var texture = _createTexture2D.Original(@this, size, mipLevel, textureFormat, flags, unk);
+        var texture = _createTexture2D!.Original(@this, size, mipLevel, textureFormat, flags, unk);
         if (_textures.IsValueCreated)
             _textures.Value?.Add((nint)texture, (indices.CreationOrder - 1, originalTextureFormat));
         return texture;

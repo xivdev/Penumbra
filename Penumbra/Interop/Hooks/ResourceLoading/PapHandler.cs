@@ -2,9 +2,9 @@
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public sealed class PapHandler(PapRewriter.PapResourceHandlerPrototype papResourceHandler) : IDisposable
+public sealed class PapHandler(PeSigScanner sigScanner, PapRewriter.PapResourceHandlerPrototype papResourceHandler) : IDisposable
 {
-    private readonly PapRewriter _papRewriter = new(papResourceHandler);
+    private readonly PapRewriter _papRewriter = new(sigScanner, papResourceHandler);
 
     public void Enable()
     {

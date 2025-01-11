@@ -7,21 +7,20 @@ using Swan;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResourceHandler) : IDisposable
+public sealed class PapRewriter(PeSigScanner sigScanner, PapRewriter.PapResourceHandlerPrototype papResourceHandler) : IDisposable
 {
     public unsafe delegate int PapResourceHandlerPrototype(void* self, byte* path, int length);
 
-    private readonly PeSigScanner                              _scanner          = new();
     private readonly Dictionary<nint, AsmHook>                 _hooks            = [];
     private readonly Dictionary<(nint, Register, ulong), nint> _nativeAllocPaths = [];
     private readonly List<nint>                                _nativeAllocCaves = [];
 
     public void Rewrite(string sig, string name)
     {
-        if (!_scanner.TryScanText(sig, out var address))
+        if (!sigScanner.TryScanText(sig, out var address))
             throw new Exception($"Signature for {name} [{sig}] could not be found.");
 
-        var funcInstructions = _scanner.GetFunctionInstructions(address).ToArray();
+        var funcInstructions = sigScanner.GetFunctionInstructions(address).ToArray();
         var hookPoints       = ScanPapHookPoints(funcInstructions).ToList();
 
         foreach (var hookPoint in hookPoints)
@@ -165,8 +164,6 @@ public sealed class PapRewriter(PapRewriter.PapResourceHandlerPrototype papResou
 
     public void Dispose()
     {
-        _scanner.Dispose();
-
         foreach (var hook in _hooks.Values)
         {
             hook.Disable();
