@@ -109,31 +109,29 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         CommunicatorService communicator, HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _resourceHandleDestructor = resourceHandleDestructor;
-        var utility1       = utility;
-        var modelRenderer1 = modelRenderer;
         _communicator          = communicator;
         _humanSetupScalingHook = humanSetupScalingHook;
 
         _skinState = new ModdedShaderPackageState(
-            () => (ShaderPackageResourceHandle**)&utility1.Address->SkinShpkResource,
-            () => (ShaderPackageResourceHandle*)utility1.DefaultSkinShpkResource);
+            () => (ShaderPackageResourceHandle**)&utility.Address->SkinShpkResource,
+            () => (ShaderPackageResourceHandle*)utility.DefaultSkinShpkResource);
         _characterStockingsState = new ModdedShaderPackageState(
-            () => (ShaderPackageResourceHandle**)&utility1.Address->CharacterStockingsShpkResource,
-            () => (ShaderPackageResourceHandle*)utility1.DefaultCharacterStockingsShpkResource);
+            () => (ShaderPackageResourceHandle**)&utility.Address->CharacterStockingsShpkResource,
+            () => (ShaderPackageResourceHandle*)utility.DefaultCharacterStockingsShpkResource);
         _characterLegacyState = new ModdedShaderPackageState(
-            () => (ShaderPackageResourceHandle**)&utility1.Address->CharacterLegacyShpkResource,
-            () => (ShaderPackageResourceHandle*)utility1.DefaultCharacterLegacyShpkResource);
-        _irisState = new ModdedShaderPackageState(() => modelRenderer1.IrisShaderPackage, () => modelRenderer1.DefaultIrisShaderPackage);
-        _characterGlassState = new ModdedShaderPackageState(() => modelRenderer1.CharacterGlassShaderPackage,
-            () => modelRenderer1.DefaultCharacterGlassShaderPackage);
-        _characterTransparencyState = new ModdedShaderPackageState(() => modelRenderer1.CharacterTransparencyShaderPackage,
-            () => modelRenderer1.DefaultCharacterTransparencyShaderPackage);
-        _characterTattooState = new ModdedShaderPackageState(() => modelRenderer1.CharacterTattooShaderPackage,
-            () => modelRenderer1.DefaultCharacterTattooShaderPackage);
-        _characterOcclusionState = new ModdedShaderPackageState(() => modelRenderer1.CharacterOcclusionShaderPackage,
-            () => modelRenderer1.DefaultCharacterOcclusionShaderPackage);
+            () => (ShaderPackageResourceHandle**)&utility.Address->CharacterLegacyShpkResource,
+            () => (ShaderPackageResourceHandle*)utility.DefaultCharacterLegacyShpkResource);
+        _irisState = new ModdedShaderPackageState(() => modelRenderer.IrisShaderPackage, () => modelRenderer.DefaultIrisShaderPackage);
+        _characterGlassState = new ModdedShaderPackageState(() => modelRenderer.CharacterGlassShaderPackage,
+            () => modelRenderer.DefaultCharacterGlassShaderPackage);
+        _characterTransparencyState = new ModdedShaderPackageState(() => modelRenderer.CharacterTransparencyShaderPackage,
+            () => modelRenderer.DefaultCharacterTransparencyShaderPackage);
+        _characterTattooState = new ModdedShaderPackageState(() => modelRenderer.CharacterTattooShaderPackage,
+            () => modelRenderer.DefaultCharacterTattooShaderPackage);
+        _characterOcclusionState = new ModdedShaderPackageState(() => modelRenderer.CharacterOcclusionShaderPackage,
+            () => modelRenderer.DefaultCharacterOcclusionShaderPackage);
         _hairMaskState =
-            new ModdedShaderPackageState(() => modelRenderer1.HairMaskShaderPackage, () => modelRenderer1.DefaultHairMaskShaderPackage);
+            new ModdedShaderPackageState(() => modelRenderer.HairMaskShaderPackage, () => modelRenderer.DefaultHairMaskShaderPackage);
 
         _humanSetupScalingHook.SetupReplacements += SetupHssReplacements;
         _humanOnRenderMaterialHook = hooks.CreateHook<CharacterBaseOnRenderMaterialDelegate>("Human.OnRenderMaterial", vTables.HumanVTable[64],

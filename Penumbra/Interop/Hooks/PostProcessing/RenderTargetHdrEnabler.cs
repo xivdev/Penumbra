@@ -1,11 +1,13 @@
 using System.Collections.Immutable;
 using Dalamud.Hooking;
+using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using OtterGui.Services;
 using Penumbra.GameData;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
@@ -21,9 +23,9 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
     private static readonly IComparer<ForcedTextureConfig> ForcedTextureConfigComparer
         = Comparer<ForcedTextureConfig>.Create((lhs, rhs) => lhs.CreationOrder.CompareTo(rhs.CreationOrder));
 
-    private readonly Configuration _config;
-
-    private readonly ThreadLocal<TextureIndices> _textureIndices = new(() => new TextureIndices(-1, -1));
+    private readonly Configuration                           _config;
+    private readonly Tuple<bool?, bool, bool, int[], bool[]> _share;
+    private readonly ThreadLocal<TextureIndices>             _textureIndices = new(() => new TextureIndices(-1, -1));
 
     private readonly ThreadLocal<Dictionary<nint, (int TextureIndex, uint TextureFormat)>?> _textures = new(() => null);
 
@@ -35,16 +37,41 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
     [Signature(Sigs.DeviceCreateTexture2D, DetourName = nameof(CreateTexture2DDetour))]
     private readonly Hook<CreateTexture2DFunc> _createTexture2D = null!;
 
-    public RenderTargetHdrEnabler(IGameInteropProvider interop, Configuration config)
+    public RenderTargetHdrEnabler(IGameInteropProvider interop, Configuration config, IDalamudPluginInterface pi,
+        DalamudConfigService dalamudConfig)
     {
         _config = config;
         interop.InitializeFromAttributes(this);
         if (config.HdrRenderTargets && !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize)
             _renderTargetManagerInitialize.Enable();
+
+        _share = pi.GetOrCreateData("Penumbra.RenderTargetHDR.V1", () =>
+        {
+            bool? waitForPlugins = dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s) ? s : null;
+            return new Tuple<bool?, bool, bool, int[], bool[]>(waitForPlugins, config.HdrRenderTargets,
+                !HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize, [0], [false]);
+        });
+        ++_share.Item4[0];
     }
+
+    public bool? FirstLaunchWaitForPluginsState
+        => _share.Item1;
+
+    public bool FirstLaunchHdrState
+        => _share.Item2;
+
+    public bool FirstLaunchHdrHookOverrideState
+        => _share.Item3;
+
+    public int PenumbraReloadCount
+        => _share.Item4[0];
+
+    public bool HdrEnabledSuccess
+        => _share.Item5[0];
 
     ~RenderTargetHdrEnabler()
         => Dispose(false);
+
 
     public static ForcedTextureConfig? GetForcedTextureConfig(int creationOrder)
     {
@@ -67,6 +94,7 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
     private nint RenderTargetManagerInitializeDetour(RenderTargetManager* @this)
     {
         _createTexture2D.Enable();
+        _share.Item5[0]       = true;
         _textureIndices.Value = new TextureIndices(0, 0);
         _textures.Value       = _config.DebugMode ? [] : null;
         try

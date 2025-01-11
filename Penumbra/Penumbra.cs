@@ -23,6 +23,7 @@ using Lumina.Excel.Sheets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 
 namespace Penumbra;
@@ -205,9 +206,10 @@ public class Penumbra : IDalamudPlugin
 
     public string GatherSupportInformation()
     {
-        var sb     = new StringBuilder(10240);
-        var exists = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
-        var drive  = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
+        var sb         = new StringBuilder(10240);
+        var exists     = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
+        var hdrEnabler = _services.GetService<RenderTargetHdrEnabler>();
+        var drive      = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
         sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
@@ -223,9 +225,10 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
         sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
+        sb.Append($"> **`Penumbra Reloads:            `** {hdrEnabler.PenumbraReloadCount}\n");
+        sb.Append($"> **`HDR Enabled (from Start):    `** {_config.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}\n");
         sb.Append($"> **`Hook Overrides:              `** {HookOverrides.Instance.IsCustomLoaded}\n");
-        sb.Append(
-            $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");
+        sb.Append($"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Ephemeral.EnableResourceLogging}, Watcher: {_config.Ephemeral.EnableResourceWatcher} ({_config.MaxResourceWatcherRecords})\n");
         sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
