@@ -11,6 +11,7 @@ using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
+using Penumbra.String.Classes;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using CSModelRenderer = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRenderer;
 using ModelRenderer = Penumbra.Interop.Services.ModelRenderer;
@@ -109,8 +110,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         CommunicatorService communicator, HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _resourceHandleDestructor = resourceHandleDestructor;
-        _communicator          = communicator;
-        _humanSetupScalingHook = humanSetupScalingHook;
+        _communicator             = communicator;
+        _humanSetupScalingHook    = humanSetupScalingHook;
 
         _skinState = new ModdedShaderPackageState(
             () => (ShaderPackageResourceHandle**)&utility.Address->SkinShpkResource,
@@ -467,7 +468,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     private Texture* PrepareColorTableDetour(MaterialResourceHandle* thisPtr, byte stain0Id, byte stain1Id)
     {
-        if (thisPtr->DataSetSize < GetDataSetExpectedSize(thisPtr->DataFlags))
+        if (thisPtr->DataSetSize < GetDataSetExpectedSize(thisPtr->DataFlags) && Utf8GamePath.IsRooted(thisPtr->FileName.AsSpan()))
             Penumbra.Log.Warning(
                 $"Material at {thisPtr->FileName} has data set of size {thisPtr->DataSetSize} bytes, but should have at least {GetDataSetExpectedSize(thisPtr->DataFlags)} bytes. This may cause crashes due to access violations.");
 
@@ -507,9 +508,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         private readonly ConcurrentSet<nint> _materials = new();
 
         // ConcurrentDictionary.Count uses a lock in its current implementation.
-        private uint _materialCount = 0;
-
-        private ulong _slowPathCallDelta = 0;
+        private uint _materialCount;
+        private ulong _slowPathCallDelta;
 
         public uint MaterialCount
         {
