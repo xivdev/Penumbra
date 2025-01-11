@@ -64,8 +64,6 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
 
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
     private readonly CommunicatorService      _communicator;
-    private readonly CharacterUtility         _utility;
-    private readonly ModelRenderer            _modelRenderer;
     private readonly HumanSetupScalingHook    _humanSetupScalingHook;
 
     private readonly ModdedShaderPackageState _skinState;
@@ -111,31 +109,31 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         CommunicatorService communicator, HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _resourceHandleDestructor = resourceHandleDestructor;
-        _utility                  = utility;
-        _modelRenderer            = modelRenderer;
-        _communicator             = communicator;
-        _humanSetupScalingHook    = humanSetupScalingHook;
+        var utility1       = utility;
+        var modelRenderer1 = modelRenderer;
+        _communicator          = communicator;
+        _humanSetupScalingHook = humanSetupScalingHook;
 
         _skinState = new ModdedShaderPackageState(
-            () => (ShaderPackageResourceHandle**)&_utility.Address->SkinShpkResource,
-            () => (ShaderPackageResourceHandle*)_utility.DefaultSkinShpkResource);
+            () => (ShaderPackageResourceHandle**)&utility1.Address->SkinShpkResource,
+            () => (ShaderPackageResourceHandle*)utility1.DefaultSkinShpkResource);
         _characterStockingsState = new ModdedShaderPackageState(
-            () => (ShaderPackageResourceHandle**)&_utility.Address->CharacterStockingsShpkResource,
-            () => (ShaderPackageResourceHandle*)_utility.DefaultCharacterStockingsShpkResource);
+            () => (ShaderPackageResourceHandle**)&utility1.Address->CharacterStockingsShpkResource,
+            () => (ShaderPackageResourceHandle*)utility1.DefaultCharacterStockingsShpkResource);
         _characterLegacyState = new ModdedShaderPackageState(
-            () => (ShaderPackageResourceHandle**)&_utility.Address->CharacterLegacyShpkResource,
-            () => (ShaderPackageResourceHandle*)_utility.DefaultCharacterLegacyShpkResource);
-        _irisState = new ModdedShaderPackageState(() => _modelRenderer.IrisShaderPackage, () => _modelRenderer.DefaultIrisShaderPackage);
-        _characterGlassState = new ModdedShaderPackageState(() => _modelRenderer.CharacterGlassShaderPackage,
-            () => _modelRenderer.DefaultCharacterGlassShaderPackage);
-        _characterTransparencyState = new ModdedShaderPackageState(() => _modelRenderer.CharacterTransparencyShaderPackage,
-            () => _modelRenderer.DefaultCharacterTransparencyShaderPackage);
-        _characterTattooState = new ModdedShaderPackageState(() => _modelRenderer.CharacterTattooShaderPackage,
-            () => _modelRenderer.DefaultCharacterTattooShaderPackage);
-        _characterOcclusionState = new ModdedShaderPackageState(() => _modelRenderer.CharacterOcclusionShaderPackage,
-            () => _modelRenderer.DefaultCharacterOcclusionShaderPackage);
+            () => (ShaderPackageResourceHandle**)&utility1.Address->CharacterLegacyShpkResource,
+            () => (ShaderPackageResourceHandle*)utility1.DefaultCharacterLegacyShpkResource);
+        _irisState = new ModdedShaderPackageState(() => modelRenderer1.IrisShaderPackage, () => modelRenderer1.DefaultIrisShaderPackage);
+        _characterGlassState = new ModdedShaderPackageState(() => modelRenderer1.CharacterGlassShaderPackage,
+            () => modelRenderer1.DefaultCharacterGlassShaderPackage);
+        _characterTransparencyState = new ModdedShaderPackageState(() => modelRenderer1.CharacterTransparencyShaderPackage,
+            () => modelRenderer1.DefaultCharacterTransparencyShaderPackage);
+        _characterTattooState = new ModdedShaderPackageState(() => modelRenderer1.CharacterTattooShaderPackage,
+            () => modelRenderer1.DefaultCharacterTattooShaderPackage);
+        _characterOcclusionState = new ModdedShaderPackageState(() => modelRenderer1.CharacterOcclusionShaderPackage,
+            () => modelRenderer1.DefaultCharacterOcclusionShaderPackage);
         _hairMaskState =
-            new ModdedShaderPackageState(() => _modelRenderer.HairMaskShaderPackage, () => _modelRenderer.DefaultHairMaskShaderPackage);
+            new ModdedShaderPackageState(() => modelRenderer1.HairMaskShaderPackage, () => modelRenderer1.DefaultHairMaskShaderPackage);
 
         _humanSetupScalingHook.SetupReplacements += SetupHssReplacements;
         _humanOnRenderMaterialHook = hooks.CreateHook<CharacterBaseOnRenderMaterialDelegate>("Human.OnRenderMaterial", vTables.HumanVTable[64],
@@ -463,6 +461,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         return mtrlResource;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static int GetDataSetExpectedSize(uint dataFlags)
         => (dataFlags & 4) != 0
             ? ColorTable.Size + ((dataFlags & 8) != 0 ? ColorDyeTable.Size : 0)
@@ -471,7 +470,8 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     private Texture* PrepareColorTableDetour(MaterialResourceHandle* thisPtr, byte stain0Id, byte stain1Id)
     {
         if (thisPtr->DataSetSize < GetDataSetExpectedSize(thisPtr->DataFlags))
-            Penumbra.Log.Warning($"Material at {thisPtr->FileName} has data set of size {thisPtr->DataSetSize} bytes, but should have at least {GetDataSetExpectedSize(thisPtr->DataFlags)} bytes. This may cause crashes due to access violations.");
+            Penumbra.Log.Warning(
+                $"Material at {thisPtr->FileName} has data set of size {thisPtr->DataSetSize} bytes, but should have at least {GetDataSetExpectedSize(thisPtr->DataFlags)} bytes. This may cause crashes due to access violations.");
 
         // If we don't have any on-screen instances of modded characterlegacy.shpk, we don't need the slow path at all.
         if (!Enabled || GetTotalMaterialCountForColorTable() == 0)

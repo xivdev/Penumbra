@@ -14,8 +14,8 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
     /// <remarks> This array must be sorted by CreationOrder ascending. </remarks>
     private static readonly ImmutableArray<ForcedTextureConfig> ForcedTextureConfigs =
     [
-        new(9,  TextureFormat.R16G16B16A16_FLOAT, "Opaque Diffuse GBuffer"),
-        new(10, TextureFormat.R16G16B16A16_FLOAT, "Semitransparent Diffuse GBuffer"),
+        new ForcedTextureConfig(9,  TextureFormat.R16G16B16A16_FLOAT, "Opaque Diffuse GBuffer"),
+        new ForcedTextureConfig(10, TextureFormat.R16G16B16A16_FLOAT, "Semitransparent Diffuse GBuffer"),
     ];
 
     private static readonly IComparer<ForcedTextureConfig> ForcedTextureConfigComparer
@@ -23,16 +23,17 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
 
     private readonly Configuration _config;
 
-    private readonly ThreadLocal<TextureIndices> _textureIndices = new(() => new(-1, -1));
+    private readonly ThreadLocal<TextureIndices> _textureIndices = new(() => new TextureIndices(-1, -1));
+
     private readonly ThreadLocal<Dictionary<nint, (int TextureIndex, uint TextureFormat)>?> _textures = new(() => null);
 
     public TextureReportRecord[]? TextureReport { get; private set; }
 
     [Signature(Sigs.RenderTargetManagerInitialize, DetourName = nameof(RenderTargetManagerInitializeDetour))]
-    private Hook<RenderTargetManagerInitializeFunc> _renderTargetManagerInitialize = null!;
+    private readonly Hook<RenderTargetManagerInitializeFunc> _renderTargetManagerInitialize = null!;
 
     [Signature(Sigs.DeviceCreateTexture2D, DetourName = nameof(CreateTexture2DDetour))]
-    private Hook<CreateTexture2DFunc> _createTexture2D = null!;
+    private readonly Hook<CreateTexture2DFunc> _createTexture2D = null!;
 
     public RenderTargetHdrEnabler(IGameInteropProvider interop, Configuration config)
     {
@@ -47,7 +48,7 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
 
     public static ForcedTextureConfig? GetForcedTextureConfig(int creationOrder)
     {
-        var i = ForcedTextureConfigs.BinarySearch(new(creationOrder, 0, string.Empty), ForcedTextureConfigComparer);
+        var i = ForcedTextureConfigs.BinarySearch(new ForcedTextureConfig(creationOrder, 0, string.Empty), ForcedTextureConfigComparer);
         return i >= 0 ? ForcedTextureConfigs[i] : null;
     }
 
@@ -59,10 +60,6 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
 
     private void Dispose(bool _)
     {
-        _renderTargetManagerInitialize.Disable();
-        if (_createTexture2D.IsEnabled)
-            _createTexture2D.Disable();
-
         _createTexture2D.Dispose();
         _renderTargetManagerInitialize.Dispose();
     }
@@ -70,8 +67,8 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
     private nint RenderTargetManagerInitializeDetour(RenderTargetManager* @this)
     {
         _createTexture2D.Enable();
-        _textureIndices.Value = new(0, 0);
-        _textures.Value = _config.DebugMode ? [] : null;
+        _textureIndices.Value = new TextureIndices(0, 0);
+        _textures.Value       = _config.DebugMode ? [] : null;
         try
         {
             return _renderTargetManagerInitialize.Original(@this);
@@ -80,10 +77,11 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
         {
             if (_textures.Value != null)
             {
-                TextureReport = CreateTextureReport(@this, _textures.Value);
+                TextureReport   = CreateTextureReport(@this, _textures.Value);
                 _textures.Value = null;
             }
-            _textureIndices.Value = new(-1, -1);
+
+            _textureIndices.Value = new TextureIndices(-1, -1);
             _createTexture2D.Disable();
         }
     }
@@ -92,9 +90,10 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
         Device* @this, int* size, byte mipLevel, uint textureFormat, uint flags, uint unk)
     {
         var originalTextureFormat = textureFormat;
-        var indices = _textureIndices.IsValueCreated ? _textureIndices.Value : new(-1, -1);
-        if (indices.ConfigIndex >= 0 && indices.ConfigIndex < ForcedTextureConfigs.Length &&
-            ForcedTextureConfigs[indices.ConfigIndex].CreationOrder == indices.CreationOrder)
+        var indices               = _textureIndices.IsValueCreated ? _textureIndices.Value : new TextureIndices(-1, -1);
+        if (indices.ConfigIndex >= 0
+         && indices.ConfigIndex < ForcedTextureConfigs.Length
+         && ForcedTextureConfigs[indices.ConfigIndex].CreationOrder == indices.CreationOrder)
         {
             var config = ForcedTextureConfigs[indices.ConfigIndex++];
             textureFormat = (uint)config.ForcedTextureFormat;
@@ -112,15 +111,17 @@ public unsafe class RenderTargetHdrEnabler : IService, IDisposable
         return texture;
     }
 
-    private static TextureReportRecord[] CreateTextureReport(RenderTargetManager* renderTargetManager, Dictionary<nint, (int TextureIndex, uint TextureFormat)> textures)
+    private static TextureReportRecord[] CreateTextureReport(RenderTargetManager* renderTargetManager,
+        Dictionary<nint, (int TextureIndex, uint TextureFormat)> textures)
     {
         var rtmTextures = new Span<nint>(renderTargetManager, sizeof(RenderTargetManager) / sizeof(nint));
-        var report = new List<TextureReportRecord>();
+        var report      = new List<TextureReportRecord>();
         for (var i = 0; i < rtmTextures.Length; ++i)
         {
             if (textures.TryGetValue(rtmTextures[i], out var texture))
-                report.Add(new(i * sizeof(nint), texture.TextureIndex, (TextureFormat)texture.TextureFormat));
+                report.Add(new TextureReportRecord(i * sizeof(nint), texture.TextureIndex, (TextureFormat)texture.TextureFormat));
         }
+
         return report.ToArray();
     }
 
