@@ -10,6 +10,7 @@ using OtterGui.Compression;
 using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections;
@@ -905,18 +906,29 @@ public class SettingsTab : ITab, IUiService
 
     private void DrawHdrRenderTargets()
     {
-        var item = _config.HdrRenderTargets ? 1 : 0;
-        ImGui.SetNextItemWidth(ImGui.CalcTextSize("M").X * 5.0f + ImGui.GetFrameHeight());
-        var edited = ImGui.Combo("##hdrRenderTarget", ref item, "SDR\0HDR\0");
+        ImGui.SetNextItemWidth(ImUtf8.CalcTextSize("M"u8).X * 5.0f + ImGui.GetFrameHeight());
+        using (var combo = ImUtf8.Combo("##hdrRenderTarget"u8, _config.HdrRenderTargets ? "HDR"u8 : "SDR"u8))
+        {
+            if (combo)
+            {
+                if (ImUtf8.Selectable("HDR"u8, _config.HdrRenderTargets) && !_config.HdrRenderTargets)
+                {
+                    _config.HdrRenderTargets = true;
+                    _config.Save();
+                }
+
+                if (ImUtf8.Selectable("SDR"u8, !_config.HdrRenderTargets) && _config.HdrRenderTargets)
+                {
+                    _config.HdrRenderTargets = false;
+                    _config.Save();
+                }
+            }
+        }
+
         ImGui.SameLine();
-        ImGuiUtil.LabeledHelpMarker("Diffuse Dynamic Range",
-            "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\nChanging this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled.");
-
-        if (!edited)
-            return;
-
-        _config.HdrRenderTargets = item != 0;
-        _config.Save();
+        ImUtf8.LabeledHelpMarker("Diffuse Dynamic Range"u8,
+            "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\n"u8
+          + "Changing this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled."u8);
     }
 
     /// <summary> Draw a checkbox for the HTTP API that creates and destroys the web server when toggled. </summary>

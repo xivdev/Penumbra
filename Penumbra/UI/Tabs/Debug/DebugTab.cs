@@ -42,7 +42,6 @@ using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
-using CSGraphics = FFXIVClientStructs.FFXIV.Client.Graphics;
 
 namespace Penumbra.UI.Tabs.Debug;
 
@@ -105,7 +104,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly RsfService                         _rsfService;
     private readonly SchedulerResourceManagementService _schedulerService;
     private readonly ObjectIdentification               _objectIdentification;
-    private readonly RenderTargetHdrEnabler             _renderTargetHdrEnabler;
+    private readonly RenderTargetDrawer                 _renderTargetDrawer;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -116,7 +115,7 @@ public class DebugTab : Window, ITab, IUiService
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
-        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetHdrEnabler renderTargetHdrEnabler)
+        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -156,7 +155,7 @@ public class DebugTab : Window, ITab, IUiService
         _globalVariablesDrawer     = globalVariablesDrawer;
         _schedulerService          = schedulerService;
         _objectIdentification      = objectIdentification;
-        _renderTargetHdrEnabler    = renderTargetHdrEnabler;
+        _renderTargetDrawer        = renderTargetDrawer;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -192,7 +191,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawData();
         DrawCrcCache();
         DrawResourceProblems();
-        DrawRenderTargets();
+        _renderTargetDrawer.Draw();
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
         _globalVariablesDrawer.Draw();
@@ -1136,54 +1135,6 @@ public class DebugTab : Window, ITab, IUiService
                     UiHelpers.Text(ptr, (int)name.Length);
                 }
         });
-    }
-
-
-    /// <summary> Draw information about render targets. </summary>
-    private unsafe void DrawRenderTargets()
-    {
-        if (!ImGui.CollapsingHeader("Render Targets"))
-            return;
-
-        var report = _renderTargetHdrEnabler.TextureReport;
-        if (report == null)
-        {
-            ImGui.TextUnformatted("The RenderTargetManager report has not been gathered.");
-            ImGui.TextUnformatted("Please restart the game with Debug Mode and Wait for Plugins on Startup enabled to fill this section.");
-            return;
-        }
-
-        using var table = Table("##RenderTargetTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
-        if (!table)
-            return;
-
-        ImUtf8.TableSetupColumn("Offset"u8,                  ImGuiTableColumnFlags.WidthStretch, 0.15f);
-        ImUtf8.TableSetupColumn("Creation Order"u8,          ImGuiTableColumnFlags.WidthStretch, 0.15f);
-        ImUtf8.TableSetupColumn("Original Texture Format"u8, ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Current Texture Format"u8,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Comment"u8,                 ImGuiTableColumnFlags.WidthStretch, 0.3f);
-        ImGui.TableHeadersRow();
-
-        foreach (var record in report)
-        {
-            ImGui.TableNextColumn();
-            ImUtf8.Text($"0x{record.Offset:X}");
-            ImGui.TableNextColumn();
-            ImUtf8.Text($"{record.CreationOrder}");
-            ImGui.TableNextColumn();
-            ImUtf8.Text($"{record.OriginalTextureFormat}");
-            ImGui.TableNextColumn();
-            var texture = *(CSGraphics.Kernel.Texture**)((nint)CSGraphics.Render.RenderTargetManager.Instance() + record.Offset);
-            if (texture != null)
-            {
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ImGuiUtil.HalfBlendText(0xFF), texture->TextureFormat != record.OriginalTextureFormat);
-                ImUtf8.Text($"{texture->TextureFormat}");
-            }
-            ImGui.TableNextColumn();
-            var forcedConfig = RenderTargetHdrEnabler.GetForcedTextureConfig(record.CreationOrder);
-            if (forcedConfig.HasValue)
-                ImGui.TextUnformatted(forcedConfig.Value.Comment);
-        }
     }
 
 
