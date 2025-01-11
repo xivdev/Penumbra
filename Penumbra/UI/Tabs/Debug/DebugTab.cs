@@ -104,6 +104,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly RsfService                         _rsfService;
     private readonly SchedulerResourceManagementService _schedulerService;
     private readonly ObjectIdentification               _objectIdentification;
+    private readonly RenderTargetDrawer                 _renderTargetDrawer;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -114,7 +115,7 @@ public class DebugTab : Window, ITab, IUiService
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
-        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification)
+        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -154,6 +155,7 @@ public class DebugTab : Window, ITab, IUiService
         _globalVariablesDrawer     = globalVariablesDrawer;
         _schedulerService          = schedulerService;
         _objectIdentification      = objectIdentification;
+        _renderTargetDrawer        = renderTargetDrawer;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -189,6 +191,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawData();
         DrawCrcCache();
         DrawResourceProblems();
+        _renderTargetDrawer.Draw();
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
         _globalVariablesDrawer.Draw();
