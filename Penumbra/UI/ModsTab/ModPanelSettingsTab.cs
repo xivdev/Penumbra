@@ -249,9 +249,10 @@ public class ModPanelSettingsTab(
         }
         else
         {
+            var actual = collectionManager.Active.Current.GetActualSettings(selection.Mod!.Index).Settings;
             if (ImUtf8.ButtonEx("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
                 collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
-                    new TemporaryModSettings(selection.Settings, "yourself"));
+                    new TemporaryModSettings(actual, "yourself"));
         }
     }
 }
