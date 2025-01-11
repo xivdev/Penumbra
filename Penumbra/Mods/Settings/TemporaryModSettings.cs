@@ -20,16 +20,22 @@ public sealed class TemporaryModSettings : ModSettings
     public TemporaryModSettings()
     { }
 
-    public TemporaryModSettings(ModSettings? clone, string source, int key = 0)
+    public TemporaryModSettings(Mod mod, ModSettings? clone, string source, int key = 0)
     {
         Source       = source;
         Lock         = key;
         ForceInherit = clone == null;
-        if (clone != null)
+        if (clone != null && clone != Empty)
         {
             Enabled  = clone.Enabled;
             Priority = clone.Priority;
             Settings = clone.Settings.Clone();
+        }
+        else
+        {
+            Enabled  = false;
+            Priority = ModPriority.Default;
+            Settings = SettingList.Default(mod);
         }
     }
 }

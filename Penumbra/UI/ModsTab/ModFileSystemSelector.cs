@@ -277,19 +277,19 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         var actual = _collectionManager.Active.Current.GetActualSettings(mod.Value.Index).Settings;
         if (actual?.Enabled is true && ImUtf8.MenuItem("Disable Temporarily"u8))
             _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
-                new TemporaryModSettings(actual, source) { Enabled = false });
+                new TemporaryModSettings(mod.Value, actual, source) { Enabled = false });
 
         if (actual is not { Enabled: true } && ImUtf8.MenuItem("Enable Temporarily"u8))
         {
             var newSettings = actual is null
                 ? TemporaryModSettings.DefaultSettings(mod.Value, source, true)
-                : new TemporaryModSettings(actual, source) { Enabled = true };
+                : new TemporaryModSettings(mod.Value, actual, source) { Enabled = true };
             _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, newSettings);
         }
 
         if (tempSettings is null && ImUtf8.MenuItem("Turn Temporary"u8))
             _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
-                new TemporaryModSettings(actual, source));
+                new TemporaryModSettings(mod.Value, actual, source));
     }
 
     private void SetDefaultImportFolder(ModFileSystem.Folder folder)
