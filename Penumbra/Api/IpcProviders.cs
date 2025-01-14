@@ -103,6 +103,8 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.RemoveTemporaryModSettingsPlayer.Provider(pi, api.Temporary),
             IpcSubscribers.RemoveAllTemporaryModSettings.Provider(pi, api.Temporary),
             IpcSubscribers.RemoveAllTemporaryModSettingsPlayer.Provider(pi, api.Temporary),
+            IpcSubscribers.QueryTemporaryModSettings.Provider(pi, api.Temporary),
+            IpcSubscribers.QueryTemporaryModSettingsPlayer.Provider(pi, api.Temporary),
 
             IpcSubscribers.ChangedItemTooltip.Provider(pi, api.Ui),
             IpcSubscribers.ChangedItemClicked.Provider(pi, api.Ui),

@@ -51,7 +51,7 @@ public class TemporaryIpcTester(
         ImGuiUtil.GuidInput("##guid", "Collection GUID...", string.Empty, ref _tempGuid, ref _tempCollectionGuidName);
         ImGui.InputInt("##tempActorIndex", ref _tempActorIndex, 0, 0);
         ImGui.InputTextWithHint("##tempMod",  "Temporary Mod Name...", ref _tempModName,  32);
-        ImGui.InputTextWithHint("##mod",  "Existing Mod Name...",  ref _modDirectory, 256);
+        ImGui.InputTextWithHint("##mod",      "Existing Mod Name...",  ref _modDirectory, 256);
         ImGui.InputTextWithHint("##tempGame", "Game Path...",          ref _tempGamePath, 256);
         ImGui.InputTextWithHint("##tempFile", "File Path...",          ref _tempFilePath, 256);
         ImUtf8.InputText("##tempManip"u8, ref _tempManipulation, "Manipulation Base64 String..."u8);
@@ -126,12 +126,14 @@ public class TemporaryIpcTester(
 
         IpcTester.DrawIntro(SetTemporaryModSettings.Label, "Set Temporary Mod Settings (to default) in specific Collection");
         if (ImUtf8.Button("Set##SetTemporary"u8))
-            _lastTempError = new SetTemporaryModSettings(pi).Invoke(guid, _modDirectory, false, true, 1337, new Dictionary<string, IReadOnlyList<string>>(),
+            _lastTempError = new SetTemporaryModSettings(pi).Invoke(guid, _modDirectory, false, true, 1337,
+                new Dictionary<string, IReadOnlyList<string>>(),
                 "IPC Tester", 1337);
 
         IpcTester.DrawIntro(SetTemporaryModSettingsPlayer.Label, "Set Temporary Mod Settings (to default) in game object collection");
         if (ImUtf8.Button("Set##SetTemporaryPlayer"u8))
-            _lastTempError = new SetTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, false, true, 1337, new Dictionary<string, IReadOnlyList<string>>(),
+            _lastTempError = new SetTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, false, true, 1337,
+                new Dictionary<string, IReadOnlyList<string>>(),
                 "IPC Tester", 1337);
 
         IpcTester.DrawIntro(RemoveTemporaryModSettings.Label, "Remove Temporary Mod Settings from specific Collection");
@@ -161,6 +163,75 @@ public class TemporaryIpcTester(
         ImGui.SameLine();
         if (ImUtf8.Button("Remove (Wrong Key)##RemoveAllTemporaryPlayer"u8))
             _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1338);
+
+        IpcTester.DrawIntro(QueryTemporaryModSettings.Label, "Query Temporary Mod Settings from specific Collection");
+        ImUtf8.Button("Query##QueryTemporaryModSettings"u8);
+        if (ImGui.IsItemHovered())
+        {
+            _lastTempError = new QueryTemporaryModSettings(pi).Invoke(guid, _modDirectory, out var settings, out var source, 1337);
+            DrawTooltip(settings, source);
+        }
+
+        ImGui.SameLine();
+        ImUtf8.Button("Query (Wrong Key)##RemoveAllTemporary"u8);
+        if (ImGui.IsItemHovered())
+        {
+            _lastTempError = new QueryTemporaryModSettings(pi).Invoke(guid, _modDirectory, out var settings, out var source, 1338);
+            DrawTooltip(settings, source);
+        }
+
+        IpcTester.DrawIntro(QueryTemporaryModSettingsPlayer.Label, "Query Temporary Mod Settings from game object Collection");
+        ImUtf8.Button("Query##QueryTemporaryModSettingsPlayer"u8);
+        if (ImGui.IsItemHovered())
+        {
+            _lastTempError =
+                new QueryTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, out var settings, out var source, 1337);
+            DrawTooltip(settings, source);
+        }
+
+        ImGui.SameLine();
+        ImUtf8.Button("Query (Wrong Key)##RemoveAllTemporaryPlayer"u8);
+        if (ImGui.IsItemHovered())
+        {
+            _lastTempError =
+                new QueryTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, out var settings, out var source, 1338);
+            DrawTooltip(settings, source);
+        }
+
+        void DrawTooltip((bool ForceInherit, bool Enabled, int Priority, Dictionary<string, List<string>> Settings)? settings, string source)
+        {
+            using var tt = ImUtf8.Tooltip();
+            ImUtf8.Text($"Query returned {_lastTempError}");
+            if (settings != null)
+                ImUtf8.Text($"Settings created by {(source.Length == 0 ? "Unknown Source" : source)}:");
+            else
+                ImUtf8.Text(source.Length > 0 ? $"Locked by {source}." : "No settings exist.");
+            ImGui.Separator();
+            if (settings == null)
+            {
+                
+                return;
+            }
+
+            using (ImUtf8.Group())
+            {
+                ImUtf8.Text("Force Inherit"u8);
+                ImUtf8.Text("Enabled"u8);
+                ImUtf8.Text("Priority"u8);
+                foreach (var group in settings.Value.Settings.Keys)
+                    ImUtf8.Text(group);
+            }
+
+            ImGui.SameLine();
+            using (ImUtf8.Group())
+            {
+                ImUtf8.Text($"{settings.Value.ForceInherit}");
+                ImUtf8.Text($"{settings.Value.Enabled}");
+                ImUtf8.Text($"{settings.Value.Priority}");
+                foreach (var group in settings.Value.Settings.Values)
+                    ImUtf8.Text(string.Join("; ", group));
+            }
+        }
     }
 
     public void DrawCollections()

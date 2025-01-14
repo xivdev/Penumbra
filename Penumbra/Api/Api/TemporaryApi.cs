@@ -130,11 +130,54 @@ public class TemporaryApi(
         return ApiHelpers.Return(ret, args);
     }
 
+    public (PenumbraApiEc, (bool, bool, int, Dictionary<string, List<string>>)?, string) QueryTemporaryModSettings(Guid collectionId, string modDirectory,
+        string modName, int key)
+    {
+        var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName);
+        if (!collectionManager.Storage.ById(collectionId, out var collection))
+            return (ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args), null, string.Empty);
 
-    public PenumbraApiEc SetTemporaryModSettings(Guid collectionId, string modDirectory, string modName, bool inherit, bool enabled, int priority,
+        return QueryTemporaryModSettings(args, collection, modDirectory, modName, key);
+    }
+
+    public (PenumbraApiEc ErrorCode, (bool, bool, int, Dictionary<string, List<string>>)? Settings, string Source)
+        QueryTemporaryModSettingsPlayer(int objectIndex,
+            string modDirectory, string modName, int key)
+    {
+        var args = ApiHelpers.Args("ObjectIndex", objectIndex, "ModDirectory", modDirectory, "ModName", modName);
+        if (!apiHelpers.AssociatedCollection(objectIndex, out var collection))
+            return (ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args), null, string.Empty);
+
+        return QueryTemporaryModSettings(args, collection, modDirectory, modName, key);
+    }
+
+    private (PenumbraApiEc ErrorCode, (bool, bool, int, Dictionary<string, List<string>>)? Settings, string Source) QueryTemporaryModSettings(
+        in LazyString args, ModCollection collection, string modDirectory, string modName, int key)
+    {
+        if (!modManager.TryGetMod(modDirectory, modName, out var mod))
+            return (ApiHelpers.Return(PenumbraApiEc.ModMissing, args), null, string.Empty);
+
+        if (collection.Identity.Index <= 0)
+            return (ApiHelpers.Return(PenumbraApiEc.Success, args), null, string.Empty);
+
+        var settings = collection.GetTempSettings(mod.Index);
+        if (settings == null)
+            return (ApiHelpers.Return(PenumbraApiEc.Success, args), null, string.Empty);
+
+        if (settings.Lock > 0 && settings.Lock != key)
+            return (ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args), null, settings.Source);
+
+        return (ApiHelpers.Return(PenumbraApiEc.Success, args),
+            (settings.ForceInherit, settings.Enabled, settings.Priority.Value, settings.ConvertToShareable(mod).Settings), settings.Source);
+    }
+
+
+    public PenumbraApiEc SetTemporaryModSettings(Guid collectionId, string modDirectory, string modName, bool inherit, bool enabled,
+        int priority,
         IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
     {
-        var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName, "Inherit", inherit, "Enabled", enabled,
+        var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName, "Inherit", inherit,
+            "Enabled", enabled,
             "Priority", priority, "Options", options, "Source", source, "Key", key);
         if (!collectionManager.Storage.ById(collectionId, out var collection))
             return ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args);
@@ -142,10 +185,12 @@ public class TemporaryApi(
         return SetTemporaryModSettings(args, collection, modDirectory, modName, inherit, enabled, priority, options, source, key);
     }
 
-    public PenumbraApiEc SetTemporaryModSettingsPlayer(int objectIndex, string modDirectory, string modName, bool inherit, bool enabled, int priority,
+    public PenumbraApiEc SetTemporaryModSettingsPlayer(int objectIndex, string modDirectory, string modName, bool inherit, bool enabled,
+        int priority,
         IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
     {
-        var args = ApiHelpers.Args("ObjectIndex", objectIndex, "ModDirectory", modDirectory, "ModName", modName, "Inherit", inherit, "Enabled", enabled,
+        var args = ApiHelpers.Args("ObjectIndex", objectIndex, "ModDirectory", modDirectory, "ModName", modName, "Inherit", inherit, "Enabled",
+            enabled,
             "Priority", priority, "Options", options, "Source", source, "Key", key);
         if (!apiHelpers.AssociatedCollection(objectIndex, out var collection))
             return ApiHelpers.Return(PenumbraApiEc.InvalidArgument, args);
@@ -254,7 +299,8 @@ public class TemporaryApi(
         var numRemoved = 0;
         for (var i = 0; i < collection.Settings.Count; ++i)
         {
-            if (collection.GetTempSettings(i) is {} tempSettings && tempSettings.Lock == key
+            if (collection.GetTempSettings(i) is { } tempSettings
+             && tempSettings.Lock == key
              && collectionManager.Editor.SetTemporarySettings(collection, modManager[i], null, key))
                 ++numRemoved;
         }
