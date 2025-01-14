@@ -40,6 +40,9 @@ public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attrib
 
     public MetaManipulationType Type
         => MetaManipulationType.Rsp;
+
+    public override string ToString()
+        => $"RSP - {SubRace.ToName()} - {Attribute.ToFullString()}";
 }
 
 [JsonConverter(typeof(Converter))]
