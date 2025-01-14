@@ -603,6 +603,7 @@ public partial class MtrlTab
             value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
         ImGui.SameLine(subColWidth);
         ImGui.SetNextItemWidth(scalarSize);
+        _stainService.GudTemplateCombo.CurrentDyeChannel = dye.Channel;
         if (_stainService.GudTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty,
                 scalarSize + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
         {
