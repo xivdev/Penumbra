@@ -22,7 +22,8 @@ public enum GroupDrawBehaviour
 
 public interface IModGroup
 {
-    public const int MaxMultiOptions = 32;
+    public const int MaxMultiOptions     = 32;
+    public const int MaxCombiningOptions = 8;
 
     public Mod    Mod         { get; }
     public string Name        { get; set; }

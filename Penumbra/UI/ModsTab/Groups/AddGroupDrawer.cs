@@ -48,6 +48,7 @@ public class AddGroupDrawer : IUiService
         DrawSingleGroupButton(mod, buttonWidth);
         ImUtf8.SameLineInner();
         DrawMultiGroupButton(mod, buttonWidth);
+        DrawCombiningGroupButton(mod, buttonWidth);
     }
 
     private void DrawSingleGroupButton(Mod mod, Vector2 width)
@@ -76,6 +77,18 @@ public class AddGroupDrawer : IUiService
         _groupNameValid = false;
     }
 
+    private void DrawCombiningGroupButton(Mod mod, Vector2 width)
+    {
+        if (!ImUtf8.ButtonEx("Add Combining Group"u8, _groupNameValid
+                    ? "Add a new combining option group to this mod."u8
+                    : "Can not add a new group of this name."u8,
+                width, !_groupNameValid))
+            return;
+
+        _modManager.OptionEditor.AddModGroup(mod, GroupType.Combining, _groupName);
+        _groupName      = string.Empty;
+        _groupNameValid = false;
+    }
     private void DrawImcInput(float width)
     {
         var change = ImcMetaDrawer.DrawObjectType(ref _imcIdentifier, width);
