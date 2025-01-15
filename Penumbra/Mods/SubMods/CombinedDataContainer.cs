@@ -4,7 +4,6 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.String.Classes;
-using Swan.Formatters;
 
 namespace Penumbra.Mods.SubMods;
 
@@ -15,7 +14,7 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
 
     public IModGroup Group { get; } = group;
 
-    public string                             Name          { get; }      = string.Empty;
+    public string                             Name          { get; set; } = string.Empty;
     public Dictionary<Utf8GamePath, FullPath> Files         { get; set; } = [];
     public Dictionary<Utf8GamePath, FullPath> FileSwaps     { get; set; } = [];
     public MetaDictionary                     Manipulations { get; set; } = new();
@@ -35,11 +34,12 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
         var sb = new StringBuilder(128);
         for (var i = 0; i < IModGroup.MaxCombiningOptions; ++i)
         {
-            if ((index & 1) == 0)
-                continue;
+            if ((index & 1) != 0)
+            {
+                sb.Append(Group.Options[i].Name);
+                sb.Append(' ').Append('+').Append(' ');
+            }
 
-            sb.Append(Group.Options[i].Name);
-            sb.Append(' ').Append('+').Append(' ');
             index >>= 1;
             if (index == 0)
                 break;

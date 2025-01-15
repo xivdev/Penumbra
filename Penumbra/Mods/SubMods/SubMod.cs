@@ -81,29 +81,40 @@ public static class SubMod
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void WriteModContainer(JsonWriter j, JsonSerializer serializer, IModDataContainer data, DirectoryInfo basePath)
     {
-        j.WritePropertyName(nameof(data.Files));
-        j.WriteStartObject();
-        foreach (var (gamePath, file) in data.Files)
+        if (data.Files.Count > 0)
         {
-            if (file.ToRelPath(basePath, out var relPath))
+            j.WritePropertyName(nameof(data.Files));
+            j.WriteStartObject();
+            foreach (var (gamePath, file) in data.Files)
+            {
+                if (file.ToRelPath(basePath, out var relPath))
+                {
+                    j.WritePropertyName(gamePath.ToString());
+                    j.WriteValue(relPath.ToString());
+                }
+            }
+
+            j.WriteEndObject();
+        }
+
+        if (data.FileSwaps.Count > 0)
+        {
+            j.WritePropertyName(nameof(data.FileSwaps));
+            j.WriteStartObject();
+            foreach (var (gamePath, file) in data.FileSwaps)
             {
                 j.WritePropertyName(gamePath.ToString());
-                j.WriteValue(relPath.ToString());
+                j.WriteValue(file.ToString());
             }
+
+            j.WriteEndObject();
         }
 
-        j.WriteEndObject();
-        j.WritePropertyName(nameof(data.FileSwaps));
-        j.WriteStartObject();
-        foreach (var (gamePath, file) in data.FileSwaps)
+        if (data.Manipulations.Count > 0)
         {
-            j.WritePropertyName(gamePath.ToString());
-            j.WriteValue(file.ToString());
+            j.WritePropertyName(nameof(data.Manipulations));
+            serializer.Serialize(j, data.Manipulations);
         }
-
-        j.WriteEndObject();
-        j.WritePropertyName(nameof(data.Manipulations));
-        serializer.Serialize(j, data.Manipulations);
     }
 
     /// <summary> Write the data for a selectable mod option on a JsonWriter. </summary>

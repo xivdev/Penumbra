@@ -227,7 +227,7 @@ public class ModGroupEditor(
             case ImcSubMod i:
                 ImcEditor.DeleteOption(i);
                 return;
-            case CombiningModGroup c:
+            case CombiningSubMod c:
                 CombiningEditor.DeleteOption(c);
                 return;
         }
@@ -259,7 +259,7 @@ public class ModGroupEditor(
             GroupType.Single    => SingleEditor.AddModGroup(mod, newName, saveType),
             GroupType.Multi     => MultiEditor.AddModGroup(mod, newName, saveType),
             GroupType.Imc       => ImcEditor.AddModGroup(mod, newName, default, default, saveType),
-            GroupType.Combining => CombiningEditor.AddModGroup(mod, newName, default, default, saveType),
+            GroupType.Combining => CombiningEditor.AddModGroup(mod, newName, saveType),
             _                   => null,
         };
 

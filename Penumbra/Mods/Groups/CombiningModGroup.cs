@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -18,7 +17,6 @@ namespace Penumbra.Mods.Groups;
 /// <summary> Groups that allow all available options to be selected at once. </summary>
 public sealed class CombiningModGroup : IModGroup
 {
-
     public GroupType Type
         => GroupType.Combining;
 
@@ -60,33 +58,6 @@ public sealed class CombiningModGroup : IModGroup
         return null;
     }
 
-    public void RemoveOption(int index)
-    {
-        if(index < 0 || index >= OptionData.Count) 
-            return;
-
-        OptionData.RemoveAt(index);
-        var list       = new List<CombinedDataContainer>(Data.Count / 2);
-        var optionFlag = 1 << index;
-        list.AddRange(Data.Where((c, i) => (i & optionFlag) == 0));
-        Data = list;
-    }
-
-    public void MoveOption(int from, int to)
-    {
-        if (!OptionData.Move(ref from, ref to))
-            return;
-
-        var list = new List<CombinedDataContainer>(Data.Count);
-        for (var i = 0ul; i < (ulong)Data.Count; ++i)
-        {
-            var actualIndex = (int) Functions.MoveBit(i, from, to);
-            list.Add(Data[actualIndex]);
-        }
-
-        Data = list;
-    }
-
     public IModOption? AddOption(string name, string description = "")
     {
         var groupIdx = Mod.Groups.IndexOf(this);
@@ -98,10 +69,9 @@ public sealed class CombiningModGroup : IModGroup
             Name        = name,
             Description = description,
         };
-        // Double available containers.
-        FillContainers(2 * Data.Count);
-        OptionData.Add(subMod);
-        return subMod;
+        return OptionData.AddNewWithPowerSet(Data, subMod, () => new CombinedDataContainer(this), IModGroup.MaxCombiningOptions)
+            ? subMod
+            : null;
     }
 
     public static CombiningModGroup? Load(Mod mod, JObject json)
@@ -148,7 +118,8 @@ public sealed class CombiningModGroup : IModGroup
             Penumbra.Messager.NotificationMessage(
                 $"Combining Group {ret.Name} in {mod.Name} has not enough data containers for its {ret.OptionData.Count} options, filling with empty containers.",
                 NotificationType.Warning);
-            ret.FillContainers(requiredContainers);
+            ret.Data.EnsureCapacity(requiredContainers);
+            ret.Data.AddRange(Enumerable.Repeat(0, requiredContainers - ret.Data.Count).Select(_ => new CombinedDataContainer(ret)));
         }
 
         ret.DefaultSettings = ret.FixSetting(ret.DefaultSettings);
@@ -221,15 +192,5 @@ public sealed class CombiningModGroup : IModGroup
     {
         Mod  = mod;
         Data = [];
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void FillContainers(int requiredCount)
-    {
-        if (requiredCount <= Data.Count)
-            return;
-
-        Data.EnsureCapacity(requiredCount);
-        Data.AddRange(Enumerable.Repeat(0, requiredCount - Data.Count).Select(_ => new CombinedDataContainer(this)));
     }
 }

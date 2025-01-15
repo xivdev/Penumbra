@@ -1,5 +1,5 @@
+using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Filesystem;
 using OtterGui.Services;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -19,54 +19,30 @@ public sealed class CombiningModGroupEditor(CommunicatorService communicator, Sa
         };
 
     protected override CombiningSubMod? CloneOption(CombiningModGroup group, IModOption option)
-    {
-        if (group.OptionData.Count >= IModGroup.MaxCombiningOptions)
-        {
-            Penumbra.Log.Error(
-                $"Could not add option {option.Name} to {group.Name} for mod {group.Mod.Name}, "
-              + $"since only up to {IModGroup.MaxCombiningOptions} options are supported in one group.");
-            return null;
-        }
-
-        var newOption = new CombiningSubMod(group)
-        {
-            Name        = option.Name,
-            Description = option.Description,
-        };
-
-        if (option is IModDataContainer data)
-        {
-            SubMod.Clone(data, newOption);
-            if (option is MultiSubMod m)
-                newOption.Priority = m.Priority;
-            else
-                newOption.Priority = new ModPriority(group.OptionData.Max(o => o.Priority.Value) + 1);
-        }
-
-        group.OptionData.Add(newOption);
-        return newOption;
-    }
+        => throw new NotImplementedException();
 
     protected override void RemoveOption(CombiningModGroup group, int optionIndex)
     {
-        var optionFlag = 1 << optionIndex;
-        for (var i = group.Data.Count - 1; i >= 0; --i)
-        {
-            group.Data.RemoveAll()
-            if ((i & optionFlag) == optionFlag)
-                group.Data.RemoveAt(i);
-        }
-
-        group.OptionData.RemoveAt(optionIndex);
-        group.DefaultSettings = group.DefaultSettings.RemoveBit(optionIndex);
+        if (group.OptionData.RemoveWithPowerSet(group.Data, optionIndex))
+            group.DefaultSettings.RemoveBit(optionIndex);
     }
 
-    protected override bool MoveOption(MultiModGroup group, int optionIdxFrom, int optionIdxTo)
+    protected override bool MoveOption(CombiningModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
+        if (!group.OptionData.MoveWithPowerSet(group.Data, ref optionIdxFrom, ref optionIdxTo))
             return false;
 
-        group.DefaultSettings = group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);
+        group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);
         return true;
+    }
+
+    public void SetDisplayName(CombinedDataContainer container, string name, SaveType saveType = SaveType.Queue)
+    {
+        if (container.Name == name)
+            return;
+
+        container.Name = name;
+        SaveService.Save(saveType, new ModSaveGroup(container.Group, Config.ReplaceNonAsciiOnImport));
+        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, container.Group.Mod, container.Group, null, null, -1);
     }
 }
