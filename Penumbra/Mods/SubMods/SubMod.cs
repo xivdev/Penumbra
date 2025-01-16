@@ -81,8 +81,9 @@ public static class SubMod
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void WriteModContainer(JsonWriter j, JsonSerializer serializer, IModDataContainer data, DirectoryInfo basePath)
     {
-        if (data.Files.Count > 0)
-        {
+        // #TODO: remove comments when TexTools updated.
+        //if (data.Files.Count > 0)
+        //{
             j.WritePropertyName(nameof(data.Files));
             j.WriteStartObject();
             foreach (var (gamePath, file) in data.Files)
@@ -95,10 +96,10 @@ public static class SubMod
             }
 
             j.WriteEndObject();
-        }
+        //}
 
-        if (data.FileSwaps.Count > 0)
-        {
+        //if (data.FileSwaps.Count > 0)
+        //{
             j.WritePropertyName(nameof(data.FileSwaps));
             j.WriteStartObject();
             foreach (var (gamePath, file) in data.FileSwaps)
@@ -108,13 +109,13 @@ public static class SubMod
             }
 
             j.WriteEndObject();
-        }
+        //}
 
-        if (data.Manipulations.Count > 0)
-        {
+        //if (data.Manipulations.Count > 0)
+        //{
             j.WritePropertyName(nameof(data.Manipulations));
             serializer.Serialize(j, data.Manipulations);
-        }
+        //}
     }
 
     /// <summary> Write the data for a selectable mod option on a JsonWriter. </summary>
