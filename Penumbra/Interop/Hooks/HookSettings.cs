@@ -43,6 +43,8 @@ public class HookOverrides
         public bool SomeMountAnimation;
         public bool SomePapLoad;
         public bool SomeParasolAnimation;
+        public bool GetCachedScheduleResource;
+        public bool LoadActionTmb;
     }
 
     public struct MetaHooks
@@ -84,6 +86,7 @@ public class HookOverrides
         public bool ModelRendererOnRenderMaterial;
         public bool ModelRendererUnkFunc;
         public bool PrepareColorTable;
+        public bool RenderTargetManagerInitialize;
     }
 
     public struct ResourceLoadingHooks

@@ -81,7 +81,7 @@ public class ResourceTreeFactory(
         var (name, anonymizedName, related) = GetCharacterName(character);
         var networked = character.EntityId != 0xE0000000;
         var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
-            networked, collectionResolveData.ModCollection.Name, collectionResolveData.ModCollection.AnonymizedName);
+            networked, collectionResolveData.ModCollection.Identity.Name, collectionResolveData.ModCollection.Identity.AnonymizedName);
         var globalContext = new GlobalResolveContext(metaFileManager, objectIdentifier, collectionResolveData.ModCollection,
             cache, (flags & Flags.WithUiData) != 0);
         using (var _ = pathState.EnterInternalResolve())

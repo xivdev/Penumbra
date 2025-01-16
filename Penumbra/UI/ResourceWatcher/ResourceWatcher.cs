@@ -241,7 +241,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
             {
                 var pathString = manipulatedPath != null ? $"custom file {name2} instead of {name}" : name;
                 Penumbra.Log.Information(
-                    $"[ResourceLoader] [LOAD] [{handle->FileType}] Loaded {pathString} to 0x{(ulong)handle:X} using collection {data.ModCollection.AnonymizedName} for {Name(data, "no associated object.")} (Refcount {handle->RefCount}) ");
+                    $"[ResourceLoader] [LOAD] [{handle->FileType}] Loaded {pathString} to 0x{(ulong)handle:X} using collection {data.ModCollection.Identity.AnonymizedName} for {Name(data, "no associated object.")} (Refcount {handle->RefCount}) ");
             }
         }
 

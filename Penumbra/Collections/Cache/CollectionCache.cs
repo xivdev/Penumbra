@@ -31,7 +31,7 @@ public sealed class CollectionCache : IDisposable
     public int Calculating = -1;
 
     public string AnonymizedName
-        => _collection.AnonymizedName;
+        => _collection.Identity.AnonymizedName;
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => ConflictDict.Values;
@@ -177,7 +177,7 @@ public sealed class CollectionCache : IDisposable
         var (paths, manipulations) = ModData.RemoveMod(mod);
 
         if (addMetaChanges)
-            _collection.IncrementCounter();
+            _collection.Counters.IncrementChange();
 
         foreach (var path in paths)
         {
@@ -250,7 +250,7 @@ public sealed class CollectionCache : IDisposable
 
         if (addMetaChanges)
         {
-            _collection.IncrementCounter();
+            _collection.Counters.IncrementChange();
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
     }
@@ -260,7 +260,7 @@ public sealed class CollectionCache : IDisposable
         if (mod.Index < 0)
             return mod.GetData();
 
-        var settings = _collection[mod.Index].Settings;
+        var settings = _collection.GetActualSettings(mod.Index).Settings;
         return settings is not { Enabled: true }
             ? AppliedModData.Empty
             : mod.GetData(settings);
@@ -342,8 +342,8 @@ public sealed class CollectionCache : IDisposable
     // Returns if the added mod takes priority before the existing mod.
     private bool AddConflict(object data, IMod addedMod, IMod existingMod)
     {
-        var addedPriority    = addedMod.Index >= 0 ? _collection[addedMod.Index].Settings!.Priority : addedMod.Priority;
-        var existingPriority = existingMod.Index >= 0 ? _collection[existingMod.Index].Settings!.Priority : existingMod.Priority;
+        var addedPriority    = addedMod.Index >= 0 ? _collection.GetActualSettings(addedMod.Index).Settings!.Priority : addedMod.Priority;
+        var existingPriority = existingMod.Index >= 0 ? _collection.GetActualSettings(existingMod.Index).Settings!.Priority : existingMod.Priority;
 
         if (existingPriority < addedPriority)
         {
@@ -408,12 +408,12 @@ public sealed class CollectionCache : IDisposable
     // Identify and record all manipulated objects for this entire collection.
     private void SetChangedItems()
     {
-        if (_changedItemsSaveCounter == _collection.ChangeCounter)
+        if (_changedItemsSaveCounter == _collection.Counters.Change)
             return;
 
         try
         {
-            _changedItemsSaveCounter = _collection.ChangeCounter;
+            _changedItemsSaveCounter = _collection.Counters.Change;
             _changedItems.Clear();
             // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.

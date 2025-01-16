@@ -34,7 +34,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         if (conflicts.Mod2.Index < 0)
             return conflicts.Mod2.Priority;
 
-        return collectionManager.Active.Current[conflicts.Mod2.Index].Settings?.Priority ?? ModPriority.Default;
+        return collectionManager.Active.Current.GetActualSettings(conflicts.Mod2.Index).Settings?.Priority ?? ModPriority.Default;
     }
 
     public void DrawContent()
@@ -74,22 +74,27 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(selector.Selected!.Name);
         ImGui.TableNextColumn();
-        var priority = collectionManager.Active.Current[selector.Selected!.Index].Settings!.Priority.Value;
-        ImGui.SetNextItemWidth(priorityWidth);
-        if (ImGui.InputInt("##priority", ref priority, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
-            _currentPriority = priority;
-
-        if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
+        var actualSettings = collectionManager.Active.Current.GetActualSettings(selector.Selected!.Index).Settings!;
+        var priority       = actualSettings.Priority.Value;
+        // TODO
+        using (ImRaii.Disabled(actualSettings is TemporaryModSettings))
         {
-            if (_currentPriority != collectionManager.Active.Current[selector.Selected!.Index].Settings!.Priority.Value)
-                collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selector.Selected!,
-                    new ModPriority(_currentPriority.Value));
+            ImGui.SetNextItemWidth(priorityWidth);
+            if (ImGui.InputInt("##priority", ref priority, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
+                _currentPriority = priority;
 
-            _currentPriority = null;
-        }
-        else if (ImGui.IsItemDeactivated())
-        {
-            _currentPriority = null;
+            if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
+            {
+                if (_currentPriority != actualSettings.Priority.Value)
+                    collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selector.Selected!,
+                        new ModPriority(_currentPriority.Value));
+
+                _currentPriority = null;
+            }
+            else if (ImGui.IsItemDeactivated())
+            {
+                _currentPriority = null;
+            }
         }
 
         ImGui.TableNextColumn();
@@ -138,7 +143,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         ImGui.TableNextColumn();
         var conflictPriority = DrawPriorityInput(conflict, priorityWidth);
         ImGui.SameLine();
-        var selectedPriority = collectionManager.Active.Current[selector.Selected!.Index].Settings!.Priority.Value;
+        var selectedPriority = collectionManager.Active.Current.GetActualSettings(selector.Selected!.Index).Settings!.Priority.Value;
         DrawPriorityButtons(conflict.Mod2 as Mod, conflictPriority, selectedPriority, buttonSize);
         ImGui.TableNextColumn();
         DrawExpandButton(conflict.Mod2, expanded, buttonSize);

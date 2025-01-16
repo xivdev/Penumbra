@@ -2,7 +2,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.Meta;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
@@ -37,7 +36,7 @@ public sealed class AtchCache(MetaFileManager manager, ModCollection collection)
 
     protected override void ApplyModInternal(AtchIdentifier identifier, AtchEntry entry)
     {
-        ++Collection.AtchChangeCounter;
+        Collection.Counters.IncrementAtch();
         ApplyFile(identifier, entry);
     }
 
@@ -68,7 +67,7 @@ public sealed class AtchCache(MetaFileManager manager, ModCollection collection)
 
     protected override void RevertModInternal(AtchIdentifier identifier)
     {
-        ++Collection.AtchChangeCounter;
+        Collection.Counters.IncrementAtch();
         if (!_atchFiles.TryGetValue(identifier.GenderRace, out var pair))
             return;
 

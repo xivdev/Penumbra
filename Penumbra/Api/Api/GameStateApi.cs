@@ -61,7 +61,7 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
     public unsafe (nint GameObject, (Guid Id, string Name) Collection) GetDrawObjectInfo(nint drawObject)
     {
         var data = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        return (data.AssociatedGameObject, (data.ModCollection.Id, data.ModCollection.Name));
+        return (data.AssociatedGameObject, (Id: data.ModCollection.Identity.Id, Name: data.ModCollection.Identity.Name));
     }
 
     public int GetCutsceneParentIndex(int actorIdx)
@@ -93,5 +93,5 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
     }
 
     private void OnCreatedCharacterBase(nint gameObject, ModCollection collection, nint drawObject)
-        => CreatedCharacterBase?.Invoke(gameObject, collection.Id, drawObject);
+        => CreatedCharacterBase?.Invoke(gameObject, collection.Identity.Id, drawObject);
 }

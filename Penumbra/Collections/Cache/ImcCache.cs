@@ -39,7 +39,7 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
 
     protected override void ApplyModInternal(ImcIdentifier identifier, ImcEntry entry)
     {
-        ++Collection.ImcChangeCounter;
+        Collection.Counters.IncrementImc();
         ApplyFile(identifier, entry);
     }
 
@@ -71,7 +71,7 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
 
     protected override void RevertModInternal(ImcIdentifier identifier)
     {
-        ++Collection.ImcChangeCounter;
+        Collection.Counters.IncrementImc();
         var path = identifier.GamePath().Path;
         if (!_imcFiles.TryGetValue(path, out var pair))
             return;

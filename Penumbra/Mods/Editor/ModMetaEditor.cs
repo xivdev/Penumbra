@@ -74,6 +74,9 @@ public class ModMetaEditor(
         dict.ClearForDefault();
 
         var count = 0;
+        foreach (var value in clone.GlobalEqp)
+            dict.TryAdd(value);
+
         foreach (var (key, value) in clone.Imc)
         {
             var defaultEntry = ImcChecker.GetDefaultEntry(key, false);

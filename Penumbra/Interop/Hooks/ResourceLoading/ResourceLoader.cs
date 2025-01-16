@@ -22,7 +22,7 @@ public unsafe class ResourceLoader : IDisposable, IService
     private ResolveData                                        _resolvedData = ResolveData.Invalid;
     public event Action<Utf8GamePath, FullPath?, ResolveData>? PapRequested;
 
-    public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config)
+    public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config, PeSigScanner sigScanner)
     {
         _resources       = resources;
         _fileReadService = fileReadService;
@@ -35,7 +35,7 @@ public unsafe class ResourceLoader : IDisposable, IService
         _resources.ResourceHandleDecRef += DecRefProtection;
         _fileReadService.ReadSqPack     += ReadSqPackDetour;
 
-        _papHandler = new PapHandler(PapResourceHandler);
+        _papHandler = new PapHandler(sigScanner, PapResourceHandler);
         _papHandler.Enable();
     }
 

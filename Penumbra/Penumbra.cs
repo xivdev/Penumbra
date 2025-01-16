@@ -23,6 +23,7 @@ using Lumina.Excel.Sheets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Hooks;
+using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 
 namespace Penumbra;
@@ -187,7 +188,7 @@ public class Penumbra : IDalamudPlugin
         ReadOnlySpan<string> relevantPlugins =
         [
             "Glamourer", "MareSynchronos", "CustomizePlus", "SimpleHeels", "VfxEditor", "heliosphere-plugin", "Ktisis", "Brio", "DynamicBridge",
-            "IllusioVitae", "Aetherment", "LoporritSync", "GagSpeak", "RoleplayingVoiceDalamud",
+            "IllusioVitae", "Aetherment", "LoporritSync", "GagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn",
         ];
         var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)
@@ -205,9 +206,10 @@ public class Penumbra : IDalamudPlugin
 
     public string GatherSupportInformation()
     {
-        var sb     = new StringBuilder(10240);
-        var exists = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
-        var drive  = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
+        var sb         = new StringBuilder(10240);
+        var exists     = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
+        var hdrEnabler = _services.GetService<RenderTargetHdrEnabler>();
+        var drive      = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
         sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
@@ -223,9 +225,10 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
         sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
+        sb.Append($"> **`Penumbra Reloads:            `** {hdrEnabler.PenumbraReloadCount}\n");
+        sb.Append($"> **`HDR Enabled (from Start):    `** {_config.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}\n");
         sb.Append($"> **`Hook Overrides:              `** {HookOverrides.Instance.IsCustomLoaded}\n");
-        sb.Append(
-            $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");
+        sb.Append($"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(
             $"> **`Logging:                     `** Log: {_config.Ephemeral.EnableResourceLogging}, Watcher: {_config.Ephemeral.EnableResourceWatcher} ({_config.MaxResourceWatcherRecords})\n");
         sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
@@ -245,24 +248,24 @@ public class Penumbra : IDalamudPlugin
 
         void PrintCollection(ModCollection c, CollectionCache _)
             => sb.Append(
-                $"> **`Collection {c.AnonymizedName + ':',-18}`** Inheritances: `{c.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
+                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.Inheritance.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
 
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                `** {_collectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:           `** {_tempCollections.Count}\n");
         sb.Append($"> **`Active Collections:          `** {_collectionManager.Caches.Count}\n");
-        sb.Append($"> **`Base Collection:             `** {_collectionManager.Active.Default.AnonymizedName}\n");
-        sb.Append($"> **`Interface Collection:        `** {_collectionManager.Active.Interface.AnonymizedName}\n");
-        sb.Append($"> **`Selected Collection:         `** {_collectionManager.Active.Current.AnonymizedName}\n");
+        sb.Append($"> **`Base Collection:             `** {_collectionManager.Active.Default.Identity.AnonymizedName}\n");
+        sb.Append($"> **`Interface Collection:        `** {_collectionManager.Active.Interface.Identity.AnonymizedName}\n");
+        sb.Append($"> **`Selected Collection:         `** {_collectionManager.Active.Current.Identity.AnonymizedName}\n");
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
             var collection = _collectionManager.Active.ByType(type);
             if (collection != null)
-                sb.Append($"> **`{name,-29}`** {collection.AnonymizedName}\n");
+                sb.Append($"> **`{name,-29}`** {collection.Identity.AnonymizedName}\n");
         }
 
         foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
-            sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.AnonymizedName}\n");
+            sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.Identity.AnonymizedName}\n");
 
         foreach (var collection in _collectionManager.Caches.Active)
             PrintCollection(collection, collection._cache!);

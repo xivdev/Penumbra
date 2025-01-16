@@ -59,7 +59,7 @@ public sealed class CollectionAutoSelector : IService, IDisposable
             return;
 
         var collection = _resolver.PlayerCollection();
-        Penumbra.Log.Debug($"Setting current collection to {collection.Identifier} through automatic collection selection.");
+        Penumbra.Log.Debug($"Setting current collection to {collection.Identity.Identifier} through automatic collection selection.");
         _collections.SetCollection(collection, CollectionType.Current);
     }
 

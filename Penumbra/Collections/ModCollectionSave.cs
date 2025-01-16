@@ -15,7 +15,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         => fileNames.CollectionFile(modCollection);
 
     public string LogName(string _)
-        => modCollection.AnonymizedName;
+        => modCollection.Identity.AnonymizedName;
 
     public string TypeName
         => "Collection";
@@ -28,23 +28,23 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         j.WriteStartObject();
         j.WritePropertyName("Version");
         j.WriteValue(ModCollection.CurrentVersion);
-        j.WritePropertyName(nameof(ModCollection.Id));
-        j.WriteValue(modCollection.Identifier);
-        j.WritePropertyName(nameof(ModCollection.Name));
-        j.WriteValue(modCollection.Name);
-        j.WritePropertyName(nameof(ModCollection.Settings));
+        j.WritePropertyName(nameof(ModCollectionIdentity.Id));
+        j.WriteValue(modCollection.Identity.Identifier);
+        j.WritePropertyName(nameof(ModCollectionIdentity.Name));
+        j.WriteValue(modCollection.Identity.Name);
+        j.WritePropertyName("Settings");
 
         // Write all used and unused settings by mod directory name.
         j.WriteStartObject();
-        var list = new List<(string, ModSettings.SavedSettings)>(modCollection.Settings.Count + modCollection.UnusedSettings.Count);
+        var list = new List<(string, ModSettings.SavedSettings)>(modCollection.Settings.Count + modCollection.Settings.Unused.Count);
         for (var i = 0; i < modCollection.Settings.Count; ++i)
         {
-            var settings = modCollection.Settings[i];
+            var settings = modCollection.GetOwnSettings(i);
             if (settings != null)
                 list.Add((modStorage[i].ModPath.Name, new ModSettings.SavedSettings(settings, modStorage[i])));
         }
 
-        list.AddRange(modCollection.UnusedSettings.Select(kvp => (kvp.Key, kvp.Value)));
+        list.AddRange(modCollection.Settings.Unused.Select(kvp => (kvp.Key, kvp.Value)));
         list.Sort((a, b) => string.Compare(a.Item1, b.Item1, StringComparison.OrdinalIgnoreCase));
 
         foreach (var (modDir, settings) in list)
@@ -57,7 +57,7 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
 
         // Inherit by collection name.
         j.WritePropertyName("Inheritance");
-        x.Serialize(j, modCollection.InheritanceByName ?? modCollection.DirectlyInheritsFrom.Select(c => c.Identifier));
+        x.Serialize(j, modCollection.Inheritance.Identifiers);
         j.WriteEndObject();
     }
 
@@ -79,10 +79,10 @@ internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection 
         {
             var obj = JObject.Parse(File.ReadAllText(file.FullName));
             version = obj["Version"]?.ToObject<int>() ?? 0;
-            name    = obj[nameof(ModCollection.Name)]?.ToObject<string>() ?? string.Empty;
-            id      = obj[nameof(ModCollection.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
+            name    = obj[nameof(ModCollectionIdentity.Name)]?.ToObject<string>() ?? string.Empty;
+            id      = obj[nameof(ModCollectionIdentity.Id)]?.ToObject<Guid>() ?? (version == 1 ? Guid.NewGuid() : Guid.Empty);
             // Custom deserialization that is converted with the constructor. 
-            settings    = obj[nameof(ModCollection.Settings)]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>() ?? settings;
+            settings    = obj["Settings"]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>() ?? settings;
             inheritance = obj["Inheritance"]?.ToObject<List<string>>() ?? inheritance;
             return true;
         }

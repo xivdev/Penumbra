@@ -36,6 +36,7 @@ using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
+using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
@@ -69,38 +70,41 @@ public class Diagnostics(ServiceManager provider) : IUiService
 
 public class DebugTab : Window, ITab, IUiService
 {
-    private readonly PerformanceTracker        _performance;
-    private readonly Configuration             _config;
-    private readonly CollectionManager         _collectionManager;
-    private readonly ModManager                _modManager;
-    private readonly ValidityChecker           _validityChecker;
-    private readonly HttpApi                   _httpApi;
-    private readonly ActorManager              _actors;
-    private readonly StainService              _stains;
-    private readonly GlobalVariablesDrawer     _globalVariablesDrawer;
-    private readonly ResourceManagerService    _resourceManager;
-    private readonly CollectionResolver        _collectionResolver;
-    private readonly DrawObjectState           _drawObjectState;
-    private readonly PathState                 _pathState;
-    private readonly SubfileHelper             _subfileHelper;
-    private readonly IdentifiedCollectionCache _identifiedCollectionCache;
-    private readonly CutsceneService           _cutsceneService;
-    private readonly ModImportManager          _modImporter;
-    private readonly ImportPopup               _importPopup;
-    private readonly FrameworkManager          _framework;
-    private readonly TextureManager            _textureManager;
-    private readonly ShaderReplacementFixer    _shaderReplacementFixer;
-    private readonly RedrawService             _redraws;
-    private readonly DictEmote                 _emotes;
-    private readonly Diagnostics               _diagnostics;
-    private readonly ObjectManager             _objects;
-    private readonly IClientState              _clientState;
-    private readonly IDataManager              _dataManager;
-    private readonly IpcTester                 _ipcTester;
-    private readonly CrashHandlerPanel         _crashHandlerPanel;
-    private readonly TexHeaderDrawer           _texHeaderDrawer;
-    private readonly HookOverrideDrawer        _hookOverrides;
-    private readonly RsfService                _rsfService;
+    private readonly PerformanceTracker                 _performance;
+    private readonly Configuration                      _config;
+    private readonly CollectionManager                  _collectionManager;
+    private readonly ModManager                         _modManager;
+    private readonly ValidityChecker                    _validityChecker;
+    private readonly HttpApi                            _httpApi;
+    private readonly ActorManager                       _actors;
+    private readonly StainService                       _stains;
+    private readonly GlobalVariablesDrawer              _globalVariablesDrawer;
+    private readonly ResourceManagerService             _resourceManager;
+    private readonly CollectionResolver                 _collectionResolver;
+    private readonly DrawObjectState                    _drawObjectState;
+    private readonly PathState                          _pathState;
+    private readonly SubfileHelper                      _subfileHelper;
+    private readonly IdentifiedCollectionCache          _identifiedCollectionCache;
+    private readonly CutsceneService                    _cutsceneService;
+    private readonly ModImportManager                   _modImporter;
+    private readonly ImportPopup                        _importPopup;
+    private readonly FrameworkManager                   _framework;
+    private readonly TextureManager                     _textureManager;
+    private readonly ShaderReplacementFixer             _shaderReplacementFixer;
+    private readonly RedrawService                      _redraws;
+    private readonly DictEmote                          _emotes;
+    private readonly Diagnostics                        _diagnostics;
+    private readonly ObjectManager                      _objects;
+    private readonly IClientState                       _clientState;
+    private readonly IDataManager                       _dataManager;
+    private readonly IpcTester                          _ipcTester;
+    private readonly CrashHandlerPanel                  _crashHandlerPanel;
+    private readonly TexHeaderDrawer                    _texHeaderDrawer;
+    private readonly HookOverrideDrawer                 _hookOverrides;
+    private readonly RsfService                         _rsfService;
+    private readonly SchedulerResourceManagementService _schedulerService;
+    private readonly ObjectIdentification               _objectIdentification;
+    private readonly RenderTargetDrawer                 _renderTargetDrawer;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -110,7 +114,8 @@ public class DebugTab : Window, ITab, IUiService
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
-        HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer)
+        HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
+        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -148,6 +153,9 @@ public class DebugTab : Window, ITab, IUiService
         _hookOverrides             = hookOverrides;
         _rsfService                = rsfService;
         _globalVariablesDrawer     = globalVariablesDrawer;
+        _schedulerService          = schedulerService;
+        _objectIdentification      = objectIdentification;
+        _renderTargetDrawer        = renderTargetDrawer;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -183,6 +191,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawData();
         DrawCrcCache();
         DrawResourceProblems();
+        _renderTargetDrawer.Draw();
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
         _globalVariablesDrawer.Draw();
@@ -201,11 +210,45 @@ public class DebugTab : Window, ITab, IUiService
             if (collection.HasCache)
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode($"{collection.Name} (Change Counter {collection.ChangeCounter})###{collection.Name}");
+                using var node =
+                    TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
                 if (!node)
                     continue;
 
                 color.Pop();
+                using (var inheritanceNode = ImUtf8.TreeNode("Inheritance"u8))
+                {
+                    if (inheritanceNode)
+                    {
+                        using var table = ImUtf8.Table("table"u8, 3,
+                            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
+                        if (table)
+                        {
+                            var max = Math.Max(
+                                Math.Max(collection.Inheritance.DirectlyInheritedBy.Count, collection.Inheritance.DirectlyInheritsFrom.Count),
+                                collection.Inheritance.FlatHierarchy.Count);
+                            for (var i = 0; i < max; ++i)
+                            {
+                                ImGui.TableNextColumn();
+                                if (i < collection.Inheritance.DirectlyInheritsFrom.Count)
+                                    ImUtf8.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
+                                else
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                ImGui.TableNextColumn();
+                                if (i < collection.Inheritance.DirectlyInheritedBy.Count)
+                                    ImUtf8.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
+                                else
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                ImGui.TableNextColumn();
+                                if (i < collection.Inheritance.FlatHierarchy.Count)
+                                    ImUtf8.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
+                                else
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                            }
+                        }
+                    }
+                }
+
                 using (var resourceNode = ImUtf8.TreeNode("Custom Resources"u8))
                 {
                     if (resourceNode)
@@ -236,7 +279,7 @@ public class DebugTab : Window, ITab, IUiService
             else
             {
                 using var color = PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})",
+                TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})",
                     ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
             }
         }
@@ -262,9 +305,9 @@ public class DebugTab : Window, ITab, IUiService
             {
                 PrintValue("Penumbra Version",                 $"{_validityChecker.Version} {DebugVersionString}");
                 PrintValue("Git Commit Hash",                  _validityChecker.CommitHash);
-                PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Name);
+                PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Identity.Name);
                 PrintValue("    has Cache",                    _collectionManager.Active.Current.HasCache.ToString());
-                PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Name);
+                PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Identity.Name);
                 PrintValue("    has Cache",                    _collectionManager.Active.Default.HasCache.ToString());
                 PrintValue("Mod Manager BasePath",             _modManager.BasePath.Name);
                 PrintValue("Mod Manager BasePath-Full",        _modManager.BasePath.FullName);
@@ -515,7 +558,7 @@ public class DebugTab : Window, ITab, IUiService
             return;
 
         ImGui.TextUnformatted(
-            $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Name})");
+            $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Identity.Name})");
         using (var drawTree = TreeNode("Draw Object to Object"))
         {
             if (drawTree)
@@ -542,7 +585,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGui.TextUnformatted(name);
                         ImGui.TableNextColumn();
                         var collection = _collectionResolver.IdentifyCollection(gameObject, true);
-                        ImGui.TextUnformatted(collection.ModCollection.Name);
+                        ImGui.TextUnformatted(collection.ModCollection.Identity.Name);
                     }
             }
         }
@@ -558,7 +601,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted($"{data.AssociatedGameObject:X}");
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(data.ModCollection.Name);
+                        ImGui.TextUnformatted(data.ModCollection.Identity.Name);
                     }
             }
         }
@@ -571,12 +614,12 @@ public class DebugTab : Window, ITab, IUiService
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("Current Mtrl Data");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.MtrlData.ModCollection.Name);
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.MtrlData.ModCollection.Identity.Name);
                     ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.MtrlData.AssociatedGameObject:X}");
                     ImGui.TableNextColumn();
 
                     ImGuiUtil.DrawTableColumn("Current Avfx Data");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.AvfxData.ModCollection.Name);
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.AvfxData.ModCollection.Identity.Name);
                     ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.AvfxData.AssociatedGameObject:X}");
                     ImGui.TableNextColumn();
 
@@ -588,7 +631,7 @@ public class DebugTab : Window, ITab, IUiService
                     foreach (var (resource, resolve) in _subfileHelper)
                     {
                         ImGuiUtil.DrawTableColumn($"0x{resource:X}");
-                        ImGuiUtil.DrawTableColumn(resolve.ModCollection.Name);
+                        ImGuiUtil.DrawTableColumn(resolve.ModCollection.Identity.Name);
                         ImGuiUtil.DrawTableColumn($"0x{resolve.AssociatedGameObject:X}");
                         ImGuiUtil.DrawTableColumn($"{((ResourceHandle*)resource)->FileName()}");
                     }
@@ -608,7 +651,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGuiUtil.DrawTableColumn($"{((GameObject*)address)->ObjectIndex}");
                         ImGuiUtil.DrawTableColumn($"0x{address:X}");
                         ImGuiUtil.DrawTableColumn(identifier.ToString());
-                        ImGuiUtil.DrawTableColumn(collection.Name);
+                        ImGuiUtil.DrawTableColumn(collection.Identity.Name);
                     }
             }
         }
@@ -672,6 +715,20 @@ public class DebugTab : Window, ITab, IUiService
                 }
             }
         }
+
+        using (var tmbCache = TreeNode("TMB Cache"))
+        {
+            if (tmbCache)
+            {
+                using var table = Table("###TmbTable", 2, ImGuiTableFlags.SizingFixedFit);
+                if (table)
+                    foreach (var (id, name) in _schedulerService.ListedTmbs.OrderBy(kvp => kvp.Key))
+                    {
+                        ImUtf8.DrawTableColumn($"{id:D6}");
+                        ImUtf8.DrawTableColumn(name.Span);
+                    }
+            }
+        }
     }
 
     private void DrawData()
@@ -680,9 +737,39 @@ public class DebugTab : Window, ITab, IUiService
             return;
 
         DrawEmotes();
+        DrawActionTmbs();
         DrawStainTemplates();
         DrawAtch();
+        DrawChangedItemTest();
     }
+
+    private          string                                     _changedItemPath = string.Empty;
+    private readonly Dictionary<string, IIdentifiedObjectData?> _changedItems    = [];
+
+    private void DrawChangedItemTest()
+    {
+        using var node = TreeNode("Changed Item Test");
+        if (!node)
+            return;
+
+        if (ImUtf8.InputText("##ChangedItemTest"u8, ref _changedItemPath, "Changed Item File Path..."u8))
+        {
+            _changedItems.Clear();
+            _objectIdentification.Identify(_changedItems, _changedItemPath);
+        }
+
+        if (_changedItems.Count == 0)
+            return;
+
+        using var list = ImUtf8.ListBox("##ChangedItemList"u8,
+            new Vector2(ImGui.GetContentRegionAvail().X, 8 * ImGui.GetTextLineHeightWithSpacing()));
+        if (!list)
+            return;
+
+        foreach (var item in _changedItems)
+            ImUtf8.Selectable(item.Key);
+    }
+
 
     private string _emoteSearchFile = string.Empty;
     private string _emoteSearchName = string.Empty;
@@ -735,6 +822,33 @@ public class DebugTab : Window, ITab, IUiService
                 ImGui.TextUnformatted(p.Key);
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(string.Join(", ", p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
+            });
+        ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
+    }
+
+    private string       _tmbKeyFilter   = string.Empty;
+    private CiByteString _tmbKeyFilterU8 = CiByteString.Empty;
+
+    private void DrawActionTmbs()
+    {
+        using var mainTree = TreeNode("Action TMBs");
+        if (!mainTree)
+            return;
+
+        if (ImGui.InputText("Key", ref _tmbKeyFilter, 256))
+            _tmbKeyFilterU8 = CiByteString.FromString(_tmbKeyFilter, out var r, MetaDataComputation.All) ? r : CiByteString.Empty;
+        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit,
+            new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
+        if (!table)
+            return;
+
+        var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
+        var dummy = ImGuiClip.FilteredClippedDraw(_schedulerService.ActionTmbs.OrderBy(r => r.Value), skips,
+            kvp => kvp.Key.Contains(_tmbKeyFilterU8),
+            p =>
+            {
+                ImUtf8.DrawTableColumn($"{p.Value}");
+                ImUtf8.DrawTableColumn(p.Key.Span);
             });
         ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
     }

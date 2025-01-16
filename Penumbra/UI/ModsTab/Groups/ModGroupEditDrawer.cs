@@ -58,6 +58,9 @@ public sealed class ModGroupEditDrawer(
     private IModOption? _dragDropOption;
     private bool        _draggingAcross;
 
+    internal string? CombiningDisplayName;
+    internal int     CombiningDisplayIndex;
+
     public void Draw(Mod mod)
     {
         PrepareStyle();
@@ -275,6 +278,7 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal string DrawNewOptionBase(IModGroup group, int count)
     {
+        ImGui.AlignTextToFramePadding();
         ImUtf8.Selectable($"Option #{count + 1}", false, size: OptionIdxSelectable);
         Target(group, count);
 

@@ -23,7 +23,7 @@ public readonly struct ResolveData(ModCollection collection, nint gameObject)
     { }
 
     public override string ToString()
-        => ModCollection.Name;
+        => ModCollection.Identity.Name;
 }
 
 public static class ResolveDataExtensions

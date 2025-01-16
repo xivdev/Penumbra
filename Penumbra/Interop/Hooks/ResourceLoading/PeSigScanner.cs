@@ -1,12 +1,13 @@
 ﻿using System.IO.MemoryMappedFiles;
 using Iced.Intel;
+using OtterGui.Services;
 using PeNet;
 using Decoder = Iced.Intel.Decoder;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 // A good chunk of this was blatantly stolen from Dalamud's SigScanner 'cause Winter could not be faffed, Winter will definitely not rewrite it later
-public unsafe class PeSigScanner : IDisposable
+public unsafe class PeSigScanner : IDisposable, IService
 {
     private readonly MemoryMappedFile         _file;
     private readonly MemoryMappedViewAccessor _textSection;

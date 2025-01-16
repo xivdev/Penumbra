@@ -44,7 +44,7 @@ public class TempCollectionManager : IDisposable, IService
         => _customCollections.Values;
 
     public bool CollectionByName(string name, [NotNullWhen(true)] out ModCollection? collection)
-        => _customCollections.Values.FindFirst(c => string.Equals(name, c.Name, StringComparison.OrdinalIgnoreCase), out collection);
+        => _customCollections.Values.FindFirst(c => string.Equals(name, c.Identity.Name, StringComparison.OrdinalIgnoreCase), out collection);
 
     public bool CollectionById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
         => _customCollections.TryGetValue(id, out collection);
@@ -54,12 +54,12 @@ public class TempCollectionManager : IDisposable, IService
         if (GlobalChangeCounter == int.MaxValue)
             GlobalChangeCounter = 0;
         var collection = _storage.CreateTemporary(name, ~Count, GlobalChangeCounter++);
-        Penumbra.Log.Debug($"Creating temporary collection {collection.Name} with {collection.Id}.");
-        if (_customCollections.TryAdd(collection.Id, collection))
+        Penumbra.Log.Debug($"Creating temporary collection {collection.Identity.Name} with {collection.Identity.Id}.");
+        if (_customCollections.TryAdd(collection.Identity.Id, collection))
         {
             // Temporary collection created.
             _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, string.Empty);
-            return collection.Id;
+            return collection.Identity.Id;
         }
 
         return Guid.Empty;
@@ -74,8 +74,8 @@ public class TempCollectionManager : IDisposable, IService
         }
 
         _storage.Delete(collection);
-        Penumbra.Log.Debug($"Deleted temporary collection {collection.Id}.");
-        GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
+        Penumbra.Log.Debug($"Deleted temporary collection {collection.Identity.Id}.");
+        GlobalChangeCounter += Math.Max(collection.Counters.Change + 1 - GlobalChangeCounter, 0);
         for (var i = 0; i < Collections.Count; ++i)
         {
             if (Collections[i].Collection != collection)
@@ -83,7 +83,7 @@ public class TempCollectionManager : IDisposable, IService
 
             // Temporary collection assignment removed.
             _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
-            Penumbra.Log.Verbose($"Unassigned temporary collection {collection.Id} from {Collections[i].DisplayName}.");
+            Penumbra.Log.Verbose($"Unassigned temporary collection {collection.Identity.Id} from {Collections[i].DisplayName}.");
             Collections.Delete(i--);
         }
 
@@ -96,7 +96,7 @@ public class TempCollectionManager : IDisposable, IService
             return false;
 
         // Temporary collection assignment added.
-        Penumbra.Log.Verbose($"Assigned temporary collection {collection.AnonymizedName} to {Collections.Last().DisplayName}.");
+        Penumbra.Log.Verbose($"Assigned temporary collection {collection.Identity.AnonymizedName} to {Collections.Last().DisplayName}.");
         _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, Collections.Last().DisplayName);
         return true;
     }
@@ -127,6 +127,6 @@ public class TempCollectionManager : IDisposable, IService
             return false;
 
         var identifier = _actors.CreatePlayer(byteString, worldId);
-        return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Id);
+        return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Identity.Id);
     }
 }

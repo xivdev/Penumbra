@@ -49,6 +49,9 @@ public class GameState : IService
     public void RestoreAnimationData(ResolveData old)
         => _animationLoadData.Value = old;
 
+    public readonly ThreadLocal<bool> InLoadActionTmb = new(() => false);
+    public readonly ThreadLocal<bool> SkipTmbCache    = new(() => false);
+
     #endregion
 
     #region Sound Data

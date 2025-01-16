@@ -101,7 +101,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
             _modelTab.Reset();
             _materialTab.Reset();
             _shaderPackageTab.Reset();
-            _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
+            _itemSwapTab.UpdateMod(mod, _activeCollections.Current.GetInheritedSettings(mod.Index).Settings);
             UpdateModels();
             _forceTextureStartPath = true;
         });
@@ -452,19 +452,17 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 
     private bool DrawOptionSelectHeader()
     {
-        const string defaultOption = "Default Option";
         using var    style         = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
         var          width         = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
         var          ret           = false;
-        if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
-                _editor.Option is DefaultSubMod))
+        if (ImUtf8.ButtonEx("Default Option"u8, "Switch to the default option for the mod.\nThis resets unsaved changes."u8, width, _editor.Option is DefaultSubMod))
         {
             _editor.LoadOption(-1, 0).Wait();
             ret = true;
         }
 
         ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
+        if (ImUtf8.ButtonEx("Refresh Data"u8, "Refresh data for the current option.\nThis resets unsaved changes."u8, width))
         {
             _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx).Wait();
             ret = true;
@@ -474,7 +472,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         ImGui.SetNextItemWidth(width.X);
         style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
         using var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value());
-        using var combo = ImRaii.Combo("##optionSelector", _editor.Option!.GetFullName());
+        using var combo = ImUtf8.Combo("##optionSelector"u8, _editor.Option!.GetFullName());
         if (!combo)
             return ret;
 

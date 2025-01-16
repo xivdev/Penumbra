@@ -167,7 +167,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => 80 * UiHelpers.Scale;
 
         public override string ToName(Record item)
-            => item.Collection?.Name ?? string.Empty;
+            => (item.Collection != null ? item.Collection.Identity.Name : null) ?? string.Empty;
     }
 
     private sealed class ObjectColumn : ColumnString<Record>

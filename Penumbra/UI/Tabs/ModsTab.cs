@@ -77,12 +77,12 @@ public class ModsTab(
         {
             Penumbra.Log.Error($"Exception thrown during ModPanel Render:\n{e}");
             Penumbra.Log.Error($"{modManager.Count} Mods\n"
-              + $"{_activeCollections.Current.AnonymizedName} Current Collection\n"
+              + $"{_activeCollections.Current.Identity.AnonymizedName} Current Collection\n"
               + $"{_activeCollections.Current.Settings.Count} Settings\n"
               + $"{selector.SortMode.Name} Sort Mode\n"
               + $"{selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
               + $"{selector.Selected?.Name ?? "NULL"} Selected Mod\n"
-              + $"{string.Join(", ", _activeCollections.Current.DirectlyInheritsFrom.Select(c => c.AnonymizedName))} Inheritances\n");
+              + $"{string.Join(", ", _activeCollections.Current.Inheritance.DirectlyInheritsFrom.Select(c => c.Identity.AnonymizedName))} Inheritances\n");
         }
     }
 

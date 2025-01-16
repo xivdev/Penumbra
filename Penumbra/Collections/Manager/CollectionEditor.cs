@@ -26,12 +26,12 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     /// </summary>
     public bool SetModState(ModCollection collection, Mod mod, bool newValue)
     {
-        var oldValue = collection.Settings[mod.Index]?.Enabled ?? collection[mod.Index].Settings?.Enabled ?? false;
+        var oldValue = collection.GetInheritedSettings(mod.Index).Settings?.Enabled ?? false;
         if (newValue == oldValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
-        ((List<ModSettings?>)collection.Settings)[mod.Index]!.Enabled = newValue;
+        collection.GetOwnSettings(mod.Index)!.Enabled = newValue;
         InvokeChange(collection, ModSettingChange.EnableState, mod, inheritance ? Setting.Indefinite : newValue ? Setting.False : Setting.True,
             0);
         return true;
@@ -55,13 +55,13 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         var changes = false;
         foreach (var mod in mods)
         {
-            var oldValue = collection.Settings[mod.Index]?.Enabled;
+            var oldValue = collection.GetOwnSettings(mod.Index)?.Enabled;
             if (newValue == oldValue)
                 continue;
 
             FixInheritance(collection, mod, false);
-            ((List<ModSettings?>)collection.Settings)[mod.Index]!.Enabled = newValue;
-            changes                                                       = true;
+            collection.GetOwnSettings(mod.Index)!.Enabled = newValue;
+            changes                                       = true;
         }
 
         if (!changes)
@@ -76,33 +76,48 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     /// </summary>
     public bool SetModPriority(ModCollection collection, Mod mod, ModPriority newValue)
     {
-        var oldValue = collection.Settings[mod.Index]?.Priority ?? collection[mod.Index].Settings?.Priority ?? ModPriority.Default;
+        var oldValue = collection.GetInheritedSettings(mod.Index).Settings?.Priority ?? ModPriority.Default;
         if (newValue == oldValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
-        ((List<ModSettings?>)collection.Settings)[mod.Index]!.Priority = newValue;
+        collection.GetOwnSettings(mod.Index)!.Priority = newValue;
         InvokeChange(collection, ModSettingChange.Priority, mod, inheritance ? Setting.Indefinite : oldValue.AsSetting, 0);
         return true;
     }
 
     /// <summary>
     /// Set a given setting group settingName of mod idx to newValue if it differs from the current value and fix it if necessary.
-    /// /// If the mod is currently inherited, stop the inheritance.
+    /// If the mod is currently inherited, stop the inheritance.
     /// </summary>
     public bool SetModSetting(ModCollection collection, Mod mod, int groupIdx, Setting newValue)
     {
-        var settings = collection.Settings[mod.Index] != null
-            ? collection.Settings[mod.Index]!.Settings
-            : collection[mod.Index].Settings?.Settings;
+        var settings = collection.GetInheritedSettings(mod.Index).Settings?.Settings;
         var oldValue = settings?[groupIdx] ?? mod.Groups[groupIdx].DefaultSettings;
         if (oldValue == newValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
-        ((List<ModSettings?>)collection.Settings)[mod.Index]!.SetValue(mod, groupIdx, newValue);
+        collection.GetOwnSettings(mod.Index)!.SetValue(mod, groupIdx, newValue);
         InvokeChange(collection, ModSettingChange.Setting, mod, inheritance ? Setting.Indefinite : oldValue, groupIdx);
         return true;
+    }
+
+    public bool SetTemporarySettings(ModCollection collection, Mod mod, TemporaryModSettings? settings, int key = 0)
+    {
+        key = settings?.Lock ?? key;
+        if (!CanSetTemporarySettings(collection, mod, key))
+            return false;
+
+        collection.Settings.SetTemporary(mod.Index, settings);
+        InvokeChange(collection, ModSettingChange.TemporarySetting, mod, Setting.Indefinite, 0);
+        return true;
+    }
+
+    public bool CanSetTemporarySettings(ModCollection collection, Mod mod, int key)
+    {
+        var old = collection.GetTempSettings(mod.Index);
+        return old is not { Lock: > 0 } || old.Lock == key;
     }
 
     /// <summary> Copy the settings of an existing (sourceMod != null) or stored (sourceName) mod to another mod, if they exist. </summary>
@@ -115,10 +130,10 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         // If it does not exist, check unused settings.
         // If it does not exist and has no unused settings, also use null.
         ModSettings.SavedSettings? savedSettings = sourceMod != null
-            ? collection.Settings[sourceMod.Index] != null
-                ? new ModSettings.SavedSettings(collection.Settings[sourceMod.Index]!, sourceMod)
+            ? collection.GetOwnSettings(sourceMod.Index) is { } ownSettings
+                ? new ModSettings.SavedSettings(ownSettings, sourceMod)
                 : null
-            : collection.UnusedSettings.TryGetValue(sourceName, out var s)
+            : collection.Settings.Unused.TryGetValue(sourceName, out var s)
                 ? s
                 : null;
 
@@ -148,10 +163,10 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
             // or remove any unused settings for the target if they are inheriting.
             if (savedSettings != null)
             {
-                ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings)[targetName] = savedSettings.Value;
+                ((Dictionary<string, ModSettings.SavedSettings>)collection.Settings.Unused)[targetName] = savedSettings.Value;
                 saveService.QueueSave(new ModCollectionSave(modStorage, collection));
             }
-            else if (((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(targetName))
+            else if (((Dictionary<string, ModSettings.SavedSettings>)collection.Settings.Unused).Remove(targetName))
             {
                 saveService.QueueSave(new ModCollectionSave(modStorage, collection));
             }
@@ -166,12 +181,12 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     /// </summary>
     private static bool FixInheritance(ModCollection collection, Mod mod, bool inherit)
     {
-        var settings = collection.Settings[mod.Index];
+        var settings = collection.GetOwnSettings(mod.Index);
         if (inherit == (settings == null))
             return false;
 
-        ((List<ModSettings?>)collection.Settings)[mod.Index] =
-            inherit ? null : collection[mod.Index].Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
+        var settings1 = inherit ? null : collection.GetInheritedSettings(mod.Index).Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
+        collection.Settings.Set(mod.Index, settings1);
         return true;
     }
 
@@ -181,14 +196,15 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     {
         saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
         communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
-        RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
+        if (type is not ModSettingChange.TemporarySetting)
+            RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
 
     /// <summary> Trigger changes in all inherited collections. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void RecurseInheritors(ModCollection directParent, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx)
     {
-        foreach (var directInheritor in directParent.DirectParentOf)
+        foreach (var directInheritor in directParent.Inheritance.DirectlyInheritedBy)
         {
             switch (type)
             {
@@ -197,7 +213,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
                     communicator.ModSettingChanged.Invoke(directInheritor, type, null, oldValue, groupIdx, true);
                     break;
                 default:
-                    if (directInheritor.Settings[mod!.Index] == null)
+                    if (directInheritor.GetOwnSettings(mod!.Index) == null)
                         communicator.ModSettingChanged.Invoke(directInheritor, type, mod, oldValue, groupIdx, true);
                     break;
             }
