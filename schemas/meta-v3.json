@@ -1,0 +1,51 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/meta-v3.json",
+    "title": "Penumbra Mod Metadata",
+    "description": "Metadata of a Penumbra mod.",
+    "type": "object",
+    "properties": {
+        "FileVersion": {
+            "description": "Major version of the metadata schema used.",
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 3
+        },
+        "Name": {
+            "description": "Name of the mod.",
+            "type": "string"
+        },
+        "Author": {
+            "description": "Author of the mod.",
+            "type": ["string", "null"]
+        },
+        "Description": {
+            "description": "Description of the mod. Can span multiple paragraphs.",
+            "type": ["string", "null"]
+        },
+        "Image": {
+            "description": "Relative path to a preview image for the mod. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
+            "type": ["string", "null"]
+        },
+        "Version": {
+            "description": "Version of the mod. Can be an arbitrary string.",
+            "type": ["string", "null"]
+        },
+        "Website": {
+            "description": "URL of the web page of the mod.",
+            "type": ["string", "null"]
+        },
+        "ModTags": {
+            "description": "Author-defined tags for the mod.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true
+        }
+    },
+    "required": [
+        "FileVersion",
+        "Name"
+    ]
+}

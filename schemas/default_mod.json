@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json",
+    "allOf": [
+        {
+            "type": "object",
+            "properties": {
+                "Version": {
+                    "description": "???",
+                    "type": ["integer", "null"]
+                },
+                "Description": {
+                    "description": "Description of the sub-mod.",
+                    "type": ["string", "null"]
+                },
+                "Image": {
+                    "description": "Unused by Penumbra.",
+                    "type": ["string", "null"]
+                }
+            }
+        }, {
+            "$ref": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json"
+        }
+    ]
+}
