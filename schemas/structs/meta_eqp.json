@@ -1,0 +1,20 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "type": "integer"
+        },
+        "SetId": {
+            "$ref": "meta_enums.json#U16"
+        },
+        "Slot": {
+            "$ref": "meta_enums.json#EquipSlot"
+        }
+    },
+    "required": [
+        "Entry",
+        "SetId",
+        "Slot"
+    ]
+}

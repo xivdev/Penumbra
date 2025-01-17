@@ -1,0 +1,34 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Files": {
+            "description": "File redirections in this container. Keys are game paths, values are relative file paths.",
+            "type": [ "object", "null" ],
+            "patternProperties": {
+                "^[^/\\\\.:?][^\\\\?:]+$": {
+                    "type": "string",
+                    "pattern": "^[^/\\\\.:?][^?:]+$"
+                }
+            },
+            "additionalProperties": false
+        },
+        "FileSwaps": {
+            "description": "File swaps in this container. Keys are original game paths, values are actual game paths.",
+            "type": [ "object", "null" ],
+            "patternProperties": {
+                "^[^/\\\\.?:][^\\\\?:]+$": {
+                    "type": "string",
+                    "pattern": "^[^/\\\\.:?][^?:]+$"
+                }
+            },
+            "additionalProperties": false
+        },
+        "Manipulations": {
+            "type": [ "array", "null" ],
+            "items": {
+                "$ref": "manipulation.json"
+            }
+        }
+    }
+}

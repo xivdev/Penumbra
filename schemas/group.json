@@ -1,35 +1,35 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/group.json",
     "type": "object",
     "properties": {
         "Version": {
-            "description": "???",
-            "type": ["integer", "null"]
+            "description": "Mod Container version, currently unused.",
+            "type": "integer"
         },
         "Name": {
             "description": "Name of the group.",
-            "type": "string"
+            "type": "string",
+            "minLength": 1
         },
         "Description": {
             "description": "Description of the group.",
-            "type": ["string", "null"]
+            "type": [ "string", "null" ]
         },
         "Image": {
             "description": "Relative path to a preview image for the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
-            "type": ["string", "null"]
+            "type": ["string", "null" ]
         },
         "Page": {
             "description": "TexTools page of the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
-            "type": ["integer", "null"]
+            "type": "integer"
         },
         "Priority": {
             "description": "Priority of the group. If several groups define conflicting files or manipulations, the highest priority wins.",
-            "type": ["integer", "null"]
+            "type": "integer"
         },
         "Type": {
             "description": "Group type. Single groups have one and only one of their options active at any point. Multi groups can have zero, one or many of their options active. Combining groups have n options, 2^n containers, and will have one and only one container active depending on the selected options.",
-            "enum": ["Single", "Multi", "Imc", "Combining"]
+            "enum": [ "Single", "Multi", "Imc", "Combining" ]
         },
         "DefaultSettings": {
             "description": "Default configuration for the group.",
@@ -42,165 +42,16 @@
     ],
     "oneOf": [
         {
-            "properties": {
-                "Type": {
-                    "const": "Single"
-                },
-                "Options": {
-                    "type": "array",
-                    "items": {
-                        "allOf": [
-                            {
-                                "type": "object",
-                                "properties": {
-                                    "Description": {
-                                        "description": "Description of the option.",
-                                        "type": ["string", "null"]
-                                    },
-                                    "Image": {
-                                        "description": "Unused by Penumbra.",
-                                        "type": ["string", "null"]
-                                    }
-                                }
-                            }, {
-                                "$ref": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json"
-                            }
-                        ]
-                    }
-                }
-            }
-        }, {
-            "properties": {
-                "Type": {
-                    "const": "Multi"
-                },
-                "Options": {
-                    "type": "array",
-                    "items": {
-                        "allOf": [
-                            {
-                                "type": "object",
-                                "properties": {
-                                    "Description": {
-                                        "description": "Description of the option.",
-                                        "type": ["string", "null"]
-                                    },
-                                    "Priority": {
-                                        "description": "Priority of the option. If several enabled options within the group define conflicting files or manipulations, the highest priority wins.",
-                                        "type": ["integer", "null"]
-                                    },
-                                    "Image": {
-                                        "description": "Unused by Penumbra.",
-                                        "type": ["string", "null"]
-                                    }
-                                }
-                            }, {
-                                "$ref": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json"
-                            }
-                        ]
-                    }
-                }
-            }
-        }, {
-            "properties": {
-                "Type": {
-                    "const": "Imc"
-                },
-                "AllVariants": {
-                    "type": "boolean"
-                },
-                "OnlyAttributes": {
-                    "type": "boolean"
-                },
-                "Identifier": {
-                    "$ref": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json#/$defs/ImcIdentifier"
-                },
-                "DefaultEntry": {
-                    "$ref": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json#/$defs/ImcEntry"
-                },
-                "Options": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "Name": {
-                                "description": "Name of the option.",
-                                "type": "string"
-                            },
-                            "Description": {
-                                "description": "Description of the option.",
-                                "type": ["string", "null"]
-                            },
-                            "Image": {
-                                "description": "Unused by Penumbra.",
-                                "type": ["string", "null"]
-                            }
-                        },
-                        "required": [
-                            "Name"
-                        ],
-                        "oneOf": [
-                            {
-                                "properties": {
-                                    "AttributeMask": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "required": [
-                                    "AttributeMask"
-                                ]
-                            }, {
-                                "properties": {
-                                    "IsDisableSubMod": {
-                                        "const": true
-                                    }
-                                },
-                                "required": [
-                                    "IsDisableSubMod"
-                                ]
-                            }
-                        ],
-                        "unevaluatedProperties": false
-                    }
-                }
-            }
-        }, {
-            "properties": {
-                "Type": {
-                    "const": "Combining"
-                },
-                "Options": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "Name": {
-                                "description": "Name of the option.",
-                                "type": "string"
-                            },
-                            "Description": {
-                                "description": "Description of the option.",
-                                "type": ["string", "null"]
-                            },
-                            "Image": {
-                                "description": "Unused by Penumbra.",
-                                "type": ["string", "null"]
-                            }
-                        },
-                        "required": [
-                            "Name"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                "Containers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/container.json"
-                    }
-                }
-            }
+            "$ref": "structs/group_combining.json"
+        },
+        {
+            "$ref": "structs/group_imc.json"
+        },
+        {
+            "$ref": "structs/group_multi.json"
+        },
+        {
+            "$ref": "structs/group_single.json"
         }
-    ],
-    "unevaluatedProperties": false
+    ]
 }

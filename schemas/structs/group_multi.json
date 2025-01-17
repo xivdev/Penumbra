@@ -1,0 +1,32 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Type": {
+            "const": "Multi"
+        },
+        "Options": {
+            "type": "array",
+            "items": {
+                "allOf": [
+                    {
+                        "$ref": "option.json"
+                    },
+                    {
+                        "$ref": "container.json"
+                    },
+                    {
+                        "properties": {
+                            "Priority": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
+
+
+

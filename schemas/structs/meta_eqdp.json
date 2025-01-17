@@ -1,0 +1,30 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1023
+        },
+        "Gender": {
+            "$ref": "meta_enums.json#Gender"
+        },
+        "Race": {
+            "$ref": "meta_enums.json#ModelRace"
+        },
+        "SetId": {
+            "$ref": "meta_enums.json#U16"
+        },
+        "Slot": {
+            "$ref": "meta_enums.json#EquipSlot"
+        }
+    },
+    "required": [
+        "Entry",
+        "Gender",
+        "Race",
+        "SetId",
+        "Slot"
+    ]
+}

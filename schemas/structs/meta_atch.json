@@ -1,0 +1,67 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "type": "object",
+            "properties": {
+                "Bone": {
+                    "type": "string",
+                    "maxLength": 34
+                },
+                "Scale": {
+                    "type": "number"
+                },
+                "OffsetX": {
+                    "type": "number"
+                },
+                "OffsetY": {
+                    "type": "number"
+                },
+                "OffsetZ": {
+                    "type": "number"
+                },
+                "RotationX": {
+                    "type": "number"
+                },
+                "RotationY": {
+                    "type": "number"
+                },
+                "RotationZ": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "Bone",
+                "Scale",
+                "OffsetX",
+                "OffsetY",
+                "OffsetZ",
+                "RotationX",
+                "RotationY",
+                "RotationZ"
+            ]
+        },
+        "Gender": {
+            "$ref": "meta_enums.json#Gender"
+        },
+        "Race": {
+            "$ref": "meta_enums.json#ModelRace"
+        },
+        "Type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4
+        },
+        "Index": {
+            "$ref": "meta_enums.json#U16"
+        }
+    },
+    "required": [
+        "Entry",
+        "Gender",
+        "Race",
+        "Type",
+        "Index"
+    ]
+}

@@ -1,0 +1,32 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Local Penumbra Mod Data",
+    "description": "The locally stored data for an installed mod in Penumbra",
+    "type": "object",
+    "properties": {
+        "FileVersion": {
+            "description": "Major version of the local data schema used.",
+            "type": "integer",
+            "minimum": 3,
+            "maximum": 3
+        },
+        "ImportDate": {
+            "description": "The date and time of the installation of the mod as a Unix Epoch millisecond timestamp.",
+            "type": "integer"
+        },
+        "LocalTags": {
+            "description": "User-defined local tags for the mod.",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            },
+            "uniqueItems": true
+        },
+        "Favorite": {
+            "description": "Whether the mod is favourited by the user.",
+            "type": "boolean"
+        }
+    },
+    "required": [ "FileVersion" ]
+}

@@ -1,0 +1,24 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+		"Name": {
+            "description": "Name of the option.",
+            "type": "string",
+            "minLength": 1
+		},
+        "Description": {
+            "description": "Description of the option.",
+            "type": [ "string", "null" ]
+        },
+        "Priority": {
+            "description": "Priority of the option. If several enabled options within the group define conflicting files or manipulations, the highest priority wins.",
+            "type": "integer"
+        },
+        "Image": {
+            "description": "Unused by Penumbra.",
+            "type": [ "string", "null" ]
+        }
+    },
+	"required": [ "Name" ]
+}

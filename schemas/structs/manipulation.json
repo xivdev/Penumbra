@@ -1,0 +1,95 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Type": {
+            "enum": [ "Unknown", "Imc", "Eqdp", "Eqp", "Est", "Gmp", "Rsp", "GlobalEqp", "Atch" ]
+        },
+        "Manipulation": {
+            "type": "object"
+        }
+    },
+    "required": [ "Type", "Manipulation" ],
+    "oneOf": [
+        {
+            "properties": {
+                "Type": {
+                    "const": "Imc"
+                },
+                "Manipulation": {
+                    "$ref": "meta_imc.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Eqdp"
+                },
+                "Manipulation": {
+                    "$ref": "meta_eqdp.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Eqp"
+                },
+                "Manipulation": {
+                    "$ref": "meta_eqp.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Est"
+                },
+                "Manipulation": {
+                    "$ref": "meta_est.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Gmp"
+                },
+                "Manipulation": {
+                    "$ref": "meta_gmp.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Rsp"
+                },
+                "Manipulation": {
+                    "$ref": "meta_rsp.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "GlobalEqp"
+                },
+                "Manipulation": {
+                    "$ref": "meta_geqp.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Atch"
+                },
+                "Manipulation": {
+                    "$ref": "meta_atch.json"
+                }
+            }
+        }
+    ]
+}

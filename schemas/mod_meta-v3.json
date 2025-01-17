@@ -1,6 +1,5 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/meta-v3.json",
     "title": "Penumbra Mod Metadata",
     "description": "Metadata of a Penumbra mod.",
     "type": "object",
@@ -13,33 +12,35 @@
         },
         "Name": {
             "description": "Name of the mod.",
-            "type": "string"
+            "type": "string",
+            "minLength": 1
         },
         "Author": {
             "description": "Author of the mod.",
-            "type": ["string", "null"]
+            "type": [ "string", "null" ]
         },
         "Description": {
             "description": "Description of the mod. Can span multiple paragraphs.",
-            "type": ["string", "null"]
+            "type": [ "string", "null" ]
         },
         "Image": {
             "description": "Relative path to a preview image for the mod. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
-            "type": ["string", "null"]
+            "type": [ "string", "null" ]
         },
         "Version": {
             "description": "Version of the mod. Can be an arbitrary string.",
-            "type": ["string", "null"]
+            "type": [ "string", "null" ]
         },
         "Website": {
             "description": "URL of the web page of the mod.",
-            "type": ["string", "null"]
+            "type": [ "string", "null" ]
         },
         "ModTags": {
             "description": "Author-defined tags for the mod.",
             "type": "array",
             "items": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1
             },
             "uniqueItems": true
         }
