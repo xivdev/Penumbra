@@ -1,6 +1,5 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/xivdev/Penumbra/master/schemas/shpk_devkit.json",
     "type": "object",
     "properties": {
         "ShaderKeys": {
