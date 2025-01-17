@@ -27,6 +27,9 @@ public enum ModDataChangeType : ushort
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService) : IService
 {
+    public SaveService SaveService
+        => saveService;
+
     /// <summary> Create the file containing the meta information about a mod from scratch. </summary>
     public void CreateMeta(DirectoryInfo directory, string? name, string? author, string? description, string? version,
         string? website)
@@ -38,148 +41,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
         saveService.ImmediateSaveSync(new ModMeta(mod));
-    }
-
-    public ModDataChangeType LoadLocalData(Mod mod)
-    {
-        var dataFile = saveService.FileNames.LocalDataFile(mod);
-
-        var importDate = 0L;
-        var localTags  = Enumerable.Empty<string>();
-        var favorite   = false;
-        var note       = string.Empty;
-
-        var save = true;
-        if (File.Exists(dataFile))
-            try
-            {
-                var text = File.ReadAllText(dataFile);
-                var json = JObject.Parse(text);
-
-                importDate = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
-                favorite   = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
-                note       = json[nameof(Mod.Note)]?.Value<string>() ?? note;
-                localTags  = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
-                save       = false;
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not load local mod data:\n{e}");
-            }
-
-        if (importDate == 0)
-            importDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-        ModDataChangeType changes = 0;
-        if (mod.ImportDate != importDate)
-        {
-            mod.ImportDate =  importDate;
-            changes        |= ModDataChangeType.ImportDate;
-        }
-
-        changes |= ModLocalData.UpdateTags(mod, null, localTags);
-
-        if (mod.Favorite != favorite)
-        {
-            mod.Favorite =  favorite;
-            changes      |= ModDataChangeType.Favorite;
-        }
-
-        if (mod.Note != note)
-        {
-            mod.Note =  note;
-            changes  |= ModDataChangeType.Note;
-        }
-
-        if (save)
-            saveService.QueueSave(new ModLocalData(mod));
-
-        return changes;
-    }
-
-    public ModDataChangeType LoadMeta(ModCreator creator, Mod mod)
-    {
-        var metaFile = saveService.FileNames.ModMetaPath(mod);
-        if (!File.Exists(metaFile))
-        {
-            Penumbra.Log.Debug($"No mod meta found for {mod.ModPath.Name}.");
-            return ModDataChangeType.Deletion;
-        }
-
-        try
-        {
-            var text = File.ReadAllText(metaFile);
-            var json = JObject.Parse(text);
-
-            var newName        = json[nameof(Mod.Name)]?.Value<string>() ?? string.Empty;
-            var newAuthor      = json[nameof(Mod.Author)]?.Value<string>() ?? string.Empty;
-            var newDescription = json[nameof(Mod.Description)]?.Value<string>() ?? string.Empty;
-            var newImage       = json[nameof(Mod.Image)]?.Value<string>() ?? string.Empty;
-            var newVersion     = json[nameof(Mod.Version)]?.Value<string>() ?? string.Empty;
-            var newWebsite     = json[nameof(Mod.Website)]?.Value<string>() ?? string.Empty;
-            var newFileVersion = json[nameof(ModMeta.FileVersion)]?.Value<uint>() ?? 0;
-            var importDate     = json[nameof(Mod.ImportDate)]?.Value<long>();
-            var modTags        = (json[nameof(Mod.ModTags)] as JArray)?.Values<string>().OfType<string>();
-
-            ModDataChangeType changes = 0;
-            if (mod.Name != newName)
-            {
-                changes  |= ModDataChangeType.Name;
-                mod.Name =  newName;
-            }
-
-            if (mod.Author != newAuthor)
-            {
-                changes    |= ModDataChangeType.Author;
-                mod.Author =  newAuthor;
-            }
-
-            if (mod.Description != newDescription)
-            {
-                changes         |= ModDataChangeType.Description;
-                mod.Description =  newDescription;
-            }
-
-            if (mod.Image != newImage)
-            {
-                changes   |= ModDataChangeType.Image;
-                mod.Image =  newImage;
-            }
-
-            if (mod.Version != newVersion)
-            {
-                changes     |= ModDataChangeType.Version;
-                mod.Version =  newVersion;
-            }
-
-            if (mod.Website != newWebsite)
-            {
-                changes     |= ModDataChangeType.Website;
-                mod.Website =  newWebsite;
-            }
-
-            if (newFileVersion != ModMeta.FileVersion)
-                if (ModMigration.Migrate(creator, saveService, mod, json, ref newFileVersion))
-                {
-                    changes |= ModDataChangeType.Migration;
-                    saveService.ImmediateSave(new ModMeta(mod));
-                }
-
-            if (importDate != null && mod.ImportDate != importDate.Value)
-            {
-                mod.ImportDate =  importDate.Value;
-                changes        |= ModDataChangeType.ImportDate;
-            }
-
-            changes |= ModLocalData.UpdateTags(mod, modTags, null);
-
-            return changes;
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Could not load mod meta for {metaFile}:\n{e}");
-            return ModDataChangeType.Deletion;
-        }
     }
 
     public void ChangeModName(Mod mod, string newName)
