@@ -28,11 +28,16 @@ public unsafe interface IFileAllocator
 public sealed class MarshalAllocator : IFileAllocator
 {
     public unsafe T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
-        => (T*)Marshal.AllocHGlobal(length * sizeof(T));
+    {
+        var ret = (T*)Marshal.AllocHGlobal(length * sizeof(T));
+        Penumbra.Log.Verbose($"Allocating {length * sizeof(T)} bytes via Marshal Allocator to 0x{(nint)ret:X}.");
+        return ret;
+    }
 
     public unsafe void Release<T>(ref T* pointer, int length) where T : unmanaged
     {
         Marshal.FreeHGlobal((nint)pointer);
+        Penumbra.Log.Verbose($"Freeing {length * sizeof(T)} bytes from 0x{(nint)pointer:X} via Marshal Allocator.");
         pointer = null;
     }
 }
@@ -53,11 +58,17 @@ public sealed unsafe class XivFileAllocator : IFileAllocator, IService
         => ((delegate* unmanaged<IMemorySpace*>)_getFileSpaceAddress)();
 
     public T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
-        => (T*)GetFileSpace()->Malloc((ulong)(length * sizeof(T)), (ulong)alignment);
+    {
+        var ret = (T*)GetFileSpace()->Malloc((ulong)(length * sizeof(T)), (ulong)alignment);
+        Penumbra.Log.Verbose($"Allocating {length * sizeof(T)} bytes via FFXIV File Allocator to 0x{(nint)ret:X}.");
+        return ret;
+    }
 
     public void Release<T>(ref T* pointer, int length) where T : unmanaged
     {
+        
         IMemorySpace.Free(pointer, (ulong)(length * sizeof(T)));
+        Penumbra.Log.Verbose($"Freeing {length * sizeof(T)} bytes from 0x{(nint)pointer:X} via FFXIV File Allocator.");
         pointer = null;
     }
 }

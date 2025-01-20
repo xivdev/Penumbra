@@ -1,3 +1,4 @@
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
@@ -192,22 +193,26 @@ public unsafe class ImcFile : MetaBaseFile
     public void Replace(ResourceHandle* resource)
     {
         var (data, length) = resource->GetData();
-        if (length == ActualLength)
+        var actualLength = ActualLength;
+        if (length >= actualLength)
         {
-            MemoryUtility.MemCpyUnchecked((byte*)data, Data, ActualLength);
+            MemoryUtility.MemCpyUnchecked((byte*)data, Data, actualLength);
+            MemoryUtility.MemSet((byte*)data + actualLength, 0, length - actualLength);
             return;
         }
 
-        var newData = Manager.XivAllocator.Allocate(ActualLength, 8);
+        var paddedLength = actualLength.PadToMultiple(128);
+        var newData      = Manager.XivAllocator.Allocate(paddedLength, 8);
         if (newData == null)
         {
             Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong)resource:X}, allocation failed.");
             return;
         }
 
-        MemoryUtility.MemCpyUnchecked(newData, Data, ActualLength);
+        MemoryUtility.MemCpyUnchecked(newData, Data, actualLength);
+        MemoryUtility.MemSet((byte*)data + actualLength, 0, paddedLength - actualLength);
 
         Manager.XivAllocator.Release((void*)data, length);
-        resource->SetData((nint)newData, ActualLength);
+        resource->SetData((nint)newData, paddedLength);
     }
 }

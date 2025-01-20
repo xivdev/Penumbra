@@ -51,7 +51,6 @@ public sealed class ImcCache(MetaFileManager manager, ModCollection collection) 
             if (!_imcFiles.TryGetValue(path, out var pair))
                 pair = (new ImcFile(Manager, identifier), []);
 
-
             if (!Apply(pair.Item1, identifier, entry))
                 return;
 
