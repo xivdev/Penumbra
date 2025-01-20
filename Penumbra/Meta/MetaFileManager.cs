@@ -28,24 +28,26 @@ public class MetaFileManager : IService
     internal readonly ImcChecker              ImcChecker;
     internal readonly AtchManager             AtchManager;
     internal readonly IFileAllocator          MarshalAllocator = new MarshalAllocator();
-    internal readonly IFileAllocator          XivAllocator;
+    internal readonly IFileAllocator          XivFileAllocator;
+    internal readonly IFileAllocator          XivDefaultAllocator;
 
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
         ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, ObjectIdentification identifier,
         FileCompactor compactor, IGameInteropProvider interop, AtchManager atchManager)
     {
-        CharacterUtility  = characterUtility;
-        ResidentResources = residentResources;
-        GameData          = gameData;
-        ActiveCollections = activeCollections;
-        Config            = config;
-        ValidityChecker   = validityChecker;
-        Identifier        = identifier;
-        Compactor         = compactor;
-        AtchManager       = atchManager;
-        ImcChecker        = new ImcChecker(this);
-        XivAllocator      = new XivFileAllocator(interop);
+        CharacterUtility    = characterUtility;
+        ResidentResources   = residentResources;
+        GameData            = gameData;
+        ActiveCollections   = activeCollections;
+        Config              = config;
+        ValidityChecker     = validityChecker;
+        Identifier          = identifier;
+        Compactor           = compactor;
+        AtchManager         = atchManager;
+        ImcChecker          = new ImcChecker(this);
+        XivFileAllocator    = new XivFileAllocator(interop);
+        XivDefaultAllocator = new XivDefaultAllocator();
         interop.InitializeFromAttributes(this);
     }
 

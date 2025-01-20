@@ -197,22 +197,24 @@ public unsafe class ImcFile : MetaBaseFile
         if (length >= actualLength)
         {
             MemoryUtility.MemCpyUnchecked((byte*)data, Data, actualLength);
-            MemoryUtility.MemSet((byte*)data + actualLength, 0, length - actualLength);
+            if (length > actualLength)
+                MemoryUtility.MemSet((byte*)(data + actualLength), 0, length - actualLength);
             return;
         }
 
         var paddedLength = actualLength.PadToMultiple(128);
-        var newData      = Manager.XivAllocator.Allocate(paddedLength, 8);
+        var newData      = Manager.XivFileAllocator.Allocate(paddedLength, 8);
         if (newData == null)
         {
             Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong)resource:X}, allocation failed.");
             return;
         }
-
+        
         MemoryUtility.MemCpyUnchecked(newData, Data, actualLength);
-        MemoryUtility.MemSet((byte*)data + actualLength, 0, paddedLength - actualLength);
-
-        Manager.XivAllocator.Release((void*)data, length);
+        if (paddedLength > actualLength)
+            MemoryUtility.MemSet(newData + actualLength, 0, paddedLength - actualLength);
+        
+        Manager.XivFileAllocator.Release((void*)data, length);
         resource->SetData((nint)newData, paddedLength);
     }
 }

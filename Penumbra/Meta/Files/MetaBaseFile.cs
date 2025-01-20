@@ -73,6 +73,24 @@ public sealed unsafe class XivFileAllocator : IFileAllocator, IService
     }
 }
 
+public sealed unsafe class XivDefaultAllocator : IFileAllocator, IService
+{
+    public T* Allocate<T>(int length, int alignment = 1) where T : unmanaged
+    {
+        var ret = (T*)IMemorySpace.GetDefaultSpace()->Malloc((ulong)(length * sizeof(T)), (ulong)alignment);
+        Penumbra.Log.Verbose($"Allocating {length * sizeof(T)} bytes via FFXIV Default Allocator to 0x{(nint)ret:X}.");
+        return ret;
+    }
+
+    public void Release<T>(ref T* pointer, int length) where T : unmanaged
+    {
+
+        IMemorySpace.Free(pointer, (ulong)(length * sizeof(T)));
+        Penumbra.Log.Verbose($"Freeing {length * sizeof(T)} bytes from 0x{(nint)pointer:X} via FFXIV Default Allocator.");
+        pointer = null;
+    }
+}
+
 public unsafe class MetaBaseFile(MetaFileManager manager, IFileAllocator alloc, MetaIndex idx) : IDisposable
 {
     protected readonly MetaFileManager Manager   = manager;
