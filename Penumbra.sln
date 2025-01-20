@@ -26,10 +26,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.CrashHandler", "Pe
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{BFEA7504-1210-4F79-A7FE-BF03B6567E33}"
 	ProjectSection(SolutionItems) = preProject
-		schemas\files\default_mod.json = schemas\files\default_mod.json
-		schemas\files\group.json = schemas\files\group.json
-		schemas\files\local_mod_data-v3.json = schemas\files\local_mod_data-v3.json
-		schemas\files\mod_meta-v3.json = schemas\files\mod_meta-v3.json
+		schemas\default_mod.json = schemas\default_mod.json
+		schemas\group.json = schemas\group.json
+		schemas\local_mod_data-v3.json = schemas\local_mod_data-v3.json
+		schemas\mod_meta-v3.json = schemas\mod_meta-v3.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "structs", "structs", "{B03F276A-0572-4F62-AF86-EF62F6B80463}"
