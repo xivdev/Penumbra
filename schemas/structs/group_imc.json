@@ -1,0 +1,50 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+        "Type": {
+            "const": "Imc"
+        },
+        "AllVariants": {
+            "type": "boolean"
+        },
+        "OnlyAttributes": {
+            "type": "boolean"
+        },
+        "Identifier": {
+            "$ref": "meta_imc.json#ImcIdentifier"
+        },
+        "DefaultEntry": {
+            "$ref": "meta_imc.json#ImcEntry"
+        },
+        "Options": {
+            "type": "array",
+            "items": {
+                "$ref": "option.json",
+                "oneOf": [
+                    {
+                        "properties": {
+                            "AttributeMask": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1023
+                            }
+                        },
+                        "required": [
+                            "AttributeMask"
+                        ]
+                    },
+                    {
+                        "properties": {
+                            "IsDisableSubMod": {
+                                "const": true
+                            }
+                        },
+                        "required": [
+                            "IsDisableSubMod"
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}

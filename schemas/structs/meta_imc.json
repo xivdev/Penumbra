@@ -1,0 +1,87 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "$ref": "#ImcEntry"
+        }
+    },
+    "required": [
+        "Entry"
+    ],
+    "allOf": [
+        {
+            "$ref": "#ImcIdentifier"
+        }
+    ],
+    "$defs": {
+        "ImcIdentifier": {
+            "type": "object",
+            "properties": {
+                "PrimaryId": {
+                    "$ref": "meta_enums.json#U16"
+                },
+                "SecondaryId": {
+                    "$ref": "meta_enums.json#U16"
+                },
+                "Variant": {
+                    "$ref": "meta_enums.json#U8"
+                },
+                "ObjectType": {
+                    "$ref": "meta_enums.json#ObjectType"
+                },
+                "EquipSlot": {
+                    "$ref": "meta_enums.json#EquipSlot"
+                },
+                "BodySlot": {
+                    "$ref": "meta_enums.json#BodySlot"
+                }
+            },
+            "$anchor": "ImcIdentifier",
+            "required": [
+                "PrimaryId",
+                "SecondaryId",
+                "Variant",
+                "ObjectType",
+                "EquipSlot",
+                "BodySlot"
+            ]
+        },
+        "ImcEntry": {
+            "type": "object",
+            "properties": {
+                "MaterialId": {
+                    "$ref": "meta_enums.json#U8"
+                },
+                "DecalId": {
+                    "$ref": "meta_enums.json#U8"
+                },
+                "VfxId": {
+                    "$ref": "meta_enums.json#U8"
+                },
+                "MaterialAnimationId": {
+                    "$ref": "meta_enums.json#U8"
+                },
+                "AttributeMask": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023
+                },
+                "SoundId": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63
+                }
+            },
+            "$anchor": "ImcEntry",
+            "required": [
+                "MaterialId",
+                "DecalId",
+                "VfxId",
+                "MaterialAnimationId",
+                "AttributeMask",
+                "SoundId"
+            ]
+        }
+    }
+}

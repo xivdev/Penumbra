@@ -1,0 +1,19 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "allOf": [
+        {
+            "type": "object",
+            "properties": {
+                "Version": {
+                    "description": "Mod Container version, currently unused.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 0
+                }
+            }
+        },
+        {
+            "$ref": "structs/container.json"
+        }
+    ]
+}

@@ -1,0 +1,57 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Version": {
+            "description": "Mod Container version, currently unused.",
+            "type": "integer"
+        },
+        "Name": {
+            "description": "Name of the group.",
+            "type": "string",
+            "minLength": 1
+        },
+        "Description": {
+            "description": "Description of the group.",
+            "type": [ "string", "null" ]
+        },
+        "Image": {
+            "description": "Relative path to a preview image for the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
+            "type": ["string", "null" ]
+        },
+        "Page": {
+            "description": "TexTools page of the group. Unused by Penumbra, present for round-trip import/export of TexTools-generated mods.",
+            "type": "integer"
+        },
+        "Priority": {
+            "description": "Priority of the group. If several groups define conflicting files or manipulations, the highest priority wins.",
+            "type": "integer"
+        },
+        "Type": {
+            "description": "Group type. Single groups have one and only one of their options active at any point. Multi groups can have zero, one or many of their options active. Combining groups have n options, 2^n containers, and will have one and only one container active depending on the selected options.",
+            "enum": [ "Single", "Multi", "Imc", "Combining" ]
+        },
+        "DefaultSettings": {
+            "description": "Default configuration for the group.",
+            "type": "integer"
+        }
+    },
+    "required": [
+        "Name",
+        "Type"
+    ],
+    "oneOf": [
+        {
+            "$ref": "structs/group_combining.json"
+        },
+        {
+            "$ref": "structs/group_imc.json"
+        },
+        {
+            "$ref": "structs/group_multi.json"
+        },
+        {
+            "$ref": "structs/group_single.json"
+        }
+    ]
+}
