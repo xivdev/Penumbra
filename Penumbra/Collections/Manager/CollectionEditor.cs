@@ -194,7 +194,8 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void InvokeChange(ModCollection changedCollection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx)
     {
-        saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
+        if (type is not ModSettingChange.TemporarySetting)
+            saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
         communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
         if (type is not ModSettingChange.TemporarySetting)
             RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);

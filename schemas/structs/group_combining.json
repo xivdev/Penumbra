@@ -1,0 +1,31 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "properties": {
+        "Type": {
+            "const": "Combining"
+        },
+        "Options": {
+            "type": "array",
+            "items": {
+                "$ref": "option.json"
+            }
+        },
+        "Containers": {
+            "type": "array",
+            "items": {
+                "allOf": [
+                    {
+                        "$ref": "container.json"
+                    },
+                    {
+                        "properties": {
+                            "Name": {
+                                "type": [ "string", "null" ]
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

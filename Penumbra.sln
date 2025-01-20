@@ -24,6 +24,34 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.String", "Penumbra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.CrashHandler", "Penumbra.CrashHandler\Penumbra.CrashHandler.csproj", "{EE834491-A98F-4395-BE0D-6861AE5AD953}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{BFEA7504-1210-4F79-A7FE-BF03B6567E33}"
+	ProjectSection(SolutionItems) = preProject
+		schemas\default_mod.json = schemas\default_mod.json
+		schemas\group.json = schemas\group.json
+		schemas\local_mod_data-v3.json = schemas\local_mod_data-v3.json
+		schemas\mod_meta-v3.json = schemas\mod_meta-v3.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "structs", "structs", "{B03F276A-0572-4F62-AF86-EF62F6B80463}"
+	ProjectSection(SolutionItems) = preProject
+		schemas\structs\container.json = schemas\structs\container.json
+		schemas\structs\group_combining.json = schemas\structs\group_combining.json
+		schemas\structs\group_imc.json = schemas\structs\group_imc.json
+		schemas\structs\group_multi.json = schemas\structs\group_multi.json
+		schemas\structs\group_single.json = schemas\structs\group_single.json
+		schemas\structs\manipulation.json = schemas\structs\manipulation.json
+		schemas\structs\meta_atch.json = schemas\structs\meta_atch.json
+		schemas\structs\meta_enums.json = schemas\structs\meta_enums.json
+		schemas\structs\meta_eqdp.json = schemas\structs\meta_eqdp.json
+		schemas\structs\meta_eqp.json = schemas\structs\meta_eqp.json
+		schemas\structs\meta_est.json = schemas\structs\meta_est.json
+		schemas\structs\meta_geqp.json = schemas\structs\meta_geqp.json
+		schemas\structs\meta_gmp.json = schemas\structs\meta_gmp.json
+		schemas\structs\meta_imc.json = schemas\structs\meta_imc.json
+		schemas\structs\meta_rsp.json = schemas\structs\meta_rsp.json
+		schemas\structs\option.json = schemas\structs\option.json
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +85,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BFEA7504-1210-4F79-A7FE-BF03B6567E33} = {F89C9EAE-25C8-43BE-8108-5921E5A93502}
+		{B03F276A-0572-4F62-AF86-EF62F6B80463} = {BFEA7504-1210-4F79-A7FE-BF03B6567E33}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B17E85B1-5F60-4440-9F9A-3DDE877E8CDF}

@@ -72,11 +72,11 @@ public partial class ModCreator(
         if (!Directory.Exists(mod.ModPath.FullName))
             return false;
 
-        modDataChange = dataEditor.LoadMeta(this, mod);
+        modDataChange = ModMeta.Load(dataEditor, this, mod);
         if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length == 0)
             return false;
 
-        modDataChange |= dataEditor.LoadLocalData(mod);
+        modDataChange |= ModLocalData.Load(dataEditor, mod);
         LoadDefaultOption(mod);
         LoadAllGroups(mod);
         if (incorporateMetaChanges)

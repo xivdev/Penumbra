@@ -15,10 +15,11 @@ public sealed class CutsceneService : IRequiredService, IDisposable
     public const int CutsceneEndIdx   = (int)ScreenActor.CutsceneEnd;
     public const int CutsceneSlots    = CutsceneEndIdx - CutsceneStartIdx;
 
-    private readonly ObjectManager       _objects;
-    private readonly CopyCharacter       _copyCharacter;
-    private readonly CharacterDestructor _characterDestructor;
-    private readonly short[]             _copiedCharacters = Enumerable.Repeat((short)-1, CutsceneSlots).ToArray();
+    private readonly ObjectManager              _objects;
+    private readonly CopyCharacter              _copyCharacter;
+    private readonly CharacterDestructor        _characterDestructor;
+    private readonly ConstructCutsceneCharacter _constructCutsceneCharacter;
+    private readonly short[]                    _copiedCharacters = Enumerable.Repeat((short)-1, CutsceneSlots).ToArray();
 
     public IEnumerable<KeyValuePair<int, IGameObject>> Actors
         => Enumerable.Range(CutsceneStartIdx, CutsceneSlots)
@@ -26,13 +27,15 @@ public sealed class CutsceneService : IRequiredService, IDisposable
             .Select(i => KeyValuePair.Create(i, this[i] ?? _objects.GetDalamudObject(i)!));
 
     public unsafe CutsceneService(ObjectManager objects, CopyCharacter copyCharacter, CharacterDestructor characterDestructor,
-        IClientState clientState)
+        ConstructCutsceneCharacter constructCutsceneCharacter, IClientState clientState)
     {
-        _objects             = objects;
-        _copyCharacter       = copyCharacter;
-        _characterDestructor = characterDestructor;
+        _objects                    = objects;
+        _copyCharacter              = copyCharacter;
+        _characterDestructor        = characterDestructor;
+        _constructCutsceneCharacter = constructCutsceneCharacter;
         _copyCharacter.Subscribe(OnCharacterCopy, CopyCharacter.Priority.CutsceneService);
         _characterDestructor.Subscribe(OnCharacterDestructor, CharacterDestructor.Priority.CutsceneService);
+        _constructCutsceneCharacter.Subscribe(OnSetupPlayerNpc, ConstructCutsceneCharacter.Priority.CutsceneService);
         if (clientState.IsGPosing)
             RecoverGPoseActors();
     }
@@ -87,6 +90,7 @@ public sealed class CutsceneService : IRequiredService, IDisposable
     {
         _copyCharacter.Unsubscribe(OnCharacterCopy);
         _characterDestructor.Unsubscribe(OnCharacterDestructor);
+        _constructCutsceneCharacter.Unsubscribe(OnSetupPlayerNpc);
     }
 
     private unsafe void OnCharacterDestructor(Character* character)
@@ -122,6 +126,15 @@ public sealed class CutsceneService : IRequiredService, IDisposable
 
         var idx = target->GameObject.ObjectIndex - CutsceneStartIdx;
         _copiedCharacters[idx] = (short)(source != null ? source->GameObject.ObjectIndex : -1);
+    }
+
+    private unsafe void OnSetupPlayerNpc(Character* npc)
+    {
+        if (npc == null || npc->ObjectIndex is < CutsceneStartIdx or >= CutsceneEndIdx)
+            return;
+
+        var idx = npc->GameObject.ObjectIndex - CutsceneStartIdx;
+        _copiedCharacters[idx] = 0;
     }
 
     /// <summary> Try to recover GPose actors on reloads into a running game. </summary>

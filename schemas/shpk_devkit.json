@@ -1,0 +1,499 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "ShaderKeys": {
+            "type": "object",
+            "patternProperties": {
+                "^\\d+$": {
+                    "$ref": "#/$defs/ShaderKey"
+                }
+            },
+            "additionalProperties": false
+        },
+        "Comment": {
+            "$ref": "#/$defs/MayVary<string>"
+        },
+        "Samplers": {
+            "type": "object",
+            "patternProperties": {
+                "^\\d+$": {
+                    "$ref": "#/$defs/MayVary<Sampler>"
+                }
+            },
+            "additionalProperties": false
+        },
+        "Constants": {
+            "type": "object",
+            "patternProperties": {
+                "^\\d+$": {
+                    "$ref": "#/$defs/MayVary<Constant[]>"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "additionalProperties": false,
+    "$defs": {
+        "ShaderKeyValue": {
+            "type": "object",
+            "properties": {
+                "Label": {
+                    "type": "string"
+                },
+                "Description": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ShaderKey": {
+            "type": "object",
+            "properties": {
+                "Label": {
+                    "type": "string"
+                },
+                "Description": {
+                    "type": "string"
+                },
+                "Values": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^\\d+$": {
+                            "$ref": "#/$defs/ShaderKeyValue"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        },
+        "Varying<any>": {
+            "type": "object",
+            "properties": {
+                "Vary": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/LaxInteger"
+                    }
+                },
+                "Selectors": {
+                    "description": "Keys are Σ 31^i shaderKey(Vary[i]).",
+                    "type": "object",
+                    "patternProperties": {
+                        "^\\d+$": {
+                            "type": "integer"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "Items": {
+                    "type": "array",
+                    "$comment": "Varying<T> is defined by constraining this array's items to T"
+                }
+            },
+            "required": [
+                "Vary",
+                "Selectors",
+                "Items"
+            ],
+            "additionalProperties": false
+        },
+        "MayVary<string>": {
+            "oneOf": [
+                {
+                    "type": ["string", "null"]
+                }, {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/Varying<any>"
+                        }, {
+                            "type": "object",
+                            "properties": {
+                                "Items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": ["string", "null"]
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "Sampler": {
+            "type": ["object", "null"],
+            "properties": {
+                "Label": {
+                    "type": "string"
+                },
+                "Description": {
+                    "type": "string"
+                },
+                "DefaultTexture": {
+                    "type": "string",
+                    "pattern": "^[^/\\\\][^\\\\]*$"
+                }
+            },
+            "additionalProperties": false
+        },
+        "MayVary<Sampler>": {
+            "oneOf": [
+                {
+                    "$ref": "#/$defs/Sampler"
+                }, {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/Varying<any>"
+                        }, {
+                            "type": "object",
+                            "properties": {
+                                "Items": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/Sampler"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "ConstantBase": {
+            "type": "object",
+            "properties": {
+                "Offset": {
+                    "description": "Defaults to 0. Mutually exclusive with ByteOffset.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "Length": {
+                    "description": "Defaults to up to the end. Mutually exclusive with ByteLength.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "ByteOffset": {
+                    "description": "Defaults to 0. Mutually exclusive with Offset.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "ByteLength": {
+                    "description": "Defaults to up to the end. Mutually exclusive with Length.",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "Group": {
+                    "description": "Defaults to \"Further Constants\".",
+                    "type": "string"
+                },
+                "Label": {
+                    "type": "string"
+                },
+                "Description": {
+                    "description": "Defaults to empty.",
+                    "type": "string"
+                },
+                "Type": {
+                    "description": "Defaults to Float.",
+                    "enum": ["Hidden", "Float", "Integer", "Color", "Enum", "Int32", "Int32Enum", "Int8", "Int8Enum", "Int16", "Int16Enum", "Int64", "Int64Enum", "Half", "Double", "TileIndex", "SphereMapIndex"]
+                }
+            },
+            "not": {
+                "anyOf": [
+                    {
+                        "required": ["Offset", "ByteOffset"]
+                    }, {
+                        "required": ["Length", "ByteLenngth"]
+                    }
+                ]
+            }
+        },
+        "HiddenConstant": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "const": "Hidden"
+                }
+            },
+            "required": [
+                "Type"
+            ],
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ConstantBase"
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "FloatConstant": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "enum": ["Float", "Half", "Double"]
+                },
+                "Minimum": {
+                    "description": "Defaults to -∞.",
+                    "type": "number"
+                },
+                "Maximum": {
+                    "description": "Defaults to ∞.",
+                    "type": "number"
+                },
+                "Speed": {
+                    "description": "Defaults to 0.1.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "RelativeSpeed": {
+                    "description": "Defaults to 0.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "Exponent": {
+                    "description": "Defaults to 1. Uses an odd pseudo-power function, f(x) = sgn(x) |x|^n.",
+                    "type": "number"
+                },
+                "Factor": {
+                    "description": "Defaults to 1.",
+                    "type": "number"
+                },
+                "Bias": {
+                    "description": "Defaults to 0.",
+                    "type": "number"
+                },
+                "Precision": {
+                    "description": "Defaults to 3.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9
+                },
+                "Slider": {
+                    "description": "Defaults to true. Drag has priority over this.",
+                    "type": "boolean"
+                },
+                "Drag": {
+                    "description": "Defaults to true. Has priority over Slider.",
+                    "type": "boolean"
+                },
+                "Unit": {
+                    "description": "Defaults to no unit.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "Label"
+            ],
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ConstantBase"
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "IntConstant": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "enum": ["Integer", "Int32", "Int8", "Int16", "Int64"]
+                },
+                "Minimum": {
+                    "description": "Defaults to -2^N, N being the explicit integer width specified in the type, or 32 for Int.",
+                    "type": "number"
+                },
+                "Maximum": {
+                    "description": "Defaults to 2^N - 1, N being the explicit integer width specified in the type, or 32 for Int.",
+                    "type": "number"
+                },
+                "Speed": {
+                    "description": "Defaults to 0.25.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "RelativeSpeed": {
+                    "description": "Defaults to 0.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "Factor": {
+                    "description": "Defaults to 1.",
+                    "type": "number"
+                },
+                "Bias": {
+                    "description": "Defaults to 0.",
+                    "type": "number"
+                },
+                "Hex": {
+                    "description": "Defaults to false. Has priority over Slider and Drag.",
+                    "type": "boolean"
+                },
+                "Slider": {
+                    "description": "Defaults to true. Hex and Drag have priority over this.",
+                    "type": "boolean"
+                },
+                "Drag": {
+                    "description": "Defaults to true. Has priority over Slider, but Hex has priority over this.",
+                    "type": "boolean"
+                },
+                "Unit": {
+                    "description": "Defaults to no unit.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "Label",
+                "Type"
+            ],
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ConstantBase"
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "ColorConstant": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "const": "Color"
+                },
+                "SquaredRgb": {
+                    "description": "Defaults to false. Uses an odd pseudo-square function, f(x) = sgn(x) |x|².",
+                    "type": "boolean"
+                },
+                "Clamped": {
+                    "description": "Defaults to false.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "Label",
+                "Type"
+            ],
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ConstantBase"
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "EnumValue": {
+            "type": "object",
+            "properties": {
+                "Label": {
+                    "type": "string"
+                },
+                "Description": {
+                    "type": "string"
+                },
+                "Value": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "Label",
+                "Value"
+            ],
+            "additionalProperties": false
+        },
+        "EnumConstant": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "enum": ["Enum", "Int32Enum", "Int8Enum", "Int16Enum", "Int64Enum"]
+                },
+                "Values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/EnumValue"
+                    }
+                }
+            },
+            "required": [
+                "Label",
+                "Type"
+            ],
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ConstantBase"
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "SpecialConstant": {
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "enum": ["TileIndex", "SphereMapIndex"]
+                }
+            },
+            "required": [
+                "Label",
+                "Type"
+            ],
+            "allOf": [
+                {
+                    "$ref": "#/$defs/ConstantBase"
+                }
+            ],
+            "unevaluatedProperties": false
+        },
+        "Constant": {
+            "oneOf": [
+                {
+                    "$ref": "#/$defs/HiddenConstant"
+                }, {
+                    "$ref": "#/$defs/FloatConstant"
+                }, {
+                    "$ref": "#/$defs/IntConstant"
+                }, {
+                    "$ref": "#/$defs/ColorConstant"
+                }, {
+                    "$ref": "#/$defs/EnumConstant"
+                }, {
+                    "$ref": "#/$defs/SpecialConstant"
+                }
+            ]
+        },
+        "MayVary<Constant[]>": {
+            "oneOf": [
+                {
+                    "type": ["array", "null"],
+                    "items": {
+                        "$ref": "#/$defs/Constant"
+                    }
+                }, {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/Varying<any>"
+                        }, {
+                            "type": "object",
+                            "properties": {
+                                "Items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": ["array", "null"],
+                                        "items": {
+                                            "$ref": "#/$defs/Constant"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "LaxInteger": {
+            "oneOf": [
+                {
+                    "type": "integer"
+                }, {
+                    "type": "string",
+                    "pattern": "^\\d+$"
+                }
+            ]
+        }
+    }
+}

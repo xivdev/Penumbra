@@ -1,0 +1,59 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "type": "object",
+            "properties": {
+                "Enabled": {
+                    "type": "boolean"
+                },
+                "Animated": {
+                    "type": "boolean"
+                },
+                "RotationA": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023
+                },
+                "RotationB": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023
+                },
+                "RotationC": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023
+                },
+                "UnknownA": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 15
+                },
+                "UnknownB": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 15
+                }
+            },
+            "required": [
+                "Enabled",
+                "Animated",
+                "RotationA",
+                "RotationB",
+                "RotationC",
+                "UnknownA",
+                "UnknownB"
+            ],
+            "additionalProperties": false
+        },
+        "SetId": {
+            "$ref": "meta_enums.json#U16"
+        }
+    },
+    "required": [
+        "Entry",
+        "SetId"
+    ]
+}

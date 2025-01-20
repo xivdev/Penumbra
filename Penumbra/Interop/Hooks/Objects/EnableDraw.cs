@@ -26,7 +26,7 @@ public sealed unsafe class EnableDraw : IHookService
     private void Detour(GameObject* gameObject)
     {
         _state.QueueGameObject(gameObject);
-        Penumbra.Log.Excessive($"[Enable Draw] Invoked on 0x{(nint)gameObject:X}.");
+        Penumbra.Log.Excessive($"[Enable Draw] Invoked on 0x{(nint)gameObject:X} at {gameObject->ObjectIndex}.");
         _task.Result.Original.Invoke(gameObject);
         _state.DequeueGameObject();
     }

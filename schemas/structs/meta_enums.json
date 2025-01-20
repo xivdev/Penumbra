@@ -1,0 +1,57 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$defs": {
+        "EquipSlot": {
+            "$anchor": "EquipSlot",
+            "enum": [ "Unknown", "MainHand", "OffHand", "Head", "Body", "Hands", "Belt", "Legs", "Feet", "Ears", "Neck", "Wrists", "RFinger", "BothHand", "LFinger", "HeadBody", "BodyHandsLegsFeet", "SoulCrystal", "LegsFeet", "FullBody", "BodyHands", "BodyLegsFeet", "ChestHands", "Nothing", "All" ]
+        },
+        "Gender": {
+            "$anchor": "Gender",
+            "enum": [ "Unknown", "Male", "Female", "MaleNpc", "FemaleNpc" ]
+        },
+        "ModelRace": {
+            "$anchor": "ModelRace",
+            "enum": [ "Unknown", "Midlander", "Highlander", "Elezen", "Lalafell", "Miqote", "Roegadyn", "AuRa", "Hrothgar", "Viera" ]
+        },
+        "ObjectType": {
+            "$anchor": "ObjectType",
+            "enum": [ "Unknown", "Vfx", "DemiHuman", "Accessory", "World", "Housing", "Monster", "Icon", "LoadingScreen", "Map", "Interface", "Equipment", "Character", "Weapon", "Font" ]
+        },
+        "BodySlot": {
+            "$anchor": "BodySlot",
+            "enum": [ "Unknown", "Hair", "Face", "Tail", "Body", "Zear" ]
+        },
+        "SubRace": {
+            "$anchor": "SubRace",
+            "enum": [ "Unknown", "Midlander", "Highlander", "Wildwood", "Duskwight", "Plainsfolk", "Dunesfolk", "SeekerOfTheSun", "KeeperOfTheMoon", "Seawolf", "Hellsguard", "Raen", "Xaela", "Helion", "Lost", "Rava", "Veena" ]
+        },
+        "U8": {
+            "$anchor": "U8",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                },
+                {
+                    "type": "string",
+                    "pattern": "^0*(1[0-9][0-9]|[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$"
+                }
+            ]
+        },
+        "U16": {
+            "$anchor": "U16",
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 65535
+                },
+                {
+                    "type": "string",
+                    "pattern": "^0*([1-5][0-9]{4}|[0-9]{0,4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$"
+                }
+            ]
+        }
+    }
+}

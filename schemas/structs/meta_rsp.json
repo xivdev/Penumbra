@@ -1,0 +1,20 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "type": "number"
+        },
+        "SubRace": {
+            "$ref": "meta_enums.json#SubRace"
+        },
+        "Attribute": {
+            "enum": [ "MaleMinSize", "MaleMaxSize", "MaleMinTail", "MaleMaxTail", "FemaleMinSize", "FemaleMaxSize", "FemaleMinTail", "FemaleMaxTail", "BustMinX", "BustMinY", "BustMinZ", "BustMaxX", "BustMaxY", "BustMaxZ" ]
+        }
+    },
+    "required": [
+        "Entry",
+        "SubRace",
+        "Attribute"
+    ]
+}

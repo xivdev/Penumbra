@@ -1,0 +1,40 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Condition": {
+            "$ref": "meta_enums.json#U16"
+        },
+        "Type": {
+            "enum": [ "DoNotHideEarrings", "DoNotHideNecklace", "DoNotHideBracelets", "DoNotHideRingR", "DoNotHideRingL", "DoNotHideHrothgarHats", "DoNotHideVieraHats" ]
+        }
+    },
+    "required": [ "Type" ],
+    "oneOf": [
+        {
+            "properties": {
+                "Type": {
+                    "const": [ "DoNotHideHrothgarHats", "DoNotHideVieraHats" ]
+                },
+                "Condition": {
+                    "const": 0
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": [ "DoNotHideHrothgarHats", "DoNotHideVieraHats" ]
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": [ "DoNotHideEarrings", "DoNotHideNecklace", "DoNotHideBracelets", "DoNotHideRingR", "DoNotHideRingL" ]
+                },
+                "Condition": {}
+            }
+        }
+    ]
+}
