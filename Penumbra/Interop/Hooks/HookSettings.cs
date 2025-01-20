@@ -76,6 +76,8 @@ public class HookOverrides
         public bool CreateCharacterBase;
         public bool EnableDraw;
         public bool WeaponReload;
+        public bool SetupPlayerNpc;
+        public bool ConstructCutsceneCharacter;
     }
 
     public struct PostProcessingHooks

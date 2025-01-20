@@ -11,7 +11,8 @@ public class GameState : IService
 {
     #region Last Game Object
 
-    private readonly ThreadLocal<Queue<nint>> _lastGameObject = new(() => new Queue<nint>());
+    private readonly ThreadLocal<Queue<nint>> _lastGameObject      = new(() => new Queue<nint>());
+    public readonly ThreadLocal<bool>        CharacterAssociated = new(() => false);
 
     public nint LastGameObject
         => _lastGameObject.IsValueCreated && _lastGameObject.Value!.Count > 0 ? _lastGameObject.Value.Peek() : nint.Zero;
