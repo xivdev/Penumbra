@@ -1,6 +1,7 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using OtterGui.Services;
+using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
@@ -26,14 +27,16 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
     public CharacterUtilityData* Address
         => *_characterUtilityAddress;
 
-    public bool         Ready { get; private set; }
-    public event Action LoadingFinished;
-    public nint         DefaultHumanPbdResource               { get; private set; }
-    public nint         DefaultTransparentResource            { get; private set; }
-    public nint         DefaultDecalResource                  { get; private set; }
-    public nint         DefaultSkinShpkResource               { get; private set; }
-    public nint         DefaultCharacterStockingsShpkResource { get; private set; }
-    public nint         DefaultCharacterLegacyShpkResource    { get; private set; }
+    public bool Ready { get; private set; }
+
+    public readonly CharacterUtilityFinished LoadingFinished = new();
+
+    public nint DefaultHumanPbdResource               { get; private set; }
+    public nint DefaultTransparentResource            { get; private set; }
+    public nint DefaultDecalResource                  { get; private set; }
+    public nint DefaultSkinShpkResource               { get; private set; }
+    public nint DefaultCharacterStockingsShpkResource { get; private set; }
+    public nint DefaultCharacterLegacyShpkResource    { get; private set; }
 
     /// <summary>
     /// The relevant indices depend on which meta manipulations we allow for.
@@ -61,7 +64,7 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
             .Select(idx => new MetaList(new InternalIndex(idx)))
             .ToArray();
         _framework      =  framework;
-        LoadingFinished += () => Penumbra.Log.Debug("Loading of CharacterUtility finished.");
+        LoadingFinished.Subscribe(() => Penumbra.Log.Debug("Loading of CharacterUtility finished."), CharacterUtilityFinished.Priority.OnFinishedLoading);
         LoadDefaultResources(null!);
         if (!Ready)
             _framework.Update += LoadDefaultResources;

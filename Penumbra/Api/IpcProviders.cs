@@ -2,6 +2,8 @@ using Dalamud.Plugin;
 using OtterGui.Services;
 using Penumbra.Api.Api;
 using Penumbra.Api.Helpers;
+using Penumbra.Communication;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Api;
 
@@ -9,11 +11,13 @@ public sealed class IpcProviders : IDisposable, IApiService
 {
     private readonly List<IDisposable> _providers;
 
-    private readonly EventProvider _disposedProvider;
-    private readonly EventProvider _initializedProvider;
+    private readonly EventProvider    _disposedProvider;
+    private readonly EventProvider    _initializedProvider;
+    private readonly CharacterUtility _characterUtility;
 
-    public IpcProviders(IDalamudPluginInterface pi, IPenumbraApi api)
+    public IpcProviders(IDalamudPluginInterface pi, IPenumbraApi api, CharacterUtility characterUtility)
     {
+        _characterUtility    = characterUtility;
         _disposedProvider    = IpcSubscribers.Disposed.Provider(pi);
         _initializedProvider = IpcSubscribers.Initialized.Provider(pi);
         _providers =
@@ -115,11 +119,21 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.OpenMainWindow.Provider(pi, api.Ui),
             IpcSubscribers.CloseMainWindow.Provider(pi, api.Ui),
         ];
+        if (_characterUtility.Ready)
+            _initializedProvider.Invoke();
+        else
+            _characterUtility.LoadingFinished.Subscribe(OnCharacterUtilityReady, CharacterUtilityFinished.Priority.IpcProvider);
+    }
+
+    private void OnCharacterUtilityReady()
+    {
         _initializedProvider.Invoke();
+        _characterUtility.LoadingFinished.Unsubscribe(OnCharacterUtilityReady);
     }
 
     public void Dispose()
     {
+        _characterUtility.LoadingFinished.Unsubscribe(OnCharacterUtilityReady);
         foreach (var provider in _providers)
             provider.Dispose();
         _providers.Clear();

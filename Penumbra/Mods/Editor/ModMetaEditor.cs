@@ -70,6 +70,11 @@ public class ModMetaEditor(
 
     public static bool DeleteDefaultValues(MetaFileManager metaFileManager, MetaDictionary dict)
     {
+        if (!metaFileManager.CharacterUtility.Ready)
+        {
+            Penumbra.Log.Warning("Trying to delete default meta values before CharacterUtility was ready, skipped.");
+            return false;
+        }
         var clone = dict.Clone();
         dict.ClearForDefault();
 

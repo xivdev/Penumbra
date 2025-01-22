@@ -71,7 +71,7 @@ public class CollectionCacheManager : IDisposable, IService
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.CollectionCacheManager);
 
         if (!MetaFileManager.CharacterUtility.Ready)
-            MetaFileManager.CharacterUtility.LoadingFinished += IncrementCounters;
+            MetaFileManager.CharacterUtility.LoadingFinished.Subscribe(IncrementCounters, CharacterUtilityFinished.Priority.CollectionCacheManager);
     }
 
     public void Dispose()
@@ -83,7 +83,7 @@ public class CollectionCacheManager : IDisposable, IService
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnCollectionInheritanceChange);
-        MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
+        MetaFileManager.CharacterUtility.LoadingFinished.Unsubscribe(IncrementCounters);
 
         foreach (var collection in _storage)
         {
@@ -298,7 +298,7 @@ public class CollectionCacheManager : IDisposable, IService
     {
         foreach (var collection in _storage.Where(c => c.HasCache))
             collection.Counters.IncrementChange();
-        MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
+        MetaFileManager.CharacterUtility.LoadingFinished.Unsubscribe(IncrementCounters);
     }
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool _)
