@@ -1,3 +1,4 @@
+using OtterGui;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -194,11 +195,28 @@ public unsafe class ImcFile : MetaBaseFile
     {
         var (data, length) = resource->GetData();
         var actualLength = ActualLength;
+
+        if (DebugConfiguration.WriteImcBytesToLog)
+        {
+            Penumbra.Log.Information($"Default IMC file -> Modified IMC File for {Path}:");
+            Penumbra.Log.Information(new Span<byte>((void*)data, length).WriteHexBytes());
+            Penumbra.Log.Information(new Span<byte>(Data,        actualLength).WriteHexBytes());
+            Penumbra.Log.Information(new Span<byte>(Data,        actualLength).WriteHexByteDiff(new Span<byte>((void*)data, length)));
+        }
+
         if (length >= actualLength)
         {
             MemoryUtility.MemCpyUnchecked((byte*)data, Data, actualLength);
             if (length > actualLength)
                 MemoryUtility.MemSet((byte*)(data + actualLength), 0, length - actualLength);
+            if (DebugConfiguration.WriteImcBytesToLog)
+            {
+                Penumbra.Log.Information(
+                    $"Copied {actualLength} bytes from local IMC file into {length} available bytes.{(length > actualLength ? $" Filled remaining {length - actualLength} bytes with 0." : string.Empty)}");
+                Penumbra.Log.Information("Result IMC Resource Data:");
+                Penumbra.Log.Information(new Span<byte>((void*)data, length).WriteHexBytes());
+            }
+
             return;
         }
 
@@ -209,11 +227,18 @@ public unsafe class ImcFile : MetaBaseFile
             Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong)resource:X}, allocation failed.");
             return;
         }
-        
+
         MemoryUtility.MemCpyUnchecked(newData, Data, actualLength);
         if (paddedLength > actualLength)
             MemoryUtility.MemSet(newData + actualLength, 0, paddedLength - actualLength);
-        
+        if (DebugConfiguration.WriteImcBytesToLog)
+        {
+            Penumbra.Log.Information(
+                $"Allocated {paddedLength} bytes for IMC file, copied {actualLength} bytes from local IMC file. {(length > actualLength ? $" Filled remaining {length - actualLength} bytes with 0." : string.Empty)}");
+            Penumbra.Log.Information("Result IMC Resource Data:");
+            Penumbra.Log.Information(new Span<byte>(newData, paddedLength).WriteHexBytes());
+        }
+
         Manager.XivFileAllocator.Release((void*)data, length);
         resource->SetData((nint)newData, paddedLength);
     }

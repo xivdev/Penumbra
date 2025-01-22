@@ -181,6 +181,7 @@ public class DebugTab : Window, ITab, IUiService
 
         DrawDebugTabGeneral();
         _crashHandlerPanel.Draw();
+        DebugConfigurationDrawer.Draw();
         _diagnostics.DrawDiagnostics();
         DrawPerformanceTab();
         DrawPathResolverDebug();
