@@ -36,7 +36,7 @@ public class ChangedItemsTab(
         if (!child)
             return;
 
-        var       height = ImGui.GetFrameHeight() + 2 * ImGui.GetStyle().CellPadding.Y;
+        var height  = ImGui.GetFrameHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
         var       skips  = ImGuiClip.GetNecessarySkips(height);
         using var list   = ImRaii.Table("##changedItems", 3, ImGuiTableFlags.RowBg, -Vector2.One);
         if (!list)
