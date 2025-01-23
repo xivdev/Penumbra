@@ -176,7 +176,7 @@ public unsafe class ResourceLoader : IDisposable, IService
             gamePath.Path.IsAscii);
         fileDescriptor->ResourceHandle->FileNameData   = path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = path.Length;
-        MtrlForceSync(fileDescriptor, ref isSync);
+        ForceSync(fileDescriptor, ref isSync);
         returnValue = DefaultLoadResource(path, fileDescriptor, priority, isSync, data);
         // Return original resource handle path so that they can be loaded separately.
         fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
@@ -215,14 +215,14 @@ public unsafe class ResourceLoader : IDisposable, IService
         }
     }
 
-    /// <summary> Special handling for materials. </summary>
-    private static void MtrlForceSync(SeFileDescriptor* fileDescriptor, ref bool isSync)
+    /// <summary> Special handling for materials and IMCs. </summary>
+    private static void ForceSync(SeFileDescriptor* fileDescriptor, ref bool isSync)
     {
         // Force isSync = true for Materials. I don't really understand why,
         // or where the difference even comes from.
         // Was called with True on my client and with false on other peoples clients,
         // which caused problems.
-        isSync |= fileDescriptor->ResourceHandle->FileType is ResourceType.Mtrl;
+        isSync |= fileDescriptor->ResourceHandle->FileType is ResourceType.Mtrl or ResourceType.Imc;
     }
 
     /// <summary>

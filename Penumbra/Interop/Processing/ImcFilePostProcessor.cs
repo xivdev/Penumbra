@@ -1,4 +1,3 @@
-using Dalamud.Game.ClientState.JobGauge.Types;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
