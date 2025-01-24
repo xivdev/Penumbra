@@ -4,6 +4,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Processing;
 
@@ -20,20 +21,23 @@ public unsafe class FilePostProcessService : IRequiredService, IDisposable
 
     public FilePostProcessService(ResourceLoader resourceLoader, ServiceManager services)
     {
-        _resourceLoader            =  resourceLoader;
-        _processors                =  services.GetServicesImplementing<IFilePostProcessor>().ToFrozenDictionary(s => s.Type, s => s);
-        _resourceLoader.FileLoaded += OnFileLoaded;
+        _resourceLoader                        =  resourceLoader;
+        _processors                            =  services.GetServicesImplementing<IFilePostProcessor>().ToFrozenDictionary(s => s.Type, s => s);
+        _resourceLoader.BeforeResourceComplete += OnResourceComplete;
     }
 
     public void Dispose()
     {
-        _resourceLoader.FileLoaded -= OnFileLoaded;
+        _resourceLoader.BeforeResourceComplete -= OnResourceComplete;
     }
 
-    private void OnFileLoaded(ResourceHandle* resource, CiByteString path, bool returnValue, bool custom,
-        ReadOnlySpan<byte> additionalData)
+    private void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original,
+        ReadOnlySpan<byte> additionalData, bool isAsync)
     {
+        if (resource->LoadState != LoadState.Success)
+            return;
+
         if (_processors.TryGetValue(resource->FileType, out var processor))
-            processor.PostProcess(resource, path, additionalData);
+            processor.PostProcess(resource, original.Path, additionalData);
     }
 }

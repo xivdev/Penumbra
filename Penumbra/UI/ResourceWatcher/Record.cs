@@ -10,10 +10,11 @@ namespace Penumbra.UI.ResourceWatcher;
 [Flags]
 public enum RecordType : byte
 {
-    Request      = 0x01,
-    ResourceLoad = 0x02,
-    FileLoad     = 0x04,
-    Destruction  = 0x08,
+    Request          = 0x01,
+    ResourceLoad     = 0x02,
+    FileLoad         = 0x04,
+    Destruction      = 0x08,
+    ResourceComplete = 0x10,
 }
 
 internal unsafe struct Record
@@ -137,6 +138,26 @@ internal unsafe struct Record
             Synchronously        = OptionalBool.Null,
             ReturnValue          = ret,
             CustomLoad           = custom,
+            AssociatedGameObject = string.Empty,
+            LoadState            = handle->LoadState,
+            Crc64                = 0,
+        };
+
+    public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath)
+        => new()
+        {
+            Time                 = DateTime.UtcNow,
+            Path                 = path.IsOwned ? path : path.Clone(),
+            OriginalPath         = originalPath.Path.IsOwned ? originalPath.Path : originalPath.Path.Clone(),
+            Collection           = null,
+            Handle               = handle,
+            ResourceType         = handle->FileType.ToFlag(),
+            Category             = handle->Category.ToFlag(),
+            RefCount             = handle->RefCount,
+            RecordType           = RecordType.ResourceComplete,
+            Synchronously        = false,
+            ReturnValue          = OptionalBool.Null,
+            CustomLoad           = OptionalBool.Null,
             AssociatedGameObject = string.Empty,
             LoadState            = handle->LoadState,
             Crc64                = 0,

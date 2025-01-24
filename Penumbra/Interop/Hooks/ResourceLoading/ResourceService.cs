@@ -19,6 +19,8 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     private readonly PerformanceTracker     _performance;
     private readonly ResourceManagerService _resourceManager;
 
+    private readonly ThreadLocal<Utf8GamePath> _currentGetResourcePath = new(() => Utf8GamePath.Empty);
+
     public ResourceService(PerformanceTracker performance, ResourceManagerService resourceManager, IGameInteropProvider interop)
     {
         _performance     = performance;
@@ -34,6 +36,8 @@ public unsafe class ResourceService : IDisposable, IRequiredService
             _getResourceSyncHook.Enable();
         if (!HookOverrides.Instance.ResourceLoading.GetResourceAsync)
             _getResourceAsyncHook.Enable();
+        if (!HookOverrides.Instance.ResourceLoading.UpdateResourceState)
+            _updateResourceStateHook.Enable();
         if (!HookOverrides.Instance.ResourceLoading.IncRef)
             _incRefHook.Enable();
         if (!HookOverrides.Instance.ResourceLoading.DecRef)
@@ -54,8 +58,10 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     {
         _getResourceSyncHook.Dispose();
         _getResourceAsyncHook.Dispose();
+        _updateResourceStateHook.Dispose();
         _incRefHook.Dispose();
         _decRefHook.Dispose();
+        _currentGetResourcePath.Dispose();
     }
 
     #region GetResource
@@ -112,27 +118,83 @@ public unsafe class ResourceService : IDisposable, IRequiredService
                     unk9);
         }
 
+        var original = gamePath;
         ResourceHandle* returnValue = null;
-        ResourceRequested?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref gamePath, gamePath, pGetResParams, ref isSync,
+        ResourceRequested?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref gamePath, original, pGetResParams, ref isSync,
             ref returnValue);
         if (returnValue != null)
             return returnValue;
 
-        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, pGetResParams, isUnk, unk8, unk9);
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, pGetResParams, isUnk, unk8, unk9, original);
     }
 
     /// <summary> Call the original GetResource function. </summary>
     public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path,
-        GetResourceParameters* resourceParameters = null, byte unk = 0, nint unk8 = 0, uint unk9 = 0)
-        => sync
-            ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
-                resourceParameters, unk8, unk9)
-            : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
-                resourceParameters, unk, unk8, unk9);
+        GetResourceParameters* resourceParameters = null, byte unk = 0, nint unk8 = 0, uint unk9 = 0, Utf8GamePath original = default)
+    {
+        if (original.Path is null) // i. e. if original is default
+            Utf8GamePath.FromByteString(path, out original);
+        var previous = _currentGetResourcePath.Value;
+        try
+        {
+            _currentGetResourcePath.Value = original;
+            return sync
+                ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                    resourceParameters, unk8, unk9)
+                : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                    resourceParameters, unk, unk8, unk9);
+        } finally
+        {
+            _currentGetResourcePath.Value = previous;
+        }
+    }
 
     #endregion
 
     private delegate nint ResourceHandlePrototype(ResourceHandle* handle);
+
+    #region UpdateResourceState
+
+    /// <summary> Invoked before a resource state is updated. </summary>
+    /// <param name="handle">The resource handle.</param>
+    /// <param name="syncOriginal">The original game path of the resource, if loaded synchronously.</param>
+    public delegate void ResourceStateUpdatingDelegate(ResourceHandle* handle, Utf8GamePath syncOriginal);
+
+    /// <summary> Invoked after a resource state is updated. </summary>
+    /// <param name="handle">The resource handle.</param>
+    /// <param name="syncOriginal">The original game path of the resource, if loaded synchronously.</param>
+    /// <param name="previousState">The previous state of the resource.</param>
+    /// <param name="returnValue">The return value to use.</param>
+    public delegate void ResourceStateUpdatedDelegate(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte UnkState, LoadState LoadState) previousState, ref uint returnValue);
+
+    /// <summary>
+    /// <inheritdoc cref="ResourceStateUpdatingDelegate"/> <para/>
+    /// Subscribers should be exception-safe.
+    /// </summary>
+    public event ResourceStateUpdatingDelegate? ResourceStateUpdating;
+
+    /// <summary>
+    /// <inheritdoc cref="ResourceStateUpdatedDelegate"/> <para/>
+    /// Subscribers should be exception-safe.
+    /// </summary>
+    public event ResourceStateUpdatedDelegate? ResourceStateUpdated;
+
+    private delegate uint UpdateResourceStatePrototype(ResourceHandle* handle, byte offFileThread);
+
+    [Signature(Sigs.UpdateResourceState, DetourName = nameof(UpdateResourceStateDetour))]
+    private readonly Hook<UpdateResourceStatePrototype> _updateResourceStateHook = null!;
+
+    private uint UpdateResourceStateDetour(ResourceHandle* handle, byte offFileThread)
+    {
+        var previousState = (handle->UnkState, handle->LoadState);
+        var syncOriginal = _currentGetResourcePath.IsValueCreated ? _currentGetResourcePath.Value! : Utf8GamePath.Empty;
+        ResourceStateUpdating?.Invoke(handle, syncOriginal);
+        var ret = _updateResourceStateHook.OriginalDisposeSafe(handle, offFileThread);
+        ResourceStateUpdated?.Invoke(handle, syncOriginal, previousState, ref ret);
+        return ret;
+    }
+
+    #endregion
 
     #region IncRef
 
