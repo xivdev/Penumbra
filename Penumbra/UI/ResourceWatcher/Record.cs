@@ -143,11 +143,11 @@ internal unsafe struct Record
             Crc64                = 0,
         };
 
-    public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath)
+    public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath, ReadOnlySpan<byte> additionalData)
         => new()
         {
             Time                 = DateTime.UtcNow,
-            Path                 = path.IsOwned ? path : path.Clone(),
+            Path                 = CombinedPath(path, additionalData),
             OriginalPath         = originalPath.Path.IsOwned ? originalPath.Path : originalPath.Path.Clone(),
             Collection           = null,
             Handle               = handle,
@@ -162,4 +162,17 @@ internal unsafe struct Record
             LoadState            = handle->LoadState,
             Crc64                = 0,
         };
+
+    private static CiByteString CombinedPath(CiByteString path, ReadOnlySpan<byte> additionalData)
+    {
+        if (additionalData.Length is 0)
+            return path.IsOwned ? path : path.Clone();
+
+        fixed (byte* ptr = additionalData)
+        {
+            // If a path has additional data and is split, it is always in the form of |{additionalData}|{path},
+            // so we can just read from the start of additional data - 1 and sum their length +2 for the pipes.
+            return new CiByteString(new ReadOnlySpan<byte>(ptr - 1, additionalData.Length + 2 + path.Length)).Clone();
+        }
+    }
 }

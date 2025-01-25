@@ -257,7 +257,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
             _newRecords.Enqueue(record);
     }
 
-    private unsafe void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original, ReadOnlySpan<byte> _, bool isAsync)
+    private unsafe void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original, ReadOnlySpan<byte> additionalData, bool isAsync)
     {
         if (!isAsync)
             return;
@@ -269,7 +269,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         if (!_ephemeral.EnableResourceWatcher)
             return;
 
-        var record = Record.CreateResourceComplete(path, resource, original);
+        var record = Record.CreateResourceComplete(path, resource, original, additionalData);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }

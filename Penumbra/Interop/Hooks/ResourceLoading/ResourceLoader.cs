@@ -1,4 +1,3 @@
-using System.IO;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
@@ -168,7 +167,7 @@ public unsafe class ResourceLoader : IDisposable, IService
 
         if (resolvedPath == null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
         {
-            returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters, original: original);
+            returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, original, parameters);
             TrackResourceLoad(returnValue, original);
             ResourceLoaded?.Invoke(returnValue, path, resolvedPath, data);
             return;
@@ -179,7 +178,7 @@ public unsafe class ResourceLoader : IDisposable, IService
         hash = ComputeHash(resolvedPath.Value.InternalName, parameters);
         var oldPath = path;
         path        = p;
-        returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters, original: original);
+        returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, original, parameters);
         TrackResourceLoad(returnValue, original);
         ResourceLoaded?.Invoke(returnValue, oldPath, resolvedPath.Value, data);
     }
@@ -194,7 +193,7 @@ public unsafe class ResourceLoader : IDisposable, IService
 
     private void ResourceStateUpdatedHandler(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte, LoadState) previousState, ref uint returnValue)
     {
-        if (handle->UnkState != 2 || handle->LoadState < LoadState.Success || previousState.Item1 == 2 && previousState.Item2 >= LoadState.Success)
+        if (handle->UnkState != 2 || handle->LoadState < LoadState.Success || previousState is { Item1: 2, Item2: >= LoadState.Success })
             return;
 
         if (!_ongoingLoads.TryRemove((nint)handle, out var asyncOriginal))
@@ -205,7 +204,7 @@ public unsafe class ResourceLoader : IDisposable, IService
             Penumbra.Log.Warning($"[ResourceLoader] Resource original paths inconsistency: 0x{(nint)handle:X}, of path {path}, sync original {syncOriginal}, async original {asyncOriginal}.");
         var original = !asyncOriginal.IsEmpty ? asyncOriginal : syncOriginal;
 
-        // Penumbra.Log.Information($"[ResourceLoader] Resource is complete: 0x{(nint)handle:X}, of path {path}, original {original}, state {previousState.Item1}:{previousState.Item2} -> {handle->UnkState}:{handle->LoadState}, sync: {asyncOriginal.IsEmpty}");
+        Penumbra.Log.Excessive($"[ResourceLoader] Resource is complete: 0x{(nint)handle:X}, of path {path}, original {original}, state {previousState.Item1}:{previousState.Item2} -> {handle->UnkState}:{handle->LoadState}, sync: {asyncOriginal.IsEmpty}");
         if (PathDataHandler.Split(path.AsSpan(), out var actualPath, out var additionalData))
             ResourceComplete?.Invoke(handle, new CiByteString(actualPath), original, additionalData, !asyncOriginal.IsEmpty);
         else
@@ -223,7 +222,7 @@ public unsafe class ResourceLoader : IDisposable, IService
         var path     = handle->CsHandle.FileName;
         var original = asyncOriginal.IsEmpty ? syncOriginal : asyncOriginal;
 
-        // Penumbra.Log.Information($"[ResourceLoader] Resource is about to be complete: 0x{(nint)handle:X}, of path {path}, original {original}");
+        Penumbra.Log.Excessive($"[ResourceLoader] Resource is about to be complete: 0x{(nint)handle:X}, of path {path}, original {original}");
         if (PathDataHandler.Split(path.AsSpan(), out var actualPath, out var additionalData))
             BeforeResourceComplete?.Invoke(handle, new CiByteString(actualPath), original, additionalData, !asyncOriginal.IsEmpty);
         else

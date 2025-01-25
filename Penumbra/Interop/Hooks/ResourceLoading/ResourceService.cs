@@ -125,15 +125,13 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         if (returnValue != null)
             return returnValue;
 
-        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, pGetResParams, isUnk, unk8, unk9, original);
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, isUnk, unk8, unk9);
     }
 
     /// <summary> Call the original GetResource function. </summary>
-    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path,
-        GetResourceParameters* resourceParameters = null, byte unk = 0, nint unk8 = 0, uint unk9 = 0, Utf8GamePath original = default)
+    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path, Utf8GamePath original,
+        GetResourceParameters* resourceParameters = null, byte unk = 0, nint unk8 = 0, uint unk9 = 0)
     {
-        if (original.Path is null) // i. e. if original is default
-            Utf8GamePath.FromByteString(path, out original);
         var previous = _currentGetResourcePath.Value;
         try
         {
@@ -187,7 +185,7 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     private uint UpdateResourceStateDetour(ResourceHandle* handle, byte offFileThread)
     {
         var previousState = (handle->UnkState, handle->LoadState);
-        var syncOriginal = _currentGetResourcePath.IsValueCreated ? _currentGetResourcePath.Value! : Utf8GamePath.Empty;
+        var syncOriginal = _currentGetResourcePath.IsValueCreated ? _currentGetResourcePath.Value : Utf8GamePath.Empty;
         ResourceStateUpdating?.Invoke(handle, syncOriginal);
         var ret = _updateResourceStateHook.OriginalDisposeSafe(handle, offFileThread);
         ResourceStateUpdated?.Invoke(handle, syncOriginal, previousState, ref ret);

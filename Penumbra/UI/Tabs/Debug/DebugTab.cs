@@ -1104,7 +1104,7 @@ public class DebugTab : Window, ITab, IUiService
 
     private unsafe void DrawResourceLoader()
     {
-        if (!ImGui.CollapsingHeader("Resource Loader"))
+        if (!ImUtf8.CollapsingHeader("Resource Loader"u8))
             return;
 
         var ongoingLoads     = _resourceLoader.OngoingLoads;
@@ -1125,12 +1125,9 @@ public class DebugTab : Window, ITab, IUiService
 
         foreach (var (handle, original) in ongoingLoads)
         {
-            ImGui.TableNextColumn();
-            ImUtf8.Text($"0x{handle:X}");
-            ImGui.TableNextColumn();
-            ImUtf8.Text(((ResourceHandle*)handle)->CsHandle.FileName);
-            ImGui.TableNextColumn();
-            ImUtf8.Text(original.Path.Span);
+            ImUtf8.DrawTableColumn($"0x{handle:X}");
+            ImUtf8.DrawTableColumn(((ResourceHandle*)handle)->CsHandle.FileName);
+            ImUtf8.DrawTableColumn(original.Path.Span);
         }
     }
 
