@@ -124,11 +124,12 @@ internal sealed class ResourceWatcherTable : Table<Record>
         {
             ImGui.TextUnformatted(item.RecordType switch
             {
-                RecordType.Request      => "REQ",
-                RecordType.ResourceLoad => "LOAD",
-                RecordType.FileLoad     => "FILE",
-                RecordType.Destruction  => "DEST",
-                _                       => string.Empty,
+                RecordType.Request          => "REQ",
+                RecordType.ResourceLoad     => "LOAD",
+                RecordType.FileLoad         => "FILE",
+                RecordType.Destruction      => "DEST",
+                RecordType.ResourceComplete => "DONE",
+                _                           => string.Empty,
             });
         }
     }
@@ -317,10 +318,10 @@ internal sealed class ResourceWatcherTable : Table<Record>
             {
                 LoadState.None              => FilterValue.HasFlag(LoadStateFlag.None),
                 LoadState.Success           => FilterValue.HasFlag(LoadStateFlag.Success),
-                LoadState.Async             => FilterValue.HasFlag(LoadStateFlag.Async),
-                LoadState.Failure           => FilterValue.HasFlag(LoadStateFlag.Failed),
                 LoadState.FailedSubResource => FilterValue.HasFlag(LoadStateFlag.FailedSub),
-                _                           => FilterValue.HasFlag(LoadStateFlag.Unknown),
+                <= LoadState.Constructed    => FilterValue.HasFlag(LoadStateFlag.Unknown),
+                < LoadState.Success         => FilterValue.HasFlag(LoadStateFlag.Async),
+                > LoadState.Success         => FilterValue.HasFlag(LoadStateFlag.Failed),
             };
 
         public override void DrawColumn(Record item, int _)
@@ -332,12 +333,12 @@ internal sealed class ResourceWatcherTable : Table<Record>
             {
                 LoadState.Success => (FontAwesomeIcon.CheckCircle, ColorId.IncreasedMetaValue.Value(),
                     $"Successfully loaded ({(byte)item.LoadState})."),
-                LoadState.Async => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), $"Loading asynchronously ({(byte)item.LoadState})."),
-                LoadState.Failure => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
-                    $"Failed to load ({(byte)item.LoadState})."),
                 LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value(),
                     $"Dependencies failed to load ({(byte)item.LoadState})."),
-                _ => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(), $"Unknown state ({(byte)item.LoadState})."),
+                <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(), $"Not yet loaded ({(byte)item.LoadState})."),
+                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), $"Loading asynchronously ({(byte)item.LoadState})."),
+                > LoadState.Success => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
+                    $"Failed to load ({(byte)item.LoadState})."),
             };
             using (var font = ImRaii.PushFont(UiBuilder.IconFont))
             {

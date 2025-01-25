@@ -47,9 +47,10 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         _table                       =  new ResourceWatcherTable(config.Ephemeral, _records);
         _resources.ResourceRequested += OnResourceRequested;
         _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
-        _loader.ResourceLoaded += OnResourceLoaded;
-        _loader.FileLoaded     += OnFileLoaded;
-        _loader.PapRequested   += OnPapRequested;
+        _loader.ResourceLoaded   += OnResourceLoaded;
+        _loader.ResourceComplete += OnResourceComplete;
+        _loader.FileLoaded       += OnFileLoaded;
+        _loader.PapRequested     += OnPapRequested;
         UpdateFilter(_ephemeral.ResourceLoggingFilter, false);
         _newMaxEntries = _config.MaxResourceWatcherRecords;
     }
@@ -73,9 +74,10 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         _records.TrimExcess();
         _resources.ResourceRequested -= OnResourceRequested;
         _destructor.Unsubscribe(OnResourceDestroyed);
-        _loader.ResourceLoaded -= OnResourceLoaded;
-        _loader.FileLoaded     -= OnFileLoaded;
-        _loader.PapRequested   -= OnPapRequested;
+        _loader.ResourceLoaded   -= OnResourceLoaded;
+        _loader.ResourceComplete -= OnResourceComplete;
+        _loader.FileLoaded       -= OnFileLoaded;
+        _loader.PapRequested     -= OnPapRequested;
     }
 
     private void Clear()
@@ -251,6 +253,23 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
         var record = manipulatedPath == null
             ? Record.CreateDefaultLoad(path.Path, handle, data.ModCollection, Name(data))
             : Record.CreateLoad(manipulatedPath.Value, path.Path, handle, data.ModCollection, Name(data));
+        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+            _newRecords.Enqueue(record);
+    }
+
+    private unsafe void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original, ReadOnlySpan<byte> additionalData, bool isAsync)
+    {
+        if (!isAsync)
+            return;
+
+        if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
+            Penumbra.Log.Information(
+                $"[ResourceLoader] [DONE] [{resource->FileType}] Finished loading {match} into 0x{(ulong)resource:X}, state {resource->LoadState}.");
+
+        if (!_ephemeral.EnableResourceWatcher)
+            return;
+
+        var record = Record.CreateResourceComplete(path, resource, original, additionalData);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }

@@ -2,6 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
@@ -13,27 +14,38 @@ namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public unsafe class ResourceLoader : IDisposable, IService
 {
-    private readonly ResourceService _resources;
-    private readonly FileReadService _fileReadService;
-    private readonly RsfService   _rsfService;
-    private readonly PapHandler      _papHandler;
-    private readonly Configuration   _config;
+    private readonly ResourceService          _resources;
+    private readonly FileReadService          _fileReadService;
+    private readonly RsfService               _rsfService;
+    private readonly PapHandler               _papHandler;
+    private readonly Configuration            _config;
+    private readonly ResourceHandleDestructor _destructor;
+
+    private readonly ConcurrentDictionary<nint, Utf8GamePath> _ongoingLoads = [];
 
     private ResolveData                                        _resolvedData = ResolveData.Invalid;
     public event Action<Utf8GamePath, FullPath?, ResolveData>? PapRequested;
 
-    public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config, PeSigScanner sigScanner)
+    public IReadOnlyDictionary<nint, Utf8GamePath> OngoingLoads
+        => _ongoingLoads;
+
+    public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config, PeSigScanner sigScanner,
+        ResourceHandleDestructor destructor)
     {
         _resources       = resources;
         _fileReadService = fileReadService;
-        _rsfService   = rsfService;
+        _rsfService      = rsfService;
         _config          = config;
+        _destructor      = destructor;
         ResetResolvePath();
 
-        _resources.ResourceRequested    += ResourceHandler;
-        _resources.ResourceHandleIncRef += IncRefProtection;
-        _resources.ResourceHandleDecRef += DecRefProtection;
-        _fileReadService.ReadSqPack     += ReadSqPackDetour;
+        _resources.ResourceRequested     += ResourceHandler;
+        _resources.ResourceStateUpdating += ResourceStateUpdatingHandler;
+        _resources.ResourceStateUpdated  += ResourceStateUpdatedHandler;
+        _resources.ResourceHandleIncRef  += IncRefProtection;
+        _resources.ResourceHandleDecRef  += DecRefProtection;
+        _fileReadService.ReadSqPack      += ReadSqPackDetour;
+        _destructor.Subscribe(ResourceDestructorHandler, ResourceHandleDestructor.Priority.ResourceLoader);
 
         _papHandler = new PapHandler(sigScanner, PapResourceHandler);
         _papHandler.Enable();
@@ -109,12 +121,32 @@ public unsafe class ResourceLoader : IDisposable, IService
     /// </summary>
     public event FileLoadedDelegate? FileLoaded;
 
+    public delegate void ResourceCompleteDelegate(ResourceHandle* resource, CiByteString path, Utf8GamePath originalPath,
+        ReadOnlySpan<byte> additionalData, bool isAsync);
+
+    /// <summary>
+    /// Event fired just before a resource finishes loading.
+    /// <see cref="ResourceHandle.LoadState"/> must be checked to know whether the load was successful or not.
+    /// AdditionalData is either empty or the part of the path inside the leading pipes.
+    /// </summary>
+    public event ResourceCompleteDelegate? BeforeResourceComplete;
+
+    /// <summary>
+    /// Event fired when a resource has finished loading.
+    /// <see cref="ResourceHandle.LoadState"/> must be checked to know whether the load was successful or not.
+    /// AdditionalData is either empty or the part of the path inside the leading pipes.
+    /// </summary>
+    public event ResourceCompleteDelegate? ResourceComplete;
+
     public void Dispose()
     {
-        _resources.ResourceRequested    -= ResourceHandler;
-        _resources.ResourceHandleIncRef -= IncRefProtection;
-        _resources.ResourceHandleDecRef -= DecRefProtection;
-        _fileReadService.ReadSqPack     -= ReadSqPackDetour;
+        _resources.ResourceRequested     -= ResourceHandler;
+        _resources.ResourceStateUpdating -= ResourceStateUpdatingHandler;
+        _resources.ResourceStateUpdated  -= ResourceStateUpdatedHandler;
+        _resources.ResourceHandleIncRef  -= IncRefProtection;
+        _resources.ResourceHandleDecRef  -= DecRefProtection;
+        _fileReadService.ReadSqPack      -= ReadSqPackDetour;
+        _destructor.Unsubscribe(ResourceDestructorHandler);
         _papHandler.Dispose();
     }
 
@@ -135,7 +167,8 @@ public unsafe class ResourceLoader : IDisposable, IService
 
         if (resolvedPath == null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
         {
-            returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
+            returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, original, parameters);
+            TrackResourceLoad(returnValue, original);
             ResourceLoaded?.Invoke(returnValue, path, resolvedPath, data);
             return;
         }
@@ -145,8 +178,55 @@ public unsafe class ResourceLoader : IDisposable, IService
         hash = ComputeHash(resolvedPath.Value.InternalName, parameters);
         var oldPath = path;
         path        = p;
-        returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
+        returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, original, parameters);
+        TrackResourceLoad(returnValue, original);
         ResourceLoaded?.Invoke(returnValue, oldPath, resolvedPath.Value, data);
+    }
+
+    private void TrackResourceLoad(ResourceHandle* handle, Utf8GamePath original)
+    {
+        if (handle->UnkState == 2 && handle->LoadState >= LoadState.Success)
+            return;
+
+        _ongoingLoads.TryAdd((nint)handle, original.Clone());
+    }
+
+    private void ResourceStateUpdatedHandler(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte, LoadState) previousState, ref uint returnValue)
+    {
+        if (handle->UnkState != 2 || handle->LoadState < LoadState.Success || previousState is { Item1: 2, Item2: >= LoadState.Success })
+            return;
+
+        if (!_ongoingLoads.TryRemove((nint)handle, out var asyncOriginal))
+            asyncOriginal = Utf8GamePath.Empty;
+
+        var path = handle->CsHandle.FileName;
+        if (!syncOriginal.IsEmpty && !asyncOriginal.IsEmpty && !syncOriginal.Equals(asyncOriginal))
+            Penumbra.Log.Warning($"[ResourceLoader] Resource original paths inconsistency: 0x{(nint)handle:X}, of path {path}, sync original {syncOriginal}, async original {asyncOriginal}.");
+        var original = !asyncOriginal.IsEmpty ? asyncOriginal : syncOriginal;
+
+        Penumbra.Log.Excessive($"[ResourceLoader] Resource is complete: 0x{(nint)handle:X}, of path {path}, original {original}, state {previousState.Item1}:{previousState.Item2} -> {handle->UnkState}:{handle->LoadState}, sync: {asyncOriginal.IsEmpty}");
+        if (PathDataHandler.Split(path.AsSpan(), out var actualPath, out var additionalData))
+            ResourceComplete?.Invoke(handle, new CiByteString(actualPath), original, additionalData, !asyncOriginal.IsEmpty);
+        else
+            ResourceComplete?.Invoke(handle, path.AsByteString(), original, [], !asyncOriginal.IsEmpty);
+    }
+
+    private void ResourceStateUpdatingHandler(ResourceHandle* handle, Utf8GamePath syncOriginal)
+    {
+        if (handle->UnkState != 1 || handle->LoadState != LoadState.Success)
+            return;
+
+        if (!_ongoingLoads.TryGetValue((nint)handle, out var asyncOriginal))
+            asyncOriginal = Utf8GamePath.Empty;
+
+        var path     = handle->CsHandle.FileName;
+        var original = asyncOriginal.IsEmpty ? syncOriginal : asyncOriginal;
+
+        Penumbra.Log.Excessive($"[ResourceLoader] Resource is about to be complete: 0x{(nint)handle:X}, of path {path}, original {original}");
+        if (PathDataHandler.Split(path.AsSpan(), out var actualPath, out var additionalData))
+            BeforeResourceComplete?.Invoke(handle, new CiByteString(actualPath), original, additionalData, !asyncOriginal.IsEmpty);
+        else
+            BeforeResourceComplete?.Invoke(handle, path.AsByteString(), original, [], !asyncOriginal.IsEmpty);
     }
 
     private void ReadSqPackDetour(SeFileDescriptor* fileDescriptor, ref int priority, ref bool isSync, ref byte? returnValue)
@@ -176,7 +256,6 @@ public unsafe class ResourceLoader : IDisposable, IService
             gamePath.Path.IsAscii);
         fileDescriptor->ResourceHandle->FileNameData   = path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = path.Length;
-        ForceSync(fileDescriptor, ref isSync);
         returnValue = DefaultLoadResource(path, fileDescriptor, priority, isSync, data);
         // Return original resource handle path so that they can be loaded separately.
         fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
@@ -213,16 +292,6 @@ public unsafe class ResourceLoader : IDisposable, IService
             FileLoaded?.Invoke(fileDescriptor->ResourceHandle, gamePath, ret != 0, false, additionalData);
             return ret;
         }
-    }
-
-    /// <summary> Special handling for materials and IMCs. </summary>
-    private static void ForceSync(SeFileDescriptor* fileDescriptor, ref bool isSync)
-    {
-        // Force isSync = true for Materials. I don't really understand why,
-        // or where the difference even comes from.
-        // Was called with True on my client and with false on other peoples clients,
-        // which caused problems.
-        isSync |= fileDescriptor->ResourceHandle->FileType is ResourceType.Mtrl or ResourceType.Imc;
     }
 
     /// <summary>
@@ -263,6 +332,11 @@ public unsafe class ResourceLoader : IDisposable, IService
         }
 
         returnValue = 1;
+    }
+
+    private void ResourceDestructorHandler(ResourceHandle* handle)
+    {
+        _ongoingLoads.TryRemove((nint)handle, out _);
     }
 
     /// <summary> Compute the CRC32 hash for a given path together with potential resource parameters. </summary>

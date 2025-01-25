@@ -10,10 +10,11 @@ namespace Penumbra.UI.ResourceWatcher;
 [Flags]
 public enum RecordType : byte
 {
-    Request      = 0x01,
-    ResourceLoad = 0x02,
-    FileLoad     = 0x04,
-    Destruction  = 0x08,
+    Request          = 0x01,
+    ResourceLoad     = 0x02,
+    FileLoad         = 0x04,
+    Destruction      = 0x08,
+    ResourceComplete = 0x10,
 }
 
 internal unsafe struct Record
@@ -141,4 +142,37 @@ internal unsafe struct Record
             LoadState            = handle->LoadState,
             Crc64                = 0,
         };
+
+    public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath, ReadOnlySpan<byte> additionalData)
+        => new()
+        {
+            Time                 = DateTime.UtcNow,
+            Path                 = CombinedPath(path, additionalData),
+            OriginalPath         = originalPath.Path.IsOwned ? originalPath.Path : originalPath.Path.Clone(),
+            Collection           = null,
+            Handle               = handle,
+            ResourceType         = handle->FileType.ToFlag(),
+            Category             = handle->Category.ToFlag(),
+            RefCount             = handle->RefCount,
+            RecordType           = RecordType.ResourceComplete,
+            Synchronously        = false,
+            ReturnValue          = OptionalBool.Null,
+            CustomLoad           = OptionalBool.Null,
+            AssociatedGameObject = string.Empty,
+            LoadState            = handle->LoadState,
+            Crc64                = 0,
+        };
+
+    private static CiByteString CombinedPath(CiByteString path, ReadOnlySpan<byte> additionalData)
+    {
+        if (additionalData.Length is 0)
+            return path.IsOwned ? path : path.Clone();
+
+        fixed (byte* ptr = additionalData)
+        {
+            // If a path has additional data and is split, it is always in the form of |{additionalData}|{path},
+            // so we can just read from the start of additional data - 1 and sum their length +2 for the pipes.
+            return new CiByteString(new ReadOnlySpan<byte>(ptr - 1, additionalData.Length + 2 + path.Length)).Clone();
+        }
+    }
 }

@@ -100,6 +100,7 @@ public class HookOverrides
         public bool DecRef;
         public bool GetResourceSync;
         public bool GetResourceAsync;
+        public bool UpdateResourceState;
         public bool CheckFileState;
         public bool TexResourceHandleOnLoad;
         public bool LoadMdlFileExtern;

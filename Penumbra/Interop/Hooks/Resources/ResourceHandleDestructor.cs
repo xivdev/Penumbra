@@ -14,8 +14,11 @@ public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHa
         /// <seealso cref="PathResolving.SubfileHelper"/>
         SubfileHelper,
 
-        /// <seealso cref="ShaderReplacementFixer"/>
+        /// <seealso cref="PostProcessing.ShaderReplacementFixer"/>
         ShaderReplacementFixer,
+
+        /// <seealso cref="ResourceLoading.ResourceLoader"/>
+        ResourceLoader,
 
         /// <seealso cref="ResourceWatcher.OnResourceDestroyed"/>
         ResourceWatcher,

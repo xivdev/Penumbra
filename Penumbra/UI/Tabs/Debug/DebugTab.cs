@@ -80,6 +80,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly StainService                       _stains;
     private readonly GlobalVariablesDrawer              _globalVariablesDrawer;
     private readonly ResourceManagerService             _resourceManager;
+    private readonly ResourceLoader                     _resourceLoader;
     private readonly CollectionResolver                 _collectionResolver;
     private readonly DrawObjectState                    _drawObjectState;
     private readonly PathState                          _pathState;
@@ -109,7 +110,7 @@ public class DebugTab : Window, ITab, IUiService
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
-        ResourceManagerService resourceManager, CollectionResolver collectionResolver,
+        ResourceManagerService resourceManager, ResourceLoader resourceLoader, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
@@ -133,6 +134,7 @@ public class DebugTab : Window, ITab, IUiService
         _actors                    = actors;
         _stains                    = stains;
         _resourceManager           = resourceManager;
+        _resourceLoader            = resourceLoader;
         _collectionResolver        = collectionResolver;
         _drawObjectState           = drawObjectState;
         _pathState                 = pathState;
@@ -191,6 +193,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawShaderReplacementFixer();
         DrawData();
         DrawCrcCache();
+        DrawResourceLoader();
         DrawResourceProblems();
         _renderTargetDrawer.Draw();
         _hookOverrides.Draw();
@@ -1096,6 +1099,35 @@ public class DebugTab : Window, ITab, IUiService
             ImUtf8.Text($"{hash:X16}");
             ImGui.TableNextColumn();
             ImUtf8.Text($"{type}");
+        }
+    }
+
+    private unsafe void DrawResourceLoader()
+    {
+        if (!ImUtf8.CollapsingHeader("Resource Loader"u8))
+            return;
+
+        var ongoingLoads     = _resourceLoader.OngoingLoads;
+        var ongoingLoadCount = ongoingLoads.Count;
+        ImUtf8.Text($"Ongoing Loads: {ongoingLoadCount}");
+
+        if (ongoingLoadCount == 0)
+            return;
+
+        using var table = ImUtf8.Table("ongoingLoadTable"u8, 3);
+        if (!table)
+            return;
+
+        ImUtf8.TableSetupColumn("Resource Handle"u8, ImGuiTableColumnFlags.WidthStretch, 0.2f);
+        ImUtf8.TableSetupColumn("Actual Path"u8,     ImGuiTableColumnFlags.WidthStretch, 0.4f);
+        ImUtf8.TableSetupColumn("Original Path"u8,   ImGuiTableColumnFlags.WidthStretch, 0.4f);
+        ImGui.TableHeadersRow();
+
+        foreach (var (handle, original) in ongoingLoads)
+        {
+            ImUtf8.DrawTableColumn($"0x{handle:X}");
+            ImUtf8.DrawTableColumn(((ResourceHandle*)handle)->CsHandle.FileName);
+            ImUtf8.DrawTableColumn(original.Path.Span);
         }
     }
 
