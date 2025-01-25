@@ -198,7 +198,7 @@ public unsafe class ImcFile : MetaBaseFile
 
         if (DebugConfiguration.WriteImcBytesToLog)
         {
-            Penumbra.Log.Information($"Default IMC file -> Modified IMC File for {Path}:");
+            Penumbra.Log.Information($"Default IMC file -> Modified IMC File for {Path}, current handle state {resource->LoadState}:");
             Penumbra.Log.Information(new Span<byte>((void*)data, length).WriteHexBytes());
             Penumbra.Log.Information(new Span<byte>(Data,        actualLength).WriteHexBytes());
             Penumbra.Log.Information(new Span<byte>(Data,        actualLength).WriteHexByteDiff(new Span<byte>((void*)data, length)));
