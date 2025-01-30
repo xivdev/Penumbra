@@ -8,6 +8,9 @@ namespace Penumbra.Import.Models.Import;
 
 public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
 {
+    public const int BoneLimit = 128;
+    public const int MaterialLimit = 10;
+
     public static MdlFile Import(ModelRoot model, IoNotifier notifier)
     {
         var importer = new ModelImporter(model, notifier);
@@ -208,10 +211,9 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
         if (index >= 0)
             return (ushort)index;
 
-        // If there's already 10 materials, we can't add any more.
         // TODO: permit, with a warning to reduce, and validation in MdlTab.
         var count = _materials.Count;
-        if (count >= 10)
+        if (count >= MaterialLimit)
             return 0;
 
         _materials.Add(materialName);
@@ -234,11 +236,11 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
             boneIndices.Add((ushort)boneIndex);
         }
 
-        if (boneIndices.Count > 128)
-            throw notifier.Exception("XIV does not support meshes weighted to a total of more than 128 bones.");
+        if (boneIndices.Count > BoneLimit)
+            throw notifier.Exception($"XIV does not support meshes weighted to a total of more than {BoneLimit} bones.");
 
-        var boneIndicesArray = new ushort[128];
-        Array.Copy(boneIndices.ToArray(), boneIndicesArray, boneIndices.Count);
+        var boneIndicesArray = new ushort[BoneLimit];
+        boneIndices.CopyTo(boneIndicesArray);
 
         var boneTableIndex = _boneTables.Count;
         _boneTables.Add(new BoneTableStruct()
