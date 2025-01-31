@@ -66,23 +66,48 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
     public (PenumbraApiEc, (bool, int, Dictionary<string, List<string>>, bool)?) GetCurrentModSettings(Guid collectionId, string modDirectory,
         string modName, bool ignoreInheritance)
     {
+        var ret = GetCurrentModSettingsWithTemp(collectionId, modDirectory, modName, ignoreInheritance, true, 0);
+        if (ret.Item2 is null)
+            return (ret.Item1, null);
+
+        return (ret.Item1, (ret.Item2.Value.Item1, ret.Item2.Value.Item2, ret.Item2.Value.Item3, ret.Item2.Value.Item4));
+    }
+
+    public (PenumbraApiEc, (bool, int, Dictionary<string, List<string>>, bool, bool)?) GetCurrentModSettingsWithTemp(Guid collectionId,
+        string modDirectory, string modName, bool ignoreInheritance, bool ignoreTemporary, int key)
+    {
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
             return (PenumbraApiEc.ModMissing, null);
 
         if (!_collectionManager.Storage.ById(collectionId, out var collection))
             return (PenumbraApiEc.CollectionMissing, null);
 
-        var settings = collection.Identity.Id == Guid.Empty
-            ? null
-            : ignoreInheritance
-                ? collection.GetOwnSettings(mod.Index)
-                : collection.GetInheritedSettings(mod.Index).Settings;
-        if (settings == null)
+        if (collection.Identity.Id == Guid.Empty)
             return (PenumbraApiEc.Success, null);
 
-        var (enabled, priority, dict) = settings.ConvertToShareable(mod);
-        return (PenumbraApiEc.Success,
-            (enabled, priority.Value, dict, collection.GetOwnSettings(mod.Index) is null));
+        if (GetCurrentSettings(collection, mod, ignoreInheritance, ignoreTemporary, key) is { } settings)
+            return (PenumbraApiEc.Success, settings);
+
+        return (PenumbraApiEc.Success, null);
+    }
+
+    public (PenumbraApiEc, Dictionary<string, (bool, int, Dictionary<string, List<string>>, bool, bool)>?) GetAllModSettings(Guid collectionId,
+        bool ignoreInheritance, bool ignoreTemporary, int key)
+    {
+        if (!_collectionManager.Storage.ById(collectionId, out var collection))
+            return (PenumbraApiEc.CollectionMissing, null);
+
+        if (collection.Identity.Id == Guid.Empty)
+            return (PenumbraApiEc.Success, []);
+
+        var ret = new Dictionary<string, (bool, int, Dictionary<string, List<string>>, bool, bool)>(_modManager.Count);
+        foreach (var mod in _modManager)
+        {
+            if (GetCurrentSettings(collection, mod, ignoreInheritance, ignoreTemporary, key) is { } settings)
+                ret[mod.Identifier] = settings;
+        }
+
+        return (PenumbraApiEc.Success, ret);
     }
 
     public PenumbraApiEc TryInheritMod(Guid collectionId, string modDirectory, string modName, bool inherit)
@@ -204,6 +229,31 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             return ApiHelpers.Return(PenumbraApiEc.CollectionMissing, args);
 
         return ApiHelpers.Return(PenumbraApiEc.Success, args);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private (bool, int, Dictionary<string, List<string>>, bool, bool)? GetCurrentSettings(ModCollection collection, Mod mod,
+        bool ignoreInheritance, bool ignoreTemporary, int key)
+    {
+        var settings = collection.Settings.Settings[mod.Index];
+        if (!ignoreTemporary && settings.TempSettings is { } tempSettings && (tempSettings.Lock <= 0 || tempSettings.Lock == key))
+        {
+            if (!tempSettings.ForceInherit)
+                return (tempSettings.Enabled, tempSettings.Priority.Value, tempSettings.ConvertToShareable(mod).Settings,
+                    false, true);
+            if (!ignoreInheritance && collection.GetActualSettings(mod.Index).Settings is { } actualSettingsTemp)
+                return (actualSettingsTemp.Enabled, actualSettingsTemp.Priority.Value,
+                    actualSettingsTemp.ConvertToShareable(mod).Settings, true, true);
+        }
+
+        if (settings.Settings is { } ownSettings)
+            return (ownSettings.Enabled, ownSettings.Priority.Value, ownSettings.ConvertToShareable(mod).Settings, false,
+                false);
+        if (!ignoreInheritance && collection.GetInheritedSettings(mod.Index).Settings is { } actualSettings)
+            return (actualSettings.Enabled, actualSettings.Priority.Value,
+                actualSettings.ConvertToShareable(mod).Settings, true, false);
+
+        return null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

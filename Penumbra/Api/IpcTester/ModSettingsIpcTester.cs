@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -22,16 +23,20 @@ public class ModSettingsIpcTester : IUiService, IDisposable
     private bool             _lastSettingChangeInherited;
     private DateTimeOffset   _lastSettingChange;
 
-    private string                                              _settingsModDirectory = string.Empty;
-    private string                                              _settingsModName      = string.Empty;
-    private Guid?                                               _settingsCollection;
-    private string                                              _settingsCollectionName = string.Empty;
-    private bool                                                _settingsIgnoreInheritance;
-    private bool                                                _settingsInherit;
-    private bool                                                _settingsEnabled;
-    private int                                                 _settingsPriority;
-    private IReadOnlyDictionary<string, (string[], GroupType)>? _availableSettings;
-    private Dictionary<string, List<string>>?                   _currentSettings;
+    private string                                                                         _settingsModDirectory = string.Empty;
+    private string                                                                         _settingsModName      = string.Empty;
+    private Guid?                                                                          _settingsCollection;
+    private string                                                                         _settingsCollectionName = string.Empty;
+    private bool                                                                           _settingsIgnoreInheritance;
+    private bool                                                                           _settingsIgnoreTemporary;
+    private int                                                                            _settingsKey;
+    private bool                                                                           _settingsInherit;
+    private bool                                                                           _settingsTemporary;
+    private bool                                                                           _settingsEnabled;
+    private int                                                                            _settingsPriority;
+    private IReadOnlyDictionary<string, (string[], GroupType)>?                            _availableSettings;
+    private Dictionary<string, List<string>>?                                              _currentSettings;
+    private Dictionary<string, (bool, int, Dictionary<string, List<string>>, bool, bool)>? _allSettings;
 
     public ModSettingsIpcTester(IDalamudPluginInterface pi)
     {
@@ -54,7 +59,9 @@ public class ModSettingsIpcTester : IUiService, IDisposable
         ImGui.InputTextWithHint("##settingsDir",  "Mod Directory Name...", ref _settingsModDirectory, 100);
         ImGui.InputTextWithHint("##settingsName", "Mod Name...",           ref _settingsModName,      100);
         ImGuiUtil.GuidInput("##settingsCollection", "Collection...", string.Empty, ref _settingsCollection, ref _settingsCollectionName);
-        ImGui.Checkbox("Ignore Inheritance", ref _settingsIgnoreInheritance);
+        ImUtf8.Checkbox("Ignore Inheritance"u8, ref _settingsIgnoreInheritance);
+        ImUtf8.Checkbox("Ignore Temporary"u8, ref _settingsIgnoreTemporary);
+        ImUtf8.InputScalar("Key"u8, ref _settingsKey);
         var collection = _settingsCollection.GetValueOrDefault(Guid.Empty);
 
         using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
@@ -83,15 +90,50 @@ public class ModSettingsIpcTester : IUiService, IDisposable
             _lastSettingsError = ret.Item1;
             if (ret.Item1 == PenumbraApiEc.Success)
             {
-                _settingsEnabled  = ret.Item2?.Item1 ?? false;
-                _settingsInherit  = ret.Item2?.Item4 ?? true;
-                _settingsPriority = ret.Item2?.Item2 ?? 0;
-                _currentSettings  = ret.Item2?.Item3;
+                _settingsEnabled   = ret.Item2?.Item1 ?? false;
+                _settingsInherit   = ret.Item2?.Item4 ?? true;
+                _settingsTemporary = false;
+                _settingsPriority  = ret.Item2?.Item2 ?? 0;
+                _currentSettings   = ret.Item2?.Item3;
             }
             else
             {
                 _currentSettings = null;
             }
+        }
+
+        IpcTester.DrawIntro(GetCurrentModSettingsWithTemp.Label, "Get Current Settings With Temp");
+        if (ImGui.Button("Get##CurrentTemp"))
+        {
+            var ret = new GetCurrentModSettingsWithTemp(_pi)
+                .Invoke(collection, _settingsModDirectory, _settingsModName, _settingsIgnoreInheritance, _settingsIgnoreTemporary, _settingsKey);
+            _lastSettingsError = ret.Item1;
+            if (ret.Item1 == PenumbraApiEc.Success)
+            {
+                _settingsEnabled   = ret.Item2?.Item1 ?? false;
+                _settingsInherit   = ret.Item2?.Item4 ?? true;
+                _settingsTemporary = ret.Item2?.Item5 ?? false;
+                _settingsPriority  = ret.Item2?.Item2 ?? 0;
+                _currentSettings   = ret.Item2?.Item3;
+            }
+            else
+            {
+                _currentSettings = null;
+            }
+        }
+        
+        IpcTester.DrawIntro(GetAllModSettings.Label, "Get All Mod Settings");
+        if (ImGui.Button("Get##All"))
+        {
+            var ret = new GetAllModSettings(_pi).Invoke(collection, _settingsIgnoreInheritance, _settingsIgnoreTemporary, _settingsKey);
+            _lastSettingsError = ret.Item1;
+            _allSettings       = ret.Item2;
+        }
+
+        if (_allSettings != null)
+        {
+            ImGui.SameLine();
+            ImUtf8.Text($"{_allSettings.Count} Mods");
         }
 
         IpcTester.DrawIntro(TryInheritMod.Label, "Inherit Mod");

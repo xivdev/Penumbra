@@ -22,7 +22,7 @@ public class PenumbraApi(
     }
 
     public (int Breaking, int Feature) ApiVersion
-        => (5, 5);
+        => (5, 6);
 
     public bool                     Valid        { get; private set; } = true;
     public IPenumbraApiCollection   Collection   { get; }              = collection;

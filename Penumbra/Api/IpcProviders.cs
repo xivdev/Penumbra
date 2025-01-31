@@ -57,6 +57,8 @@ public sealed class IpcProviders : IDisposable, IApiService
 
             IpcSubscribers.GetAvailableModSettings.Provider(pi, api.ModSettings),
             IpcSubscribers.GetCurrentModSettings.Provider(pi, api.ModSettings),
+            IpcSubscribers.GetCurrentModSettingsWithTemp.Provider(pi, api.ModSettings),
+            IpcSubscribers.GetAllModSettings.Provider(pi, api.ModSettings),
             IpcSubscribers.TryInheritMod.Provider(pi, api.ModSettings),
             IpcSubscribers.TrySetMod.Provider(pi, api.ModSettings),
             IpcSubscribers.TrySetModPriority.Provider(pi, api.ModSettings),
