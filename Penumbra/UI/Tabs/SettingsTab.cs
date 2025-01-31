@@ -49,6 +49,7 @@ public class SettingsTab : ITab, IUiService
     private readonly CrashHandlerService         _crashService;
     private readonly MigrationSectionDrawer      _migrationDrawer;
     private readonly CollectionAutoSelector      _autoSelector;
+    private readonly CleanupService              _cleanupService;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -60,7 +61,7 @@ public class SettingsTab : ITab, IUiService
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
-        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector)
+        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -84,6 +85,7 @@ public class SettingsTab : ITab, IUiService
         _crashService         = crashService;
         _migrationDrawer      = migrationDrawer;
         _autoSelector         = autoSelector;
+        _cleanupService       = cleanupService;
     }
 
     public void DrawHeader()
@@ -789,9 +791,13 @@ public class SettingsTab : ITab, IUiService
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
         DrawEnableDebugModeBox();
+        ImGui.Separator();
         DrawReloadResourceButton();
         DrawReloadFontsButton();
+        ImGui.Separator();
+        DrawCleanupButtons();
         ImGui.NewLine();
+
     }
 
     private void DrawCrashHandler()
@@ -980,6 +986,29 @@ public class SettingsTab : ITab, IUiService
     {
         if (ImGuiUtil.DrawDisabledButton("Reload Fonts", Vector2.Zero, "Force the game to reload its font files.", !_fontReloader.Valid))
             _fontReloader.Reload();
+    }
+
+    private void DrawCleanupButtons()
+    {
+        var enabled = _config.DeleteModModifier.IsActive();
+        if (ImUtf8.ButtonEx("Clear Unused Local Mod Data Files"u8,
+                "Delete all local mod data files that do not correspond to currently installed mods."u8, default, !enabled))
+            _cleanupService.CleanUnusedLocalData();
+        if (!enabled)
+            ImUtf8.HoverTooltip($"Hold {_config.DeleteModModifier} while clicking to delete files.");
+
+        if (ImUtf8.ButtonEx("Clear Backup Files"u8,
+                "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory."u8,
+                default, !enabled))
+            _cleanupService.CleanBackupFiles();
+        if (!enabled)
+            ImUtf8.HoverTooltip($"Hold {_config.DeleteModModifier} while clicking to delete files.");
+
+        if (ImUtf8.ButtonEx("Clear All Unused Settings"u8,
+                "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8, default, !enabled))
+            _cleanupService.CleanupAllUnusedSettings();
+        if (!enabled)
+            ImUtf8.HoverTooltip($"Hold {_config.DeleteModModifier} while clicking to remove settings.");
     }
 
     /// <summary> Draw a checkbox that toggles the dalamud setting to wait for plugins on open. </summary>

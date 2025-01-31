@@ -194,12 +194,16 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     }
 
     /// <summary> Remove all settings for not currently-installed mods from the given collection. </summary>
-    public void CleanUnavailableSettings(ModCollection collection)
+    public int CleanUnavailableSettings(ModCollection collection)
     {
-        var any = collection.Settings.Unused.Count > 0;
-        ((Dictionary<string, ModSettings.SavedSettings>)collection.Settings.Unused).Clear();
-        if (any)
+        var count = collection.Settings.Unused.Count;
+        if (count > 0)
+        {
+            ((Dictionary<string, ModSettings.SavedSettings>)collection.Settings.Unused).Clear();
             _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+        }
+
+        return count;
     }
 
     /// <summary> Remove a specific setting for not currently-installed mods from the given collection. </summary>
