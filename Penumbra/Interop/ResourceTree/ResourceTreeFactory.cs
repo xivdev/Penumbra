@@ -25,6 +25,8 @@ public class ResourceTreeFactory(
     PathState pathState,
     ModManager modManager) : IService
 {
+    private static readonly string ParentDirectoryPrefix = $"..{Path.DirectorySeparatorChar}";
+
     private TreeBuildCache CreateTreeBuildCache()
         => new(objects, gameData, actors);
 
@@ -159,7 +161,7 @@ public class ResourceTreeFactory(
             if (onlyWithinPath != null)
             {
                 var relPath = Path.GetRelativePath(onlyWithinPath, fullPath.FullName);
-                if (relPath != "." && (relPath.StartsWith('.') || Path.IsPathRooted(relPath)))
+                if (relPath == ".." || relPath.StartsWith(ParentDirectoryPrefix) || Path.IsPathRooted(relPath))
                     return false;
             }
 
