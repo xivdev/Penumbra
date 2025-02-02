@@ -147,25 +147,28 @@ public class ResourceTreeFactory(
     {
         foreach (var node in tree.FlatNodes)
         {
-            if (!ShallKeepPath(node.FullPath, onlyWithinPath))
+            node.FullPathStatus = GetPathStatus(node.FullPath, onlyWithinPath);
+            if (node.FullPathStatus != ResourceNode.PathStatus.Valid)
                 node.FullPath = FullPath.Empty;
         }
 
         return;
 
-        static bool ShallKeepPath(FullPath fullPath, string? onlyWithinPath)
+        static ResourceNode.PathStatus GetPathStatus(FullPath fullPath, string? onlyWithinPath)
         {
             if (!fullPath.IsRooted)
-                return true;
+                return ResourceNode.PathStatus.Valid;
 
             if (onlyWithinPath != null)
             {
                 var relPath = Path.GetRelativePath(onlyWithinPath, fullPath.FullName);
                 if (relPath == ".." || relPath.StartsWith(ParentDirectoryPrefix) || Path.IsPathRooted(relPath))
-                    return false;
+                    return ResourceNode.PathStatus.External;
             }
 
-            return fullPath.Exists;
+            return fullPath.Exists
+                ? ResourceNode.PathStatus.Valid
+                : ResourceNode.PathStatus.NonExistent;
         }
     }
 

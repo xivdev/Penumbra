@@ -16,6 +16,7 @@ public class ResourceNode : ICloneable
     public readonly nint                ResourceHandle;
     public          Utf8GamePath[]      PossibleGamePaths;
     public          FullPath            FullPath;
+    public          PathStatus          FullPathStatus;
     public          string?             ModName;
     public readonly WeakReference<Mod>  Mod = new(null!);
     public          string?             ModRelativePath;
@@ -61,6 +62,7 @@ public class ResourceNode : ICloneable
         ResourceHandle    = other.ResourceHandle;
         PossibleGamePaths = other.PossibleGamePaths;
         FullPath          = other.FullPath;
+        FullPathStatus    = other.FullPathStatus;
         ModName           = other.ModName;
         Mod               = other.Mod;
         ModRelativePath   = other.ModRelativePath;
@@ -99,5 +101,12 @@ public class ResourceNode : ICloneable
     {
         public UiData PrependName(string prefix)
             => Name == null ? this : this with { Name = prefix + Name };
+    }
+
+    public enum PathStatus : byte
+    {
+        Valid,
+        NonExistent,
+        External,
     }
 }
