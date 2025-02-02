@@ -285,10 +285,10 @@ public class ResourceTreeViewer(
             }
             else
             {
-                ImGui.Selectable("(unavailable)", false, ImGuiSelectableFlags.Disabled,
+                ImUtf8.Selectable(GetPathStatusLabel(resourceNode.FullPathStatus), false, ImGuiSelectableFlags.Disabled,
                     new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 ImGuiUtil.HoverTooltip(
-                    $"The actual path to this file is unavailable.\nIt may be managed by another plug-in.{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
+                    $"{GetPathStatusDescription(resourceNode.FullPathStatus)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
 
             mutedColor.Dispose();
@@ -353,6 +353,22 @@ public class ResourceTreeViewer(
              || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
         }
     }
+
+    private static ReadOnlySpan<byte> GetPathStatusLabel(ResourceNode.PathStatus status)
+        => status switch
+        {
+            ResourceNode.PathStatus.External    => "(managed by external tools)"u8,
+            ResourceNode.PathStatus.NonExistent => "(not found)"u8,
+            _                                   => "(unavailable)"u8,
+        };
+
+    private static string GetPathStatusDescription(ResourceNode.PathStatus status)
+        => status switch
+        {
+            ResourceNode.PathStatus.External    => "The actual path to this file is unavailable, because it is managed by external tools.",
+            ResourceNode.PathStatus.NonExistent => "The actual path to this file is unavailable, because it seems to have been moved or deleted since it was loaded.",
+            _                                   => "The actual path to this file is unavailable.",
+        };
 
     [Flags]
     private enum TreeCategory : uint
