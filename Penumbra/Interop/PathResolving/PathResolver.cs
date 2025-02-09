@@ -1,4 +1,3 @@
-using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
@@ -55,6 +54,8 @@ public class PathResolver : IDisposable, IService
             ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb => (null, ResolveData.Invalid),
             // Prevent .atch loading to prevent crashes on outdated .atch files.
             ResourceType.Atch => ResolveAtch(path),
+            // These are manipulated through Meta Edits instead.
+            ResourceType.Eqp or ResourceType.Eqdp or ResourceType.Est or ResourceType.Gmp or ResourceType.Cmp => (null, ResolveData.Invalid),
 
             _ => category switch
             {
