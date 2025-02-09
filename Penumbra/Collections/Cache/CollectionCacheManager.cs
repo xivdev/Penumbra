@@ -171,8 +171,7 @@ public class CollectionCacheManager : IDisposable, IService
         try
         {
             ResolvedFileChanged.Invoke(collection, ResolvedFileChanged.Type.FullRecomputeStart, Utf8GamePath.Empty, FullPath.Empty,
-                FullPath.Empty,
-                null);
+                FullPath.Empty, null);
             cache.ResolvedFiles.Clear();
             cache.Meta.Reset();
             cache.ConflictDict.Clear();

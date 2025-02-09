@@ -49,42 +49,38 @@ public class PathResolver : IDisposable, IService
         if (!_config.EnableMods)
             return (null, ResolveData.Invalid);
 
-        // Do not allow manipulating layers to prevent very obvious cheating and softlocks.
-        if (resourceType is ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb)
-            return (null, ResolveData.Invalid);
-
-        // Prevent .atch loading to prevent crashes on outdated .atch files. TODO: handle atch modding differently.
-        if (resourceType is ResourceType.Atch)
-            return ResolveAtch(path);
-
-        return category switch
+        return resourceType switch
         {
-            // Only Interface collection.
-            ResourceCategory.Ui => ResolveUi(path),
-            // Never allow changing scripts.
-            ResourceCategory.UiScript   => (null, ResolveData.Invalid),
-            ResourceCategory.GameScript => (null, ResolveData.Invalid),
-            // Use actual resolving.
-            ResourceCategory.Chara  => Resolve(path, resourceType),
-            ResourceCategory.Shader => ResolveShader(path, resourceType),
-            ResourceCategory.Vfx    => Resolve(path, resourceType),
-            ResourceCategory.Sound  => Resolve(path, resourceType),
-            // EXD Modding in general should probably be prohibited but is currently used for fan translations.
-            // We prevent WebURL specifically because it technically allows launching arbitrary programs / to execute arbitrary code.
-            ResourceCategory.Exd => path.Path.StartsWith("exd/weburl"u8)
-                ? (null, ResolveData.Invalid)
-                : DefaultResolver(path),
-            // None of these files are ever associated with specific characters,
-            // always use the default resolver for now,
-            // except that common/font is conceptually more UI.
-            ResourceCategory.Common => path.Path.StartsWith("common/font"u8)
-                ? ResolveUi(path)
-                : DefaultResolver(path),
-            ResourceCategory.BgCommon => DefaultResolver(path),
-            ResourceCategory.Bg       => DefaultResolver(path),
-            ResourceCategory.Cut      => DefaultResolver(path),
-            ResourceCategory.Music    => DefaultResolver(path),
-            _                         => DefaultResolver(path),
+            // Do not allow manipulating layers to prevent very obvious cheating and softlocks.
+            ResourceType.Lvb or ResourceType.Lgb or ResourceType.Sgb => (null, ResolveData.Invalid),
+            // Prevent .atch loading to prevent crashes on outdated .atch files.
+            ResourceType.Atch => ResolveAtch(path),
+
+            _ => category switch
+            {
+                // Only Interface collection.
+                ResourceCategory.Ui => ResolveUi(path),
+                // Never allow changing scripts.
+                ResourceCategory.UiScript   => (null, ResolveData.Invalid),
+                ResourceCategory.GameScript => (null, ResolveData.Invalid),
+                // Use actual resolving.
+                ResourceCategory.Chara  => Resolve(path, resourceType),
+                ResourceCategory.Shader => ResolveShader(path, resourceType),
+                ResourceCategory.Vfx    => Resolve(path, resourceType),
+                ResourceCategory.Sound  => Resolve(path, resourceType),
+                // EXD Modding in general should probably be prohibited but is currently used for fan translations.
+                // We prevent WebURL specifically because it technically allows launching arbitrary programs / to execute arbitrary code.
+                ResourceCategory.Exd => path.Path.StartsWith("exd/weburl"u8) ? (null, ResolveData.Invalid) : DefaultResolver(path),
+                // None of these files are ever associated with specific characters,
+                // always use the default resolver for now,
+                // except that common/font is conceptually more UI.
+                ResourceCategory.Common   => path.Path.StartsWith("common/font"u8) ? ResolveUi(path) : DefaultResolver(path),
+                ResourceCategory.BgCommon => DefaultResolver(path),
+                ResourceCategory.Bg       => DefaultResolver(path),
+                ResourceCategory.Cut      => DefaultResolver(path),
+                ResourceCategory.Music    => DefaultResolver(path),
+                _                         => DefaultResolver(path),
+            }
         };
     }
 
