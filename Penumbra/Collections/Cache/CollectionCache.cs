@@ -1,3 +1,4 @@
+using Dalamud.Interface.ImGuiNotification;
 using OtterGui;
 using OtterGui.Classes;
 using Penumbra.Meta.Manipulations;
@@ -274,6 +275,24 @@ public sealed class CollectionCache : IDisposable
             _manager.ResolvedFileChanged.Invoke(collection, type, key, value, old, mod);
     }
 
+    private static bool IsRedirectionSupported(Utf8GamePath path, IMod mod)
+    {
+        var ext = path.Extension().AsciiToLower().ToString();
+        switch (ext)
+        {
+            case ".atch" or ".eqp" or ".eqdp" or ".est" or ".gmp" or ".cmp" or ".imc":
+                Penumbra.Messager.NotificationMessage(
+                    $"Redirection of {ext} files for {mod.Name} is unsupported. Please use the corresponding meta manipulations instead.",
+                    NotificationType.Warning);
+                return false;
+            case ".lvb" or ".lgb" or ".sgb":
+                Penumbra.Messager.NotificationMessage($"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.",
+                    NotificationType.Warning);
+                return false;
+            default: return true;
+        }
+    }
+
     // Add a specific file redirection, handling potential conflicts.
     // For different mods, higher mod priority takes precedence before option group priority,
     // which takes precedence before option priority, which takes precedence before ordering.
@@ -281,6 +300,9 @@ public sealed class CollectionCache : IDisposable
     private void AddFile(Utf8GamePath path, FullPath file, IMod mod)
     {
         if (!CheckFullPath(path, file))
+            return;
+
+        if (!IsRedirectionSupported(path, mod))
             return;
 
         try
@@ -342,8 +364,9 @@ public sealed class CollectionCache : IDisposable
     // Returns if the added mod takes priority before the existing mod.
     private bool AddConflict(object data, IMod addedMod, IMod existingMod)
     {
-        var addedPriority    = addedMod.Index >= 0 ? _collection.GetActualSettings(addedMod.Index).Settings!.Priority : addedMod.Priority;
-        var existingPriority = existingMod.Index >= 0 ? _collection.GetActualSettings(existingMod.Index).Settings!.Priority : existingMod.Priority;
+        var addedPriority = addedMod.Index >= 0 ? _collection.GetActualSettings(addedMod.Index).Settings!.Priority : addedMod.Priority;
+        var existingPriority =
+            existingMod.Index >= 0 ? _collection.GetActualSettings(existingMod.Index).Settings!.Priority : existingMod.Priority;
 
         if (existingPriority < addedPriority)
         {
@@ -427,7 +450,8 @@ public sealed class CollectionCache : IDisposable
                     if (!_changedItems.TryGetValue(name, out var data))
                         _changedItems.Add(name, (new SingleArray<IMod>(mod), obj));
                     else if (!data.Item1.Contains(mod))
-                        _changedItems[name] = (data.Item1.Append(mod), obj is IdentifiedCounter x && data.Item2 is IdentifiedCounter y ? x + y : obj);
+                        _changedItems[name] = (data.Item1.Append(mod),
+                            obj is IdentifiedCounter x && data.Item2 is IdentifiedCounter y ? x + y : obj);
                     else if (obj is IdentifiedCounter x && data.Item2 is IdentifiedCounter y)
                         _changedItems[name] = (data.Item1, x + y);
                 }
