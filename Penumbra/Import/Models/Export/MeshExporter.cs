@@ -355,24 +355,24 @@ public class MeshExporter
     {
         if (_geometryType == typeof(VertexPosition))
             return new VertexPosition(
-                ToVector3(attributes[MdlFile.VertexUsage.Position][0])
+                ToVector3(attributes[MdlFile.VertexUsage.Position].First().Value)
             );
 
         if (_geometryType == typeof(VertexPositionNormal))
             return new VertexPositionNormal(
-                ToVector3(attributes[MdlFile.VertexUsage.Position][0]),
-                ToVector3(attributes[MdlFile.VertexUsage.Normal][0])
+                ToVector3(attributes[MdlFile.VertexUsage.Position].First().Value),
+                ToVector3(attributes[MdlFile.VertexUsage.Normal].First().Value)
             );
 
         if (_geometryType == typeof(VertexPositionNormalTangent))
         {
             // (Bi)tangents are universally stored as ByteFloat4, which uses 0..1 to represent the full -1..1 range.
             // TODO: While this assumption is safe, it would be sensible to actually check.
-            var bitangent = ToVector4(attributes[MdlFile.VertexUsage.Tangent1][0]) * 2 - Vector4.One;
+            var bitangent = ToVector4(attributes[MdlFile.VertexUsage.Tangent1].First().Value) * 2 - Vector4.One;
 
             return new VertexPositionNormalTangent(
-                ToVector3(attributes[MdlFile.VertexUsage.Position][0]),
-                ToVector3(attributes[MdlFile.VertexUsage.Normal][0]),
+                ToVector3(attributes[MdlFile.VertexUsage.Position].First().Value),
+                ToVector3(attributes[MdlFile.VertexUsage.Normal].First().Value),
                 bitangent
             );
         }
@@ -426,22 +426,22 @@ public class MeshExporter
             return new VertexEmpty();
 
         if (_materialType == typeof(VertexColorFfxiv))
-            return new VertexColorFfxiv(ToVector4(attributes[MdlFile.VertexUsage.Color][0]));
+            return new VertexColorFfxiv(ToVector4(attributes[MdlFile.VertexUsage.Color].First().Value));
 
         if (_materialType == typeof(VertexTexture1))
-            return new VertexTexture1(ToVector2(attributes[MdlFile.VertexUsage.UV][0]));
+            return new VertexTexture1(ToVector2(attributes[MdlFile.VertexUsage.UV].First().Value));
 
         if (_materialType == typeof(VertexTexture1ColorFfxiv))
             return new VertexTexture1ColorFfxiv(
-                ToVector2(attributes[MdlFile.VertexUsage.UV][0]),
-                ToVector4(attributes[MdlFile.VertexUsage.Color][0])
+                ToVector2(attributes[MdlFile.VertexUsage.UV].First().Value),
+                ToVector4(attributes[MdlFile.VertexUsage.Color].First().Value)
             );
 
         // XIV packs two UVs into a single vec4 attribute.
 
         if (_materialType == typeof(VertexTexture2))
         {
-            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV].First().Value);
             return new VertexTexture2(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W)
@@ -450,11 +450,11 @@ public class MeshExporter
 
         if (_materialType == typeof(VertexTexture2ColorFfxiv))
         {
-            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV].First().Value);
             return new VertexTexture2ColorFfxiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
-                ToVector4(attributes[MdlFile.VertexUsage.Color][0])
+                ToVector4(attributes[MdlFile.VertexUsage.Color].First().Value)
             );
         }
         if (_materialType == typeof(VertexTexture3))
@@ -470,7 +470,7 @@ public class MeshExporter
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
-                ToVector4(attributes[MdlFile.VertexUsage.Color][0]) 
+                ToVector4(attributes[MdlFile.VertexUsage.Color].First().Value) 
             );
         }
 
@@ -482,7 +482,7 @@ public class MeshExporter
     {
         if (usages.ContainsKey(MdlFile.VertexUsage.BlendWeights) && usages.ContainsKey(MdlFile.VertexUsage.BlendIndices))
         {
-            if (usages[MdlFile.VertexUsage.BlendWeights][0] == MdlFile.VertexType.UShort4)
+            if (usages[MdlFile.VertexUsage.BlendWeights].First().Value == MdlFile.VertexType.UShort4)
             {
                 return typeof(VertexJoints8);
             }
@@ -506,8 +506,8 @@ public class MeshExporter
             if (_boneIndexMap == null)
                 throw _notifier.Exception("Tried to build skinned vertex but no bone mappings are available.");
 
-            var indiciesData = attributes[MdlFile.VertexUsage.BlendIndices][0];
-            var weightsData  = attributes[MdlFile.VertexUsage.BlendWeights][0];
+            var indiciesData = attributes[MdlFile.VertexUsage.BlendIndices].First().Value;
+            var weightsData  = attributes[MdlFile.VertexUsage.BlendWeights].First().Value;
             var indices      = ToByteArray(indiciesData);
             var weights      = ToFloatArray(weightsData);
             
