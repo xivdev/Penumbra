@@ -107,19 +107,14 @@ public class MeshExporter
     /// <summary> Build a mapping between indices in this mesh's bone table (if any), and the glTF joint indices provided. </summary>
     private Dictionary<ushort, int>? BuildBoneIndexMap(GltfSkeleton skeleton)
     {
-        Penumbra.Log.Debug("Building Bone Index Map");
         // A BoneTableIndex of 255 means that this mesh is not skinned.
         if (XivMesh.BoneTableIndex == 255)
-        {
-            Penumbra.Log.Debug("BoneTableIndex was 255");
             return null;
-        }
 
         var xivBoneTable = _mdl.BoneTables[XivMesh.BoneTableIndex];
 
         var indexMap = new Dictionary<ushort, int>();
         // #TODO @ackwell maybe fix for V6 Models, I think this works fine.
-        Penumbra.Log.Debug($"Version is 5 {_mdl.Version == MdlFile.V5}");
 
         foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take((int)xivBoneTable.BoneCount).WithIndex())
         {
