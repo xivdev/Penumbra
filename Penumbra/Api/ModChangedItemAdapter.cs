@@ -1,6 +1,7 @@
 using Penumbra.GameData.Data;
+using Penumbra.Mods.Manager;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Api;
 
 public sealed class ModChangedItemAdapter(WeakReference<ModStorage> storage)
     : IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>>,

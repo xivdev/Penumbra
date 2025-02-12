@@ -29,6 +29,7 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.GetCollectionForObject.Provider(pi, api.Collection),
             IpcSubscribers.SetCollection.Provider(pi, api.Collection),
             IpcSubscribers.SetCollectionForObject.Provider(pi, api.Collection),
+            IpcSubscribers.CheckCurrentChangedItemFunc.Provider(pi, api.Collection),
 
             IpcSubscribers.ConvertTextureFile.Provider(pi, api.Editing),
             IpcSubscribers.ConvertTextureData.Provider(pi, api.Editing),

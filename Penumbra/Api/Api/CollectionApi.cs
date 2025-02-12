@@ -2,6 +2,7 @@ using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Mods;
 
 namespace Penumbra.Api.Api;
 
@@ -23,9 +24,25 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
                 .Select(c => (c.Identity.Id, c.Identity.Name)));
 
         list.AddRange(collections.Storage
-            .Where(c => string.Equals(c.Identity.Name, identifier, StringComparison.OrdinalIgnoreCase) && !list.Contains((c.Identity.Id, c.Identity.Name)))
+            .Where(c => string.Equals(c.Identity.Name, identifier, StringComparison.OrdinalIgnoreCase)
+             && !list.Contains((c.Identity.Id, c.Identity.Name)))
             .Select(c => (c.Identity.Id, c.Identity.Name)));
         return list;
+    }
+
+    public Func<string, (string ModDirectory, string ModName)[]> CheckCurrentChangedItemFunc()
+    {
+        var weakRef = new WeakReference<CollectionManager>(collections);
+        return s =>
+        {
+            if (!weakRef.TryGetTarget(out var c))
+                throw new ObjectDisposedException("The underlying collection storage of this IPC container was disposed.");
+
+            if (!c.Active.Current.ChangedItems.TryGetValue(s, out var d))
+                return [];
+
+            return d.Item1.Select(m => (m is Mod mod ? mod.Identifier : string.Empty, m.Name.Text)).ToArray();
+        };
     }
 
     public Dictionary<string, object?> GetChangedItemsForCollection(Guid collectionId)
@@ -74,7 +91,8 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
     }
 
     public Guid[] GetCollectionByName(string name)
-        => collections.Storage.Where(c => string.Equals(name, c.Identity.Name, StringComparison.OrdinalIgnoreCase)).Select(c => c.Identity.Id).ToArray();
+        => collections.Storage.Where(c => string.Equals(name, c.Identity.Name, StringComparison.OrdinalIgnoreCase)).Select(c => c.Identity.Id)
+            .ToArray();
 
     public (PenumbraApiEc, (Guid Id, string Name)? OldCollection) SetCollection(ApiCollectionType type, Guid? collectionId,
         bool allowCreateNew, bool allowDelete)
