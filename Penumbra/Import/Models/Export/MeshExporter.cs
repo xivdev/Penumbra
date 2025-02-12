@@ -456,7 +456,14 @@ public class MeshExporter
         }
         if (_materialType == typeof(VertexTexture3))
         {
-            throw _notifier.Exception("Unimplemented: Material Type is VertexTexture3");
+            // Not 100% sure about this
+            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            return new VertexTexture3(
+                new Vector2(uv0.X, uv0.Y),
+                new Vector2(uv0.Z, uv0.W),
+                new Vector2(uv1.X, uv1.Y)
+            );
         }
 
         if (_materialType == typeof(VertexTexture3ColorFfxiv))
