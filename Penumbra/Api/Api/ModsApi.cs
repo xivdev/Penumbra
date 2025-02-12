@@ -145,4 +145,10 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         => _modManager.TryGetMod(modDirectory, modName, out var mod)
             ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToInternalObject())
             : [];
+
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> GetChangedItemAdapterDictionary()
+        => new ModChangedItemAdapter(new WeakReference<ModStorage>(_modManager));
+
+    public IReadOnlyList<(string ModDirectory, IReadOnlyDictionary<string, object?> ChangedItems)> GetChangedItemAdapterList()
+        => new ModChangedItemAdapter(new WeakReference<ModStorage>(_modManager));
 }

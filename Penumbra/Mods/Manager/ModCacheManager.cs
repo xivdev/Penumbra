@@ -15,7 +15,7 @@ public class ModCacheManager : IDisposable, IService
     private readonly CommunicatorService  _communicator;
     private readonly ObjectIdentification _identifier;
     private readonly ModStorage           _modManager;
-    private          bool                 _updatingItems = false;
+    private          bool                 _updatingItems;
 
     public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config)
     {

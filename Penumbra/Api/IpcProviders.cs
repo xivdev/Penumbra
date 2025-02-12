@@ -54,6 +54,8 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.GetModPath.Provider(pi, api.Mods),
             IpcSubscribers.SetModPath.Provider(pi, api.Mods),
             IpcSubscribers.GetChangedItems.Provider(pi, api.Mods),
+            IpcSubscribers.GetChangedItemAdapterDictionary.Provider(pi, api.Mods),
+            IpcSubscribers.GetChangedItemAdapterList.Provider(pi, api.Mods),
 
             IpcSubscribers.GetAvailableModSettings.Provider(pi, api.ModSettings),
             IpcSubscribers.GetCurrentModSettings.Provider(pi, api.ModSettings),
