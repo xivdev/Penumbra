@@ -127,7 +127,7 @@ public class ItemSwapContainer
             ? new MetaDictionary(cache)
             : _appliedModData.Manipulations;
 
-    public EquipItem[] LoadEquipment(EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true,
+    public HashSet<EquipItem> LoadEquipment(EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true,
         bool useLeftRing = true)
     {
         Swaps.Clear();
@@ -138,7 +138,7 @@ public class ItemSwapContainer
         return ret;
     }
 
-    public EquipItem[] LoadTypeSwap(EquipSlot slotFrom, EquipItem from, EquipSlot slotTo, EquipItem to, ModCollection? collection = null)
+    public HashSet<EquipItem> LoadTypeSwap(EquipSlot slotFrom, EquipItem from, EquipSlot slotTo, EquipItem to, ModCollection? collection = null)
     {
         Swaps.Clear();
         Loaded = false;

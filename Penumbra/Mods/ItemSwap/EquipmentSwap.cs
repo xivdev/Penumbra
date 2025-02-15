@@ -27,31 +27,31 @@ public static class EquipmentSwap
                 : [];
     }
 
-    public static EquipItem[] CreateTypeSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
+    public static HashSet<EquipItem> CreateTypeSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, MetaDictionary manips,
         EquipSlot slotFrom, EquipItem itemFrom, EquipSlot slotTo, EquipItem itemTo)
     {
         LookupItem(itemFrom, out var actualSlotFrom, out var idFrom, out var variantFrom);
-        LookupItem(itemTo, out var actualSlotTo, out var idTo, out var variantTo);
+        LookupItem(itemTo,   out var actualSlotTo,   out var idTo,   out var variantTo);
         if (actualSlotFrom != slotFrom.ToSlot() || actualSlotTo != slotTo.ToSlot())
             throw new ItemSwap.InvalidItemTypeException();
 
         var (imcFileFrom, variants, affectedItems) = GetVariants(manager, identifier, slotFrom, idFrom, idTo, variantFrom);
         var imcIdentifierTo = new ImcIdentifier(slotTo, idTo, variantTo);
-        var imcFileTo = new ImcFile(manager, imcIdentifierTo);
+        var imcFileTo       = new ImcFile(manager, imcIdentifierTo);
         var imcEntry = manips.TryGetValue(imcIdentifierTo, out var entry)
             ? entry
             : imcFileTo.GetEntry(imcIdentifierTo.EquipSlot, imcIdentifierTo.Variant);
         var mtrlVariantTo = imcEntry.MaterialId;
-        var skipFemale = false;
-        var skipMale = false;
+        var skipFemale    = false;
+        var skipMale      = false;
         foreach (var gr in Enum.GetValues<GenderRace>())
         {
             switch (gr.Split().Item1)
             {
-                case Gender.Male when skipMale: continue;
-                case Gender.Female when skipFemale: continue;
-                case Gender.MaleNpc when skipMale: continue;
+                case Gender.Male when skipMale:        continue;
+                case Gender.Female when skipFemale:    continue;
+                case Gender.MaleNpc when skipMale:     continue;
                 case Gender.FemaleNpc when skipFemale: continue;
             }
 
@@ -88,30 +88,40 @@ public static class EquipmentSwap
         return affectedItems;
     }
 
-    public static EquipItem[] CreateItemSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
+    public static HashSet<EquipItem> CreateItemSwap(MetaFileManager manager, ObjectIdentification identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, MetaDictionary manips, EquipItem itemFrom,
         EquipItem itemTo, bool rFinger = true, bool lFinger = true)
     {
         // Check actual ids, variants and slots. We only support using the same slot.
         LookupItem(itemFrom, out var slotFrom, out var idFrom, out var variantFrom);
-        LookupItem(itemTo, out var slotTo, out var idTo, out var variantTo);
+        LookupItem(itemTo,   out var slotTo,   out var idTo,   out var variantTo);
         if (slotFrom != slotTo)
             throw new ItemSwap.InvalidItemTypeException();
 
-        var eqp = CreateEqp(manager, manips, slotFrom, idFrom, idTo);
+        HashSet<EquipItem> affectedItems = [];
+        var                eqp           = CreateEqp(manager, manips, slotFrom, idFrom, idTo);
         if (eqp != null)
+        {
             swaps.Add(eqp);
+            // Add items affected through multi-slot EQP edits.
+            foreach (var child in eqp.ChildSwaps.SelectMany(c => c.WithChildren()).OfType<MetaSwap<EqpIdentifier, EqpEntryInternal>>())
+            {
+                affectedItems.UnionWith(identifier
+                    .Identify(GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, child.SwapFromIdentifier.Slot))
+                    .Select(kvp => kvp.Value).OfType<IdentifiedItem>().Select(i => i.Item));
+            }
+        }
 
         var gmp = CreateGmp(manager, manips, slotFrom, idFrom, idTo);
         if (gmp != null)
             swaps.Add(gmp);
 
-        var affectedItems = Array.Empty<EquipItem>();
         foreach (var slot in ConvertSlots(slotFrom, rFinger, lFinger))
         {
-            (var imcFileFrom, var variants, affectedItems) = GetVariants(manager, identifier, slot, idFrom, idTo, variantFrom);
+            var (imcFileFrom, variants, affectedItemsLocal) = GetVariants(manager, identifier, slot, idFrom, idTo, variantFrom);
+            affectedItems.UnionWith(affectedItemsLocal);
             var imcIdentifierTo = new ImcIdentifier(slotTo, idTo, variantTo);
-            var imcFileTo = new ImcFile(manager, imcIdentifierTo);
+            var imcFileTo       = new ImcFile(manager, imcIdentifierTo);
             var imcEntry = manips.TryGetValue(imcIdentifierTo, out var entry)
                 ? entry
                 : imcFileTo.GetEntry(imcIdentifierTo.EquipSlot, imcIdentifierTo.Variant);
@@ -122,18 +132,18 @@ public static class EquipmentSwap
             {
                 EquipSlot.Head => EstType.Head,
                 EquipSlot.Body => EstType.Body,
-                _ => (EstType)0,
+                _              => (EstType)0,
             };
 
             var skipFemale = false;
-            var skipMale = false;
+            var skipMale   = false;
             foreach (var gr in Enum.GetValues<GenderRace>())
             {
                 switch (gr.Split().Item1)
                 {
-                    case Gender.Male when skipMale: continue;
-                    case Gender.Female when skipFemale: continue;
-                    case Gender.MaleNpc when skipMale: continue;
+                    case Gender.Male when skipMale:        continue;
+                    case Gender.Female when skipFemale:    continue;
+                    case Gender.MaleNpc when skipMale:     continue;
                     case Gender.FemaleNpc when skipFemale: continue;
                 }
 
@@ -148,7 +158,7 @@ public static class EquipmentSwap
                         swaps.Add(eqdp);
 
                     var ownMdl = eqdp?.SwapToModdedEntry.Model ?? false;
-                    var est = ItemSwap.CreateEst(manager, redirections, manips, estType, gr, idFrom, idTo, ownMdl);
+                    var est    = ItemSwap.CreateEst(manager, redirections, manips, estType, gr, idFrom, idTo, ownMdl);
                     if (est != null)
                         swaps.Add(est);
                 }
@@ -176,6 +186,7 @@ public static class EquipmentSwap
 
         return affectedItems;
     }
+
     public static MetaSwap<EqdpIdentifier, EqdpEntryInternal>? CreateEqdp(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections,
         MetaDictionary manips, EquipSlot slot, GenderRace gr, PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
         => CreateEqdp(manager, redirections, manips, slot, slot, gr, idFrom, idTo, mtrlTo);
@@ -185,9 +196,9 @@ public static class EquipmentSwap
         PrimaryId idTo, byte mtrlTo)
     {
         var eqdpFromIdentifier = new EqdpIdentifier(idFrom, slotFrom, gr);
-        var eqdpToIdentifier = new EqdpIdentifier(idTo, slotTo, gr);
-        var eqdpFromDefault = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(manager, eqdpFromIdentifier), slotFrom);
-        var eqdpToDefault = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(manager, eqdpToIdentifier), slotTo);
+        var eqdpToIdentifier   = new EqdpIdentifier(idTo,   slotTo,   gr);
+        var eqdpFromDefault    = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(manager, eqdpFromIdentifier), slotFrom);
+        var eqdpToDefault      = new EqdpEntryInternal(ExpandedEqdpFile.GetDefault(manager, eqdpToIdentifier),   slotTo);
         var meta = new MetaSwap<EqdpIdentifier, EqdpEntryInternal>(i => manips.TryGetValue(i, out var e) ? e : null, eqdpFromIdentifier,
             eqdpFromDefault, eqdpToIdentifier,
             eqdpToDefault);
@@ -216,7 +227,7 @@ public static class EquipmentSwap
             ? GamePaths.Accessory.Mdl.Path(idFrom, gr, slotFrom)
             : GamePaths.Equipment.Mdl.Path(idFrom, gr, slotFrom);
         var mdlPathTo = slotTo.IsAccessory() ? GamePaths.Accessory.Mdl.Path(idTo, gr, slotTo) : GamePaths.Equipment.Mdl.Path(idTo, gr, slotTo);
-        var mdl = FileSwap.CreateSwap(manager, ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo);
+        var mdl       = FileSwap.CreateSwap(manager, ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo);
 
         foreach (ref var fileName in mdl.AsMdl()!.Materials.AsSpan())
         {
@@ -238,16 +249,17 @@ public static class EquipmentSwap
         variant = i.Variant;
     }
 
-    private static (ImcFile, Variant[], EquipItem[]) GetVariants(MetaFileManager manager, ObjectIdentification identifier, EquipSlot slotFrom,
+    private static (ImcFile, Variant[], HashSet<EquipItem>) GetVariants(MetaFileManager manager, ObjectIdentification identifier,
+        EquipSlot slotFrom,
         PrimaryId idFrom, PrimaryId idTo, Variant variantFrom)
     {
-        var ident = new ImcIdentifier(slotFrom, idFrom, variantFrom);
-        var imc = new ImcFile(manager, ident);
-        EquipItem[] items;
-        Variant[] variants;
+        var                ident = new ImcIdentifier(slotFrom, idFrom, variantFrom);
+        var                imc   = new ImcFile(manager, ident);
+        HashSet<EquipItem> items;
+        Variant[]          variants;
         if (idFrom == idTo)
         {
-            items = identifier.Identify(idFrom, 0, variantFrom, slotFrom).ToArray();
+            items    = identifier.Identify(idFrom, 0, variantFrom, slotFrom).ToHashSet();
             variants = [variantFrom];
         }
         else
@@ -256,7 +268,7 @@ public static class EquipmentSwap
                     ? GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)
                     : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom))
                 .Select(kvp => kvp.Value).OfType<IdentifiedItem>().Select(i => i.Item)
-                .ToArray();
+                .ToHashSet();
             variants = Enumerable.Range(0, imc.Count + 1).Select(i => (Variant)i).ToArray();
         }
 
@@ -270,9 +282,9 @@ public static class EquipmentSwap
             return null;
 
         var manipFromIdentifier = new GmpIdentifier(idFrom);
-        var manipToIdentifier = new GmpIdentifier(idTo);
-        var manipFromDefault = ExpandedGmpFile.GetDefault(manager, manipFromIdentifier);
-        var manipToDefault = ExpandedGmpFile.GetDefault(manager, manipToIdentifier);
+        var manipToIdentifier   = new GmpIdentifier(idTo);
+        var manipFromDefault    = ExpandedGmpFile.GetDefault(manager, manipFromIdentifier);
+        var manipToDefault      = ExpandedGmpFile.GetDefault(manager, manipToIdentifier);
         return new MetaSwap<GmpIdentifier, GmpEntry>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier, manipFromDefault,
             manipToIdentifier, manipToDefault);
     }
@@ -287,9 +299,9 @@ public static class EquipmentSwap
         Variant variantFrom, Variant variantTo, ImcFile imcFileFrom, ImcFile imcFileTo)
     {
         var manipFromIdentifier = new ImcIdentifier(slotFrom, idFrom, variantFrom);
-        var manipToIdentifier = new ImcIdentifier(slotTo, idTo, variantTo);
-        var manipFromDefault = imcFileFrom.GetEntry(ImcFile.PartIndex(slotFrom), variantFrom);
-        var manipToDefault = imcFileTo.GetEntry(ImcFile.PartIndex(slotTo), variantTo);
+        var manipToIdentifier   = new ImcIdentifier(slotTo,   idTo,   variantTo);
+        var manipFromDefault    = imcFileFrom.GetEntry(ImcFile.PartIndex(slotFrom), variantFrom);
+        var manipToDefault      = imcFileTo.GetEntry(ImcFile.PartIndex(slotTo), variantTo);
         var imc = new MetaSwap<ImcIdentifier, ImcEntry>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier, manipFromDefault,
             manipToIdentifier, manipToDefault);
 
@@ -328,7 +340,7 @@ public static class EquipmentSwap
         var vfxPathFrom = GamePaths.Equipment.Avfx.Path(idFrom, vfxId);
         vfxPathFrom = ItemSwap.ReplaceType(vfxPathFrom, slotFrom, slotTo, idFrom);
         var vfxPathTo = GamePaths.Equipment.Avfx.Path(idTo, vfxId);
-        var avfx = FileSwap.CreateSwap(manager, ResourceType.Avfx, redirections, vfxPathFrom, vfxPathTo);
+        var avfx      = FileSwap.CreateSwap(manager, ResourceType.Avfx, redirections, vfxPathFrom, vfxPathTo);
 
         foreach (ref var filePath in avfx.AsAvfx()!.Textures.AsSpan())
         {
@@ -339,18 +351,42 @@ public static class EquipmentSwap
         return avfx;
     }
 
-    public static MetaSwap<EqpIdentifier, EqpEntryInternal>? CreateEqp(MetaFileManager manager, MetaDictionary manips,
-        EquipSlot slot, PrimaryId idFrom, PrimaryId idTo)
+    public static MetaSwap<EqpIdentifier, EqpEntryInternal>? CreateEqp(MetaFileManager manager, MetaDictionary manips, EquipSlot slot,
+        PrimaryId idFrom, PrimaryId idTo)
     {
         if (slot.IsAccessory())
             return null;
 
         var manipFromIdentifier = new EqpIdentifier(idFrom, slot);
-        var manipToIdentifier = new EqpIdentifier(idTo, slot);
-        var manipFromDefault = new EqpEntryInternal(ExpandedEqpFile.GetDefault(manager, idFrom), slot);
-        var manipToDefault = new EqpEntryInternal(ExpandedEqpFile.GetDefault(manager, idTo), slot);
-        return new MetaSwap<EqpIdentifier, EqpEntryInternal>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier,
+        var manipToIdentifier   = new EqpIdentifier(idTo,   slot);
+        var manipFromDefault    = new EqpEntryInternal(ExpandedEqpFile.GetDefault(manager, idFrom), slot);
+        var manipToDefault      = new EqpEntryInternal(ExpandedEqpFile.GetDefault(manager, idTo),   slot);
+        var swap = new MetaSwap<EqpIdentifier, EqpEntryInternal>(i => manips.TryGetValue(i, out var e) ? e : null, manipFromIdentifier,
             manipFromDefault, manipToIdentifier, manipToDefault);
+        var entry = swap.SwapToModdedEntry.ToEntry(slot);
+        // Add additional EQP entries if the swapped item is a multi-slot item,
+        // because those take the EQP entries of their other model-set slots when used.
+        switch (slot)
+        {
+            case EquipSlot.Body:
+                if (!entry.HasFlag(EqpEntry.BodyShowLeg)
+                 && CreateEqp(manager, manips, EquipSlot.Legs, idFrom, idTo) is { } legChild)
+                    swap.ChildSwaps.Add(legChild);
+                if (!entry.HasFlag(EqpEntry.BodyShowHead)
+                 && CreateEqp(manager, manips, EquipSlot.Head, idFrom, idTo) is { } headChild)
+                    swap.ChildSwaps.Add(headChild);
+                if (!entry.HasFlag(EqpEntry.BodyShowHand)
+                 && CreateEqp(manager, manips, EquipSlot.Hands, idFrom, idTo) is { } handChild)
+                    swap.ChildSwaps.Add(handChild);
+                break;
+            case EquipSlot.Legs:
+                if (!entry.HasFlag(EqpEntry.LegsShowFoot)
+                 && CreateEqp(manager, manips, EquipSlot.Feet, idFrom, idTo) is { } footChild)
+                    swap.ChildSwaps.Add(footChild);
+                break;
+        }
+
+        return swap;
     }
 
     public static FileSwap? CreateMtrl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slot, PrimaryId idFrom,
@@ -380,7 +416,7 @@ public static class EquipmentSwap
 
         if (newFileName != fileName)
         {
-            fileName = newFileName;
+            fileName       = newFileName;
             dataWasChanged = true;
         }
 
@@ -405,13 +441,13 @@ public static class EquipmentSwap
         EquipSlot slotTo, PrimaryId idFrom, PrimaryId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged)
     {
         var addedDashes = GamePaths.Tex.HandleDx11Path(texture, out var path);
-        var newPath = ItemSwap.ReplaceAnyId(path, prefix, idFrom);
+        var newPath     = ItemSwap.ReplaceAnyId(path, prefix, idFrom);
         newPath = ItemSwap.ReplaceSlot(newPath, slotTo, slotFrom, slotTo != slotFrom);
         newPath = ItemSwap.ReplaceType(newPath, slotFrom, slotTo, idFrom);
         newPath = ItemSwap.AddSuffix(newPath, ".tex", $"_{Path.GetFileName(texture.Path).GetStableHashCode():x8}");
         if (newPath != path)
         {
-            texture.Path = addedDashes ? newPath.Replace("--", string.Empty) : newPath;
+            texture.Path   = addedDashes ? newPath.Replace("--", string.Empty) : newPath;
             dataWasChanged = true;
         }
 
@@ -429,8 +465,8 @@ public static class EquipmentSwap
         PrimaryId idFrom, ref string filePath, ref bool dataWasChanged)
     {
         var oldPath = filePath;
-        filePath = ItemSwap.AddSuffix(filePath, ".atex", $"_{Path.GetFileName(filePath).GetStableHashCode():x8}");
-        filePath = ItemSwap.ReplaceType(filePath, slotFrom, slotTo, idFrom);
+        filePath       = ItemSwap.AddSuffix(filePath, ".atex", $"_{Path.GetFileName(filePath).GetStableHashCode():x8}");
+        filePath       = ItemSwap.ReplaceType(filePath, slotFrom, slotTo, idFrom);
         dataWasChanged = true;
 
         return FileSwap.CreateSwap(manager, ResourceType.Atex, redirections, filePath, oldPath, oldPath);

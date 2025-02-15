@@ -180,7 +180,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
     private bool       _useLeftRing  = true;
     private bool       _useRightRing = true;
 
-    private EquipItem[]? _affectedItems;
+    private HashSet<EquipItem>? _affectedItems;
 
     private void UpdateState()
     {
@@ -541,11 +541,11 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
 
         _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
             ImGui.GetTextLineHeightWithSpacing());
-        if (_affectedItems is not { Length: > 1 })
+        if (_affectedItems is not { Count: > 1 })
             return;
 
         ImGui.SameLine();
-        ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
+        ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, selector.CurrentSelection.Item.Name))
@@ -602,11 +602,11 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
             _dirty |= ImGui.Checkbox("Swap Left Ring", ref _useLeftRing);
         }
 
-        if (_affectedItems is not { Length: > 1 })
+        if (_affectedItems is not { Count: > 1 })
             return;
 
         ImGui.SameLine();
-        ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
+        ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, targetSelector.CurrentSelection.Item.Name))
