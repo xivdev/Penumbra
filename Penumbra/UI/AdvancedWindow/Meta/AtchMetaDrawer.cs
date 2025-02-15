@@ -1,11 +1,14 @@
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiNotification;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;
@@ -13,6 +16,7 @@ using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
+using Notification = OtterGui.Classes.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
@@ -27,9 +31,9 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
     public override float ColumnHeight
         => 2 * ImUtf8.FrameHeightSpacing;
 
-    private AtchFile?      _currentBaseAtchFile;
-    private AtchPoint?     _currentBaseAtchPoint;
-    private AtchPointCombo _combo;
+    private          AtchFile?      _currentBaseAtchFile;
+    private          AtchPoint?     _currentBaseAtchPoint;
+    private readonly AtchPointCombo _combo;
 
     public AtchMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
         : base(editor, metaFiles)
@@ -42,6 +46,41 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
     {
         protected override string ToString(AtchType obj)
             => obj.ToName();
+    }
+
+    public void ImportFile(string filePath)
+    {
+        try
+        {
+            if (filePath.Length == 0 || !File.Exists(filePath))
+                throw new FileNotFoundException();
+
+            var gr = GamePaths.ParseRaceCode(filePath);
+            if (gr is GenderRace.Unknown)
+                throw new Exception($"Could not identify race code from path {filePath}.");
+            var text        = File.ReadAllBytes(filePath);
+            var file        = new AtchFile(text);
+            foreach (var point in file.Points)
+            {
+                foreach (var (entry, index) in point.Entries.WithIndex())
+                {
+                    var identifier   = new AtchIdentifier(point.Type, gr, (ushort) index);
+                    var defaultValue = AtchCache.GetDefault(MetaFiles, identifier);
+                    if (defaultValue == null)
+                        continue;
+
+                    if (defaultValue.Value.Equals(entry))
+                        Editor.Changes |= Editor.Remove(identifier);
+                    else
+                        Editor.Changes |= Editor.TryAdd(identifier, entry) || Editor.Update(identifier, entry);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Messager.AddMessage(new Notification(ex, "Unable to import .atch file.", "Could not import .atch file:",
+                NotificationType.Warning));
+        }
     }
 
 

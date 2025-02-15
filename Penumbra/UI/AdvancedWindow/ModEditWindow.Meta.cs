@@ -4,6 +4,8 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Api;
+using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
@@ -43,8 +45,10 @@ public partial class ModEditWindow
         if (ImUtf8.Button("Write as TexTools Files"u8))
             _metaFileManager.WriteAllTexToolsMeta(Mod!);
         ImGui.SameLine();
-        if (ImUtf8.ButtonEx("Remove All Default-Values", "Delete any entries from all lists that set the value to its default value."u8))
+        if (ImUtf8.ButtonEx("Remove All Default-Values"u8, "Delete any entries from all lists that set the value to its default value."u8))
             _editor.MetaEditor.DeleteDefaultValues();
+        ImGui.SameLine();
+        DrawAtchDragDrop();
 
         using var child = ImRaii.Child("##meta", -Vector2.One, true);
         if (!child)
@@ -58,6 +62,25 @@ public partial class ModEditWindow
         DrawEditHeader(MetaManipulationType.Rsp);
         DrawEditHeader(MetaManipulationType.Atch);
         DrawEditHeader(MetaManipulationType.GlobalEqp);
+    }
+
+    private void DrawAtchDragDrop()
+    {
+        _dragDropManager.CreateImGuiSource("atchDrag", f => f.Extensions.Contains(".atch"), f =>
+        {
+            var gr = GamePaths.ParseRaceCode(f.Files.FirstOrDefault() ?? string.Empty);
+            if (gr is GenderRace.Unknown)
+                return false;
+
+            ImUtf8.Text($"Dragging .atch for {gr.ToName()}...");
+            return true;
+        });
+        ImUtf8.ButtonEx("Import .atch"u8,
+            _dragDropManager.IsDragging ? ""u8 : "Drag a .atch file containinig its race code in the path here to import its values."u8,
+            default,
+            !_dragDropManager.IsDragging);
+        if (_dragDropManager.CreateImGuiTarget("atchDrag", out var files, out _) && files.FirstOrDefault() is { } file)
+            _metaDrawers.Atch.ImportFile(file);
     }
 
     private void DrawEditHeader(MetaManipulationType type)
