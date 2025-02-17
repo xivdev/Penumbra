@@ -114,6 +114,20 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
         return true;
     }
 
+    public int ClearTemporarySettings(ModCollection collection, int key = 0)
+    {
+        var numRemoved = 0;
+        for (var i = 0; i < collection.Settings.Count; ++i)
+        {
+            if (collection.GetTempSettings(i) is { } tempSettings
+             && tempSettings.Lock == key
+             && SetTemporarySettings(collection, modStorage[i], null, key))
+                ++numRemoved;
+        }
+
+        return numRemoved;
+    }
+
     public bool CanSetTemporarySettings(ModCollection collection, Mod mod, int key)
     {
         var old = collection.GetTempSettings(mod.Index);

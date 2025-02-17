@@ -64,6 +64,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SubscribeRightClickLeaf(ToggleLeafFavorite);
         SubscribeRightClickLeaf(DrawTemporaryOptions);
         SubscribeRightClickLeaf(l => QuickMove(l, _config.QuickMoveFolder1, _config.QuickMoveFolder2, _config.QuickMoveFolder3));
+        SubscribeRightClickMain(ClearTemporarySettings, 105);
         SubscribeRightClickMain(ClearDefaultImportFolder, 100);
         SubscribeRightClickMain(() => ClearQuickMove(0, _config.QuickMoveFolder1, () => {_config.QuickMoveFolder1 = string.Empty; _config.Save();}), 110);
         SubscribeRightClickMain(() => ClearQuickMove(1, _config.QuickMoveFolder2, () => {_config.QuickMoveFolder2 = string.Empty; _config.Save();}), 120);
@@ -237,8 +238,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     // Add custom context menu items.
     private void EnableDescendants(ModFileSystem.Folder folder)
     {
-        if (ImGui.MenuItem("Enable Descendants"))
+        if (ImUtf8.MenuItem("Enable Descendants"u8))
             SetDescendants(folder, true);
+    }
+
+    private void ClearTemporarySettings()
+    {
+        if (ImUtf8.MenuItem("Clear Temporary Settings"u8))
+            _collectionManager.Editor.ClearTemporarySettings(_collectionManager.Active.Current);
     }
 
     private void DisableDescendants(ModFileSystem.Folder folder)

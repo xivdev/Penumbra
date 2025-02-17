@@ -130,8 +130,8 @@ public class TemporaryApi(
         return ApiHelpers.Return(ret, args);
     }
 
-    public (PenumbraApiEc, (bool, bool, int, Dictionary<string, List<string>>)?, string) QueryTemporaryModSettings(Guid collectionId, string modDirectory,
-        string modName, int key)
+    public (PenumbraApiEc, (bool, bool, int, Dictionary<string, List<string>>)?, string) QueryTemporaryModSettings(Guid collectionId,
+        string modDirectory, string modName, int key)
     {
         var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName);
         if (!collectionManager.Storage.ById(collectionId, out var collection))
@@ -296,15 +296,7 @@ public class TemporaryApi(
         if (collection.Identity.Index <= 0)
             return ApiHelpers.Return(PenumbraApiEc.NothingChanged, args);
 
-        var numRemoved = 0;
-        for (var i = 0; i < collection.Settings.Count; ++i)
-        {
-            if (collection.GetTempSettings(i) is { } tempSettings
-             && tempSettings.Lock == key
-             && collectionManager.Editor.SetTemporarySettings(collection, modManager[i], null, key))
-                ++numRemoved;
-        }
-
+        var numRemoved = collectionManager.Editor.ClearTemporarySettings(collection, key);
         return ApiHelpers.Return(numRemoved > 0 ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged, args);
     }
 
