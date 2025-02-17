@@ -274,8 +274,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void DrawTemporaryOptions(FileSystem<Mod>.Leaf mod)
     {
-        const string source       = "yourself";
-        var          tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
+        var tempSettings = _collectionManager.Active.Current.GetTempSettings(mod.Value.Index);
         if (tempSettings is { Lock: > 0 })
             return;
 
@@ -284,19 +283,19 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         var actual = _collectionManager.Active.Current.GetActualSettings(mod.Value.Index).Settings;
         if (actual?.Enabled is true && ImUtf8.MenuItem("Disable Temporarily"u8))
             _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
-                new TemporaryModSettings(mod.Value, actual, source) { Enabled = false });
+                new TemporaryModSettings(mod.Value, actual) { Enabled = false });
 
         if (actual is not { Enabled: true } && ImUtf8.MenuItem("Enable Temporarily"u8))
         {
             var newSettings = actual is null
-                ? TemporaryModSettings.DefaultSettings(mod.Value, source, true)
-                : new TemporaryModSettings(mod.Value, actual, source) { Enabled = true };
+                ? TemporaryModSettings.DefaultSettings(mod.Value, TemporaryModSettings.OwnSource, true)
+                : new TemporaryModSettings(mod.Value, actual) { Enabled = true };
             _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value, newSettings);
         }
 
         if (tempSettings is null && ImUtf8.MenuItem("Turn Temporary"u8))
             _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, mod.Value,
-                new TemporaryModSettings(mod.Value, actual, source));
+                new TemporaryModSettings(mod.Value, actual));
     }
 
     private void SetDefaultImportFolder(ModFileSystem.Folder folder)

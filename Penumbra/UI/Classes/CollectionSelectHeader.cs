@@ -1,7 +1,10 @@
+using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Services;
+using OtterGui.Text;
+using OtterGui.Text.Widget;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -12,18 +15,21 @@ namespace Penumbra.UI.Classes;
 
 public class CollectionSelectHeader : IUiService
 {
-    private readonly CollectionCombo    _collectionCombo;
-    private readonly ActiveCollections  _activeCollections;
-    private readonly TutorialService    _tutorial;
-    private readonly ModSelection       _selection;
-    private readonly CollectionResolver _resolver;
+    private readonly CollectionCombo     _collectionCombo;
+    private readonly ActiveCollections   _activeCollections;
+    private readonly TutorialService     _tutorial;
+    private readonly ModSelection        _selection;
+    private readonly CollectionResolver  _resolver;
+    private readonly FontAwesomeCheckbox _temporaryCheckbox = new(FontAwesomeIcon.Stopwatch);
+    private readonly Configuration       _config;
 
     public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModSelection selection,
-        CollectionResolver resolver)
+        CollectionResolver resolver, Configuration config)
     {
         _tutorial          = tutorial;
         _selection         = selection;
         _resolver          = resolver;
+        _config            = config;
         _activeCollections = collectionManager.Active;
         _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Identity.Name).ToList());
     }
@@ -33,6 +39,8 @@ public class CollectionSelectHeader : IUiService
     {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
             .Push(ImGuiStyleVar.ItemSpacing, new Vector2(0, spacing ? ImGui.GetStyle().ItemSpacing.Y : 0));
+        DrawTemporaryCheckbox();
+        ImGui.SameLine();
         var comboWidth = ImGui.GetContentRegionAvail().X / 4f;
         var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
         using (var _ = ImRaii.Group())
@@ -49,6 +57,29 @@ public class CollectionSelectHeader : IUiService
 
         if (!_activeCollections.CurrentCollectionInUse)
             ImGuiUtil.DrawTextButton("The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg);
+    }
+
+    private void DrawTemporaryCheckbox()
+    {
+        var hold = _config.DeleteModModifier.IsActive();
+        using (ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImUtf8.GlobalScale))
+        {
+            var tint = ImGuiCol.Text.Tinted(ColorId.TemporaryModSettingsTint);
+            using var color = ImRaii.PushColor(ImGuiCol.FrameBgHovered, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
+                .Push(ImGuiCol.FrameBgActive, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
+                .Push(ImGuiCol.CheckMark,     tint)
+                .Push(ImGuiCol.Border,        tint, _config.DefaultTemporaryMode);
+            if (_temporaryCheckbox.Draw("##tempCheck"u8, _config.DefaultTemporaryMode, out var newValue) && hold)
+            {
+                _config.DefaultTemporaryMode = newValue;
+                _config.Save();
+            }
+        }
+
+        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
+            "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired.\n"u8);
+        if (!hold)
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to toggle.");
     }
 
     private enum CollectionState

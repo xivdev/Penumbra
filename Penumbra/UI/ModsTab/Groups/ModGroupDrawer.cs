@@ -20,6 +20,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     private          bool                   _temporary;
     private          bool                   _locked;
     private          TemporaryModSettings?  _tempSettings;
+    private          ModSettings?           _settings;
 
     public void Draw(Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
@@ -27,6 +28,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
             return;
 
         _blockGroupCache.Clear();
+        _settings     = settings;
         _tempSettings = tempSettings;
         _temporary    = tempSettings != null;
         _locked       = (tempSettings?.Lock ?? 0) > 0;
@@ -242,10 +244,11 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void SetModSetting(IModGroup group, int groupIdx, Setting setting)
     {
-        if (_temporary)
+        if (_temporary || config.DefaultTemporaryMode)
         {
-            _tempSettings!.ForceInherit       = false;
-            _tempSettings!.Settings[groupIdx] = setting;
+            _tempSettings                     ??= new TemporaryModSettings(group.Mod, _settings);
+            _tempSettings!.ForceInherit       =   false;
+            _tempSettings!.Settings[groupIdx] =   setting;
             collectionManager.Editor.SetTemporarySettings(Current, group.Mod, _tempSettings);
         }
         else

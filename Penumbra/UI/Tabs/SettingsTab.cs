@@ -430,7 +430,6 @@ public class SettingsTab : ITab, IUiService
         Checkbox("Automatically Select Character-Associated Collection",
             "On every login, automatically select the collection associated with the current character as the current collection for editing.",
             _config.AutoSelectCollection, _autoSelector.SetAutomaticSelection);
-
         Checkbox("Print Chat Command Success Messages to Chat",
             "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here.",
             _config.PrintSuccessfulCommandsToChat, v => _config.PrintSuccessfulCommandsToChat = v);
@@ -618,6 +617,9 @@ public class SettingsTab : ITab, IUiService
     /// <summary> Draw all settings pertaining to import and export of mods. </summary>
     private void DrawModHandlingSettings()
     {
+        Checkbox("Use Temporary Settings Per Default",
+            "When you make any changes to your collection, apply them as temporary changes first and require a click to 'turn permanent' if you want to keep them.",
+            _config.DefaultTemporaryMode, v => _config.DefaultTemporaryMode = v);
         Checkbox("Replace Non-Standard Symbols On Import",
             "Replace all non-ASCII symbols in mod and option names with underscores when importing mods.", _config.ReplaceNonAsciiOnImport,
             v => _config.ReplaceNonAsciiOnImport = v);

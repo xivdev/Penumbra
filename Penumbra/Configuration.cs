@@ -70,6 +70,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool        HidePrioritiesInSelector             { get; set; } = false;
     public bool        HideRedrawBar                        { get; set; } = false;
     public bool        HideMachinistOffhandFromChangedItems { get; set; } = true;
+    public bool        DefaultTemporaryMode                 { get; set; } = false;
     public RenameField ShowRename                           { get; set; } = RenameField.BothDataPrio;
     public int         OptionGroupCollapsibleMin            { get; set; } = 5;
 
