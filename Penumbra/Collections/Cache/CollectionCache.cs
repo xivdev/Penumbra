@@ -282,11 +282,11 @@ public sealed class CollectionCache : IDisposable
         {
             case ".atch" or ".eqp" or ".eqdp" or ".est" or ".gmp" or ".cmp" or ".imc":
                 Penumbra.Messager.NotificationMessage(
-                    $"Redirection of {ext} files for {mod.Name} is unsupported. Please use the corresponding meta manipulations instead.",
+                    $"Redirection of {ext} files for {mod.Name} is unsupported. This probably means that the mod is outdated and may not work correctly.\n\nPlease tell the mod creator to use the corresponding meta manipulations instead.",
                     NotificationType.Warning);
                 return false;
             case ".lvb" or ".lgb" or ".sgb":
-                Penumbra.Messager.NotificationMessage($"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.",
+                Penumbra.Messager.NotificationMessage($"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.\n\nThis mod will probably not work correctly.",
                     NotificationType.Warning);
                 return false;
             default: return true;
