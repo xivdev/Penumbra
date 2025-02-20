@@ -1,4 +1,3 @@
-using System;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.Memory;
 using SharpGLTF.Schema2;
@@ -11,7 +10,7 @@ Realistically, it will need to stick around until transforms/mutations are built
 and there's reason to overhaul the export pipeline.
 */
 
-public struct VertexColorFfxiv : IVertexCustom
+public struct VertexColorFfxiv(Vector4 ffxivColor) : IVertexCustom
 {
     public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
     {
@@ -20,7 +19,7 @@ public struct VertexColorFfxiv : IVertexCustom
             new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
     }
 
-    public Vector4 FfxivColor;
+    public Vector4 FfxivColor = ffxivColor;
 
     public int MaxColors
         => 0;
@@ -32,9 +31,6 @@ public struct VertexColorFfxiv : IVertexCustom
 
     public IEnumerable<string> CustomAttributes
         => CustomNames;
-
-    public VertexColorFfxiv(Vector4 ffxivColor)
-        => FfxivColor = ffxivColor;
 
     public void Add(in VertexMaterialDelta delta)
     { }
@@ -88,7 +84,7 @@ public struct VertexColorFfxiv : IVertexCustom
     }
 }
 
-public struct VertexTexture1ColorFfxiv : IVertexCustom
+public struct VertexTexture1ColorFfxiv(Vector2 texCoord0, Vector4 ffxivColor) : IVertexCustom
 {
     public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
     {
@@ -98,9 +94,9 @@ public struct VertexTexture1ColorFfxiv : IVertexCustom
             new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
     }
 
-    public Vector2 TexCoord0;
+    public Vector2 TexCoord0 = texCoord0;
 
-    public Vector4 FfxivColor;
+    public Vector4 FfxivColor = ffxivColor;
 
     public int MaxColors
         => 0;
@@ -112,12 +108,6 @@ public struct VertexTexture1ColorFfxiv : IVertexCustom
 
     public IEnumerable<string> CustomAttributes
         => CustomNames;
-
-    public VertexTexture1ColorFfxiv(Vector2 texCoord0, Vector4 ffxivColor)
-    {
-        TexCoord0  = texCoord0;
-        FfxivColor = ffxivColor;
-    }
 
     public void Add(in VertexMaterialDelta delta)
     {
@@ -182,7 +172,7 @@ public struct VertexTexture1ColorFfxiv : IVertexCustom
     }
 }
 
-public struct VertexTexture2ColorFfxiv : IVertexCustom
+public struct VertexTexture2ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivColor) : IVertexCustom
 {
     public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
     {
@@ -194,9 +184,9 @@ public struct VertexTexture2ColorFfxiv : IVertexCustom
             new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
     }
 
-    public Vector2 TexCoord0;
-    public Vector2 TexCoord1;
-    public Vector4 FfxivColor;
+    public Vector2 TexCoord0  = texCoord0;
+    public Vector2 TexCoord1  = texCoord1;
+    public Vector4 FfxivColor = ffxivColor;
 
     public int MaxColors
         => 0;
@@ -208,13 +198,6 @@ public struct VertexTexture2ColorFfxiv : IVertexCustom
 
     public IEnumerable<string> CustomAttributes
         => CustomNames;
-
-    public VertexTexture2ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vector4 ffxivColor)
-    {
-        TexCoord0  = texCoord0;
-        TexCoord1  = texCoord1;
-        FfxivColor = ffxivColor;
-    }
 
     public void Add(in VertexMaterialDelta delta)
     {
@@ -283,7 +266,8 @@ public struct VertexTexture2ColorFfxiv : IVertexCustom
     }
 }
 
-public struct VertexTexture3ColorFfxiv : IVertexCustom
+public struct VertexTexture3ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivColor)
+    : IVertexCustom
 {
     public IEnumerable<KeyValuePair<string, AttributeFormat>> GetEncodingAttributes()
     {
@@ -297,10 +281,10 @@ public struct VertexTexture3ColorFfxiv : IVertexCustom
             new AttributeFormat(DimensionType.VEC4, EncodingType.UNSIGNED_SHORT, true));
     }
 
-    public Vector2 TexCoord0;
-    public Vector2 TexCoord1;
-    public Vector2 TexCoord2;
-    public Vector4 FfxivColor;
+    public Vector2 TexCoord0  = texCoord0;
+    public Vector2 TexCoord1  = texCoord1;
+    public Vector2 TexCoord2  = texCoord2;
+    public Vector4 FfxivColor = ffxivColor;
 
     public int MaxColors
         => 0;
@@ -312,14 +296,6 @@ public struct VertexTexture3ColorFfxiv : IVertexCustom
 
     public IEnumerable<string> CustomAttributes
         => CustomNames;
-
-    public VertexTexture3ColorFfxiv(Vector2 texCoord0, Vector2 texCoord1, Vector2 texCoord2, Vector4 ffxivColor)
-    {
-        TexCoord0 = texCoord0;
-        TexCoord1 = texCoord1;
-        TexCoord2 = texCoord2;
-        FfxivColor = ffxivColor;
-    }
 
     public void Add(in VertexMaterialDelta delta)
     {
@@ -387,7 +363,7 @@ public struct VertexTexture3ColorFfxiv : IVertexCustom
             FfxivColor.Z,
             FfxivColor.W,
         };
-        if (components.Any(component => component < 0 || component > 1))
+        if (components.Any(component => component is < 0f or > 1f))
             throw new ArgumentOutOfRangeException(nameof(FfxivColor));
     }
 }
