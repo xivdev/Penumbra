@@ -406,7 +406,7 @@ public class MeshExporter
             (0, true)  => typeof(VertexColorFfxiv),
             (0, false) => typeof(VertexEmpty),
 
-            _ => throw new Exception("Unreachable."),
+            _ => throw _notifier.Exception($"Unhandled UV count of {uvCount} encountered."),
         };
     }
 
