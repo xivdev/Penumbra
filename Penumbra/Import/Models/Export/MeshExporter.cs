@@ -7,7 +7,6 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
-using SharpGLTF.IO;
 using SharpGLTF.Materials;
 using SharpGLTF.Scenes;
 
@@ -347,24 +346,24 @@ public class MeshExporter
     {
         if (_geometryType == typeof(VertexPosition))
             return new VertexPosition(
-                ToVector3(attributes[MdlFile.VertexUsage.Position].First())
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Position))
             );
 
         if (_geometryType == typeof(VertexPositionNormal))
             return new VertexPositionNormal(
-                ToVector3(attributes[MdlFile.VertexUsage.Position].First()),
-                ToVector3(attributes[MdlFile.VertexUsage.Normal].First())
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Position)),
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal))
             );
 
         if (_geometryType == typeof(VertexPositionNormalTangent))
         {
             // (Bi)tangents are universally stored as ByteFloat4, which uses 0..1 to represent the full -1..1 range.
             // TODO: While this assumption is safe, it would be sensible to actually check.
-            var bitangent = ToVector4(attributes[MdlFile.VertexUsage.Tangent1].First()) * 2 - Vector4.One;
+            var bitangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)) * 2 - Vector4.One;
 
             return new VertexPositionNormalTangent(
-                ToVector3(attributes[MdlFile.VertexUsage.Position].First()),
-                ToVector3(attributes[MdlFile.VertexUsage.Normal].First()),
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Position)),
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal)),
                 bitangent
             );
         }
@@ -418,22 +417,22 @@ public class MeshExporter
             return new VertexEmpty();
 
         if (_materialType == typeof(VertexColorFfxiv))
-            return new VertexColorFfxiv(ToVector4(attributes[MdlFile.VertexUsage.Color].First()));
+            return new VertexColorFfxiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)));
 
         if (_materialType == typeof(VertexTexture1))
-            return new VertexTexture1(ToVector2(attributes[MdlFile.VertexUsage.UV].First()));
+            return new VertexTexture1(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)));
 
         if (_materialType == typeof(VertexTexture1ColorFfxiv))
             return new VertexTexture1ColorFfxiv(
-                ToVector2(attributes[MdlFile.VertexUsage.UV].First()),
-                ToVector4(attributes[MdlFile.VertexUsage.Color].First())
+                ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
 
         // XIV packs two UVs into a single vec4 attribute.
 
         if (_materialType == typeof(VertexTexture2))
         {
-            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV].First());
+            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             return new VertexTexture2(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W)
@@ -442,11 +441,11 @@ public class MeshExporter
 
         if (_materialType == typeof(VertexTexture2ColorFfxiv))
         {
-            var uv = ToVector4(attributes[MdlFile.VertexUsage.UV].First());
+            var uv = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
             return new VertexTexture2ColorFfxiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
-                ToVector4(attributes[MdlFile.VertexUsage.Color].First())
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
         }
         if (_materialType == typeof(VertexTexture3))
@@ -469,7 +468,7 @@ public class MeshExporter
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
-                ToVector4(attributes[MdlFile.VertexUsage.Color].First()) 
+                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)) 
             );
         }
 
@@ -477,18 +476,13 @@ public class MeshExporter
     }
 
     /// <summary> Get the vertex skinning type for this mesh's vertex usages. </summary>
-    private static Type GetSkinningType(IReadOnlyDictionary<MdlFile.VertexUsage, List<MdlFile.VertexType>> usages)
+    private Type GetSkinningType(IReadOnlyDictionary<MdlFile.VertexUsage, List<MdlFile.VertexType>> usages)
     {
         if (usages.ContainsKey(MdlFile.VertexUsage.BlendWeights) && usages.ContainsKey(MdlFile.VertexUsage.BlendIndices))
         {
-            if (usages[MdlFile.VertexUsage.BlendWeights].First() == MdlFile.VertexType.UShort4)
-            {
-                return typeof(VertexJoints8);
-            }
-            else
-            {
-                return typeof(VertexJoints4);
-            }
+            return GetFirstSafe(usages, MdlFile.VertexUsage.BlendWeights) == MdlFile.VertexType.UShort4 
+                ? typeof(VertexJoints8) 
+                : typeof(VertexJoints4);
         }
 
         return typeof(VertexEmpty);
@@ -505,8 +499,8 @@ public class MeshExporter
             if (_boneIndexMap == null)
                 throw _notifier.Exception("Tried to build skinned vertex but no bone mappings are available.");
 
-            var indiciesData = attributes[MdlFile.VertexUsage.BlendIndices].First();
-            var weightsData  = attributes[MdlFile.VertexUsage.BlendWeights].First();
+            var indiciesData = GetFirstSafe(attributes, MdlFile.VertexUsage.BlendIndices);
+            var weightsData  = GetFirstSafe(attributes, MdlFile.VertexUsage.BlendWeights);
             var indices      = ToByteArray(indiciesData);
             var weights      = ToFloatArray(weightsData);
             
@@ -531,6 +525,17 @@ public class MeshExporter
         }
 
         throw _notifier.Exception($"Unknown skinning type {_skinningType}");
+    }
+
+    /// <summary> Check that the list has length 1 for any case where this is expected and return the one entry. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private T GetFirstSafe<T>(IReadOnlyDictionary<MdlFile.VertexUsage, List<T>> attributes, MdlFile.VertexUsage usage)
+    {
+        var list = attributes[usage];
+        if (list.Count != 1)
+            throw _notifier.Exception($"Multiple usage indices encountered for {usage}.");
+
+        return list[0];
     }
 
     /// <summary> Convert a vertex attribute value to a Vector2. Supported inputs are Vector2, Vector3, and Vector4. </summary>
