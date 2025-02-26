@@ -1,7 +1,9 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Physics;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.Interop;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -10,6 +12,7 @@ using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
+using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -74,6 +77,18 @@ public class ResourceTree
 
         var genericContext = globalContext.CreateContext(model);
 
+        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+        var mpapArrayPtr = *(ResourceHandle***)((nint)model + 0x948);
+        var mpapArray    = null != mpapArrayPtr ? new ReadOnlySpan<Pointer<ResourceHandle>>(mpapArrayPtr, model->SlotCount) : [];
+        var decalArray = modelType switch
+        {
+            ModelType.Human     => human->SlotDecalsSpan,
+            ModelType.DemiHuman => ((Demihuman*)model)->SlotDecals,
+            ModelType.Weapon    => [((Weapon*)model)->Decal],
+            ModelType.Monster   => [((Monster*)model)->Decal],
+            _                   => [],
+        };
+
         for (var i = 0u; i < model->SlotCount; ++i)
         {
             var slotContext = modelType switch
@@ -100,7 +115,8 @@ public class ResourceTree
             }
 
             var mdl     = model->Models[i];
-            var mdlNode = slotContext.CreateNodeFromModel(mdl, imc);
+            var mdlNode = slotContext.CreateNodeFromModel(mdl, imc, i < decalArray.Length ? decalArray[(int)i].Value : null,
+                i < mpapArray.Length ? mpapArray[(int)i].Value : null);
             if (mdlNode != null)
             {
                 if (globalContext.WithUiData)
@@ -109,7 +125,9 @@ public class ResourceTree
             }
         }
 
-        AddSkeleton(Nodes, genericContext, model->EID, model->Skeleton);
+        AddSkeleton(Nodes, genericContext, model->EID, model->Skeleton, model->BonePhysicsModule);
+        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+        AddMaterialAnimationSkeleton(Nodes, genericContext, *(SkeletonResourceHandle**)((nint)model + 0x940));
 
         AddWeapons(globalContext, model);
 
@@ -140,6 +158,10 @@ public class ResourceTree
 
             var genericContext = globalContext.CreateContext(subObject, 0xFFFFFFFFu, slot, equipment, weaponType);
 
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+            var mpapArrayPtr = *(ResourceHandle***)((nint)subObject + 0x948);
+            var mpapArray    = null != mpapArrayPtr ? new ReadOnlySpan<Pointer<ResourceHandle>>(mpapArrayPtr, subObject->SlotCount) : [];
+
             for (var i = 0; i < subObject->SlotCount; ++i)
             {
                 var slotContext = globalContext.CreateContext(subObject, (uint)i, slot, equipment, weaponType);
@@ -154,7 +176,7 @@ public class ResourceTree
                 }
 
                 var mdl     = subObject->Models[i];
-                var mdlNode = slotContext.CreateNodeFromModel(mdl, imc);
+                var mdlNode = slotContext.CreateNodeFromModel(mdl, imc, weapon->Decal, i < mpapArray.Length ? mpapArray[i].Value : null);
                 if (mdlNode != null)
                 {
                     if (globalContext.WithUiData)
@@ -163,7 +185,9 @@ public class ResourceTree
                 }
             }
 
-            AddSkeleton(weaponNodes, genericContext, subObject->EID, subObject->Skeleton, $"Weapon #{weaponIndex}, ");
+            AddSkeleton(weaponNodes, genericContext, subObject->EID, subObject->Skeleton, subObject->BonePhysicsModule, $"Weapon #{weaponIndex}, ");
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+            AddMaterialAnimationSkeleton(weaponNodes, genericContext, *(SkeletonResourceHandle**)((nint)subObject + 0x940), $"Weapon #{weaponIndex}, ");
 
             ++weaponIndex;
         }
@@ -216,6 +240,7 @@ public class ResourceTree
         var legacyDecalNode = genericContext.CreateNodeFromTex(human->LegacyBodyDecal, legacyDecalPath);
         if (legacyDecalNode != null)
         {
+            legacyDecalNode.ForceProtected = !hasLegacyDecal;
             if (globalContext.WithUiData)
             {
                 legacyDecalNode              = legacyDecalNode.Clone();
@@ -227,7 +252,7 @@ public class ResourceTree
         }
     }
 
-    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, string prefix = "")
+    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, BonePhysicsModule* physics, string prefix = "")
     {
         var eidNode = context.CreateNodeFromEid((ResourceHandle*)eid);
         if (eidNode != null)
@@ -242,7 +267,9 @@ public class ResourceTree
 
         for (var i = 0; i < skeleton->PartialSkeletonCount; ++i)
         {
-            var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], (uint)i);
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+            var phybHandle = physics != null ? ((ResourceHandle**)((nint)physics + 0x190))[i] : null;
+            var sklbNode   = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], phybHandle, (uint)i);
             if (sklbNode != null)
             {
                 if (context.Global.WithUiData)
@@ -250,5 +277,16 @@ public class ResourceTree
                 nodes.Add(sklbNode);
             }
         }
+    }
+
+    private unsafe void AddMaterialAnimationSkeleton(List<ResourceNode> nodes, ResolveContext context, SkeletonResourceHandle* sklbHandle, string prefix = "")
+    {
+        var sklbNode = context.CreateNodeFromMaterialSklb(sklbHandle);
+        if (sklbNode == null)
+            return;
+
+        if (context.Global.WithUiData)
+            sklbNode.FallbackName = $"{prefix}Material Animation Skeleton";
+        nodes.Add(sklbNode);
     }
 }

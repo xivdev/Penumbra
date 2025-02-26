@@ -180,7 +180,15 @@ internal unsafe partial record ResolveContext(
         return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, path);
     }
 
-    public ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc)
+    public ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex, Utf8GamePath gamePath)
+    {
+        if (tex == null)
+            return null;
+
+        return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, gamePath);
+    }
+
+    public ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc, TextureResourceHandle* decalHandle, ResourceHandle* mpapHandle)
     {
         if (mdl == null || mdl->ModelResourceHandle == null)
             return null;
@@ -209,6 +217,14 @@ internal unsafe partial record ResolveContext(
                 node.Children.Add(mtrlNode);
             }
         }
+
+        var decalNode = CreateNodeFromDecal(decalHandle, imc);
+        if (null != decalNode)
+            node.Children.Add(decalNode);
+
+        var mpapNode = CreateNodeFromMaterialPap(mpapHandle, imc);
+        if (null != mpapNode)
+            node.Children.Add(mpapNode);
 
         Global.Nodes.Add((path, (nint)mdl->ModelResourceHandle), node);
 
@@ -301,7 +317,59 @@ internal unsafe partial record ResolveContext(
         }
     }
 
-    public ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
+    public ResourceNode? CreateNodeFromDecal(TextureResourceHandle* decalHandle, ResourceHandle* imc)
+    {
+        if (decalHandle == null)
+            return null;
+
+        var path = ResolveDecalPath(imc);
+        if (path.IsEmpty)
+            return null;
+
+        var node = CreateNodeFromTex(decalHandle, path)!;
+        if (Global.WithUiData)
+            node.FallbackName = "Decal";
+
+        return node;
+    }
+
+    public ResourceNode? CreateNodeFromMaterialPap(ResourceHandle* mpapHandle, ResourceHandle* imc)
+    {
+        if (mpapHandle == null)
+            return null;
+
+        var path = ResolveMaterialAnimationPath(imc);
+        if (path.IsEmpty)
+            return null;
+
+        if (Global.Nodes.TryGetValue((path, (nint)mpapHandle), out var cached))
+            return cached;
+
+        var node = CreateNode(ResourceType.Pap, 0, mpapHandle, path);
+        if (Global.WithUiData)
+            node.FallbackName = "Material Animation";
+
+        return node;
+    }
+
+    public ResourceNode? CreateNodeFromMaterialSklb(SkeletonResourceHandle* sklbHandle)
+    {
+        if (sklbHandle == null)
+            return null;
+
+        if (!Utf8GamePath.FromString(GamePaths.Skeleton.Sklb.MaterialAnimationSkeletonPath, out var path))
+            return null;
+
+        if (Global.Nodes.TryGetValue((path, (nint)sklbHandle), out var cached))
+            return cached;
+
+        var node = CreateNode(ResourceType.Sklb, 0, (ResourceHandle*)sklbHandle, path);
+        node.ForceInternal = true;
+
+        return node;
+    }
+
+    public ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, ResourceHandle* phybHandle, uint partialSkeletonIndex)
     {
         if (sklb == null || sklb->SkeletonResourceHandle == null)
             return null;
@@ -315,6 +383,9 @@ internal unsafe partial record ResolveContext(
         var skpNode = CreateParameterNodeFromPartialSkeleton(sklb, partialSkeletonIndex);
         if (skpNode != null)
             node.Children.Add(skpNode);
+        var phybNode = CreateNodeFromPhyb(phybHandle, partialSkeletonIndex);
+        if (phybNode != null)
+            node.Children.Add(phybNode);
         Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
 
         return node;
@@ -334,6 +405,24 @@ internal unsafe partial record ResolveContext(
         if (Global.WithUiData)
             node.FallbackName = "Skeleton Parameters";
         Global.Nodes.Add((path, (nint)sklb->SkeletonParameterResourceHandle), node);
+
+        return node;
+    }
+
+    private ResourceNode? CreateNodeFromPhyb(ResourceHandle* phybHandle, uint partialSkeletonIndex)
+    {
+        if (phybHandle == null)
+            return null;
+
+        var path = ResolvePhysicsModulePath(partialSkeletonIndex);
+
+        if (Global.Nodes.TryGetValue((path, (nint)phybHandle), out var cached))
+            return cached;
+
+        var node = CreateNode(ResourceType.Phyb, 0, phybHandle, path, false);
+        if (Global.WithUiData)
+            node.FallbackName = "Physics Module";
+        Global.Nodes.Add((path, (nint)phybHandle), node);
 
         return node;
     }

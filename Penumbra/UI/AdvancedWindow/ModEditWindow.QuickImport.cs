@@ -110,8 +110,11 @@ public partial class ModEditWindow
             _quickImportActions.Add((resourceNode.GamePath, writable), quickImport);
         }
 
+        var canQuickImport     = quickImport.CanExecute;
+        var quickImportEnabled = canQuickImport && (!resourceNode.Protected || _config.DeleteModModifier.IsActive());
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), buttonSize,
-                $"Add a copy of this file to {quickImport.OptionName}.", !quickImport.CanExecute, true))
+                $"Add a copy of this file to {quickImport.OptionName}.{(canQuickImport && !quickImportEnabled ? $"\nHold {_config.DeleteModModifier} while clicking to add." : string.Empty)}",
+                !quickImportEnabled, true))
         {
             quickImport.Execute();
             _quickImportActions.Remove((resourceNode.GamePath, writable));

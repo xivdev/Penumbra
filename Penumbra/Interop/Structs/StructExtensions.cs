@@ -33,6 +33,12 @@ internal static class StructExtensions
         return ToOwnedByteString(character.ResolveMtrlPath(pathBuffer, CharacterBase.PathBufferSize, slotIndex, mtrlFileName));
     }
 
+    public static CiByteString ResolveMaterialPapPathAsByteString(ref this CharacterBase character, uint slotIndex, uint unkSId)
+    {
+        Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
+        return ToOwnedByteString(character.ResolveMaterialPapPath(pathBuffer, slotIndex, unkSId));
+    }
+
     public static CiByteString ResolveSklbPathAsByteString(ref this CharacterBase character, uint partialSkeletonIndex)
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
@@ -43,6 +49,12 @@ internal static class StructExtensions
     {
         Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
         return ToOwnedByteString(character.ResolveSkpPath(pathBuffer, partialSkeletonIndex));
+    }
+
+    public static CiByteString ResolvePhybPathAsByteString(ref this CharacterBase character, uint partialSkeletonIndex)
+    {
+        Span<byte> pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
+        return ToOwnedByteString(character.ResolvePhybPath(pathBuffer, partialSkeletonIndex));
     }
 
     private static unsafe CiByteString ToOwnedByteString(byte* str)
