@@ -17,12 +17,12 @@ public class ResourceNode : ICloneable
     public          Utf8GamePath[]      PossibleGamePaths;
     public          FullPath            FullPath;
     public          PathStatus          FullPathStatus;
+    public          bool                ForceInternal;
+    public          bool                ForceProtected;
     public          string?             ModName;
     public readonly WeakReference<Mod>  Mod = new(null!);
     public          string?             ModRelativePath;
     public          CiByteString        AdditionalData;
-    public          bool                ForceInternal;
-    public          bool                ForceProtected;
     public readonly ulong               Length;
     public readonly List<ResourceNode>  Children;
     internal        ResolveContext?     ResolveContext;
