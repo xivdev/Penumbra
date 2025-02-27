@@ -17,6 +17,8 @@ public class ResourceNode : ICloneable
     public          Utf8GamePath[]      PossibleGamePaths;
     public          FullPath            FullPath;
     public          PathStatus          FullPathStatus;
+    public          bool                ForceInternal;
+    public          bool                ForceProtected;
     public          string?             ModName;
     public readonly WeakReference<Mod>  Mod = new(null!);
     public          string?             ModRelativePath;
@@ -37,8 +39,13 @@ public class ResourceNode : ICloneable
         }
     }
 
+    /// <summary> Whether to treat the file as internal (hide from user unless debug mode is on). </summary>
     public bool Internal
-        => Type is ResourceType.Eid or ResourceType.Imc;
+        => ForceInternal || Type is ResourceType.Eid or ResourceType.Imc;
+
+    /// <summary> Whether to treat the file as protected (require holding the Mod Deletion Modifier to make a quick import). </summary>
+    public bool Protected
+        => ForceProtected || Internal || Type is ResourceType.Shpk or ResourceType.Sklb or ResourceType.Pbd;
 
     internal ResourceNode(ResourceType type, nint objectAddress, nint resourceHandle, ulong length, ResolveContext? resolveContext)
     {
@@ -67,6 +74,8 @@ public class ResourceNode : ICloneable
         Mod               = other.Mod;
         ModRelativePath   = other.ModRelativePath;
         AdditionalData    = other.AdditionalData;
+        ForceInternal     = other.ForceInternal;
+        ForceProtected    = other.ForceProtected;
         Length            = other.Length;
         Children          = other.Children;
         ResolveContext    = other.ResolveContext;

@@ -1,7 +1,9 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Physics;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.Interop;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -10,44 +12,38 @@ using Penumbra.UI;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
+using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop.ResourceTree;
 
-public class ResourceTree
+public class ResourceTree(
+    string name,
+    string anonymizedName,
+    int gameObjectIndex,
+    nint gameObjectAddress,
+    nint drawObjectAddress,
+    bool localPlayerRelated,
+    bool playerRelated,
+    bool networked,
+    string collectionName,
+    string anonymizedCollectionName)
 {
-    public readonly string                Name;
-    public readonly string                AnonymizedName;
-    public readonly int                   GameObjectIndex;
-    public readonly nint                  GameObjectAddress;
-    public readonly nint                  DrawObjectAddress;
-    public readonly bool                  LocalPlayerRelated;
-    public readonly bool                  PlayerRelated;
-    public readonly bool                  Networked;
-    public readonly string                CollectionName;
-    public readonly string                AnonymizedCollectionName;
-    public readonly List<ResourceNode>    Nodes;
-    public readonly HashSet<ResourceNode> FlatNodes;
+    public readonly string                Name                     = name;
+    public readonly string                AnonymizedName           = anonymizedName;
+    public readonly int                   GameObjectIndex          = gameObjectIndex;
+    public readonly nint                  GameObjectAddress        = gameObjectAddress;
+    public readonly nint                  DrawObjectAddress        = drawObjectAddress;
+    public readonly bool                  LocalPlayerRelated       = localPlayerRelated;
+    public readonly bool                  PlayerRelated            = playerRelated;
+    public readonly bool                  Networked                = networked;
+    public readonly string                CollectionName           = collectionName;
+    public readonly string                AnonymizedCollectionName = anonymizedCollectionName;
+    public readonly List<ResourceNode>    Nodes                    = [];
+    public readonly HashSet<ResourceNode> FlatNodes                = [];
 
     public int           ModelId;
     public CustomizeData CustomizeData;
     public GenderRace    RaceCode;
-
-    public ResourceTree(string name, string anonymizedName, int gameObjectIndex, nint gameObjectAddress, nint drawObjectAddress,
-        bool localPlayerRelated, bool playerRelated, bool networked, string collectionName, string anonymizedCollectionName)
-    {
-        Name                     = name;
-        AnonymizedName           = anonymizedName;
-        GameObjectIndex          = gameObjectIndex;
-        GameObjectAddress        = gameObjectAddress;
-        DrawObjectAddress        = drawObjectAddress;
-        LocalPlayerRelated       = localPlayerRelated;
-        Networked                = networked;
-        PlayerRelated            = playerRelated;
-        CollectionName           = collectionName;
-        AnonymizedCollectionName = anonymizedCollectionName;
-        Nodes                    = [];
-        FlatNodes                = [];
-    }
 
     public void ProcessPostfix(Action<ResourceNode, ResourceNode?> action)
     {
@@ -70,9 +66,21 @@ public class ResourceTree
         };
         ModelId       = character->ModelContainer.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
-        RaceCode      = human != null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
+        RaceCode      = human is not null ? (GenderRace)human->RaceSexId : GenderRace.Unknown;
 
         var genericContext = globalContext.CreateContext(model);
+
+        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+        var mpapArrayPtr = *(ResourceHandle***)((nint)model + 0x948);
+        var mpapArray    = mpapArrayPtr is not null ? new ReadOnlySpan<Pointer<ResourceHandle>>(mpapArrayPtr, model->SlotCount) : [];
+        var decalArray = modelType switch
+        {
+            ModelType.Human     => human->SlotDecalsSpan,
+            ModelType.DemiHuman => ((Demihuman*)model)->SlotDecals,
+            ModelType.Weapon    => [((Weapon*)model)->Decal],
+            ModelType.Monster   => [((Monster*)model)->Decal],
+            _                   => [],
+        };
 
         for (var i = 0u; i < model->SlotCount; ++i)
         {
@@ -90,18 +98,17 @@ public class ResourceTree
                     : globalContext.CreateContext(model, i),
             };
 
-            var imc     = (ResourceHandle*)model->IMCArray[i];
-            var imcNode = slotContext.CreateNodeFromImc(imc);
-            if (imcNode != null)
+            var imc = (ResourceHandle*)model->IMCArray[i];
+            if (slotContext.CreateNodeFromImc(imc) is { } imcNode)
             {
                 if (globalContext.WithUiData)
                     imcNode.FallbackName = $"IMC #{i}";
                 Nodes.Add(imcNode);
             }
 
-            var mdl     = model->Models[i];
-            var mdlNode = slotContext.CreateNodeFromModel(mdl, imc);
-            if (mdlNode != null)
+            var mdl = model->Models[i];
+            if (slotContext.CreateNodeFromModel(mdl, imc, i < decalArray.Length ? decalArray[(int)i].Value : null,
+                    i < mpapArray.Length ? mpapArray[(int)i].Value : null) is { } mdlNode)
             {
                 if (globalContext.WithUiData)
                     mdlNode.FallbackName = $"Model #{i}";
@@ -109,11 +116,13 @@ public class ResourceTree
             }
         }
 
-        AddSkeleton(Nodes, genericContext, model->EID, model->Skeleton);
+        AddSkeleton(Nodes, genericContext, model->EID, model->Skeleton, model->BonePhysicsModule);
+        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+        AddMaterialAnimationSkeleton(Nodes, genericContext, *(SkeletonResourceHandle**)((nint)model + 0x940));
 
         AddWeapons(globalContext, model);
 
-        if (human != null)
+        if (human is not null)
             AddHumanResources(globalContext, human);
     }
 
@@ -123,12 +132,12 @@ public class ResourceTree
         var weaponNodes = new List<ResourceNode>();
         foreach (var baseSubObject in model->DrawObject.Object.ChildObjects)
         {
-            if (baseSubObject->GetObjectType() != FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType.CharacterBase)
+            if (baseSubObject->GetObjectType() is not FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType.CharacterBase)
                 continue;
 
             var subObject = (CharacterBase*)baseSubObject;
 
-            if (subObject->GetModelType() != ModelType.Weapon)
+            if (subObject->GetModelType() is not ModelType.Weapon)
                 continue;
 
             var weapon = (Weapon*)subObject;
@@ -140,22 +149,24 @@ public class ResourceTree
 
             var genericContext = globalContext.CreateContext(subObject, 0xFFFFFFFFu, slot, equipment, weaponType);
 
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+            var mpapArrayPtr = *(ResourceHandle***)((nint)subObject + 0x948);
+            var mpapArray    = mpapArrayPtr is not null ? new ReadOnlySpan<Pointer<ResourceHandle>>(mpapArrayPtr, subObject->SlotCount) : [];
+
             for (var i = 0; i < subObject->SlotCount; ++i)
             {
                 var slotContext = globalContext.CreateContext(subObject, (uint)i, slot, equipment, weaponType);
 
-                var imc     = (ResourceHandle*)subObject->IMCArray[i];
-                var imcNode = slotContext.CreateNodeFromImc(imc);
-                if (imcNode != null)
+                var imc = (ResourceHandle*)subObject->IMCArray[i];
+                if (slotContext.CreateNodeFromImc(imc) is { } imcNode)
                 {
                     if (globalContext.WithUiData)
                         imcNode.FallbackName = $"Weapon #{weaponIndex}, IMC #{i}";
                     weaponNodes.Add(imcNode);
                 }
 
-                var mdl     = subObject->Models[i];
-                var mdlNode = slotContext.CreateNodeFromModel(mdl, imc);
-                if (mdlNode != null)
+                var mdl = subObject->Models[i];
+                if (slotContext.CreateNodeFromModel(mdl, imc, weapon->Decal, i < mpapArray.Length ? mpapArray[i].Value : null) is { } mdlNode)
                 {
                     if (globalContext.WithUiData)
                         mdlNode.FallbackName = $"Weapon #{weaponIndex}, Model #{i}";
@@ -163,7 +174,11 @@ public class ResourceTree
                 }
             }
 
-            AddSkeleton(weaponNodes, genericContext, subObject->EID, subObject->Skeleton, $"Weapon #{weaponIndex}, ");
+            AddSkeleton(weaponNodes, genericContext, subObject->EID, subObject->Skeleton, subObject->BonePhysicsModule,
+                $"Weapon #{weaponIndex}, ");
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+            AddMaterialAnimationSkeleton(weaponNodes, genericContext, *(SkeletonResourceHandle**)((nint)subObject + 0x940),
+                $"Weapon #{weaponIndex}, ");
 
             ++weaponIndex;
         }
@@ -176,28 +191,25 @@ public class ResourceTree
         var genericContext = globalContext.CreateContext(&human->CharacterBase);
 
         var cache = globalContext.Collection._cache;
-        if (cache != null && cache.CustomResources.TryGetValue(PreBoneDeformerReplacer.PreBoneDeformerPath, out var pbdHandle))
+        if (cache is not null
+         && cache.CustomResources.TryGetValue(PreBoneDeformerReplacer.PreBoneDeformerPath, out var pbdHandle)
+         && genericContext.CreateNodeFromPbd(pbdHandle.ResourceHandle) is { } pbdNode)
         {
-            var pbdNode = genericContext.CreateNodeFromPbd(pbdHandle.ResourceHandle);
-            if (pbdNode != null)
+            if (globalContext.WithUiData)
             {
-                if (globalContext.WithUiData)
-                {
-                    pbdNode              = pbdNode.Clone();
-                    pbdNode.FallbackName = "Racial Deformer";
-                    pbdNode.IconFlag     = ChangedItemIconFlag.Customization;
-                }
-
-                Nodes.Add(pbdNode);
+                pbdNode              = pbdNode.Clone();
+                pbdNode.FallbackName = "Racial Deformer";
+                pbdNode.IconFlag     = ChangedItemIconFlag.Customization;
             }
+
+            Nodes.Add(pbdNode);
         }
 
         var decalId = (byte)(human->Customize[(int)CustomizeIndex.Facepaint] & 0x7F);
-        var decalPath = decalId != 0
+        var decalPath = decalId is not 0
             ? GamePaths.Human.Decal.FaceDecalPath(decalId)
             : GamePaths.Tex.TransparentPath;
-        var decalNode = genericContext.CreateNodeFromTex(human->Decal, decalPath);
-        if (decalNode != null)
+        if (genericContext.CreateNodeFromTex(human->Decal, decalPath) is { } decalNode)
         {
             if (globalContext.WithUiData)
             {
@@ -213,9 +225,9 @@ public class ResourceTree
         var legacyDecalPath = hasLegacyDecal
             ? GamePaths.Human.Decal.LegacyDecalPath
             : GamePaths.Tex.TransparentPath;
-        var legacyDecalNode = genericContext.CreateNodeFromTex(human->LegacyBodyDecal, legacyDecalPath);
-        if (legacyDecalNode != null)
+        if (genericContext.CreateNodeFromTex(human->LegacyBodyDecal, legacyDecalPath) is { } legacyDecalNode)
         {
+            legacyDecalNode.ForceProtected = !hasLegacyDecal;
             if (globalContext.WithUiData)
             {
                 legacyDecalNode              = legacyDecalNode.Clone();
@@ -227,7 +239,8 @@ public class ResourceTree
         }
     }
 
-    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, string prefix = "")
+    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, BonePhysicsModule* physics,
+        string prefix = "")
     {
         var eidNode = context.CreateNodeFromEid((ResourceHandle*)eid);
         if (eidNode != null)
@@ -242,13 +255,26 @@ public class ResourceTree
 
         for (var i = 0; i < skeleton->PartialSkeletonCount; ++i)
         {
-            var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], (uint)i);
-            if (sklbNode != null)
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
+            var phybHandle = physics != null ? ((ResourceHandle**)((nint)physics + 0x190))[i] : null;
+            if (context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], phybHandle, (uint)i) is { } sklbNode)
             {
                 if (context.Global.WithUiData)
                     sklbNode.FallbackName = $"{prefix}Skeleton #{i}";
                 nodes.Add(sklbNode);
             }
         }
+    }
+
+    private unsafe void AddMaterialAnimationSkeleton(List<ResourceNode> nodes, ResolveContext context, SkeletonResourceHandle* sklbHandle,
+        string prefix = "")
+    {
+        var sklbNode = context.CreateNodeFromMaterialSklb(sklbHandle);
+        if (sklbNode is null)
+            return;
+
+        if (context.Global.WithUiData)
+            sklbNode.FallbackName = $"{prefix}Material Animation Skeleton";
+        nodes.Add(sklbNode);
     }
 }

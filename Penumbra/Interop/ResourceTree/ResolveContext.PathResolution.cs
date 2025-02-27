@@ -22,6 +22,13 @@ internal partial record ResolveContext
     private static bool IsEquipmentSlot(uint slotIndex)
         => slotIndex is < 5 or 16 or 17;
 
+    private unsafe Variant Variant
+        => ModelType switch
+        {
+            ModelType.Monster => (byte)((Monster*)CharacterBase)->Variant,
+            _                 => Equipment.Variant,
+        };
+
     private Utf8GamePath ResolveModelPath()
     {
         // Correctness:
@@ -92,7 +99,7 @@ internal partial record ResolveContext
                 => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.DemiHuman => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             ModelType.Weapon    => ResolveWeaponMaterialPath(modelPath, imc, mtrlFileName),
-            ModelType.Monster   => ResolveMonsterMaterialPath(modelPath, imc, mtrlFileName),
+            ModelType.Monster   => ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName),
             _                   => ResolveMaterialPathNative(mtrlFileName),
         };
     }
@@ -100,7 +107,7 @@ internal partial record ResolveContext
     [SkipLocalsInit]
     private unsafe Utf8GamePath ResolveEquipmentMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
     {
-        var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
+        var variant  = ResolveImcData(imc).MaterialId;
         var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
         Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
@@ -118,9 +125,9 @@ internal partial record ResolveContext
             return Utf8GamePath.FromString(GamePaths.Weapon.Mtrl.Path(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
 
         // Some offhands share materials with the corresponding mainhand
-        if (ItemData.AdaptOffhandImc(Equipment.Set.Id, out var mirroredSetId))
+        if (ItemData.AdaptOffhandImc(Equipment.Set, out var mirroredSetId))
         {
-            var variant  = ResolveMaterialVariant(imc, Equipment.Variant);
+            var variant  = ResolveImcData(imc).MaterialId;
             var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
 
             Span<byte> mirroredFileName = stackalloc byte[32];
@@ -141,31 +148,16 @@ internal partial record ResolveContext
         return ResolveEquipmentMaterialPath(modelPath, imc, mtrlFileName);
     }
 
-    private unsafe Utf8GamePath ResolveMonsterMaterialPath(Utf8GamePath modelPath, ResourceHandle* imc, byte* mtrlFileName)
-    {
-        var variant  = ResolveMaterialVariant(imc, (byte)((Monster*)CharacterBase)->Variant);
-        var fileName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(mtrlFileName);
-
-        Span<byte> pathBuffer = stackalloc byte[CharaBase.PathBufferSize];
-        pathBuffer = AssembleMaterialPath(pathBuffer, modelPath.Path.Span, variant, fileName);
-
-        return Utf8GamePath.FromSpan(pathBuffer, MetaDataComputation.None, out var path) ? path.Clone() : Utf8GamePath.Empty;
-    }
-
-    private unsafe byte ResolveMaterialVariant(ResourceHandle* imc, Variant variant)
+    private unsafe ImcEntry ResolveImcData(ResourceHandle* imc)
     {
         var imcFileData = imc->GetDataSpan();
         if (imcFileData.IsEmpty)
         {
             Penumbra.Log.Warning($"IMC resource handle with path {imc->FileName.AsByteString()} doesn't have a valid data span");
-            return variant.Id;
+            return default;
         }
 
-        var entry = ImcFile.GetEntry(imcFileData, SlotIndex.ToEquipSlot(), variant, out var exists);
-        if (!exists)
-            return variant.Id;
-
-        return entry.MaterialId;
+        return ImcFile.GetEntry(imcFileData, SlotIndex.ToEquipSlot(), Variant, out _);
     }
 
     private static Span<byte> AssembleMaterialPath(Span<byte> materialPathBuffer, ReadOnlySpan<byte> modelPath, byte variant,
@@ -256,7 +248,7 @@ internal partial record ResolveContext
                 if (faceId < 201)
                     faceId -= tribe switch
                     {
-                        0xB when modelType == 4 => 100,
+                        0xB when modelType is 4 => 100,
                         0xE | 0xF               => 100,
                         _                       => 0,
                     };
@@ -305,7 +297,7 @@ internal partial record ResolveContext
     private Utf8GamePath ResolveHumanSkeletonParameterPath(uint partialSkeletonIndex)
     {
         var (raceCode, slot, set) = ResolveHumanSkeletonData(partialSkeletonIndex);
-        if (set == 0)
+        if (set.Id is 0)
             return Utf8GamePath.Empty;
 
         var path = GamePaths.Skeleton.Skp.Path(raceCode, slot, set);
@@ -316,5 +308,53 @@ internal partial record ResolveContext
     {
         var path = CharacterBase->ResolveSkpPathAsByteString(partialSkeletonIndex);
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
+    }
+
+    private Utf8GamePath ResolvePhysicsModulePath(uint partialSkeletonIndex)
+    {
+        // Correctness and Safety:
+        // Resolving a physics module path through the game's code can use EST metadata for human skeletons.
+        // Additionally, it can dereference null pointers for human equipment skeletons.
+        return ModelType switch
+        {
+            ModelType.Human => ResolveHumanPhysicsModulePath(partialSkeletonIndex),
+            _               => ResolvePhysicsModulePathNative(partialSkeletonIndex),
+        };
+    }
+
+    private Utf8GamePath ResolveHumanPhysicsModulePath(uint partialSkeletonIndex)
+    {
+        var (raceCode, slot, set) = ResolveHumanSkeletonData(partialSkeletonIndex);
+        if (set.Id is 0)
+            return Utf8GamePath.Empty;
+
+        var path = GamePaths.Skeleton.Phyb.Path(raceCode, slot, set);
+        return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
+    }
+
+    private unsafe Utf8GamePath ResolvePhysicsModulePathNative(uint partialSkeletonIndex)
+    {
+        var path = CharacterBase->ResolvePhybPathAsByteString(partialSkeletonIndex);
+        return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
+    }
+
+    private unsafe Utf8GamePath ResolveMaterialAnimationPath(ResourceHandle* imc)
+    {
+        var animation = ResolveImcData(imc).MaterialAnimationId;
+        if (animation is 0)
+            return Utf8GamePath.Empty;
+
+        var path = CharacterBase->ResolveMaterialPapPathAsByteString(SlotIndex, animation);
+        return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
+    }
+
+    private unsafe Utf8GamePath ResolveDecalPath(ResourceHandle* imc)
+    {
+        var decal = ResolveImcData(imc).DecalId;
+        if (decal is 0)
+            return Utf8GamePath.Empty;
+
+        var path = GamePaths.Equipment.Decal.Path(decal);
+        return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 }
