@@ -52,7 +52,7 @@ internal unsafe partial record ResolveContext(
 
     private ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, CiByteString gamePath)
     {
-        if (resourceHandle == null)
+        if (resourceHandle is null)
             return null;
         if (gamePath.IsEmpty)
             return null;
@@ -65,7 +65,7 @@ internal unsafe partial record ResolveContext(
     [SkipLocalsInit]
     private ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, CiByteString gamePath, bool dx11)
     {
-        if (resourceHandle == null)
+        if (resourceHandle is null)
             return null;
 
         Utf8GamePath path;
@@ -105,7 +105,7 @@ internal unsafe partial record ResolveContext(
     private ResourceNode GetOrCreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
         Utf8GamePath gamePath)
     {
-        if (resourceHandle == null)
+        if (resourceHandle is null)
             throw new ArgumentNullException(nameof(resourceHandle));
 
         if (Global.Nodes.TryGetValue((gamePath, (nint)resourceHandle), out var cached))
@@ -117,7 +117,7 @@ internal unsafe partial record ResolveContext(
     private ResourceNode CreateNode(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle,
         Utf8GamePath gamePath, bool autoAdd = true)
     {
-        if (resourceHandle == null)
+        if (resourceHandle is null)
             throw new ArgumentNullException(nameof(resourceHandle));
 
         var fileName       = (ReadOnlySpan<byte>)resourceHandle->FileName.AsSpan();
@@ -141,7 +141,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromEid(ResourceHandle* eid)
     {
-        if (eid == null)
+        if (eid is null)
             return null;
 
         if (!Utf8GamePath.FromByteString(CharacterBase->ResolveEidPathAsByteString(), out var path))
@@ -152,7 +152,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
     {
-        if (imc == null)
+        if (imc is null)
             return null;
 
         if (!Utf8GamePath.FromByteString(CharacterBase->ResolveImcPathAsByteString(SlotIndex), out var path))
@@ -163,7 +163,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromPbd(ResourceHandle* pbd)
     {
-        if (pbd == null)
+        if (pbd is null)
             return null;
 
         return GetOrCreateNode(ResourceType.Pbd, 0, pbd, PreBoneDeformerReplacer.PreBoneDeformerPath);
@@ -171,7 +171,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex, string gamePath)
     {
-        if (tex == null)
+        if (tex is null)
             return null;
 
         if (!Utf8GamePath.FromString(gamePath, out var path))
@@ -182,7 +182,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex, Utf8GamePath gamePath)
     {
-        if (tex == null)
+        if (tex is null)
             return null;
 
         return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, gamePath);
@@ -190,7 +190,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc, TextureResourceHandle* decalHandle, ResourceHandle* mpapHandle)
     {
-        if (mdl == null || mdl->ModelResourceHandle == null)
+        if (mdl is null || mdl->ModelResourceHandle is null)
             return null;
 
         var mdlResource = mdl->ModelResourceHandle;
@@ -205,12 +205,12 @@ internal unsafe partial record ResolveContext(
         for (var i = 0; i < mdl->MaterialCount; i++)
         {
             var mtrl = mdl->Materials[i];
-            if (mtrl == null)
+            if (mtrl is null)
                 continue;
 
             var mtrlFileName = mdlResource->GetMaterialFileNameBySlot((uint)i);
             var mtrlNode     = CreateNodeFromMaterial(mtrl, ResolveMaterialPath(path, imc, mtrlFileName));
-            if (mtrlNode != null)
+            if (mtrlNode is not null)
             {
                 if (Global.WithUiData)
                     mtrlNode.FallbackName = $"Material #{i}";
@@ -218,12 +218,10 @@ internal unsafe partial record ResolveContext(
             }
         }
 
-        var decalNode = CreateNodeFromDecal(decalHandle, imc);
-        if (null != decalNode)
+        if (CreateNodeFromDecal(decalHandle, imc) is { } decalNode)
             node.Children.Add(decalNode);
 
-        var mpapNode = CreateNodeFromMaterialPap(mpapHandle, imc);
-        if (null != mpapNode)
+        if (CreateNodeFromMaterialPap(mpapHandle, imc) is { } mpapNode)
             node.Children.Add(mpapNode);
 
         Global.Nodes.Add((path, (nint)mdl->ModelResourceHandle), node);
@@ -233,7 +231,7 @@ internal unsafe partial record ResolveContext(
 
     private ResourceNode? CreateNodeFromMaterial(Material* mtrl, Utf8GamePath path)
     {
-        if (mtrl == null || mtrl->MaterialResourceHandle == null)
+        if (mtrl is null || mtrl->MaterialResourceHandle is null)
             return null;
 
         var resource = mtrl->MaterialResourceHandle;
@@ -242,15 +240,15 @@ internal unsafe partial record ResolveContext(
 
         var node     = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
         var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new CiByteString(resource->ShpkName));
-        if (shpkNode != null)
+        if (shpkNode is not null)
         {
             if (Global.WithUiData)
                 shpkNode.Name = "Shader Package";
             node.Children.Add(shpkNode);
         }
 
-        var shpkNames = Global.WithUiData && shpkNode != null ? Global.TreeBuildCache.ReadShaderPackageNames(shpkNode.FullPath) : null;
-        var shpk      = Global.WithUiData && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
+        var shpkNames = Global.WithUiData && shpkNode is not null ? Global.TreeBuildCache.ReadShaderPackageNames(shpkNode.FullPath) : null;
+        var shpk      = Global.WithUiData && shpkNode is not null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
         var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->TextureCount; i++)
@@ -263,7 +261,7 @@ internal unsafe partial record ResolveContext(
             if (Global.WithUiData)
             {
                 string? name = null;
-                if (shpk != null)
+                if (shpk is not null)
                 {
                     var index = GetTextureIndex(mtrl, resource->Textures[i].Flags, alreadyProcessedSamplerIds);
                     var samplerId = index != 0x001F
@@ -319,7 +317,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromDecal(TextureResourceHandle* decalHandle, ResourceHandle* imc)
     {
-        if (decalHandle == null)
+        if (decalHandle is null)
             return null;
 
         var path = ResolveDecalPath(imc);
@@ -335,7 +333,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromMaterialPap(ResourceHandle* mpapHandle, ResourceHandle* imc)
     {
-        if (mpapHandle == null)
+        if (mpapHandle is null)
             return null;
 
         var path = ResolveMaterialAnimationPath(imc);
@@ -354,7 +352,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromMaterialSklb(SkeletonResourceHandle* sklbHandle)
     {
-        if (sklbHandle == null)
+        if (sklbHandle is null)
             return null;
 
         if (!Utf8GamePath.FromString(GamePaths.Skeleton.Sklb.MaterialAnimationSkeletonPath, out var path))
@@ -371,7 +369,7 @@ internal unsafe partial record ResolveContext(
 
     public ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, ResourceHandle* phybHandle, uint partialSkeletonIndex)
     {
-        if (sklb == null || sklb->SkeletonResourceHandle == null)
+        if (sklb is null || sklb->SkeletonResourceHandle is null)
             return null;
 
         var path = ResolveSkeletonPath(partialSkeletonIndex);
@@ -379,12 +377,10 @@ internal unsafe partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)sklb->SkeletonResourceHandle), out var cached))
             return cached;
 
-        var node    = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
-        var skpNode = CreateParameterNodeFromPartialSkeleton(sklb, partialSkeletonIndex);
-        if (skpNode != null)
+        var node = CreateNode(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, path, false);
+        if (CreateParameterNodeFromPartialSkeleton(sklb, partialSkeletonIndex) is { } skpNode)
             node.Children.Add(skpNode);
-        var phybNode = CreateNodeFromPhyb(phybHandle, partialSkeletonIndex);
-        if (phybNode != null)
+        if (CreateNodeFromPhyb(phybHandle, partialSkeletonIndex) is { } phybNode)
             node.Children.Add(phybNode);
         Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
 
@@ -393,7 +389,7 @@ internal unsafe partial record ResolveContext(
 
     private ResourceNode? CreateParameterNodeFromPartialSkeleton(PartialSkeleton* sklb, uint partialSkeletonIndex)
     {
-        if (sklb == null || sklb->SkeletonParameterResourceHandle == null)
+        if (sklb is null || sklb->SkeletonParameterResourceHandle is null)
             return null;
 
         var path = ResolveSkeletonParameterPath(partialSkeletonIndex);
@@ -411,7 +407,7 @@ internal unsafe partial record ResolveContext(
 
     private ResourceNode? CreateNodeFromPhyb(ResourceHandle* phybHandle, uint partialSkeletonIndex)
     {
-        if (phybHandle == null)
+        if (phybHandle is null)
             return null;
 
         var path = ResolvePhysicsModulePath(partialSkeletonIndex);
@@ -431,7 +427,9 @@ internal unsafe partial record ResolveContext(
     {
         var path = gamePath.Path.Split((byte)'/');
         // Weapons intentionally left out.
-        var isEquipment = path.Count >= 2 && path[0].Span.SequenceEqual("chara"u8) && (path[1].Span.SequenceEqual("accessory"u8) || path[1].Span.SequenceEqual("equipment"u8));
+        var isEquipment = path.Count >= 2
+         && path[0].Span.SequenceEqual("chara"u8)
+         && (path[1].Span.SequenceEqual("accessory"u8) || path[1].Span.SequenceEqual("equipment"u8));
         if (isEquipment)
             foreach (var item in Global.Identifier.Identify(Equipment.Set, 0, Equipment.Variant, Slot.ToSlot()))
             {
@@ -447,7 +445,7 @@ internal unsafe partial record ResolveContext(
             }
 
         var dataFromPath = GuessUiDataFromPath(gamePath);
-        if (dataFromPath.Name != null)
+        if (dataFromPath.Name is not null)
             return dataFromPath;
 
         return isEquipment
@@ -462,24 +460,13 @@ internal unsafe partial record ResolveContext(
             var name = obj.Key;
             if (obj.Value is IdentifiedCustomization)
                 name = name[14..].Trim();
-            if (name != "Unknown")
+            if (name is not "Unknown")
                 return new ResourceNode.UiData(name, obj.Value.GetIcon().ToFlag());
         }
 
         return new ResourceNode.UiData(null, ChangedItemIconFlag.Unknown);
     }
 
-    private static string? SafeGet(ReadOnlySpan<string> array, Index index)
-    {
-        var i = index.GetOffset(array.Length);
-        return i >= 0 && i < array.Length ? array[i] : null;
-    }
-
     private static ulong GetResourceHandleLength(ResourceHandle* handle)
-    {
-        if (handle == null)
-            return 0;
-
-        return handle->GetLength();
-    }
+        => handle is null ? 0ul : handle->GetLength();
 }

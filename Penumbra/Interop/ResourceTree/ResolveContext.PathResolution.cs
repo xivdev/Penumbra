@@ -248,7 +248,7 @@ internal partial record ResolveContext
                 if (faceId < 201)
                     faceId -= tribe switch
                     {
-                        0xB when modelType == 4 => 100,
+                        0xB when modelType is 4 => 100,
                         0xE | 0xF               => 100,
                         _                       => 0,
                     };
@@ -297,7 +297,7 @@ internal partial record ResolveContext
     private Utf8GamePath ResolveHumanSkeletonParameterPath(uint partialSkeletonIndex)
     {
         var (raceCode, slot, set) = ResolveHumanSkeletonData(partialSkeletonIndex);
-        if (set == 0)
+        if (set.Id is 0)
             return Utf8GamePath.Empty;
 
         var path = GamePaths.Skeleton.Skp.Path(raceCode, slot, set);
@@ -325,7 +325,7 @@ internal partial record ResolveContext
     private Utf8GamePath ResolveHumanPhysicsModulePath(uint partialSkeletonIndex)
     {
         var (raceCode, slot, set) = ResolveHumanSkeletonData(partialSkeletonIndex);
-        if (set == 0)
+        if (set.Id is 0)
             return Utf8GamePath.Empty;
 
         var path = GamePaths.Skeleton.Phyb.Path(raceCode, slot, set);
@@ -341,7 +341,7 @@ internal partial record ResolveContext
     private unsafe Utf8GamePath ResolveMaterialAnimationPath(ResourceHandle* imc)
     {
         var animation = ResolveImcData(imc).MaterialAnimationId;
-        if (animation == 0)
+        if (animation is 0)
             return Utf8GamePath.Empty;
 
         var path = CharacterBase->ResolveMaterialPapPathAsByteString(SlotIndex, animation);
@@ -351,7 +351,7 @@ internal partial record ResolveContext
     private unsafe Utf8GamePath ResolveDecalPath(ResourceHandle* imc)
     {
         var decal = ResolveImcData(imc).DecalId;
-        if (decal == 0)
+        if (decal is 0)
             return Utf8GamePath.Empty;
 
         var path = GamePaths.Equipment.Decal.Path(decal);
