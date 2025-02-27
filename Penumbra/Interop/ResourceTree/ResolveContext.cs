@@ -355,13 +355,10 @@ internal unsafe partial record ResolveContext(
         if (sklbHandle is null)
             return null;
 
-        if (!Utf8GamePath.FromString(GamePaths.Skeleton.Sklb.MaterialAnimationSkeletonPath, out var path))
-            return null;
-
-        if (Global.Nodes.TryGetValue((path, (nint)sklbHandle), out var cached))
+        if (Global.Nodes.TryGetValue((GamePaths.Sklb.MaterialAnimationSkeletonUtf8, (nint)sklbHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Sklb, 0, (ResourceHandle*)sklbHandle, path);
+        var node = CreateNode(ResourceType.Sklb, 0, (ResourceHandle*)sklbHandle, GamePaths.Sklb.MaterialAnimationSkeletonUtf8);
         node.ForceInternal = true;
 
         return node;
@@ -455,11 +452,12 @@ internal unsafe partial record ResolveContext(
 
     internal ResourceNode.UiData GuessUiDataFromPath(Utf8GamePath gamePath)
     {
+        const string customization = "Customization: ";
         foreach (var obj in Global.Identifier.Identify(gamePath.ToString()))
         {
             var name = obj.Key;
-            if (obj.Value is IdentifiedCustomization)
-                name = name[14..].Trim();
+            if (name.StartsWith(customization))
+                name = name.AsSpan(14).Trim().ToString();
             if (name is not "Unknown")
                 return new ResourceNode.UiData(name, obj.Value.GetIcon().ToFlag());
         }

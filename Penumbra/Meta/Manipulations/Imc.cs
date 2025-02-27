@@ -34,14 +34,14 @@ public readonly record struct ImcIdentifier(
     {
         var path = ObjectType switch
         {
-            ObjectType.Equipment when allVariants => GamePaths.Equipment.Mdl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
-            ObjectType.Equipment => GamePaths.Equipment.Mtrl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
-            ObjectType.Accessory when allVariants => GamePaths.Accessory.Mdl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
-            ObjectType.Accessory => GamePaths.Accessory.Mtrl.Path(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
-            ObjectType.Weapon => GamePaths.Weapon.Mtrl.Path(PrimaryId, SecondaryId.Id, Variant, "a"),
-            ObjectType.DemiHuman => GamePaths.DemiHuman.Mtrl.Path(PrimaryId, SecondaryId.Id, EquipSlot, Variant,
+            ObjectType.Equipment when allVariants => GamePaths.Mdl.Equipment(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
+            ObjectType.Equipment => GamePaths.Mtrl.Equipment(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
+            ObjectType.Accessory when allVariants => GamePaths.Mdl.Accessory(PrimaryId, GenderRace.MidlanderMale, EquipSlot),
+            ObjectType.Accessory => GamePaths.Mtrl.Accessory(PrimaryId, GenderRace.MidlanderMale, EquipSlot, Variant, "a"),
+            ObjectType.Weapon => GamePaths.Mtrl.Weapon(PrimaryId, SecondaryId.Id, Variant, "a"),
+            ObjectType.DemiHuman => GamePaths.Mtrl.DemiHuman(PrimaryId, SecondaryId.Id, EquipSlot, Variant,
                 "a"),
-            ObjectType.Monster => GamePaths.Monster.Mtrl.Path(PrimaryId, SecondaryId.Id, Variant, "a"),
+            ObjectType.Monster => GamePaths.Mtrl.Monster(PrimaryId, SecondaryId.Id, Variant, "a"),
             _                  => string.Empty,
         };
         if (path.Length == 0)
@@ -51,15 +51,7 @@ public readonly record struct ImcIdentifier(
     }
 
     public string GamePathString()
-        => ObjectType switch
-        {
-            ObjectType.Accessory => GamePaths.Accessory.Imc.Path(PrimaryId),
-            ObjectType.Equipment => GamePaths.Equipment.Imc.Path(PrimaryId),
-            ObjectType.DemiHuman => GamePaths.DemiHuman.Imc.Path(PrimaryId, SecondaryId.Id),
-            ObjectType.Monster   => GamePaths.Monster.Imc.Path(PrimaryId, SecondaryId.Id),
-            ObjectType.Weapon    => GamePaths.Weapon.Imc.Path(PrimaryId, SecondaryId.Id),
-            _                    => string.Empty,
-        };
+        => GamePaths.Imc.Path(ObjectType, PrimaryId, SecondaryId);
 
     public Utf8GamePath GamePath()
         => Utf8GamePath.FromString(GamePathString(), out var p) ? p : Utf8GamePath.Empty;

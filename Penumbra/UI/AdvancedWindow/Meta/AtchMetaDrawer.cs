@@ -55,7 +55,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
             if (filePath.Length == 0 || !File.Exists(filePath))
                 throw new FileNotFoundException();
 
-            var gr = GamePaths.ParseRaceCode(filePath);
+            var gr = Parser.ParseRaceCode(filePath);
             if (gr is GenderRace.Unknown)
                 throw new Exception($"Could not identify race code from path {filePath}.");
             var text        = File.ReadAllBytes(filePath);
@@ -277,7 +277,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
         if (!ret)
             return false;
 
-        index      = Math.Clamp(index, (ushort)0, (ushort)(currentAtchPoint!.Entries.Length - 1));
+        index      = Math.Clamp(index, (ushort)0, (ushort)(currentAtchPoint.Entries.Length - 1));
         identifier = identifier with { EntryIndex = index };
         return true;
     }

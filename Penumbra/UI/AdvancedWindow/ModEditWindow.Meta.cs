@@ -68,7 +68,7 @@ public partial class ModEditWindow
     {
         _dragDropManager.CreateImGuiSource("atchDrag", f => f.Extensions.Contains(".atch"), f =>
         {
-            var gr = GamePaths.ParseRaceCode(f.Files.FirstOrDefault() ?? string.Empty);
+            var gr = Parser.ParseRaceCode(f.Files.FirstOrDefault() ?? string.Empty);
             if (gr is GenderRace.Unknown)
                 return false;
 

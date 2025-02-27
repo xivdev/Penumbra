@@ -30,17 +30,17 @@ public readonly record struct EstIdentifier(PrimaryId SetId, EstType Slot, Gende
         {
             case EstType.Hair:
                 changedItems.TryAdd(
-                    $"Customization: {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()} Hair (Hair) {SetId}", null);
+                    $"Customization: {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()} Hair {SetId}", null);
                 break;
             case EstType.Face:
                 changedItems.TryAdd(
-                    $"Customization: {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()} Face (Face) {SetId}", null);
+                    $"Customization: {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()} Face {SetId}", null);
                 break;
             case EstType.Body:
-                identifier.Identify(changedItems, GamePaths.Equipment.Mdl.Path(SetId, GenderRace, EquipSlot.Body));
+                identifier.Identify(changedItems, GamePaths.Mdl.Equipment(SetId, GenderRace, EquipSlot.Body));
                 break;
             case EstType.Head:
-                identifier.Identify(changedItems, GamePaths.Equipment.Mdl.Path(SetId, GenderRace, EquipSlot.Head));
+                identifier.Identify(changedItems, GamePaths.Mdl.Equipment(SetId, GenderRace, EquipSlot.Head));
                 break;
         }
     }

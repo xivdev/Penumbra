@@ -207,8 +207,8 @@ public class ResourceTree(
 
         var decalId = (byte)(human->Customize[(int)CustomizeIndex.Facepaint] & 0x7F);
         var decalPath = decalId is not 0
-            ? GamePaths.Human.Decal.FaceDecalPath(decalId)
-            : GamePaths.Tex.TransparentPath;
+            ? GamePaths.Tex.FaceDecal(decalId)
+            : GamePaths.Tex.Transparent;
         if (genericContext.CreateNodeFromTex(human->Decal, decalPath) is { } decalNode)
         {
             if (globalContext.WithUiData)
@@ -223,8 +223,8 @@ public class ResourceTree(
 
         var hasLegacyDecal = (human->Customize[(int)CustomizeIndex.FaceFeatures] & 0x80) != 0;
         var legacyDecalPath = hasLegacyDecal
-            ? GamePaths.Human.Decal.LegacyDecalPath
-            : GamePaths.Tex.TransparentPath;
+            ? GamePaths.Tex.LegacyDecal
+            : GamePaths.Tex.Transparent;
         if (genericContext.CreateNodeFromTex(human->LegacyBodyDecal, legacyDecalPath) is { } legacyDecalNode)
         {
             legacyDecalNode.ForceProtected = !hasLegacyDecal;

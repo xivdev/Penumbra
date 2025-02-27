@@ -107,7 +107,7 @@ public static class EquipmentSwap
             foreach (var child in eqp.ChildSwaps.SelectMany(c => c.WithChildren()).OfType<MetaSwap<EqpIdentifier, EqpEntryInternal>>())
             {
                 affectedItems.UnionWith(identifier
-                    .Identify(GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, child.SwapFromIdentifier.Slot))
+                    .Identify(GamePaths.Mdl.Equipment(idFrom, GenderRace.MidlanderMale, child.SwapFromIdentifier.Slot))
                     .Select(kvp => kvp.Value).OfType<IdentifiedItem>().Select(i => i.Item));
             }
         }
@@ -223,11 +223,9 @@ public static class EquipmentSwap
     public static FileSwap CreateMdl(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, EquipSlot slotFrom, EquipSlot slotTo,
         GenderRace gr, PrimaryId idFrom, PrimaryId idTo, byte mtrlTo)
     {
-        var mdlPathFrom = slotFrom.IsAccessory()
-            ? GamePaths.Accessory.Mdl.Path(idFrom, gr, slotFrom)
-            : GamePaths.Equipment.Mdl.Path(idFrom, gr, slotFrom);
-        var mdlPathTo = slotTo.IsAccessory() ? GamePaths.Accessory.Mdl.Path(idTo, gr, slotTo) : GamePaths.Equipment.Mdl.Path(idTo, gr, slotTo);
-        var mdl       = FileSwap.CreateSwap(manager, ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo);
+        var mdlPathFrom = GamePaths.Mdl.Gear(idFrom, gr, slotFrom);
+        var mdlPathTo   = GamePaths.Mdl.Gear(idTo,   gr, slotTo);
+        var mdl         = FileSwap.CreateSwap(manager, ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo);
 
         foreach (ref var fileName in mdl.AsMdl()!.Materials.AsSpan())
         {
@@ -264,9 +262,7 @@ public static class EquipmentSwap
         }
         else
         {
-            items = identifier.Identify(slotFrom.IsEquipment()
-                    ? GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)
-                    : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom))
+            items = identifier.Identify(GamePaths.Mdl.Gear(idFrom, GenderRace.MidlanderMale, slotFrom))
                 .Select(kvp => kvp.Value).OfType<IdentifiedItem>().Select(i => i.Item)
                 .ToHashSet();
             variants = Enumerable.Range(0, imc.Count + 1).Select(i => (Variant)i).ToArray();
@@ -324,7 +320,7 @@ public static class EquipmentSwap
         if (decalId == 0)
             return null;
 
-        var decalPath = GamePaths.Equipment.Decal.Path(decalId);
+        var decalPath = GamePaths.Tex.EquipDecal(decalId);
         return FileSwap.CreateSwap(manager, ResourceType.Tex, redirections, decalPath, decalPath);
     }
 
@@ -337,9 +333,9 @@ public static class EquipmentSwap
         if (vfxId == 0)
             return null;
 
-        var vfxPathFrom = GamePaths.Equipment.Avfx.Path(idFrom, vfxId);
+        var vfxPathFrom = GamePaths.Avfx.Path(slotFrom, idFrom, vfxId);
         vfxPathFrom = ItemSwap.ReplaceType(vfxPathFrom, slotFrom, slotTo, idFrom);
-        var vfxPathTo = GamePaths.Equipment.Avfx.Path(idTo, vfxId);
+        var vfxPathTo = GamePaths.Avfx.Path(slotTo, idTo, vfxId);
         var avfx      = FileSwap.CreateSwap(manager, ResourceType.Avfx, redirections, vfxPathFrom, vfxPathTo);
 
         foreach (ref var filePath in avfx.AsAvfx()!.Textures.AsSpan())
@@ -402,14 +398,10 @@ public static class EquipmentSwap
         if (!fileName.Contains($"{prefix}{idTo.Id:D4}"))
             return null;
 
-        var folderTo = slotTo.IsAccessory()
-            ? GamePaths.Accessory.Mtrl.FolderPath(idTo, variantTo)
-            : GamePaths.Equipment.Mtrl.FolderPath(idTo, variantTo);
+        var folderTo = GamePaths.Mtrl.GearFolder(slotTo, idTo, variantTo);
         var pathTo = $"{folderTo}{fileName}";
 
-        var folderFrom = slotFrom.IsAccessory()
-            ? GamePaths.Accessory.Mtrl.FolderPath(idFrom, variantTo)
-            : GamePaths.Equipment.Mtrl.FolderPath(idFrom, variantTo);
+        var folderFrom  = GamePaths.Mtrl.GearFolder(slotFrom, idFrom, variantTo);
         var newFileName = ItemSwap.ReplaceId(fileName, prefix, idTo, idFrom);
         newFileName = ItemSwap.ReplaceSlot(newFileName, slotTo, slotFrom, slotTo != slotFrom);
         var pathFrom = $"{folderFrom}{newFileName}";
@@ -457,7 +449,7 @@ public static class EquipmentSwap
     public static FileSwap CreateShader(MetaFileManager manager, Func<Utf8GamePath, FullPath> redirections, ref string shaderName,
         ref bool dataWasChanged)
     {
-        var path = $"shader/sm5/shpk/{shaderName}";
+        var path = GamePaths.Shader(shaderName);
         return FileSwap.CreateSwap(manager, ResourceType.Shpk, redirections, path, path);
     }
 

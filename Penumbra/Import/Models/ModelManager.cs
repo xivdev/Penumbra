@@ -63,7 +63,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
         if (info.FileType is not FileType.Model)
             return [];
 
-        var baseSkeleton = GamePaths.Skeleton.Sklb.Path(info.GenderRace, "base", 1);
+        var baseSkeleton = GamePaths.Sklb.Customization(info.GenderRace, "base", 1);
 
         return info.ObjectType switch
         {
@@ -79,9 +79,9 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
             ObjectType.Character when info.BodySlot is BodySlot.Face or BodySlot.Ear
                 => [baseSkeleton, ..ResolveEstSkeleton(EstType.Face, info, estManipulations)],
             ObjectType.Character => throw new Exception($"Currently unsupported human model type \"{info.BodySlot}\"."),
-            ObjectType.DemiHuman => [GamePaths.DemiHuman.Sklb.Path(info.PrimaryId)],
-            ObjectType.Monster   => [GamePaths.Monster.Sklb.Path(info.PrimaryId)],
-            ObjectType.Weapon    => [GamePaths.Weapon.Sklb.Path(info.PrimaryId)],
+            ObjectType.DemiHuman => [GamePaths.Sklb.DemiHuman(info.PrimaryId)],
+            ObjectType.Monster   => [GamePaths.Sklb.Monster(info.PrimaryId)],
+            ObjectType.Weapon    => [GamePaths.Sklb.Weapon(info.PrimaryId)],
             _                    => [],
         };
     }
@@ -105,7 +105,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
         if (targetId == EstEntry.Zero)
             return [];
 
-        return [GamePaths.Skeleton.Sklb.Path(info.GenderRace, type.ToName(), targetId.AsId)];
+        return [GamePaths.Sklb.Customization(info.GenderRace, type.ToName(), targetId.AsId)];
     }
 
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>
@@ -137,7 +137,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
 
         var resolvedPath = info.ObjectType switch
         {
-            ObjectType.Character => GamePaths.Character.Mtrl.Path(
+            ObjectType.Character => GamePaths.Mtrl.Customization(
                 info.GenderRace, info.BodySlot, info.PrimaryId, relativePath, out _, out _, info.Variant),
             _ => absolutePath,
         };

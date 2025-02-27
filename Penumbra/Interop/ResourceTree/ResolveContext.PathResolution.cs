@@ -43,8 +43,8 @@ internal partial record ResolveContext
     private Utf8GamePath ResolveEquipmentModelPath()
     {
         var path = IsEquipmentSlot(SlotIndex)
-            ? GamePaths.Equipment.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot())
-            : GamePaths.Accessory.Mdl.Path(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot());
+            ? GamePaths.Mdl.Equipment(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot())
+            : GamePaths.Mdl.Accessory(Equipment.Set, ResolveModelRaceCode(), SlotIndex.ToEquipSlot());
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -122,7 +122,7 @@ internal partial record ResolveContext
         var setIdHigh = Equipment.Set.Id / 100;
         // All MCH (20??) weapons' materials C are one and the same
         if (setIdHigh is 20 && mtrlFileName[14] == (byte)'c')
-            return Utf8GamePath.FromString(GamePaths.Weapon.Mtrl.Path(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
+            return Utf8GamePath.FromString(GamePaths.Mtrl.Weapon(2001, 1, 1, "c"), out var path) ? path : Utf8GamePath.Empty;
 
         // Some offhands share materials with the corresponding mainhand
         if (ItemData.AdaptOffhandImc(Equipment.Set, out var mirroredSetId))
@@ -230,7 +230,7 @@ internal partial record ResolveContext
         if (set == 0)
             return Utf8GamePath.Empty;
 
-        var path = GamePaths.Skeleton.Sklb.Path(raceCode, slot, set);
+        var path = GamePaths.Sklb.Customization(raceCode, slot, set);
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -300,7 +300,7 @@ internal partial record ResolveContext
         if (set.Id is 0)
             return Utf8GamePath.Empty;
 
-        var path = GamePaths.Skeleton.Skp.Path(raceCode, slot, set);
+        var path = GamePaths.Skp.Customization(raceCode, slot, set);
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -328,7 +328,7 @@ internal partial record ResolveContext
         if (set.Id is 0)
             return Utf8GamePath.Empty;
 
-        var path = GamePaths.Skeleton.Phyb.Path(raceCode, slot, set);
+        var path = GamePaths.Phyb.Customization(raceCode, slot, set);
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
@@ -354,7 +354,7 @@ internal partial record ResolveContext
         if (decal is 0)
             return Utf8GamePath.Empty;
 
-        var path = GamePaths.Equipment.Decal.Path(decal);
+        var path = GamePaths.Tex.EquipDecal(decal);
         return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 }

@@ -124,7 +124,7 @@ public partial class MtrlTab
 
     private FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
     {
-        defaultPath = GamePaths.Shader.ShpkPath(Mtrl.ShaderPackage.Name);
+        defaultPath = GamePaths.Shader(Mtrl.ShaderPackage.Name);
         if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath))
             return FullPath.Empty;
 

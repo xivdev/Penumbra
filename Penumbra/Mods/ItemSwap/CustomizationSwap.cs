@@ -17,8 +17,8 @@ public static class CustomizationSwap
         if (idFrom.Id > byte.MaxValue)
             throw new Exception($"The Customization ID {idFrom} is too large for {slot}.");
 
-        var mdlPathFrom = GamePaths.Character.Mdl.Path(race, slot, idFrom, slot.ToCustomizationType());
-        var mdlPathTo   = GamePaths.Character.Mdl.Path(race, slot, idTo,   slot.ToCustomizationType());
+        var mdlPathFrom = GamePaths.Mdl.Customization(race, slot, idFrom, slot.ToCustomizationType());
+        var mdlPathTo   = GamePaths.Mdl.Customization(race, slot, idTo,   slot.ToCustomizationType());
 
         var mdl = FileSwap.CreateSwap(manager, ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo);
         var range = slot == BodySlot.Tail
@@ -47,8 +47,8 @@ public static class CustomizationSwap
         ref string fileName, ref bool dataWasChanged)
     {
         variant = slot is BodySlot.Face or BodySlot.Ear ? Variant.None.Id : variant;
-        var mtrlFromPath = GamePaths.Character.Mtrl.Path(race, slot, idFrom, fileName, out var gameRaceFrom, out var gameSetIdFrom, variant);
-        var mtrlToPath   = GamePaths.Character.Mtrl.Path(race, slot, idTo,   fileName, out var gameRaceTo,   out var gameSetIdTo,   variant);
+        var mtrlFromPath = GamePaths.Mtrl.Customization(race, slot, idFrom, fileName, out var gameRaceFrom, out var gameSetIdFrom, variant);
+        var mtrlToPath   = GamePaths.Mtrl.Customization(race, slot, idTo,   fileName, out var gameRaceTo,   out var gameSetIdTo,   variant);
 
         var newFileName = fileName;
         newFileName = ItemSwap.ReplaceRace(newFileName, gameRaceTo, race, gameRaceTo != race);
@@ -60,7 +60,7 @@ public static class CustomizationSwap
         var actualMtrlFromPath = mtrlFromPath;
         if (newFileName != fileName)
         {
-            actualMtrlFromPath = GamePaths.Character.Mtrl.Path(race, slot, idFrom, newFileName, out _, out _, variant);
+            actualMtrlFromPath = GamePaths.Mtrl.Customization(race, slot, idFrom, newFileName, out _, out _, variant);
             fileName           = newFileName;
             dataWasChanged     = true;
         }
