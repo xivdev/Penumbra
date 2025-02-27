@@ -1,8 +1,7 @@
 using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Data;
-using OtterGui;
-using OtterGui.Raii;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
@@ -43,7 +42,7 @@ public partial class ModEditWindow
 
     private void DrawQuickImportTab()
     {
-        using var tab = ImRaii.TabItem("Import from Screen");
+        using var tab = ImUtf8.TabItem("Import from Screen"u8);
         if (!tab)
         {
             _quickImportActions.Clear();
@@ -73,14 +72,14 @@ public partial class ModEditWindow
             else
             {
                 var file = _gameData.GetFile(path);
-                writable = file == null ? null : new RawGameFileWritable(file);
+                writable = file is null ? null : new RawGameFileWritable(file);
             }
 
             _quickImportWritables.Add(resourceNode.FullPath, writable);
         }
 
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), buttonSize, "Export this file.",
-                resourceNode.FullPath.FullName.Length == 0 || writable == null, true))
+        if (ImUtf8.IconButton(FontAwesomeIcon.Save, "Export this file."u8, buttonSize,
+                resourceNode.FullPath.FullName.Length is 0 || writable is null))
         {
             var fullPathStr = resourceNode.FullPath.FullName;
             var ext = resourceNode.PossibleGamePaths.Length == 1
@@ -112,16 +111,17 @@ public partial class ModEditWindow
 
         var canQuickImport     = quickImport.CanExecute;
         var quickImportEnabled = canQuickImport && (!resourceNode.Protected || _config.DeleteModModifier.IsActive());
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), buttonSize,
+        if (ImUtf8.IconButton(FontAwesomeIcon.FileImport,
                 $"Add a copy of this file to {quickImport.OptionName}.{(canQuickImport && !quickImportEnabled ? $"\nHold {_config.DeleteModModifier} while clicking to add." : string.Empty)}",
-                !quickImportEnabled, true))
+                buttonSize,
+                !quickImportEnabled))
         {
             quickImport.Execute();
             _quickImportActions.Remove((resourceNode.GamePath, writable));
         }
     }
 
-    private record class RawFileWritable(string Path) : IWritable
+    private record RawFileWritable(string Path) : IWritable
     {
         public bool Valid
             => true;
@@ -130,7 +130,7 @@ public partial class ModEditWindow
             => File.ReadAllBytes(Path);
     }
 
-    private record class RawGameFileWritable(FileResource FileResource) : IWritable
+    private record RawGameFileWritable(FileResource FileResource) : IWritable
     {
         public bool Valid
             => true;
@@ -188,19 +188,19 @@ public partial class ModEditWindow
         public static QuickImportAction Prepare(ModEditWindow owner, Utf8GamePath gamePath, IWritable? file)
         {
             var editor = owner._editor;
-            if (editor == null)
+            if (editor is null)
                 return new QuickImportAction(owner._editor, FallbackOptionName, gamePath);
 
             var subMod     = editor.Option!;
             var optionName = subMod is IModOption o ? o.FullName : FallbackOptionName;
-            if (gamePath.IsEmpty || file == null || editor.FileEditor.Changes)
+            if (gamePath.IsEmpty || file is null || editor.FileEditor.Changes)
                 return new QuickImportAction(editor, optionName, gamePath);
 
             if (subMod.Files.ContainsKey(gamePath) || subMod.FileSwaps.ContainsKey(gamePath))
                 return new QuickImportAction(editor, optionName, gamePath);
 
             var mod = owner.Mod;
-            if (mod == null)
+            if (mod is null)
                 return new QuickImportAction(editor, optionName, gamePath);
 
             var (preferredPath, subDirs) = GetPreferredPath(mod, subMod as IModOption, owner._config.ReplaceNonAsciiOnImport);
@@ -235,7 +235,7 @@ public partial class ModEditWindow
         {
             var path    = mod.ModPath;
             var subDirs = 0;
-            if (subMod == null)
+            if (subMod is null)
                 return (path, subDirs);
 
             var name     = subMod.Name;
