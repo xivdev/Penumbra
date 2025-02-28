@@ -8,8 +8,8 @@ namespace Penumbra.Meta.Manipulations;
 
 public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attribute) : IMetaIdentifier
 {
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
-        => changedItems.TryAdd($"{SubRace.ToName()} {Attribute.ToFullString()}", null);
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
+        => changedItems.UpdateCountOrSet($"{SubRace.ToName()} {Attribute.ToFullString()}", () => new IdentifiedName());
 
     public MetaIndex FileIndex()
         => MetaIndex.HumanCmp;

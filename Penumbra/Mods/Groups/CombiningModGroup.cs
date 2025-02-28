@@ -136,7 +136,7 @@ public sealed class CombiningModGroup : IModGroup
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
         => Data[setting.AsIndex].AddDataTo(redirections, manipulations);
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
     {
         foreach (var container in DataContainers)
             identifier.AddChangedItems(container, changedItems);

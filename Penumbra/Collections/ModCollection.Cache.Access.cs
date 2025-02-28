@@ -46,8 +46,8 @@ public partial class ModCollection
     internal IReadOnlyDictionary<Utf8GamePath, ModPath> ResolvedFiles
         => _cache?.ResolvedFiles ?? new ConcurrentDictionary<Utf8GamePath, ModPath>();
 
-    internal IReadOnlyDictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)> ChangedItems
-        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, IIdentifiedObjectData?)>();
+    internal IReadOnlyDictionary<string, (SingleArray<IMod>, IIdentifiedObjectData)> ChangedItems
+        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, IIdentifiedObjectData)>();
 
     internal IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => _cache?.AllConflicts ?? Array.Empty<SingleArray<ModConflicts>>();

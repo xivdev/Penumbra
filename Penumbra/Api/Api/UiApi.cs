@@ -81,21 +81,21 @@ public class UiApi : IPenumbraApiUi, IApiService, IDisposable
     public void CloseMainWindow()
         => _configWindow.IsOpen = false;
 
-    private void OnChangedItemClick(MouseButton button, IIdentifiedObjectData? data)
+    private void OnChangedItemClick(MouseButton button, IIdentifiedObjectData data)
     {
         if (ChangedItemClicked == null)
             return;
 
-        var (type, id) = data?.ToApiObject() ?? (ChangedItemType.None, 0);
+        var (type, id) = data.ToApiObject();
         ChangedItemClicked.Invoke(button, type, id);
     }
 
-    private void OnChangedItemHover(IIdentifiedObjectData? data)
+    private void OnChangedItemHover(IIdentifiedObjectData data)
     {
         if (ChangedItemTooltip == null)
             return;
 
-        var (type, id) = data?.ToApiObject() ?? (ChangedItemType.None, 0);
+        var (type, id) = data.ToApiObject();
         ChangedItemTooltip.Invoke(type, id);
     }
 }

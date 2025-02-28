@@ -101,13 +101,14 @@ public sealed class Mod : IMod
     }
 
     // Cache
-    public readonly SortedList<string, IIdentifiedObjectData?> ChangedItems = new();
+    public readonly SortedList<string, IIdentifiedObjectData> ChangedItems = new();
 
     public string LowerChangedItemsString { get; internal set; } = string.Empty;
     public string AllTagsLower            { get; internal set; } = string.Empty;
 
-    public int  TotalFileCount     { get; internal set; }
-    public int  TotalSwapCount     { get; internal set; }
-    public int  TotalManipulations { get; internal set; }
+    public int    TotalFileCount         { get; internal set; }
+    public int    TotalSwapCount         { get; internal set; }
+    public int    TotalManipulations     { get; internal set; }
+    public ushort LastChangedItemsUpdate { get; internal set; }
     public bool HasOptions         { get; internal set; }
 }

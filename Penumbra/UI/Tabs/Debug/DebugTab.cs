@@ -748,7 +748,7 @@ public class DebugTab : Window, ITab, IUiService
     }
 
     private          string                                     _changedItemPath = string.Empty;
-    private readonly Dictionary<string, IIdentifiedObjectData?> _changedItems    = [];
+    private readonly Dictionary<string, IIdentifiedObjectData> _changedItems    = [];
 
     private void DrawChangedItemTest()
     {

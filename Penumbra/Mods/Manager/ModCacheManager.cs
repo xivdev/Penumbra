@@ -139,6 +139,7 @@ public class ModCacheManager : IDisposable, IService
             mod.ChangedItems.RemoveMachinistOffhands();
 
         mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
+        ++mod.LastChangedItemsUpdate;
     }
 
     private static void UpdateCounts(Mod mod)

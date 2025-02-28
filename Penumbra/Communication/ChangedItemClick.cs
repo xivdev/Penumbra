@@ -12,7 +12,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the clicked object data if any. </item>
 /// </list>
 /// </summary>
-public sealed class ChangedItemClick() : EventWrapper<MouseButton, IIdentifiedObjectData?, ChangedItemClick.Priority>(nameof(ChangedItemClick))
+public sealed class ChangedItemClick() : EventWrapper<MouseButton, IIdentifiedObjectData, ChangedItemClick.Priority>(nameof(ChangedItemClick))
 {
     public enum Priority
     {

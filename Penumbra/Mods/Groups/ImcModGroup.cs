@@ -131,7 +131,7 @@ public class ImcModGroup(Mod mod) : IModGroup
         }
     }
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
         => Identifier.AddChangedItems(identifier, changedItems, AllVariants);
 
     public Setting FixSetting(Setting setting)

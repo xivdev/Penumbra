@@ -70,7 +70,7 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
     public override string ToString()
         => $"Global EQP - {Type}{(Condition != 0 ? $" - {Condition.Id}" : string.Empty)}";
 
-    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData?> changedItems)
+    public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
     {
         var path = Type switch
         {
@@ -86,9 +86,9 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
         if (path.Length > 0)
             identifier.Identify(changedItems, path);
         else if (Type is GlobalEqpType.DoNotHideVieraHats)
-            changedItems["All Hats for Viera"] = null;
+            changedItems.UpdateCountOrSet("All Hats for Viera", () => new IdentifiedName());
         else if (Type is GlobalEqpType.DoNotHideHrothgarHats)
-            changedItems["All Hats for Hrothgar"] = null;
+            changedItems.UpdateCountOrSet("All Hats for Hrothgar", () => new IdentifiedName());
     }
 
     public MetaIndex FileIndex()

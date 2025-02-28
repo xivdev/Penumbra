@@ -3,6 +3,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
@@ -26,30 +27,36 @@ public class ChangedItemsTab(
 
     private LowerString _changedItemFilter    = LowerString.Empty;
     private LowerString _changedItemModFilter = LowerString.Empty;
+    private Vector2     _buttonSize;
 
     public void DrawContent()
     {
         collectionHeader.Draw(true);
         drawer.DrawTypeFilter();
         var       varWidth = DrawFilters();
-        using var child    = ImRaii.Child("##changedItemsChild", -Vector2.One);
+        using var child    = ImUtf8.Child("##changedItemsChild"u8, -Vector2.One);
         if (!child)
             return;
 
-        var height  = ImGui.GetFrameHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
-        var       skips  = ImGuiClip.GetNecessarySkips(height);
-        using var list   = ImRaii.Table("##changedItems", 3, ImGuiTableFlags.RowBg, -Vector2.One);
+        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeight());
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, Vector2.Zero)
+            .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
+            .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
+            .Push(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.01f, 0.5f));
+
+        var       skips = ImGuiClip.GetNecessarySkips(_buttonSize.Y);
+        using var list  = ImUtf8.Table("##changedItems"u8, 3, ImGuiTableFlags.RowBg, -Vector2.One);
         if (!list)
             return;
 
         const ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.NoResize | ImGuiTableColumnFlags.WidthFixed;
-        ImGui.TableSetupColumn("items", flags, 450 * UiHelpers.Scale);
-        ImGui.TableSetupColumn("mods",  flags, varWidth - 130 * UiHelpers.Scale);
-        ImGui.TableSetupColumn("id",    flags, 130 * UiHelpers.Scale);
+        ImUtf8.TableSetupColumn("items"u8, flags, 450 * UiHelpers.Scale);
+        ImUtf8.TableSetupColumn("mods"u8,  flags, varWidth - 140 * UiHelpers.Scale);
+        ImUtf8.TableSetupColumn("id"u8,    flags, 140 * UiHelpers.Scale);
 
         var items = collectionManager.Active.Current.ChangedItems;
         var rest  = ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);
-        ImGuiClip.DrawEndDummy(rest, height);
+        ImGuiClip.DrawEndDummy(rest, _buttonSize.Y);
     }
 
     /// <summary> Draw a pair of filters and return the variable width of the flexible column. </summary>
@@ -67,22 +74,25 @@ public class ChangedItemsTab(
     }
 
     /// <summary> Apply the current filters. </summary>
-    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData?)> item)
+    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData)> item)
         => drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
          && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
 
     /// <summary> Draw a full column for a changed item. </summary>
-    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData?)> item)
+    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData)> item)
     {
         ImGui.TableNextColumn();
-        drawer.DrawCategoryIcon(item.Value.Item2);
-        ImGui.SameLine();
-        drawer.DrawChangedItem(item.Key, item.Value.Item2);
+        drawer.DrawCategoryIcon(item.Value.Item2, _buttonSize.Y);
+        ImGui.SameLine(0, 0);
+        var name    = item.Value.Item2.ToName(item.Key);
+        var clicked = ImUtf8.Selectable(name, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 });
+        drawer.ChangedItemHandling(item.Value.Item2, clicked);
+
         ImGui.TableNextColumn();
         DrawModColumn(item.Value.Item1);
 
         ImGui.TableNextColumn();
-        ChangedItemDrawer.DrawModelData(item.Value.Item2);
+        ChangedItemDrawer.DrawModelData(item.Value.Item2, _buttonSize.Y);
     }
 
     private void DrawModColumn(SingleArray<IMod> mods)
@@ -90,19 +100,18 @@ public class ChangedItemsTab(
         if (mods.Count <= 0)
             return;
 
-        var       first = mods[0];
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0, 0.5f));
-        if (ImGui.Selectable(first.Name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight()))
+        var first = mods[0];
+        if (ImUtf8.Selectable(first.Name.Text, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 })
          && ImGui.GetIO().KeyCtrl
          && first is Mod mod)
             communicator.SelectTab.Invoke(TabType.Mods, mod);
 
-        if (ImGui.IsItemHovered())
-        {
-            using var _ = ImRaii.Tooltip();
-            ImGui.TextUnformatted("Hold Control and click to jump to mod.\n");
-            if (mods.Count > 1)
-                ImGui.TextUnformatted("Other mods affecting this item:\n" + string.Join("\n", mods.Skip(1).Select(m => m.Name)));
-        }
+        if (!ImGui.IsItemHovered())
+            return;
+
+        using var _ = ImRaii.Tooltip();
+        ImUtf8.Text("Hold Control and click to jump to mod.\n"u8);
+        if (mods.Count > 1)
+            ImUtf8.Text("Other mods affecting this item:\n" + string.Join("\n", mods.Skip(1).Select(m => m.Name)));
     }
 }

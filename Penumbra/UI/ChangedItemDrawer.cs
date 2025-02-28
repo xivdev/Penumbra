@@ -9,6 +9,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Services;
@@ -86,18 +87,20 @@ public class ChangedItemDrawer : IDisposable, IUiService
     }
 
     /// <summary> Check if a changed item should be drawn based on its category. </summary>
-    public bool FilterChangedItem(string name, IIdentifiedObjectData? data, LowerString filter)
+    public bool FilterChangedItem(string name, IIdentifiedObjectData data, LowerString filter)
         => (_config.Ephemeral.ChangedItemFilter == ChangedItemFlagExtensions.AllFlags
              || _config.Ephemeral.ChangedItemFilter.HasFlag(data.GetIcon().ToFlag()))
          && (filter.IsEmpty || !data.IsFilteredOut(name, filter));
 
     /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
-    public void DrawCategoryIcon(IIdentifiedObjectData? data)
-        => DrawCategoryIcon(data.GetIcon().ToFlag());
+    public void DrawCategoryIcon(IIdentifiedObjectData data, float height)
+        => DrawCategoryIcon(data.GetIcon().ToFlag(), height);
 
     public void DrawCategoryIcon(ChangedItemIconFlag iconFlagType)
+        => DrawCategoryIcon(iconFlagType, ImGui.GetFrameHeight());
+
+    public void DrawCategoryIcon(ChangedItemIconFlag iconFlagType, float height)
     {
-        var height = ImGui.GetFrameHeight();
         if (!_icons.TryGetValue(iconFlagType, out var icon))
         {
             ImGui.Dummy(new Vector2(height));
@@ -114,50 +117,50 @@ public class ChangedItemDrawer : IDisposable, IUiService
         }
     }
 
-    /// <summary>
-    /// Draw a changed item, invoking the Api-Events for clicks and tooltips.
-    /// Also draw the item ID in grey if requested.
-    /// </summary>
-    public void DrawChangedItem(string name, IIdentifiedObjectData? data)
+    public void ChangedItemHandling(IIdentifiedObjectData data, bool leftClicked)
     {
-        name = data?.ToName(name) ?? name;
-        using (ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0,               0.5f))
-                   .Push(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, ImGui.GetStyle().CellPadding.Y * 2)))
-        {
-            var ret = ImGui.Selectable(name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight()))
-                ? MouseButton.Left
-                : MouseButton.None;
-            ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
-            ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
-            if (ret != MouseButton.None)
-                _communicator.ChangedItemClick.Invoke(ret, data);
-        }
+        var ret = leftClicked ? MouseButton.Left : MouseButton.None;
+        ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
+        ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
+        if (ret != MouseButton.None)
+            _communicator.ChangedItemClick.Invoke(ret, data);
+        if (!ImGui.IsItemHovered())
+            return;
 
-        if (_communicator.ChangedItemHover.HasTooltip && ImGui.IsItemHovered())
-        {
-            // We can not be sure that any subscriber actually prints something in any case.
-            // Circumvent ugly blank tooltip with less-ugly useless tooltip.
-            using var tt = ImRaii.Tooltip();
-            using (ImRaii.Group())
-            {
-                _communicator.ChangedItemHover.Invoke(data);
-            }
-
-            if (ImGui.GetItemRectSize() == Vector2.Zero)
-                ImGui.TextUnformatted("No actions available.");
-        }
+        using var tt = ImUtf8.Tooltip();
+        if (data.Count == 1)
+            ImUtf8.Text("This item is changed through a single effective change.\n");
+        else
+            ImUtf8.Text($"This item is changed through {data.Count} distinct effective changes.\n");
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3 * ImUtf8.GlobalScale);
+        ImGui.Separator();
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3 * ImUtf8.GlobalScale);
+        _communicator.ChangedItemHover.Invoke(data);
     }
 
     /// <summary> Draw the model information, right-justified. </summary>
-    public static void DrawModelData(IIdentifiedObjectData? data)
+    public static void DrawModelData(IIdentifiedObjectData data, float height)
     {
-        var additionalData = data?.AdditionalData ?? string.Empty;
+        var additionalData = data.AdditionalData;
         if (additionalData.Length == 0)
             return;
 
-        ImGui.SameLine(ImGui.GetContentRegionAvail().X);
-        ImGui.AlignTextToFramePadding();
-        ImGuiUtil.RightJustify(additionalData, ColorId.ItemId.Value());
+        ImGui.SameLine();
+        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (height - ImGui.GetTextLineHeight()) / 2);
+        ImUtf8.TextRightAligned(additionalData, ImGui.GetStyle().ItemInnerSpacing.X);
+    }
+
+    /// <summary> Draw the model information, right-justified. </summary>
+    public static void DrawModelData(ReadOnlySpan<byte> text, float height)
+    {
+        if (text.Length == 0)
+            return;
+
+        ImGui.SameLine();
+        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (height - ImGui.GetTextLineHeight()) / 2);
+        ImUtf8.TextRightAligned(text, ImGui.GetStyle().ItemInnerSpacing.X);
     }
 
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
@@ -276,7 +279,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
         return true;
     }
 
-    private static unsafe IDalamudTextureWrap? LoadUnknownTexture(IDataManager gameData, ITextureProvider textureProvider)
+    private static IDalamudTextureWrap? LoadUnknownTexture(IDataManager gameData, ITextureProvider textureProvider)
     {
         var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
         if (unk == null)

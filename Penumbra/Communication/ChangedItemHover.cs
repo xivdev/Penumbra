@@ -10,7 +10,7 @@ namespace Penumbra.Communication;
 ///     <item>Parameter is the hovered object data if any. </item>
 /// </list>
 /// </summary>
-public sealed class ChangedItemHover() : EventWrapper<IIdentifiedObjectData?, ChangedItemHover.Priority>(nameof(ChangedItemHover))
+public sealed class ChangedItemHover() : EventWrapper<IIdentifiedObjectData, ChangedItemHover.Priority>(nameof(ChangedItemHover))
 {
     public enum Priority
     {

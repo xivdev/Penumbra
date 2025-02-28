@@ -65,7 +65,7 @@ public sealed class ModChangedItemAdapter(WeakReference<ModStorage> storage)
             : throw new ObjectDisposedException("The underlying mod storage of this IPC container was disposed.");
     }
 
-    private sealed class ChangedItemDictionaryAdapter(SortedList<string, IIdentifiedObjectData?> data) : IReadOnlyDictionary<string, object?>
+    private sealed class ChangedItemDictionaryAdapter(SortedList<string, IIdentifiedObjectData> data) : IReadOnlyDictionary<string, object?>
     {
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
             => data.Select(d => new KeyValuePair<string, object?>(d.Key, d.Value?.ToInternalObject())).GetEnumerator();
