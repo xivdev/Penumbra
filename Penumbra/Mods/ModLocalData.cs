@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 
@@ -21,6 +22,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
             { nameof(Mod.LocalTags), JToken.FromObject(mod.LocalTags) },
             { nameof(Mod.Note), JToken.FromObject(mod.Note) },
             { nameof(Mod.Favorite), JToken.FromObject(mod.Favorite) },
+            { nameof(Mod.PreferredChangedItems), JToken.FromObject(mod.PreferredChangedItems) },
         };
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
@@ -36,6 +38,8 @@ public readonly struct ModLocalData(Mod mod) : ISavable
         var favorite   = false;
         var note       = string.Empty;
 
+        HashSet<CustomItemId> preferredChangedItems = [];
+
         var save = true;
         if (File.Exists(dataFile))
             try
@@ -43,16 +47,21 @@ public readonly struct ModLocalData(Mod mod) : ISavable
                 var text = File.ReadAllText(dataFile);
                 var json = JObject.Parse(text);
 
-                importDate = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
-                favorite   = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
-                note       = json[nameof(Mod.Note)]?.Value<string>() ?? note;
-                localTags  = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
-                save       = false;
+                importDate            = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
+                favorite              = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
+                note                  = json[nameof(Mod.Note)]?.Value<string>() ?? note;
+                localTags             = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
+                preferredChangedItems = (json[nameof(Mod.PreferredChangedItems)] as JArray)?.Values<ulong>().Select(i => (CustomItemId) i).ToHashSet() ?? mod.DefaultPreferredItems;
+                save                  = false;
             }
             catch (Exception e)
             {
                 Penumbra.Log.Error($"Could not load local mod data:\n{e}");
             }
+        else
+        {
+            preferredChangedItems = mod.DefaultPreferredItems;
+        }
 
         if (importDate == 0)
             importDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -64,7 +73,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
             changes        |= ModDataChangeType.ImportDate;
         }
 
-        changes |= ModLocalData.UpdateTags(mod, null, localTags);
+        changes |= UpdateTags(mod, null, localTags);
 
         if (mod.Favorite != favorite)
         {
@@ -76,6 +85,12 @@ public readonly struct ModLocalData(Mod mod) : ISavable
         {
             mod.Note =  note;
             changes  |= ModDataChangeType.Note;
+        }
+
+        if (!preferredChangedItems.SetEquals(mod.PreferredChangedItems))
+        {
+            mod.PreferredChangedItems =  preferredChangedItems;
+            changes                   |= ModDataChangeType.PreferredChangedItems;
         }
 
         if (save)

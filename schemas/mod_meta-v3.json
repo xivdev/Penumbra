@@ -43,6 +43,15 @@
                 "minLength": 1
             },
             "uniqueItems": true
+        },
+        "DefaultPreferredItems": {
+            "description": "Default preferred items to list as the main item of a group managed by the mod creator.",
+            "type": "array",
+            "items": {
+                "minimum": 0,
+                "type": "integer"
+            },
+            "uniqueItems": true
         }
     },
     "required": [

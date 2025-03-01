@@ -1,6 +1,7 @@
 using OtterGui;
 using OtterGui.Classes;
 using Penumbra.GameData.Data;
+using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
@@ -47,21 +48,22 @@ public sealed class Mod : IMod
         => Name.Text;
 
     // Meta Data
-    public LowerString           Name        { get; internal set; } = "New Mod";
-    public LowerString           Author      { get; internal set; } = LowerString.Empty;
-    public string                Description { get; internal set; } = string.Empty;
-    public string                Version     { get; internal set; } = string.Empty;
-    public string                Website     { get; internal set; } = string.Empty;
-    public string                Image       { get; internal set; } = string.Empty;
-    public IReadOnlyList<string> ModTags     { get; internal set; } = [];
+    public LowerString           Name                  { get; internal set; } = "New Mod";
+    public LowerString           Author                { get; internal set; } = LowerString.Empty;
+    public string                Description           { get; internal set; } = string.Empty;
+    public string                Version               { get; internal set; } = string.Empty;
+    public string                Website               { get; internal set; } = string.Empty;
+    public string                Image                 { get; internal set; } = string.Empty;
+    public IReadOnlyList<string> ModTags               { get; internal set; } = [];
+    public HashSet<CustomItemId> DefaultPreferredItems { get; internal set; } = [];
 
 
     // Local Data
-    public long                  ImportDate { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
-    public IReadOnlyList<string> LocalTags  { get; internal set; } = [];
-    public string                Note       { get; internal set; } = string.Empty;
-    public bool                  Favorite   { get; internal set; } = false;
-
+    public long                  ImportDate            { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
+    public IReadOnlyList<string> LocalTags             { get; internal set; } = [];
+    public string                Note                  { get; internal set; } = string.Empty;
+    public HashSet<CustomItemId> PreferredChangedItems { get; internal set; } = [];
+    public bool                  Favorite              { get; internal set; } = false;
 
     // Options
     public readonly DefaultSubMod   Default;
@@ -110,5 +112,5 @@ public sealed class Mod : IMod
     public int    TotalSwapCount         { get; internal set; }
     public int    TotalManipulations     { get; internal set; }
     public ushort LastChangedItemsUpdate { get; internal set; }
-    public bool HasOptions         { get; internal set; }
+    public bool   HasOptions             { get; internal set; }
 }

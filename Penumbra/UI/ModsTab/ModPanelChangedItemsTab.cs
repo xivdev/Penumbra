@@ -10,6 +10,7 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.String;
 
 namespace Penumbra.UI.ModsTab;
@@ -18,7 +19,8 @@ public class ModPanelChangedItemsTab(
     ModFileSystemSelector selector,
     ChangedItemDrawer drawer,
     ImGuiCacheService cacheService,
-    Configuration config)
+    Configuration config,
+    ModDataEditor dataEditor)
     : ITab, IUiService
 {
     private readonly ImGuiCacheService.CacheId _cacheId = cacheService.GetNewId();
@@ -77,7 +79,7 @@ public class ModPanelChangedItemsTab(
                 => new()
                 {
                     Child      = true,
-                    Text       = ByteString.FromStringUnsafe(data.ToName(text),           false),
+                    Text       = ByteString.FromStringUnsafe(data.ToName(text),   false),
                     ModelData  = ByteString.FromStringUnsafe(data.AdditionalData, false),
                     Icon       = data.GetIcon().ToFlag(),
                     Expandable = false,
@@ -93,7 +95,11 @@ public class ModPanelChangedItemsTab(
 
         public void Update(Mod? mod, ChangedItemDrawer drawer, ChangedItemIconFlag filter, ChangedItemMode mode)
         {
-            if (mod == _lastSelected && _lastSelected!.LastChangedItemsUpdate == _lastUpdate && _filter == filter && !_reset && _lastMode == mode)
+            if (mod == _lastSelected
+             && _lastSelected!.LastChangedItemsUpdate == _lastUpdate
+             && _filter == filter
+             && !_reset
+             && _lastMode == mode)
                 return;
 
             _reset = false;
@@ -138,6 +144,12 @@ public class ModPanelChangedItemsTab(
             {
                 list.Sort((i1, i2) =>
                 {
+                    // reversed
+                    var preferred = _lastSelected.PreferredChangedItems.Contains(i2.Item.Id)
+                        .CompareTo(_lastSelected.PreferredChangedItems.Contains(i1.Item.Id));
+                    if (preferred != 0)
+                        return preferred;
+
                     // reversed
                     var count = i2.Count.CompareTo(i1.Count);
                     if (count != 0)
@@ -217,6 +229,7 @@ public class ModPanelChangedItemsTab(
             .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
             .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
             .Push(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.01f, 0.5f));
+        using var color = ImRaii.PushColor(ImGuiCol.Button, 0);
 
         using var table = ImUtf8.Table("##changedItems"u8, cache.AnyExpandable ? 2 : 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY,
             new Vector2(ImGui.GetContentRegionAvail().X, -1));
@@ -241,7 +254,6 @@ public class ModPanelChangedItemsTab(
         ImGui.TableNextColumn();
         if (obj.Expandable)
         {
-            using var color = ImRaii.PushColor(ImGuiCol.Button, 0);
             if (ImUtf8.IconButton(obj.Expanded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight,
                     obj.Expanded     ? "Hide the other items using the same model." :
                     obj.Children > 1 ? $"Show {obj.Children} other items using the same model." :
@@ -252,6 +264,10 @@ public class ModPanelChangedItemsTab(
                 if (cacheService.TryGetCache<ChangedItemsCache>(_cacheId, out var cache))
                     cache.Reset();
             }
+        }
+        else if (obj is { Child: true, Data: IdentifiedItem item })
+        {
+            DrawPreferredButton(item, idx);
         }
         else
         {
@@ -265,6 +281,53 @@ public class ModPanelChangedItemsTab(
     {
         using var id = ImUtf8.PushId(idx);
         DrawBaseContainer(obj, idx);
+    }
+
+    private void DrawPreferredButton(IdentifiedItem item, int idx)
+    {
+        if (ImUtf8.IconButton(FontAwesomeIcon.Star, "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8, _buttonSize,
+                false, ImGui.GetColorU32(ImGuiCol.TextDisabled, 0.1f)))
+            dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, false, true);
+        using var context = ImUtf8.PopupContextItem("StarContext"u8, ImGuiPopupFlags.MouseButtonRight);
+        if (!context)
+            return;
+
+        if (cacheService.TryGetCache<ChangedItemsCache>(_cacheId, out var cache))
+            for (--idx; idx >= 0; --idx)
+            {
+                if (!cache.Data[idx].Expanded)
+                    continue;
+
+                if (cache.Data[idx].Data is IdentifiedItem it)
+                {
+                    if (selector.Selected!.PreferredChangedItems.Contains(it.Item.Id)
+                     && ImUtf8.MenuItem("Remove Parent from Local Preferred Items"u8))
+                        dataEditor.RemovePreferredItem(selector.Selected!, it.Item.Id, false);
+                    if (selector.Selected!.DefaultPreferredItems.Contains(it.Item.Id)
+                     && ImUtf8.MenuItem("Remove Parent from Default Preferred Items"u8))
+                        dataEditor.RemovePreferredItem(selector.Selected!, it.Item.Id, true);
+                }
+
+                break;
+            }
+
+        var enabled = !selector.Selected!.DefaultPreferredItems.Contains(item.Item.Id);
+        if (enabled)
+        {
+            if (ImUtf8.MenuItem("Add to Local and Default Preferred Changed Items"u8))
+                dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, true, true);
+        }
+        else
+        {
+            if (ImUtf8.MenuItem("Remove from Default Preferred Changed Items"u8))
+                dataEditor.RemovePreferredItem(selector.Selected!, item.Item.Id, true);
+        }
+
+        if (ImUtf8.MenuItem("Reset Local Preferred Items to Default"u8))
+            dataEditor.ResetPreferredItems(selector.Selected!);
+
+        if (ImUtf8.MenuItem("Clear Local and Default Preferred Items not Changed by the Mod"u8))
+            dataEditor.ClearInvalidPreferredItems(selector.Selected!);
     }
 
 

@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -25,6 +26,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
             { nameof(Mod.Version), JToken.FromObject(mod.Version) },
             { nameof(Mod.Website), JToken.FromObject(mod.Website) },
             { nameof(Mod.ModTags), JToken.FromObject(mod.ModTags) },
+            { nameof(Mod.DefaultPreferredItems), JToken.FromObject(mod.DefaultPreferredItems) },
         };
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
@@ -48,7 +50,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
             var newFileVersion = json[nameof(FileVersion)]?.Value<uint>() ?? 0;
 
             // Empty name gets checked after loading and is not allowed.
-            var newName        = json[nameof(Mod.Name)]?.Value<string>() ?? string.Empty;
+            var newName = json[nameof(Mod.Name)]?.Value<string>() ?? string.Empty;
 
             var newAuthor      = json[nameof(Mod.Author)]?.Value<string>() ?? string.Empty;
             var newDescription = json[nameof(Mod.Description)]?.Value<string>() ?? string.Empty;
@@ -56,6 +58,8 @@ public readonly struct ModMeta(Mod mod) : ISavable
             var newVersion     = json[nameof(Mod.Version)]?.Value<string>() ?? string.Empty;
             var newWebsite     = json[nameof(Mod.Website)]?.Value<string>() ?? string.Empty;
             var modTags        = (json[nameof(Mod.ModTags)] as JArray)?.Values<string>().OfType<string>();
+            var defaultItems = (json[nameof(Mod.DefaultPreferredItems)] as JArray)?.Values<ulong>().Select(i => (CustomItemId)i).ToHashSet()
+             ?? [];
 
             ModDataChangeType changes = 0;
             if (mod.Name != newName)
@@ -92,6 +96,12 @@ public readonly struct ModMeta(Mod mod) : ISavable
             {
                 changes     |= ModDataChangeType.Website;
                 mod.Website =  newWebsite;
+            }
+
+            if (!mod.DefaultPreferredItems.SetEquals(defaultItems))
+            {
+                changes                   |= ModDataChangeType.DefaultChangedItems;
+                mod.DefaultPreferredItems =  defaultItems;
             }
 
             if (newFileVersion != FileVersion)
