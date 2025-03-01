@@ -39,11 +39,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool EnableMods
     {
         get => _enableMods;
-        set
-        {
-            _enableMods = value;
-            ModsEnabled?.Invoke(value);
-        }
+        set => SetField(ref _enableMods, value, ModsEnabled);
     }
 
     public string ModDirectory    { get; set; } = string.Empty;
@@ -58,21 +54,22 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 
     public bool AutoSelectCollection { get; set; } = false;
 
-    public bool        ShowModsInLobby                      { get; set; } = true;
-    public bool        UseCharacterCollectionInMainWindow   { get; set; } = true;
-    public bool        UseCharacterCollectionsInCards       { get; set; } = true;
-    public bool        UseCharacterCollectionInInspect      { get; set; } = true;
-    public bool        UseCharacterCollectionInTryOn        { get; set; } = true;
-    public bool        UseOwnerNameForCharacterCollection   { get; set; } = true;
-    public bool        UseNoModsInInspect                   { get; set; } = false;
-    public bool        HideChangedItemFilters               { get; set; } = false;
-    public bool        ReplaceNonAsciiOnImport              { get; set; } = false;
-    public bool        HidePrioritiesInSelector             { get; set; } = false;
-    public bool        HideRedrawBar                        { get; set; } = false;
-    public bool        HideMachinistOffhandFromChangedItems { get; set; } = true;
-    public bool        DefaultTemporaryMode                 { get; set; } = false;
-    public RenameField ShowRename                           { get; set; } = RenameField.BothDataPrio;
-    public int         OptionGroupCollapsibleMin            { get; set; } = 5;
+    public bool            ShowModsInLobby                      { get; set; } = true;
+    public bool            UseCharacterCollectionInMainWindow   { get; set; } = true;
+    public bool            UseCharacterCollectionsInCards       { get; set; } = true;
+    public bool            UseCharacterCollectionInInspect      { get; set; } = true;
+    public bool            UseCharacterCollectionInTryOn        { get; set; } = true;
+    public bool            UseOwnerNameForCharacterCollection   { get; set; } = true;
+    public bool            UseNoModsInInspect                   { get; set; } = false;
+    public bool            HideChangedItemFilters               { get; set; } = false;
+    public bool            ReplaceNonAsciiOnImport              { get; set; } = false;
+    public bool            HidePrioritiesInSelector             { get; set; } = false;
+    public bool            HideRedrawBar                        { get; set; } = false;
+    public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
+    public bool            DefaultTemporaryMode                 { get; set; } = false;
+    public RenameField     ShowRename                           { get; set; } = RenameField.BothDataPrio;
+    public ChangedItemMode ChangedItemDisplay                   { get; set; } = ChangedItemMode.GroupedCollapsed;
+    public int             OptionGroupCollapsibleMin            { get; set; } = 5;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 
@@ -216,5 +213,46 @@ public class Configuration : IPluginConfiguration, ISavable, IService
         using var jWriter    = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
         var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
         serializer.Serialize(jWriter, this);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool SetField<T>(ref T field, T value, Action<T, T>? @event, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(value))
+            return false;
+
+        var oldValue = field;
+        field = value;
+        try
+        {
+            @event?.Invoke(oldValue, field);
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Error($"Error in subscribers updating configuration field {propertyName} from {oldValue} to {field}:\n{ex}");
+            throw;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool SetField<T>(ref T field, T value, Action<T>? @event, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(value))
+            return false;
+
+        field = value;
+        try
+        {
+            @event?.Invoke(field);
+        }
+        catch (Exception ex)
+        {
+            Penumbra.Log.Error($"Error in subscribers updating configuration field {propertyName} to {field}:\n{ex}");
+            throw;
+        }
+
+        return true;
     }
 }

@@ -445,6 +445,15 @@ public class SettingsTab : ITab, IUiService
                     _config.Ephemeral.Save();
                 }
             });
+
+        ChangedItemModeExtensions.DrawCombo("##ChangedItemMode"u8, _config.ChangedItemDisplay, UiHelpers.InputTextWidth.X, v =>
+        {
+            _config.ChangedItemDisplay = v;
+            _config.Save();
+        });
+        ImUtf8.LabeledHelpMarker("Mod Changed Item Display"u8,
+            "Configure how to display the changed items of a single mod in the mods info panel."u8);
+
         Checkbox("Omit Machinist Offhands in Changed Items",
             "Omits all Aetherotransformers (machinist offhands) in the changed items tabs because any change on them changes all of them at the moment.\n\n"
           + "Changing this triggers a rediscovery of your mods so all changed items can be updated.",

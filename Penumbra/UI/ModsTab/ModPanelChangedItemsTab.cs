@@ -18,7 +18,7 @@ public class ModPanelChangedItemsTab(
     ModFileSystemSelector selector,
     ChangedItemDrawer drawer,
     ImGuiCacheService cacheService,
-    EphemeralConfig config)
+    Configuration config)
     : ITab, IUiService
 {
     private readonly ImGuiCacheService.CacheId _cacheId = cacheService.GetNewId();
@@ -28,6 +28,7 @@ public class ModPanelChangedItemsTab(
         private         Mod?                _lastSelected;
         private         ushort              _lastUpdate;
         private         ChangedItemIconFlag _filter = ChangedItemFlagExtensions.DefaultFlags;
+        private         ChangedItemMode     _lastMode;
         private         bool                _reset;
         public readonly List<Container>     Data = [];
         public          bool                AnyExpandable { get; private set; }
@@ -90,9 +91,9 @@ public class ModPanelChangedItemsTab(
         public void Reset()
             => _reset = true;
 
-        public void Update(Mod? mod, ChangedItemDrawer drawer, ChangedItemIconFlag filter)
+        public void Update(Mod? mod, ChangedItemDrawer drawer, ChangedItemIconFlag filter, ChangedItemMode mode)
         {
-            if (mod == _lastSelected && _lastSelected!.LastChangedItemsUpdate == _lastUpdate && _filter == filter && !_reset)
+            if (mod == _lastSelected && _lastSelected!.LastChangedItemsUpdate == _lastUpdate && _filter == filter && !_reset && _lastMode == mode)
                 return;
 
             _reset = false;
@@ -100,12 +101,25 @@ public class ModPanelChangedItemsTab(
             AnyExpandable = false;
             _lastSelected = mod;
             _filter       = filter;
+            _lastMode     = mode;
             if (_lastSelected == null)
                 return;
 
             _lastUpdate = _lastSelected.LastChangedItemsUpdate;
-            var tmp = new Dictionary<(PrimaryId, FullEquipType), List<IdentifiedItem>>();
 
+            if (mode is ChangedItemMode.Alphabetical)
+            {
+                foreach (var (s, i) in _lastSelected.ChangedItems)
+                {
+                    if (drawer.FilterChangedItem(s, i, LowerString.Empty))
+                        Data.Add(Container.Single(s, i));
+                }
+
+                return;
+            }
+
+            var tmp              = new Dictionary<(PrimaryId, FullEquipType), List<IdentifiedItem>>();
+            var defaultExpansion = _lastMode is ChangedItemMode.GroupedExpanded;
             foreach (var (s, i) in _lastSelected.ChangedItems)
             {
                 if (i is not IdentifiedItem item)
@@ -165,7 +179,7 @@ public class ModPanelChangedItemsTab(
                 else
                 {
                     var id       = ImUtf8.GetId($"{mainItem.Item.PrimaryId}{(int)mainItem.Item.Type}");
-                    var expanded = ImGui.GetStateStorage().GetBool(id, false);
+                    var expanded = ImGui.GetStateStorage().GetBool(id, defaultExpansion);
                     Data.Add(Container.Parent(mainItem.Item.Name, mainItem, id, list.Count - 1, expanded));
                     AnyExpandable = true;
                     if (!expanded)
@@ -196,7 +210,7 @@ public class ModPanelChangedItemsTab(
         drawer.DrawTypeFilter();
 
         _stateStorage = ImGui.GetStateStorage();
-        cache.Update(selector.Selected, drawer, config.ChangedItemFilter);
+        cache.Update(selector.Selected, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
         ImGui.Separator();
         _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeight());
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, Vector2.Zero)
