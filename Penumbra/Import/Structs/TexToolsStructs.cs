@@ -26,7 +26,7 @@ public class SimpleMod
 public class ModPackPage
 {
     public int        PageIndex = 0;
-    public ModGroup[] ModGroups = Array.Empty<ModGroup>();
+    public ModGroup[] ModGroups = [];
 }
 
 [Serializable]
@@ -34,7 +34,7 @@ public class ModGroup
 {
     public string       GroupName     = string.Empty;
     public GroupType    SelectionType = GroupType.Single;
-    public OptionList[] OptionList    = Array.Empty<OptionList>();
+    public OptionList[] OptionList    = [];
     public string       Description   = string.Empty;
 }
 
@@ -44,7 +44,7 @@ public class OptionList
     public string      Name          = string.Empty;
     public string      Description   = string.Empty;
     public string      ImagePath     = string.Empty;
-    public SimpleMod[] ModsJsons     = Array.Empty<SimpleMod>();
+    public SimpleMod[] ModsJsons     = [];
     public string      GroupName     = string.Empty;
     public GroupType   SelectionType = GroupType.Single;
     public bool        IsChecked     = false;
@@ -59,8 +59,8 @@ public class ExtendedModPack
     public string        Version        = string.Empty;
     public string        Description    = DefaultTexToolsData.Description;
     public string        Url            = string.Empty;
-    public ModPackPage[] ModPackPages   = Array.Empty<ModPackPage>();
-    public SimpleMod[]   SimpleModsList = Array.Empty<SimpleMod>();
+    public ModPackPage[] ModPackPages   = [];
+    public SimpleMod[]   SimpleModsList = [];
 }
 
 [Serializable]
@@ -72,5 +72,5 @@ public class SimpleModPack
     public string      Version        = string.Empty;
     public string      Description    = DefaultTexToolsData.Description;
     public string      Url            = string.Empty;
-    public SimpleMod[] SimpleModsList = Array.Empty<SimpleMod>();
+    public SimpleMod[] SimpleModsList = [];
 }
