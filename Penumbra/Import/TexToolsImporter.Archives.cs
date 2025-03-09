@@ -96,17 +96,36 @@ public partial class TexToolsImporter
 
         _token.ThrowIfCancellationRequested();
         var oldName = _currentModDirectory.FullName;
-        // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
-        if (leadDir)
+
+        // Try renaming the folder three times because sometimes we get AccessDenied here for some unknown reason.
+        const int numTries = 3;
+        for (var i = 1;; ++i)
         {
-            _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, baseName, _config.ReplaceNonAsciiOnImport, false);
-            Directory.Move(Path.Combine(oldName, baseName), _currentModDirectory.FullName);
-            Directory.Delete(oldName);
-        }
-        else
-        {
-            _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, name, _config.ReplaceNonAsciiOnImport, false);
-            Directory.Move(oldName, _currentModDirectory.FullName);
+            // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
+            try
+            {
+                if (leadDir)
+                {
+                    _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, baseName, _config.ReplaceNonAsciiOnImport, false);
+                    Directory.Move(Path.Combine(oldName, baseName), _currentModDirectory.FullName);
+                    Directory.Delete(oldName);
+                }
+                else
+                {
+                    _currentModDirectory = ModCreator.CreateModFolder(_baseDirectory, name, _config.ReplaceNonAsciiOnImport, false);
+                    Directory.Move(oldName, _currentModDirectory.FullName);
+                }
+            }
+            catch (IOException io)
+            {
+                if (i == numTries)
+                    throw;
+
+                Penumbra.Log.Warning($"Error when renaming the extracted mod, try {i}/{numTries}: {io.Message}.");
+                continue;
+            }
+
+            break;
         }
 
         _currentModDirectory.Refresh();
