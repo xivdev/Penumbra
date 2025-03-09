@@ -58,20 +58,65 @@ public class PenumbraChangelog : IUiService
         Add1_3_2_0(Changelog);
         Add1_3_3_0(Changelog);
         Add1_3_4_0(Changelog);
+        Add1_3_5_0(Changelog);
     }
 
     #region Changelogs
 
+    private static void Add1_3_5_0(Changelog log)
+        => log.NextVersion("Version 1.3.5.0")
+            .RegisterImportant(
+                "Redirections of unsupported file types like .atch will now produce warnings when they are enabled. Please update mods still containing them or request updates from their creators.")
+            .RegisterEntry("You can now import .atch in the Meta section of advanced editing to add their non-default changes to the mod.")
+            .RegisterHighlight("Added an option in settings and in the collection bar in the mod tab to always use temporary settings.")
+            .RegisterEntry(
+                "While this option is enabled, all changes you make in the current collection will be applied as temporary changes, and you have to use Turn Permanent to make them permanent.",
+                1)
+            .RegisterEntry(
+                "This should be useful for trying out new mods without needing to reset their settings later, or for creating mod associations in Glamourer from them.",
+                1)
+            .RegisterEntry(
+                "Added a context menu entry on the mod selector blank-space context menu to clear all temporary settings made manually.")
+            .RegisterHighlight(
+                "Resource Trees now consider some additional files like decals, and improved the quick-import behaviour for some files that should not generally be modded.")
+            .RegisterHighlight("The Changed Item display for single mods has been heavily improved.")
+            .RegisterEntry("Any changed item will now show how many individual edits are affecting it in the mod in its tooltip.", 1)
+            .RegisterEntry("Equipment pieces are now grouped by their model id, reducing clutter.",                                1)
+            .RegisterEntry(
+                "The primary equipment piece displayed is the one with the most changes affecting it, but can be configured to a specific item by the mod creator and locally.",
+                1)
+            .RegisterEntry(
+                "Preferred changed items stored in the mod will be shared when exporting the mod, and used as the default for local preferences, which will not be shared.",
+                2)
+            .RegisterEntry(
+                "You can configure whether groups are automatically collapsed or expanded, or remove grouping entirely in the settings.", 1)
+            .RegisterHighlight("Fixed support for model import/export with more than one UV.")
+            .RegisterEntry("Added some IPC relating to changed items.")
+            .RegisterEntry("Skeleton and Physics changes should now be identified in Changed Items.")
+            .RegisterEntry("Item Swaps will now also correctly swap EQP entries of multi-slot pieces.")
+            .RegisterEntry("Meta edit transmission through IPC should be a lot more efficient than before.")
+            .RegisterEntry("Fixed an issue with incognito names in some cutscenes.")
+            .RegisterEntry("Newly extracted mod folders will now try to rename themselves three times before being considered a failure.");
+
     private static void Add1_3_4_0(Changelog log)
         => log.NextVersion("Version 1.3.4.0")
-            .RegisterHighlight("Added HDR functionality to diffuse buffers. This allows more accurate representation of non-standard color values for e.g. skin or hair colors when used with advanced customizations in Glamourer.")
-            .RegisterEntry("This option requires Wait For Plugins On Load to be enabled in Dalamud and to be enabled on start to work. It is on by default but can be turned off.", 1)
+            .RegisterHighlight(
+                "Added HDR functionality to diffuse buffers. This allows more accurate representation of non-standard color values for e.g. skin or hair colors when used with advanced customizations in Glamourer.")
+            .RegisterEntry(
+                "This option requires Wait For Plugins On Load to be enabled in Dalamud and to be enabled on start to work. It is on by default but can be turned off.",
+                1)
             .RegisterHighlight("Added a new option group type: Combining Groups.")
-            .RegisterEntry("A combining group behaves similarly to a multi group for the user, but instead of enabling the different options separately, it results in exactly one option per choice of settings.", 1)
-            .RegisterEntry("Example: The user sees 2 checkboxes [+25%, +50%], but the 4 different selection states result in +0%, +25%, +50% or +75% if both are toggled on. Every choice of settings can be configured separately by the mod creator.", 1)
-            .RegisterEntry("Added new functionality to better track copies of the player character in cutscenes if they get forced to specific clothing, like in the Margrat cutscene. Might improve tracking in wedding ceremonies, too, let me know.")
+            .RegisterEntry(
+                "A combining group behaves similarly to a multi group for the user, but instead of enabling the different options separately, it results in exactly one option per choice of settings.",
+                1)
+            .RegisterEntry(
+                "Example: The user sees 2 checkboxes [+25%, +50%], but the 4 different selection states result in +0%, +25%, +50% or +75% if both are toggled on. Every choice of settings can be configured separately by the mod creator.",
+                1)
+            .RegisterEntry(
+                "Added new functionality to better track copies of the player character in cutscenes if they get forced to specific clothing, like in the Margrat cutscene. Might improve tracking in wedding ceremonies, too, let me know.")
             .RegisterEntry("Added a display of the number of selected files and folders to the multi mod selection.")
-            .RegisterEntry("Added cleaning functionality to remove outdated or unused files or backups from the config and mod folders via manual action.")
+            .RegisterEntry(
+                "Added cleaning functionality to remove outdated or unused files or backups from the config and mod folders via manual action.")
             .RegisterEntry("Updated the Bone and Material limits in the Model Importer.")
             .RegisterEntry("Improved handling of IMC and Material files loaded asynchronously.")
             .RegisterEntry("Added IPC functionality to query temporary settings.")
@@ -86,49 +131,75 @@ public class PenumbraChangelog : IUiService
     private static void Add1_3_3_0(Changelog log)
         => log.NextVersion("Version 1.3.3.0")
             .RegisterHighlight("Added Temporary Settings to collections.")
-            .RegisterEntry("Settings can be manually turned temporary (and turned back) while editing mod settings via right-click context on the mod or buttons in the settings panel.", 1)
-            .RegisterEntry("This can be used to test mods or changes without saving those changes permanently or having to reinstate the old settings afterwards.", 1)
-            .RegisterEntry("More importantly, this can be set via IPC by other plugins, allowing Glamourer to only set and reset temporary settings when applying Mod Associations.", 1)
-            .RegisterEntry("As an extreme example, it would be possible to only enable the consistent mods for your character in the collection, and let Glamourer handle all outfit mods itself via temporary settings only.", 1)
-            .RegisterEntry("This required some pretty big changes that were in testing for a while now, but nobody talked about it much so it may still have some bugs or usability issues. Let me know!", 1)
-            .RegisterHighlight("Added an option to automatically select the collection assigned to the current character on login events. This is off by default.")
-            .RegisterEntry("Added partial copying of color tables in material editing via right-click context menu entries on the import buttons.")
-            .RegisterHighlight("Added handling for TMB files cached by the game that should resolve issues of leaky TMBs from animation and VFX mods.")
-            .RegisterEntry("The enabled checkbox, Priority and Inheriting buttons now stick at the top of the Mod Settings panel even when scrolling down for specific settings.")
+            .RegisterEntry(
+                "Settings can be manually turned temporary (and turned back) while editing mod settings via right-click context on the mod or buttons in the settings panel.",
+                1)
+            .RegisterEntry(
+                "This can be used to test mods or changes without saving those changes permanently or having to reinstate the old settings afterwards.",
+                1)
+            .RegisterEntry(
+                "More importantly, this can be set via IPC by other plugins, allowing Glamourer to only set and reset temporary settings when applying Mod Associations.",
+                1)
+            .RegisterEntry(
+                "As an extreme example, it would be possible to only enable the consistent mods for your character in the collection, and let Glamourer handle all outfit mods itself via temporary settings only.",
+                1)
+            .RegisterEntry(
+                "This required some pretty big changes that were in testing for a while now, but nobody talked about it much so it may still have some bugs or usability issues. Let me know!",
+                1)
+            .RegisterHighlight(
+                "Added an option to automatically select the collection assigned to the current character on login events. This is off by default.")
+            .RegisterEntry(
+                "Added partial copying of color tables in material editing via right-click context menu entries on the import buttons.")
+            .RegisterHighlight(
+                "Added handling for TMB files cached by the game that should resolve issues of leaky TMBs from animation and VFX mods.")
+            .RegisterEntry(
+                "The enabled checkbox, Priority and Inheriting buttons now stick at the top of the Mod Settings panel even when scrolling down for specific settings.")
             .RegisterEntry("When creating new mods with Item Swap, the attributed author of the resulting mod was improved.")
             .RegisterEntry("Fixed an issue with rings in the On-Screen tab and in the data sent over to other plugins via IPC.")
-            .RegisterEntry("Fixed some issues when writing material files that resulted in technically valid files that still caused some issues with the game for unknown reasons.")
+            .RegisterEntry(
+                "Fixed some issues when writing material files that resulted in technically valid files that still caused some issues with the game for unknown reasons.")
             .RegisterEntry("Fixed some ImGui assertions.");
 
     private static void Add1_3_2_0(Changelog log)
         => log.NextVersion("Version 1.3.2.0")
             .RegisterHighlight("Added ATCH meta manipulations that allow the composite editing of attachment points across multiple mods.")
             .RegisterEntry("Those ATCH manipulations should be shared via Mare Synchronos.", 1)
-            .RegisterEntry("This is an early implementation and might be bug-prone. Let me know of any issues. It was in testing for quite a while without reports.", 1)
-            .RegisterEntry("Added jumping to identified mods in the On-Screen tab via Control + Right-Click and improved their display slightly.")
+            .RegisterEntry(
+                "This is an early implementation and might be bug-prone. Let me know of any issues. It was in testing for quite a while without reports.",
+                1)
+            .RegisterEntry(
+                "Added jumping to identified mods in the On-Screen tab via Control + Right-Click and improved their display slightly.")
             .RegisterEntry("Added some right-click context menu copy options in the File Redirections editor for paths.")
             .RegisterHighlight("Added the option to change a specific mod's settings via chat commands by using '/penumbra mod settings'.")
             .RegisterEntry("Fixed issues with the copy-pasting of meta manipulations.")
             .RegisterEntry("Fixed some other issues related to meta manipulations.")
-            .RegisterEntry("Updated available NPC names and fixed an issue with some supposedly invisible characters in names showing in ImGui.");
+            .RegisterEntry(
+                "Updated available NPC names and fixed an issue with some supposedly invisible characters in names showing in ImGui.");
 
 
     private static void Add1_3_1_0(Changelog log)
         => log.NextVersion("Version 1.3.1.0")
             .RegisterEntry("Penumbra has been updated for Dalamud API 11 and patch 7.1.")
-            .RegisterImportant("There are some known issues with potential crashes using certain VFX/SFX mods, probably related to sound files.")
-            .RegisterEntry("If you encounter those issues, please report them in the discord and potentially disable the corresponding mods for the time being.", 1)
-            .RegisterImportant("The modding of .atch files has been disabled. Outdated modded versions of these files cause crashes when loaded.")
+            .RegisterImportant(
+                "There are some known issues with potential crashes using certain VFX/SFX mods, probably related to sound files.")
+            .RegisterEntry(
+                "If you encounter those issues, please report them in the discord and potentially disable the corresponding mods for the time being.",
+                1)
+            .RegisterImportant(
+                "The modding of .atch files has been disabled. Outdated modded versions of these files cause crashes when loaded.")
             .RegisterEntry("A better way for modular modding of .atch files via meta changes will release to the testing branch soonish.", 1)
             .RegisterHighlight("Temporary collections (as created by Mare) will now always respect ownership.")
-            .RegisterEntry("This means that you can toggle this setting off if you do not want it, and Mare will still work for minions and mounts of other players.", 1)
-            .RegisterEntry("The new physics and animation engine files (.kdb and .bnmb) should now be correctly redirected and respect EST changes.")
+            .RegisterEntry(
+                "This means that you can toggle this setting off if you do not want it, and Mare will still work for minions and mounts of other players.",
+                1)
+            .RegisterEntry(
+                "The new physics and animation engine files (.kdb and .bnmb) should now be correctly redirected and respect EST changes.")
             .RegisterEntry("Fixed issues with EQP entries being labeled wrongly and global EQP not changing all required values for earrings.")
             .RegisterEntry("Fixed an issue with global EQP changes of a mod being reset upon reloading the mod.")
             .RegisterEntry("Fixed another issue with left rings and mare synchronization / the on-screen tab.")
             .RegisterEntry("Maybe fixed some issues with characters appearing in the login screen being misidentified.")
             .RegisterEntry("Some improvements for debug visualization have been made.");
-            
+
 
     private static void Add1_3_0_0(Changelog log)
         => log.NextVersion("Version 1.3.0.0")
@@ -138,16 +209,20 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("Reworked quite a bit of things around face wear / bonus items. Please let me know if anything broke.", 1)
             .RegisterEntry("The import date of a mod is now shown in the Edit Mod tab, and can be reset via button.")
             .RegisterEntry("A button to open the file containing local mod data for a mod was also added.", 1)
-            .RegisterHighlight("IMC groups can now be configured to only apply the attribute flags for their entry, and take the other values from the default value.")
+            .RegisterHighlight(
+                "IMC groups can now be configured to only apply the attribute flags for their entry, and take the other values from the default value.")
             .RegisterEntry("This allows keeping the material index of every IMC entry of a group, while setting the attributes.", 1)
             .RegisterHighlight("Model Import/Export was fixed and re-enabled (thanks ackwell and ramen).")
             .RegisterHighlight("Added a hack to allow bonus items (face wear, glasses) to have VFX.")
             .RegisterEntry("Also fixed the hack that allowed accessories to have VFX not working anymore.", 1)
             .RegisterHighlight("Added rudimentary options to edit PBD files in the advanced editing window.")
             .RegisterEntry("Preparing the advanced editing window for a mod now does not freeze the game until it is ready.")
-            .RegisterEntry("Meta Manipulations in the advanced editing window are now ordered and do not eat into performance as much when drawn.")
+            .RegisterEntry(
+                "Meta Manipulations in the advanced editing window are now ordered and do not eat into performance as much when drawn.")
             .RegisterEntry("Added a button to the advanced editing window to remove all default-valued meta manipulations from a mod")
-            .RegisterEntry("Default-valued manipulations will now also be removed on import from archives and .pmps, not just .ttmps, if not configured otherwise.", 1)
+            .RegisterEntry(
+                "Default-valued manipulations will now also be removed on import from archives and .pmps, not just .ttmps, if not configured otherwise.",
+                1)
             .RegisterEntry("Checkbox-based mod filters are now tri-state checkboxes instead of two disjoint checkboxes.")
             .RegisterEntry("Paths from the resource logger can now be copied.")
             .RegisterEntry("Silenced some redundant error logs when updating mods via Heliosphere.")
