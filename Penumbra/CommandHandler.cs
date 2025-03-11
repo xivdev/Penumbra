@@ -75,20 +75,21 @@ public class CommandHandler : IDisposable, IApiService
 
         _ = argumentList[0].ToLowerInvariant() switch
         {
-            "window"     => ToggleWindow(arguments),
-            "enable"     => SetPenumbraState(arguments, true),
-            "disable"    => SetPenumbraState(arguments, false),
-            "toggle"     => SetPenumbraState(arguments, null),
-            "reload"     => Reload(arguments),
-            "redraw"     => Redraw(arguments),
-            "lockui"     => SetUiLockState(arguments),
-            "size"       => SetUiMinimumSize(arguments),
-            "debug"      => SetDebug(arguments),
-            "collection" => SetCollection(arguments),
-            "mod"        => SetMod(arguments),
-            "bulktag"    => SetTag(arguments),
-            "knowledge"  => HandleKnowledge(arguments),
-            _            => PrintHelp(argumentList[0]),
+            "window"        => ToggleWindow(arguments),
+            "enable"        => SetPenumbraState(arguments, true),
+            "disable"       => SetPenumbraState(arguments, false),
+            "toggle"        => SetPenumbraState(arguments, null),
+            "reload"        => Reload(arguments),
+            "redraw"        => Redraw(arguments),
+            "lockui"        => SetUiLockState(arguments),
+            "size"          => SetUiMinimumSize(arguments),
+            "debug"         => SetDebug(arguments),
+            "collection"    => SetCollection(arguments),
+            "mod"           => SetMod(arguments),
+            "bulktag"       => SetTag(arguments),
+            "clearsettings" => ClearSettings(arguments),
+            "knowledge"     => HandleKnowledge(arguments),
+            _               => PrintHelp(argumentList[0]),
         };
     }
 
@@ -126,6 +127,21 @@ public class CommandHandler : IDisposable, IApiService
         _chat.Print(new SeStringBuilder()
             .AddCommand("bulktag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help.")
             .BuiltString);
+        _chat.Print(new SeStringBuilder()
+            .AddCommand("clearsettings",
+                "Clear all temporary settings applied manually through Penumbra in the current or all collections. Use with 'all' parameter for all.")
+            .BuiltString);
+        return true;
+    }
+
+    private bool ClearSettings(string arguments)
+    {
+        if (arguments.Trim().ToLowerInvariant() is "all")
+            foreach (var collection in _collectionManager.Storage)
+                _collectionEditor.ClearTemporarySettings(collection);
+        else
+            _collectionEditor.ClearTemporarySettings(_collectionManager.Active.Current);
+
         return true;
     }
 
@@ -416,7 +432,8 @@ public class CommandHandler : IDisposable, IApiService
             var split2 = nameSplit[1].Split('|', 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             if (split2.Length < 2)
             {
-                _chat.Print("Not enough arguments for changing settings provided. Please add a group name and a list of setting names - which can be empty for multi options.");
+                _chat.Print(
+                    "Not enough arguments for changing settings provided. Please add a group name and a list of setting names - which can be empty for multi options.");
                 return false;
             }
 
