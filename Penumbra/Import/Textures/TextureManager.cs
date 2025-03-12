@@ -50,11 +50,11 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
 
 
     public Task SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, string input, string output)
-        => Enqueue(new SaveAsAction(this, type, uiBuilder.Device, mipMaps, asTex, input, output));
+        => Enqueue(new SaveAsAction(this, type, mipMaps, asTex, input, output));
 
     public Task SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, BaseImage image, string path, byte[]? rgba = null,
         int width = 0, int height = 0)
-        => Enqueue(new SaveAsAction(this, type, uiBuilder.Device, mipMaps, asTex, image, path, rgba, width, height));
+        => Enqueue(new SaveAsAction(this, type, mipMaps, asTex, image, path, rgba, width, height));
 
     private Task Enqueue(IAction action)
     {
@@ -159,30 +159,27 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
         private readonly string                          _outputPath;
         private readonly ImageInputData                  _input;
         private readonly CombinedTexture.TextureSaveType _type;
-        private readonly Device?                         _device;
         private readonly bool                            _mipMaps;
         private readonly bool                            _asTex;
 
-        public SaveAsAction(TextureManager textures, CombinedTexture.TextureSaveType type, Device? device, bool mipMaps, bool asTex,
-            string input, string output)
+        public SaveAsAction(TextureManager textures, CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, string input,
+            string output)
         {
             _textures   = textures;
             _input      = new ImageInputData(input);
             _outputPath = output;
             _type       = type;
-            _device     = device;
             _mipMaps    = mipMaps;
             _asTex      = asTex;
         }
 
-        public SaveAsAction(TextureManager textures, CombinedTexture.TextureSaveType type, Device? device, bool mipMaps, bool asTex,
-            BaseImage image, string path, byte[]? rgba = null, int width = 0, int height = 0)
+        public SaveAsAction(TextureManager textures, CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, BaseImage image,
+            string path, byte[]? rgba = null, int width = 0, int height = 0)
         {
             _textures   = textures;
             _input      = new ImageInputData(image, rgba, width, height);
             _outputPath = path;
             _type       = type;
-            _device     = device;
             _mipMaps    = mipMaps;
             _asTex      = asTex;
         }
@@ -207,8 +204,8 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                     rgba, width, height),
                 CombinedTexture.TextureSaveType.AsIs when imageTypeBehaviour is TextureType.Dds => AddMipMaps(image.AsDds!, _mipMaps),
                 CombinedTexture.TextureSaveType.Bitmap => ConvertToRgbaDds(image, _mipMaps, cancel, rgba, width, height),
-                CombinedTexture.TextureSaveType.BC3 => ConvertToCompressedDds(image, _mipMaps, false, _device, cancel, rgba, width, height),
-                CombinedTexture.TextureSaveType.BC7 => ConvertToCompressedDds(image, _mipMaps, true, _device, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC3 => _textures.ConvertToCompressedDds(image, _mipMaps, false, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC7 => _textures.ConvertToCompressedDds(image, _mipMaps, true, cancel, rgba, width, height),
                 _ => throw new Exception("Wrong save type."),
             };
 
@@ -326,8 +323,8 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     }
 
     /// <summary> Convert an existing image to a block compressed .dds. Does not create a deep copy of an existing dds of the correct format and just returns the existing one. </summary>
-    public static BaseImage ConvertToCompressedDds(BaseImage input, bool mipMaps, bool bc7, Device? device, CancellationToken cancel,
-        byte[]? rgba = null, int width = 0, int height = 0)
+    public BaseImage ConvertToCompressedDds(BaseImage input, bool mipMaps, bool bc7, CancellationToken cancel, byte[]? rgba = null,
+        int width = 0, int height = 0)
     {
         switch (input.Type.ReduceToBehaviour())
         {
@@ -337,12 +334,12 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                 cancel.ThrowIfCancellationRequested();
                 var dds = ConvertToDds(rgba, width, height).AsDds!;
                 cancel.ThrowIfCancellationRequested();
-                return CreateCompressed(dds, mipMaps, bc7, device, cancel);
+                return CreateCompressed(dds, mipMaps, bc7, cancel);
             }
             case TextureType.Dds:
             {
                 var scratch = input.AsDds!;
-                return CreateCompressed(scratch, mipMaps, bc7, device, cancel);
+                return CreateCompressed(scratch, mipMaps, bc7, cancel);
             }
             default: return new BaseImage();
         }
@@ -390,7 +387,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     }
 
     /// <summary> Create a BC3 or BC7 block-compressed .dds from the input (optionally with mipmaps). Returns input (+ mipmaps) if it is already the correct format. </summary>
-    public static ScratchImage CreateCompressed(ScratchImage input, bool mipMaps, bool bc7, Device? device, CancellationToken cancel)
+    public ScratchImage CreateCompressed(ScratchImage input, bool mipMaps, bool bc7, CancellationToken cancel)
     {
         var format = bc7 ? DXGIFormat.BC7UNorm : DXGIFormat.BC3UNorm;
         if (input.Meta.Format == format)
@@ -405,8 +402,9 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
         input = AddMipMaps(input, mipMaps);
         cancel.ThrowIfCancellationRequested();
         // See https://github.com/microsoft/DirectXTex/wiki/Compress#parameters for the format condition.
-        if (device is not null && format is DXGIFormat.BC6HUF16 or DXGIFormat.BC6HSF16 or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB)
+        if (format is DXGIFormat.BC6HUF16 or DXGIFormat.BC6HSF16 or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB)
         {
+            var device     = uiBuilder.Device;
             var dxgiDevice = device.QueryInterface<DxgiDevice>();
 
             using var deviceClone = new Device(dxgiDevice.Adapter, device.CreationFlags, device.FeatureLevel);
