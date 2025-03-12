@@ -25,17 +25,17 @@ public partial class ModEditWindow
     {
         ("As Is", "Save the current texture with its own format without additional conversion or compression, if possible."),
         ("RGBA (Uncompressed)",
-            "Save the current texture as an uncompressed BGRA bitmap. This requires the most space but technically offers the best quality."),
+            "Save the current texture as an uncompressed BGRA bitmap.\nThis requires the most space but technically offers the best quality."),
         ("BC1 (Simple Compression for Opaque RGB)",
-            "Save the current texture compressed via BC1/DXT1 compression. This offers a 8:1 compression ratio and is quick with acceptable quality, but only supports RGB, without Alpha."),
+            "Save the current texture compressed via BC1/DXT1 compression.\nThis offers a 8:1 compression ratio and is quick with acceptable quality, but only supports RGB, without Alpha.\n\nCan be used for diffuse maps and equipment textures to save extra space."),
         ("BC3 (Simple Compression for RGBA)",
-            "Save the current texture compressed via BC3/DXT5 compression. This offers a 4:1 compression ratio and is quick with acceptable quality, and fully supports RGBA."),
+            "Save the current texture compressed via BC3/DXT5 compression.\nThis offers a 4:1 compression ratio and is quick with acceptable quality, and fully supports RGBA.\n\nGeneric format that can be used for most textures."),
         ("BC4 (Simple Compression for Opaque Grayscale)",
-            "Save the current texture compressed via BC4 compression. This offers a 8:1 compression ratio and has almost indistinguishable quality, but only supports Grayscale, without Alpha."),
+            "Save the current texture compressed via BC4 compression.\nThis offers a 8:1 compression ratio and has almost indistinguishable quality, but only supports Grayscale, without Alpha.\n\nCan be used for face paints and legacy marks."),
         ("BC5 (Simple Compression for Opaque RG)",
-            "Save the current texture compressed via BC5 compression. This offers a 4:1 compression ratio and has almost indistinguishable quality, but only supports RG, without B or Alpha."),
+            "Save the current texture compressed via BC5 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but only supports RG, without B or Alpha.\n\nRecommended for index maps, unrecommended for normal maps."),
         ("BC7 (Complex Compression for RGBA)",
-            "Save the current texture compressed via BC7 compression. This offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while."),
+            "Save the current texture compressed via BC7 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while.\n\nGeneric format that can be used for most textures."),
     };
 
     private void DrawInputChild(string label, Texture tex, Vector2 size, Vector2 imageSize)
