@@ -26,9 +26,15 @@ public partial class ModEditWindow
         ("As Is", "Save the current texture with its own format without additional conversion or compression, if possible."),
         ("RGBA (Uncompressed)",
             "Save the current texture as an uncompressed BGRA bitmap. This requires the most space but technically offers the best quality."),
-        ("BC3 (Simple Compression)",
-            "Save the current texture compressed via BC3/DXT5 compression. This offers a 4:1 compression ratio and is quick with acceptable quality."),
-        ("BC7 (Complex Compression)",
+        ("BC1 (Simple Compression for Opaque RGB)",
+            "Save the current texture compressed via BC1/DXT1 compression. This offers a 8:1 compression ratio and is quick with acceptable quality, but only supports RGB, without Alpha."),
+        ("BC3 (Simple Compression for RGBA)",
+            "Save the current texture compressed via BC3/DXT5 compression. This offers a 4:1 compression ratio and is quick with acceptable quality, and fully supports RGBA."),
+        ("BC4 (Simple Compression for Opaque Grayscale)",
+            "Save the current texture compressed via BC4 compression. This offers a 8:1 compression ratio and has almost indistinguishable quality, but only supports Grayscale, without Alpha."),
+        ("BC5 (Simple Compression for Opaque RG)",
+            "Save the current texture compressed via BC5 compression. This offers a 4:1 compression ratio and has almost indistinguishable quality, but only supports RG, without B or Alpha."),
+        ("BC7 (Complex Compression for RGBA)",
             "Save the current texture compressed via BC7 compression. This offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while."),
     };
 

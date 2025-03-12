@@ -204,8 +204,11 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                     rgba, width, height),
                 CombinedTexture.TextureSaveType.AsIs when imageTypeBehaviour is TextureType.Dds => AddMipMaps(image.AsDds!, _mipMaps),
                 CombinedTexture.TextureSaveType.Bitmap => ConvertToRgbaDds(image, _mipMaps, cancel, rgba, width, height),
-                CombinedTexture.TextureSaveType.BC3 => _textures.ConvertToCompressedDds(image, _mipMaps, false, cancel, rgba, width, height),
-                CombinedTexture.TextureSaveType.BC7 => _textures.ConvertToCompressedDds(image, _mipMaps, true, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC1 => _textures.ConvertToCompressedDds(image, _mipMaps, DXGIFormat.BC1UNorm, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC3 => _textures.ConvertToCompressedDds(image, _mipMaps, DXGIFormat.BC3UNorm, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC4 => _textures.ConvertToCompressedDds(image, _mipMaps, DXGIFormat.BC4UNorm, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC5 => _textures.ConvertToCompressedDds(image, _mipMaps, DXGIFormat.BC5UNorm, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC7 => _textures.ConvertToCompressedDds(image, _mipMaps, DXGIFormat.BC7UNorm, cancel, rgba, width, height),
                 _ => throw new Exception("Wrong save type."),
             };
 
@@ -323,7 +326,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     }
 
     /// <summary> Convert an existing image to a block compressed .dds. Does not create a deep copy of an existing dds of the correct format and just returns the existing one. </summary>
-    public BaseImage ConvertToCompressedDds(BaseImage input, bool mipMaps, bool bc7, CancellationToken cancel, byte[]? rgba = null,
+    public BaseImage ConvertToCompressedDds(BaseImage input, bool mipMaps, DXGIFormat format, CancellationToken cancel, byte[]? rgba = null,
         int width = 0, int height = 0)
     {
         switch (input.Type.ReduceToBehaviour())
@@ -334,12 +337,12 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
                 cancel.ThrowIfCancellationRequested();
                 var dds = ConvertToDds(rgba, width, height).AsDds!;
                 cancel.ThrowIfCancellationRequested();
-                return CreateCompressed(dds, mipMaps, bc7, cancel);
+                return CreateCompressed(dds, mipMaps, format, cancel);
             }
             case TextureType.Dds:
             {
                 var scratch = input.AsDds!;
-                return CreateCompressed(scratch, mipMaps, bc7, cancel);
+                return CreateCompressed(scratch, mipMaps, format, cancel);
             }
             default: return new BaseImage();
         }
@@ -387,9 +390,8 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     }
 
     /// <summary> Create a BC3 or BC7 block-compressed .dds from the input (optionally with mipmaps). Returns input (+ mipmaps) if it is already the correct format. </summary>
-    public ScratchImage CreateCompressed(ScratchImage input, bool mipMaps, bool bc7, CancellationToken cancel)
+    public ScratchImage CreateCompressed(ScratchImage input, bool mipMaps, DXGIFormat format, CancellationToken cancel)
     {
-        var format = bc7 ? DXGIFormat.BC7UNorm : DXGIFormat.BC3UNorm;
         if (input.Meta.Format == format)
             return input;
 
