@@ -134,7 +134,7 @@ public partial class ModEditWindow
                     tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
                 _center.SaveAs(_left.Type, _textures, _left.Path, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -159,7 +159,7 @@ public partial class ModEditWindow
                     !canConvertInPlace || _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -169,7 +169,7 @@ public partial class ModEditWindow
                     !canConvertInPlace || _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -180,7 +180,7 @@ public partial class ModEditWindow
                  || _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
         }
@@ -235,7 +235,7 @@ public partial class ModEditWindow
                 if (a)
                 {
                     _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                    InvokeChange(Mod, b);
+                    AddChangeTask(b);
                     if (b == _left.Path)
                         AddReloadTask(_left.Path, false);
                     else if (b == _right.Path)
@@ -243,6 +243,17 @@ public partial class ModEditWindow
                 }
             }, Mod!.ModPath.FullName, _forceTextureStartPath);
         _forceTextureStartPath = false;
+    }
+
+    private void AddChangeTask(string path)
+    {
+        _center.SaveTask.ContinueWith(t =>
+        {
+            if (!t.IsCompletedSuccessfully)
+                return;
+
+            _framework.RunOnFrameworkThread(() => InvokeChange(Mod, path));
+        }, TaskScheduler.Default);
     }
 
     private void AddReloadTask(string path, bool right)
