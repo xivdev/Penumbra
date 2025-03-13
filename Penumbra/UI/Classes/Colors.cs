@@ -34,6 +34,7 @@ public enum ColorId : short
     PredefinedTagAdd,
     PredefinedTagRemove,
     TemporaryModSettingsTint,
+    ChangedItemPreferenceStar,
     NoTint,
 }
 
@@ -110,6 +111,7 @@ public static class Colors
             ColorId.TemporaryModSettingsTint      => ( 0x30FF0000, "Mod with Temporary Settings",           "A mod that has temporary settings. This color is used as a tint for the regular state colors." ),
             ColorId.NewModTint                    => ( 0x8000FF00, "New Mod Tint",                          "A mod that was newly imported or created during this session and has not been enabled yet. This color is used as a tint for the regular state colors."),
             ColorId.NoTint                        => ( 0x00000000, "No Tint",                               "The default tint for all mods."),
+            ColorId.ChangedItemPreferenceStar     => ( 0x30FFFFFF, "Preferred Changed Item Star",           "The color of the star button in the mod panel's changed items tab to prioritize specific items."),
             _                                     => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

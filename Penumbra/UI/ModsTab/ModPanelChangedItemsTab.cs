@@ -12,6 +12,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.String;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -213,6 +214,7 @@ public class ModPanelChangedItemsTab(
     private ImGuiStoragePtr _stateStorage;
 
     private Vector2 _buttonSize;
+    private uint    _starColor;
 
     public void DrawContent()
     {
@@ -236,6 +238,7 @@ public class ModPanelChangedItemsTab(
         if (!table)
             return;
 
+        _starColor = ColorId.ChangedItemPreferenceStar.Value();
         if (cache.AnyExpandable)
         {
             ImUtf8.TableSetupColumn("##exp"u8,  ImGuiTableColumnFlags.WidthFixed, _buttonSize.Y);
@@ -286,7 +289,7 @@ public class ModPanelChangedItemsTab(
     private void DrawPreferredButton(IdentifiedItem item, int idx)
     {
         if (ImUtf8.IconButton(FontAwesomeIcon.Star, "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8, _buttonSize,
-                false, ImGui.GetColorU32(ImGuiCol.TextDisabled, 0.1f)))
+                false, _starColor))
             dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, false, true);
         using var context = ImUtf8.PopupContextItem("StarContext"u8, ImGuiPopupFlags.MouseButtonRight);
         if (!context)
