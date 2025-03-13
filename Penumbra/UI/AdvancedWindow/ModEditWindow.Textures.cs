@@ -25,11 +25,17 @@ public partial class ModEditWindow
     {
         ("As Is", "Save the current texture with its own format without additional conversion or compression, if possible."),
         ("RGBA (Uncompressed)",
-            "Save the current texture as an uncompressed BGRA bitmap. This requires the most space but technically offers the best quality."),
-        ("BC3 (Simple Compression)",
-            "Save the current texture compressed via BC3/DXT5 compression. This offers a 4:1 compression ratio and is quick with acceptable quality."),
-        ("BC7 (Complex Compression)",
-            "Save the current texture compressed via BC7 compression. This offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while."),
+            "Save the current texture as an uncompressed BGRA bitmap.\nThis requires the most space but technically offers the best quality."),
+        ("BC1 (Simple Compression for Opaque RGB)",
+            "Save the current texture compressed via BC1/DXT1 compression.\nThis offers a 8:1 compression ratio and is quick with acceptable quality, but only supports RGB, without Alpha.\n\nCan be used for diffuse maps and equipment textures to save extra space."),
+        ("BC3 (Simple Compression for RGBA)",
+            "Save the current texture compressed via BC3/DXT5 compression.\nThis offers a 4:1 compression ratio and is quick with acceptable quality, and fully supports RGBA.\n\nGeneric format that can be used for most textures."),
+        ("BC4 (Simple Compression for Opaque Grayscale)",
+            "Save the current texture compressed via BC4 compression.\nThis offers a 8:1 compression ratio and has almost indistinguishable quality, but only supports Grayscale, without Alpha.\n\nCan be used for face paints and legacy marks."),
+        ("BC5 (Simple Compression for Opaque RG)",
+            "Save the current texture compressed via BC5 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but only supports RG, without B or Alpha.\n\nRecommended for index maps, unrecommended for normal maps."),
+        ("BC7 (Complex Compression for RGBA)",
+            "Save the current texture compressed via BC7 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while.\n\nGeneric format that can be used for most textures."),
     };
 
     private void DrawInputChild(string label, Texture tex, Vector2 size, Vector2 imageSize)
@@ -134,7 +140,7 @@ public partial class ModEditWindow
                     tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
                 _center.SaveAs(_left.Type, _textures, _left.Path, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -159,7 +165,7 @@ public partial class ModEditWindow
                     !canConvertInPlace || _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -169,7 +175,7 @@ public partial class ModEditWindow
                     !canConvertInPlace || _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
 
@@ -180,7 +186,7 @@ public partial class ModEditWindow
                  || _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
-                InvokeChange(Mod, _left.Path);
+                AddChangeTask(_left.Path);
                 AddReloadTask(_left.Path, false);
             }
         }
@@ -235,7 +241,7 @@ public partial class ModEditWindow
                 if (a)
                 {
                     _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                    InvokeChange(Mod, b);
+                    AddChangeTask(b);
                     if (b == _left.Path)
                         AddReloadTask(_left.Path, false);
                     else if (b == _right.Path)
@@ -243,6 +249,17 @@ public partial class ModEditWindow
                 }
             }, Mod!.ModPath.FullName, _forceTextureStartPath);
         _forceTextureStartPath = false;
+    }
+
+    private void AddChangeTask(string path)
+    {
+        _center.SaveTask.ContinueWith(t =>
+        {
+            if (!t.IsCompletedSuccessfully)
+                return;
+
+            _framework.RunOnFrameworkThread(() => InvokeChange(Mod, path));
+        }, TaskScheduler.Default);
     }
 
     private void AddReloadTask(string path, bool right)

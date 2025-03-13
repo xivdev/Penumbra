@@ -6,7 +6,10 @@ public partial class CombinedTexture : IDisposable
     {
         AsIs,
         Bitmap,
+        BC1,
         BC3,
+        BC4,
+        BC5,
         BC7,
     }
 

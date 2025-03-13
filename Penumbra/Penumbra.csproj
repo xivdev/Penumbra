@@ -80,6 +80,10 @@
             <HintPath>$(DalamudLibPath)SharpDX.Direct3D11.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="SharpDX.DXGI">
+            <HintPath>$(DalamudLibPath)SharpDX.DXGI.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="OtterTex.dll">
             <HintPath>lib\OtterTex.dll</HintPath>
         </Reference>

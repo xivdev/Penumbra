@@ -138,7 +138,7 @@ public partial class MtrlTab
         foreach (var constant in Mtrl.ShaderPackage.Constants)
         {
             var values = Mtrl.GetConstantValue<byte>(constant);
-            if (values != null)
+            if (values != [])
                 SetMaterialParameter(constant.Id, 0, values);
         }
 
