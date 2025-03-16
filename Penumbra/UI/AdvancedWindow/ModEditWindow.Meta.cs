@@ -75,12 +75,34 @@ public partial class ModEditWindow
             ImUtf8.Text($"Dragging .atch for {gr.ToName()}...");
             return true;
         });
-        ImUtf8.ButtonEx("Import .atch"u8,
-            _dragDropManager.IsDragging ? ""u8 : "Drag a .atch file containinig its race code in the path here to import its values."u8,
-            default,
-            !_dragDropManager.IsDragging);
+        var hasAtch = _editor.Files.Atch.Count > 0;
+        if (ImUtf8.ButtonEx("Import .atch"u8,
+                _dragDropManager.IsDragging
+                    ? ""u8
+                    : hasAtch
+                        ? "Drag a .atch file containing its race code in the path here to import its values.\n\nClick to select an .atch file from the mod."u8
+                        : "Drag a .atch file containing its race code in the path here to import its values."u8, default,
+                !_dragDropManager.IsDragging && !hasAtch)
+         && hasAtch)
+            ImUtf8.OpenPopup("##atchPopup"u8);
         if (_dragDropManager.CreateImGuiTarget("atchDrag", out var files, out _) && files.FirstOrDefault() is { } file)
             _metaDrawers.Atch.ImportFile(file);
+
+        using var popup = ImUtf8.Popup("##atchPopup"u8);
+        if (!popup)
+            return;
+
+        if (!hasAtch)
+        {
+            ImGui.CloseCurrentPopup();
+            return;
+        }
+
+        foreach (var atchFile in _editor.Files.Atch)
+        {
+            if (ImUtf8.Selectable(atchFile.RelPath.Path.Span) && atchFile.File.Exists)
+                _metaDrawers.Atch.ImportFile(atchFile.File.FullName);
+        }
     }
 
     private void DrawEditHeader(MetaManipulationType type)
