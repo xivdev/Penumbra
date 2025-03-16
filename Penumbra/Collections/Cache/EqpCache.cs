@@ -48,8 +48,8 @@ public sealed class EqpCache(MetaFileManager manager, ModCollection collection) 
             ? entry.HasFlag(EqpEntry.BodyHideGlovesL)
             : entry.HasFlag(EqpEntry.BodyHideGlovesM);
         return testFlag
-            ? (entry | EqpEntry._4) & ~EqpEntry.BodyHideGlovesS
-            : entry & ~(EqpEntry._4 | EqpEntry.BodyHideGlovesS);
+            ? (entry | EqpEntry.BodyHideGloveCuffs) & ~EqpEntry.BodyHideGlovesS
+            : entry & ~(EqpEntry.BodyHideGloveCuffs | EqpEntry.BodyHideGlovesS);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
