@@ -247,7 +247,7 @@ public class ModPanelChangedItemsTab(
         }
         else
         {
-            ImGuiClip.ClippedDraw(cache.Data, DrawContainer, ImGui.GetFrameHeightWithSpacing());
+            ImGuiClip.ClippedDraw(cache.Data, DrawContainer, _buttonSize.Y);
         }
     }
 
