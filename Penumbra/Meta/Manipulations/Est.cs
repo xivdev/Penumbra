@@ -29,19 +29,24 @@ public readonly record struct EstIdentifier(PrimaryId SetId, EstType Slot, Gende
         switch (Slot)
         {
             case EstType.Hair:
+            {
+                var (gender, race) = GenderRace.Split();
+                var id = (CustomizeValue)SetId.Id;
                 changedItems.UpdateCountOrSet(
-                    $"Customization: {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()} Hair {SetId}", () => new IdentifiedName());
+                    $"Customization: {gender.ToName()} {race.ToName()} Hair {SetId}", () => IdentifiedCustomization.Hair(race, gender, id));
                 break;
+            }
             case EstType.Face:
+            {
+                var (gender, race) = GenderRace.Split();
+                var id = (CustomizeValue)SetId.Id;
                 changedItems.UpdateCountOrSet(
-                    $"Customization: {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()} Face {SetId}", () => new IdentifiedName());
+                    $"Customization: {gender.ToName()} {race.ToName()} Face {SetId}",
+                    () => IdentifiedCustomization.Face(race, gender, id));
                 break;
-            case EstType.Body:
-                identifier.Identify(changedItems, GamePaths.Mdl.Equipment(SetId, GenderRace, EquipSlot.Body));
-                break;
-            case EstType.Head:
-                identifier.Identify(changedItems, GamePaths.Mdl.Equipment(SetId, GenderRace, EquipSlot.Head));
-                break;
+            }
+            case EstType.Body: identifier.Identify(changedItems, GamePaths.Mdl.Equipment(SetId, GenderRace, EquipSlot.Body)); break;
+            case EstType.Head: identifier.Identify(changedItems, GamePaths.Mdl.Equipment(SetId, GenderRace, EquipSlot.Head)); break;
         }
     }
 
