@@ -12,14 +12,15 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager dataManager, ActorManager actors)
+internal readonly struct TreeBuildCache(ObjectManager? objects, IDataManager dataManager, ActorManager actors)
 {
     private readonly Dictionary<FullPath, IReadOnlyDictionary<uint, Name>?> _shaderPackageNames = [];
 
+    private readonly IGameObject? _player = objects?.GetDalamudObject(0);
+
     public unsafe bool IsLocalPlayerRelated(ICharacter character)
     {
-        var player = objects.GetDalamudObject(0);
-        if (player == null)
+        if (_player is null)
             return false;
 
         var gameObject  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)character.Address;
@@ -28,27 +29,26 @@ internal readonly struct TreeBuildCache(ObjectManager objects, IDataManager data
         return actualIndex switch
         {
             < 2                              => true,
-            < (int)ScreenActor.CutsceneStart => gameObject->OwnerId == player.EntityId,
+            < (int)ScreenActor.CutsceneStart => gameObject->OwnerId == _player.EntityId,
             _                                => false,
         };
     }
 
     public IEnumerable<ICharacter> GetCharacters()
-        => objects.Objects.OfType<ICharacter>();
+        => objects is not null ? objects.Objects.OfType<ICharacter>() : [];
 
     public IEnumerable<ICharacter> GetLocalPlayerRelatedCharacters()
     {
-        var player = objects.GetDalamudObject(0);
-        if (player == null)
+        if (_player is null)
             yield break;
 
-        yield return (ICharacter)player;
+        yield return (ICharacter)_player;
 
-        var minion = objects.GetDalamudObject(1);
-        if (minion != null)
+        var minion = objects!.GetDalamudObject(1);
+        if (minion is not null)
             yield return (ICharacter)minion;
 
-        var playerId = player.EntityId;
+        var playerId = _player.EntityId;
         for (var i = 2; i < ObjectIndex.CutsceneStart.Index; i += 2)
         {
             if (objects.GetDalamudObject(i) is ICharacter owned && owned.OwnerId == playerId)

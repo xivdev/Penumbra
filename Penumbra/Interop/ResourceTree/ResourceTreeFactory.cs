@@ -23,24 +23,35 @@ public class ResourceTreeFactory(
     Configuration config,
     ActorManager actors,
     PathState pathState,
+    IFramework framework,
     ModManager modManager) : IService
 {
     private static readonly string ParentDirectoryPrefix = $"..{Path.DirectorySeparatorChar}";
 
     private TreeBuildCache CreateTreeBuildCache()
-        => new(objects, gameData, actors);
+        => new(framework.IsInFrameworkUpdateThread ? objects : null, gameData, actors);
+
+    private TreeBuildCache CreateTreeBuildCache(Flags flags)
+        => !framework.IsInFrameworkUpdateThread && flags.HasFlag(Flags.PopulateObjectTableData)
+            ? framework.RunOnFrameworkThread(CreateTreeBuildCache).Result
+            : CreateTreeBuildCache();
 
     public IEnumerable<ICharacter> GetLocalPlayerRelatedCharacters()
-    {
-        var cache = CreateTreeBuildCache();
-        return cache.GetLocalPlayerRelatedCharacters();
-    }
+        => framework.RunOnFrameworkThread(() =>
+        {
+            var cache = CreateTreeBuildCache();
+            return cache.GetLocalPlayerRelatedCharacters();
+        }).Result;
 
     public IEnumerable<(ICharacter Character, ResourceTree ResourceTree)> FromObjectTable(
         Flags flags)
     {
-        var cache      = CreateTreeBuildCache();
-        var characters = (flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters();
+        var (cache, characters) = framework.RunOnFrameworkThread(() =>
+        {
+            var cache = CreateTreeBuildCache();
+            var characters = ((flags & Flags.LocalPlayerRelatedOnly) != 0 ? cache.GetLocalPlayerRelatedCharacters() : cache.GetCharacters()).ToArray();
+            return (cache, characters);
+        }).Result;
 
         foreach (var character in characters)
         {
@@ -53,7 +64,7 @@ public class ResourceTreeFactory(
     public IEnumerable<(ICharacter Character, ResourceTree ResourceTree)> FromCharacters(
         IEnumerable<ICharacter> characters, Flags flags)
     {
-        var cache = CreateTreeBuildCache();
+        var cache = CreateTreeBuildCache(flags);
         foreach (var character in characters)
         {
             var tree = FromCharacter(character, cache, flags);
@@ -63,7 +74,7 @@ public class ResourceTreeFactory(
     }
 
     public ResourceTree? FromCharacter(ICharacter character, Flags flags)
-        => FromCharacter(character, CreateTreeBuildCache(), flags);
+        => FromCharacter(character, CreateTreeBuildCache(flags), flags);
 
     private unsafe ResourceTree? FromCharacter(ICharacter character, TreeBuildCache cache, Flags flags)
     {
@@ -80,7 +91,7 @@ public class ResourceTreeFactory(
             return null;
 
         var localPlayerRelated = cache.IsLocalPlayerRelated(character);
-        var (name, anonymizedName, related) = GetCharacterName(character);
+        var (name, anonymizedName, related) = GetCharacterName((GameObject*)character.Address);
         var networked = character.EntityId != 0xE0000000;
         var tree = new ResourceTree(name, anonymizedName, character.ObjectIndex, (nint)gameObjStruct, (nint)drawObjStruct, localPlayerRelated, related,
             networked, collectionResolveData.ModCollection.Identity.Name, collectionResolveData.ModCollection.Identity.AnonymizedName);
@@ -183,36 +194,37 @@ public class ResourceTreeFactory(
         }
     }
 
-    private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(ICharacter character)
+    private unsafe (string Name, string AnonymizedName, bool PlayerRelated) GetCharacterName(GameObject* character)
     {
-        var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
+        var identifier = actors.FromObject(character, out var owner, true, false, false);
         var identifierStr = identifier.ToString();
         return (identifierStr, identifier.Incognito(identifierStr), IsPlayerRelated(identifier, owner));
     }
 
-    private unsafe bool IsPlayerRelated(ICharacter? character)
+    private unsafe bool IsPlayerRelated(GameObject* character)
     {
-        if (character == null)
+        if (character is null)
             return false;
 
-        var identifier = actors.FromObject((GameObject*)character.Address, out var owner, true, false, false);
+        var identifier = actors.FromObject(character, out var owner, true, false, false);
         return IsPlayerRelated(identifier, owner);
     }
 
-    private bool IsPlayerRelated(ActorIdentifier identifier, Actor owner)
+    private unsafe bool IsPlayerRelated(ActorIdentifier identifier, Actor owner)
         => identifier.Type switch
         {
             IdentifierType.Player => true,
-            IdentifierType.Owned  => IsPlayerRelated(objects.Objects.CreateObjectReference(owner) as ICharacter),
+            IdentifierType.Owned  => IsPlayerRelated(owner.AsObject),
             _                     => false,
         };
 
     [Flags]
     public enum Flags
     {
-        RedactExternalPaths    = 1,
-        WithUiData             = 2,
-        LocalPlayerRelatedOnly = 4,
-        WithOwnership          = 8,
+        RedactExternalPaths     = 1,
+        WithUiData              = 2,
+        LocalPlayerRelatedOnly  = 4,
+        WithOwnership           = 8,
+        PopulateObjectTableData = 16,
     }
 }
