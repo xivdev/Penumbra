@@ -1,4 +1,5 @@
-﻿using Penumbra.CrashHandler.Buffers;
+﻿using System;
+using Penumbra.CrashHandler.Buffers;
 
 namespace Penumbra.CrashHandler;
 

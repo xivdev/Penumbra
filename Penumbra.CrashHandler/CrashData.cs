@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Penumbra.CrashHandler.Buffers;
 
 namespace Penumbra.CrashHandler;

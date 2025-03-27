@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Nodes;
+﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Nodes;
 
 namespace Penumbra.CrashHandler.Buffers;
 

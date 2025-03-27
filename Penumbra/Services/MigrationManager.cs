@@ -1,11 +1,75 @@
 using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
 using OtterGui.Services;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.Mods;
+using Penumbra.String.Classes;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 
 namespace Penumbra.Services;
+
+public class ModMigrator
+{
+    private class FileData(string path)
+    {
+        public readonly string                              Path      = path;
+        public readonly List<(string GamePath, int Option)> GamePaths = [];
+    }
+
+    private sealed class FileDataDict : Dictionary<string, FileData>
+    {
+        public void Add(string path, string gamePath, int option)
+        {
+            if (!TryGetValue(path, out var data))
+            {
+                data = new FileData(path);
+                data.GamePaths.Add((gamePath, option));
+                Add(path, data);
+            }
+            else
+            {
+                data.GamePaths.Add((gamePath, option));
+            }
+        }
+    }
+
+    private readonly FileDataDict Textures  = [];
+    private readonly FileDataDict Models    = [];
+    private readonly FileDataDict Materials = [];
+
+    public void Update(IEnumerable<Mod> mods)
+    {
+        CollectFiles(mods);
+    }
+
+    private void CollectFiles(IEnumerable<Mod> mods)
+    {
+        var option = 0;
+        foreach (var mod in mods)
+        {
+            AddDict(mod.Default.Files, option++);
+            foreach (var container in mod.Groups.SelectMany(group => group.DataContainers))
+                AddDict(container.Files, option++);
+        }
+
+        return;
+
+        void AddDict(Dictionary<Utf8GamePath, FullPath> dict, int currentOption)
+        {
+            foreach (var (gamePath, file) in dict)
+            {
+                switch (ResourceTypeExtensions.FromExtension(gamePath.Extension().Span))
+                {
+                    case ResourceType.Tex:  Textures.Add(file.FullName, gamePath.ToString(), currentOption); break;
+                    case ResourceType.Mdl:  Models.Add(file.FullName, gamePath.ToString(), currentOption); break;
+                    case ResourceType.Mtrl: Materials.Add(file.FullName, gamePath.ToString(), currentOption); break;
+                }
+            }
+        }
+    }
+}
 
 public class MigrationManager(Configuration config) : IService
 {

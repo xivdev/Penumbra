@@ -193,7 +193,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         if (shpk == null)
             return;
 
-        var shpkName = mtrl->ShpkNameSpan;
+        var shpkName = mtrl->ShpkName.AsSpan();
         var shpkState = GetStateForHumanSetup(shpkName)
          ?? GetStateForHumanRender(shpkName)
          ?? GetStateForModelRendererRender(shpkName)
@@ -217,7 +217,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     }
 
     private ModdedShaderPackageState? GetStateForHumanSetup(MaterialResourceHandle* mtrlResource)
-        => mtrlResource == null ? null : GetStateForHumanSetup(mtrlResource->ShpkNameSpan);
+        => mtrlResource == null ? null : GetStateForHumanSetup(mtrlResource->ShpkName.AsSpan());
 
     private ModdedShaderPackageState? GetStateForHumanSetup(ReadOnlySpan<byte> shpkName)
         => CharacterStockingsShpkName.SequenceEqual(shpkName) ? _characterStockingsState : null;
@@ -227,7 +227,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => _characterStockingsState.MaterialCount;
 
     private ModdedShaderPackageState? GetStateForHumanRender(MaterialResourceHandle* mtrlResource)
-        => mtrlResource == null ? null : GetStateForHumanRender(mtrlResource->ShpkNameSpan);
+        => mtrlResource == null ? null : GetStateForHumanRender(mtrlResource->ShpkName.AsSpan());
 
     private ModdedShaderPackageState? GetStateForHumanRender(ReadOnlySpan<byte> shpkName)
         => SkinShpkName.SequenceEqual(shpkName) ? _skinState : null;
@@ -237,7 +237,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => _skinState.MaterialCount;
 
     private ModdedShaderPackageState? GetStateForModelRendererRender(MaterialResourceHandle* mtrlResource)
-        => mtrlResource == null ? null : GetStateForModelRendererRender(mtrlResource->ShpkNameSpan);
+        => mtrlResource == null ? null : GetStateForModelRendererRender(mtrlResource->ShpkName.AsSpan());
 
     private ModdedShaderPackageState? GetStateForModelRendererRender(ReadOnlySpan<byte> shpkName)
     {
@@ -264,7 +264,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
           + _hairMaskState.MaterialCount;
 
     private ModdedShaderPackageState? GetStateForModelRendererUnk(MaterialResourceHandle* mtrlResource)
-        => mtrlResource == null ? null : GetStateForModelRendererUnk(mtrlResource->ShpkNameSpan);
+        => mtrlResource == null ? null : GetStateForModelRendererUnk(mtrlResource->ShpkName.AsSpan());
 
     private ModdedShaderPackageState? GetStateForModelRendererUnk(ReadOnlySpan<byte> shpkName)
     {
@@ -480,7 +480,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         if (material == null)
             return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);
 
-        var shpkState = GetStateForColorTable(thisPtr->ShpkNameSpan);
+        var shpkState = GetStateForColorTable(thisPtr->ShpkName.AsSpan());
         if (shpkState == null || shpkState.MaterialCount == 0)
             return _prepareColorTableHook.Original(thisPtr, stain0Id, stain1Id);
 

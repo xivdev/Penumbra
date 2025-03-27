@@ -239,7 +239,7 @@ internal unsafe partial record ResolveContext(
             return cached;
 
         var node     = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
-        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new CiByteString(resource->ShpkName));
+        var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new CiByteString(resource->ShpkName.Value));
         if (shpkNode is not null)
         {
             if (Global.WithUiData)
@@ -253,7 +253,7 @@ internal unsafe partial record ResolveContext(
         var alreadyProcessedSamplerIds = new HashSet<uint>();
         for (var i = 0; i < resource->TextureCount; i++)
         {
-            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new CiByteString(resource->TexturePath(i)),
+            var texNode = CreateNodeFromTex(resource->Textures[i].TextureResourceHandle, new CiByteString(resource->TexturePath(i).Value),
                 resource->Textures[i].IsDX11);
             if (texNode == null)
                 continue;
