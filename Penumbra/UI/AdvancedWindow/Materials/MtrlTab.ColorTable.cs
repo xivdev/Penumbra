@@ -607,7 +607,7 @@ public partial class MtrlTab
         if (_stainService.GudTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty,
                 scalarSize + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
         {
-            dye.Template = _stainService.GudTemplateCombo.CurrentSelection;
+            dye.Template = _stainService.GudTemplateCombo.CurrentSelection.UShort;
             ret          = true;
         }
 

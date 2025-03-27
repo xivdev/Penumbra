@@ -16,7 +16,7 @@ namespace Penumbra.Services;
 public class StainService : IService
 {
     public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile)
-        : FilterComboCache<ushort>(stmFile.Entries.Keys.Prepend((ushort)0), MouseWheelType.None, Penumbra.Log)
+        : FilterComboCache<StmKeyType>(stmFile.Entries.Keys.Prepend(0), MouseWheelType.None, Penumbra.Log)
         where TDyePack : unmanaged, IDyePack
     {
         // FIXME There might be a better way to handle that.
@@ -31,7 +31,7 @@ public class StainService : IService
             return baseSize + ImGui.GetTextLineHeight() * 3 + ImGui.GetStyle().ItemInnerSpacing.X * 3;
         }
 
-        protected override string ToString(ushort obj)
+        protected override string ToString(StmKeyType obj)
             => $"{obj,4}";
 
         protected override void DrawFilter(int currentSelected, float width)

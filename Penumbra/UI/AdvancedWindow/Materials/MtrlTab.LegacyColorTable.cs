@@ -184,7 +184,7 @@ public partial class MtrlTab
             if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
                   + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
             {
-                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection;
+                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection.UShort;
                 ret                       = true;
             }
 
@@ -299,7 +299,7 @@ public partial class MtrlTab
             if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
                   + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
             {
-                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection;
+                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection.UShort;
                 ret                       = true;
             }
 
