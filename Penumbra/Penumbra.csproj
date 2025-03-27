@@ -26,6 +26,22 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Reference Include="Iced">
+            <HintPath>$(DalamudLibPath)Iced.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SharpDX">
+            <HintPath>$(DalamudLibPath)SharpDX.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SharpDX.Direct3D11">
+            <HintPath>$(DalamudLibPath)SharpDX.Direct3D11.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SharpDX.DXGI">
+            <HintPath>$(DalamudLibPath)SharpDX.DXGI.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="OtterTex.dll">
             <HintPath>lib\OtterTex.dll</HintPath>
         </Reference>
