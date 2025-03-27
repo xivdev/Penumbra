@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -18,7 +19,6 @@ public class LaunchButton : IDisposable, IUiService
     private readonly string           _fileName;
     private readonly ITextureProvider _textureProvider;
 
-    private IDalamudTextureWrap?           _icon;
     private IReadOnlyTitleScreenMenuEntry? _entry;
 
     /// <summary>
@@ -30,7 +30,6 @@ public class LaunchButton : IDisposable, IUiService
         _configWindow    = ui;
         _textureProvider = textureProvider;
         _title           = title;
-        _icon            = null;
         _entry           = null;
 
         _fileName       =  Path.Combine(pi.AssemblyLocation.DirectoryName!, "tsmLogo.png");
@@ -39,7 +38,6 @@ public class LaunchButton : IDisposable, IUiService
 
     public void Dispose()
     {
-        _icon?.Dispose();
         if (_entry != null)
             _title.RemoveEntry(_entry);
     }
@@ -52,9 +50,8 @@ public class LaunchButton : IDisposable, IUiService
         try
         {
             // TODO: update when API updated.
-            _icon = _textureProvider.GetFromFile(_fileName).RentAsync().Result;
-            if (_icon != null)
-                _entry = _title.AddEntry("Manage Penumbra", _icon, OnTriggered);
+            var icon = _textureProvider.GetFromFile(_fileName);
+            _entry = _title.AddEntry("Manage Penumbra", icon, OnTriggered);
 
             _uiBuilder.Draw -= CreateEntry;
         }

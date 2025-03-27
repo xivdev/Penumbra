@@ -84,7 +84,9 @@ public sealed unsafe class LiveColorTablePreviewer : LiveMaterialPreviewerBase
         textureSize[1] = Height;
 
         using var texture =
-            new SafeTextureHandle(Device.Instance()->CreateTexture2D(textureSize, 1, 0x2460, 0x80000804, 7), false);
+            new SafeTextureHandle(
+                Device.Instance()->CreateTexture2D(textureSize, 1, TextureFormat.R16G16B16A16_FLOAT,
+                    TextureFlags.TextureNoSwizzle | TextureFlags.Immutable | TextureFlags.Managed, 7), false);
         if (texture.IsInvalid)
             return;
 

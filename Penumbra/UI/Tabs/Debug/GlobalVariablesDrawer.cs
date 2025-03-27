@@ -164,13 +164,14 @@ public unsafe class GlobalVariablesDrawer(
             _schedulerFilterMapU8 = CiByteString.FromString(_schedulerFilterMap, out var t, MetaDataComputation.All, false)
                 ? t
                 : CiByteString.Empty;
-        ImUtf8.Text($"{_shownResourcesMap} / {scheduler.Scheduler->NumResources}");
+        ImUtf8.Text($"{_shownResourcesMap} / {scheduler.Scheduler->Resources.LongCount}");
         using var table = ImUtf8.Table("##SchedulerMapResources"u8, 10, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
 
-        var map   = (StdMap<int, Pointer<SchedulerResource>>*)&scheduler.Scheduler->Unknown;
+        // TODO Remove cast when it'll have the right type in CS.
+        var map   = (StdMap<int, Pointer<SchedulerResource>>*)&scheduler.Scheduler->Resources;
         var total = 0;
         _shownResourcesMap = 0;
         foreach (var (key, resourcePtr) in *map)
@@ -214,7 +215,7 @@ public unsafe class GlobalVariablesDrawer(
             _schedulerFilterListU8 = CiByteString.FromString(_schedulerFilterList, out var t, MetaDataComputation.All, false)
                 ? t
                 : CiByteString.Empty;
-        ImUtf8.Text($"{_shownResourcesList} / {scheduler.Scheduler->NumResources}");
+        ImUtf8.Text($"{_shownResourcesList} / {scheduler.Scheduler->Resources.LongCount}");
         using var table = ImUtf8.Table("##SchedulerListResources"u8, 10, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
@@ -223,7 +224,7 @@ public unsafe class GlobalVariablesDrawer(
         var resource = scheduler.Scheduler->Begin;
         var total    = 0;
         _shownResourcesList = 0;
-        while (resource != null && total < (int)scheduler.Scheduler->NumResources)
+        while (resource != null && total < scheduler.Scheduler->Resources.Count)
         {
             if (_schedulerFilterList.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterListU8.Span) >= 0)
             {

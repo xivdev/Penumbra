@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.STD;
+using InteropGenerator.Runtime;
 using Penumbra.String;
 
 namespace Penumbra.Interop.Structs;
@@ -57,8 +58,8 @@ internal static class StructExtensions
         return ToOwnedByteString(character.ResolvePhybPath(pathBuffer, partialSkeletonIndex));
     }
 
-    private static unsafe CiByteString ToOwnedByteString(byte* str)
-        => str == null ? CiByteString.Empty : new CiByteString(str).Clone();
+    private static unsafe CiByteString ToOwnedByteString(CStringPointer str)
+        => str.HasValue ? new CiByteString(str.Value).Clone() : CiByteString.Empty;
 
     private static CiByteString ToOwnedByteString(ReadOnlySpan<byte> str)
         => str.Length == 0 ? CiByteString.Empty : CiByteString.FromSpanUnsafe(str, true).Clone();
