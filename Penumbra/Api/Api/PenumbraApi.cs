@@ -16,13 +16,16 @@ public class PenumbraApi(
     TemporaryApi temporary,
     UiApi ui) : IDisposable, IApiService, IPenumbraApi
 {
+    public const int BreakingVersion = 5;
+    public const int FeatureVersion  = 8;
+
     public void Dispose()
     {
         Valid = false;
     }
 
     public (int Breaking, int Feature) ApiVersion
-        => (5, 7);
+        => (BreakingVersion, FeatureVersion);
 
     public bool                     Valid        { get; private set; } = true;
     public IPenumbraApiCollection   Collection   { get; }              = collection;

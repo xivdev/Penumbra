@@ -58,6 +58,8 @@ public class Penumbra : IDalamudPlugin
         {
             HookOverrides.Instance = HookOverrides.LoadFile(pluginInterface);
             _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
+            // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
+            _services.GetService<IpcLaunchingProvider>();
             Messager               = _services.GetService<MessageService>();
             _validityChecker       = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
