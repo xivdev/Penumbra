@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
@@ -14,7 +15,7 @@ public class HttpApi : IDisposable, IApiService
         // @formatter:off
         [Route( HttpVerbs.Get,  "/mods"       )] public partial object? GetMods();
         [Route( HttpVerbs.Post, "/redraw"     )] public partial Task    Redraw();
-        [Route( HttpVerbs.Post, "/redrawAll"  )] public partial void    RedrawAll();
+        [Route( HttpVerbs.Post, "/redrawAll"  )] public partial Task    RedrawAll();
         [Route( HttpVerbs.Post, "/reloadmod"  )] public partial Task    ReloadMod();
         [Route( HttpVerbs.Post, "/installmod" )] public partial Task    InstallMod();
         [Route( HttpVerbs.Post, "/openwindow" )] public partial void    OpenWindow();
@@ -24,11 +25,13 @@ public class HttpApi : IDisposable, IApiService
     public const string Prefix = "http://localhost:42069/";
 
     private readonly IPenumbraApi _api;
+    private readonly IFramework   _framework;
     private          WebServer?   _server;
 
-    public HttpApi(Configuration config, IPenumbraApi api)
+    public HttpApi(Configuration config, IPenumbraApi api, IFramework framework)
     {
-        _api = api;
+        _api       = api;
+        _framework = framework;
         if (config.EnableHttpApi)
             CreateWebServer();
     }
@@ -44,7 +47,7 @@ public class HttpApi : IDisposable, IApiService
                 .WithUrlPrefix(Prefix)
                 .WithMode(HttpListenerMode.EmbedIO))
             .WithCors(Prefix)
-            .WithWebApi("/api", m => m.WithController(() => new Controller(_api)));
+            .WithWebApi("/api", m => m.WithController(() => new Controller(_api, _framework)));
 
         _server.StateChanged += (_, e) => Penumbra.Log.Information($"WebServer New State - {e.NewState}");
         _server.RunAsync();
@@ -59,60 +62,58 @@ public class HttpApi : IDisposable, IApiService
     public void Dispose()
         => ShutdownWebServer();
 
-    private partial class Controller
+    private partial class Controller(IPenumbraApi api, IFramework framework)
     {
-        private readonly IPenumbraApi _api;
-
-        public Controller(IPenumbraApi api)
-            => _api = api;
-
         public partial object? GetMods()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(GetMods)} triggered.");
-            return _api.Mods.GetModList();
+            return api.Mods.GetModList();
         }
 
         public async partial Task Redraw()
         {
-            var data = await HttpContext.GetRequestDataAsync<RedrawData>();
-            Penumbra.Log.Debug($"[HTTP] {nameof(Redraw)} triggered with {data}.");
-            if (data.ObjectTableIndex >= 0)
-                _api.Redraw.RedrawObject(data.ObjectTableIndex, data.Type);
-            else
-                _api.Redraw.RedrawAll(data.Type);
+            var data = await HttpContext.GetRequestDataAsync<RedrawData>().ConfigureAwait(false);
+            Penumbra.Log.Debug($"[HTTP] [{Environment.CurrentManagedThreadId}] {nameof(Redraw)} triggered with {data}.");
+            await framework.RunOnFrameworkThread(() =>
+            {
+                if (data.ObjectTableIndex >= 0)
+                    api.Redraw.RedrawObject(data.ObjectTableIndex, data.Type);
+                else
+                    api.Redraw.RedrawAll(data.Type);
+            }).ConfigureAwait(false);
         }
 
-        public partial void RedrawAll()
+        public async partial Task RedrawAll()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(RedrawAll)} triggered.");
-            _api.Redraw.RedrawAll(RedrawType.Redraw);
+            await framework.RunOnFrameworkThread(() => { api.Redraw.RedrawAll(RedrawType.Redraw); }).ConfigureAwait(false);
         }
 
         public async partial Task ReloadMod()
         {
-            var data = await HttpContext.GetRequestDataAsync<ModReloadData>();
+            var data = await HttpContext.GetRequestDataAsync<ModReloadData>().ConfigureAwait(false);
             Penumbra.Log.Debug($"[HTTP] {nameof(ReloadMod)} triggered with {data}.");
             // Add the mod if it is not already loaded and if the directory name is given.
             // AddMod returns Success if the mod is already loaded.
             if (data.Path.Length != 0)
-                _api.Mods.AddMod(data.Path);
+                api.Mods.AddMod(data.Path);
 
             // Reload the mod by path or name, which will also remove no-longer existing mods.
-            _api.Mods.ReloadMod(data.Path, data.Name);
+            api.Mods.ReloadMod(data.Path, data.Name);
         }
 
         public async partial Task InstallMod()
         {
-            var data = await HttpContext.GetRequestDataAsync<ModInstallData>();
+            var data = await HttpContext.GetRequestDataAsync<ModInstallData>().ConfigureAwait(false);
             Penumbra.Log.Debug($"[HTTP] {nameof(InstallMod)} triggered with {data}.");
             if (data.Path.Length != 0)
-                _api.Mods.InstallMod(data.Path);
+                api.Mods.InstallMod(data.Path);
         }
 
         public partial void OpenWindow()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(OpenWindow)} triggered.");
-            _api.Ui.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
+            api.Ui.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
         }
 
         private record ModReloadData(string Path, string Name)
