@@ -270,13 +270,13 @@ internal unsafe partial record ResolveContext(
                     if (samplerId.HasValue)
                     {
                         alreadyProcessedSamplerIds.Add(samplerId.Value);
-                        var samplerCrc = GetSamplerCrcById(shpk, samplerId.Value);
-                        if (samplerCrc.HasValue)
+                        var textureCrc = GetTextureCrcById(shpk, samplerId.Value);
+                        if (textureCrc.HasValue)
                         {
-                            if (shpkNames != null && shpkNames.TryGetValue(samplerCrc.Value, out var samplerName))
+                            if (shpkNames != null && shpkNames.TryGetValue(textureCrc.Value, out var samplerName))
                                 name = samplerName.Value;
                             else
-                                name = $"Texture 0x{samplerCrc.Value:X8}";
+                                name = $"Texture 0x{textureCrc.Value:X8}";
                         }
                     }
                 }
@@ -292,9 +292,9 @@ internal unsafe partial record ResolveContext(
 
         return node;
 
-        static uint? GetSamplerCrcById(ShaderPackage* shpk, uint id)
-            => shpk->SamplersSpan.FindFirst(s => s.Id == id, out var s)
-                ? s.CRC
+        static uint? GetTextureCrcById(ShaderPackage* shpk, uint id)
+            => shpk->TexturesSpan.FindFirst(t => t.Id == id, out var t)
+                ? t.CRC
                 : null;
 
         static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle, HashSet<uint> alreadyVisitedSamplerIds)
