@@ -6,7 +6,7 @@ public static class VolatileOffsets
     {
         public const int PlayTimeOffset     = 0x254;
         public const int SomeIntermediate   = 0x1F8;
-        public const int Flags              = 0x4A4;
+        public const int Flags              = 0x4A8;
         public const int IInstanceListenner = 0x270;
         public const int BitShift           = 13;
         public const int CasterVFunc        = 1;
@@ -19,7 +19,7 @@ public static class VolatileOffsets
 
     public static class UpdateModel
     {
-        public const int ShortCircuit = 0xA2C;
+        public const int ShortCircuit = 0xA3C;
     }
 
     public static class FontReloader
