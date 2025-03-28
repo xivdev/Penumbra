@@ -59,9 +59,35 @@ public class PenumbraChangelog : IUiService
         Add1_3_3_0(Changelog);
         Add1_3_4_0(Changelog);
         Add1_3_5_0(Changelog);
+        Add1_3_6_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_3_6_0(Changelog log)
+        => log.NextVersion("Version 1.3.6.0")
+            .RegisterImportant("Updated Penumbra for update 7.20 and Dalamud API 12.")
+            .RegisterEntry(
+                "This is not thoroughly tested, but I decided to push to stable instead of testing because otherwise a lot of people would just go to testing just for early access again despite having no business doing so.",
+                1)
+            .RegisterEntry(
+                "I also do not use most of the functionality of Penumbra myself, so I am unable to even encounter most issues myself.", 1)
+            .RegisterEntry("If you encounter any issues, please report them quickly on the discord.",                                   1)
+            .RegisterImportant("There is a known issue with the Material Editor due to the shader changes, please do not author materials for the moment, they will be broken!", 1)
+            .RegisterHighlight(
+                "The texture editor now has encoding support for Block Compression 1, 4 and 5 and tooltips explaining when to use which format.")
+            .RegisterEntry("It also is able to use GPU compression and thus has become much faster for BC7 in particular. (Thanks Ny!)", 1)
+            .RegisterEntry(
+                "Added the option to import .atch files found in the particular mod via right-click context menu on the import drag & drop button.")
+            .RegisterEntry("Added a chat command to clear temporary settings done manually in Penumbra.")
+            .RegisterEntry(
+                "The changed item star to select the preferred changed item is a bit more noticeable by default, and its color can be configured.")
+            .RegisterEntry("Some minor fixes for computing changed items. (Thanks Anna!)")
+            .RegisterEntry("The EQP entry previously named Unknown 4 was renamed to 'Hide Glove Cuffs'.")
+            .RegisterEntry("Fixed the changed item identification for EST changes.")
+            .RegisterEntry("Fixed clipping issues in the changed items panel when no grouping was active.");
+            
+
 
     private static void Add1_3_5_0(Changelog log)
         => log.NextVersion("Version 1.3.5.0")
