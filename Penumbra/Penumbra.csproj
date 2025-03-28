@@ -23,6 +23,13 @@
         <Content Include="tsmLogo.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <None Include="lib\DirectXTexC.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>DirectXTexC.dll</TargetPath>
+        </None>
+        <None Include="Penumbra.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -62,16 +69,6 @@
         <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
         <ProjectReference Include="..\Penumbra.Api\Penumbra.Api.csproj" />
         <ProjectReference Include="..\Penumbra.String\Penumbra.String.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="lib\DirectXTexC.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <TargetPath>DirectXTexC.dll</TargetPath>
-        </None>
-        <None Update="Penumbra.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
     <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">

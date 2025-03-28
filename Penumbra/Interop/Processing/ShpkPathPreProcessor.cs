@@ -56,8 +56,8 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
             using var file  = MmioMemoryManager.CreateFromFile(path, access: MemoryMappedFileAccess.Read);
             var       bytes = file.GetSpan();
 
-            return ShpkFile.FastIsLegacy(bytes)
-                ? SanityCheckResult.Legacy
+            return ShpkFile.FastIsObsolete(bytes)
+                ? SanityCheckResult.Obsolete
                 : SanityCheckResult.Success;
         }
         catch (FileNotFoundException)
@@ -75,7 +75,7 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
         {
             SanityCheckResult.IoError  => "Cannot read the modded file.",
             SanityCheckResult.NotFound => "The modded file does not exist.",
-            SanityCheckResult.Legacy   => "This mod is not compatible with Dawntrail. Get an updated version, if possible, or disable it.",
+            SanityCheckResult.Obsolete => "This mod is not compatible with Dawntrail post patch 7.2. Get an updated version, if possible, or disable it.",
             _                          => string.Empty,
         };
 
@@ -84,6 +84,6 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
         Success,
         IoError,
         NotFound,
-        Legacy,
+        Obsolete,
     }
 }
