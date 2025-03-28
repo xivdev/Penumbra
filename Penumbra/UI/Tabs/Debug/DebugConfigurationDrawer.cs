@@ -6,7 +6,8 @@ public static class DebugConfigurationDrawer
 {
     public static void Draw()
     {
-        if (!ImUtf8.CollapsingHeaderId("Debug Logging Options"))
+        using var id = ImUtf8.CollapsingHeaderId("Debug Logging Options"u8);
+        if (!id)
             return;
 
         ImUtf8.Checkbox("Log IMC File Replacements"u8, ref DebugConfiguration.WriteImcBytesToLog);
