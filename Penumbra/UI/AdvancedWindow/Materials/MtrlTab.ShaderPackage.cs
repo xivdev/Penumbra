@@ -216,7 +216,7 @@ public partial class MtrlTab
         else
             foreach (var (key, index) in Mtrl.ShaderPackage.ShaderKeys.WithIndex())
             {
-                var keyName   = Names.KnownNames.TryResolve(key.Category);
+                var keyName   = Names.KnownNames.TryResolve(key.Key);
                 var valueName = keyName.WithKnownSuffixes().TryResolve(Names.KnownNames, key.Value);
                 _shaderKeys.Add((keyName.ToString(), index, string.Empty, true, [(valueName.ToString(), key.Value, string.Empty)]));
             }
@@ -366,6 +366,7 @@ public partial class MtrlTab
                 ret                     = true;
                 _associatedShpk         = null;
                 _loadedShpkPath         = FullPath.Empty;
+                UnpinResources(true);
                 LoadShpk(FindAssociatedShpk(out _, out _));
             }
 
@@ -442,8 +443,8 @@ public partial class MtrlTab
         {
             using var font         = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
             ref var   key          = ref Mtrl.ShaderPackage.ShaderKeys[index];
-            using var id           = ImUtf8.PushId((int)key.Category);
-            var       shpkKey      = _associatedShpk?.GetMaterialKeyById(key.Category);
+            using var id           = ImUtf8.PushId((int)key.Key);
+            var       shpkKey      = _associatedShpk?.GetMaterialKeyById(key.Key);
             var       currentValue = key.Value;
             var (currentLabel, _, currentDescription) =
                 values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
@@ -459,6 +460,7 @@ public partial class MtrlTab
                             {
                                 key.Value = value;
                                 ret       = true;
+                                UnpinResources(false);
                                 Update();
                             }
 

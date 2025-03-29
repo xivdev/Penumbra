@@ -57,6 +57,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         Mtrl                  = file;
         FilePath              = filePath;
         Writable              = writable;
+        _samplersPinned       = true;
         _associatedBaseDevkit = TryLoadShpkDevkit("_base", out _loadedBaseDevkitPathName);
         Update();
         LoadShpk(FindAssociatedShpk(out _, out _));
@@ -172,6 +173,22 @@ public sealed partial class MtrlTab : IWritable, IDisposable
             Widget.DrawHexViewer(Mtrl.AdditionalData);
     }
 
+    private void UnpinResources(bool all)
+    {
+        _samplersPinned = false;
+
+        if (!all)
+            return;
+
+        var keys = Mtrl.ShaderPackage.ShaderKeys;
+        for (var i = 0; i < keys.Length; i++)
+            keys[i].Pinned = false;
+
+        var constants = Mtrl.ShaderPackage.Constants;
+        for (var i = 0; i < constants.Length; i++)
+            constants[i].Pinned = false;
+    }
+
     private void Update()
     {
         UpdateShaders();
@@ -192,7 +209,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
     public byte[] Write()
     {
         var output = Mtrl.Clone();
-        output.GarbageCollect(_associatedShpk, SamplerIds);
+        output.GarbageCollect(_associatedShpk, TextureIds);
 
         return output.Write();
     }

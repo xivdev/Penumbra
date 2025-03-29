@@ -288,7 +288,7 @@ public class MaterialExporter
         const uint valueFace        = 0x6E5B8F10;
 
         var isFace = material.Mtrl.ShaderPackage.ShaderKeys
-            .Any(key => key is { Category: categoryHairType, Value: valueFace });
+            .Any(key => key is { Key: categoryHairType, Value: valueFace });
 
         var normal = material.Textures[TextureUsage.SamplerNormal];
         var mask   = material.Textures[TextureUsage.SamplerMask];
@@ -363,7 +363,7 @@ public class MaterialExporter
 
         // Face is the default for the skin shader, so a lack of skin type category is also correct.
         var isFace = !material.Mtrl.ShaderPackage.ShaderKeys
-            .Any(key => key.Category == categorySkinType && key.Value != valueFace);
+            .Any(key => key.Key == categorySkinType && key.Value != valueFace);
 
         // TODO: There's more nuance to skin than this, but this should be enough for a baseline reference.
         // TODO: Specular?
