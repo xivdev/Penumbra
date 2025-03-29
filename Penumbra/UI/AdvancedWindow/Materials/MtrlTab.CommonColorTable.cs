@@ -22,7 +22,7 @@ public partial class MtrlTab
 
     private bool DrawColorTableSection(bool disabled)
     {
-        if (!_shpkLoading && !SamplerIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
+        if (!_shpkLoading && !TextureIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
             return false;
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
