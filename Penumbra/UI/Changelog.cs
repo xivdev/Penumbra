@@ -60,9 +60,14 @@ public class PenumbraChangelog : IUiService
         Add1_3_4_0(Changelog);
         Add1_3_5_0(Changelog);
         Add1_3_6_0(Changelog);
+        Add1_3_6_4(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_3_6_4(Changelog log)
+        => log.NextVersion("Version 1.3.6.4")
+            .RegisterEntry("The material editor should be functional again.");
 
     private static void Add1_3_6_0(Changelog log)
         => log.NextVersion("Version 1.3.6.0")
@@ -73,7 +78,6 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry(
                 "I also do not use most of the functionality of Penumbra myself, so I am unable to even encounter most issues myself.", 1)
             .RegisterEntry("If you encounter any issues, please report them quickly on the discord.",                                   1)
-            .RegisterImportant("There is a known issue with the Material Editor due to the shader changes, please do not author materials for the moment, they will be broken!", 1)
             .RegisterHighlight(
                 "The texture editor now has encoding support for Block Compression 1, 4 and 5 and tooltips explaining when to use which format.")
             .RegisterEntry("It also is able to use GPU compression and thus has become much faster for BC7 in particular. (Thanks Ny!)", 1)
