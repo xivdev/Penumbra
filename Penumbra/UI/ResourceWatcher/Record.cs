@@ -56,6 +56,26 @@ internal unsafe struct Record
             Crc64                = 0,
         };
 
+    public static Record CreateRequest(CiByteString path, bool sync, FullPath fullPath, ResolveData resolve)
+        => new()
+        {
+            Time                 = DateTime.UtcNow,
+            Path                 = fullPath.InternalName.IsOwned ? fullPath.InternalName : fullPath.InternalName.Clone(),
+            OriginalPath         = path.IsOwned ? path : path.Clone(),
+            Collection           = resolve.Valid ? resolve.ModCollection : null,
+            Handle               = null,
+            ResourceType         = ResourceExtensions.Type(path).ToFlag(),
+            Category             = ResourceExtensions.Category(path).ToFlag(),
+            RefCount             = 0,
+            RecordType           = RecordType.Request,
+            Synchronously        = sync,
+            ReturnValue          = OptionalBool.Null,
+            CustomLoad           = fullPath.InternalName != path,
+            AssociatedGameObject = string.Empty,
+            LoadState            = LoadState.None,
+            Crc64                = fullPath.Crc64,
+        };
+
     public static Record CreateDefaultLoad(CiByteString path, ResourceHandle* handle, ModCollection collection, string associatedGameObject)
     {
         path = path.IsOwned ? path : path.Clone();

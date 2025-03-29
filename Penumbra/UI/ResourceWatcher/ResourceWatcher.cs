@@ -58,12 +58,19 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
     private void OnPapRequested(Utf8GamePath original, FullPath? _1, ResolveData _2)
     {
         if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
+        {
             Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested asynchronously.");
+            if (_1.HasValue)
+                Penumbra.Log.Information(
+                    $"[ResourceLoader] [LOAD] Resolved {_1.Value.FullName} for {match} from collection {_2.ModCollection} for object 0x{_2.AssociatedGameObject:X}.");
+        }
 
         if (!_ephemeral.EnableResourceWatcher)
             return;
 
-        var record = Record.CreateRequest(original.Path, false);
+        var record = _1.HasValue
+            ? Record.CreateRequest(original.Path, false, _1.Value, _2)
+            : Record.CreateRequest(original.Path, false);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }
@@ -257,7 +264,8 @@ public sealed class ResourceWatcher : IDisposable, ITab, IUiService
             _newRecords.Enqueue(record);
     }
 
-    private unsafe void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original, ReadOnlySpan<byte> additionalData, bool isAsync)
+    private unsafe void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original,
+        ReadOnlySpan<byte> additionalData, bool isAsync)
     {
         if (!isAsync)
             return;
