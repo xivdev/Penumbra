@@ -10,6 +10,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ShaderStructs;
+using Penumbra.Interop.Processing;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
@@ -128,7 +129,11 @@ public partial class MtrlTab
         if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath))
             return FullPath.Empty;
 
-        return _edit.FindBestMatch(defaultGamePath);
+        var path = _edit.FindBestMatch(defaultGamePath);
+        if (!path.IsRooted || ShpkPathPreProcessor.SanityCheck(path.FullName) == ShpkPathPreProcessor.SanityCheckResult.Success)
+            return path;
+
+        return new FullPath(defaultPath);
     }
 
     private void LoadShpk(FullPath path)
