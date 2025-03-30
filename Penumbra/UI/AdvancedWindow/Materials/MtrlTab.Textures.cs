@@ -59,7 +59,7 @@ public partial class MtrlTab
             foreach (var textureId in TextureIds)
             {
                 var shpkTexture = _associatedShpk.GetTextureById(textureId);
-                if (shpkTexture is not { Slot: 2 })
+                if (shpkTexture is not { Slot: 2 } && (shpkTexture is not null || textureId == TableSamplerId))
                     continue;
 
                 var dkData     = TryGetShpkDevkitData<DevkitSampler>("Samplers", textureId, true);
