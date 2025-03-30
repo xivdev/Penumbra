@@ -49,7 +49,7 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
         return null;
     }
 
-    private static SanityCheckResult SanityCheck(string path)
+    internal static SanityCheckResult SanityCheck(string path)
     {
         try
         {
@@ -79,7 +79,7 @@ public sealed class ShpkPathPreProcessor(ResourceManagerService resourceManager,
             _                          => string.Empty,
         };
 
-    private enum SanityCheckResult
+    internal enum SanityCheckResult
     {
         Success,
         IoError,
