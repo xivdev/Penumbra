@@ -23,7 +23,7 @@ public unsafe class ResourceLoader : IDisposable, IService
 
     private readonly ConcurrentDictionary<nint, Utf8GamePath> _ongoingLoads = [];
 
-    private ResolveData                                        _resolvedData = ResolveData.Invalid;
+    private readonly ThreadLocal<ResolveData>                  _resolvedData = new(() => ResolveData.Invalid);
     public event Action<Utf8GamePath, FullPath?, ResolveData>? PapRequested;
 
     public IReadOnlyDictionary<nint, Utf8GamePath> OngoingLoads
@@ -56,10 +56,11 @@ public unsafe class ResourceLoader : IDisposable, IService
         if (!_config.EnableMods || !Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
             return length;
 
+        var resolvedData = _resolvedData.Value;
         var (resolvedPath, data) = _incMode.Value
             ? (null, ResolveData.Invalid)
-            : _resolvedData.Valid
-                ? (_resolvedData.ModCollection.ResolvePath(gamePath), _resolvedData)
+            : resolvedData.Valid
+                ? (resolvedData.ModCollection.ResolvePath(gamePath), resolvedData)
                 : ResolvePath(gamePath, ResourceCategory.Chara, ResourceType.Pap);
 
 
@@ -78,19 +79,31 @@ public unsafe class ResourceLoader : IDisposable, IService
     /// <summary> Load a resource for a given path and a specific collection. </summary>
     public ResourceHandle* LoadResolvedResource(ResourceCategory category, ResourceType type, CiByteString path, ResolveData resolveData)
     {
-        _resolvedData = resolveData;
-        var ret = _resources.GetResource(category, type, path);
-        _resolvedData = ResolveData.Invalid;
-        return ret;
+        var previous = _resolvedData.Value;
+        _resolvedData.Value = resolveData;
+        try
+        {
+            return _resources.GetResource(category, type, path);
+        }
+        finally
+        {
+            _resolvedData.Value = previous;
+        }
     }
 
     /// <summary> Load a resource for a given path and a specific collection. </summary>
     public SafeResourceHandle LoadResolvedSafeResource(ResourceCategory category, ResourceType type, CiByteString path, ResolveData resolveData)
     {
-        _resolvedData = resolveData;
-        var ret = _resources.GetSafeResource(category, type, path);
-        _resolvedData = ResolveData.Invalid;
-        return ret;
+        var previous = _resolvedData.Value;
+        _resolvedData.Value = resolveData;
+        try
+        {
+            return _resources.GetSafeResource(category, type, path);
+        }
+        finally
+        {
+            _resolvedData.Value = previous;
+        }
     }
 
     /// <summary> The function to use to resolve a given path. </summary>
@@ -159,10 +172,11 @@ public unsafe class ResourceLoader : IDisposable, IService
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
 
         // If no replacements are being made, we still want to be able to trigger the event.
+        var resolvedData = _resolvedData.Value;
         var (resolvedPath, data) = _incMode.Value
             ? (null, ResolveData.Invalid)
-            : _resolvedData.Valid
-                ? (_resolvedData.ModCollection.ResolvePath(path), _resolvedData)
+            : resolvedData.Valid
+                ? (resolvedData.ModCollection.ResolvePath(path), resolvedData)
                 : ResolvePath(path, category, type);
 
         if (resolvedPath == null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
