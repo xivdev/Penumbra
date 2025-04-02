@@ -15,6 +15,9 @@ public sealed unsafe class CharacterDestructor : EventWrapperPtr<Character, Char
 
         /// <seealso cref="PathResolving.IdentifiedCollectionCache"/>
         IdentifiedCollectionCache = 0,
+
+        /// <seealso cref="PathResolving.DrawObjectState.OnCharacterDestructor"/>
+        DrawObjectState = 0,
     }
 
     public CharacterDestructor(HookManager hooks)

@@ -90,7 +90,6 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry("The EQP entry previously named Unknown 4 was renamed to 'Hide Glove Cuffs'.")
             .RegisterEntry("Fixed the changed item identification for EST changes.")
             .RegisterEntry("Fixed clipping issues in the changed items panel when no grouping was active.");
-            
 
 
     private static void Add1_3_5_0(Changelog log)

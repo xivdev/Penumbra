@@ -15,6 +15,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     private readonly CreateCharacterBase     _createCharacterBase;
     private readonly WeaponReload            _weaponReload;
     private readonly CharacterBaseDestructor _characterBaseDestructor;
+    private readonly CharacterDestructor     _characterDestructor;
     private readonly GameState               _gameState;
 
     private readonly Dictionary<nint, (nint GameObject, bool IsChild)> _drawObjectToGameObject = [];
@@ -23,20 +24,23 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
         => _gameState.LastGameObject;
 
     public unsafe DrawObjectState(ObjectManager objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
-        CharacterBaseDestructor characterBaseDestructor, GameState gameState, IFramework framework)
+        CharacterBaseDestructor characterBaseDestructor, GameState gameState, IFramework framework, CharacterDestructor characterDestructor)
     {
         _objects                 = objects;
         _createCharacterBase     = createCharacterBase;
         _weaponReload            = weaponReload;
         _characterBaseDestructor = characterBaseDestructor;
         _gameState               = gameState;
+        _characterDestructor     = characterDestructor;
         framework.RunOnFrameworkThread(InitializeDrawObjects);
 
         _weaponReload.Subscribe(OnWeaponReloading, WeaponReload.Priority.DrawObjectState);
         _weaponReload.Subscribe(OnWeaponReloaded,  WeaponReload.PostEvent.Priority.DrawObjectState);
         _createCharacterBase.Subscribe(OnCharacterBaseCreated, CreateCharacterBase.PostEvent.Priority.DrawObjectState);
         _characterBaseDestructor.Subscribe(OnCharacterBaseDestructor, CharacterBaseDestructor.Priority.DrawObjectState);
+        _characterDestructor.Subscribe(OnCharacterDestructor, CharacterDestructor.Priority.DrawObjectState);
     }
+
 
     public bool ContainsKey(nint key)
         => _drawObjectToGameObject.ContainsKey(key);
@@ -68,6 +72,36 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
         _weaponReload.Unsubscribe(OnWeaponReloaded);
         _createCharacterBase.Unsubscribe(OnCharacterBaseCreated);
         _characterBaseDestructor.Unsubscribe(OnCharacterBaseDestructor);
+        _characterDestructor.Unsubscribe(OnCharacterDestructor);
+    }
+
+    /// <remarks>
+    /// Seems like sometimes the draw object of a game object is destroyed in frames after the original game object is already destroyed.
+    /// So protect against outdated game object pointers in the dictionary.
+    /// </remarks>
+    private unsafe void OnCharacterDestructor(Character* a)
+    {
+        if (a is null)
+            return;
+
+        var character = (nint)a;
+        var delete    = stackalloc nint[5];
+        var current   = 0;
+        foreach (var (drawObject, (gameObject, _)) in _drawObjectToGameObject)
+        {
+            if (gameObject != character)
+                continue;
+        
+            delete[current++] = drawObject;
+            if (current is 4)
+                break;
+        }
+        
+        for (var ptr = delete; *ptr != nint.Zero; ++ptr)
+        {
+            _drawObjectToGameObject.Remove(*ptr, out var pair);
+            Penumbra.Log.Excessive($"[DrawObjectState] Removed draw object 0x{*ptr:X} -> 0x{(nint)a:X} (actual: 0x{pair.GameObject:X}, {pair.IsChild}).");
+        }
     }
 
     private unsafe void OnWeaponReloading(DrawDataContainer* _, Character* character, CharacterWeapon* _2)
