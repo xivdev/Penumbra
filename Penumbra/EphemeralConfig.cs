@@ -41,6 +41,7 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     public string                   LastModPath                       { get; set; } = string.Empty;
     public bool                     AdvancedEditingOpen               { get; set; } = false;
     public bool                     ForceRedrawOnFileChange           { get; set; } = false;
+    public bool                     IncognitoMode                     { get; set; } = false;
 
     /// <summary>
     /// Load the current configuration.

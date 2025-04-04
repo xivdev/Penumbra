@@ -2,7 +2,6 @@ using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using OtterGui.Services;
-using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
@@ -13,7 +12,7 @@ public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBa
         /// <seealso cref="PathResolving.DrawObjectState.OnCharacterBaseDestructor"/>
         DrawObjectState = 0,
 
-        /// <seealso cref="ModEditWindow.MtrlTab.UnbindFromDrawObjectMaterialInstances"/>
+        /// <seealso cref="UI.AdvancedWindow.Materials.MtrlTab.UnbindFromDrawObjectMaterialInstances"/>
         MtrlTab = -1000,
     }
 
@@ -42,7 +41,7 @@ public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBa
 
     private nint Detour(CharacterBase* characterBase)
     {
-        Penumbra.Log.Verbose($"[{Name}] Triggered with 0x{(nint)characterBase:X}.");
+        Penumbra.Log.Excessive($"[{Name}] Triggered with 0x{(nint)characterBase:X}.");
         Invoke(characterBase);
         return _task.Result.Original(characterBase);
     }

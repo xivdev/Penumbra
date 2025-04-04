@@ -61,7 +61,7 @@ public class CollectionSelectHeader : IUiService
 
     private void DrawTemporaryCheckbox()
     {
-        var hold = _config.DeleteModModifier.IsActive();
+        var hold = _config.IncognitoModifier.IsActive();
         using (ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImUtf8.GlobalScale))
         {
             var tint = ImGuiCol.Text.Tinted(ColorId.TemporaryModSettingsTint);
@@ -77,9 +77,9 @@ public class CollectionSelectHeader : IUiService
         }
 
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
-            "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired.\n"u8);
+            "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired."u8);
         if (!hold)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to toggle.");
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"\nHold {_config.IncognitoModifier} while clicking to toggle.");
     }
 
     private enum CollectionState

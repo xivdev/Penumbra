@@ -45,7 +45,7 @@ public sealed unsafe class CharacterDestructor : EventWrapperPtr<Character, Char
 
     private void Detour(Character* character)
     {
-        Penumbra.Log.Verbose($"[{Name}] Triggered with 0x{(nint)character:X}.");
+        Penumbra.Log.Excessive($"[{Name}] Triggered with 0x{(nint)character:X}.");
         Invoke(character);
         _task.Result.Original(character);
     }

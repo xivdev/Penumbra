@@ -621,6 +621,14 @@ public class SettingsTab : ITab, IUiService
                 _config.DeleteModModifier = v;
                 _config.Save();
             });
+        Widget.DoubleModifierSelector("Incognito Modifier",
+            "A modifier you need to hold while clicking the Incognito or Temporary Settings Mode button for it to take effect.", UiHelpers.InputTextWidth.X,
+            _config.IncognitoModifier,
+            v =>
+            {
+                _config.IncognitoModifier = v;
+                _config.Save();
+            });
     }
 
     /// <summary> Draw all settings pertaining to import and export of mods. </summary>

@@ -94,6 +94,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public string         QuickMoveFolder2              { get; set; } = string.Empty;
     public string         QuickMoveFolder3              { get; set; } = string.Empty;
     public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
+    public DoubleModifier IncognitoModifier             { get; set; } = new(ModifierHotkey.Control);
     public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool           AutoDeduplicateOnImport       { get; set; } = true;
     public bool           AutoReduplicateUiOnImport     { get; set; } = true;
