@@ -1,3 +1,4 @@
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using OtterGui.Classes;
@@ -41,6 +42,7 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     public string                   LastModPath                       { get; set; } = string.Empty;
     public bool                     AdvancedEditingOpen               { get; set; } = false;
     public bool                     ForceRedrawOnFileChange           { get; set; } = false;
+    public FileDialog.SortingField  FilePickerSortingField            { get; set; } = FileDialog.SortingField.FileName;
 
     /// <summary>
     /// Load the current configuration.

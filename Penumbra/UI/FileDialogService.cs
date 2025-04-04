@@ -19,7 +19,7 @@ public class FileDialogService : IDisposable, IUiService
     public FileDialogService(CommunicatorService communicator, Configuration config)
     {
         _communicator = communicator;
-        _manager      = SetupFileManager(config.ModDirectory);
+        _manager      = SetupFileManager(config);
         _communicator.ModDirectoryChanged.Subscribe(OnModDirectoryChange, ModDirectoryChanged.Priority.FileDialogService);
     }
 
@@ -65,6 +65,8 @@ public class FileDialogService : IDisposable, IUiService
 
     public void Dispose()
     {
+        _manager.SetDefaultSortOrder = null;
+        _manager.GetDefaultSortOrder = null;
         _startPaths.Clear();
         _manager.Reset();
         _communicator.ModDirectoryChanged.Unsubscribe(OnModDirectoryChange);
@@ -115,12 +117,21 @@ public class FileDialogService : IDisposable, IUiService
          ?? ".";
 
     /// <summary> Set up the file selector with the right flags and custom side bar items. </summary>
-    private static FileDialogManager SetupFileManager(string modDirectory)
+    private static FileDialogManager SetupFileManager(Configuration config)
     {
         var fileManager = new FileDialogManager
         {
             AddedWindowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDocking,
         };
+        fileManager.SetDefaultSortOrder = v =>
+        {
+            if (v == config.Ephemeral.FilePickerSortingField)
+                return;
+
+            config.Ephemeral.FilePickerSortingField = v;
+            config.Ephemeral.Save();
+        };
+        fileManager.GetDefaultSortOrder = () => config.Ephemeral.FilePickerSortingField;
 
         if (Functions.GetDownloadsFolder(out var downloadsFolder))
             fileManager.CustomSideBarItems.Add(("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1));
@@ -130,7 +141,7 @@ public class FileDialogService : IDisposable, IUiService
                 fileManager.CustomSideBarItems.Add(($"{name}##{idx}", path, FontAwesomeIcon.Folder, -1));
 
         // Add Penumbra Root. This is not updated if the root changes right now.
-        fileManager.CustomSideBarItems.Add(("Root Directory", modDirectory, FontAwesomeIcon.Gamepad, 0));
+        fileManager.CustomSideBarItems.Add(("Root Directory", config.ModDirectory, FontAwesomeIcon.Gamepad, 0));
 
         // Remove Videos and Music.
         fileManager.CustomSideBarItems.Add(("Videos", string.Empty, 0, -1));
