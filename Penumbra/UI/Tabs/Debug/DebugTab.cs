@@ -503,6 +503,8 @@ public class DebugTab : Window, ITab, IUiService
         if (!ImGui.CollapsingHeader("Actors"))
             return;
 
+        _objects.DrawDebug();
+
         using var table = Table("##actors", 8, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
