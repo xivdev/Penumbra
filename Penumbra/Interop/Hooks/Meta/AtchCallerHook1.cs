@@ -25,7 +25,7 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
 
     private void Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel)
     {
-        var collection = _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true);
+        var collection = playerModel.Valid ? _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true) : _collectionResolver.DefaultCollection;
         _metaState.AtchCollection.Push(collection);
         Task.Result.Original(data, slot, unk, playerModel);
         _metaState.AtchCollection.Pop();

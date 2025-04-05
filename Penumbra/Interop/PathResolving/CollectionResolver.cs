@@ -95,6 +95,10 @@ public sealed unsafe class CollectionResolver(
         return IdentifyCollection(obj, useCache);
     }
 
+    /// <summary> Get the default collection. </summary>
+    public ResolveData DefaultCollection
+        => collectionManager.Active.Default.ToResolveData();
+
     /// <summary> Return whether the given ModelChara id refers to a human-type model. </summary>
     public bool IsModelHuman(uint modelCharaId)
         => humanModels.IsHuman(modelCharaId);
