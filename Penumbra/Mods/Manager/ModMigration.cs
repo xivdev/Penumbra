@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Api.Enums;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -82,9 +83,8 @@ public static partial class ModMigration
         foreach (var (gamePath, swapPath) in swaps)
             mod.Default.FileSwaps.Add(gamePath, swapPath);
 
-        creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true, true);
-        foreach (var group in mod.Groups)
-            saveService.ImmediateSave(new ModSaveGroup(group, creator.Config.ReplaceNonAsciiOnImport));
+        creator.IncorporateAllMetaChanges(mod, true, true);
+        saveService.SaveAllOptionGroups(mod, false, creator.Config.ReplaceNonAsciiOnImport);
 
         // Delete meta files.
         foreach (var file in seenMetaFiles.Where(f => f.Exists))
@@ -182,7 +182,7 @@ public static partial class ModMigration
             Description = option.OptionDesc,
         };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
-        creator.IncorporateMetaChanges(subMod, mod.ModPath, false, true);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
         return subMod;
     }
 
@@ -196,7 +196,7 @@ public static partial class ModMigration
             Priority    = priority,
         };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
-        creator.IncorporateMetaChanges(subMod, mod.ModPath, false, true);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
         return subMod;
     }
 

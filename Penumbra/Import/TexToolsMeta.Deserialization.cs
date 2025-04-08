@@ -2,7 +2,6 @@ using Lumina.Extensions;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Import.Structs;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;
@@ -19,9 +18,7 @@ public partial class TexToolsMeta
 
         var identifier = new EqpIdentifier(metaFileInfo.PrimaryId, metaFileInfo.EquipSlot);
         var value      = Eqp.FromSlotAndBytes(metaFileInfo.EquipSlot, data) & mask;
-        var def        = ExpandedEqpFile.GetDefault(_metaFileManager, metaFileInfo.PrimaryId) & mask;
-        if (_keepDefault || def != value)
-            MetaManipulations.TryAdd(identifier, value);
+        MetaManipulations.TryAdd(identifier, value);
     }
 
     // Deserialize and check Eqdp Entries and add them to the list if they are non-default.
@@ -41,11 +38,9 @@ public partial class TexToolsMeta
                 continue;
 
             var identifier = new EqdpIdentifier(metaFileInfo.PrimaryId, metaFileInfo.EquipSlot, gr);
-            var mask = Eqdp.Mask(metaFileInfo.EquipSlot);
-            var value = Eqdp.FromSlotAndBits(metaFileInfo.EquipSlot, (byteValue & 1) == 1, (byteValue & 2) == 2) & mask;
-            var def = ExpandedEqdpFile.GetDefault(_metaFileManager, gr, metaFileInfo.EquipSlot.IsAccessory(), metaFileInfo.PrimaryId) & mask;
-            if (_keepDefault || def != value)
-                MetaManipulations.TryAdd(identifier, value);
+            var mask       = Eqdp.Mask(metaFileInfo.EquipSlot);
+            var value      = Eqdp.FromSlotAndBits(metaFileInfo.EquipSlot, (byteValue & 1) == 1, (byteValue & 2) == 2) & mask;
+            MetaManipulations.TryAdd(identifier, value);
         }
     }
 
@@ -55,10 +50,9 @@ public partial class TexToolsMeta
         if (data == null)
             return;
 
-        var value = GmpEntry.FromTexToolsMeta(data.AsSpan(0, 5));
-        var def   = ExpandedGmpFile.GetDefault(_metaFileManager, metaFileInfo.PrimaryId);
-        if (_keepDefault || value != def)
-            MetaManipulations.TryAdd(new GmpIdentifier(metaFileInfo.PrimaryId), value);
+        var value      = GmpEntry.FromTexToolsMeta(data.AsSpan(0, 5));
+        var identifier = new GmpIdentifier(metaFileInfo.PrimaryId);
+        MetaManipulations.TryAdd(identifier, value);
     }
 
     // Deserialize and check Est Entries and add them to the list if they are non-default.
@@ -86,9 +80,7 @@ public partial class TexToolsMeta
                 continue;
 
             var identifier = new EstIdentifier(id, type, gr);
-            var def        = EstFile.GetDefault(_metaFileManager, type, gr, id);
-            if (_keepDefault || def != value)
-                MetaManipulations.TryAdd(identifier, value);
+            MetaManipulations.TryAdd(identifier, value);
         }
     }
 
@@ -108,15 +100,10 @@ public partial class TexToolsMeta
         {
             var identifier = new ImcIdentifier(metaFileInfo.PrimaryId, 0, metaFileInfo.PrimaryType, metaFileInfo.SecondaryId,
                 metaFileInfo.EquipSlot, metaFileInfo.SecondaryType);
-            var file    = new ImcFile(_metaFileManager, identifier);
-            var partIdx = ImcFile.PartIndex(identifier.EquipSlot); // Gets turned to unknown for things without equip, and unknown turns to 0.
             foreach (var value in values)
             {
                 identifier = identifier with { Variant = (Variant)i };
-                var def = file.GetEntry(partIdx, (Variant)i);
-                if (_keepDefault || def != value && identifier.Validate())
-                    MetaManipulations.TryAdd(identifier, value);
-
+                MetaManipulations.TryAdd(identifier, value);
                 ++i;
             }
         }

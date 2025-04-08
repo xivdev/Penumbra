@@ -80,13 +80,9 @@ public partial class ModCreator(
         LoadDefaultOption(mod);
         LoadAllGroups(mod);
         if (incorporateMetaChanges)
-            IncorporateAllMetaChanges(mod, true);
-        if (deleteDefaultMetaChanges && !Config.KeepDefaultMetaChanges)
-            foreach (var container in mod.AllDataContainers)
-            {
-                if (ModMetaEditor.DeleteDefaultValues(metaFileManager, container.Manipulations))
-                    saveService.ImmediateSaveSync(new ModSaveGroup(container, Config.ReplaceNonAsciiOnImport));
-            }
+            IncorporateAllMetaChanges(mod, true, deleteDefaultMetaChanges);
+        else if (deleteDefaultMetaChanges)
+            ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, saveService, false);
 
         return true;
     }
@@ -158,19 +154,21 @@ public partial class ModCreator(
     /// Convert all .meta and .rgsp files to their respective meta changes and add them to their options.
     /// Deletes the source files if delete is true.
     /// </summary>
-    public void IncorporateAllMetaChanges(Mod mod, bool delete)
+    public void IncorporateAllMetaChanges(Mod mod, bool delete, bool removeDefaultValues)
     {
         var          changes    = false;
-        List<string> deleteList = new();
+        List<string> deleteList = [];
         foreach (var subMod in mod.AllDataContainers)
         {
-            var (localChanges, localDeleteList) =  IncorporateMetaChanges(subMod, mod.ModPath, false, true);
+            var (localChanges, localDeleteList) =  IncorporateMetaChanges(subMod, mod.ModPath, false);
             changes                             |= localChanges;
             if (delete)
                 deleteList.AddRange(localDeleteList);
         }
 
         DeleteDeleteList(deleteList, delete);
+        if (removeDefaultValues && !Config.KeepDefaultMetaChanges)
+            changes |= ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, null, false);
 
         if (!changes)
             return;
@@ -184,8 +182,7 @@ public partial class ModCreator(
     /// If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
     /// If delete is true, the files are deleted afterwards.
     /// </summary>
-    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(IModDataContainer option, DirectoryInfo basePath, bool delete,
-        bool deleteDefault)
+    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(IModDataContainer option, DirectoryInfo basePath, bool delete)
     {
         var deleteList   = new List<string>();
         var oldSize      = option.Manipulations.Count;
@@ -202,8 +199,7 @@ public partial class ModCreator(
                     if (!file.Exists)
                         continue;
 
-                    var meta = new TexToolsMeta(metaFileManager, gamePathParser, File.ReadAllBytes(file.FullName),
-                        Config.KeepDefaultMetaChanges);
+                    var meta = new TexToolsMeta(gamePathParser, File.ReadAllBytes(file.FullName));
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
@@ -215,8 +211,7 @@ public partial class ModCreator(
                     if (!file.Exists)
                         continue;
 
-                    var rgsp = TexToolsMeta.FromRgspFile(metaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
-                        Config.KeepDefaultMetaChanges);
+                    var rgsp = TexToolsMeta.FromRgspFile(metaFileManager, file.FullName, File.ReadAllBytes(file.FullName));
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
                     deleteList.Add(file.FullName);
@@ -232,9 +227,6 @@ public partial class ModCreator(
 
         DeleteDeleteList(deleteList, delete);
         var changes = oldSize < option.Manipulations.Count;
-        if (deleteDefault && !Config.KeepDefaultMetaChanges)
-            changes |= ModMetaEditor.DeleteDefaultValues(metaFileManager, option.Manipulations);
-
         return (changes, deleteList);
     }
 
@@ -289,7 +281,7 @@ public partial class ModCreator(
         foreach (var (_, gamePath, file) in list)
             mod.Files.TryAdd(gamePath, file);
 
-        IncorporateMetaChanges(mod, baseFolder, true, true);
+        IncorporateMetaChanges(mod, baseFolder, true);
 
         return mod;
     }
@@ -308,7 +300,7 @@ public partial class ModCreator(
                 mod.Default.Files.TryAdd(gamePath, file);
         }
 
-        IncorporateMetaChanges(mod.Default, directory, true, true);
+        IncorporateMetaChanges(mod.Default, directory, true);
         saveService.ImmediateSaveSync(new ModSaveGroup(mod.ModPath, mod.Default, Config.ReplaceNonAsciiOnImport));
     }
 

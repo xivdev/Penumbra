@@ -1,6 +1,5 @@
 using Penumbra.GameData.Enums;
 using Penumbra.Meta;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;
@@ -8,7 +7,7 @@ namespace Penumbra.Import;
 public partial class TexToolsMeta
 {
     // Parse a single rgsp file.
-    public static TexToolsMeta FromRgspFile(MetaFileManager manager, string filePath, byte[] data, bool keepDefault)
+    public static TexToolsMeta FromRgspFile(MetaFileManager manager, string filePath, byte[] data)
     {
         if (data.Length != 45 && data.Length != 42)
         {
@@ -70,9 +69,7 @@ public partial class TexToolsMeta
         void Add(RspAttribute attribute, float value)
         {
             var identifier = new RspIdentifier(subRace, attribute);
-            var def        = CmpFile.GetDefault(manager, subRace, attribute);
-            if (keepDefault || value != def.Value)
-                ret.MetaManipulations.TryAdd(identifier, new RspEntry(value));
+            ret.MetaManipulations.TryAdd(identifier, new RspEntry(value));
         }
     }
 }

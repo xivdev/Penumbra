@@ -23,15 +23,11 @@ public partial class TexToolsMeta
     // The info class determines the files or table locations the changes need to apply to from the filename.
     public readonly  uint           Version;
     public readonly  string         FilePath;
-    public readonly  MetaDictionary MetaManipulations = new();
-    private readonly bool           _keepDefault;
+    public readonly  MetaDictionary MetaManipulations        = new();
 
-    private readonly MetaFileManager _metaFileManager;
 
-    public TexToolsMeta(MetaFileManager metaFileManager, GamePathParser parser, byte[] data, bool keepDefault)
+    public TexToolsMeta(GamePathParser parser, byte[] data)
     {
-        _metaFileManager = metaFileManager;
-        _keepDefault     = keepDefault;
         try
         {
             using var reader = new BinaryReader(new MemoryStream(data));
@@ -79,7 +75,6 @@ public partial class TexToolsMeta
 
     private TexToolsMeta(MetaFileManager metaFileManager, string filePath, uint version)
     {
-        _metaFileManager = metaFileManager;
         FilePath         = filePath;
         Version          = version;
     }
