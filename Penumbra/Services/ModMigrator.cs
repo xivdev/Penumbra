@@ -9,6 +9,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
 using Penumbra.Mods.SubMods;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
@@ -175,6 +176,7 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
 
         public enum TextureUsage
         {
+            Unknown,
             Normal,
             Index,
             Mask,
@@ -191,51 +193,44 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
             if (data.FileExists(newPath))
                 return true;
 
-            switch (usage)
+            ReadOnlySpan<(string, string)> pairs = usage switch
             {
-                case TextureUsage.Normal:
-                    newPath = path.Replace("_n.tex", "_norm.tex");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    newPath = path.Replace("_n_", "_norm_");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    return false;
-                case TextureUsage.Index: return false;
-                case TextureUsage.Mask:
-                    newPath = path.Replace("_m.tex", "_mult.tex");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    newPath = path.Replace("_m.tex", "_mask.tex");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    newPath = path.Replace("_m_", "_mult_");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    newPath = path.Replace("_m_", "_mask_");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    return false;
-                case TextureUsage.Diffuse:
-                    newPath = path.Replace("_d.tex", "_base.tex");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    newPath = path.Replace("_d_", "_base_");
-                    if (data.FileExists(newPath))
-                        return true;
-
-                    return false;
-                case TextureUsage.Specular:
-                    return false;
-                default:                    throw new ArgumentOutOfRangeException(nameof(usage), usage, null);
+                TextureUsage.Unknown =>
+                [
+                    ("_n.tex", "_norm.tex"),
+                    ("_m.tex", "_mult.tex"),
+                    ("_m.tex", "_mask.tex"),
+                    ("_d.tex", "_base.tex"),
+                ],
+                TextureUsage.Normal =>
+                [
+                    ("_n_", "_norm_"),
+                    ("_n.tex", "_norm.tex"),
+                ],
+                TextureUsage.Mask =>
+                [
+                    ("_m_", "_mult_"),
+                    ("_m_", "_mask_"),
+                    ("_m.tex", "_mult.tex"),
+                    ("_m.tex", "_mask.tex"),
+                ],
+                TextureUsage.Diffuse =>
+                [
+                    ("_d_", "_base_"),
+                    ("_d.tex", "_base.tex"),
+                ],
+                TextureUsage.Index    => [],
+                TextureUsage.Specular => [],
+                _                     => [],
+            };
+            foreach (var (from, to) in pairs)
+            {
+                newPath = path.Replace(from, to);
+                if (data.FileExists(newPath))
+                    return true;
             }
+
+            return false;
         }
     }
 
@@ -326,6 +321,29 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
             return;
         }
 
-        // try to migrate texture swaps
+        var newSwapFrom = swapFrom;
+        if (!fromExists && !MaterialPack.AdaptPath(gameData, swapFrom, MaterialPack.TextureUsage.Unknown, out newSwapFrom))
+        {
+            _messages.Add($"Could not migrate file swap {swapFrom} -> {swapTo} in {container.Mod.Name}: {container.GetFullName()}.");
+            return;
+        }
+
+        var newSwapTo = swapTo;
+        if (!toExists && !MaterialPack.AdaptPath(gameData, swapTo, MaterialPack.TextureUsage.Unknown, out newSwapTo))
+        {
+            _messages.Add($"Could not migrate file swap {swapFrom} -> {swapTo} in {container.Mod.Name}: {container.GetFullName()}.");
+            return;
+        }
+
+        if (!Utf8GamePath.FromString(swapFrom, out var path) || !Utf8GamePath.FromString(newSwapFrom, out var newPath))
+        {
+            _messages.Add(
+                $"Could not migrate file swap {swapFrom} -> {swapTo} in {container.Mod.Name}: {container.GetFullName()}. Unknown Error.");
+            return;
+        }
+
+        container.FileSwaps.Remove(path);
+        container.FileSwaps.Add(newPath, new FullPath(newSwapTo));
+        _changedMods.Add((Mod)container.Mod);
     }
 }
