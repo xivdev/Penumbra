@@ -121,32 +121,42 @@ public class ModPanelEditTab(
             : backup.Exists
                 ? $"Overwrite current exported mod \"{backup.Name}\" with current mod."
                 : $"Create exported archive of current mod at \"{backup.Name}\".";
-        if (ImGuiUtil.DrawDisabledButton("Export Mod", buttonSize, tt, ModBackup.CreatingBackup))
+        if (ImUtf8.ButtonEx("Export Mod"u8, tt, buttonSize, ModBackup.CreatingBackup))
             backup.CreateAsync();
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            ImUtf8.OpenPopup("context"u8);
 
         ImGui.SameLine();
         tt = backup.Exists
             ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
-        if (ImGuiUtil.DrawDisabledButton("Delete Export", buttonSize, tt, !backup.Exists || !config.DeleteModModifier.IsActive()))
+        if (ImUtf8.ButtonEx("Delete Export"u8, tt, buttonSize, !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Delete();
 
         tt = backup.Exists
             ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
         ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton("Restore From Export", buttonSize, tt, !backup.Exists || !config.DeleteModModifier.IsActive()))
+        if (ImUtf8.ButtonEx("Restore From Export"u8, tt, buttonSize, !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Restore(modManager);
         if (backup.Exists)
         {
             ImGui.SameLine();
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            using (ImRaii.PushFont(UiBuilder.IconFont))
             {
-                ImGui.TextUnformatted(FontAwesomeIcon.CheckCircle.ToIconString());
+                ImUtf8.Text(FontAwesomeIcon.CheckCircle.ToIconString());
             }
 
-            ImGuiUtil.HoverTooltip($"Export exists in \"{backup.Name}\".");
+            ImUtf8.HoverTooltip($"Export exists in \"{backup.Name}\".");
         }
+
+        using var context = ImUtf8.Popup("context"u8);
+        if (!context)
+            return;
+
+        if (ImUtf8.Selectable("Open Backup Directory"u8))
+            Process.Start(new ProcessStartInfo(modExportManager.ExportDirectory.FullName) { UseShellExecute = true });
     }
 
     /// <summary> Anything about editing the regular meta information about the mod. </summary>
