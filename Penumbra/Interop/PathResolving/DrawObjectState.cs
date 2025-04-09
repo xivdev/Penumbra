@@ -9,7 +9,7 @@ using Penumbra.Interop.Hooks.Objects;
 
 namespace Penumbra.Interop.PathResolving;
 
-public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>, IService
+public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (Actor, ObjectIndex, bool)>, IService
 {
     private readonly ObjectManager           _objects;
     private readonly CreateCharacterBase     _createCharacterBase;
@@ -18,7 +18,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     private readonly CharacterDestructor     _characterDestructor;
     private readonly GameState               _gameState;
 
-    private readonly Dictionary<nint, (nint GameObject, bool IsChild)> _drawObjectToGameObject = [];
+    private readonly Dictionary<Model, (Actor GameObject, ObjectIndex Index, bool IsChild)> _drawObjectToGameObject = [];
 
     public nint LastGameObject
         => _gameState.LastGameObject;
@@ -41,11 +41,10 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
         _characterDestructor.Subscribe(OnCharacterDestructor, CharacterDestructor.Priority.DrawObjectState);
     }
 
-
-    public bool ContainsKey(nint key)
+    public bool ContainsKey(Model key)
         => _drawObjectToGameObject.ContainsKey(key);
 
-    public IEnumerator<KeyValuePair<nint, (nint, bool)>> GetEnumerator()
+    public IEnumerator<KeyValuePair<Model, (Actor, ObjectIndex, bool)>> GetEnumerator()
         => _drawObjectToGameObject.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -54,16 +53,28 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     public int Count
         => _drawObjectToGameObject.Count;
 
-    public bool TryGetValue(nint drawObject, out (nint, bool) gameObject)
-        => _drawObjectToGameObject.TryGetValue(drawObject, out gameObject);
+    public bool TryGetValue(Model drawObject, out (Actor, ObjectIndex, bool) gameObject)
+    {
+        if (!_drawObjectToGameObject.TryGetValue(drawObject, out gameObject))
+            return false;
 
-    public (nint, bool) this[nint key]
+        var currentObject = _objects[gameObject.Item2];
+        if (currentObject != gameObject.Item1)
+        {
+            Penumbra.Log.Warning($"[DrawObjectState] Stored association {drawObject} -> {gameObject.Item1} has index {gameObject.Item2}, which resolves to {currentObject}.");
+            return false;
+        }
+
+        return true;
+    }
+
+    public (Actor, ObjectIndex, bool) this[Model key]
         => _drawObjectToGameObject[key];
 
-    public IEnumerable<nint> Keys
+    public IEnumerable<Model> Keys
         => _drawObjectToGameObject.Keys;
 
-    public IEnumerable<(nint, bool)> Values
+    public IEnumerable<(Actor, ObjectIndex, bool)> Values
         => _drawObjectToGameObject.Values;
 
     public unsafe void Dispose()
@@ -87,20 +98,21 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
         var character = (nint)a;
         var delete    = stackalloc nint[5];
         var current   = 0;
-        foreach (var (drawObject, (gameObject, _)) in _drawObjectToGameObject)
+        foreach (var (drawObject, (gameObject, _, _)) in _drawObjectToGameObject)
         {
             if (gameObject != character)
                 continue;
-        
+
             delete[current++] = drawObject;
             if (current is 4)
                 break;
         }
-        
+
         for (var ptr = delete; *ptr != nint.Zero; ++ptr)
         {
             _drawObjectToGameObject.Remove(*ptr, out var pair);
-            Penumbra.Log.Excessive($"[DrawObjectState] Removed draw object 0x{*ptr:X} -> 0x{(nint)a:X} (actual: 0x{pair.GameObject:X}, {pair.IsChild}).");
+            Penumbra.Log.Excessive(
+                $"[DrawObjectState] Removed draw object 0x{*ptr:X} -> 0x{(nint)a:X} (actual: 0x{pair.GameObject.Address:X}, {pair.IsChild}).");
         }
     }
 
@@ -119,9 +131,9 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
     private unsafe void OnCharacterBaseCreated(ModelCharaId modelCharaId, CustomizeArray* customize, CharacterArmor* equipment,
         CharacterBase* drawObject)
     {
-        var gameObject = LastGameObject;
-        if (gameObject != nint.Zero)
-            _drawObjectToGameObject[(nint)drawObject] = (gameObject, false);
+        Actor gameObject = LastGameObject;
+        if (gameObject.Valid)
+            _drawObjectToGameObject[(nint)drawObject] = (gameObject, gameObject.Index, false);
     }
 
     /// <summary>
@@ -137,12 +149,12 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (ni
         }
     }
 
-    private unsafe void IterateDrawObjectTree(Object* drawObject, nint gameObject, bool isChild, bool iterate)
+    private unsafe void IterateDrawObjectTree(Object* drawObject, Actor gameObject, bool isChild, bool iterate)
     {
         if (drawObject == null)
             return;
 
-        _drawObjectToGameObject[(nint)drawObject] = (gameObject, isChild);
+        _drawObjectToGameObject[drawObject] = (gameObject, gameObject.Index, isChild);
         IterateDrawObjectTree(drawObject->ChildObject, gameObject, true, true);
         if (!iterate)
             return;

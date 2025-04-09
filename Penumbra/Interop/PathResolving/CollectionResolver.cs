@@ -89,10 +89,13 @@ public sealed unsafe class CollectionResolver(
     /// <summary> Identify the correct collection for a draw object. </summary>
     public ResolveData IdentifyCollection(DrawObject* drawObject, bool useCache)
     {
-        var obj = (GameObject*)(drawObjectState.TryGetValue((nint)drawObject, out var gameObject)
+        if (drawObject is null)
+            return DefaultCollection;
+
+        Actor obj = drawObjectState.TryGetValue(drawObject, out var gameObject)
             ? gameObject.Item1
-            : drawObjectState.LastGameObject);
-        return IdentifyCollection(obj, useCache);
+            : drawObjectState.LastGameObject;
+        return IdentifyCollection(obj.AsObject, useCache);
     }
 
     /// <summary> Get the default collection. </summary>

@@ -14,16 +14,18 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly CollectionResolver  _collectionResolver;
+    private readonly DrawObjectState     _drawObjectState;
     private readonly CutsceneService     _cutsceneService;
     private readonly ResourceLoader      _resourceLoader;
 
     public unsafe GameStateApi(CommunicatorService communicator, CollectionResolver collectionResolver, CutsceneService cutsceneService,
-        ResourceLoader resourceLoader)
+        ResourceLoader resourceLoader, DrawObjectState drawObjectState)
     {
         _communicator                  =  communicator;
         _collectionResolver            =  collectionResolver;
         _cutsceneService               =  cutsceneService;
         _resourceLoader                =  resourceLoader;
+        _drawObjectState               =  drawObjectState;
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _resourceLoader.PapRequested   += OnPapRequested;
         _communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
@@ -66,6 +68,30 @@ public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
 
     public int GetCutsceneParentIndex(int actorIdx)
         => _cutsceneService.GetParentIndex(actorIdx);
+
+    public Func<int, int> GetCutsceneParentIndexFunc()
+    {
+        var weakRef = new WeakReference<CutsceneService>(_cutsceneService);
+        return idx =>
+        {
+            if (!weakRef.TryGetTarget(out var c))
+                throw new ObjectDisposedException("The underlying cutscene state storage of this IPC container was disposed.");
+
+            return c.GetParentIndex(idx);
+        };
+    }
+
+    public Func<nint, nint> GetGameObjectFromDrawObjectFunc()
+    {
+        var weakRef = new WeakReference<DrawObjectState>(_drawObjectState);
+        return model =>
+        {
+            if (!weakRef.TryGetTarget(out var c))
+                throw new ObjectDisposedException("The underlying draw object state storage of this IPC container was disposed.");
+
+            return c.TryGetValue(model, out var data) ? data.Item1.Address : nint.Zero;
+        };
+    }
 
     public PenumbraApiEc SetCutsceneParentIndex(int copyIdx, int newParentIdx)
         => _cutsceneService.SetParentIndex(copyIdx, newParentIdx)

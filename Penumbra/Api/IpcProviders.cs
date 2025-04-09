@@ -40,6 +40,8 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.CreatingCharacterBase.Provider(pi, api.GameState),
             IpcSubscribers.CreatedCharacterBase.Provider(pi, api.GameState),
             IpcSubscribers.GameObjectResourcePathResolved.Provider(pi, api.GameState),
+            IpcSubscribers.GetCutsceneParentIndexFunc.Provider(pi, api.GameState),
+            IpcSubscribers.GetGameObjectFromDrawObjectFunc.Provider(pi, api.GameState),
 
             IpcSubscribers.GetPlayerMetaManipulations.Provider(pi, api.Meta),
             IpcSubscribers.GetMetaManipulations.Provider(pi, api.Meta),

@@ -569,29 +569,31 @@ public class DebugTab : Window, ITab, IUiService
         {
             if (drawTree)
             {
-                using var table = Table("###DrawObjectResolverTable", 6, ImGuiTableFlags.SizingFixedFit);
+                using var table = Table("###DrawObjectResolverTable", 8, ImGuiTableFlags.SizingFixedFit);
                 if (table)
-                    foreach (var (drawObject, (gameObjectPtr, child)) in _drawObjectState
-                                 .OrderBy(kvp => ((GameObject*)kvp.Value.Item1)->ObjectIndex)
-                                 .ThenBy(kvp => kvp.Value.Item2)
-                                 .ThenBy(kvp => kvp.Key))
+                    foreach (var (drawObject, (gameObjectPtr, idx, child)) in _drawObjectState
+                                 .OrderBy(kvp => kvp.Value.Item2.Index)
+                                 .ThenBy(kvp => kvp.Value.Item3)
+                                 .ThenBy(kvp => kvp.Key.Address))
                     {
-                        var gameObject = (GameObject*)gameObjectPtr;
                         ImGui.TableNextColumn();
+                        ImUtf8.CopyOnClickSelectable($"{drawObject}");
+                        ImUtf8.DrawTableColumn($"{gameObjectPtr.Index}");
+                        using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF, gameObjectPtr.Index != idx))
+                        {
+                            ImUtf8.DrawTableColumn($"{idx}");
+                        }
 
-                        ImGuiUtil.CopyOnClickSelectable($"0x{drawObject:X}");
+                        ImUtf8.DrawTableColumn(child ? "Child"u8 : "Main"u8);
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(gameObject->ObjectIndex.ToString());
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(child ? "Child" : "Main");
-                        ImGui.TableNextColumn();
-                        var (address, name) = ($"0x{gameObjectPtr:X}", new ByteString(gameObject->Name).ToString());
-                        ImGuiUtil.CopyOnClickSelectable(address);
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(name);
-                        ImGui.TableNextColumn();
-                        var collection = _collectionResolver.IdentifyCollection(gameObject, true);
-                        ImGui.TextUnformatted(collection.ModCollection.Identity.Name);
+                        ImUtf8.CopyOnClickSelectable($"{gameObjectPtr}");
+                        using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF, _objects[idx] != gameObjectPtr))
+                        {
+                            ImUtf8.DrawTableColumn($"{_objects[idx]}");
+                        }
+                        ImUtf8.DrawTableColumn(gameObjectPtr.Utf8Name.Span);
+                        var collection = _collectionResolver.IdentifyCollection(gameObjectPtr.AsObject, true);
+                        ImUtf8.DrawTableColumn(collection.ModCollection.Identity.Name);
                     }
             }
         }
