@@ -106,6 +106,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly SchedulerResourceManagementService _schedulerService;
     private readonly ObjectIdentification               _objectIdentification;
     private readonly RenderTargetDrawer                 _renderTargetDrawer;
+    private readonly ModMigratorDebug                   _modMigratorDebug;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -116,7 +117,8 @@ public class DebugTab : Window, ITab, IUiService
         TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
-        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer)
+        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
+        ModMigratorDebug modMigratorDebug)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -158,6 +160,7 @@ public class DebugTab : Window, ITab, IUiService
         _schedulerService          = schedulerService;
         _objectIdentification      = objectIdentification;
         _renderTargetDrawer        = renderTargetDrawer;
+        _modMigratorDebug          = modMigratorDebug;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -190,6 +193,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawActorsDebug();
         DrawCollectionCaches();
         _texHeaderDrawer.Draw();
+        _modMigratorDebug.Draw();
         DrawShaderReplacementFixer();
         DrawData();
         DrawCrcCache();
@@ -591,6 +595,7 @@ public class DebugTab : Window, ITab, IUiService
                         {
                             ImUtf8.DrawTableColumn($"{_objects[idx]}");
                         }
+
                         ImUtf8.DrawTableColumn(gameObjectPtr.Utf8Name.Span);
                         var collection = _collectionResolver.IdentifyCollection(gameObjectPtr.AsObject, true);
                         ImUtf8.DrawTableColumn(collection.ModCollection.Identity.Name);
@@ -751,7 +756,7 @@ public class DebugTab : Window, ITab, IUiService
         DrawChangedItemTest();
     }
 
-    private          string                                     _changedItemPath = string.Empty;
+    private          string                                    _changedItemPath = string.Empty;
     private readonly Dictionary<string, IIdentifiedObjectData> _changedItems    = [];
 
     private void DrawChangedItemTest()
