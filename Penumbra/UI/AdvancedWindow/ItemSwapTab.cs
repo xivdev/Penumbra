@@ -4,6 +4,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -15,6 +16,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Mods.Manager;
@@ -46,19 +48,20 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         _config            = config;
         _swapData          = new ItemSwapContainer(metaFileManager, identifier);
 
+        var a = collectionManager.Active;
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
         {
             // @formatter:off
-            [SwapType.Hat]      = (new ItemSelector(itemService, selector, FullEquipType.Head),    new ItemSelector(itemService, null, FullEquipType.Head),    "Take this Hat",        "and put it on this one" ),
-            [SwapType.Top]      = (new ItemSelector(itemService, selector, FullEquipType.Body),    new ItemSelector(itemService, null, FullEquipType.Body),    "Take this Top",        "and put it on this one" ),
-            [SwapType.Gloves]   = (new ItemSelector(itemService, selector, FullEquipType.Hands),   new ItemSelector(itemService, null, FullEquipType.Hands),   "Take these Gloves",    "and put them on these"  ),
-            [SwapType.Pants]    = (new ItemSelector(itemService, selector, FullEquipType.Legs),    new ItemSelector(itemService, null, FullEquipType.Legs),    "Take these Pants",     "and put them on these"  ),
-            [SwapType.Shoes]    = (new ItemSelector(itemService, selector, FullEquipType.Feet),    new ItemSelector(itemService, null, FullEquipType.Feet),    "Take these Shoes",     "and put them on these"  ),
-            [SwapType.Earrings] = (new ItemSelector(itemService, selector, FullEquipType.Ears),    new ItemSelector(itemService, null, FullEquipType.Ears),    "Take these Earrings",  "and put them on these"  ),
-            [SwapType.Necklace] = (new ItemSelector(itemService, selector, FullEquipType.Neck),    new ItemSelector(itemService, null, FullEquipType.Neck),    "Take this Necklace",   "and put it on this one" ),
-            [SwapType.Bracelet] = (new ItemSelector(itemService, selector, FullEquipType.Wrists),  new ItemSelector(itemService, null, FullEquipType.Wrists),  "Take these Bracelets", "and put them on these"  ),
-            [SwapType.Ring]     = (new ItemSelector(itemService, selector, FullEquipType.Finger),  new ItemSelector(itemService, null, FullEquipType.Finger),  "Take this Ring",       "and put it on this one" ),
-            [SwapType.Glasses]  = (new ItemSelector(itemService, selector, FullEquipType.Glasses), new ItemSelector(itemService, null, FullEquipType.Glasses), "Take these Glasses",   "and put them on these" ),
+            [SwapType.Hat]      = (new ItemSelector(a, itemService, selector, FullEquipType.Head),    new ItemSelector(a, itemService, null, FullEquipType.Head),    "Take this Hat",        "and put it on this one" ),
+            [SwapType.Top]      = (new ItemSelector(a, itemService, selector, FullEquipType.Body),    new ItemSelector(a, itemService, null, FullEquipType.Body),    "Take this Top",        "and put it on this one" ),
+            [SwapType.Gloves]   = (new ItemSelector(a, itemService, selector, FullEquipType.Hands),   new ItemSelector(a, itemService, null, FullEquipType.Hands),   "Take these Gloves",    "and put them on these"  ),
+            [SwapType.Pants]    = (new ItemSelector(a, itemService, selector, FullEquipType.Legs),    new ItemSelector(a, itemService, null, FullEquipType.Legs),    "Take these Pants",     "and put them on these"  ),
+            [SwapType.Shoes]    = (new ItemSelector(a, itemService, selector, FullEquipType.Feet),    new ItemSelector(a, itemService, null, FullEquipType.Feet),    "Take these Shoes",     "and put them on these"  ),
+            [SwapType.Earrings] = (new ItemSelector(a, itemService, selector, FullEquipType.Ears),    new ItemSelector(a, itemService, null, FullEquipType.Ears),    "Take these Earrings",  "and put them on these"  ),
+            [SwapType.Necklace] = (new ItemSelector(a, itemService, selector, FullEquipType.Neck),    new ItemSelector(a, itemService, null, FullEquipType.Neck),    "Take this Necklace",   "and put it on this one" ),
+            [SwapType.Bracelet] = (new ItemSelector(a, itemService, selector, FullEquipType.Wrists),  new ItemSelector(a, itemService, null, FullEquipType.Wrists),  "Take these Bracelets", "and put them on these"  ),
+            [SwapType.Ring]     = (new ItemSelector(a, itemService, selector, FullEquipType.Finger),  new ItemSelector(a, itemService, null, FullEquipType.Finger),  "Take this Ring",       "and put it on this one" ),
+            [SwapType.Glasses]  = (new ItemSelector(a, itemService, selector, FullEquipType.Glasses), new ItemSelector(a, itemService, null, FullEquipType.Glasses), "Take these Glasses",   "and put them on these" ),
             // @formatter:on
         };
 
@@ -134,23 +137,34 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         Glasses,
     }
 
-    private class ItemSelector(ItemData data, ModFileSystemSelector? selector, FullEquipType type)
-        : FilterComboCache<(EquipItem Item, bool InMod)>(() =>
+    private class ItemSelector(ActiveCollections collections, ItemData data, ModFileSystemSelector? selector, FullEquipType type)
+        : FilterComboCache<(EquipItem Item, bool InMod, SingleArray<IMod> InCollection)>(() =>
         {
             var list = data.ByType[type];
-            if (selector?.Selected is { } mod && mod.ChangedItems.Values.Any(o => o is IdentifiedItem i && i.Item.Type == type))
-                return list.Select(i => (i, mod.ChangedItems.ContainsKey(i.Name))).OrderByDescending(p => p.Item2).ToList();
-
-            return list.Select(i => (i, false)).ToList();
+            var enumerable = selector?.Selected is { } mod && mod.ChangedItems.Values.Any(o => o is IdentifiedItem i && i.Item.Type == type)
+                ? list.Select(i => (i, mod.ChangedItems.ContainsKey(i.Name), collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
+                    .OrderByDescending(p => p.Item2).ThenByDescending(p => p.Item3.Count)
+                : selector is null
+                    ? list.Select(i => (i, false, collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>())).OrderBy(p => p.Item3.Count)
+                    : list.Select(i => (i, false, collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>())).OrderByDescending(p => p.Item3.Count);
+            return enumerable.ToList();
         }, MouseWheelType.None, Penumbra.Log)
     {
         protected override bool DrawSelectable(int globalIdx, bool selected)
         {
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ResTreeLocalPlayer.Value(), Items[globalIdx].InMod);
-            return base.DrawSelectable(globalIdx, selected);
+            var (_, inMod, inCollection) = Items[globalIdx];
+            using var color = inMod
+                ? ImRaii.PushColor(ImGuiCol.Text, ColorId.ResTreeLocalPlayer.Value())
+                : inCollection.Count > 0
+                    ? ImRaii.PushColor(ImGuiCol.Text, ColorId.ResTreeNonNetworked.Value())
+                    : null;
+            var ret = base.DrawSelectable(globalIdx, selected);
+            if (inCollection.Count > 0)
+                ImUtf8.HoverTooltip(string.Join('\n', inCollection.Select(m => m.Name.Text)));
+            return ret;
         }
 
-        protected override string ToString((EquipItem Item, bool InMod) obj)
+        protected override string ToString((EquipItem Item, bool InMod, SingleArray<IMod> InCollection) obj)
             => obj.Item.Name;
     }
 
