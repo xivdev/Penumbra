@@ -55,12 +55,12 @@ public class ModsTab(
         {
             selector.Draw(GetModSelectorSize(config));
             ImGui.SameLine();
+            ImGui.SetCursorPosX(MathF.Round(ImGui.GetCursorPosX()));
             using var group = ImRaii.Group();
             collectionHeader.Draw(false);
 
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-
-            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(-1, config.HideRedrawBar ? 0 : -ImGui.GetFrameHeight()),
+            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(ImGui.GetContentRegionAvail().X, config.HideRedrawBar ? 0 : -ImGui.GetFrameHeight()),
                        true, ImGuiWindowFlags.HorizontalScrollbar))
             {
                 style.Pop();
@@ -94,9 +94,9 @@ public class ModsTab(
         var relativeSize = config.ScaleModSelector
             ? Math.Clamp(config.ModSelectorScaledSize, Configuration.Constants.MinScaledSize, Configuration.Constants.MaxScaledSize)
             : 0;
-        return !config.ScaleModSelector
-            ? absoluteSize
-            : Math.Max(absoluteSize, relativeSize * ImGui.GetContentRegionAvail().X / 100);
+        return MathF.Round(config.ScaleModSelector
+            ? Math.Max(absoluteSize, relativeSize * ImGui.GetContentRegionAvail().X / 100)
+            : absoluteSize);
     }
 
     private void DrawRedrawLine()
