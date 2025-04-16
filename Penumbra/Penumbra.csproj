@@ -11,6 +11,7 @@
 
     <PropertyGroup>
         <DefineConstants>PROFILING;</DefineConstants>
+        <Use_DalamudPackager>false</Use_DalamudPackager>
     </PropertyGroup>
 
     <ItemGroup>
