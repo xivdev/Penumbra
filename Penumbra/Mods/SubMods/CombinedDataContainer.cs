@@ -1,5 +1,5 @@
 using Newtonsoft.Json.Linq;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;

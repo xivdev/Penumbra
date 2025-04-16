@@ -2,6 +2,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Utility;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;

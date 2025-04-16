@@ -1,6 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using OtterGui.Tasks;
 using Penumbra.Mods.Groups;

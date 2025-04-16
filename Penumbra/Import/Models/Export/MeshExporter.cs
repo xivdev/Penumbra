@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Lumina.Extensions;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Geometry;

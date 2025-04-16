@@ -1,6 +1,6 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
-using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;

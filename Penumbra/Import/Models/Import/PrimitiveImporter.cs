@@ -1,5 +1,5 @@
 using Lumina.Data.Parsing;
-using OtterGui;
+using OtterGui.Extensions;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;

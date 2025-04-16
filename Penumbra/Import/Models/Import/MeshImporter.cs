@@ -1,5 +1,5 @@
 using Lumina.Data.Parsing;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Schema2;
 

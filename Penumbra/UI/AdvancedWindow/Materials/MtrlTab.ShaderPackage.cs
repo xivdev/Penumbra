@@ -4,6 +4,7 @@ using ImGuiNET;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.GameData;

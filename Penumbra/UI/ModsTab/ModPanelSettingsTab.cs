@@ -1,5 +1,4 @@
 using ImGuiNET;
-using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
@@ -11,6 +10,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.ModsTab.Groups;
+using OtterGui.Extensions;
 
 namespace Penumbra.UI.ModsTab;
 

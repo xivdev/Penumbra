@@ -1,5 +1,4 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui;
 using OtterGui.Classes;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -8,6 +7,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using Penumbra.GameData.Data;
+using OtterGui.Extensions;
 
 namespace Penumbra.Collections.Cache;
 

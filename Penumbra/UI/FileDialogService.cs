@@ -3,6 +3,7 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Services;

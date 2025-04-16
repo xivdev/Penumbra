@@ -3,6 +3,7 @@ using Dalamud.Interface.ImGuiNotification;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;

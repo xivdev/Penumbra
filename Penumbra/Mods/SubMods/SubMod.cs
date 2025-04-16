@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 

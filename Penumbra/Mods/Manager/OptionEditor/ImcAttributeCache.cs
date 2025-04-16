@@ -1,4 +1,4 @@
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;

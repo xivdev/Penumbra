@@ -9,6 +9,7 @@ using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.String;
+using OtterGui.Extensions;
 
 namespace Penumbra.UI.AdvancedWindow;
 

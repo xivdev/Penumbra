@@ -1,5 +1,5 @@
 using Newtonsoft.Json;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;

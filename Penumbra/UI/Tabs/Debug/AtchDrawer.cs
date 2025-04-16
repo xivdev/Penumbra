@@ -1,5 +1,5 @@
 using ImGuiNET;
-using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Text;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;

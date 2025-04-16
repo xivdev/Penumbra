@@ -1,7 +1,7 @@
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using Iced.Intel;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.String.Classes;
 using Swan;
 

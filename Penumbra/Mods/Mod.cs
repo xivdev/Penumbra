@@ -1,5 +1,6 @@
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;

@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.Api.Enums;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;

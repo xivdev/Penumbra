@@ -1,8 +1,8 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
-using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Filesystem;
 using OtterGui.Services;
 using OtterGui.Widgets;

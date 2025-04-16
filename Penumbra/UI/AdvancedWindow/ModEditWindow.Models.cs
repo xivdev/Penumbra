@@ -3,6 +3,7 @@ using ImGuiNET;
 using Lumina.Data.Parsing;
 using OtterGui;
 using OtterGui.Custom;
+using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;

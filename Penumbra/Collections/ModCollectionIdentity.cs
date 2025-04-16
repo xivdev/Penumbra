@@ -1,4 +1,5 @@
 using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.Collections.Manager;
 
 namespace Penumbra.Collections;

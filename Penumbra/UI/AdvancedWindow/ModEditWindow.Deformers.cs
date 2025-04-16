@@ -3,6 +3,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Text;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;

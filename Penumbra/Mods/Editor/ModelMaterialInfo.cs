@@ -1,5 +1,5 @@
-using OtterGui;
 using OtterGui.Compression;
+using OtterGui.Extensions;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 

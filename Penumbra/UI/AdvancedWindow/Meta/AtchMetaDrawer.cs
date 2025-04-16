@@ -2,7 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
-using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;

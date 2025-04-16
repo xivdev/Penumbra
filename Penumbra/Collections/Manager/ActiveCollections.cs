@@ -1,8 +1,8 @@
 using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;

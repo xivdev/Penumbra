@@ -1,5 +1,6 @@
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterTex;
 using Penumbra.Import.Textures;

@@ -1,7 +1,7 @@
 using Dalamud.Utility;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.GameData.Interop;

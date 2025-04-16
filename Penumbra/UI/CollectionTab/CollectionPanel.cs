@@ -9,6 +9,7 @@ using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;

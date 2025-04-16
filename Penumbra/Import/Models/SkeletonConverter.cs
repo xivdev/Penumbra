@@ -1,5 +1,5 @@
 using System.Xml;
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.Import.Models.Export;
 
 namespace Penumbra.Import.Models;

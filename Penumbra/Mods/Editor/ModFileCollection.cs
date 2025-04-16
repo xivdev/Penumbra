@@ -1,4 +1,5 @@
 using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;

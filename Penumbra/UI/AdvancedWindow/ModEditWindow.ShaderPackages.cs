@@ -12,6 +12,7 @@ using static Penumbra.GameData.Files.ShpkFile;
 using OtterGui.Widgets;
 using OtterGui.Text;
 using Penumbra.GameData.Structs;
+using OtterGui.Extensions;
 
 namespace Penumbra.UI.AdvancedWindow;
 

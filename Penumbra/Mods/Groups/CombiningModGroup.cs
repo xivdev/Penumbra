@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;

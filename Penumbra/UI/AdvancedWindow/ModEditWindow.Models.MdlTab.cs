@@ -1,4 +1,4 @@
-using OtterGui;
+using OtterGui.Extensions;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;

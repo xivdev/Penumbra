@@ -1,5 +1,5 @@
-using OtterGui;
 using OtterGui.Compression;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;

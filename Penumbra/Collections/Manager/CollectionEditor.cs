@@ -1,4 +1,4 @@
-using OtterGui;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
