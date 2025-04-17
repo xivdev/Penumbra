@@ -12,6 +12,7 @@ using ImGuiNET;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;

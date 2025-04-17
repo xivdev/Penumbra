@@ -1,10 +1,9 @@
 using Dalamud.Interface;
 using ImGuiNET;
-using OtterGui.Raii;
 using OtterGui;
+using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
-using OtterGui.Text.Widget;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -15,13 +14,12 @@ namespace Penumbra.UI.Classes;
 
 public class CollectionSelectHeader : IUiService
 {
-    private readonly CollectionCombo     _collectionCombo;
-    private readonly ActiveCollections   _activeCollections;
-    private readonly TutorialService     _tutorial;
-    private readonly ModSelection        _selection;
-    private readonly CollectionResolver  _resolver;
-    private readonly FontAwesomeCheckbox _temporaryCheckbox = new(FontAwesomeIcon.Stopwatch);
-    private readonly Configuration       _config;
+    private readonly CollectionCombo    _collectionCombo;
+    private readonly ActiveCollections  _activeCollections;
+    private readonly TutorialService    _tutorial;
+    private readonly ModSelection       _selection;
+    private readonly CollectionResolver _resolver;
+    private readonly Configuration      _config;
 
     public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModSelection selection,
         CollectionResolver resolver, Configuration config)
@@ -64,14 +62,15 @@ public class CollectionSelectHeader : IUiService
         var hold = _config.IncognitoModifier.IsActive();
         using (ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImUtf8.GlobalScale))
         {
-            var tint = ImGuiCol.Text.Tinted(ColorId.TemporaryModSettingsTint);
-            using var color = ImRaii.PushColor(ImGuiCol.FrameBgHovered, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
-                .Push(ImGuiCol.FrameBgActive, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
-                .Push(ImGuiCol.CheckMark,     tint)
-                .Push(ImGuiCol.Border,        tint, _config.DefaultTemporaryMode);
-            if (_temporaryCheckbox.Draw("##tempCheck"u8, _config.DefaultTemporaryMode, out var newValue) && hold)
+            var tint = _config.DefaultTemporaryMode
+                ? ImGuiCol.Text.Tinted(ColorId.TemporaryModSettingsTint)
+                : ImGui.GetColorU32(ImGuiCol.TextDisabled);
+            using var color = ImRaii.PushColor(ImGuiCol.ButtonHovered, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
+                .Push(ImGuiCol.ButtonActive, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
+                .Push(ImGuiCol.Border,       tint,                                _config.DefaultTemporaryMode);
+            if (ImUtf8.IconButton(FontAwesomeIcon.Stopwatch, ""u8, default, false, tint, ImGui.GetColorU32(ImGuiCol.FrameBg)) && hold)
             {
-                _config.DefaultTemporaryMode = newValue;
+                _config.DefaultTemporaryMode = !_config.DefaultTemporaryMode;
                 _config.Save();
             }
         }
