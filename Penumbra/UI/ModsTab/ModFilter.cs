@@ -22,12 +22,14 @@ public enum ModFilter
     NotNew                 = 1 << 16,
     Inherited              = 1 << 17,
     Uninherited            = 1 << 18,
-    Undefined              = 1 << 19,
+    Temporary              = 1 << 19,
+    NotTemporary           = 1 << 20,
+    Undefined              = 1 << 21,
 };
 
 public static class ModFilterExtensions
 {
-    public const ModFilter UnfilteredStateMods = (ModFilter)((1 << 20) - 1);
+    public const ModFilter UnfilteredStateMods = (ModFilter)((1 << 22) - 1);
 
     public static IReadOnlyList<(ModFilter On, ModFilter Off, string Name)> TriStatePairs =
     [
@@ -38,6 +40,7 @@ public static class ModFilterExtensions
         (ModFilter.HasFiles, ModFilter.HasNoFiles, "Has Redirections"),
         (ModFilter.HasMetaManipulations, ModFilter.HasNoMetaManipulations, "Has Meta Manipulations"),
         (ModFilter.HasFileSwaps, ModFilter.HasNoFileSwaps, "Has File Swaps"),
+        (ModFilter.Temporary, ModFilter.NotTemporary, "Temporary"),
     ];
 
     public static IReadOnlyList<IReadOnlyList<(ModFilter Filter, string Name)>> Groups =
