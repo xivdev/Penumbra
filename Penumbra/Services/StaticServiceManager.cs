@@ -17,6 +17,8 @@ using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
 
 namespace Penumbra.Services;
 
+#pragma warning disable SeStringEvaluator
+
 public static class StaticServiceManager
 {
     public static ServiceManager CreateProvider(Penumbra penumbra, IDalamudPluginInterface pi, Logger log)
@@ -60,5 +62,6 @@ public static class StaticServiceManager
             .AddDalamudService<ITextureSubstitutionProvider>(pi)
             .AddDalamudService<IGameInteropProvider>(pi)
             .AddDalamudService<IPluginLog>(pi)
-            .AddDalamudService<INotificationManager>(pi);
+            .AddDalamudService<INotificationManager>(pi)
+            .AddDalamudService<ISeStringEvaluator>(pi);
 }
