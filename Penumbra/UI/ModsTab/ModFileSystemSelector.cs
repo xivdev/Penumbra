@@ -647,6 +647,20 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
          || !_stateFilter.HasFlag(ModFilter.NotFavorite) && !mod.Favorite)
             return true;
 
+        // Handle Temporary
+        if (!_stateFilter.HasFlag(ModFilter.Temporary) || !_stateFilter.HasFlag(ModFilter.NotTemporary))
+        {
+            if (settings == null && _stateFilter.HasFlag(ModFilter.Temporary))
+            {
+                return true;
+            }
+            
+            if (settings != null && settings.IsTemporary() != _stateFilter.HasFlag(ModFilter.Temporary))
+            {
+                return true;
+            }
+        }
+
         // Handle Inheritance
         if (collection == _collectionManager.Active.Current)
         {
