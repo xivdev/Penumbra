@@ -10,7 +10,6 @@ using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Structs;
@@ -354,21 +353,14 @@ public sealed unsafe partial class RedrawService : IDisposable
     {
         switch (settings)
         {
-            case RedrawType.Redraw:
-                ReloadActor(actor);
-                break;
-            case RedrawType.AfterGPose:
-                ReloadActorAfterGPose(actor);
-                break;
-            default: throw new ArgumentOutOfRangeException(nameof(settings), settings, null);
+            case RedrawType.Redraw:     ReloadActor(actor); break;
+            case RedrawType.AfterGPose: ReloadActorAfterGPose(actor); break;
+            default:                    throw new ArgumentOutOfRangeException(nameof(settings), settings, null);
         }
     }
 
     private IGameObject? GetLocalPlayer()
-    {
-        var gPosePlayer = _objects.GetDalamudObject(GPosePlayerIdx);
-        return gPosePlayer ?? _objects.GetDalamudObject(0);
-    }
+        => InGPose ? _objects.GetDalamudObject(GPosePlayerIdx) ?? _objects.GetDalamudObject(0) : _objects.GetDalamudObject(0);
 
     public bool GetName(string lowerName, out IGameObject? actor)
     {
