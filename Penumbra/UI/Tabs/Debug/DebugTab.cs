@@ -108,6 +108,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly ObjectIdentification               _objectIdentification;
     private readonly RenderTargetDrawer                 _renderTargetDrawer;
     private readonly ModMigratorDebug                   _modMigratorDebug;
+    private readonly ShapeInspector                     _shapeInspector;
 
     public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -119,7 +120,7 @@ public class DebugTab : Window, ITab, IUiService
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
-        ModMigratorDebug modMigratorDebug)
+        ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -162,6 +163,7 @@ public class DebugTab : Window, ITab, IUiService
         _objectIdentification      = objectIdentification;
         _renderTargetDrawer        = renderTargetDrawer;
         _modMigratorDebug          = modMigratorDebug;
+        _shapeInspector            = shapeInspector;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -508,37 +510,50 @@ public class DebugTab : Window, ITab, IUiService
         if (!ImGui.CollapsingHeader("Actors"))
             return;
 
-        _objects.DrawDebug();
-
-        using var table = Table("##actors", 8, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
-            -Vector2.UnitX);
-        if (!table)
-            return;
-
-        DrawSpecial("Current Player",  _actors.GetCurrentPlayer());
-        DrawSpecial("Current Inspect", _actors.GetInspectPlayer());
-        DrawSpecial("Current Card",    _actors.GetCardPlayer());
-        DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
-
-        foreach (var obj in _objects)
+        using (var objectTree = ImUtf8.TreeNode("Object Manager"u8))
         {
-            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
-            ImGui.TableNextColumn();
-            ImGuiUtil.CopyOnClickSelectable($"0x{obj.Address:X}");
-            ImGui.TableNextColumn();
-            if (obj.Address != nint.Zero)
-                ImGuiUtil.CopyOnClickSelectable($"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
-            var identifier = _actors.FromObject(obj, out _, false, true, false);
-            ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
-            var id = obj.AsObject->ObjectKind is ObjectKind.BattleNpc
-                ? $"{identifier.DataId} | {obj.AsObject->BaseId}"
-                : identifier.DataId.ToString();
-            ImGuiUtil.DrawTableColumn(id);
-            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{*(nint*)obj.Address:X}" : "NULL");
-            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{obj.AsObject->EntityId:X}" : "NULL");
-            ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero
-                ? obj.AsObject->IsCharacter() ? $"Character: {obj.AsCharacter->ObjectKind}" : "No Character"
-                : "NULL");
+            if (objectTree)
+            {
+                _objects.DrawDebug();
+
+                using var table = Table("##actors", 8, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+                    -Vector2.UnitX);
+                if (!table)
+                    return;
+
+                DrawSpecial("Current Player",  _actors.GetCurrentPlayer());
+                DrawSpecial("Current Inspect", _actors.GetInspectPlayer());
+                DrawSpecial("Current Card",    _actors.GetCardPlayer());
+                DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
+
+                foreach (var obj in _objects)
+                {
+                    ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
+                    ImGui.TableNextColumn();
+                    Penumbra.Dynamis.DrawPointer(obj.Address);
+                    ImGui.TableNextColumn();
+                    if (obj.Address != nint.Zero)
+                        Penumbra.Dynamis.DrawPointer((nint)((Character*)obj.Address)->GameObject.GetDrawObject());
+                    var identifier = _actors.FromObject(obj, out _, false, true, false);
+                    ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
+                    var id = obj.AsObject->ObjectKind is ObjectKind.BattleNpc
+                        ? $"{identifier.DataId} | {obj.AsObject->BaseId}"
+                        : identifier.DataId.ToString();
+                    ImGuiUtil.DrawTableColumn(id);
+                    ImGui.TableNextColumn();
+                    Penumbra.Dynamis.DrawPointer(obj.Address != nint.Zero ? *(nint*)obj.Address : nint.Zero);
+                    ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{obj.AsObject->EntityId:X}" : "NULL");
+                    ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero
+                        ? obj.AsObject->IsCharacter() ? $"Character: {obj.AsCharacter->ObjectKind}" : "No Character"
+                        : "NULL");
+                }
+            }
+        }
+
+        using (var shapeTree = ImUtf8.TreeNode("Shape Inspector"u8))
+        {
+            if (shapeTree)
+                _shapeInspector.Draw();
         }
 
         return;
@@ -1184,8 +1199,16 @@ public class DebugTab : Window, ITab, IUiService
     /// <summary> Draw information about IPC options and availability. </summary>
     private void DrawDebugTabIpc()
     {
-        if (ImGui.CollapsingHeader("IPC"))
-            _ipcTester.Draw();
+        if (!ImUtf8.CollapsingHeader("IPC"u8))
+            return;
+
+        using (var tree = ImUtf8.TreeNode("Dynamis"u8))
+        {
+            if (tree)
+                Penumbra.Dynamis.DrawDebugInfo();
+        }
+
+        _ipcTester.Draw();
     }
 
     /// <summary> Helper to print a property and its value in a 2-column table. </summary>

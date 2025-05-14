@@ -67,6 +67,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool            HideRedrawBar                        { get; set; } = false;
     public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
     public bool            DefaultTemporaryMode                 { get; set; } = false;
+    public bool            EnableCustomShapes                   { get; set; } = true;
     public RenameField     ShowRename                           { get; set; } = RenameField.BothDataPrio;
     public ChangedItemMode ChangedItemDisplay                   { get; set; } = ChangedItemMode.GroupedCollapsed;
     public int             OptionGroupCollapsibleMin            { get; set; } = 5;
@@ -84,9 +85,6 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode<Mod> SortMode = ISortMode<Mod>.FoldersFirst;
 
-    public bool           ScaleModSelector              { get; set; } = false;
-    public float          ModSelectorAbsoluteSize       { get; set; } = Constants.DefaultAbsoluteSize;
-    public int            ModSelectorScaledSize         { get; set; } = Constants.DefaultScaledSize;
     public bool           OpenFoldersByDefault          { get; set; } = false;
     public int            SingleGroupRadioMax           { get; set; } = 2;
     public string         DefaultImportFolder           { get; set; } = string.Empty;

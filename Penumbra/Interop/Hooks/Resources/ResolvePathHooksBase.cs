@@ -246,28 +246,6 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         return ret;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    private struct ChangedEquipData
-    {
-        [FieldOffset(0)]
-        public PrimaryId Model;
-
-        [FieldOffset(2)]
-        public Variant Variant;
-
-        [FieldOffset(8)]
-        public PrimaryId BonusModel;
-
-        [FieldOffset(10)]
-        public Variant BonusVariant;
-
-        [FieldOffset(20)]
-        public ushort VfxId;
-
-        [FieldOffset(22)]
-        public GenderRace GenderRace;
-    }
-
     private nint ResolveVfxHuman(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex, nint unkOutParam)
     {
         switch (slotIndex)

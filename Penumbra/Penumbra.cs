@@ -34,6 +34,7 @@ public class Penumbra : IDalamudPlugin
 
     public static readonly Logger         Log = new();
     public static          MessageService Messager { get; private set; } = null!;
+    public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
     private readonly ResidentResourceManager _residentResources;
@@ -59,8 +60,9 @@ public class Penumbra : IDalamudPlugin
             _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
             // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
             _services.GetService<IpcLaunchingProvider>();
-            Messager               = _services.GetService<MessageService>();
-            _validityChecker       = _services.GetService<ValidityChecker>();
+            Messager         = _services.GetService<MessageService>();
+            Dynamis          = _services.GetService<DynamisIpc>();
+            _validityChecker = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
 
             var startup = _services.GetService<DalamudConfigService>()
@@ -228,6 +230,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
         sb.Append($"> **`Penumbra Reloads:            `** {hdrEnabler.PenumbraReloadCount}\n");
         sb.Append($"> **`HDR Enabled (from Start):    `** {_config.HdrRenderTargets} ({hdrEnabler is { FirstLaunchHdrState: true, FirstLaunchHdrHookOverrideState: true }}){(hdrEnabler.HdrEnabledSuccess ? ", Detour Called" : ", **NEVER CALLED**")}\n");
+        sb.Append($"> **`Custom Shapes Enabled:       `** {_config.EnableCustomShapes}\n");
         sb.Append($"> **`Hook Overrides:              `** {HookOverrides.Instance.IsCustomLoaded}\n");
         sb.Append($"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(

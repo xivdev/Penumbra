@@ -81,6 +81,9 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.ResolvedFileChanged"/>
     public readonly ResolvedFileChanged ResolvedFileChanged = new();
 
+    /// <inheritdoc cref="Communication.ModelAttributeComputed"/>
+    public readonly ModelAttributeComputed ModelAttributeComputed = new();
+
     public void Dispose()
     {
         CollectionChange.Dispose();
@@ -105,5 +108,6 @@ public class CommunicatorService : IDisposable, IService
         ChangedItemClick.Dispose();
         SelectTab.Dispose();
         ResolvedFileChanged.Dispose();
+        ModelAttributeComputed.Dispose();
     }
 }

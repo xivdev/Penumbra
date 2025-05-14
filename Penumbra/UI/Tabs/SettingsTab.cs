@@ -14,6 +14,7 @@ using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections;
+using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -50,6 +51,7 @@ public class SettingsTab : ITab, IUiService
     private readonly MigrationSectionDrawer      _migrationDrawer;
     private readonly CollectionAutoSelector      _autoSelector;
     private readonly CleanupService              _cleanupService;
+    private readonly AttributeHooks              _attributeHooks;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -61,7 +63,8 @@ public class SettingsTab : ITab, IUiService
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
-        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService)
+        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
+        AttributeHooks attributeHooks)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -86,6 +89,7 @@ public class SettingsTab : ITab, IUiService
         _migrationDrawer      = migrationDrawer;
         _autoSelector         = autoSelector;
         _cleanupService       = cleanupService;
+        _attributeHooks       = attributeHooks;
     }
 
     public void DrawHeader()
@@ -807,6 +811,8 @@ public class SettingsTab : ITab, IUiService
             "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
           + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
             _config.KeepDefaultMetaChanges, v => _config.KeepDefaultMetaChanges = v);
+        Checkbox("Enable Advanced Shape Support", "Penumbra will allow for custom shape keys for modded models to be considered and combined.",
+            _config.EnableAttributeHooks,         _attributeHooks.SetState);
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
         DrawEnableDebugModeBox();
