@@ -19,18 +19,20 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public override ReadOnlySpan<byte> Label
         => "Shape Keys (SHP)###SHP"u8;
 
-    private ShapeString _buffer = ShapeString.TryRead("shpx_"u8, out var s) ? s : ShapeString.Empty;
+    private ShapeString _buffer          = ShapeString.TryRead("shpx_"u8, out var s) ? s : ShapeString.Empty;
+    private ShapeString _conditionBuffer = ShapeString.Empty;
     private bool        _identifierValid;
+    private bool        _conditionValid = true;
 
     public override int NumColumns
-        => 6;
+        => 7;
 
     public override float ColumnHeight
         => ImUtf8.FrameHeightSpacing;
 
     protected override void Initialize()
     {
-        Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeString.Empty);
+        Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeString.Empty, ShapeString.Empty);
     }
 
     protected override void DrawNew()
@@ -40,7 +42,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Shp)));
 
         ImGui.TableNextColumn();
-        var canAdd = !Editor.Contains(Identifier) && _identifierValid;
+        var canAdd = !Editor.Contains(Identifier) && _identifierValid && _conditionValid;
         var tt = canAdd
             ? "Stage this edit."u8
             : _identifierValid
@@ -67,6 +69,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .OrderBy(kvp => kvp.Key.Shape)
             .ThenBy(kvp => kvp.Key.Slot)
             .ThenBy(kvp => kvp.Key.Id)
+            .ThenBy(kvp => kvp.Key.ShapeCondition)
             .Select(kvp => (kvp.Key, kvp.Value));
 
     protected override int Count
@@ -82,6 +85,9 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
         ImGui.TableNextColumn();
         changes |= DrawShapeKeyInput(ref identifier, ref _buffer, ref _identifierValid);
+
+        ImGui.TableNextColumn();
+        changes |= DrawShapeConditionInput(ref identifier, ref _conditionBuffer, ref _conditionValid);
         return changes;
     }
 
@@ -101,6 +107,13 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Shape.AsSpan, FrameColor);
+
+        ImGui.TableNextColumn();
+        if (identifier.ShapeCondition.Length > 0)
+        {
+            ImUtf8.TextFramed(identifier.ShapeCondition.AsSpan, FrameColor);
+            ImUtf8.HoverTooltip("Connector condition for this shape to be activated.");
+        }
     }
 
     private static bool DrawEntry(ref ShpEntry entry, bool disabled)
@@ -154,7 +167,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         return ret;
     }
 
-    public static bool DrawHumanSlot(ref ShpIdentifier identifier, float unscaledWidth = 150)
+    public bool DrawHumanSlot(ref ShpIdentifier identifier, float unscaledWidth = 150)
     {
         var ret = false;
         ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
@@ -168,13 +181,37 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
                     ret = true;
                     if (slot is HumanSlot.Unknown)
+                    {
                         identifier = identifier with
                         {
                             Id = null,
                             Slot = slot,
                         };
+                    }
                     else
-                        identifier = identifier with { Slot = slot };
+                    {
+                        if (_conditionBuffer.Length > 0
+                         && (_conditionBuffer.IsAnkle() && slot is not HumanSlot.Feet and not HumanSlot.Legs
+                             || _conditionBuffer.IsWrist() && slot is not HumanSlot.Hands and not HumanSlot.Body
+                             || _conditionBuffer.IsWaist() && slot is not HumanSlot.Body and not HumanSlot.Legs))
+                        {
+                            identifier = identifier with
+                            {
+                                Slot = slot,
+                                ShapeCondition = ShapeString.Empty,
+                            };
+                            _conditionValid = false;
+                        }
+                        else
+                        {
+                            identifier = identifier with
+                            {
+                                Slot = slot,
+                                ShapeCondition = _conditionBuffer,
+                            };
+                            _conditionValid = true;
+                        }
+                    }
                 }
         }
 
@@ -201,6 +238,33 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         }
 
         ImUtf8.HoverTooltip("Supported shape keys need to have the format `shpx_*` and a maximum length of 30 characters."u8);
+        return ret;
+    }
+
+    public static unsafe bool DrawShapeConditionInput(ref ShpIdentifier identifier, ref ShapeString buffer, ref bool valid,
+        float unscaledWidth = 150)
+    {
+        var ret  = false;
+        var ptr  = Unsafe.AsPointer(ref buffer);
+        var span = new Span<byte>(ptr, ShapeString.MaxLength + 1);
+        using (new ImRaii.ColorStyle().Push(ImGuiCol.Border, Colors.RegexWarningBorder, !valid).Push(ImGuiStyleVar.FrameBorderSize, 1f, !valid))
+        {
+            ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+            if (ImUtf8.InputText("##shpCondition"u8, span, out int newLength, "Shape Condition..."u8))
+            {
+                buffer.ForceLength((byte)newLength);
+                valid = ShpIdentifier.ValidateCustomShapeString(buffer)
+                 && (buffer.IsAnkle() && identifier.Slot is HumanSlot.Unknown or HumanSlot.Feet or HumanSlot.Legs
+                     || buffer.IsWaist() && identifier.Slot is HumanSlot.Unknown or HumanSlot.Body or HumanSlot.Legs
+                     || buffer.IsWrist() && identifier.Slot is HumanSlot.Unknown or HumanSlot.Body or HumanSlot.Hands);
+                if (valid)
+                    identifier = identifier with { ShapeCondition = buffer };
+                ret = true;
+            }
+        }
+
+        ImUtf8.HoverTooltip(
+            "Supported conditional shape keys need to have the format `shpx_an_*` (Legs or Feet), `shpx_wr_*` (Body or Hands), or `shpx_wa_*` (Body or Legs) and a maximum length of 30 characters."u8);
         return ret;
     }
 

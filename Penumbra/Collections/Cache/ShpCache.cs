@@ -13,7 +13,23 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
     internal IReadOnlyDictionary<ShapeString, ShpHashSet> State
         => _shpData;
 
-    internal sealed class ShpHashSet : HashSet<(HumanSlot Slot, PrimaryId Id)>
+    internal IEnumerable<(ShapeString, IReadOnlyDictionary<ShapeString, ShpHashSet>)> ConditionState
+        => _conditionalSet.Select(kvp => (kvp.Key, (IReadOnlyDictionary<ShapeString, ShpHashSet>)kvp.Value));
+
+    public bool CheckConditionState(ShapeString condition, [NotNullWhen(true)] out IReadOnlyDictionary<ShapeString, ShpHashSet>? dict)
+    {
+        if (_conditionalSet.TryGetValue(condition, out var d))
+        {
+            dict = d;
+            return true;
+        }
+
+        dict = null;
+        return false;
+    }
+
+
+    public sealed class ShpHashSet : HashSet<(HumanSlot Slot, PrimaryId Id)>
     {
         private readonly BitArray _allIds = new(ShapeManager.ModelSlotSize);
 
@@ -76,12 +92,14 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
             => !_allIds.HasAnySet() && Count is 0;
     }
 
-    private readonly Dictionary<ShapeString, ShpHashSet> _shpData = [];
+    private readonly Dictionary<ShapeString, ShpHashSet>                          _shpData        = [];
+    private readonly Dictionary<ShapeString, Dictionary<ShapeString, ShpHashSet>> _conditionalSet = [];
 
     public void Reset()
     {
         Clear();
         _shpData.Clear();
+        _conditionalSet.Clear();
     }
 
     protected override void Dispose(bool _)
@@ -89,21 +107,62 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
     protected override void ApplyModInternal(ShpIdentifier identifier, ShpEntry entry)
     {
-        if (!_shpData.TryGetValue(identifier.Shape, out var value))
+        if (identifier.ShapeCondition.Length > 0)
         {
-            value = [];
-            _shpData.Add(identifier.Shape, value);
+            if (!_conditionalSet.TryGetValue(identifier.ShapeCondition, out var shapes))
+            {
+                if (!entry.Value)
+                    return;
+
+                shapes = new Dictionary<ShapeString, ShpHashSet>();
+                _conditionalSet.Add(identifier.ShapeCondition, shapes);
+            }
+
+            Func(shapes);
+        }
+        else
+        {
+            Func(_shpData);
         }
 
-        value.TrySet(identifier.Slot, identifier.Id, entry);
+        void Func(Dictionary<ShapeString, ShpHashSet> dict)
+        {
+            if (!dict.TryGetValue(identifier.Shape, out var value))
+            {
+                if (!entry.Value)
+                    return;
+
+                value = [];
+                dict.Add(identifier.Shape, value);
+            }
+
+            value.TrySet(identifier.Slot, identifier.Id, entry);
+        }
     }
 
     protected override void RevertModInternal(ShpIdentifier identifier)
     {
-        if (!_shpData.TryGetValue(identifier.Shape, out var value))
-            return;
+        if (identifier.ShapeCondition.Length > 0)
+        {
+            if (!_conditionalSet.TryGetValue(identifier.ShapeCondition, out var shapes))
+                return;
 
-        if (value.TrySet(identifier.Slot, identifier.Id, ShpEntry.False) && value.IsEmpty)
-            _shpData.Remove(identifier.Shape);
+            Func(shapes);
+        }
+        else
+        {
+            Func(_shpData);
+        }
+
+        return;
+
+        void Func(Dictionary<ShapeString, ShpHashSet> dict)
+        {
+            if (!_shpData.TryGetValue(identifier.Shape, out var value))
+                return;
+
+            if (value.TrySet(identifier.Slot, identifier.Id, ShpEntry.False) && value.IsEmpty)
+                _shpData.Remove(identifier.Shape);
+        }
     }
 }

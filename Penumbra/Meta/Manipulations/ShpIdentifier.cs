@@ -7,7 +7,7 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, ShapeString Shape)
+public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, ShapeString Shape, ShapeString ShapeCondition)
     : IComparable<ShpIdentifier>, IMetaIdentifier
 {
     public int CompareTo(ShpIdentifier other)
@@ -34,12 +34,39 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
             return 1;
         }
 
+        var shapeComparison = Shape.CompareTo(other.Shape);
+        if (shapeComparison is not 0)
+            return shapeComparison;
 
-        return Shape.CompareTo(other.Shape);
+        return ShapeCondition.CompareTo(other.ShapeCondition);
     }
 
+
     public override string ToString()
-        => $"Shp - {Shape}{(Slot is HumanSlot.Unknown ? " - All Slots & IDs" : $" - {Slot.ToName()}{(Id.HasValue ? $" - {Id.Value.Id}" : " - All IDs")}")}";
+    {
+        var sb = new StringBuilder(64);
+        sb.Append("Shp - ")
+            .Append(Shape);
+        if (Slot is HumanSlot.Unknown)
+        {
+            sb.Append(" - All Slots & IDs");
+        }
+        else
+        {
+            sb.Append(" - ")
+                .Append(Slot.ToName())
+                .Append(" - ");
+            if (Id.HasValue)
+                sb.Append(Id.Value.Id);
+            else
+                sb.Append("All IDs");
+        }
+
+        if (ShapeCondition.Length > 0)
+            sb.Append(" - ")
+                .Append(ShapeCondition);
+        return sb.ToString();
+    }
 
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
     {
@@ -57,7 +84,24 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         if (Slot is HumanSlot.Unknown && Id is not null)
             return false;
 
-        return ValidateCustomShapeString(Shape);
+        if (!ValidateCustomShapeString(Shape))
+            return false;
+
+        if (ShapeCondition.Length is 0)
+            return true;
+
+        if (!ValidateCustomShapeString(ShapeCondition))
+            return false;
+
+        return Slot switch
+        {
+            HumanSlot.Hands when ShapeCondition.IsWrist()                                                           => true,
+            HumanSlot.Body when ShapeCondition.IsWrist() || ShapeCondition.IsWaist()                                => true,
+            HumanSlot.Legs when ShapeCondition.IsWaist() || ShapeCondition.IsAnkle()                                => true,
+            HumanSlot.Feet when ShapeCondition.IsAnkle()                                                            => true,
+            HumanSlot.Unknown when ShapeCondition.IsWrist() || ShapeCondition.IsWaist() || ShapeCondition.IsAnkle() => true,
+            _                                                                                                       => false,
+        };
     }
 
     public static unsafe bool ValidateCustomShapeString(byte* shape)
@@ -101,18 +145,22 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         if (Id.HasValue)
             jObj["Id"] = Id.Value.Id.ToString();
         jObj["Shape"] = Shape.ToString();
+        if (ShapeCondition.Length > 0)
+            jObj["ShapeCondition"] = ShapeCondition.ToString();
         return jObj;
     }
 
     public static ShpIdentifier? FromJson(JObject jObj)
     {
-        var slot  = jObj["Slot"]?.ToObject<HumanSlot>() ?? HumanSlot.Unknown;
-        var id    = jObj["Id"]?.ToObject<ushort>();
         var shape = jObj["Shape"]?.ToObject<string>();
         if (shape is null || !ShapeString.TryRead(shape, out var shapeString))
             return null;
 
-        var identifier = new ShpIdentifier(slot, id, shapeString);
+        var slot                 = jObj["Slot"]?.ToObject<HumanSlot>() ?? HumanSlot.Unknown;
+        var id                   = jObj["Id"]?.ToObject<ushort>();
+        var shapeCondition       = jObj["ShapeCondition"]?.ToObject<string>();
+        var shapeConditionString = shapeCondition is null || !ShapeString.TryRead(shapeCondition, out var s) ? ShapeString.Empty : s;
+        var identifier           = new ShpIdentifier(slot, id, shapeString, shapeConditionString);
         return identifier.Validate() ? identifier : null;
     }
 

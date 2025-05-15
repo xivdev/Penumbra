@@ -37,6 +37,22 @@ public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool IsAnkle()
+        => CheckCenter('a', 'n');
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool IsWaist()
+        => CheckCenter('w', 'a');
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool IsWrist()
+        => CheckCenter('w', 'r');
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private bool CheckCenter(char first, char second)
+        => Length > 8 && _buffer[5] == first && _buffer[6] == second && _buffer[7] is (byte)'_';
+
     public bool Equals(ShapeString other)
         => Length == other.Length && _buffer[..Length].SequenceEqual(other._buffer[..Length]);
 

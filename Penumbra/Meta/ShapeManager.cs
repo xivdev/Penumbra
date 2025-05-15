@@ -1,8 +1,10 @@
 using System.Reflection.Metadata.Ecma335;
 using OtterGui.Services;
 using Penumbra.Collections;
+using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Meta.Manipulations;
 
@@ -30,15 +32,19 @@ public class ShapeManager : IRequiredService, IDisposable
     private readonly Dictionary<ShapeString, short>[] _temporaryIndices =
         Enumerable.Range(0, NumSlots).Select(_ => new Dictionary<ShapeString, short>()).ToArray();
 
-    private readonly uint[] _temporaryMasks  = new uint[NumSlots];
-    private readonly uint[] _temporaryValues = new uint[NumSlots];
+    private readonly uint[]      _temporaryMasks  = new uint[NumSlots];
+    private readonly uint[]      _temporaryValues = new uint[NumSlots];
+    private readonly PrimaryId[] _ids             = new PrimaryId[ModelSlotSize];
 
     public void Dispose()
         => _attributeHook.Unsubscribe(OnAttributeComputed);
 
     private unsafe void OnAttributeComputed(Actor actor, Model model, ModCollection collection)
     {
-        ComputeCache(model, collection);
+        if (!collection.HasCache)
+            return;
+
+        ComputeCache(model, collection.MetaCache!.Shp);
         for (var i = 0; i < NumSlots; ++i)
         {
             if (_temporaryMasks[i] is 0)
@@ -52,11 +58,8 @@ public class ShapeManager : IRequiredService, IDisposable
         }
     }
 
-    private unsafe void ComputeCache(Model human, ModCollection collection)
+    private unsafe void ComputeCache(Model human, ShpCache cache)
     {
-        if (!collection.HasCache)
-            return;
-
         for (var i = 0; i < NumSlots; ++i)
         {
             _temporaryMasks[i]  = 0;
@@ -68,6 +71,8 @@ public class ShapeManager : IRequiredService, IDisposable
             if (model is null || model->ModelResourceHandle is null)
                 continue;
 
+            _ids[(int)modelIndex] = human.GetArmorChanged(modelIndex).Set;
+
             ref var shapes = ref model->ModelResourceHandle->Shapes;
             foreach (var (shape, index) in shapes.Where(kvp => ShpIdentifier.ValidateCustomShapeString(kvp.Key.Value)))
             {
@@ -75,8 +80,8 @@ public class ShapeManager : IRequiredService, IDisposable
                 {
                     _temporaryIndices[i].TryAdd(shapeString, index);
                     _temporaryMasks[i] |= (ushort)(1 << index);
-                    if (collection.MetaCache!.Shp.State.Count > 0
-                     && collection.MetaCache!.Shp.ShouldBeEnabled(shapeString, modelIndex, human.GetArmorChanged(modelIndex).Set))
+                    if (cache.State.Count > 0
+                     && cache.ShouldBeEnabled(shapeString, modelIndex, _ids[(int)modelIndex]))
                         _temporaryValues[i] |= (ushort)(1 << index);
                 }
                 else
@@ -86,37 +91,54 @@ public class ShapeManager : IRequiredService, IDisposable
             }
         }
 
-        UpdateDefaultMasks();
+        UpdateDefaultMasks(cache);
     }
 
-    private void UpdateDefaultMasks()
+    private void UpdateDefaultMasks(ShpCache cache)
     {
         foreach (var (shape, topIndex) in _temporaryIndices[1])
         {
-            if (CheckCenter(shape, 'w', 'r') && _temporaryIndices[2].TryGetValue(shape, out var handIndex))
+            if (shape.IsWrist() && _temporaryIndices[2].TryGetValue(shape, out var handIndex))
             {
                 _temporaryValues[1] |= 1u << topIndex;
                 _temporaryValues[2] |= 1u << handIndex;
+                CheckCondition(shape, HumanSlot.Body, HumanSlot.Hands, 1, 2);
             }
 
-            if (CheckCenter(shape, 'w', 'a') && _temporaryIndices[3].TryGetValue(shape, out var legIndex))
+            if (shape.IsWaist() && _temporaryIndices[3].TryGetValue(shape, out var legIndex))
             {
                 _temporaryValues[1] |= 1u << topIndex;
                 _temporaryValues[3] |= 1u << legIndex;
+                CheckCondition(shape, HumanSlot.Body, HumanSlot.Legs, 1, 3);
             }
         }
 
         foreach (var (shape, bottomIndex) in _temporaryIndices[3])
         {
-            if (CheckCenter(shape, 'a', 'n') && _temporaryIndices[4].TryGetValue(shape, out var footIndex))
+            if (shape.IsAnkle() && _temporaryIndices[4].TryGetValue(shape, out var footIndex))
             {
                 _temporaryValues[3] |= 1u << bottomIndex;
                 _temporaryValues[4] |= 1u << footIndex;
+                CheckCondition(shape, HumanSlot.Legs, HumanSlot.Feet, 3, 4);
+            }
+        }
+
+        return;
+
+        void CheckCondition(in ShapeString shape, HumanSlot slot1, HumanSlot slot2, int idx1, int idx2)
+        {
+            if (!cache.CheckConditionState(shape, out var dict))
+                return;
+
+            foreach (var (subShape, set) in dict)
+            {
+                if (set.Contains(slot1, _ids[idx1]))
+                    if (_temporaryIndices[idx1].TryGetValue(subShape, out var subIndex))
+                        _temporaryValues[idx1] |= 1u << subIndex;
+                if (set.Contains(slot2, _ids[idx2]))
+                    if (_temporaryIndices[idx2].TryGetValue(subShape, out var subIndex))
+                        _temporaryValues[idx2] |= 1u << subIndex;
             }
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static bool CheckCenter(in ShapeString shape, char first, char second)
-        => shape.Length > 8 && shape[4] == first && shape[5] == second && shape[6] is (byte)'_';
 }

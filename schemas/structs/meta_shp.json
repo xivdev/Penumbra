@@ -16,6 +16,12 @@
             "minLength": 5,
             "maxLength": 30,
             "pattern": "^shpx_"
+        },
+        "ShapeCondition": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 30,
+            "pattern": "^shpx_(wa|an|wr)_"
         }
     },
     "required": [
