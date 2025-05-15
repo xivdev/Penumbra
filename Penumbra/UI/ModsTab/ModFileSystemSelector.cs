@@ -131,16 +131,39 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         ".7z",
     ];
 
-    public new void Draw(float width)
+    public new void Draw()
     {
         _dragDrop.CreateImGuiSource("ModDragDrop", m => m.Extensions.Any(e => ValidModExtensions.Contains(e.ToLowerInvariant())), m =>
         {
             ImUtf8.Text($"Dragging mods for import:\n\t{string.Join("\n\t", m.Files.Select(Path.GetFileName))}");
             return true;
         });
-        base.Draw(width);
+        base.Draw();
         if (_dragDrop.CreateImGuiTarget("ModDragDrop", out var files, out _))
             _modImportManager.AddUnpack(files.Where(f => ValidModExtensions.Contains(Path.GetExtension(f.ToLowerInvariant()))));
+    }
+
+    protected override float CurrentWidth
+        => _config.Ephemeral.CurrentModSelectorWidth * ImUtf8.GlobalScale;
+
+    protected override float MinimumAbsoluteRemainder
+        => 550 * ImUtf8.GlobalScale;
+
+    protected override float MinimumScaling
+        => _config.Ephemeral.ModSelectorMinimumScale;
+
+    protected override float MaximumScaling
+        => _config.Ephemeral.ModSelectorMaximumScale;
+
+    protected override void SetSize(Vector2 size)
+    {
+        base.SetSize(size);
+        var adaptedSize = MathF.Round(size.X / ImUtf8.GlobalScale);
+        if (adaptedSize == _config.Ephemeral.CurrentModSelectorWidth)
+            return;
+
+        _config.Ephemeral.CurrentModSelectorWidth = adaptedSize;
+        _config.Ephemeral.Save();
     }
 
     public override void Dispose()
@@ -651,14 +674,10 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (!_stateFilter.HasFlag(ModFilter.Temporary) || !_stateFilter.HasFlag(ModFilter.NotTemporary))
         {
             if (settings == null && _stateFilter.HasFlag(ModFilter.Temporary))
-            {
                 return true;
-            }
-            
+
             if (settings != null && settings.IsTemporary() != _stateFilter.HasFlag(ModFilter.Temporary))
-            {
                 return true;
-            }
         }
 
         // Handle Inheritance

@@ -53,7 +53,7 @@ public class ModsTab(
     {
         try
         {
-            selector.Draw(GetModSelectorSize(config));
+            selector.Draw();
             ImGui.SameLine();
             ImGui.SetCursorPosX(MathF.Round(ImGui.GetCursorPosX()));
             using var group = ImRaii.Group();
@@ -84,19 +84,6 @@ public class ModsTab(
               + $"{selector.Selected?.Name ?? "NULL"} Selected Mod\n"
               + $"{string.Join(", ", _activeCollections.Current.Inheritance.DirectlyInheritsFrom.Select(c => c.Identity.AnonymizedName))} Inheritances\n");
         }
-    }
-
-    /// <summary> Get the correct size for the mod selector based on current config. </summary>
-    public static float GetModSelectorSize(Configuration config)
-    {
-        var absoluteSize = Math.Clamp(config.ModSelectorAbsoluteSize, Configuration.Constants.MinAbsoluteSize,
-            Math.Min(Configuration.Constants.MaxAbsoluteSize, ImGui.GetContentRegionAvail().X - 100));
-        var relativeSize = config.ScaleModSelector
-            ? Math.Clamp(config.ModSelectorScaledSize, Configuration.Constants.MinScaledSize, Configuration.Constants.MaxScaledSize)
-            : 0;
-        return MathF.Round(config.ScaleModSelector
-            ? Math.Max(absoluteSize, relativeSize * ImGui.GetContentRegionAvail().X / 100)
-            : absoluteSize);
     }
 
     private void DrawRedrawLine()

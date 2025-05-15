@@ -1,6 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using OtterGui.Classes;
+using OtterGui.FileSystem.Selector;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
@@ -22,6 +23,10 @@ public class EphemeralConfig : ISavable, IDisposable, IService
 
     [JsonIgnore]
     private readonly ModPathChanged _modPathChanged;
+
+    public float CurrentModSelectorWidth { get; set; } = 200f;
+    public float ModSelectorMinimumScale { get; set; } = 0.1f;
+    public float ModSelectorMaximumScale { get; set; } = 0.5f;
 
     public int                      Version                           { get; set; } = Configuration.Constants.CurrentVersion;
     public int                      LastSeenVersion                   { get; set; } = PenumbraChangelog.LastChangelogVersion;
