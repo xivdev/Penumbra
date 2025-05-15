@@ -5,6 +5,10 @@
             "$anchor": "EquipSlot",
             "enum": [ "Unknown", "MainHand", "OffHand", "Head", "Body", "Hands", "Belt", "Legs", "Feet", "Ears", "Neck", "Wrists", "RFinger", "BothHand", "LFinger", "HeadBody", "BodyHandsLegsFeet", "SoulCrystal", "LegsFeet", "FullBody", "BodyHands", "BodyLegsFeet", "ChestHands", "Nothing", "All" ]
         },
+        "HumanSlot": {
+            "$anchor": "HumanSlot",
+            "enum": [ "Head", "Body", "Hands", "Legs", "Feet", "Ears", "Neck", "Wrists", "RFinger", "LFinger", "Hair", "Face", "Ear", "Glasses", "Unknown" ]
+        },
         "Gender": {
             "$anchor": "Gender",
             "enum": [ "Unknown", "Male", "Female", "MaleNpc", "FemaleNpc" ]

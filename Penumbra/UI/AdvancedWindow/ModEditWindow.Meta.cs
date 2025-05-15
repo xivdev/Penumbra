@@ -61,6 +61,7 @@ public partial class ModEditWindow
         DrawEditHeader(MetaManipulationType.Gmp);
         DrawEditHeader(MetaManipulationType.Rsp);
         DrawEditHeader(MetaManipulationType.Atch);
+        DrawEditHeader(MetaManipulationType.Shp);
         DrawEditHeader(MetaManipulationType.GlobalEqp);
     }
 

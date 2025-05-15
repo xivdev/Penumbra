@@ -245,6 +245,8 @@ public sealed class CollectionCache : IDisposable
                 AddManipulation(mod, identifier, entry);
             foreach (var (identifier, entry) in files.Manipulations.Atch)
                 AddManipulation(mod, identifier, entry);
+            foreach (var (identifier, entry) in files.Manipulations.Shp)
+                AddManipulation(mod, identifier, entry);
             foreach (var identifier in files.Manipulations.GlobalEqp)
                 AddManipulation(mod, identifier, null!);
         }

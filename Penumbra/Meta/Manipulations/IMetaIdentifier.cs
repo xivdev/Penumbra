@@ -15,6 +15,7 @@ public enum MetaManipulationType : byte
     Rsp       = 6,
     GlobalEqp = 7,
     Atch      = 8,
+    Shp       = 9,
 }
 
 public interface IMetaIdentifier

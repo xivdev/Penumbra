@@ -51,7 +51,7 @@ public class SettingsTab : ITab, IUiService
     private readonly MigrationSectionDrawer      _migrationDrawer;
     private readonly CollectionAutoSelector      _autoSelector;
     private readonly CleanupService              _cleanupService;
-    private readonly AttributeHooks              _attributeHooks;
+    private readonly AttributeHook               _attributeHook;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -64,7 +64,7 @@ public class SettingsTab : ITab, IUiService
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
-        AttributeHooks attributeHooks)
+        AttributeHook attributeHook)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -89,7 +89,7 @@ public class SettingsTab : ITab, IUiService
         _migrationDrawer      = migrationDrawer;
         _autoSelector         = autoSelector;
         _cleanupService       = cleanupService;
-        _attributeHooks       = attributeHooks;
+        _attributeHook        = attributeHook;
     }
 
     public void DrawHeader()
@@ -525,55 +525,6 @@ public class SettingsTab : ITab, IUiService
         ImGuiUtil.LabeledHelpMarker("Sort Mode", "Choose the sort mode for the mod selector in the mods tab.");
     }
 
-    private float _absoluteSelectorSize = float.NaN;
-
-    /// <summary> Draw a selector for the absolute size of the mod selector in pixels. </summary>
-    private void DrawAbsoluteSizeSelector()
-    {
-        if (float.IsNaN(_absoluteSelectorSize))
-            _absoluteSelectorSize = _config.ModSelectorAbsoluteSize;
-
-        if (ImGuiUtil.DragFloat("##absoluteSize", ref _absoluteSelectorSize, UiHelpers.InputTextWidth.X, 1,
-                Configuration.Constants.MinAbsoluteSize, Configuration.Constants.MaxAbsoluteSize, "%.0f")
-         && _absoluteSelectorSize != _config.ModSelectorAbsoluteSize)
-        {
-            _config.ModSelectorAbsoluteSize = _absoluteSelectorSize;
-            _config.Save();
-        }
-
-        ImGui.SameLine();
-        ImGuiUtil.LabeledHelpMarker("Mod Selector Absolute Size",
-            "The minimal absolute size of the mod selector in the mod tab in pixels.");
-    }
-
-    private int _relativeSelectorSize = int.MaxValue;
-
-    /// <summary> Draw a selector for the relative size of the mod selector as a percentage and a toggle to enable relative sizing. </summary>
-    private void DrawRelativeSizeSelector()
-    {
-        var scaleModSelector = _config.ScaleModSelector;
-        if (ImGui.Checkbox("Scale Mod Selector With Window Size", ref scaleModSelector))
-        {
-            _config.ScaleModSelector = scaleModSelector;
-            _config.Save();
-        }
-
-        ImGui.SameLine();
-        if (_relativeSelectorSize == int.MaxValue)
-            _relativeSelectorSize = _config.ModSelectorScaledSize;
-        if (ImGuiUtil.DragInt("##relativeSize", ref _relativeSelectorSize, UiHelpers.InputTextWidth.X - ImGui.GetCursorPosX(), 0.1f,
-                Configuration.Constants.MinScaledSize, Configuration.Constants.MaxScaledSize, "%i%%")
-         && _relativeSelectorSize != _config.ModSelectorScaledSize)
-        {
-            _config.ModSelectorScaledSize = _relativeSelectorSize;
-            _config.Save();
-        }
-
-        ImGui.SameLine();
-        ImGuiUtil.LabeledHelpMarker("Mod Selector Relative Size",
-            "Instead of keeping the mod-selector in the Installed Mods tab a fixed width, this will let it scale with the total size of the Penumbra window.");
-    }
-
     private void DrawRenameSettings()
     {
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
@@ -607,8 +558,6 @@ public class SettingsTab : ITab, IUiService
     private void DrawModSelectorSettings()
     {
         DrawFolderSortType();
-        DrawAbsoluteSizeSelector();
-        DrawRelativeSizeSelector();
         DrawRenameSettings();
         Checkbox("Open Folders by Default", "Whether to start with all folders collapsed or expanded in the mod selector.",
             _config.OpenFoldersByDefault,   v =>
@@ -626,7 +575,8 @@ public class SettingsTab : ITab, IUiService
                 _config.Save();
             });
         Widget.DoubleModifierSelector("Incognito Modifier",
-            "A modifier you need to hold while clicking the Incognito or Temporary Settings Mode button for it to take effect.", UiHelpers.InputTextWidth.X,
+            "A modifier you need to hold while clicking the Incognito or Temporary Settings Mode button for it to take effect.",
+            UiHelpers.InputTextWidth.X,
             _config.IncognitoModifier,
             v =>
             {
@@ -811,8 +761,8 @@ public class SettingsTab : ITab, IUiService
             "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
           + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
             _config.KeepDefaultMetaChanges, v => _config.KeepDefaultMetaChanges = v);
-        Checkbox("Enable Advanced Shape Support", "Penumbra will allow for custom shape keys for modded models to be considered and combined.",
-            _config.EnableAttributeHooks,         _attributeHooks.SetState);
+        Checkbox("Enable Custom Shape Support", "Penumbra will allow for custom shape keys for modded models to be considered and combined.",
+            _config.EnableCustomShapes,         _attributeHook.SetState);
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
         DrawEnableDebugModeBox();

@@ -1,11 +1,12 @@
 using Lumina.Misc;
 using Newtonsoft.Json;
 using Penumbra.GameData.Files.PhybStructs;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta;
 
 [JsonConverter(typeof(Converter))]
-public struct ShapeString : IEquatable<ShapeString>
+public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
 {
     public const int MaxLength = 30;
 
@@ -21,6 +22,20 @@ public struct ShapeString : IEquatable<ShapeString>
 
     public override string ToString()
         => Encoding.UTF8.GetString(_buffer[..Length]);
+
+    public byte this[int index]
+        => _buffer[index];
+
+    public unsafe ReadOnlySpan<byte> AsSpan
+    {
+        get
+        {
+            fixed (void* ptr = &this)
+            {
+                return new ReadOnlySpan<byte>(ptr, Length);
+            }
+        }
+    }
 
     public bool Equals(ShapeString other)
         => Length == other.Length && _buffer[..Length].SequenceEqual(other._buffer[..Length]);
@@ -41,6 +56,14 @@ public struct ShapeString : IEquatable<ShapeString>
     {
         var span = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pointer);
         return TryRead(span, out ret);
+    }
+
+    public unsafe int CompareTo(ShapeString other)
+    {
+        fixed (void* lhs = &this)
+        {
+            return ByteStringFunctions.Compare((byte*)lhs, Length, (byte*)&other, other.Length);
+        }
     }
 
     public static bool TryRead(ReadOnlySpan<byte> utf8, out ShapeString ret)
@@ -67,6 +90,14 @@ public struct ShapeString : IEquatable<ShapeString>
         ret._buffer[written] = 0;
         ret._buffer[31]      = (byte)written;
         return true;
+    }
+
+    public void ForceLength(byte length)
+    {
+        if (length > MaxLength)
+            length = MaxLength;
+        _buffer[length] = 0;
+        _buffer[31]     = length;
     }
 
     private sealed class Converter : JsonConverter<ShapeString>

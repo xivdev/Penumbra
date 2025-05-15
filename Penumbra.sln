@@ -50,6 +50,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "structs", "structs", "{B03F
 		schemas\structs\meta_gmp.json = schemas\structs\meta_gmp.json
 		schemas\structs\meta_imc.json = schemas\structs\meta_imc.json
 		schemas\structs\meta_rsp.json = schemas\structs\meta_rsp.json
+		schemas\structs\meta_shp.json = schemas\structs\meta_shp.json
 		schemas\structs\option.json = schemas\structs\option.json
 	EndProjectSection
 EndProject

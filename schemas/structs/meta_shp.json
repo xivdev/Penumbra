@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "Entry": {
+            "type": "boolean"
+        },
+        "Slot": {
+            "$ref": "meta_enums.json#HumanSlot"
+        },
+        "Id": {
+            "$ref": "meta_enums.json#U16"
+        },
+        "Shape": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 30
+        }
+    },
+    "required": [
+        "Shape"
+    ]
+}
