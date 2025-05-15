@@ -19,7 +19,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public override ReadOnlySpan<byte> Label
         => "Shape Keys (SHP)###SHP"u8;
 
-    private ShapeString _buffer = ShapeString.TryRead("shp_"u8, out var s) ? s : ShapeString.Empty;
+    private ShapeString _buffer = ShapeString.TryRead("shpx_"u8, out var s) ? s : ShapeString.Empty;
     private bool        _identifierValid;
 
     public override int NumColumns
@@ -200,7 +200,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip("Supported shape keys need to have the format `shp_xx_*` and a maximum length of 30 characters."u8);
+        ImUtf8.HoverTooltip("Supported shape keys need to have the format `shpx_*` and a maximum length of 30 characters."u8);
         return ret;
     }
 

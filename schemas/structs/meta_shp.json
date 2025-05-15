@@ -13,8 +13,9 @@
         },
         "Shape": {
             "type": "string",
-            "minLength": 8,
-            "maxLength": 30
+            "minLength": 5,
+            "maxLength": 30,
+            "pattern": "^shpx_"
         }
     },
     "required": [

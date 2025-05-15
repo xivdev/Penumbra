@@ -93,13 +93,13 @@ public class ShapeManager : IRequiredService, IDisposable
     {
         foreach (var (shape, topIndex) in _temporaryIndices[1])
         {
-            if (shape[4] is (byte)'w' && shape[5] is (byte)'r' && _temporaryIndices[2].TryGetValue(shape, out var handIndex))
+            if (CheckCenter(shape, 'w', 'r') && _temporaryIndices[2].TryGetValue(shape, out var handIndex))
             {
                 _temporaryValues[1] |= 1u << topIndex;
                 _temporaryValues[2] |= 1u << handIndex;
             }
 
-            if (shape[4] is (byte)'w' && shape[5] is (byte)'a' && _temporaryIndices[3].TryGetValue(shape, out var legIndex))
+            if (CheckCenter(shape, 'w', 'a') && _temporaryIndices[3].TryGetValue(shape, out var legIndex))
             {
                 _temporaryValues[1] |= 1u << topIndex;
                 _temporaryValues[3] |= 1u << legIndex;
@@ -108,11 +108,15 @@ public class ShapeManager : IRequiredService, IDisposable
 
         foreach (var (shape, bottomIndex) in _temporaryIndices[3])
         {
-            if (shape[4] is (byte)'a' && shape[5] is (byte)'n' && _temporaryIndices[4].TryGetValue(shape, out var footIndex))
+            if (CheckCenter(shape, 'a', 'n') && _temporaryIndices[4].TryGetValue(shape, out var footIndex))
             {
                 _temporaryValues[3] |= 1u << bottomIndex;
                 _temporaryValues[4] |= 1u << footIndex;
             }
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool CheckCenter(in ShapeString shape, char first, char second)
+        => shape.Length > 8 && shape[4] == first && shape[5] == second && shape[6] is (byte)'_';
 }

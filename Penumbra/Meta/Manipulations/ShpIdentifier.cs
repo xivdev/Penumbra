@@ -1,4 +1,3 @@
-using Lumina.Models.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
@@ -61,34 +60,16 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         return ValidateCustomShapeString(Shape);
     }
 
-    public static bool ValidateCustomShapeString(ReadOnlySpan<byte> shape)
-    {
-        // "shp_xx_y"
-        if (shape.Length < 8)
-            return false;
-
-        if (shape[0] is not (byte)'s'
-         || shape[1] is not (byte)'h'
-         || shape[2] is not (byte)'p'
-         || shape[3] is not (byte)'_'
-         || shape[6] is not (byte)'_')
-            return false;
-
-        return true;
-    }
-
     public static unsafe bool ValidateCustomShapeString(byte* shape)
     {
-        // "shp_xx_y"
+        // "shpx_*"
         if (shape is null)
             return false;
 
         if (*shape++ is not (byte)'s'
          || *shape++ is not (byte)'h'
          || *shape++ is not (byte)'p'
-         || *shape++ is not (byte)'_'
-         || *shape++ is 0
-         || *shape++ is 0
+         || *shape++ is not (byte)'x'
          || *shape++ is not (byte)'_'
          || *shape is 0)
             return false;
@@ -98,16 +79,16 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
 
     public static bool ValidateCustomShapeString(in ShapeString shape)
     {
-        // "shp_xx_y"
-        if (shape.Length < 8)
+        // "shpx_*"
+        if (shape.Length < 6)
             return false;
 
         var span = shape.AsSpan;
         if (span[0] is not (byte)'s'
          || span[1] is not (byte)'h'
          || span[2] is not (byte)'p'
-         || span[3] is not (byte)'_'
-         || span[6] is not (byte)'_')
+         || span[3] is not (byte)'x'
+         || span[4] is not (byte)'_')
             return false;
 
         return true;
