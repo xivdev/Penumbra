@@ -11,11 +11,18 @@ namespace Penumbra.Mods.Settings;
 /// <summary> Contains the settings for a given mod. </summary>
 public class ModSettings
 {
-    public static readonly ModSettings Empty = new();
+    public static readonly ModSettings Empty = new(true);
 
-    public                 SettingList Settings { get; internal init; } = [];
-    public                 ModPriority Priority { get; set; }
-    public                 bool        Enabled  { get; set; }
+    public SettingList Settings { get; internal init; } = [];
+    public ModPriority Priority { get; set; }
+    public bool        Enabled  { get; set; }
+    public bool        IsEmpty  { get; protected init; }
+
+    public ModSettings()
+    { }
+
+    protected ModSettings(bool empty)
+        => IsEmpty = empty;
 
     // Create an independent copy of the current settings.
     public ModSettings DeepCopy()

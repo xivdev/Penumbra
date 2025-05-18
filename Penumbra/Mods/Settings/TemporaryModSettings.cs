@@ -2,9 +2,11 @@ namespace Penumbra.Mods.Settings;
 
 public sealed class TemporaryModSettings : ModSettings
 {
+    public new static readonly TemporaryModSettings Empty = new(true);
+
     public const string OwnSource = "yourself";
     public       string Source    = string.Empty;
-    public       int    Lock      = 0;
+    public       int    Lock;
     public       bool   ForceInherit;
 
     // Create default settings for a given mod.
@@ -21,12 +23,16 @@ public sealed class TemporaryModSettings : ModSettings
     public TemporaryModSettings()
     { }
 
+    private TemporaryModSettings(bool empty)
+        : base(empty)
+    { }
+
     public TemporaryModSettings(Mod mod, ModSettings? clone, string source = OwnSource, int key = 0)
     {
         Source       = source;
         Lock         = key;
         ForceInherit = clone == null;
-        if (clone != null && clone != Empty)
+        if (clone is { IsEmpty: false })
         {
             Enabled  = clone.Enabled;
             Priority = clone.Priority;
@@ -34,6 +40,7 @@ public sealed class TemporaryModSettings : ModSettings
         }
         else
         {
+            IsEmpty  = true;
             Enabled  = false;
             Priority = ModPriority.Default;
             Settings = SettingList.Default(mod);
