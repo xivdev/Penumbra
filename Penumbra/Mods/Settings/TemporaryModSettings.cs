@@ -40,7 +40,6 @@ public sealed class TemporaryModSettings : ModSettings
         }
         else
         {
-            IsEmpty  = true;
             Enabled  = false;
             Priority = ModPriority.Default;
             Settings = SettingList.Default(mod);
