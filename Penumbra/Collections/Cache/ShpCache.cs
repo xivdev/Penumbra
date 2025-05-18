@@ -22,10 +22,6 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
     public int EnabledCount { get; private set; }
 
-
-    public bool ShouldBeEnabled(ShapeConnectorCondition connector, in ShapeString shape, HumanSlot slot, PrimaryId id)
-        => State(connector).TryGetValue(shape, out var value) && value.Contains(slot, id);
-
     public sealed class ShpHashSet : HashSet<(HumanSlot Slot, PrimaryId Id)>
     {
         private readonly BitArray _allIds = new(ShapeManager.ModelSlotSize);
@@ -148,13 +144,14 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
         void Func(Dictionary<ShapeString, ShpHashSet> dict)
         {
-            if (!_shpData.TryGetValue(identifier.Shape, out var value))
+            if (!dict.TryGetValue(identifier.Shape, out var value))
                 return;
 
-            if (value.TrySet(identifier.Slot, identifier.Id, ShpEntry.False) && value.IsEmpty)
+            if (value.TrySet(identifier.Slot, identifier.Id, ShpEntry.False))
             {
                 --EnabledCount;
-                _shpData.Remove(identifier.Shape);
+                if (value.IsEmpty)
+                    dict.Remove(identifier.Shape);
             }
         }
     }
