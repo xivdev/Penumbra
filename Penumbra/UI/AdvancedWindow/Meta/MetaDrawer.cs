@@ -44,9 +44,13 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         DrawNew();
 
         var height    = ColumnHeight;
-        var skips     = ImGuiClip.GetNecessarySkipsAtPos(height, ImGui.GetCursorPosY());
-        var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
-        ImGuiClip.DrawEndDummy(remainder, height);
+        var skips     = ImGuiClip.GetNecessarySkipsAtPos(height, ImGui.GetCursorPosY(), Count);
+        if (skips < Count)
+        {
+            var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
+            if (remainder > 0)
+                ImGuiClip.DrawEndDummy(remainder, height);
+        }
 
         void DrawLine((TIdentifier Identifier, TEntry Value) pair)
             => DrawEntry(pair.Identifier, pair.Value);
