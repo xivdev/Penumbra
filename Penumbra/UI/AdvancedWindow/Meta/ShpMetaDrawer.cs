@@ -19,10 +19,8 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public override ReadOnlySpan<byte> Label
         => "Shape Keys (SHP)###SHP"u8;
 
-    private ShapeString _buffer          = ShapeString.TryRead("shpx_"u8, out var s) ? s : ShapeString.Empty;
-    private ShapeString _conditionBuffer = ShapeString.Empty;
+    private ShapeString _buffer = ShapeString.TryRead("shpx_"u8, out var s) ? s : ShapeString.Empty;
     private bool        _identifierValid;
-    private bool        _conditionValid = true;
 
     public override int NumColumns
         => 7;
@@ -32,7 +30,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override void Initialize()
     {
-        Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeString.Empty, ShapeString.Empty);
+        Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeString.Empty, ShapeConnectorCondition.None);
     }
 
     protected override void DrawNew()
@@ -42,7 +40,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Shp)));
 
         ImGui.TableNextColumn();
-        var canAdd = !Editor.Contains(Identifier) && _identifierValid && _conditionValid;
+        var canAdd = !Editor.Contains(Identifier) && _identifierValid;
         var tt = canAdd
             ? "Stage this edit."u8
             : _identifierValid
@@ -69,7 +67,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             .OrderBy(kvp => kvp.Key.Shape)
             .ThenBy(kvp => kvp.Key.Slot)
             .ThenBy(kvp => kvp.Key.Id)
-            .ThenBy(kvp => kvp.Key.ShapeCondition)
+            .ThenBy(kvp => kvp.Key.ConnectorCondition)
             .Select(kvp => (kvp.Key, kvp.Value));
 
     protected override int Count
@@ -87,7 +85,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         changes |= DrawShapeKeyInput(ref identifier, ref _buffer, ref _identifierValid);
 
         ImGui.TableNextColumn();
-        changes |= DrawShapeConditionInput(ref identifier, ref _conditionBuffer, ref _conditionValid);
+        changes |= DrawConnectorConditionInput(ref identifier);
         return changes;
     }
 
@@ -109,9 +107,9 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         ImUtf8.TextFramed(identifier.Shape.AsSpan, FrameColor);
 
         ImGui.TableNextColumn();
-        if (identifier.ShapeCondition.Length > 0)
+        if (identifier.ConnectorCondition is not ShapeConnectorCondition.None)
         {
-            ImUtf8.TextFramed(identifier.ShapeCondition.AsSpan, FrameColor);
+            ImUtf8.TextFramed($"{identifier.ConnectorCondition}", FrameColor);
             ImUtf8.HoverTooltip("Connector condition for this shape to be activated.");
         }
     }
@@ -190,27 +188,18 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
                     }
                     else
                     {
-                        if (_conditionBuffer.Length > 0
-                         && (_conditionBuffer.IsAnkle() && slot is not HumanSlot.Feet and not HumanSlot.Legs
-                             || _conditionBuffer.IsWrist() && slot is not HumanSlot.Hands and not HumanSlot.Body
-                             || _conditionBuffer.IsWaist() && slot is not HumanSlot.Body and not HumanSlot.Legs))
+                        identifier = identifier with
                         {
-                            identifier = identifier with
+                            Slot = slot,
+                            ConnectorCondition = Identifier.ConnectorCondition switch
                             {
-                                Slot = slot,
-                                ShapeCondition = ShapeString.Empty,
-                            };
-                            _conditionValid = false;
-                        }
-                        else
-                        {
-                            identifier = identifier with
-                            {
-                                Slot = slot,
-                                ShapeCondition = _conditionBuffer,
-                            };
-                            _conditionValid = true;
-                        }
+                                ShapeConnectorCondition.Wrists when slot is HumanSlot.Body or HumanSlot.Hands => ShapeConnectorCondition.Wrists,
+                                ShapeConnectorCondition.Waist when slot is HumanSlot.Body or HumanSlot.Legs   => ShapeConnectorCondition.Waist,
+                                ShapeConnectorCondition.Ankles when slot is HumanSlot.Legs or HumanSlot.Feet  => ShapeConnectorCondition.Ankles,
+                                _                                                                             => ShapeConnectorCondition.None,
+                            },
+                        };
+                        ret = true;
                     }
                 }
         }
@@ -241,30 +230,40 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         return ret;
     }
 
-    public static unsafe bool DrawShapeConditionInput(ref ShpIdentifier identifier, ref ShapeString buffer, ref bool valid,
-        float unscaledWidth = 150)
+    public static unsafe bool DrawConnectorConditionInput(ref ShpIdentifier identifier, float unscaledWidth = 150)
     {
-        var ret  = false;
-        var ptr  = Unsafe.AsPointer(ref buffer);
-        var span = new Span<byte>(ptr, ShapeString.MaxLength + 1);
-        using (new ImRaii.ColorStyle().Push(ImGuiCol.Border, Colors.RegexWarningBorder, !valid).Push(ImGuiStyleVar.FrameBorderSize, 1f, !valid))
+        var ret = false;
+        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        var (showWrists, showWaist, showAnkles, disable) = identifier.Slot switch
         {
-            ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
-            if (ImUtf8.InputText("##shpCondition"u8, span, out int newLength, "Shape Condition..."u8))
+            HumanSlot.Unknown => (true, true, true, false),
+            HumanSlot.Body    => (true, true, false, false),
+            HumanSlot.Legs    => (false, true, true, false),
+            HumanSlot.Hands   => (true, false, false, false),
+            HumanSlot.Feet    => (false, false, true, false),
+            _                 => (false, false, false, true),
+        };
+        using var disabled = ImRaii.Disabled(disable);
+        using (var combo = ImUtf8.Combo("##shpCondition"u8, $"{identifier.ConnectorCondition}"))
+        {
+            if (combo)
             {
-                buffer.ForceLength((byte)newLength);
-                valid = ShpIdentifier.ValidateCustomShapeString(buffer)
-                 && (buffer.IsAnkle() && identifier.Slot is HumanSlot.Unknown or HumanSlot.Feet or HumanSlot.Legs
-                     || buffer.IsWaist() && identifier.Slot is HumanSlot.Unknown or HumanSlot.Body or HumanSlot.Legs
-                     || buffer.IsWrist() && identifier.Slot is HumanSlot.Unknown or HumanSlot.Body or HumanSlot.Hands);
-                if (valid)
-                    identifier = identifier with { ShapeCondition = buffer };
-                ret = true;
+                if (ImUtf8.Selectable("None"u8, identifier.ConnectorCondition is ShapeConnectorCondition.None))
+                    identifier = identifier with { ConnectorCondition = ShapeConnectorCondition.None };
+
+                if (showWrists && ImUtf8.Selectable("Wrists"u8, identifier.ConnectorCondition is ShapeConnectorCondition.Wrists))
+                    identifier = identifier with { ConnectorCondition = ShapeConnectorCondition.Wrists };
+
+                if (showWaist && ImUtf8.Selectable("Waist"u8, identifier.ConnectorCondition is ShapeConnectorCondition.Waist))
+                    identifier = identifier with { ConnectorCondition = ShapeConnectorCondition.Waist };
+
+                if (showAnkles && ImUtf8.Selectable("Ankles"u8, identifier.ConnectorCondition is ShapeConnectorCondition.Ankles))
+                    identifier = identifier with { ConnectorCondition = ShapeConnectorCondition.Ankles };
             }
         }
 
         ImUtf8.HoverTooltip(
-            "Supported conditional shape keys need to have the format `shpx_an_*` (Legs or Feet), `shpx_wr_*` (Body or Hands), or `shpx_wa_*` (Body or Legs) and a maximum length of 30 characters."u8);
+            "Only activate this shape key if any custom connector shape keys (shpx_[wr|wa|an]_*) are also enabled through matching attributes."u8);
         return ret;
     }
 

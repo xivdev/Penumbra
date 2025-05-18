@@ -29,6 +29,10 @@
             "$anchor": "SubRace",
             "enum": [ "Unknown", "Midlander", "Highlander", "Wildwood", "Duskwight", "Plainsfolk", "Dunesfolk", "SeekerOfTheSun", "KeeperOfTheMoon", "Seawolf", "Hellsguard", "Raen", "Xaela", "Helion", "Lost", "Rava", "Veena" ]
         },
+        "ShapeConnectorCondition": {
+            "$anchor": "ShapeConnectorCondition",
+            "enum": [ "None", "Wrists", "Waist", "Ankles" ]
+        },
         "U8": {
             "$anchor": "U8",
             "oneOf": [

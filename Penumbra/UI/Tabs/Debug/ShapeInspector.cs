@@ -8,6 +8,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.UI.Tabs.Debug;
 
@@ -52,17 +53,11 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         ImUtf8.TableSetupColumn("Enabled"u8,   ImGuiTableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
-        foreach (var (shape, set) in data.ModCollection.MetaCache!.Shp.State)
+        foreach (var condition in Enum.GetValues<ShapeConnectorCondition>())
         {
-            ImGui.TableNextColumn();
-            DrawShape(shape, set);
-        }
-
-        foreach (var (condition, dict) in data.ModCollection.MetaCache!.Shp.ConditionState)
-        {
-            foreach (var (shape, set) in dict)
+            foreach (var (shape, set) in data.ModCollection.MetaCache!.Shp.State(condition))
             {
-                ImUtf8.DrawTableColumn(condition.AsSpan);
+                ImUtf8.DrawTableColumn(condition.ToString());
                 DrawShape(shape, set);
             }
         }

@@ -8,26 +8,23 @@ namespace Penumbra.Collections.Cache;
 public sealed class ShpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<ShpIdentifier, ShpEntry>(manager, collection)
 {
     public bool ShouldBeEnabled(in ShapeString shape, HumanSlot slot, PrimaryId id)
-        => _shpData.TryGetValue(shape, out var value) && value.Contains(slot, id);
+        => EnabledCount > 0 && _shpData.TryGetValue(shape, out var value) && value.Contains(slot, id);
 
-    internal IReadOnlyDictionary<ShapeString, ShpHashSet> State
-        => _shpData;
-
-    internal IEnumerable<(ShapeString, IReadOnlyDictionary<ShapeString, ShpHashSet>)> ConditionState
-        => _conditionalSet.Select(kvp => (kvp.Key, (IReadOnlyDictionary<ShapeString, ShpHashSet>)kvp.Value));
-
-    public bool CheckConditionState(ShapeString condition, [NotNullWhen(true)] out IReadOnlyDictionary<ShapeString, ShpHashSet>? dict)
-    {
-        if (_conditionalSet.TryGetValue(condition, out var d))
+    internal IReadOnlyDictionary<ShapeString, ShpHashSet> State(ShapeConnectorCondition connector)
+        => connector switch
         {
-            dict = d;
-            return true;
-        }
+            ShapeConnectorCondition.None   => _shpData,
+            ShapeConnectorCondition.Wrists => _wristConnectors,
+            ShapeConnectorCondition.Waist  => _waistConnectors,
+            ShapeConnectorCondition.Ankles => _ankleConnectors,
+            _                              => [],
+        };
 
-        dict = null;
-        return false;
-    }
+    public int EnabledCount { get; private set; }
 
+
+    public bool ShouldBeEnabled(ShapeConnectorCondition connector, in ShapeString shape, HumanSlot slot, PrimaryId id)
+        => State(connector).TryGetValue(shape, out var value) && value.Contains(slot, id);
 
     public sealed class ShpHashSet : HashSet<(HumanSlot Slot, PrimaryId Id)>
     {
@@ -92,14 +89,18 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
             => !_allIds.HasAnySet() && Count is 0;
     }
 
-    private readonly Dictionary<ShapeString, ShpHashSet>                          _shpData        = [];
-    private readonly Dictionary<ShapeString, Dictionary<ShapeString, ShpHashSet>> _conditionalSet = [];
+    private readonly Dictionary<ShapeString, ShpHashSet> _shpData         = [];
+    private readonly Dictionary<ShapeString, ShpHashSet> _wristConnectors = [];
+    private readonly Dictionary<ShapeString, ShpHashSet> _waistConnectors = [];
+    private readonly Dictionary<ShapeString, ShpHashSet> _ankleConnectors = [];
 
     public void Reset()
     {
         Clear();
         _shpData.Clear();
-        _conditionalSet.Clear();
+        _wristConnectors.Clear();
+        _waistConnectors.Clear();
+        _ankleConnectors.Clear();
     }
 
     protected override void Dispose(bool _)
@@ -107,23 +108,15 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
     protected override void ApplyModInternal(ShpIdentifier identifier, ShpEntry entry)
     {
-        if (identifier.ShapeCondition.Length > 0)
+        switch (identifier.ConnectorCondition)
         {
-            if (!_conditionalSet.TryGetValue(identifier.ShapeCondition, out var shapes))
-            {
-                if (!entry.Value)
-                    return;
-
-                shapes = new Dictionary<ShapeString, ShpHashSet>();
-                _conditionalSet.Add(identifier.ShapeCondition, shapes);
-            }
-
-            Func(shapes);
+            case ShapeConnectorCondition.None:   Func(_shpData); break;
+            case ShapeConnectorCondition.Wrists: Func(_wristConnectors); break;
+            case ShapeConnectorCondition.Waist:  Func(_waistConnectors); break;
+            case ShapeConnectorCondition.Ankles: Func(_ankleConnectors); break;
         }
-        else
-        {
-            Func(_shpData);
-        }
+
+        return;
 
         void Func(Dictionary<ShapeString, ShpHashSet> dict)
         {
@@ -136,22 +129,19 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
                 dict.Add(identifier.Shape, value);
             }
 
-            value.TrySet(identifier.Slot, identifier.Id, entry);
+            if (value.TrySet(identifier.Slot, identifier.Id, entry))
+                ++EnabledCount;
         }
     }
 
     protected override void RevertModInternal(ShpIdentifier identifier)
     {
-        if (identifier.ShapeCondition.Length > 0)
+        switch (identifier.ConnectorCondition)
         {
-            if (!_conditionalSet.TryGetValue(identifier.ShapeCondition, out var shapes))
-                return;
-
-            Func(shapes);
-        }
-        else
-        {
-            Func(_shpData);
+            case ShapeConnectorCondition.None:   Func(_shpData); break;
+            case ShapeConnectorCondition.Wrists: Func(_wristConnectors); break;
+            case ShapeConnectorCondition.Waist:  Func(_waistConnectors); break;
+            case ShapeConnectorCondition.Ankles: Func(_ankleConnectors); break;
         }
 
         return;
@@ -162,7 +152,10 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
                 return;
 
             if (value.TrySet(identifier.Slot, identifier.Id, ShpEntry.False) && value.IsEmpty)
+            {
+                --EnabledCount;
                 _shpData.Remove(identifier.Shape);
+            }
         }
     }
 }

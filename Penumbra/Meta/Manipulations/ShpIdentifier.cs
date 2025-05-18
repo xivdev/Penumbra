@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -7,7 +8,16 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, ShapeString Shape, ShapeString ShapeCondition)
+[JsonConverter(typeof(StringEnumConverter))]
+public enum ShapeConnectorCondition : byte
+{
+    None   = 0,
+    Wrists = 1,
+    Waist  = 2,
+    Ankles = 3,
+}
+
+public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, ShapeString Shape, ShapeConnectorCondition ConnectorCondition)
     : IComparable<ShpIdentifier>, IMetaIdentifier
 {
     public int CompareTo(ShpIdentifier other)
@@ -34,11 +44,11 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
             return 1;
         }
 
-        var shapeComparison = Shape.CompareTo(other.Shape);
-        if (shapeComparison is not 0)
-            return shapeComparison;
+        var conditionComparison = ConnectorCondition.CompareTo(other.ConnectorCondition);
+        if (conditionComparison is not 0)
+            return conditionComparison;
 
-        return ShapeCondition.CompareTo(other.ShapeCondition);
+        return Shape.CompareTo(other.Shape);
     }
 
 
@@ -62,9 +72,13 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
                 sb.Append("All IDs");
         }
 
-        if (ShapeCondition.Length > 0)
-            sb.Append(" - ")
-                .Append(ShapeCondition);
+        switch (ConnectorCondition)
+        {
+            case ShapeConnectorCondition.Wrists: sb.Append(" - Wrist Connector"); break;
+            case ShapeConnectorCondition.Waist:  sb.Append(" - Waist Connector"); break;
+            case ShapeConnectorCondition.Ankles: sb.Append(" - Ankle Connector"); break;
+        }
+
         return sb.ToString();
     }
 
@@ -87,20 +101,16 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         if (!ValidateCustomShapeString(Shape))
             return false;
 
-        if (ShapeCondition.Length is 0)
-            return true;
-
-        if (!ValidateCustomShapeString(ShapeCondition))
+        if (!Enum.IsDefined(ConnectorCondition))
             return false;
 
-        return Slot switch
+        return ConnectorCondition switch
         {
-            HumanSlot.Hands when ShapeCondition.IsWrist()                                                           => true,
-            HumanSlot.Body when ShapeCondition.IsWrist() || ShapeCondition.IsWaist()                                => true,
-            HumanSlot.Legs when ShapeCondition.IsWaist() || ShapeCondition.IsAnkle()                                => true,
-            HumanSlot.Feet when ShapeCondition.IsAnkle()                                                            => true,
-            HumanSlot.Unknown when ShapeCondition.IsWrist() || ShapeCondition.IsWaist() || ShapeCondition.IsAnkle() => true,
-            _                                                                                                       => false,
+            ShapeConnectorCondition.None   => true,
+            ShapeConnectorCondition.Wrists => Slot is HumanSlot.Body or HumanSlot.Hands or HumanSlot.Unknown,
+            ShapeConnectorCondition.Waist  => Slot is HumanSlot.Body or HumanSlot.Legs or HumanSlot.Unknown,
+            ShapeConnectorCondition.Ankles => Slot is HumanSlot.Legs or HumanSlot.Feet or HumanSlot.Unknown,
+            _                              => false,
         };
     }
 
@@ -145,8 +155,8 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         if (Id.HasValue)
             jObj["Id"] = Id.Value.Id.ToString();
         jObj["Shape"] = Shape.ToString();
-        if (ShapeCondition.Length > 0)
-            jObj["ShapeCondition"] = ShapeCondition.ToString();
+        if (ConnectorCondition is not ShapeConnectorCondition.None)
+            jObj["ConnectorCondition"] = ConnectorCondition.ToString();
         return jObj;
     }
 
@@ -156,11 +166,10 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
         if (shape is null || !ShapeString.TryRead(shape, out var shapeString))
             return null;
 
-        var slot                 = jObj["Slot"]?.ToObject<HumanSlot>() ?? HumanSlot.Unknown;
-        var id                   = jObj["Id"]?.ToObject<ushort>();
-        var shapeCondition       = jObj["ShapeCondition"]?.ToObject<string>();
-        var shapeConditionString = shapeCondition is null || !ShapeString.TryRead(shapeCondition, out var s) ? ShapeString.Empty : s;
-        var identifier           = new ShpIdentifier(slot, id, shapeString, shapeConditionString);
+        var slot               = jObj["Slot"]?.ToObject<HumanSlot>() ?? HumanSlot.Unknown;
+        var id                 = jObj["Id"]?.ToObject<ushort>();
+        var connectorCondition = jObj["ConnectorCondition"]?.ToObject<ShapeConnectorCondition>() ?? ShapeConnectorCondition.None;
+        var identifier         = new ShpIdentifier(slot, id, shapeString, connectorCondition);
         return identifier.Validate() ? identifier : null;
     }
 

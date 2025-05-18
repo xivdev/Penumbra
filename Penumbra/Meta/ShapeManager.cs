@@ -1,4 +1,3 @@
-using System.Reflection.Metadata.Ecma335;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
@@ -80,8 +79,7 @@ public class ShapeManager : IRequiredService, IDisposable
                 {
                     _temporaryIndices[i].TryAdd(shapeString, index);
                     _temporaryMasks[i] |= (ushort)(1 << index);
-                    if (cache.State.Count > 0
-                     && cache.ShouldBeEnabled(shapeString, modelIndex, _ids[(int)modelIndex]))
+                    if (cache.ShouldBeEnabled(shapeString, modelIndex, _ids[(int)modelIndex]))
                         _temporaryValues[i] |= (ushort)(1 << index);
                 }
                 else
@@ -102,14 +100,14 @@ public class ShapeManager : IRequiredService, IDisposable
             {
                 _temporaryValues[1] |= 1u << topIndex;
                 _temporaryValues[2] |= 1u << handIndex;
-                CheckCondition(shape, HumanSlot.Body, HumanSlot.Hands, 1, 2);
+                CheckCondition(cache.State(ShapeConnectorCondition.Wrists), HumanSlot.Body, HumanSlot.Hands, 1, 2);
             }
 
             if (shape.IsWaist() && _temporaryIndices[3].TryGetValue(shape, out var legIndex))
             {
                 _temporaryValues[1] |= 1u << topIndex;
                 _temporaryValues[3] |= 1u << legIndex;
-                CheckCondition(shape, HumanSlot.Body, HumanSlot.Legs, 1, 3);
+                CheckCondition(cache.State(ShapeConnectorCondition.Waist), HumanSlot.Body, HumanSlot.Legs, 1, 3);
             }
         }
 
@@ -119,25 +117,23 @@ public class ShapeManager : IRequiredService, IDisposable
             {
                 _temporaryValues[3] |= 1u << bottomIndex;
                 _temporaryValues[4] |= 1u << footIndex;
-                CheckCondition(shape, HumanSlot.Legs, HumanSlot.Feet, 3, 4);
+                CheckCondition(cache.State(ShapeConnectorCondition.Ankles), HumanSlot.Legs, HumanSlot.Feet, 3, 4);
             }
         }
 
         return;
 
-        void CheckCondition(in ShapeString shape, HumanSlot slot1, HumanSlot slot2, int idx1, int idx2)
+        void CheckCondition(IReadOnlyDictionary<ShapeString, ShpCache.ShpHashSet> dict, HumanSlot slot1, HumanSlot slot2, int idx1, int idx2)
         {
-            if (!cache.CheckConditionState(shape, out var dict))
+            if (dict.Count is 0)
                 return;
 
-            foreach (var (subShape, set) in dict)
+            foreach (var (shape, set) in dict)
             {
-                if (set.Contains(slot1, _ids[idx1]))
-                    if (_temporaryIndices[idx1].TryGetValue(subShape, out var subIndex))
-                        _temporaryValues[idx1] |= 1u << subIndex;
-                if (set.Contains(slot2, _ids[idx2]))
-                    if (_temporaryIndices[idx2].TryGetValue(subShape, out var subIndex))
-                        _temporaryValues[idx2] |= 1u << subIndex;
+                if (set.Contains(slot1, _ids[idx1]) && _temporaryIndices[idx1].TryGetValue(shape, out var index1))
+                    _temporaryValues[idx1] |= 1u << index1;
+                if (set.Contains(slot2, _ids[idx2]) && _temporaryIndices[idx2].TryGetValue(shape, out var index2))
+                    _temporaryValues[idx2] |= 1u << index2;
             }
         }
     }
