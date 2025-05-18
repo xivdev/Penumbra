@@ -7,9 +7,11 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Extensions;
+using OtterGui.Log;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
+using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -34,6 +36,41 @@ using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 
+public sealed class OptionSelectCombo(ModEditor editor, ModEditWindow window)
+    : FilterComboCache<(string FullName, (int Group, int Data) Index)>(
+        () => window.Mod!.AllDataContainers.Select(c => (c.GetFullName(), c.GetDataIndices())).ToList(), MouseWheelType.Control, Penumbra.Log)
+{
+    private ImRaii.ColorStyle _border;
+
+    protected override void DrawCombo(string label, string preview, string tooltip, int currentSelected, float previewWidth, float itemHeight,
+        ImGuiComboFlags flags)
+    {
+        _border = ImRaii.PushFrameBorder(ImUtf8.GlobalScale, ColorId.FolderLine.Value());
+        base.DrawCombo(label, preview, tooltip, currentSelected, previewWidth, itemHeight, flags);
+        _border.Dispose();
+    }
+
+    protected override void DrawFilter(int currentSelected, float width)
+    {
+        _border.Dispose();
+        base.DrawFilter(currentSelected, width);
+    }
+
+    public bool Draw(float width)
+    {
+        var flags = window.Mod!.AllDataContainers.Count() switch
+        {
+            0   => ImGuiComboFlags.NoArrowButton,
+            > 8 => ImGuiComboFlags.HeightLargest,
+            _   => ImGuiComboFlags.None,
+        };
+        return Draw("##optionSelector", editor.Option!.GetFullName(), string.Empty, width, ImGui.GetTextLineHeight(), flags);
+    }
+
+    protected override bool DrawSelectable(int globalIdx, bool selected)
+        => ImUtf8.Selectable(Items[globalIdx].FullName, selected);
+}
+
 public partial class ModEditWindow : Window, IDisposable, IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
@@ -49,11 +86,12 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
     private readonly IDragDropManager    _dragDropManager;
     private readonly IDataManager        _gameData;
     private readonly IFramework          _framework;
+    private readonly OptionSelectCombo   _optionSelect;
 
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
 
-    public Mod?   Mod { get; private set; }
+    public Mod? Mod { get; private set; }
 
 
     public bool IsLoading
@@ -208,7 +246,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         if (IsLoading)
         {
             var radius    = 100 * ImUtf8.GlobalScale;
-            var thickness = (int) (20 * ImUtf8.GlobalScale);
+            var thickness = (int)(20 * ImUtf8.GlobalScale);
             var offsetX   = ImGui.GetContentRegionAvail().X / 2 - radius;
             var offsetY   = ImGui.GetContentRegionAvail().Y / 2 - radius;
             ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(offsetX, offsetY));
@@ -216,7 +254,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
             return;
         }
 
-        using var tabBar = ImRaii.TabBar("##tabs");
+        using var tabBar = ImUtf8.TabBar("##tabs"u8);
         if (!tabBar)
             return;
 
@@ -231,7 +269,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _materialTab.Draw();
         DrawTextureTab();
         _shaderPackageTab.Draw();
-        using (var tab = ImRaii.TabItem("Item Swap"))
+        using (var tab = ImUtf8.TabItem("Item Swap"u8))
         {
             if (tab)
                 _itemSwapTab.DrawContent();
@@ -453,10 +491,11 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
 
     private bool DrawOptionSelectHeader()
     {
-        using var    style         = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
-        var          width         = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
-        var          ret           = false;
-        if (ImUtf8.ButtonEx("Default Option"u8, "Switch to the default option for the mod.\nThis resets unsaved changes."u8, width, _editor.Option is DefaultSubMod))
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
+        var       width = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
+        var       ret   = false;
+        if (ImUtf8.ButtonEx("Default Option"u8, "Switch to the default option for the mod.\nThis resets unsaved changes."u8, width,
+                _editor.Option is DefaultSubMod))
         {
             _editor.LoadOption(-1, 0).Wait();
             ret = true;
@@ -470,22 +509,11 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         }
 
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(width.X);
-        style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
-        using var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value());
-        using var combo = ImUtf8.Combo("##optionSelector"u8, _editor.Option!.GetFullName());
-        if (!combo)
-            return ret;
-
-        foreach (var (option, idx) in Mod!.AllDataContainers.WithIndex())
+        if (_optionSelect.Draw(width.X))
         {
-            using var id = ImRaii.PushId(idx);
-            if (ImGui.Selectable(option.GetFullName(), option == _editor.Option))
-            {
-                var (groupIdx, dataIdx) = option.GetDataIndices();
-                _editor.LoadOption(groupIdx, dataIdx).Wait();
-                ret = true;
-            }
+            var (groupIdx, dataIdx) = _optionSelect.CurrentSelection.Index;
+            _editor.LoadOption(groupIdx, dataIdx).Wait();
+            ret = true;
         }
 
         return ret;
@@ -656,6 +684,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _fileDialog        = fileDialog;
         _framework         = framework;
         _metaDrawers       = metaDrawers;
+        _optionSelect      = new OptionSelectCombo(editor, this);
         _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => mtrlTabFactory.Create(this, new MtrlFile(bytes), path, writable));
