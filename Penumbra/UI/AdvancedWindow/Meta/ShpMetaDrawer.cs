@@ -5,6 +5,7 @@ using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -151,9 +152,8 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         }
         else
         {
-            if (IdInput("##shpPrimaryId"u8, unscaledWidth, identifier.Id.GetValueOrDefault(0).Id, out var setId, 0,
-                    ExpandedEqpGmpBase.Count - 1,
-                    false))
+            var max = identifier.Slot.ToSpecificEnum() is BodySlot ? byte.MaxValue : ExpandedEqpGmpBase.Count - 1;
+            if (IdInput("##shpPrimaryId"u8, unscaledWidth, identifier.Id.GetValueOrDefault(0).Id, out var setId, 0, max, false))
             {
                 identifier = identifier with { Id = setId };
                 ret        = true;
@@ -190,6 +190,10 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
                     {
                         identifier = identifier with
                         {
+                            Id = identifier.Id.HasValue
+                                ? (PrimaryId)Math.Clamp(identifier.Id.Value.Id, 0,
+                                    slot.ToSpecificEnum() is BodySlot ? byte.MaxValue : ExpandedEqpGmpBase.Count - 1)
+                                : null,
                             Slot = slot,
                             ConnectorCondition = Identifier.ConnectorCondition switch
                             {

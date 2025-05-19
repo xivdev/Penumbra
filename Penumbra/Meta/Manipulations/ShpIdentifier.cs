@@ -5,6 +5,7 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
@@ -96,6 +97,12 @@ public readonly record struct ShpIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
             return false;
 
         if (Slot is HumanSlot.Unknown && Id is not null)
+            return false;
+
+        if (Slot.ToSpecificEnum() is BodySlot && Id is { Id: > byte.MaxValue })
+            return false;
+
+        if (Id is { Id: > ExpandedEqpGmpBase.Count - 1 })
             return false;
 
         if (!ValidateCustomShapeString(Shape))

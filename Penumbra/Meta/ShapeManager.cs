@@ -70,7 +70,7 @@ public class ShapeManager : IRequiredService, IDisposable
             if (model is null || model->ModelResourceHandle is null)
                 continue;
 
-            _ids[(int)modelIndex] = human.GetArmorChanged(modelIndex).Set;
+            _ids[(int)modelIndex] = human.GetModelId(modelIndex);
 
             ref var shapes = ref model->ModelResourceHandle->Shapes;
             foreach (var (shape, index) in shapes.Where(kvp => ShpIdentifier.ValidateCustomShapeString(kvp.Key.Value)))
