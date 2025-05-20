@@ -6,7 +6,7 @@
             "$ref": "meta_enums.json#U16"
         },
         "Type": {
-            "enum": [ "DoNotHideEarrings", "DoNotHideNecklace", "DoNotHideBracelets", "DoNotHideRingR", "DoNotHideRingL", "DoNotHideHrothgarHats", "DoNotHideVieraHats" ]
+            "enum": [ "DoNotHideEarrings", "DoNotHideNecklace", "DoNotHideBracelets", "DoNotHideRingR", "DoNotHideRingL", "DoNotHideHrothgarHats", "DoNotHideVieraHats", "HideHorns", "HideVieraEars", "HideMiqoteEars" ]
         }
     },
     "required": [ "Type" ],
@@ -14,7 +14,7 @@
         {
             "properties": {
                 "Type": {
-                    "const": [ "DoNotHideHrothgarHats", "DoNotHideVieraHats" ]
+                    "const": [ "DoNotHideHrothgarHats", "DoNotHideVieraHats", "HideHorns", "HideVieraEars", "HideMiqoteEars" ]
                 },
                 "Condition": {
                     "const": 0
@@ -24,7 +24,7 @@
         {
             "properties": {
                 "Type": {
-                    "const": [ "DoNotHideHrothgarHats", "DoNotHideVieraHats" ]
+                    "const": [ "DoNotHideHrothgarHats", "DoNotHideVieraHats", "HideHorns", "HideVieraEars", "HideMiqoteEars" ]
                 }
             }
         },

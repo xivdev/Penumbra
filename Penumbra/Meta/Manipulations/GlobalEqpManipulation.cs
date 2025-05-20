@@ -16,10 +16,10 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
         if (!Enum.IsDefined(Type))
             return false;
 
-        if (Type is GlobalEqpType.DoNotHideVieraHats or GlobalEqpType.DoNotHideHrothgarHats)
-            return Condition == 0;
+        if (Type.HasCondition())
+            return Condition.Id is not 0;
 
-        return Condition != 0;
+        return Condition.Id is 0;
     }
 
     public JObject AddToJson(JObject jObj)
@@ -89,6 +89,12 @@ public readonly struct GlobalEqpManipulation : IMetaIdentifier
             changedItems.UpdateCountOrSet("All Hats for Viera", () => new IdentifiedName());
         else if (Type is GlobalEqpType.DoNotHideHrothgarHats)
             changedItems.UpdateCountOrSet("All Hats for Hrothgar", () => new IdentifiedName());
+        else if (Type is GlobalEqpType.HideHorns)
+            changedItems.UpdateCountOrSet("All Au Ra Horns", () => new IdentifiedName());
+        else if (Type is GlobalEqpType.HideVieraEars)
+            changedItems.UpdateCountOrSet("All Viera Ears", () => new IdentifiedName());
+        else if (Type is GlobalEqpType.HideMiqoteEars)
+            changedItems.UpdateCountOrSet("All Miqo'te Ears", () => new IdentifiedName());
     }
 
     public MetaIndex FileIndex()

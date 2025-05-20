@@ -13,6 +13,9 @@ public enum GlobalEqpType
     DoNotHideRingL,
     DoNotHideHrothgarHats,
     DoNotHideVieraHats,
+    HideHorns,
+    HideVieraEars,
+    HideMiqoteEars,
 }
 
 public static class GlobalEqpExtensions
@@ -27,6 +30,9 @@ public static class GlobalEqpExtensions
             GlobalEqpType.DoNotHideRingL        => true,
             GlobalEqpType.DoNotHideHrothgarHats => false,
             GlobalEqpType.DoNotHideVieraHats    => false,
+            GlobalEqpType.HideHorns             => false,
+            GlobalEqpType.HideVieraEars         => false,
+            GlobalEqpType.HideMiqoteEars        => false,
             _                                   => false,
         };
 
@@ -41,6 +47,9 @@ public static class GlobalEqpExtensions
             GlobalEqpType.DoNotHideRingL        => "Always Show Rings (Left Finger)"u8,
             GlobalEqpType.DoNotHideHrothgarHats => "Always Show Hats for Hrothgar"u8,
             GlobalEqpType.DoNotHideVieraHats    => "Always Show Hats for Viera"u8,
+            GlobalEqpType.HideHorns             => "Always Hide Horns (Au Ra)"u8,
+            GlobalEqpType.HideVieraEars         => "Always Hide Ears (Viera)"u8,
+            GlobalEqpType.HideMiqoteEars        => "Always Hide Ears (Miqo'te)"u8,
             _                                   => "\0"u8,
         };
 
@@ -60,6 +69,9 @@ public static class GlobalEqpExtensions
                 "Prevents the game from hiding any hats for Hrothgar that are normally flagged to not display on them."u8,
             GlobalEqpType.DoNotHideVieraHats =>
                 "Prevents the game from hiding any hats for Viera that are normally flagged to not display on them."u8,
-            _ => "\0"u8,
+            GlobalEqpType.HideHorns      => "Forces the game to hide Au Ra horns regardless of headwear."u8,
+            GlobalEqpType.HideVieraEars  => "Forces the game to hide Viera ears regardless of headwear."u8,
+            GlobalEqpType.HideMiqoteEars => "Forces the game to hide Miqo'te ears regardless of headwear."u8,
+            _                            => "\0"u8,
         };
 }

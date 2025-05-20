@@ -15,6 +15,9 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
     private readonly HashSet<PrimaryId> _doNotHideRingR     = [];
     private          bool               _doNotHideVieraHats;
     private          bool               _doNotHideHrothgarHats;
+    private          bool               _hideAuRaHorns;
+    private          bool               _hideVieraEars;
+    private          bool               _hideMiqoteEars;
 
     public new void Clear()
     {
@@ -26,6 +29,9 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
         _doNotHideRingR.Clear();
         _doNotHideHrothgarHats = false;
         _doNotHideVieraHats    = false;
+        _hideAuRaHorns         = false;
+        _hideVieraEars         = false;
+        _hideMiqoteEars        = false;
     }
 
     public unsafe EqpEntry Apply(EqpEntry original, CharacterArmor* armor)
@@ -39,8 +45,20 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
         if (_doNotHideHrothgarHats)
             original |= EqpEntry.HeadShowHrothgarHat;
 
+        if (_hideAuRaHorns)
+            original &= ~EqpEntry.HeadShowEarAuRa;
+
+        if (_hideVieraEars)
+            original &= ~EqpEntry.HeadShowEarViera;
+
+        if (_hideMiqoteEars)
+            original &= ~EqpEntry.HeadShowEarMiqote;
+
         if (_doNotHideEarrings.Contains(armor[5].Set))
-            original |= EqpEntry.HeadShowEarringsHyurRoe | EqpEntry.HeadShowEarringsLalaElezen | EqpEntry.HeadShowEarringsMiqoHrothViera | EqpEntry.HeadShowEarringsAura;
+            original |= EqpEntry.HeadShowEarringsHyurRoe
+              | EqpEntry.HeadShowEarringsLalaElezen
+              | EqpEntry.HeadShowEarringsMiqoHrothViera
+              | EqpEntry.HeadShowEarringsAura;
 
         if (_doNotHideNecklace.Contains(armor[6].Set))
             original |= EqpEntry.BodyShowNecklace | EqpEntry.HeadShowNecklace;
@@ -53,6 +71,7 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
 
         if (_doNotHideRingL.Contains(armor[9].Set))
             original |= EqpEntry.HandShowRingL;
+
         return original;
     }
 
@@ -71,6 +90,9 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
             GlobalEqpType.DoNotHideRingL        => _doNotHideRingL.Add(manipulation.Condition),
             GlobalEqpType.DoNotHideHrothgarHats => !_doNotHideHrothgarHats && (_doNotHideHrothgarHats = true),
             GlobalEqpType.DoNotHideVieraHats    => !_doNotHideVieraHats && (_doNotHideVieraHats       = true),
+            GlobalEqpType.HideHorns             => !_hideAuRaHorns && (_hideAuRaHorns                 = true),
+            GlobalEqpType.HideMiqoteEars        => !_hideMiqoteEars && (_hideMiqoteEars               = true),
+            GlobalEqpType.HideVieraEars         => !_hideVieraEars && (_hideVieraEars                 = true),
             _                                   => false,
         };
         return true;
@@ -90,6 +112,9 @@ public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, 
             GlobalEqpType.DoNotHideRingL        => _doNotHideRingL.Remove(manipulation.Condition),
             GlobalEqpType.DoNotHideHrothgarHats => _doNotHideHrothgarHats && !(_doNotHideHrothgarHats = false),
             GlobalEqpType.DoNotHideVieraHats    => _doNotHideVieraHats && !(_doNotHideVieraHats       = false),
+            GlobalEqpType.HideHorns             => _hideAuRaHorns && (_hideAuRaHorns   = false),
+            GlobalEqpType.HideMiqoteEars        => _hideMiqoteEars && (_hideMiqoteEars = false),
+            GlobalEqpType.HideVieraEars         => _hideVieraEars && (_hideVieraEars   = false),
             _                                   => false,
         };
         return true;
