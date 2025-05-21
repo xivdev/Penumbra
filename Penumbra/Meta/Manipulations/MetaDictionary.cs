@@ -11,129 +11,164 @@ namespace Penumbra.Meta.Manipulations;
 [JsonConverter(typeof(Converter))]
 public class MetaDictionary
 {
-    private readonly Dictionary<ImcIdentifier, ImcEntry>           _imc       = [];
-    private readonly Dictionary<EqpIdentifier, EqpEntryInternal>   _eqp       = [];
-    private readonly Dictionary<EqdpIdentifier, EqdpEntryInternal> _eqdp      = [];
-    private readonly Dictionary<EstIdentifier, EstEntry>           _est       = [];
-    private readonly Dictionary<RspIdentifier, RspEntry>           _rsp       = [];
-    private readonly Dictionary<GmpIdentifier, GmpEntry>           _gmp       = [];
-    private readonly Dictionary<AtchIdentifier, AtchEntry>         _atch      = [];
-    private readonly Dictionary<ShpIdentifier, ShpEntry>           _shp       = [];
-    private readonly HashSet<GlobalEqpManipulation>                _globalEqp = [];
+    private class Wrapper : HashSet<GlobalEqpManipulation>
+    {
+        public readonly Dictionary<ImcIdentifier, ImcEntry>           Imc  = [];
+        public readonly Dictionary<EqpIdentifier, EqpEntryInternal>   Eqp  = [];
+        public readonly Dictionary<EqdpIdentifier, EqdpEntryInternal> Eqdp = [];
+        public readonly Dictionary<EstIdentifier, EstEntry>           Est  = [];
+        public readonly Dictionary<RspIdentifier, RspEntry>           Rsp  = [];
+        public readonly Dictionary<GmpIdentifier, GmpEntry>           Gmp  = [];
+        public readonly Dictionary<AtchIdentifier, AtchEntry>         Atch = [];
+        public readonly Dictionary<ShpIdentifier, ShpEntry>           Shp  = [];
+
+        public Wrapper()
+        { }
+
+        public Wrapper(MetaCache cache)
+        {
+            Imc  = cache.Imc.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            Eqp  = cache.Eqp.ToDictionary(kvp => kvp.Key, kvp => new EqpEntryInternal(kvp.Value.Entry, kvp.Key.Slot));
+            Eqdp = cache.Eqdp.ToDictionary(kvp => kvp.Key, kvp => new EqdpEntryInternal(kvp.Value.Entry, kvp.Key.Slot));
+            Est  = cache.Est.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            Gmp  = cache.Gmp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            Rsp  = cache.Rsp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            Atch = cache.Atch.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            Shp  = cache.Shp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            foreach (var geqp in cache.GlobalEqp.Keys)
+                Add(geqp);
+        }
+    }
+
+    private Wrapper? _data;
 
     public IReadOnlyDictionary<ImcIdentifier, ImcEntry> Imc
-        => _imc;
+        => _data?.Imc ?? [];
 
     public IReadOnlyDictionary<EqpIdentifier, EqpEntryInternal> Eqp
-        => _eqp;
+        => _data?.Eqp ?? [];
 
     public IReadOnlyDictionary<EqdpIdentifier, EqdpEntryInternal> Eqdp
-        => _eqdp;
+        => _data?.Eqdp ?? [];
 
     public IReadOnlyDictionary<EstIdentifier, EstEntry> Est
-        => _est;
+        => _data?.Est ?? [];
 
     public IReadOnlyDictionary<GmpIdentifier, GmpEntry> Gmp
-        => _gmp;
+        => _data?.Gmp ?? [];
 
     public IReadOnlyDictionary<RspIdentifier, RspEntry> Rsp
-        => _rsp;
+        => _data?.Rsp ?? [];
 
     public IReadOnlyDictionary<AtchIdentifier, AtchEntry> Atch
-        => _atch;
+        => _data?.Atch ?? [];
 
     public IReadOnlyDictionary<ShpIdentifier, ShpEntry> Shp
-        => _shp;
+        => _data?.Shp ?? [];
 
     public IReadOnlySet<GlobalEqpManipulation> GlobalEqp
-        => _globalEqp;
+        => _data ?? [];
 
     public int Count { get; private set; }
 
     public int GetCount(MetaManipulationType type)
-        => type switch
-        {
-            MetaManipulationType.Imc       => _imc.Count,
-            MetaManipulationType.Eqdp      => _eqdp.Count,
-            MetaManipulationType.Eqp       => _eqp.Count,
-            MetaManipulationType.Est       => _est.Count,
-            MetaManipulationType.Gmp       => _gmp.Count,
-            MetaManipulationType.Rsp       => _rsp.Count,
-            MetaManipulationType.Atch      => _atch.Count,
-            MetaManipulationType.Shp       => _shp.Count,
-            MetaManipulationType.GlobalEqp => _globalEqp.Count,
-            _                              => 0,
-        };
+        => _data is null
+            ? 0
+            : type switch
+            {
+                MetaManipulationType.Imc       => _data.Imc.Count,
+                MetaManipulationType.Eqdp      => _data.Eqdp.Count,
+                MetaManipulationType.Eqp       => _data.Eqp.Count,
+                MetaManipulationType.Est       => _data.Est.Count,
+                MetaManipulationType.Gmp       => _data.Gmp.Count,
+                MetaManipulationType.Rsp       => _data.Rsp.Count,
+                MetaManipulationType.Atch      => _data.Atch.Count,
+                MetaManipulationType.Shp       => _data.Shp.Count,
+                MetaManipulationType.GlobalEqp => _data.Count,
+                _                              => 0,
+            };
 
     public bool Contains(IMetaIdentifier identifier)
-        => identifier switch
-        {
-            EqdpIdentifier i        => _eqdp.ContainsKey(i),
-            EqpIdentifier i         => _eqp.ContainsKey(i),
-            EstIdentifier i         => _est.ContainsKey(i),
-            GlobalEqpManipulation i => _globalEqp.Contains(i),
-            GmpIdentifier i         => _gmp.ContainsKey(i),
-            ImcIdentifier i         => _imc.ContainsKey(i),
-            AtchIdentifier i        => _atch.ContainsKey(i),
-            ShpIdentifier i         => _shp.ContainsKey(i),
-            RspIdentifier i         => _rsp.ContainsKey(i),
-            _                       => false,
-        };
+        => _data is not null
+         && identifier switch
+            {
+                EqdpIdentifier i        => _data.Eqdp.ContainsKey(i),
+                EqpIdentifier i         => _data.Eqp.ContainsKey(i),
+                EstIdentifier i         => _data.Est.ContainsKey(i),
+                GlobalEqpManipulation i => _data.Contains(i),
+                GmpIdentifier i         => _data.Gmp.ContainsKey(i),
+                ImcIdentifier i         => _data.Imc.ContainsKey(i),
+                AtchIdentifier i        => _data.Atch.ContainsKey(i),
+                ShpIdentifier i         => _data.Shp.ContainsKey(i),
+                RspIdentifier i         => _data.Rsp.ContainsKey(i),
+                _                       => false,
+            };
 
     public void Clear()
     {
+        _data = null;
         Count = 0;
-        _imc.Clear();
-        _eqp.Clear();
-        _eqdp.Clear();
-        _est.Clear();
-        _rsp.Clear();
-        _gmp.Clear();
-        _atch.Clear();
-        _shp.Clear();
-        _globalEqp.Clear();
     }
 
     public void ClearForDefault()
     {
-        Count = _globalEqp.Count;
-        _imc.Clear();
-        _eqp.Clear();
-        _eqdp.Clear();
-        _est.Clear();
-        _rsp.Clear();
-        _gmp.Clear();
-        _atch.Clear();
+        if (_data is null)
+            return;
+
+        if (_data.Count is 0 && Shp.Count is 0)
+        {
+            _data = null;
+            Count = 0;
+        }
+
+        Count = GlobalEqp.Count + Shp.Count;
+        _data!.Imc.Clear();
+        _data!.Eqp.Clear();
+        _data!.Eqdp.Clear();
+        _data!.Est.Clear();
+        _data!.Rsp.Clear();
+        _data!.Gmp.Clear();
+        _data!.Atch.Clear();
     }
 
     public bool Equals(MetaDictionary other)
-        => Count == other.Count
-         && _imc.SetEquals(other._imc)
-         && _eqp.SetEquals(other._eqp)
-         && _eqdp.SetEquals(other._eqdp)
-         && _est.SetEquals(other._est)
-         && _rsp.SetEquals(other._rsp)
-         && _gmp.SetEquals(other._gmp)
-         && _atch.SetEquals(other._atch)
-         && _shp.SetEquals(other._shp)
-         && _globalEqp.SetEquals(other._globalEqp);
+    {
+        if (Count != other.Count)
+            return false;
+
+        if (_data is null)
+            return true;
+
+        return _data.Imc.SetEquals(other._data!.Imc)
+         && _data.Eqp.SetEquals(other._data!.Eqp)
+         && _data.Eqdp.SetEquals(other._data!.Eqdp)
+         && _data.Est.SetEquals(other._data!.Est)
+         && _data.Rsp.SetEquals(other._data!.Rsp)
+         && _data.Gmp.SetEquals(other._data!.Gmp)
+         && _data.Atch.SetEquals(other._data!.Atch)
+         && _data.Shp.SetEquals(other._data!.Shp)
+         && _data.SetEquals(other._data!);
+    }
 
     public IEnumerable<IMetaIdentifier> Identifiers
-        => _imc.Keys.Cast<IMetaIdentifier>()
-            .Concat(_eqdp.Keys.Cast<IMetaIdentifier>())
-            .Concat(_eqp.Keys.Cast<IMetaIdentifier>())
-            .Concat(_est.Keys.Cast<IMetaIdentifier>())
-            .Concat(_gmp.Keys.Cast<IMetaIdentifier>())
-            .Concat(_rsp.Keys.Cast<IMetaIdentifier>())
-            .Concat(_atch.Keys.Cast<IMetaIdentifier>())
-            .Concat(_shp.Keys.Cast<IMetaIdentifier>())
-            .Concat(_globalEqp.Cast<IMetaIdentifier>());
+        => _data is null
+            ? []
+            : _data.Imc.Keys.Cast<IMetaIdentifier>()
+                .Concat(_data!.Eqdp.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Eqp.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Est.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Gmp.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Rsp.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Atch.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Shp.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Cast<IMetaIdentifier>());
 
     #region TryAdd
 
     public bool TryAdd(ImcIdentifier identifier, ImcEntry entry)
     {
-        if (!_imc.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Imc.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -142,7 +177,8 @@ public class MetaDictionary
 
     public bool TryAdd(EqpIdentifier identifier, EqpEntryInternal entry)
     {
-        if (!_eqp.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Eqp.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -154,7 +190,8 @@ public class MetaDictionary
 
     public bool TryAdd(EqdpIdentifier identifier, EqdpEntryInternal entry)
     {
-        if (!_eqdp.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Eqdp.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -166,7 +203,8 @@ public class MetaDictionary
 
     public bool TryAdd(EstIdentifier identifier, EstEntry entry)
     {
-        if (!_est.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Est.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -175,7 +213,8 @@ public class MetaDictionary
 
     public bool TryAdd(GmpIdentifier identifier, GmpEntry entry)
     {
-        if (!_gmp.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Gmp.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -184,7 +223,8 @@ public class MetaDictionary
 
     public bool TryAdd(RspIdentifier identifier, RspEntry entry)
     {
-        if (!_rsp.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Rsp.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -193,7 +233,8 @@ public class MetaDictionary
 
     public bool TryAdd(AtchIdentifier identifier, in AtchEntry entry)
     {
-        if (!_atch.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Atch.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -202,7 +243,8 @@ public class MetaDictionary
 
     public bool TryAdd(ShpIdentifier identifier, in ShpEntry entry)
     {
-        if (!_shp.TryAdd(identifier, entry))
+        _data ??= [];
+        if (!_data!.Shp.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -211,7 +253,8 @@ public class MetaDictionary
 
     public bool TryAdd(GlobalEqpManipulation identifier)
     {
-        if (!_globalEqp.Add(identifier))
+        _data ??= [];
+        if (!_data.Add(identifier))
             return false;
 
         ++Count;
@@ -224,19 +267,19 @@ public class MetaDictionary
 
     public bool Update(ImcIdentifier identifier, ImcEntry entry)
     {
-        if (!_imc.ContainsKey(identifier))
+        if (_data is null || !_data.Imc.ContainsKey(identifier))
             return false;
 
-        _imc[identifier] = entry;
+        _data.Imc[identifier] = entry;
         return true;
     }
 
     public bool Update(EqpIdentifier identifier, EqpEntryInternal entry)
     {
-        if (!_eqp.ContainsKey(identifier))
+        if (_data is null || !_data.Eqp.ContainsKey(identifier))
             return false;
 
-        _eqp[identifier] = entry;
+        _data.Eqp[identifier] = entry;
         return true;
     }
 
@@ -245,10 +288,10 @@ public class MetaDictionary
 
     public bool Update(EqdpIdentifier identifier, EqdpEntryInternal entry)
     {
-        if (!_eqdp.ContainsKey(identifier))
+        if (_data is null || !_data.Eqdp.ContainsKey(identifier))
             return false;
 
-        _eqdp[identifier] = entry;
+        _data.Eqdp[identifier] = entry;
         return true;
     }
 
@@ -257,46 +300,46 @@ public class MetaDictionary
 
     public bool Update(EstIdentifier identifier, EstEntry entry)
     {
-        if (!_est.ContainsKey(identifier))
+        if (_data is null || !_data.Est.ContainsKey(identifier))
             return false;
 
-        _est[identifier] = entry;
+        _data.Est[identifier] = entry;
         return true;
     }
 
     public bool Update(GmpIdentifier identifier, GmpEntry entry)
     {
-        if (!_gmp.ContainsKey(identifier))
+        if (_data is null || !_data.Gmp.ContainsKey(identifier))
             return false;
 
-        _gmp[identifier] = entry;
+        _data.Gmp[identifier] = entry;
         return true;
     }
 
     public bool Update(RspIdentifier identifier, RspEntry entry)
     {
-        if (!_rsp.ContainsKey(identifier))
+        if (_data is null || !_data.Rsp.ContainsKey(identifier))
             return false;
 
-        _rsp[identifier] = entry;
+        _data.Rsp[identifier] = entry;
         return true;
     }
 
     public bool Update(AtchIdentifier identifier, in AtchEntry entry)
     {
-        if (!_atch.ContainsKey(identifier))
+        if (_data is null || !_data.Atch.ContainsKey(identifier))
             return false;
 
-        _atch[identifier] = entry;
+        _data.Atch[identifier] = entry;
         return true;
     }
 
     public bool Update(ShpIdentifier identifier, in ShpEntry entry)
     {
-        if (!_shp.ContainsKey(identifier))
+        if (_data is null || !_data.Shp.ContainsKey(identifier))
             return false;
 
-        _shp[identifier] = entry;
+        _data.Shp[identifier] = entry;
         return true;
     }
 
@@ -305,48 +348,59 @@ public class MetaDictionary
     #region TryGetValue
 
     public bool TryGetValue(EstIdentifier identifier, out EstEntry value)
-        => _est.TryGetValue(identifier, out value);
+        => _data?.Est.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(EqpIdentifier identifier, out EqpEntryInternal value)
-        => _eqp.TryGetValue(identifier, out value);
+        => _data?.Eqp.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(EqdpIdentifier identifier, out EqdpEntryInternal value)
-        => _eqdp.TryGetValue(identifier, out value);
+        => _data?.Eqdp.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(GmpIdentifier identifier, out GmpEntry value)
-        => _gmp.TryGetValue(identifier, out value);
+        => _data?.Gmp.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(RspIdentifier identifier, out RspEntry value)
-        => _rsp.TryGetValue(identifier, out value);
+        => _data?.Rsp.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(ImcIdentifier identifier, out ImcEntry value)
-        => _imc.TryGetValue(identifier, out value);
+        => _data?.Imc.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(AtchIdentifier identifier, out AtchEntry value)
-        => _atch.TryGetValue(identifier, out value);
+        => _data?.Atch.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
     public bool TryGetValue(ShpIdentifier identifier, out ShpEntry value)
-        => _shp.TryGetValue(identifier, out value);
+        => _data?.Shp.TryGetValue(identifier, out value) ?? SetDefault(out value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool SetDefault<T>(out T? value)
+    {
+        value = default;
+        return false;
+    }
 
     #endregion
 
     public bool Remove(IMetaIdentifier identifier)
     {
+        if (_data is null)
+            return false;
+
         var ret = identifier switch
         {
-            EqdpIdentifier i        => _eqdp.Remove(i),
-            EqpIdentifier i         => _eqp.Remove(i),
-            EstIdentifier i         => _est.Remove(i),
-            GlobalEqpManipulation i => _globalEqp.Remove(i),
-            GmpIdentifier i         => _gmp.Remove(i),
-            ImcIdentifier i         => _imc.Remove(i),
-            RspIdentifier i         => _rsp.Remove(i),
-            AtchIdentifier i        => _atch.Remove(i),
-            ShpIdentifier i         => _shp.Remove(i),
+            EqdpIdentifier i        => _data.Eqdp.Remove(i),
+            EqpIdentifier i         => _data.Eqp.Remove(i),
+            EstIdentifier i         => _data.Est.Remove(i),
+            GlobalEqpManipulation i => _data.Remove(i),
+            GmpIdentifier i         => _data.Gmp.Remove(i),
+            ImcIdentifier i         => _data.Imc.Remove(i),
+            RspIdentifier i         => _data.Rsp.Remove(i),
+            AtchIdentifier i        => _data.Atch.Remove(i),
+            ShpIdentifier i         => _data.Shp.Remove(i),
             _                       => false,
         };
-        if (ret)
-            --Count;
+        if (ret && --Count is 0)
+            _data = null;
+
         return ret;
     }
 
@@ -354,86 +408,97 @@ public class MetaDictionary
 
     public void UnionWith(MetaDictionary manips)
     {
-        foreach (var (identifier, entry) in manips._imc)
+        if (manips.Count is 0)
+            return;
+
+        _data ??= [];
+        foreach (var (identifier, entry) in manips._data!.Imc)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._eqp)
+        foreach (var (identifier, entry) in manips._data!.Eqp)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._eqdp)
+        foreach (var (identifier, entry) in manips._data!.Eqdp)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._gmp)
+        foreach (var (identifier, entry) in manips._data!.Gmp)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._rsp)
+        foreach (var (identifier, entry) in manips._data!.Rsp)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._est)
+        foreach (var (identifier, entry) in manips._data!.Est)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._atch)
+        foreach (var (identifier, entry) in manips._data!.Atch)
             TryAdd(identifier, entry);
 
-        foreach (var (identifier, entry) in manips._shp)
+        foreach (var (identifier, entry) in manips._data!.Shp)
             TryAdd(identifier, entry);
 
-        foreach (var identifier in manips._globalEqp)
+        foreach (var identifier in manips._data!)
             TryAdd(identifier);
     }
 
     /// <summary> Try to merge all manipulations from manips into this, and return the first failure, if any. </summary>
     public bool MergeForced(MetaDictionary manips, out IMetaIdentifier? failedIdentifier)
     {
-        foreach (var (identifier, _) in manips._imc.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        if (manips.Count is 0)
+        {
+            failedIdentifier = null;
+            return true;
+        }
+
+        _data ??= [];
+        foreach (var (identifier, _) in manips._data!.Imc.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._eqp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Eqp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._eqdp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Eqdp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._gmp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Gmp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._rsp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Rsp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._est.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Est.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._atch.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Atch.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var (identifier, _) in manips._shp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        foreach (var (identifier, _) in manips._data!.Shp.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
         {
             failedIdentifier = identifier;
             return false;
         }
 
-        foreach (var identifier in manips._globalEqp.Where(identifier => !TryAdd(identifier)))
+        foreach (var identifier in manips._data!.Where(identifier => !TryAdd(identifier)))
         {
             failedIdentifier = identifier;
             return false;
@@ -445,30 +510,50 @@ public class MetaDictionary
 
     public void SetTo(MetaDictionary other)
     {
-        _imc.SetTo(other._imc);
-        _eqp.SetTo(other._eqp);
-        _eqdp.SetTo(other._eqdp);
-        _est.SetTo(other._est);
-        _rsp.SetTo(other._rsp);
-        _gmp.SetTo(other._gmp);
-        _atch.SetTo(other._atch);
-        _shp.SetTo(other._shp);
-        _globalEqp.SetTo(other._globalEqp);
-        Count = _imc.Count + _eqp.Count + _eqdp.Count + _est.Count + _rsp.Count + _gmp.Count + _atch.Count + _shp.Count + _globalEqp.Count;
+        if (other.Count is 0)
+        {
+            _data = null;
+            Count = 0;
+            return;
+        }
+
+        _data ??= [];
+        _data!.Imc.SetTo(other._data!.Imc);
+        _data!.Eqp.SetTo(other._data!.Eqp);
+        _data!.Eqdp.SetTo(other._data!.Eqdp);
+        _data!.Est.SetTo(other._data!.Est);
+        _data!.Rsp.SetTo(other._data!.Rsp);
+        _data!.Gmp.SetTo(other._data!.Gmp);
+        _data!.Atch.SetTo(other._data!.Atch);
+        _data!.Shp.SetTo(other._data!.Shp);
+        _data!.SetTo(other._data!);
+        Count = other.Count;
     }
 
     public void UpdateTo(MetaDictionary other)
     {
-        _imc.UpdateTo(other._imc);
-        _eqp.UpdateTo(other._eqp);
-        _eqdp.UpdateTo(other._eqdp);
-        _est.UpdateTo(other._est);
-        _rsp.UpdateTo(other._rsp);
-        _gmp.UpdateTo(other._gmp);
-        _atch.UpdateTo(other._atch);
-        _shp.UpdateTo(other._shp);
-        _globalEqp.UnionWith(other._globalEqp);
-        Count = _imc.Count + _eqp.Count + _eqdp.Count + _est.Count + _rsp.Count + _gmp.Count + _atch.Count + _shp.Count + _globalEqp.Count;
+        if (other.Count is 0)
+            return;
+
+        _data ??= [];
+        _data!.Imc.UpdateTo(other._data!.Imc);
+        _data!.Eqp.UpdateTo(other._data!.Eqp);
+        _data!.Eqdp.UpdateTo(other._data!.Eqdp);
+        _data!.Est.UpdateTo(other._data!.Est);
+        _data!.Rsp.UpdateTo(other._data!.Rsp);
+        _data!.Gmp.UpdateTo(other._data!.Gmp);
+        _data!.Atch.UpdateTo(other._data!.Atch);
+        _data!.Shp.UpdateTo(other._data!.Shp);
+        _data!.UnionWith(other._data!);
+        Count = _data!.Imc.Count
+          + _data!.Eqp.Count
+          + _data!.Eqdp.Count
+          + _data!.Est.Count
+          + _data!.Rsp.Count
+          + _data!.Gmp.Count
+          + _data!.Atch.Count
+          + _data!.Shp.Count
+          + _data!.Count;
     }
 
     #endregion
@@ -635,15 +720,19 @@ public class MetaDictionary
             }
 
             var array = new JArray();
-            SerializeTo(array, value._imc);
-            SerializeTo(array, value._eqp);
-            SerializeTo(array, value._eqdp);
-            SerializeTo(array, value._est);
-            SerializeTo(array, value._rsp);
-            SerializeTo(array, value._gmp);
-            SerializeTo(array, value._atch);
-            SerializeTo(array, value._shp);
-            SerializeTo(array, value._globalEqp);
+            if (value._data is not null)
+            {
+                SerializeTo(array, value._data!.Imc);
+                SerializeTo(array, value._data!.Eqp);
+                SerializeTo(array, value._data!.Eqdp);
+                SerializeTo(array, value._data!.Est);
+                SerializeTo(array, value._data!.Rsp);
+                SerializeTo(array, value._data!.Gmp);
+                SerializeTo(array, value._data!.Atch);
+                SerializeTo(array, value._data!.Shp);
+                SerializeTo(array, value._data!);
+            }
+
             array.WriteTo(writer);
         }
 
@@ -771,18 +860,10 @@ public class MetaDictionary
 
     public MetaDictionary(MetaCache? cache)
     {
-        if (cache == null)
+        if (cache is null)
             return;
 
-        _imc       = cache.Imc.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
-        _eqp       = cache.Eqp.ToDictionary(kvp => kvp.Key, kvp => new EqpEntryInternal(kvp.Value.Entry, kvp.Key.Slot));
-        _eqdp      = cache.Eqdp.ToDictionary(kvp => kvp.Key, kvp => new EqdpEntryInternal(kvp.Value.Entry, kvp.Key.Slot));
-        _est       = cache.Est.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
-        _gmp       = cache.Gmp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
-        _rsp       = cache.Rsp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
-        _atch      = cache.Atch.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
-        _shp       = cache.Shp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
-        _globalEqp = cache.GlobalEqp.Select(kvp => kvp.Key).ToHashSet();
-        Count      = cache.Count;
+        _data = new Wrapper(cache);
+        Count = cache.Count;
     }
 }
