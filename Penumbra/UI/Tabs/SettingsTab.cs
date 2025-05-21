@@ -761,7 +761,7 @@ public class SettingsTab : ITab, IUiService
             "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
           + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
             _config.KeepDefaultMetaChanges, v => _config.KeepDefaultMetaChanges = v);
-        Checkbox("Enable Custom Shape Support", "Penumbra will allow for custom shape keys for modded models to be considered and combined.",
+        Checkbox("Enable Custom Shape and Attribute Support", "Penumbra will allow for custom shape keys and attributes for modded models to be considered and combined.",
             _config.EnableCustomShapes,         _attributeHook.SetState);
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
