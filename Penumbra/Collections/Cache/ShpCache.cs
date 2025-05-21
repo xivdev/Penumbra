@@ -7,10 +7,10 @@ namespace Penumbra.Collections.Cache;
 
 public sealed class ShpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<ShpIdentifier, ShpEntry>(manager, collection)
 {
-    public bool ShouldBeEnabled(in ShapeString shape, HumanSlot slot, PrimaryId id)
-        => EnabledCount > 0 && _shpData.TryGetValue(shape, out var value) && value.Contains(slot, id);
+    public bool ShouldBeEnabled(in ShapeAttributeString shape, HumanSlot slot, PrimaryId id, GenderRace genderRace)
+        => EnabledCount > 0 && _shpData.TryGetValue(shape, out var value) && value.Contains(slot, id, genderRace);
 
-    internal IReadOnlyDictionary<ShapeString, ShpHashSet> State(ShapeConnectorCondition connector)
+    internal IReadOnlyDictionary<ShapeAttributeString, ShapeAttributeHashSet> State(ShapeConnectorCondition connector)
         => connector switch
         {
             ShapeConnectorCondition.None   => _shpData,
@@ -22,73 +22,10 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
     public int EnabledCount { get; private set; }
 
-    public sealed class ShpHashSet : HashSet<(HumanSlot Slot, PrimaryId Id)>
-    {
-        private readonly BitArray _allIds = new(ShapeManager.ModelSlotSize);
-
-        public bool All
-        {
-            get => _allIds[^1];
-            set => _allIds[^1] = value;
-        }
-
-        public bool this[HumanSlot slot]
-        {
-            get
-            {
-                if (slot is HumanSlot.Unknown)
-                    return All;
-
-                return _allIds[(int)slot];
-            }
-            set
-            {
-                if (slot is HumanSlot.Unknown)
-                    _allIds[^1] = value;
-                else
-                    _allIds[(int)slot] = value;
-            }
-        }
-
-        public bool Contains(HumanSlot slot, PrimaryId id)
-            => All || this[slot] || Contains((slot, id));
-
-        public bool TrySet(HumanSlot slot, PrimaryId? id, ShpEntry value)
-        {
-            if (slot is HumanSlot.Unknown)
-            {
-                var old = All;
-                All = value.Value;
-                return old != value.Value;
-            }
-
-            if (!id.HasValue)
-            {
-                var old = this[slot];
-                this[slot] = value.Value;
-                return old != value.Value;
-            }
-
-            if (value.Value)
-                return Add((slot, id.Value));
-
-            return Remove((slot, id.Value));
-        }
-
-        public new void Clear()
-        {
-            base.Clear();
-            _allIds.SetAll(false);
-        }
-
-        public bool IsEmpty
-            => !_allIds.HasAnySet() && Count is 0;
-    }
-
-    private readonly Dictionary<ShapeString, ShpHashSet> _shpData         = [];
-    private readonly Dictionary<ShapeString, ShpHashSet> _wristConnectors = [];
-    private readonly Dictionary<ShapeString, ShpHashSet> _waistConnectors = [];
-    private readonly Dictionary<ShapeString, ShpHashSet> _ankleConnectors = [];
+    private readonly Dictionary<ShapeAttributeString, ShapeAttributeHashSet> _shpData         = [];
+    private readonly Dictionary<ShapeAttributeString, ShapeAttributeHashSet> _wristConnectors = [];
+    private readonly Dictionary<ShapeAttributeString, ShapeAttributeHashSet> _waistConnectors = [];
+    private readonly Dictionary<ShapeAttributeString, ShapeAttributeHashSet> _ankleConnectors = [];
 
     public void Reset()
     {
@@ -114,7 +51,7 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
         return;
 
-        void Func(Dictionary<ShapeString, ShpHashSet> dict)
+        void Func(Dictionary<ShapeAttributeString, ShapeAttributeHashSet> dict)
         {
             if (!dict.TryGetValue(identifier.Shape, out var value))
             {
@@ -125,7 +62,7 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
                 dict.Add(identifier.Shape, value);
             }
 
-            if (value.TrySet(identifier.Slot, identifier.Id, entry))
+            if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, entry.Value))
                 ++EnabledCount;
         }
     }
@@ -142,12 +79,12 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
 
         return;
 
-        void Func(Dictionary<ShapeString, ShpHashSet> dict)
+        void Func(Dictionary<ShapeAttributeString, ShapeAttributeHashSet> dict)
         {
             if (!dict.TryGetValue(identifier.Shape, out var value))
                 return;
 
-            if (value.TrySet(identifier.Slot, identifier.Id, ShpEntry.False))
+            if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, false))
             {
                 --EnabledCount;
                 if (value.IsEmpty)

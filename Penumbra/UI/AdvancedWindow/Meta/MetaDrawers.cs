@@ -12,7 +12,8 @@ public class MetaDrawers(
     ImcMetaDrawer imc,
     RspMetaDrawer rsp,
     AtchMetaDrawer atch,
-    ShpMetaDrawer shp) : IService
+    ShpMetaDrawer shp,
+    AtrMetaDrawer atr) : IService
 {
     public readonly EqdpMetaDrawer      Eqdp      = eqdp;
     public readonly EqpMetaDrawer       Eqp       = eqp;
@@ -23,6 +24,7 @@ public class MetaDrawers(
     public readonly GlobalEqpMetaDrawer GlobalEqp = globalEqp;
     public readonly AtchMetaDrawer      Atch      = atch;
     public readonly ShpMetaDrawer       Shp       = shp;
+    public readonly AtrMetaDrawer       Atr       = atr;
 
     public IMetaDrawer? Get(MetaManipulationType type)
         => type switch
@@ -35,6 +37,7 @@ public class MetaDrawers(
             MetaManipulationType.Rsp       => Rsp,
             MetaManipulationType.Atch      => Atch,
             MetaManipulationType.Shp       => Shp,
+            MetaManipulationType.Atr       => Atr,
             MetaManipulationType.GlobalEqp => GlobalEqp,
             _                              => null,
         };

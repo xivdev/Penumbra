@@ -6,11 +6,11 @@ using Penumbra.String.Functions;
 namespace Penumbra.Meta;
 
 [JsonConverter(typeof(Converter))]
-public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
+public struct ShapeAttributeString : IEquatable<ShapeAttributeString>, IComparable<ShapeAttributeString>
 {
     public const int MaxLength = 30;
 
-    public static readonly ShapeString Empty = new();
+    public static readonly ShapeAttributeString Empty = new();
 
     private FixedString32 _buffer;
 
@@ -37,6 +37,72 @@ public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
         }
     }
 
+    public static unsafe bool ValidateCustomShapeString(byte* shape)
+    {
+        // "shpx_*"
+        if (shape is null)
+            return false;
+
+        if (*shape++ is not (byte)'s'
+         || *shape++ is not (byte)'h'
+         || *shape++ is not (byte)'p'
+         || *shape++ is not (byte)'x'
+         || *shape++ is not (byte)'_'
+         || *shape is 0)
+            return false;
+
+        return true;
+    }
+
+    public bool ValidateCustomShapeString()
+    {
+        // "shpx_*"
+        if (Length < 6)
+            return false;
+
+        if (_buffer[0] is not (byte)'s'
+         || _buffer[1] is not (byte)'h'
+         || _buffer[2] is not (byte)'p'
+         || _buffer[3] is not (byte)'x'
+         || _buffer[4] is not (byte)'_')
+            return false;
+
+        return true;
+    }
+
+    public static unsafe bool ValidateCustomAttributeString(byte* shape)
+    {
+        // "atrx_*"
+        if (shape is null)
+            return false;
+
+        if (*shape++ is not (byte)'a'
+         || *shape++ is not (byte)'t'
+         || *shape++ is not (byte)'r'
+         || *shape++ is not (byte)'x'
+         || *shape++ is not (byte)'_'
+         || *shape is 0)
+            return false;
+
+        return true;
+    }
+
+    public bool ValidateCustomAttributeString()
+    {
+        // "atrx_*"
+        if (Length < 6)
+            return false;
+
+        if (_buffer[0] is not (byte)'a'
+         || _buffer[1] is not (byte)'t'
+         || _buffer[2] is not (byte)'r'
+         || _buffer[3] is not (byte)'x'
+         || _buffer[4] is not (byte)'_')
+            return false;
+
+        return true;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool IsAnkle()
         => CheckCenter('a', 'n');
@@ -53,28 +119,28 @@ public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
     private bool CheckCenter(char first, char second)
         => Length > 8 && _buffer[5] == first && _buffer[6] == second && _buffer[7] is (byte)'_';
 
-    public bool Equals(ShapeString other)
+    public bool Equals(ShapeAttributeString other)
         => Length == other.Length && _buffer[..Length].SequenceEqual(other._buffer[..Length]);
 
     public override bool Equals(object? obj)
-        => obj is ShapeString other && Equals(other);
+        => obj is ShapeAttributeString other && Equals(other);
 
     public override int GetHashCode()
         => (int)Crc32.Get(_buffer[..Length]);
 
-    public static bool operator ==(ShapeString left, ShapeString right)
+    public static bool operator ==(ShapeAttributeString left, ShapeAttributeString right)
         => left.Equals(right);
 
-    public static bool operator !=(ShapeString left, ShapeString right)
+    public static bool operator !=(ShapeAttributeString left, ShapeAttributeString right)
         => !left.Equals(right);
 
-    public static unsafe bool TryRead(byte* pointer, out ShapeString ret)
+    public static unsafe bool TryRead(byte* pointer, out ShapeAttributeString ret)
     {
         var span = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pointer);
         return TryRead(span, out ret);
     }
 
-    public unsafe int CompareTo(ShapeString other)
+    public unsafe int CompareTo(ShapeAttributeString other)
     {
         fixed (void* lhs = &this)
         {
@@ -82,7 +148,7 @@ public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
         }
     }
 
-    public static bool TryRead(ReadOnlySpan<byte> utf8, out ShapeString ret)
+    public static bool TryRead(ReadOnlySpan<byte> utf8, out ShapeAttributeString ret)
     {
         if (utf8.Length is 0 or > MaxLength)
         {
@@ -97,7 +163,7 @@ public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
         return true;
     }
 
-    public static bool TryRead(ReadOnlySpan<char> utf16, out ShapeString ret)
+    public static bool TryRead(ReadOnlySpan<char> utf16, out ShapeAttributeString ret)
     {
         ret = Empty;
         if (!Encoding.UTF8.TryGetBytes(utf16, ret._buffer[..MaxLength], out var written))
@@ -116,19 +182,20 @@ public struct ShapeString : IEquatable<ShapeString>, IComparable<ShapeString>
         _buffer[31]     = length;
     }
 
-    private sealed class Converter : JsonConverter<ShapeString>
+    private sealed class Converter : JsonConverter<ShapeAttributeString>
     {
-        public override void WriteJson(JsonWriter writer, ShapeString value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, ShapeAttributeString value, JsonSerializer serializer)
         {
             writer.WriteValue(value.ToString());
         }
 
-        public override ShapeString ReadJson(JsonReader reader, Type objectType, ShapeString existingValue, bool hasExistingValue,
+        public override ShapeAttributeString ReadJson(JsonReader reader, Type objectType, ShapeAttributeString existingValue,
+            bool hasExistingValue,
             JsonSerializer serializer)
         {
             var value = serializer.Deserialize<string>(reader);
             if (!TryRead(value, out existingValue))
-                throw new JsonReaderException($"Could not parse {value} into ShapeString.");
+                throw new JsonReaderException($"Could not parse {value} into ShapeAttributeString.");
 
             return existingValue;
         }

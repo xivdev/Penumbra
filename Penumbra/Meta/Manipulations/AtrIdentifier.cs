@@ -1,5 +1,4 @@
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Data;
@@ -10,24 +9,10 @@ using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
-[JsonConverter(typeof(StringEnumConverter))]
-public enum ShapeConnectorCondition : byte
+public readonly record struct AtrIdentifier(HumanSlot Slot, PrimaryId? Id, ShapeAttributeString Attribute, GenderRace GenderRaceCondition)
+    : IComparable<AtrIdentifier>, IMetaIdentifier
 {
-    None   = 0,
-    Wrists = 1,
-    Waist  = 2,
-    Ankles = 3,
-}
-
-public readonly record struct ShpIdentifier(
-    HumanSlot Slot,
-    PrimaryId? Id,
-    ShapeAttributeString Shape,
-    ShapeConnectorCondition ConnectorCondition,
-    GenderRace GenderRaceCondition)
-    : IComparable<ShpIdentifier>, IMetaIdentifier
-{
-    public int CompareTo(ShpIdentifier other)
+    public int CompareTo(AtrIdentifier other)
     {
         var slotComparison = Slot.CompareTo(other.Slot);
         if (slotComparison is not 0)
@@ -51,15 +36,11 @@ public readonly record struct ShpIdentifier(
             return 1;
         }
 
-        var conditionComparison = ConnectorCondition.CompareTo(other.ConnectorCondition);
-        if (conditionComparison is not 0)
-            return conditionComparison;
-
         var genderRaceComparison = GenderRaceCondition.CompareTo(other.GenderRaceCondition);
         if (genderRaceComparison is not 0)
             return genderRaceComparison;
 
-        return Shape.CompareTo(other.Shape);
+        return Attribute.CompareTo(other.Attribute);
     }
 
 
@@ -67,7 +48,7 @@ public readonly record struct ShpIdentifier(
     {
         var sb = new StringBuilder(64);
         sb.Append("Shp - ")
-            .Append(Shape);
+            .Append(Attribute);
         if (Slot is HumanSlot.Unknown)
         {
             sb.Append(" - All Slots & IDs");
@@ -81,13 +62,6 @@ public readonly record struct ShpIdentifier(
                 sb.Append(Id.Value.Id);
             else
                 sb.Append("All IDs");
-        }
-
-        switch (ConnectorCondition)
-        {
-            case ShapeConnectorCondition.Wrists: sb.Append(" - Wrist Connector"); break;
-            case ShapeConnectorCondition.Waist:  sb.Append(" - Waist Connector"); break;
-            case ShapeConnectorCondition.Ankles: sb.Append(" - Ankle Connector"); break;
         }
 
         if (GenderRaceCondition is not GenderRace.Unknown)
@@ -112,9 +86,6 @@ public readonly record struct ShpIdentifier(
         if (!ShapeAttributeHashSet.GenderRaceIndices.ContainsKey(GenderRaceCondition))
             return false;
 
-        if (!Enum.IsDefined(ConnectorCondition))
-            return false;
-
         if (Slot is HumanSlot.Unknown && Id is not null)
             return false;
 
@@ -124,17 +95,7 @@ public readonly record struct ShpIdentifier(
         if (Id is { Id: > ExpandedEqpGmpBase.Count - 1 })
             return false;
 
-        if (!Shape.ValidateCustomShapeString())
-            return false;
-
-        return ConnectorCondition switch
-        {
-            ShapeConnectorCondition.None   => true,
-            ShapeConnectorCondition.Wrists => Slot is HumanSlot.Body or HumanSlot.Hands or HumanSlot.Unknown,
-            ShapeConnectorCondition.Waist  => Slot is HumanSlot.Body or HumanSlot.Legs or HumanSlot.Unknown,
-            ShapeConnectorCondition.Ankles => Slot is HumanSlot.Legs or HumanSlot.Feet or HumanSlot.Unknown,
-            _                              => false,
-        };
+        return Attribute.ValidateCustomAttributeString();
     }
 
     public JObject AddToJson(JObject jObj)
@@ -143,44 +104,41 @@ public readonly record struct ShpIdentifier(
             jObj["Slot"] = Slot.ToString();
         if (Id.HasValue)
             jObj["Id"] = Id.Value.Id.ToString();
-        jObj["Shape"] = Shape.ToString();
-        if (ConnectorCondition is not ShapeConnectorCondition.None)
-            jObj["ConnectorCondition"] = ConnectorCondition.ToString();
+        jObj["Attribute"] = Attribute.ToString();
         if (GenderRaceCondition is not GenderRace.Unknown)
             jObj["GenderRaceCondition"] = (uint)GenderRaceCondition;
         return jObj;
     }
 
-    public static ShpIdentifier? FromJson(JObject jObj)
+    public static AtrIdentifier? FromJson(JObject jObj)
     {
-        var shape = jObj["Shape"]?.ToObject<string>();
-        if (shape is null || !ShapeAttributeString.TryRead(shape, out var shapeString))
+        var attribute = jObj["Attribute"]?.ToObject<string>();
+        if (attribute is null || !ShapeAttributeString.TryRead(attribute, out var attributeString))
             return null;
 
         var slot                = jObj["Slot"]?.ToObject<HumanSlot>() ?? HumanSlot.Unknown;
         var id                  = jObj["Id"]?.ToObject<ushort>();
-        var connectorCondition  = jObj["ConnectorCondition"]?.ToObject<ShapeConnectorCondition>() ?? ShapeConnectorCondition.None;
         var genderRaceCondition = jObj["GenderRaceCondition"]?.ToObject<GenderRace>() ?? 0;
-        var identifier          = new ShpIdentifier(slot, id, shapeString, connectorCondition, genderRaceCondition);
+        var identifier          = new AtrIdentifier(slot, id, attributeString, genderRaceCondition);
         return identifier.Validate() ? identifier : null;
     }
 
     public MetaManipulationType Type
-        => MetaManipulationType.Shp;
+        => MetaManipulationType.Atr;
 }
 
 [JsonConverter(typeof(Converter))]
-public readonly record struct ShpEntry(bool Value)
+public readonly record struct AtrEntry(bool Value)
 {
-    public static readonly ShpEntry True  = new(true);
-    public static readonly ShpEntry False = new(false);
+    public static readonly AtrEntry True  = new(true);
+    public static readonly AtrEntry False = new(false);
 
-    private class Converter : JsonConverter<ShpEntry>
+    private class Converter : JsonConverter<AtrEntry>
     {
-        public override void WriteJson(JsonWriter writer, ShpEntry value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, AtrEntry value, JsonSerializer serializer)
             => serializer.Serialize(writer, value.Value);
 
-        public override ShpEntry ReadJson(JsonReader reader, Type objectType, ShpEntry existingValue, bool hasExistingValue,
+        public override AtrEntry ReadJson(JsonReader reader, Type objectType, AtrEntry existingValue, bool hasExistingValue,
             JsonSerializer serializer)
             => new(serializer.Deserialize<bool>(reader));
     }

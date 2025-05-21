@@ -21,6 +21,7 @@ public class MetaDictionary
         public readonly Dictionary<GmpIdentifier, GmpEntry>           Gmp  = [];
         public readonly Dictionary<AtchIdentifier, AtchEntry>         Atch = [];
         public readonly Dictionary<ShpIdentifier, ShpEntry>           Shp  = [];
+        public readonly Dictionary<AtrIdentifier, AtrEntry>           Atr  = [];
 
         public Wrapper()
         { }
@@ -35,6 +36,7 @@ public class MetaDictionary
             Rsp  = cache.Rsp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
             Atch = cache.Atch.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
             Shp  = cache.Shp.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
+            Atr  = cache.Atr.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
             foreach (var geqp in cache.GlobalEqp.Keys)
                 Add(geqp);
         }
@@ -66,6 +68,9 @@ public class MetaDictionary
     public IReadOnlyDictionary<ShpIdentifier, ShpEntry> Shp
         => _data?.Shp ?? [];
 
+    public IReadOnlyDictionary<AtrIdentifier, AtrEntry> Atr
+        => _data?.Atr ?? [];
+
     public IReadOnlySet<GlobalEqpManipulation> GlobalEqp
         => _data ?? [];
 
@@ -84,6 +89,7 @@ public class MetaDictionary
                 MetaManipulationType.Rsp       => _data.Rsp.Count,
                 MetaManipulationType.Atch      => _data.Atch.Count,
                 MetaManipulationType.Shp       => _data.Shp.Count,
+                MetaManipulationType.Atr       => _data.Atr.Count,
                 MetaManipulationType.GlobalEqp => _data.Count,
                 _                              => 0,
             };
@@ -100,6 +106,7 @@ public class MetaDictionary
                 ImcIdentifier i         => _data.Imc.ContainsKey(i),
                 AtchIdentifier i        => _data.Atch.ContainsKey(i),
                 ShpIdentifier i         => _data.Shp.ContainsKey(i),
+                AtrIdentifier i         => _data.Atr.ContainsKey(i),
                 RspIdentifier i         => _data.Rsp.ContainsKey(i),
                 _                       => false,
             };
@@ -115,13 +122,13 @@ public class MetaDictionary
         if (_data is null)
             return;
 
-        if (_data.Count is 0 && Shp.Count is 0)
+        if (_data.Count is 0 && Shp.Count is 0 && Atr.Count is 0)
         {
             _data = null;
             Count = 0;
         }
 
-        Count = GlobalEqp.Count + Shp.Count;
+        Count = GlobalEqp.Count + Shp.Count + Atr.Count;
         _data!.Imc.Clear();
         _data!.Eqp.Clear();
         _data!.Eqdp.Clear();
@@ -147,6 +154,7 @@ public class MetaDictionary
          && _data.Gmp.SetEquals(other._data!.Gmp)
          && _data.Atch.SetEquals(other._data!.Atch)
          && _data.Shp.SetEquals(other._data!.Shp)
+         && _data.Atr.SetEquals(other._data!.Atr)
          && _data.SetEquals(other._data!);
     }
 
@@ -161,6 +169,7 @@ public class MetaDictionary
                 .Concat(_data!.Rsp.Keys.Cast<IMetaIdentifier>())
                 .Concat(_data!.Atch.Keys.Cast<IMetaIdentifier>())
                 .Concat(_data!.Shp.Keys.Cast<IMetaIdentifier>())
+                .Concat(_data!.Atr.Keys.Cast<IMetaIdentifier>())
                 .Concat(_data!.Cast<IMetaIdentifier>());
 
     #region TryAdd
@@ -245,6 +254,16 @@ public class MetaDictionary
     {
         _data ??= [];
         if (!_data!.Shp.TryAdd(identifier, entry))
+            return false;
+
+        ++Count;
+        return true;
+    }
+
+    public bool TryAdd(AtrIdentifier identifier, in AtrEntry entry)
+    {
+        _data ??= [];
+        if (!_data!.Atr.TryAdd(identifier, entry))
             return false;
 
         ++Count;
@@ -343,6 +362,15 @@ public class MetaDictionary
         return true;
     }
 
+    public bool Update(AtrIdentifier identifier, in AtrEntry entry)
+    {
+        if (_data is null || !_data.Atr.ContainsKey(identifier))
+            return false;
+
+        _data.Atr[identifier] = entry;
+        return true;
+    }
+
     #endregion
 
     #region TryGetValue
@@ -371,6 +399,9 @@ public class MetaDictionary
     public bool TryGetValue(ShpIdentifier identifier, out ShpEntry value)
         => _data?.Shp.TryGetValue(identifier, out value) ?? SetDefault(out value);
 
+    public bool TryGetValue(AtrIdentifier identifier, out AtrEntry value)
+        => _data?.Atr.TryGetValue(identifier, out value) ?? SetDefault(out value);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static bool SetDefault<T>(out T? value)
     {
@@ -396,6 +427,7 @@ public class MetaDictionary
             RspIdentifier i         => _data.Rsp.Remove(i),
             AtchIdentifier i        => _data.Atch.Remove(i),
             ShpIdentifier i         => _data.Shp.Remove(i),
+            AtrIdentifier i         => _data.Atr.Remove(i),
             _                       => false,
         };
         if (ret && --Count is 0)
@@ -434,6 +466,9 @@ public class MetaDictionary
             TryAdd(identifier, entry);
 
         foreach (var (identifier, entry) in manips._data!.Shp)
+            TryAdd(identifier, entry);
+
+        foreach (var (identifier, entry) in manips._data!.Atr)
             TryAdd(identifier, entry);
 
         foreach (var identifier in manips._data!)
@@ -498,6 +533,12 @@ public class MetaDictionary
             return false;
         }
 
+        foreach (var (identifier, _) in manips._data!.Atr.Where(kvp => !TryAdd(kvp.Key, kvp.Value)))
+        {
+            failedIdentifier = identifier;
+            return false;
+        }
+
         foreach (var identifier in manips._data!.Where(identifier => !TryAdd(identifier)))
         {
             failedIdentifier = identifier;
@@ -526,6 +567,7 @@ public class MetaDictionary
         _data!.Gmp.SetTo(other._data!.Gmp);
         _data!.Atch.SetTo(other._data!.Atch);
         _data!.Shp.SetTo(other._data!.Shp);
+        _data!.Atr.SetTo(other._data!.Atr);
         _data!.SetTo(other._data!);
         Count = other.Count;
     }
@@ -544,6 +586,7 @@ public class MetaDictionary
         _data!.Gmp.UpdateTo(other._data!.Gmp);
         _data!.Atch.UpdateTo(other._data!.Atch);
         _data!.Shp.UpdateTo(other._data!.Shp);
+        _data!.Atr.UpdateTo(other._data!.Atr);
         _data!.UnionWith(other._data!);
         Count = _data!.Imc.Count
           + _data!.Eqp.Count
@@ -651,6 +694,16 @@ public class MetaDictionary
             }),
         };
 
+    public static JObject Serialize(AtrIdentifier identifier, AtrEntry entry)
+        => new()
+        {
+            ["Type"] = MetaManipulationType.Atr.ToString(),
+            ["Manipulation"] = identifier.AddToJson(new JObject
+            {
+                ["Entry"] = entry.Value,
+            }),
+        };
+
     public static JObject Serialize(GlobalEqpManipulation identifier)
         => new()
         {
@@ -682,6 +735,8 @@ public class MetaDictionary
             return Serialize(Unsafe.As<TIdentifier, AtchIdentifier>(ref identifier), Unsafe.As<TEntry, AtchEntry>(ref entry));
         if (typeof(TIdentifier) == typeof(ShpIdentifier) && typeof(TEntry) == typeof(ShpEntry))
             return Serialize(Unsafe.As<TIdentifier, ShpIdentifier>(ref identifier), Unsafe.As<TEntry, ShpEntry>(ref entry));
+        if (typeof(TIdentifier) == typeof(AtrIdentifier) && typeof(TEntry) == typeof(AtrEntry))
+            return Serialize(Unsafe.As<TIdentifier, AtrIdentifier>(ref identifier), Unsafe.As<TEntry, AtrEntry>(ref entry));
         if (typeof(TIdentifier) == typeof(GlobalEqpManipulation))
             return Serialize(Unsafe.As<TIdentifier, GlobalEqpManipulation>(ref identifier));
 
@@ -730,6 +785,7 @@ public class MetaDictionary
                 SerializeTo(array, value._data!.Gmp);
                 SerializeTo(array, value._data!.Atch);
                 SerializeTo(array, value._data!.Shp);
+                SerializeTo(array, value._data!.Atr);
                 SerializeTo(array, value._data!);
             }
 
@@ -837,6 +893,16 @@ public class MetaDictionary
                             dict.TryAdd(identifier.Value, entry);
                         else
                             Penumbra.Log.Warning("Invalid SHP Manipulation encountered.");
+                        break;
+                    }
+                    case MetaManipulationType.Atr:
+                    {
+                        var identifier = AtrIdentifier.FromJson(manip);
+                        var entry      = new AtrEntry(manip["Entry"]?.Value<bool>() ?? true);
+                        if (identifier.HasValue)
+                            dict.TryAdd(identifier.Value, entry);
+                        else
+                            Penumbra.Log.Warning("Invalid ATR Manipulation encountered.");
                         break;
                     }
                     case MetaManipulationType.GlobalEqp:

@@ -42,6 +42,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "structs", "structs", "{B03F
 		schemas\structs\group_single.json = schemas\structs\group_single.json
 		schemas\structs\manipulation.json = schemas\structs\manipulation.json
 		schemas\structs\meta_atch.json = schemas\structs\meta_atch.json
+		schemas\structs\meta_atr.json = schemas\structs\meta_atr.json
 		schemas\structs\meta_enums.json = schemas\structs\meta_enums.json
 		schemas\structs\meta_eqdp.json = schemas\structs\meta_eqdp.json
 		schemas\structs\meta_eqp.json = schemas\structs\meta_eqp.json

@@ -22,8 +22,8 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
 {
     public enum Priority
     {
-        /// <seealso cref="ShapeManager.OnAttributeComputed"/>
-        ShapeManager = 0,
+        /// <seealso cref="ShapeAttributeManager.OnAttributeComputed"/>
+        ShapeAttributeManager = 0,
     }
 
     private readonly CollectionResolver _resolver;

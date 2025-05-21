@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "Type": {
-            "enum": [ "Unknown", "Imc", "Eqdp", "Eqp", "Est", "Gmp", "Rsp", "GlobalEqp", "Atch", "Shp" ]
+            "enum": [ "Unknown", "Imc", "Eqdp", "Eqp", "Est", "Gmp", "Rsp", "GlobalEqp", "Atch", "Shp", "Atr" ]
         },
         "Manipulation": {
             "type": "object"
@@ -98,6 +98,16 @@
                 },
                 "Manipulation": {
                     "$ref": "meta_shp.json"
+                }
+            }
+        },
+        {
+            "properties": {
+                "Type": {
+                    "const": "Atr"
+                },
+                "Manipulation": {
+                    "$ref": "meta_atr.json"
                 }
             }
         }

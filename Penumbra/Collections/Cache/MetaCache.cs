@@ -17,11 +17,12 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
     public readonly ImcCache       Imc       = new(manager, collection);
     public readonly AtchCache      Atch      = new(manager, collection);
     public readonly ShpCache       Shp       = new(manager, collection);
+    public readonly AtrCache       Atr       = new(manager, collection);
     public readonly GlobalEqpCache GlobalEqp = new();
     public          bool           IsDisposed { get; private set; }
 
     public int Count
-        => Eqp.Count + Eqdp.Count + Est.Count + Gmp.Count + Rsp.Count + Imc.Count + Atch.Count + Shp.Count + GlobalEqp.Count;
+        => Eqp.Count + Eqdp.Count + Est.Count + Gmp.Count + Rsp.Count + Imc.Count + Atch.Count + Shp.Count + Atr.Count + GlobalEqp.Count;
 
     public IEnumerable<(IMetaIdentifier, IMod)> IdentifierSources
         => Eqp.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value.Source))
@@ -32,6 +33,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
             .Concat(Imc.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value.Source)))
             .Concat(Atch.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value.Source)))
             .Concat(Shp.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value.Source)))
+            .Concat(Atr.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value.Source)))
             .Concat(GlobalEqp.Select(kvp => ((IMetaIdentifier)kvp.Key, kvp.Value)));
 
     public void Reset()
@@ -44,6 +46,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
         Imc.Reset();
         Atch.Reset();
         Shp.Reset();
+        Atr.Reset();
         GlobalEqp.Clear();
     }
 
@@ -61,6 +64,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
         Imc.Dispose();
         Atch.Dispose();
         Shp.Dispose();
+        Atr.Dispose();
     }
 
     public bool TryGetMod(IMetaIdentifier identifier, [NotNullWhen(true)] out IMod? mod)
@@ -76,6 +80,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
             RspIdentifier i         => Rsp.TryGetValue(i, out var p) && Convert(p,  out mod),
             AtchIdentifier i        => Atch.TryGetValue(i, out var p) && Convert(p, out mod),
             ShpIdentifier i         => Shp.TryGetValue(i, out var p) && Convert(p,  out mod),
+            AtrIdentifier i         => Atr.TryGetValue(i, out var p) && Convert(p,  out mod),
             GlobalEqpManipulation i => GlobalEqp.TryGetValue(i, out mod),
             _                       => false,
         };
@@ -98,6 +103,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
             RspIdentifier i         => Rsp.RevertMod(i, out mod),
             AtchIdentifier i        => Atch.RevertMod(i, out mod),
             ShpIdentifier i         => Shp.RevertMod(i, out mod),
+            AtrIdentifier i         => Atr.RevertMod(i, out mod),
             GlobalEqpManipulation i => GlobalEqp.RevertMod(i, out mod),
             _                       => (mod = null) != null,
         };
@@ -115,6 +121,7 @@ public class MetaCache(MetaFileManager manager, ModCollection collection)
             RspIdentifier i when entry is RspEntry e           => Rsp.ApplyMod(mod, i, e),
             AtchIdentifier i when entry is AtchEntry e         => Atch.ApplyMod(mod, i, e),
             ShpIdentifier i when entry is ShpEntry e           => Shp.ApplyMod(mod, i, e),
+            AtrIdentifier i when entry is AtrEntry e           => Atr.ApplyMod(mod, i, e),
             GlobalEqpManipulation i                            => GlobalEqp.ApplyMod(mod, i),
             _                                                  => false,
         };

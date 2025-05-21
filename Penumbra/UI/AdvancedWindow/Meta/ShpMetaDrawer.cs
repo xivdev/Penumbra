@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
+using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -20,18 +21,18 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public override ReadOnlySpan<byte> Label
         => "Shape Keys (SHP)###SHP"u8;
 
-    private ShapeString _buffer = ShapeString.TryRead("shpx_"u8, out var s) ? s : ShapeString.Empty;
-    private bool        _identifierValid;
+    private ShapeAttributeString _buffer = ShapeAttributeString.TryRead("shpx_"u8, out var s) ? s : ShapeAttributeString.Empty;
+    private bool                 _identifierValid;
 
     public override int NumColumns
-        => 7;
+        => 8;
 
     public override float ColumnHeight
         => ImUtf8.FrameHeightSpacing;
 
     protected override void Initialize()
     {
-        Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeString.Empty, ShapeConnectorCondition.None);
+        Identifier = new ShpIdentifier(HumanSlot.Unknown, null, ShapeAttributeString.Empty, ShapeConnectorCondition.None, GenderRace.Unknown);
     }
 
     protected override void DrawNew()
@@ -80,6 +81,9 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var changes = DrawHumanSlot(ref identifier);
 
         ImGui.TableNextColumn();
+        changes |= DrawGenderRaceConditionInput(ref identifier);
+
+        ImGui.TableNextColumn();
         changes |= DrawPrimaryId(ref identifier);
 
         ImGui.TableNextColumn();
@@ -96,6 +100,17 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
         ImUtf8.TextFramed(SlotName(identifier.Slot), FrameColor);
         ImUtf8.HoverTooltip("Model Slot"u8);
+
+        ImGui.TableNextColumn();
+        if (identifier.GenderRaceCondition is not GenderRace.Unknown)
+        {
+            ImUtf8.TextFramed($"{identifier.GenderRaceCondition.ToName()} ({identifier.GenderRaceCondition.ToRaceCode()})", FrameColor);
+            ImUtf8.HoverTooltip("Gender & Race Code for this shape key to be set.");
+        }
+        else
+        {
+            ImUtf8.TextFramed("Any Gender & Race"u8, FrameColor);
+        }
 
         ImGui.TableNextColumn();
         if (identifier.Id.HasValue)
@@ -165,7 +180,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         return ret;
     }
 
-    public bool DrawHumanSlot(ref ShpIdentifier identifier, float unscaledWidth = 150)
+    public bool DrawHumanSlot(ref ShpIdentifier identifier, float unscaledWidth = 170)
     {
         var ret = false;
         ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
@@ -212,18 +227,19 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         return ret;
     }
 
-    public static unsafe bool DrawShapeKeyInput(ref ShpIdentifier identifier, ref ShapeString buffer, ref bool valid, float unscaledWidth = 150)
+    public static unsafe bool DrawShapeKeyInput(ref ShpIdentifier identifier, ref ShapeAttributeString buffer, ref bool valid,
+        float unscaledWidth = 200)
     {
         var ret  = false;
         var ptr  = Unsafe.AsPointer(ref buffer);
-        var span = new Span<byte>(ptr, ShapeString.MaxLength + 1);
+        var span = new Span<byte>(ptr, ShapeAttributeString.MaxLength + 1);
         using (new ImRaii.ColorStyle().Push(ImGuiCol.Border, Colors.RegexWarningBorder, !valid).Push(ImGuiStyleVar.FrameBorderSize, 1f, !valid))
         {
             ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
             if (ImUtf8.InputText("##shpShape"u8, span, out int newLength, "Shape Key..."u8))
             {
                 buffer.ForceLength((byte)newLength);
-                valid = ShpIdentifier.ValidateCustomShapeString(buffer);
+                valid = buffer.ValidateCustomShapeString();
                 if (valid)
                     identifier = identifier with { Shape = buffer };
                 ret = true;
@@ -234,7 +250,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         return ret;
     }
 
-    public static unsafe bool DrawConnectorConditionInput(ref ShpIdentifier identifier, float unscaledWidth = 150)
+    private static bool DrawConnectorConditionInput(ref ShpIdentifier identifier, float unscaledWidth = 80)
     {
         var ret = false;
         ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
@@ -271,7 +287,43 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         return ret;
     }
 
-    private static ReadOnlySpan<HumanSlot> AvailableSlots
+    private static bool DrawGenderRaceConditionInput(ref ShpIdentifier identifier, float unscaledWidth = 250)
+    {
+        var ret = false;
+        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+
+        using (var combo = ImUtf8.Combo("##shpGenderRace"u8, identifier.GenderRaceCondition is GenderRace.Unknown
+                   ? "Any Gender & Race"
+                   : $"{identifier.GenderRaceCondition.ToName()} ({identifier.GenderRaceCondition.ToRaceCode()})"))
+        {
+            if (combo)
+            {
+                if (ImUtf8.Selectable("Any Gender & Race"u8, identifier.GenderRaceCondition is GenderRace.Unknown)
+                 && identifier.GenderRaceCondition is not GenderRace.Unknown)
+                {
+                    identifier = identifier with { GenderRaceCondition = GenderRace.Unknown };
+                    ret        = true;
+                }
+
+                foreach (var gr in ShapeAttributeHashSet.GenderRaceValues.Skip(1))
+                {
+                    if (ImUtf8.Selectable($"{gr.ToName()} ({gr.ToRaceCode()})", identifier.GenderRaceCondition == gr)
+                     && identifier.GenderRaceCondition != gr)
+                    {
+                        identifier = identifier with { GenderRaceCondition = gr };
+                        ret        = true;
+                    }
+                }
+            }
+        }
+
+        ImUtf8.HoverTooltip(
+            "Only activate this shape key for this gender & race code."u8);
+
+        return ret;
+    }
+
+    public static ReadOnlySpan<HumanSlot> AvailableSlots
         =>
         [
             HumanSlot.Unknown,
@@ -291,7 +343,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             HumanSlot.Ear,
         ];
 
-    private static ReadOnlySpan<byte> SlotName(HumanSlot slot)
+    public static ReadOnlySpan<byte> SlotName(HumanSlot slot)
         => slot switch
         {
             HumanSlot.Unknown => "All Slots"u8,
