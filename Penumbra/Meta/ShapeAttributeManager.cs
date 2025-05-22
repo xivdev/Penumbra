@@ -75,7 +75,7 @@ public unsafe class ShapeAttributeManager : IRequiredService, IDisposable
             {
                 // Mask out custom attributes if they are disabled. Attributes are enabled by default.
                 if (attributeCache.ShouldBeDisabled(attributeString, _modelIndex, _ids[_modelIndex.ToIndex()], _genderRace))
-                    _model->EnabledAttributeIndexMask &= (ushort)~(1 << index);
+                    _model->EnabledAttributeIndexMask &= ~(1u << index);
             }
             else
             {
@@ -95,7 +95,7 @@ public unsafe class ShapeAttributeManager : IRequiredService, IDisposable
                 _temporaryShapes[_slotIndex].TryAdd(shapeString, index);
                 // Add custom shapes if they are enabled. Shapes are disabled by default.
                 if (shapeCache.ShouldBeEnabled(shapeString, _modelIndex, _ids[_modelIndex.ToIndex()], _genderRace))
-                    _model->EnabledShapeKeyIndexMask |= (ushort)(1 << index);
+                    _model->EnabledShapeKeyIndexMask |= 1u << index;
             }
             else
             {
