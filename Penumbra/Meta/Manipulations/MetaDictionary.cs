@@ -596,6 +596,7 @@ public class MetaDictionary
           + _data!.Gmp.Count
           + _data!.Atch.Count
           + _data!.Shp.Count
+          + _data!.Atr.Count
           + _data!.Count;
     }
 
