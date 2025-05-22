@@ -165,7 +165,7 @@ public partial class ModEditWindow
 
     private void AddFromClipboardButton()
     {
-        if (ImGui.Button("Add from Clipboard"))
+        if (ImUtf8.Button("Add from Clipboard"u8))
         {
             var clipboard = ImGuiUtil.GetClipboardText();
 
@@ -176,13 +176,13 @@ public partial class ModEditWindow
             }
         }
 
-        ImGuiUtil.HoverTooltip(
-            "Try to add meta manipulations currently stored in the clipboard to the current manipulations.\nOverwrites already existing manipulations.");
+        ImUtf8.HoverTooltip(
+            "Try to add meta manipulations currently stored in the clipboard to the current manipulations.\nOverwrites already existing manipulations."u8);
     }
 
     private void SetFromClipboardButton()
     {
-        if (ImGui.Button("Set from Clipboard"))
+        if (ImUtf8.Button("Set from Clipboard"u8))
         {
             var clipboard = ImGuiUtil.GetClipboardText();
             if (MetaApi.ConvertManips(clipboard, out var manips, out _))
@@ -192,7 +192,7 @@ public partial class ModEditWindow
             }
         }
 
-        ImGuiUtil.HoverTooltip(
-            "Try to set the current meta manipulations to the set currently stored in the clipboard.\nRemoves all other manipulations.");
+        ImUtf8.HoverTooltip(
+            "Try to set the current meta manipulations to the set currently stored in the clipboard.\nRemoves all other manipulations."u8);
     }
 }

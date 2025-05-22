@@ -159,7 +159,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (!treeNode2)
             return;
 
-        using var table = ImUtf8.Table("##shapes"u8, 5, ImGuiTableFlags.RowBg);
+        using var table = ImUtf8.Table("##shapes"u8, 6, ImGuiTableFlags.RowBg);
         if (!table)
             return;
 
@@ -167,6 +167,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         ImUtf8.TableSetupColumn("Slot"u8,    ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
         ImUtf8.TableSetupColumn("Address"u8, ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
         ImUtf8.TableSetupColumn("Mask"u8,    ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
+        ImUtf8.TableSetupColumn("Count"u8,    ImGuiTableColumnFlags.WidthFixed, 30 * ImUtf8.GlobalScale);
         ImUtf8.TableSetupColumn("Shapes"u8,  ImGuiTableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
@@ -184,6 +185,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             {
                 var mask = model->EnabledShapeKeyIndexMask;
                 ImUtf8.DrawTableColumn($"{mask:X8}");
+                ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Shapes.Count}");
                 ImGui.TableNextColumn();
                 foreach (var (shape, idx) in model->ModelResourceHandle->Shapes)
                 {
@@ -200,6 +202,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             {
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
             }
         }
     }
@@ -210,7 +213,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (!treeNode2)
             return;
 
-        using var table = ImUtf8.Table("##attributes"u8, 5, ImGuiTableFlags.RowBg);
+        using var table = ImUtf8.Table("##attributes"u8, 6, ImGuiTableFlags.RowBg);
         if (!table)
             return;
 
@@ -218,6 +221,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         ImUtf8.TableSetupColumn("Slot"u8,       ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
         ImUtf8.TableSetupColumn("Address"u8,    ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
         ImUtf8.TableSetupColumn("Mask"u8,       ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
+        ImUtf8.TableSetupColumn("Count"u8,      ImGuiTableColumnFlags.WidthFixed, 30 * ImUtf8.GlobalScale);
         ImUtf8.TableSetupColumn("Attributes"u8, ImGuiTableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
@@ -235,6 +239,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             {
                 var mask = model->EnabledAttributeIndexMask;
                 ImUtf8.DrawTableColumn($"{mask:X8}");
+                ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Attributes.Count}");
                 ImGui.TableNextColumn();
                 foreach (var (attribute, idx) in model->ModelResourceHandle->Attributes)
                 {
@@ -249,6 +254,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             }
             else
             {
+                ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
             }
