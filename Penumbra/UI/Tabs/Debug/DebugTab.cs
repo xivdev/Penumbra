@@ -1075,14 +1075,14 @@ public class DebugTab : Window, ITab, IUiService
             ImGui.TableNextColumn();
             ImGui.TextUnformatted($"Slot {i}");
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(imc == null ? "NULL" : $"0x{(ulong)imc:X}");
+            Penumbra.Dynamis.DrawPointer((nint)imc);
             ImGui.TableNextColumn();
             if (imc != null)
                 UiHelpers.Text(imc);
 
             var mdl = (RenderModel*)model->Models[i];
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(mdl == null ? "NULL" : $"0x{(ulong)mdl:X}");
+            Penumbra.Dynamis.DrawPointer((nint)mdl);
             if (mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara)
                 continue;
 
