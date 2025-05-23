@@ -64,6 +64,8 @@ public class ModMetaEditor(
             OtherData[MetaManipulationType.Est].Add(name, option.Manipulations.GetCount(MetaManipulationType.Est));
             OtherData[MetaManipulationType.Rsp].Add(name, option.Manipulations.GetCount(MetaManipulationType.Rsp));
             OtherData[MetaManipulationType.Atch].Add(name, option.Manipulations.GetCount(MetaManipulationType.Atch));
+            OtherData[MetaManipulationType.Shp].Add(name, option.Manipulations.GetCount(MetaManipulationType.Shp));
+            OtherData[MetaManipulationType.Atr].Add(name, option.Manipulations.GetCount(MetaManipulationType.Atr));
             OtherData[MetaManipulationType.GlobalEqp].Add(name, option.Manipulations.GetCount(MetaManipulationType.GlobalEqp));
         }
 
