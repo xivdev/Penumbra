@@ -21,43 +21,39 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
 
     private readonly BitArray _allIds = new((ShapeAttributeManager.ModelSlotSize + 1) * GenderRaceValues.Count);
 
-    public bool this[HumanSlot slot]
-        => slot is HumanSlot.Unknown ? All : _allIds[(int)slot * GenderRaceIndices.Count];
-
-    public bool this[GenderRace genderRace]
-        => GenderRaceIndices.TryGetValue(genderRace, out var index)
-         && _allIds[ShapeAttributeManager.ModelSlotSize * GenderRaceIndices.Count + index];
-
-    public bool this[HumanSlot slot, GenderRace genderRace]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private bool CheckGroups(HumanSlot slot, GenderRace genderRace)
     {
-        get
-        {
-            if (!GenderRaceIndices.TryGetValue(genderRace, out var index))
-                return false;
+        if (All || this[slot])
+            return true;
 
-            if (_allIds[ShapeAttributeManager.ModelSlotSize * GenderRaceIndices.Count + index])
-                return true;
+        if (!GenderRaceIndices.TryGetValue(genderRace, out var index))
+            return false;
 
-            return _allIds[(int)slot * GenderRaceIndices.Count + index];
-        }
-        set
-        {
-            if (!GenderRaceIndices.TryGetValue(genderRace, out var index))
-                return;
+        if (_allIds[ToIndex(HumanSlot.Unknown, index)])
+            return true;
 
-            var genderRaceCount = GenderRaceValues.Count;
-            if (slot is HumanSlot.Unknown)
-                _allIds[ShapeAttributeManager.ModelSlotSize * genderRaceCount + index] = value;
-            else
-                _allIds[(int)slot * genderRaceCount + index] = value;
-        }
+        return _allIds[ToIndex(slot, index)];
     }
 
+    public bool this[HumanSlot slot]
+        => _allIds[ToIndex(slot, 0)];
+
+    public bool this[GenderRace genderRace]
+        => ToIndex(HumanSlot.Unknown, genderRace, out var index) && _allIds[index];
+
+    public bool this[HumanSlot slot, GenderRace genderRace]
+        => ToIndex(slot, genderRace, out var index) && _allIds[index];
+
     public bool All
-        => _allIds[ShapeAttributeManager.ModelSlotSize * GenderRaceIndices.Count];
+        => _allIds[AllIndex];
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int ToIndex(HumanSlot slot, int genderRaceIndex)
+        => slot is HumanSlot.Unknown ? genderRaceIndex + AllIndex : genderRaceIndex + (int)slot * GenderRaceValues.Count;
 
     public bool Contains(HumanSlot slot, PrimaryId id, GenderRace genderRace)
-        => All || this[slot, genderRace] || ContainsEntry(slot, id, genderRace);
+        => CheckGroups(slot, genderRace) || ContainsEntry(slot, id, genderRace);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private bool ContainsEntry(HumanSlot slot, PrimaryId id, GenderRace genderRace)
@@ -72,9 +68,9 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
 
         if (!id.HasValue)
         {
-            var slotIndex = slot is HumanSlot.Unknown ? ShapeAttributeManager.ModelSlotSize : (int)slot;
-            var old       = _allIds[slotIndex * GenderRaceIndices.Count + index];
-            _allIds[slotIndex * GenderRaceIndices.Count + index] = value;
+            var slotIndex = ToIndex(slot, index);
+            var old       = _allIds[slotIndex];
+            _allIds[slotIndex] = value;
             return old != value;
         }
 
@@ -120,4 +116,16 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
 
     public bool IsEmpty
         => !_allIds.HasAnySet() && Count is 0;
+
+    private static readonly int AllIndex = ShapeAttributeManager.ModelSlotSize * GenderRaceValues.Count;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static bool ToIndex(HumanSlot slot, GenderRace genderRace, out int index)
+    {
+        if (!GenderRaceIndices.TryGetValue(genderRace, out index))
+            return false;
+
+        index = ToIndex(slot, index);
+        return true;
+    }
 }

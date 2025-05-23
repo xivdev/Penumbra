@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
+using OtterGui.Extensions;
 using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Collections.Cache;
@@ -167,7 +168,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         ImUtf8.TableSetupColumn("Slot"u8,    ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
         ImUtf8.TableSetupColumn("Address"u8, ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
         ImUtf8.TableSetupColumn("Mask"u8,    ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
-        ImUtf8.TableSetupColumn("Count"u8,    ImGuiTableColumnFlags.WidthFixed, 30 * ImUtf8.GlobalScale);
+        ImUtf8.TableSetupColumn("Count"u8,   ImGuiTableColumnFlags.WidthFixed, 30 * ImUtf8.GlobalScale);
         ImUtf8.TableSetupColumn("Shapes"u8,  ImGuiTableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
@@ -187,9 +188,9 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 ImUtf8.DrawTableColumn($"{mask:X8}");
                 ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Shapes.Count}");
                 ImGui.TableNextColumn();
-                foreach (var (shape, idx) in model->ModelResourceHandle->Shapes)
+                foreach (var ((shape, flag), idx) in model->ModelResourceHandle->Shapes.WithIndex())
                 {
-                    var       disabled = (mask & (1u << idx)) is 0;
+                    var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImRaii.PushColor(ImGuiCol.Text, disabledColor, disabled);
                     ImUtf8.Text(shape.AsSpan());
                     ImGui.SameLine(0, 0);
@@ -241,9 +242,9 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 ImUtf8.DrawTableColumn($"{mask:X8}");
                 ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Attributes.Count}");
                 ImGui.TableNextColumn();
-                foreach (var (attribute, idx) in model->ModelResourceHandle->Attributes)
+                foreach (var ((attribute, flag), idx) in model->ModelResourceHandle->Attributes.WithIndex())
                 {
-                    var       disabled = (mask & (1u << idx)) is 0;
+                    var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImRaii.PushColor(ImGuiCol.Text, disabledColor, disabled);
                     ImUtf8.Text(attribute.AsSpan());
                     ImGui.SameLine(0, 0);
