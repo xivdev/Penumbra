@@ -34,6 +34,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
     private          AtchFile?      _currentBaseAtchFile;
     private          AtchPoint?     _currentBaseAtchPoint;
     private readonly AtchPointCombo _combo;
+    private          string         _fileImport = string.Empty;
 
     public AtchMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
         : base(editor, metaFiles)
@@ -48,6 +49,8 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
             => obj.ToName();
     }
 
+    private sealed class RaceCodeException(string filePath) : Exception($"Could not identify race code from path {filePath}.");
+
     public void ImportFile(string filePath)
     {
         try
@@ -57,14 +60,15 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
 
             var gr = Parser.ParseRaceCode(filePath);
             if (gr is GenderRace.Unknown)
-                throw new Exception($"Could not identify race code from path {filePath}.");
-            var text        = File.ReadAllBytes(filePath);
-            var file        = new AtchFile(text);
+                throw new RaceCodeException(filePath);
+
+            var text = File.ReadAllBytes(filePath);
+            var file = new AtchFile(text);
             foreach (var point in file.Points)
             {
                 foreach (var (entry, index) in point.Entries.WithIndex())
                 {
-                    var identifier   = new AtchIdentifier(point.Type, gr, (ushort) index);
+                    var identifier   = new AtchIdentifier(point.Type, gr, (ushort)index);
                     var defaultValue = AtchCache.GetDefault(MetaFiles, identifier);
                     if (defaultValue == null)
                         continue;
@@ -75,6 +79,12 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
                         Editor.Changes |= Editor.TryAdd(identifier, entry) || Editor.Update(identifier, entry);
                 }
             }
+        }
+        catch (RaceCodeException ex)
+        {
+            Penumbra.Messager.AddMessage(new Notification(ex, "The imported .atch file does not contain a race code (cXXXX) in its name.",
+                "Could not import .atch file:",
+                NotificationType.Warning));
         }
         catch (Exception ex)
         {
@@ -157,12 +167,12 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
 
     private void UpdateFile()
     {
-        _currentBaseAtchFile = MetaFiles.AtchManager.AtchFileBase[Identifier.GenderRace];
+        _currentBaseAtchFile  = MetaFiles.AtchManager.AtchFileBase[Identifier.GenderRace];
         _currentBaseAtchPoint = _currentBaseAtchFile.GetPoint(Identifier.Type);
         if (_currentBaseAtchPoint == null)
         {
             _currentBaseAtchPoint = _currentBaseAtchFile.Points.First();
-            Identifier           = Identifier with { Type = _currentBaseAtchPoint.Type };
+            Identifier            = Identifier with { Type = _currentBaseAtchPoint.Type };
         }
 
         if (Identifier.EntryIndex >= _currentBaseAtchPoint.Entries.Length)
