@@ -61,9 +61,48 @@ public class PenumbraChangelog : IUiService
         Add1_3_5_0(Changelog);
         Add1_3_6_0(Changelog);
         Add1_3_6_4(Changelog);
+        Add1_4_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_4_0_0(Changelog log)
+        => log.NextVersion("Version 1.4.0.0")
+            .RegisterHighlight("Added two types of new Meta Changes, SHP and ATR (Thanks Karou!).")
+            .RegisterEntry("Those allow mod creators to toggle custom shape keys and attributes for models on and off, respectively.", 1)
+            .RegisterEntry("Custom shape keys need to have the format 'shpx_*' and custom attributes need 'atrx_*'.",                  1)
+            .RegisterHighlight(
+                "Shapes of the following formats will automatically be toggled on if both relevant slots contain the same shape key:", 1)
+            .RegisterEntry("'shpx_wa_*', for the waist seam between the body and leg slot,",    2)
+            .RegisterEntry("'shpx_wr_*', for the wrist seams between the body and hands slot,", 2)
+            .RegisterEntry("'shpx_an_*', for the ankle seams between the leg and feet slot.",   2)
+            .RegisterEntry(
+                "Custom shape key and attributes can be turned off in the advanced settings section for the moment, but this is not recommended.",
+                1)
+            .RegisterHighlight("The mod selector width is now draggable within certain restrictions that depend on the total window width.")
+            .RegisterEntry("The current behavior may not be final, let me know if you have any comments.", 1)
+            .RegisterEntry("Improved the naming of NPCs for identifiers by using Haselnussbombers new naming functionality (Thanks Hasel!).")
+            .RegisterEntry("Added global EQP entries to always hide Au Ra horns, Viera ears, or Miqo'te ears, respectively.")
+            .RegisterEntry("This will leave holes in the heads of the respective race if not modded in some way.", 1)
+            .RegisterEntry("Added a filter for mods that have temporary settings in the mod selector panel (Thanks Caraxi).")
+            .RegisterEntry("Made the checkbox for toggling Temporary Settings Mode in the mod tab more visible.")
+            .RegisterEntry("Improved the option select combo in advanced editing.")
+            .RegisterEntry("Fixed some issues with item identification for EST changes.")
+            .RegisterEntry("Fixed the sizing of the mod panel being off by 1 pixel sometimes.")
+            .RegisterEntry("Fixed an issue with redrawing while in GPose when other plugins broke some assumptions about the game state.")
+            .RegisterEntry("Fixed a clipping issue within the Meta Manipulations tab in advanced editing.")
+            .RegisterEntry("Fixed an issue with empty and temporary settings.")
+            .RegisterHighlight(
+                "In the Item Swap tab, items changed by this mod are now sorted and highlighted before items changed in the current collection before other items for the source, and inversely for the target. (1.3.6.8)")
+            .RegisterHighlight(
+                "Default-valued meta edits should now be kept on import and only removed when the option to keep them is not set AND no other options in the mod edit the same entry. (1.3.6.8)")
+            .RegisterEntry("Added a right-click context menu on file redirections to copy the full file path. (1.3.6.8)")
+            .RegisterEntry(
+                "Added a right-click context menu on the mod export button to open the backup directory in your file explorer. (1.3.6.8)")
+            .RegisterEntry("Fixed some issues when redrawing characters from other plugins. (1.3.6.8)")
+            .RegisterEntry(
+                "Added a modifier key separate from the delete modifier key that is used for less important key-checks, specifically toggling incognito mode. (1.3.6.7)")
+            .RegisterEntry("Fixed some issues with the Material Editor (Thanks Ny). (1.3.6.6)");
 
     private static void Add1_3_6_4(Changelog log)
         => log.NextVersion("Version 1.3.6.4")
