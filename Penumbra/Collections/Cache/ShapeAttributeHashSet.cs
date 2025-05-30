@@ -59,7 +59,7 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
     private bool ContainsEntry(HumanSlot slot, PrimaryId id, GenderRace genderRace)
         => GenderRaceIndices.TryGetValue(genderRace, out var index)
          && TryGetValue((slot, id), out var flags)
-         && (flags & (1ul << index)) is not 0;
+         && ((flags & 1ul) is not 0 || (flags & (1ul << index)) is not 0);
 
     public bool TrySet(HumanSlot slot, PrimaryId? id, GenderRace genderRace, bool value)
     {
