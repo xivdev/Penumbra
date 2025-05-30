@@ -66,6 +66,8 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             MetaDictionary.SerializeTo(array, cache.Rsp.Select(kvp => new KeyValuePair<RspIdentifier, RspEntry>(kvp.Key, kvp.Value.Entry)));
             MetaDictionary.SerializeTo(array, cache.Gmp.Select(kvp => new KeyValuePair<GmpIdentifier, GmpEntry>(kvp.Key, kvp.Value.Entry)));
             MetaDictionary.SerializeTo(array, cache.Atch.Select(kvp => new KeyValuePair<AtchIdentifier, AtchEntry>(kvp.Key, kvp.Value.Entry)));
+            MetaDictionary.SerializeTo(array, cache.Shp.Select(kvp => new KeyValuePair<ShpIdentifier, ShpEntry>(kvp.Key, kvp.Value.Entry)));
+            MetaDictionary.SerializeTo(array, cache.Atr.Select(kvp => new KeyValuePair<AtrIdentifier, AtrEntry>(kvp.Key, kvp.Value.Entry)));
         }
 
         return Functions.ToCompressedBase64(array, 0);
@@ -111,6 +113,8 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
                 }
 
                 WriteCache(zipStream, cache.Atch);
+                WriteCache(zipStream, cache.Shp);
+                WriteCache(zipStream, cache.Atr);
             }
         }
 
@@ -126,6 +130,86 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             metaCache.EnterReadLock();
             try
             {
+                stream.Write(metaCache.Count);
+                foreach (var (identifier, (_, value)) in metaCache)
+                {
+                    stream.Write(identifier);
+                    stream.Write(value);
+                }
+            }
+            finally
+            {
+                metaCache.ExitReadLock();
+            }
+        }
+    }
+
+    public const uint ImcKey  = ((uint)'I' << 24) | ((uint)'M' << 16) | ((uint)'C' << 8);
+    public const uint EqpKey  = ((uint)'E' << 24) | ((uint)'Q' << 16) | ((uint)'P' << 8);
+    public const uint EqdpKey = ((uint)'E' << 24) | ((uint)'Q' << 16) | ((uint)'D' << 8) | 'P';
+    public const uint EstKey  = ((uint)'E' << 24) | ((uint)'S' << 16) | ((uint)'T' << 8);
+    public const uint RspKey  = ((uint)'R' << 24) | ((uint)'S' << 16) | ((uint)'P' << 8);
+    public const uint GmpKey  = ((uint)'G' << 24) | ((uint)'M' << 16) | ((uint)'P' << 8);
+    public const uint GeqpKey = ((uint)'G' << 24) | ((uint)'E' << 16) | ((uint)'Q' << 8) | 'P';
+    public const uint AtchKey = ((uint)'A' << 24) | ((uint)'T' << 16) | ((uint)'C' << 8) | 'H';
+    public const uint ShpKey  = ((uint)'S' << 24) | ((uint)'H' << 16) | ((uint)'P' << 8);
+    public const uint AtrKey  = ((uint)'A' << 24) | ((uint)'T' << 16) | ((uint)'R' << 8);
+
+    private static unsafe string CompressMetaManipulationsV2(ModCollection? collection)
+    {
+        using var ms = new MemoryStream();
+        ms.Capacity = 1024;
+        using (var zipStream = new GZipStream(ms, CompressionMode.Compress, true))
+        {
+            zipStream.Write((byte)2);
+            zipStream.Write("META0002"u8);
+            if (collection?.MetaCache is { } cache)
+            {
+                WriteCache(zipStream, cache.Imc,  ImcKey);
+                WriteCache(zipStream, cache.Eqp,  EqpKey);
+                WriteCache(zipStream, cache.Eqdp, EqdpKey);
+                WriteCache(zipStream, cache.Est,  EstKey);
+                WriteCache(zipStream, cache.Rsp,  RspKey);
+                WriteCache(zipStream, cache.Gmp,  GmpKey);
+                cache.GlobalEqp.EnterReadLock();
+
+                try
+                {
+                    if (cache.GlobalEqp.Count > 0)
+                    {
+                        zipStream.Write(GeqpKey);
+                        zipStream.Write(cache.GlobalEqp.Count);
+                        foreach (var (globalEqp, _) in cache.GlobalEqp)
+                            zipStream.Write(new ReadOnlySpan<byte>(&globalEqp, sizeof(GlobalEqpManipulation)));
+                    }
+                }
+                finally
+                {
+                    cache.GlobalEqp.ExitReadLock();
+                }
+
+                WriteCache(zipStream, cache.Atch, AtchKey);
+                WriteCache(zipStream, cache.Shp,  ShpKey);
+                WriteCache(zipStream, cache.Atr,  AtrKey);
+            }
+        }
+
+        ms.Flush();
+        ms.Position = 0;
+        var data = ms.GetBuffer().AsSpan(0, (int)ms.Length);
+        return Convert.ToBase64String(data);
+
+        void WriteCache<TKey, TValue>(Stream stream, MetaCacheBase<TKey, TValue> metaCache, uint label)
+            where TKey : unmanaged, IMetaIdentifier
+            where TValue : unmanaged
+        {
+            metaCache.EnterReadLock();
+            try
+            {
+                if (metaCache.Count <= 0)
+                    return;
+
+                stream.Write(label);
                 stream.Write(metaCache.Count);
                 foreach (var (identifier, (_, value)) in metaCache)
                 {
@@ -170,6 +254,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             {
                 case 0: return ConvertManipsV0(data, out manips);
                 case 1: return ConvertManipsV1(data, out manips);
+                case 2: return ConvertManipsV2(data, out manips);
                 default:
                     Penumbra.Log.Debug($"Invalid version for manipulations: {version}.");
                     manips = null;
@@ -183,6 +268,131 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             version = byte.MaxValue;
             return false;
         }
+    }
+
+    private static bool ConvertManipsV2(ReadOnlySpan<byte> data, [NotNullWhen(true)] out MetaDictionary? manips)
+    {
+        if (!data.StartsWith("META0002"u8))
+        {
+            Penumbra.Log.Debug("Invalid manipulations of version 2, does not start with valid prefix.");
+            manips = null;
+            return false;
+        }
+
+        manips = new MetaDictionary();
+        var r = new SpanBinaryReader(data[8..]);
+        while (r.Remaining > 4)
+        {
+            var prefix = r.ReadUInt32();
+            var count  = r.Remaining > 4 ? r.ReadInt32() : 0;
+            if (count is 0)
+                continue;
+
+            switch (prefix)
+            {
+                case ImcKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<ImcIdentifier>();
+                        var value      = r.Read<ImcEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case EqpKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<EqpIdentifier>();
+                        var value      = r.Read<EqpEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case EqdpKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<EqdpIdentifier>();
+                        var value      = r.Read<EqdpEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case EstKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<EstIdentifier>();
+                        var value      = r.Read<EstEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case RspKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<RspIdentifier>();
+                        var value      = r.Read<RspEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case GmpKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<GmpIdentifier>();
+                        var value      = r.Read<GmpEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case GeqpKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<GlobalEqpManipulation>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier))
+                            return false;
+                    }
+
+                    break;
+                case AtchKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<AtchIdentifier>();
+                        var value      = r.Read<AtchEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case ShpKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<ShpIdentifier>();
+                        var value      = r.Read<ShpEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+                case AtrKey:
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var identifier = r.Read<AtrIdentifier>();
+                        var value      = r.Read<AtrEntry>();
+                        if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                            return false;
+                    }
+
+                    break;
+            }
+        }
+
+        return true;
     }
 
     private static bool ConvertManipsV1(ReadOnlySpan<byte> data, [NotNullWhen(true)] out MetaDictionary? manips)
@@ -268,6 +478,28 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
                 var value      = r.Read<AtchEntry>();
                 if (!identifier.Validate() || !manips.TryAdd(identifier, value))
                     return false;
+            }
+
+            // Shp and Atr was added later
+            if (r.Position < r.Count)
+            {
+                var shpCount = r.ReadInt32();
+                for (var i = 0; i < shpCount; ++i)
+                {
+                    var identifier = r.Read<ShpIdentifier>();
+                    var value      = r.Read<ShpEntry>();
+                    if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                        return false;
+                }
+
+                var atrCount = r.ReadInt32();
+                for (var i = 0; i < atrCount; ++i)
+                {
+                    var identifier = r.Read<AtrIdentifier>();
+                    var value      = r.Read<AtrEntry>();
+                    if (!identifier.Validate() || !manips.TryAdd(identifier, value))
+                        return false;
+                }
             }
         }
 
