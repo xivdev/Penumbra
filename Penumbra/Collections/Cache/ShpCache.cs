@@ -8,7 +8,10 @@ namespace Penumbra.Collections.Cache;
 public sealed class ShpCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<ShpIdentifier, ShpEntry>(manager, collection)
 {
     public bool ShouldBeEnabled(in ShapeAttributeString shape, HumanSlot slot, PrimaryId id, GenderRace genderRace)
-        => EnabledCount > 0 && _shpData.TryGetValue(shape, out var value) && value.Contains(slot, id, genderRace);
+        => EnabledCount > 0 && _shpData.TryGetValue(shape, out var value) && value.CheckEntry(slot, id, genderRace) is true;
+
+    public bool ShouldBeDisabled(in ShapeAttributeString shape, HumanSlot slot, PrimaryId id, GenderRace genderRace)
+        => DisabledCount > 0 && _shpData.TryGetValue(shape, out var value) && value.CheckEntry(slot, id, genderRace) is false;
 
     internal IReadOnlyDictionary<ShapeAttributeString, ShapeAttributeHashSet> State(ShapeConnectorCondition connector)
         => connector switch
@@ -20,7 +23,8 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
             _                              => [],
         };
 
-    public int EnabledCount { get; private set; }
+    public int EnabledCount  { get; private set; }
+    public int DisabledCount { get; private set; }
 
     private readonly Dictionary<ShapeAttributeString, ShapeAttributeHashSet> _shpData         = [];
     private readonly Dictionary<ShapeAttributeString, ShapeAttributeHashSet> _wristConnectors = [];
@@ -34,10 +38,12 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
         _wristConnectors.Clear();
         _waistConnectors.Clear();
         _ankleConnectors.Clear();
+        EnabledCount  = 0;
+        DisabledCount = 0;
     }
 
     protected override void Dispose(bool _)
-        => Clear();
+        => Reset();
 
     protected override void ApplyModInternal(ShpIdentifier identifier, ShpEntry entry)
     {
@@ -55,15 +61,17 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
         {
             if (!dict.TryGetValue(identifier.Shape, out var value))
             {
-                if (!entry.Value)
-                    return;
-
                 value = [];
                 dict.Add(identifier.Shape, value);
             }
 
-            if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, entry.Value))
-                ++EnabledCount;
+            if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, entry.Value, out _))
+            {
+                if (entry.Value)
+                    ++EnabledCount;
+                else
+                    ++DisabledCount;
+            }
         }
     }
 
@@ -84,9 +92,12 @@ public sealed class ShpCache(MetaFileManager manager, ModCollection collection) 
             if (!dict.TryGetValue(identifier.Shape, out var value))
                 return;
 
-            if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, false))
+            if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, null, out var which))
             {
-                --EnabledCount;
+                if (which)
+                    --EnabledCount;
+                else
+                    --DisabledCount;
                 if (value.IsEmpty)
                     dict.Remove(identifier.Shape);
             }

@@ -17,12 +17,12 @@ namespace Penumbra.UI;
 public sealed class ConfigWindow : Window, IUiService
 {
     private readonly IDalamudPluginInterface _pluginInterface;
-    private readonly Configuration          _config;
-    private readonly PerformanceTracker     _tracker;
-    private readonly ValidityChecker        _validityChecker;
-    private          Penumbra?              _penumbra;
-    private          ConfigTabBar           _configTabs = null!;
-    private          string?                _lastException;
+    private readonly Configuration           _config;
+    private readonly PerformanceTracker      _tracker;
+    private readonly ValidityChecker         _validityChecker;
+    private          Penumbra?               _penumbra;
+    private          ConfigTabBar            _configTabs = null!;
+    private          string?                 _lastException;
 
     public ConfigWindow(PerformanceTracker tracker, IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial)

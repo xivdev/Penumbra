@@ -8,9 +8,11 @@ namespace Penumbra.Collections.Cache;
 public sealed class AtrCache(MetaFileManager manager, ModCollection collection) : MetaCacheBase<AtrIdentifier, AtrEntry>(manager, collection)
 {
     public bool ShouldBeDisabled(in ShapeAttributeString attribute, HumanSlot slot, PrimaryId id, GenderRace genderRace)
-        => DisabledCount > 0 && _atrData.TryGetValue(attribute, out var value) && value.Contains(slot, id, genderRace);
+        => DisabledCount > 0 && _atrData.TryGetValue(attribute, out var value) && value.CheckEntry(slot, id, genderRace) is false;
 
+    public int EnabledCount  { get; private set; }
     public int DisabledCount { get; private set; }
+
 
     internal IReadOnlyDictionary<ShapeAttributeString, ShapeAttributeHashSet> Data
         => _atrData;
@@ -21,24 +23,28 @@ public sealed class AtrCache(MetaFileManager manager, ModCollection collection) 
     {
         Clear();
         _atrData.Clear();
+        DisabledCount = 0;
+        EnabledCount  = 0;
     }
 
     protected override void Dispose(bool _)
-        => Clear();
+        => Reset();
 
     protected override void ApplyModInternal(AtrIdentifier identifier, AtrEntry entry)
     {
         if (!_atrData.TryGetValue(identifier.Attribute, out var value))
         {
-            if (entry.Value)
-                return;
-
             value = [];
             _atrData.Add(identifier.Attribute, value);
         }
 
-        if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, !entry.Value))
-            ++DisabledCount;
+        if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, entry.Value, out _))
+        {
+            if (entry.Value)
+                ++EnabledCount;
+            else
+                ++DisabledCount;
+        }
     }
 
     protected override void RevertModInternal(AtrIdentifier identifier)
@@ -46,9 +52,12 @@ public sealed class AtrCache(MetaFileManager manager, ModCollection collection) 
         if (!_atrData.TryGetValue(identifier.Attribute, out var value))
             return;
 
-        if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, false))
+        if (value.TrySet(identifier.Slot, identifier.Id, identifier.GenderRaceCondition, null, out var which))
         {
-            --DisabledCount;
+            if (which)
+                --EnabledCount;
+            else
+                --DisabledCount;
             if (value.IsEmpty)
                 _atrData.Remove(identifier.Attribute);
         }
