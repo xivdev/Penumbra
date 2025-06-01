@@ -31,19 +31,18 @@ public partial class ModEditWindow
 
     private class LoadedData
     {
-        public          MdlFile          LastFile              = null!;
+        public          MdlFile          LastFile             = null!;
         public readonly List<TagButtons> SubMeshAttributeTags = [];
         public          long[]           LodTriCount          = [];
     }
 
-    private          string           _modelNewMaterial           = string.Empty;
+    private string _modelNewMaterial = string.Empty;
 
     private readonly LoadedData _main    = new();
     private readonly LoadedData _preview = new();
 
-    private          string           _customPath                 = string.Empty;
-    private          Utf8GamePath     _customGamePath             = Utf8GamePath.Empty;
-
+    private string       _customPath     = string.Empty;
+    private Utf8GamePath _customGamePath = Utf8GamePath.Empty;
 
 
     private LoadedData UpdateFile(MdlFile file, bool force, bool disabled)
@@ -68,7 +67,7 @@ public partial class ModEditWindow
 
     private bool DrawModelPanel(MdlTab tab, bool disabled)
     {
-        var ret = tab.Dirty;
+        var ret  = tab.Dirty;
         var data = UpdateFile(tab.Mdl, ret, disabled);
         DrawVersionUpdate(tab, disabled);
         DrawImportExport(tab, disabled);
@@ -89,7 +88,8 @@ public partial class ModEditWindow
         if (disabled || tab.Mdl.Version is not MdlFile.V5)
             return;
 
-        if (!ImUtf8.ButtonEx("Update MDL Version from V5 to V6"u8, "Try using this if the bone weights of a pre-Dawntrail model seem wrong.\n\nThis is not revertible."u8,
+        if (!ImUtf8.ButtonEx("Update MDL Version from V5 to V6"u8,
+                "Try using this if the bone weights of a pre-Dawntrail model seem wrong.\n\nThis is not revertible."u8,
                 new Vector2(-0.1f, 0), false, 0, Colors.PressEnterWarningBg))
             return;
 
@@ -350,7 +350,7 @@ public partial class ModEditWindow
         if (!disabled)
         {
             ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
-            ImGui.TableSetupColumn("help", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+            ImGui.TableSetupColumn("help",    ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
         }
 
         var inputFlags = disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None;
@@ -369,10 +369,11 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, string.Empty, !validName, true))
         {
-            ret |= true;
-            tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
-            _modelNewMaterial = string.Empty;
+            ret               |= true;
+            tab.Mdl.Materials =  materials.AddItem(_modelNewMaterial);
+            _modelNewMaterial =  string.Empty;
         }
+
         ImGui.TableNextColumn();
         if (!validName && _modelNewMaterial.Length > 0)
             DrawInvalidMaterialMarker();
@@ -423,14 +424,16 @@ public partial class ModEditWindow
         // Add markers to invalid materials.
         if (!tab.ValidateMaterial(temp))
             DrawInvalidMaterialMarker();
-        
+
         return ret;
     }
 
     private static void DrawInvalidMaterialMarker()
     {
         using (ImRaii.PushFont(UiBuilder.IconFont))
+        {
             ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
+        }
 
         ImGuiUtil.HoverTooltip(
             "Materials must be either relative (e.g. \"/filename.mtrl\")\n"
@@ -498,11 +501,11 @@ public partial class ModEditWindow
         using var node = ImRaii.TreeNode($"Click to expand");
         if (!node)
             return;
-        
+
         var flags = ImGuiTableFlags.SizingFixedFit
-            | ImGuiTableFlags.RowBg
-            | ImGuiTableFlags.Borders
-            | ImGuiTableFlags.NoHostExtendX;
+          | ImGuiTableFlags.RowBg
+          | ImGuiTableFlags.Borders
+          | ImGuiTableFlags.NoHostExtendX;
         using var table = ImRaii.Table(string.Empty, 4, flags);
         if (!table)
             return;
@@ -590,6 +593,7 @@ public partial class ModEditWindow
         if (!header)
             return false;
 
+        var ret = false;
         using (var table = ImRaii.Table("##data", 2, ImGuiTableFlags.SizingFixedFit))
         {
             if (table)
@@ -650,22 +654,49 @@ public partial class ModEditWindow
         using (var attributes = ImRaii.TreeNode("Attributes", ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (attributes)
-                foreach (var attribute in data.LastFile.Attributes)
-                    ImRaii.TreeNode(attribute, ImGuiTreeNodeFlags.Leaf).Dispose();
+                for (var i = 0; i < data.LastFile.Attributes.Length; ++i)
+                {
+                    using var id        = ImUtf8.PushId(i);
+                    ref var   attribute = ref data.LastFile.Attributes[i];
+                    var       name      = attribute;
+                    if (ImUtf8.InputText("##attribute"u8, ref name, "Attribute Name..."u8) && name.Length > 0 && name != attribute)
+                    {
+                        attribute = name;
+                        ret       = true;
+                    }
+                }
         }
 
         using (var bones = ImRaii.TreeNode("Bones", ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (bones)
-                foreach (var bone in data.LastFile.Bones)
-                    ImRaii.TreeNode(bone, ImGuiTreeNodeFlags.Leaf).Dispose();
+                for (var i = 0; i < data.LastFile.Bones.Length; ++i)
+                {
+                    using var id   = ImUtf8.PushId(i);
+                    ref var   bone = ref data.LastFile.Bones[i];
+                    var       name = bone;
+                    if (ImUtf8.InputText("##bone"u8, ref name, "Bone Name..."u8) && name.Length > 0 && name != bone)
+                    {
+                        bone = name;
+                        ret  = true;
+                    }
+                }
         }
 
         using (var shapes = ImRaii.TreeNode("Shapes", ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (shapes)
-                foreach (var shape in data.LastFile.Shapes)
-                    ImRaii.TreeNode(shape.ShapeName, ImGuiTreeNodeFlags.Leaf).Dispose();
+                for (var i = 0; i < data.LastFile.Shapes.Length; ++i)
+                {
+                    using var id    = ImUtf8.PushId(i);
+                    ref var   shape = ref data.LastFile.Shapes[i];
+                    var       name  = shape.ShapeName;
+                    if (ImUtf8.InputText("##shape"u8, ref name, "Shape Name..."u8) && name.Length > 0 && name != shape.ShapeName)
+                    {
+                        shape.ShapeName = name;
+                        ret             = true;
+                    }
+                }
         }
 
         if (data.LastFile.RemainingData.Length > 0)
@@ -675,7 +706,7 @@ public partial class ModEditWindow
                 Widget.DrawHexViewer(data.LastFile.RemainingData);
         }
 
-        return false;
+        return ret;
     }
 
     private static bool GetFirstModel(IEnumerable<string> files, [NotNullWhen(true)] out string? file)
