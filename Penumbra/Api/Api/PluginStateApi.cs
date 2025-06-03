@@ -1,39 +1,38 @@
+using System.Collections.Frozen;
 using Newtonsoft.Json;
 using OtterGui.Services;
 using Penumbra.Communication;
+using Penumbra.Mods;
 using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class PluginStateApi : IPenumbraApiPluginState, IApiService
+public class PluginStateApi(Configuration config, CommunicatorService communicator) : IPenumbraApiPluginState, IApiService
 {
-    private readonly Configuration       _config;
-    private readonly CommunicatorService _communicator;
-
-    public PluginStateApi(Configuration config, CommunicatorService communicator)
-    {
-        _config       = config;
-        _communicator = communicator;
-    }
-
     public string GetModDirectory()
-        => _config.ModDirectory;
+        => config.ModDirectory;
 
     public string GetConfiguration()
-        => JsonConvert.SerializeObject(_config, Formatting.Indented);
+        => JsonConvert.SerializeObject(config, Formatting.Indented);
 
     public event Action<string, bool>? ModDirectoryChanged
     {
-        add => _communicator.ModDirectoryChanged.Subscribe(value!, Communication.ModDirectoryChanged.Priority.Api);
-        remove => _communicator.ModDirectoryChanged.Unsubscribe(value!);
+        add => communicator.ModDirectoryChanged.Subscribe(value!, Communication.ModDirectoryChanged.Priority.Api);
+        remove => communicator.ModDirectoryChanged.Unsubscribe(value!);
     }
 
     public bool GetEnabledState()
-        => _config.EnableMods;
+        => config.EnableMods;
 
     public event Action<bool>? EnabledChange
     {
-        add => _communicator.EnabledChanged.Subscribe(value!, EnabledChanged.Priority.Api);
-        remove => _communicator.EnabledChanged.Unsubscribe(value!);
+        add => communicator.EnabledChanged.Subscribe(value!, EnabledChanged.Priority.Api);
+        remove => communicator.EnabledChanged.Unsubscribe(value!);
     }
+
+    public FrozenSet<string> SupportedFeatures
+        => FeatureChecker.SupportedFeatures.ToFrozenSet();
+
+    public string[] CheckSupportedFeatures(IEnumerable<string> requiredFeatures)
+        => requiredFeatures.Where(f => !FeatureChecker.Supported(f)).ToArray();
 }

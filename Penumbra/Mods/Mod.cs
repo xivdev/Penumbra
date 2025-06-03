@@ -1,4 +1,3 @@
-using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
 using Penumbra.GameData.Data;
@@ -11,6 +10,16 @@ using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
+
+[Flags]
+public enum FeatureFlags : ulong
+{
+    None    = 0,
+    Atch    = 1ul << 0,
+    Shp     = 1ul << 1,
+    Atr     = 1ul << 2,
+    Invalid = 1ul << 62,
+}
 
 public sealed class Mod : IMod
 {
@@ -57,6 +66,7 @@ public sealed class Mod : IMod
     public string                Image                 { get; internal set; } = string.Empty;
     public IReadOnlyList<string> ModTags               { get; internal set; } = [];
     public HashSet<CustomItemId> DefaultPreferredItems { get; internal set; } = [];
+    public FeatureFlags          RequiredFeatures      { get; internal set; } = 0;
 
 
     // Local Data
@@ -69,6 +79,23 @@ public sealed class Mod : IMod
     // Options
     public readonly DefaultSubMod   Default;
     public readonly List<IModGroup> Groups = [];
+
+    /// <summary> Compute the required feature flags for this mod. </summary>
+    public FeatureFlags ComputeRequiredFeatures()
+    {
+        var flags = FeatureFlags.None;
+        foreach (var option in AllDataContainers)
+        {
+            if (option.Manipulations.Atch.Count > 0)
+                flags |= FeatureFlags.Atch;
+            if (option.Manipulations.Atr.Count > 0)
+                flags |= FeatureFlags.Atr;
+            if (option.Manipulations.Shp.Count > 0)
+                flags |= FeatureFlags.Shp;
+        }
+
+        return flags;
+    }
 
     public AppliedModData GetData(ModSettings? settings = null)
     {

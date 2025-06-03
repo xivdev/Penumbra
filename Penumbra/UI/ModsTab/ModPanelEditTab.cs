@@ -65,6 +65,10 @@ public class ModPanelEditTab(
             }
 
         UiHelpers.DefaultLineSpace();
+
+        FeatureChecker.DrawFeatureFlagInput(modManager.DataEditor, _mod, UiHelpers.InputTextWidth.X);
+
+        UiHelpers.DefaultLineSpace();
         var sharedTagsEnabled     = predefinedTagManager.Count > 0;
         var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
@@ -75,6 +79,7 @@ public class ModPanelEditTab(
         if (sharedTagsEnabled)
             predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, false,
                 selector.Selected!);
+
 
         UiHelpers.DefaultLineSpace();
         addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);

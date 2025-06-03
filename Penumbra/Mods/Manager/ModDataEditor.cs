@@ -26,6 +26,7 @@ public enum ModDataChangeType : ushort
     Image                 = 0x1000,
     DefaultChangedItems   = 0x2000,
     PreferredChangedItems = 0x4000,
+    RequiredFeatures      = 0x8000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData) : IService
@@ -95,6 +96,16 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Website = newWebsite;
         saveService.QueueSave(new ModMeta(mod));
         communicatorService.ModDataChanged.Invoke(ModDataChangeType.Website, mod, null);
+    }
+
+    public void ChangeRequiredFeatures(Mod mod, FeatureFlags flags)
+    {
+        if (mod.RequiredFeatures == flags)
+            return;
+
+        mod.RequiredFeatures = flags;
+        saveService.QueueSave(new ModMeta(mod));
+        communicatorService.ModDataChanged.Invoke(ModDataChangeType.RequiredFeatures, mod, null);
     }
 
     public void ChangeModTag(Mod mod, int tagIdx, string newTag)

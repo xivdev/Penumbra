@@ -5,6 +5,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
@@ -12,7 +13,7 @@ namespace Penumbra.Api.IpcTester;
 
 public class PluginStateIpcTester : IUiService, IDisposable
 {
-    private readonly IDalamudPluginInterface        _pi;
+    private readonly IDalamudPluginInterface       _pi;
     public readonly  EventSubscriber<string, bool> ModDirectoryChanged;
     public readonly  EventSubscriber               Initialized;
     public readonly  EventSubscriber               Disposed;
@@ -25,6 +26,9 @@ public class PluginStateIpcTester : IUiService, IDisposable
 
     private readonly List<DateTimeOffset> _initializedList = [];
     private readonly List<DateTimeOffset> _disposedList    = [];
+
+    private string   _requiredFeatureString = string.Empty;
+    private string[] _requiredFeatures      = [];
 
     private DateTimeOffset _lastEnabledChange = DateTimeOffset.UnixEpoch;
     private bool?          _lastEnabledValue;
@@ -48,12 +52,15 @@ public class PluginStateIpcTester : IUiService, IDisposable
         EnabledChange.Dispose();
     }
 
+
     public void Draw()
     {
         using var _ = ImRaii.TreeNode("Plugin State");
         if (!_)
             return;
 
+        if (ImUtf8.InputText("Required Features"u8, ref _requiredFeatureString))
+            _requiredFeatures = _requiredFeatureString.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
         if (!table)
             return;
@@ -70,6 +77,12 @@ public class PluginStateIpcTester : IUiService, IDisposable
 
         IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change");
         ImGui.TextUnformatted(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never");
+
+        IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features");
+        ImUtf8.Text(string.Join(", ", new SupportedFeatures(_pi).Invoke()));
+
+        IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features");
+        ImUtf8.Text(string.Join(", ", new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
 
         DrawConfigPopup();
         IpcTester.DrawIntro(GetConfiguration.Label, "Configuration");

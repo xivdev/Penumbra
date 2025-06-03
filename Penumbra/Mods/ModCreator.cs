@@ -28,7 +28,8 @@ public partial class ModCreator(
     MetaFileManager metaFileManager,
     GamePathParser gamePathParser) : IService
 {
-    public readonly Configuration Config = config;
+    public const    FeatureFlags  SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
+    public readonly Configuration Config            = config;
 
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
     public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null)
@@ -74,7 +75,7 @@ public partial class ModCreator(
             return false;
 
         modDataChange = ModMeta.Load(dataEditor, this, mod);
-        if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length == 0)
+        if (modDataChange.HasFlag(ModDataChangeType.Deletion) || mod.Name.Length == 0 || mod.RequiredFeatures is FeatureFlags.Invalid)
             return false;
 
         modDataChange |= ModLocalData.Load(dataEditor, mod);

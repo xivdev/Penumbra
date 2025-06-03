@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Structs;
-using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 
@@ -28,6 +27,19 @@ public readonly struct ModMeta(Mod mod) : ISavable
             { nameof(Mod.ModTags), JToken.FromObject(mod.ModTags) },
             { nameof(Mod.DefaultPreferredItems), JToken.FromObject(mod.DefaultPreferredItems) },
         };
+        if (mod.RequiredFeatures is not FeatureFlags.None)
+        {
+            var features = mod.RequiredFeatures;
+            var array    = new JArray();
+            foreach (var flag in Enum.GetValues<FeatureFlags>())
+            {
+                if ((features & flag) is not FeatureFlags.None)
+                    array.Add(flag.ToString());
+            }
+
+            jObject[nameof(Mod.RequiredFeatures)] = array;
+        }
+
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
         jObject.WriteTo(jWriter);
@@ -60,6 +72,8 @@ public readonly struct ModMeta(Mod mod) : ISavable
             var modTags        = (json[nameof(Mod.ModTags)] as JArray)?.Values<string>().OfType<string>();
             var defaultItems = (json[nameof(Mod.DefaultPreferredItems)] as JArray)?.Values<ulong>().Select(i => (CustomItemId)i).ToHashSet()
              ?? [];
+            var requiredFeatureArray = (json[nameof(Mod.RequiredFeatures)] as JArray)?.Values<string>() ?? [];
+            var requiredFeatures     = FeatureChecker.ParseFlags(mod.ModPath.Name, newName.Length > 0 ? newName : mod.Name.Length > 0 ? mod.Name : "Unknown", requiredFeatureArray!);
 
             ModDataChangeType changes = 0;
             if (mod.Name != newName)
@@ -110,6 +124,13 @@ public readonly struct ModMeta(Mod mod) : ISavable
                     changes |= ModDataChangeType.Migration;
                     editor.SaveService.ImmediateSave(new ModMeta(mod));
                 }
+
+            // Required features get checked during parsing, in which case the new required features signal invalid.
+            if (requiredFeatures != mod.RequiredFeatures)
+            {
+                changes              |= ModDataChangeType.RequiredFeatures;
+                mod.RequiredFeatures =  requiredFeatures;
+            }
 
             changes |= ModLocalData.UpdateTags(mod, modTags, null);
 

@@ -80,6 +80,8 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.ModDirectoryChanged.Provider(pi, api.PluginState),
             IpcSubscribers.GetEnabledState.Provider(pi, api.PluginState),
             IpcSubscribers.EnabledChange.Provider(pi, api.PluginState),
+            IpcSubscribers.SupportedFeatures.Provider(pi, api.PluginState),
+            IpcSubscribers.CheckSupportedFeatures.Provider(pi, api.PluginState),
 
             IpcSubscribers.RedrawObject.Provider(pi, api.Redraw),
             IpcSubscribers.RedrawAll.Provider(pi, api.Redraw),

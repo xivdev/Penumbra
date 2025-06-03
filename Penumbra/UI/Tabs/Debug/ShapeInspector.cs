@@ -96,7 +96,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (set.All is { } value)
         {
             using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !value);
-            ImUtf8.Text("All"u8);
+            ImUtf8.Text("All, "u8);
             ImGui.SameLine(0, 0);
         }
 

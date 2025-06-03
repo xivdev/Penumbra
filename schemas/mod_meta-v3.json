@@ -52,6 +52,14 @@
                 "type": "integer"
             },
             "uniqueItems": true
+        },
+        "RequiredFeatures": {
+            "description": "A list of required features by name.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true
         }
     },
     "required": [

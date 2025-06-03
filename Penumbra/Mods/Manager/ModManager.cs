@@ -143,9 +143,10 @@ public sealed class ModManager : ModStorage, IDisposable, IService
         _communicator.ModPathChanged.Invoke(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath);
         if (!Creator.ReloadMod(mod, true, false, out var metaChange))
         {
-            Penumbra.Log.Warning(mod.Name.Length == 0
-                ? $"Reloading mod {oldName} has failed, new name is empty. Removing from loaded mods instead."
-                : $"Reloading mod {oldName} failed, {mod.ModPath.FullName} does not exist anymore or it has invalid data. Removing from loaded mods instead.");
+            if (mod.RequiredFeatures is not FeatureFlags.Invalid)
+                Penumbra.Log.Warning(mod.Name.Length == 0
+                    ? $"Reloading mod {oldName} has failed, new name is empty. Removing from loaded mods instead."
+                    : $"Reloading mod {oldName} failed, {mod.ModPath.FullName} does not exist anymore or it has invalid data. Removing from loaded mods instead.");
             RemoveMod(mod);
             return;
         }
@@ -251,12 +252,8 @@ public sealed class ModManager : ModStorage, IDisposable, IService
     {
         switch (type)
         {
-            case ModPathChangeType.Added:
-                SetNew(mod);
-                break;
-            case ModPathChangeType.Deleted:
-                SetKnown(mod);
-                break;
+            case ModPathChangeType.Added:   SetNew(mod); break;
+            case ModPathChangeType.Deleted: SetKnown(mod); break;
             case ModPathChangeType.Moved:
                 if (oldDirectory != null && newDirectory != null)
                     DataEditor.MoveDataFile(oldDirectory, newDirectory);
