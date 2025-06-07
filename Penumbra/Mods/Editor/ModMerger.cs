@@ -6,6 +6,7 @@ using OtterGui.Extensions;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
+using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
@@ -44,13 +45,13 @@ public class ModMerger : IDisposable, IService
     public ModMerger(ModManager mods, ModGroupEditor editor, ModSelection selection, DuplicateManager duplicates,
         CommunicatorService communicator, ModCreator creator, Configuration config)
     {
-        _editor                     =  editor;
-        _selection                  =  selection;
-        _duplicates                 =  duplicates;
-        _communicator               =  communicator;
-        _creator                    =  creator;
-        _config                     =  config;
-        _mods                       =  mods;
+        _editor       = editor;
+        _selection    = selection;
+        _duplicates   = duplicates;
+        _communicator = communicator;
+        _creator      = creator;
+        _config       = config;
+        _mods         = mods;
         _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModMerger);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModMerger);
     }
@@ -99,26 +100,117 @@ public class ModMerger : IDisposable, IService
 
         foreach (var originalGroup in MergeFromMod!.Groups)
         {
-            var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
-            if (groupCreated)
-                _createdGroups.Add(groupIdx);
-            if (group == null)
-                throw new Exception(
-                    $"The merged group {originalGroup.Name} already existed, but had a different type than the original group of type {originalGroup.Type}.");
-
-            foreach (var originalOption in originalGroup.DataContainers)
+            switch (originalGroup.Type)
             {
-                var (option, _, optionCreated) = _editor.FindOrAddOption(group, originalOption.GetName());
-                if (optionCreated)
+                case GroupType.Single:
+                case GroupType.Multi:
                 {
-                    _createdOptions.Add(option!);
-                    // #TODO DataContainer <> Option.
-                    MergeIntoOption([originalOption], (IModDataContainer)option!, false);
+                    var (group, groupIdx, groupCreated) = _editor.FindOrAddModGroup(MergeToMod!, originalGroup.Type, originalGroup.Name);
+                    if (group is null)
+                        throw new Exception(
+                            $"The merged group {originalGroup.Name} already existed, but had a different type than the original group of type {originalGroup.Type}.");
+
+                    if (groupCreated)
+                    {
+                        _createdGroups.Add(groupIdx);
+                        group.Description     = originalGroup.Description;
+                        group.Image           = originalGroup.Image;
+                        group.DefaultSettings = originalGroup.DefaultSettings;
+                        group.Page            = originalGroup.Page;
+                        group.Priority        = originalGroup.Priority;
+                    }
+
+                    foreach (var originalOption in originalGroup.Options)
+                    {
+                        var (option, _, optionCreated) = _editor.FindOrAddOption(group, originalOption.Name);
+                        if (optionCreated)
+                        {
+                            _createdOptions.Add(option!);
+                            MergeIntoOption([(IModDataContainer)originalOption], (IModDataContainer)option!, false);
+                            option!.Description = originalOption.Description;
+                            if (option is MultiSubMod multiOption)
+                                multiOption.Priority = ((MultiSubMod)originalOption).Priority;
+                        }
+                        else
+                        {
+                            throw new Exception(
+                                $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: The option {option!.FullName} already existed.");
+                        }
+                    }
+
+                    break;
                 }
-                else
+
+                case GroupType.Imc when originalGroup is ImcModGroup imc:
                 {
-                    throw new Exception(
-                        $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: The option {option!.FullName} already existed.");
+                    var group = _editor.ImcEditor.AddModGroup(MergeToMod!, imc.Name, imc.Identifier, imc.DefaultEntry);
+                    if (group is null)
+                        throw new Exception(
+                            $"The merged group {originalGroup.Name} already existed, but groups of type {originalGroup.Type} can not be merged.");
+
+                    group.AllVariants     = imc.AllVariants;
+                    group.OnlyAttributes  = imc.OnlyAttributes;
+                    group.Description     = imc.Description;
+                    group.Image           = imc.Image;
+                    group.DefaultSettings = imc.DefaultSettings;
+                    group.Page            = imc.Page;
+                    group.Priority        = imc.Priority;
+                    foreach (var originalOption in imc.OptionData)
+                    {
+                        if (originalOption.IsDisableSubMod)
+                        {
+                            _editor.ImcEditor.ChangeCanBeDisabled(group, true);
+                            var disable = group.OptionData.First(s => s.IsDisableSubMod);
+                            disable.Description = originalOption.Description;
+                            disable.Name        = originalOption.Name;
+                            continue;
+                        }
+
+                        var newOption = _editor.ImcEditor.AddOption(group, originalOption.Name);
+                        if (newOption is null)
+                            throw new Exception(
+                                $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: Unknown error when creating IMC option {originalOption.FullName}.");
+
+                        newOption.Description   = originalOption.Description;
+                        newOption.AttributeMask = originalOption.AttributeMask;
+                    }
+
+                    break;
+                }
+                case GroupType.Combining when originalGroup is CombiningModGroup combining:
+                {
+                    var group = _editor.CombiningEditor.AddModGroup(MergeToMod!, combining.Name);
+                    if (group is null)
+                        throw new Exception(
+                            $"The merged group {originalGroup.Name} already existed, but groups of type {originalGroup.Type} can not be merged.");
+
+                    group.Description     = combining.Description;
+                    group.Image           = combining.Image;
+                    group.DefaultSettings = combining.DefaultSettings;
+                    group.Page            = combining.Page;
+                    group.Priority        = combining.Priority;
+                    foreach (var originalOption in combining.OptionData)
+                    {
+                        var option = _editor.CombiningEditor.AddOption(group, originalOption.Name);
+                        if (option is null)
+                            throw new Exception(
+                                $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: Unknown error when creating combining option {originalOption.FullName}.");
+
+                        option.Description = originalOption.Description;
+                    }
+
+                    if (group.Data.Count != combining.Data.Count)
+                        throw new Exception(
+                            $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}: Unknown error caused data container counts in combining group {originalGroup.Name} to differ.");
+
+                    foreach (var (originalContainer, container) in combining.Data.Zip(group.Data))
+                    {
+                        container.Name = originalContainer.Name;
+                        MergeIntoOption([originalContainer], container, false);
+                    }
+
+
+                    break;
                 }
             }
         }
@@ -151,7 +243,6 @@ public class ModMerger : IDisposable, IService
         if (!dir.Exists)
             _createdDirectories.Add(dir.FullName);
         CopyFiles(dir);
-        // #TODO DataContainer <> Option.
         MergeIntoOption(MergeFromMod!.AllDataContainers.Reverse(), (IModDataContainer)option!, true);
     }
 
