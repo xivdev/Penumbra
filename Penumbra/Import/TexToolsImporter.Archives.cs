@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
+using Penumbra.Services;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -145,6 +146,9 @@ public partial class TexToolsImporter
                 break;
             case ".mtrl":
                 _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                break;
+            case ".tex":
+                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName, _extractionOptions);
                 break;
             default:
                 reader.WriteEntryToDirectory(_currentModDirectory!.FullName, _extractionOptions);

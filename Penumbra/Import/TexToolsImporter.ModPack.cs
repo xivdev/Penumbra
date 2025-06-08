@@ -259,6 +259,7 @@ public partial class TexToolsImporter
         {
             ".mdl"  => _migrationManager.MigrateTtmpModel(extractedFile.FullName, data.Data),
             ".mtrl" => _migrationManager.MigrateTtmpMaterial(extractedFile.FullName, data.Data),
+            ".tex"  => _migrationManager.FixTtmpMipMaps(extractedFile.FullName, data.Data),
             _       => data.Data,
         };
 

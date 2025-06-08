@@ -1,6 +1,10 @@
 using Dalamud.Interface.ImGuiNotification;
+using Lumina.Data.Files;
 using OtterGui.Classes;
 using OtterGui.Services;
+using Lumina.Extensions;
+using Penumbra.GameData.Files.Utility;
+using Penumbra.Import.Textures;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using MdlFile = Penumbra.GameData.Files.MdlFile;
@@ -296,6 +300,26 @@ public class MigrationManager(Configuration config) : IService
         }
     }
 
+    public void FixMipMaps(IReader reader, string directory, ExtractionOptions options)
+    {
+        var       path = Path.Combine(directory, reader.Entry.Key!);
+        using var s    = new MemoryStream();
+        using var e    = reader.OpenEntryStream();
+        e.CopyTo(s);
+        var length = s.Position;
+        s.Seek(0, SeekOrigin.Begin);
+        var br     = new BinaryReader(s, Encoding.UTF8, true);
+        var header = br.ReadStructure<TexFile.TexHeader>();
+        br.Dispose();
+        TexFileParser.FixMipOffsets(length, ref header, out var actualSize);
+
+        s.Seek(0, SeekOrigin.Begin);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using var f = File.Open(path, FileMode.Create, FileAccess.Write);
+        f.Write(header);
+        f.Write(s.GetBuffer().AsSpan(80, (int)actualSize - 80));
+    }
+
     /// <summary> Update the data of a .mdl file during TTMP extraction. Returns either the existing array or a new one. </summary>
     public byte[] MigrateTtmpModel(string path, byte[] data)
     {
@@ -346,6 +370,25 @@ public class MigrationManager(Configuration config) : IService
             Penumbra.Log.Warning($"Failed to migrate material {path} to Dawntrail during import:\n{ex}");
             return data;
         }
+    }
+
+    public byte[] FixTtmpMipMaps(string path, byte[] data)
+    {
+        using var m      = new MemoryStream(data);
+        var       br     = new BinaryReader(m, Encoding.UTF8, true);
+        var       header = br.ReadStructure<TexFile.TexHeader>();
+        br.Dispose();
+        TexFileParser.FixMipOffsets(data.Length, ref header, out var actualSize);
+        if (actualSize == data.Length)
+            return data;
+
+        var       ret = new byte[actualSize];
+        using var m2  = new MemoryStream(ret);
+        using var bw  = new BinaryWriter(m2);
+        bw.Write(header);
+        bw.Write(data.AsSpan(80, (int)actualSize - 80));
+
+        return ret;
     }
 
 

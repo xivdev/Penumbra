@@ -70,7 +70,6 @@ public class ModImportManager(ModManager modManager, Configuration config, ModEd
         _import = null;
     }
 
-
     public bool AddUnpackedMod([NotNullWhen(true)] out Mod? mod)
     {
         if (!_modsToAdd.TryDequeue(out var directory))

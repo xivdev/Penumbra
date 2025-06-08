@@ -61,6 +61,75 @@ public static class TexFileParser
         return 13;
     }
 
+    public static unsafe void FixMipOffsets(long size, ref TexFile.TexHeader header, out long newSize)
+    {
+        var width     = (uint)header.Width;
+        var height    = (uint)header.Height;
+        var format    = header.Format.ToDXGI();
+        var bits      = format.BitsPerPixel();
+        var totalSize = 80u;
+        size -= totalSize;
+        var minSize = format.IsCompressed() ? 4u : 1u;
+        for (var i = 0; i < 13; ++i)
+        {
+            var requiredSize = (uint)((long)width * height * bits / 8);
+            if (requiredSize > size)
+            {
+                newSize = totalSize;
+                if (header.MipCount != i)
+                {
+                    Penumbra.Log.Debug(
+                        $"-- Mip Map Count in TEX header was {header.MipCount}, but file only contains data for {i} Mip Maps, fixed.");
+                    FixLodOffsets(ref header, i);
+                }
+
+                return;
+            }
+
+            if (header.OffsetToSurface[i] != totalSize)
+            {
+                Penumbra.Log.Debug(
+                    $"-- Mip Map Offset {i + 1} in TEX header was {header.OffsetToSurface[i]} but should be {totalSize}, fixed.");
+                header.OffsetToSurface[i] = totalSize;
+            }
+
+            if (width == minSize && height == minSize)
+            {
+                newSize = totalSize;
+                if (header.MipCount != i)
+                {
+                    Penumbra.Log.Debug($"-- Reduced number of Mip Maps from {header.MipCount} to {i} due to minimum size constraints.");
+                    FixLodOffsets(ref header, i);
+                }
+
+                return;
+            }
+
+            totalSize += requiredSize;
+            size      -= requiredSize;
+            width     =  Math.Max(width / 2,  minSize);
+            height    =  Math.Max(height / 2, minSize);
+        }
+
+        newSize = totalSize;
+        if (header.MipCount != 13)
+        {
+            Penumbra.Log.Debug($"-- Mip Map Count in TEX header was {header.MipCount}, but maximum is 13, fixed.");
+            FixLodOffsets(ref header, 13);
+        }
+
+        void FixLodOffsets(ref TexFile.TexHeader header, int index)
+        {
+            header.MipCount = index;
+            if (header.LodOffset[2] >= header.MipCount)
+                header.LodOffset[2] = (byte)(header.MipCount - 1);
+            if (header.LodOffset[1] >= header.MipCount)
+                header.LodOffset[1] = header.MipCount > 2 ? (byte)(header.MipCount - 2) : (byte)(header.MipCount - 1);
+            for (++index; index < 13; ++index)
+                header.OffsetToSurface[index] = 0;
+        }
+    }
+
     private static unsafe void CopyData(ScratchImage image, BinaryReader r)
     {
         fixed (byte* ptr = image.Pixels)
