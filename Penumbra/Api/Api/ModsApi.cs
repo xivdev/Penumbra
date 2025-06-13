@@ -112,7 +112,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public (PenumbraApiEc, string, bool, bool) GetModPath(string modDirectory, string modName)
     {
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_modFileSystem.FindLeaf(mod, out var leaf))
+         || !_modFileSystem.TryGetValue(mod, out var leaf))
             return (PenumbraApiEc.ModMissing, string.Empty, false, false);
 
         var fullPath      = leaf.FullName();
@@ -127,7 +127,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
             return PenumbraApiEc.InvalidArgument;
 
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_modFileSystem.FindLeaf(mod, out var leaf))
+         || !_modFileSystem.TryGetValue(mod, out var leaf))
             return PenumbraApiEc.ModMissing;
 
         try

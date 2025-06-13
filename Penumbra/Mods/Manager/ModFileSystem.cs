@@ -80,7 +80,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
     // Update sort order when defaulted mod names change.
     private void OnModDataChange(ModDataChangeType type, Mod mod, string? oldName)
     {
-        if (!type.HasFlag(ModDataChangeType.Name) || oldName == null || !FindLeaf(mod, out var leaf))
+        if (!type.HasFlag(ModDataChangeType.Name) || oldName == null || !TryGetValue(mod, out var leaf))
             return;
 
         var old = oldName.FixName();
@@ -111,7 +111,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
                 CreateDuplicateLeaf(parent, mod.Name.Text, mod);
                 break;
             case ModPathChangeType.Deleted:
-                if (FindLeaf(mod, out var leaf))
+                if (TryGetValue(mod, out var leaf))
                     Delete(leaf);
 
                 break;
@@ -123,16 +123,6 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
                 break;
         }
     }
-
-    // Search the entire filesystem for the leaf corresponding to a mod.
-    public bool FindLeaf(Mod mod, [NotNullWhen(true)] out Leaf? leaf)
-    {
-        leaf = Root.GetAllDescendants(ISortMode<Mod>.Lexicographical)
-            .OfType<Leaf>()
-            .FirstOrDefault(l => l.Value == mod);
-        return leaf != null;
-    }
-
 
     // Used for saving and loading.
     private static string ModToIdentifier(Mod mod)
