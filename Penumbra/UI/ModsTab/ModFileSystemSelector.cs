@@ -229,14 +229,27 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             var (setting, collection) = _collectionManager.Active.Current.GetActualSettings(leaf.Value.Index);
             if (_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {
-                _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, leaf.Value, true);
+                // Delete temporary settings if they exist, regardless of mode, or set to inheriting if none exist.
+                if (_collectionManager.Active.Current.GetTempSettings(leaf.Value.Index) is not null)
+                    _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, leaf.Value, null);
+                else
+                    _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, leaf.Value, true);
             }
             else
             {
-                var inherited = collection != _collectionManager.Active.Current;
-                if (inherited)
-                    _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, leaf.Value, false);
-                _collectionManager.Editor.SetModState(_collectionManager.Active.Current, leaf.Value, setting is not { Enabled: true });
+                if (_config.DefaultTemporaryMode)
+                {
+                    var settings = new TemporaryModSettings(leaf.Value, setting) { ForceInherit = false };
+                    settings.Enabled = !settings.Enabled;
+                    _collectionManager.Editor.SetTemporarySettings(_collectionManager.Active.Current, leaf.Value, settings);
+                }
+                else
+                {
+                    var inherited = collection != _collectionManager.Active.Current;
+                    if (inherited)
+                        _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, leaf.Value, false);
+                    _collectionManager.Editor.SetModState(_collectionManager.Active.Current, leaf.Value, setting is not { Enabled: true });
+                }
             }
         }
 
