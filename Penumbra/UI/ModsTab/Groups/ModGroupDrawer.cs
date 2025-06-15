@@ -15,13 +15,55 @@ using Penumbra.Mods.SubMods;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
-public sealed class ModGroupDrawer(Configuration config, CollectionManager collectionManager) : IUiService
+public sealed class ModGroupDrawer : IUiService
 {
     private readonly List<(IModGroup, int)> _blockGroupCache = [];
     private          bool                   _temporary;
     private          bool                   _locked;
     private          TemporaryModSettings?  _tempSettings;
     private          ModSettings?           _settings;
+    private readonly SingleGroupCombo       _combo;
+    private readonly Configuration          _config;
+    private readonly CollectionManager      _collectionManager;
+
+    public ModGroupDrawer(Configuration config, CollectionManager collectionManager)
+    {
+        _config            = config;
+        _collectionManager = collectionManager;
+        _combo             = new SingleGroupCombo(this);
+    }
+
+    private sealed class SingleGroupCombo(ModGroupDrawer parent)
+        : FilterComboCache<IModOption>(() => _group!.Options, MouseWheelType.Control, Penumbra.Log)
+    {
+        private static IModGroup? _group;
+        private static int        _groupIdx;
+
+        protected override bool DrawSelectable(int globalIdx, bool selected)
+        {
+            var option = _group!.Options[globalIdx];
+            var ret    = ImUtf8.Selectable(option.Name, globalIdx == CurrentSelectionIdx);
+
+            if (option.Description.Length > 0)
+                ImUtf8.SelectableHelpMarker(option.Description);
+
+            return ret;
+        }
+
+        protected override string ToString(IModOption obj)
+            => obj.Name;
+
+        public void Draw(IModGroup group, int groupIndex, int currentOption)
+        {
+            _group              = group;
+            _groupIdx           = groupIndex;
+            CurrentSelectionIdx = currentOption;
+            CurrentSelection    = _group.Options[CurrentSelectionIdx];
+            if (Draw(string.Empty, CurrentSelection.Name, string.Empty, ref CurrentSelectionIdx, UiHelpers.InputTextWidth.X * 3 / 4,
+                    ImGui.GetTextLineHeightWithSpacing()))
+                parent.SetModSetting(_group, _groupIdx, Setting.Single(CurrentSelectionIdx));
+        }
+    }
 
     public void Draw(Mod mod, ModSettings settings, TemporaryModSettings? tempSettings)
     {
@@ -41,7 +83,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
 
             switch (group.Behaviour)
             {
-                case GroupDrawBehaviour.SingleSelection when group.Options.Count <= config.SingleGroupRadioMax:
+                case GroupDrawBehaviour.SingleSelection when group.Options.Count <= _config.SingleGroupRadioMax:
                 case GroupDrawBehaviour.MultiSelection:
                     _blockGroupCache.Add((group, idx));
                     break;
@@ -76,25 +118,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         using var id             = ImUtf8.PushId(groupIdx);
         var       selectedOption = setting.AsIndex;
         using var disabled       = ImRaii.Disabled(_locked);
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X * 3 / 4);
-        var options = group.Options;
-        using (var combo = ImUtf8.Combo(""u8, options[selectedOption].Name))
-        {
-            if (combo)
-                for (var idx2 = 0; idx2 < options.Count; ++idx2)
-                {
-                    id.Push(idx2);
-                    var option = options[idx2];
-                    if (ImUtf8.Selectable(option.Name, idx2 == selectedOption))
-                        SetModSetting(group, groupIdx, Setting.Single(idx2));
-
-                    if (option.Description.Length > 0)
-                        ImUtf8.SelectableHelpMarker(option.Description);
-
-                    id.Pop();
-                }
-        }
-
+        _combo.Draw(group, groupIdx, selectedOption);
         ImGui.SameLine();
         if (group.Description.Length > 0)
             ImUtf8.LabeledHelpMarker(group.Name, group.Description);
@@ -195,7 +219,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
 
     private void DrawCollapseHandling(IReadOnlyList<IModOption> options, float minWidth, Action draw)
     {
-        if (options.Count <= config.OptionGroupCollapsibleMin)
+        if (options.Count <= _config.OptionGroupCollapsibleMin)
         {
             draw();
         }
@@ -240,21 +264,21 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
     }
 
     private ModCollection Current
-        => collectionManager.Active.Current;
+        => _collectionManager.Active.Current;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void SetModSetting(IModGroup group, int groupIdx, Setting setting)
     {
-        if (_temporary || config.DefaultTemporaryMode)
+        if (_temporary || _config.DefaultTemporaryMode)
         {
             _tempSettings                     ??= new TemporaryModSettings(group.Mod, _settings);
             _tempSettings!.ForceInherit       =   false;
             _tempSettings!.Settings[groupIdx] =   setting;
-            collectionManager.Editor.SetTemporarySettings(Current, group.Mod, _tempSettings);
+            _collectionManager.Editor.SetTemporarySettings(Current, group.Mod, _tempSettings);
         }
         else
         {
-            collectionManager.Editor.SetModSetting(Current, group.Mod, groupIdx, setting);
+            _collectionManager.Editor.SetModSetting(Current, group.Mod, groupIdx, setting);
         }
     }
 }
