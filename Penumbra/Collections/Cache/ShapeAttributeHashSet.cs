@@ -120,6 +120,7 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
 
         if (TryGetValue((slot, id.Value), out var flags))
         {
+            index *= 2;
             var newFlags = value switch
             {
                 true  => (flags | (1ul << index)) & ~(1ul << (index + 1)),
@@ -137,7 +138,7 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
         if (value is null)
             return false;
 
-        this[(slot, id.Value)] = 1ul << (index + (value.Value ? 0 : 1));
+        this[(slot, id.Value)] = 1ul << (2 * index + (value.Value ? 0 : 1));
         return true;
     }
 
