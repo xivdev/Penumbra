@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
+using OtterGuiInternal.Enums;
 using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.PostProcessing;
@@ -20,6 +21,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
+using ImGuiId = OtterGuiInternal.Enums.ImGuiId;
 
 namespace Penumbra.UI.Tabs;
 
@@ -112,6 +114,7 @@ public class SettingsTab : ITab, IUiService
         ImGui.NewLine();
         DrawRootFolder();
         DrawDirectoryButtons();
+        ImGui.NewLine();
         ImGui.NewLine();
 
         DrawGeneralSettings();
@@ -761,8 +764,9 @@ public class SettingsTab : ITab, IUiService
             "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
           + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
             _config.KeepDefaultMetaChanges, v => _config.KeepDefaultMetaChanges = v);
-        Checkbox("Enable Custom Shape and Attribute Support", "Penumbra will allow for custom shape keys and attributes for modded models to be considered and combined.",
-            _config.EnableCustomShapes,         _attributeHook.SetState);
+        Checkbox("Enable Custom Shape and Attribute Support",
+            "Penumbra will allow for custom shape keys and attributes for modded models to be considered and combined.",
+            _config.EnableCustomShapes, _attributeHook.SetState);
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
         DrawEnableDebugModeBox();
@@ -1050,6 +1054,9 @@ public class SettingsTab : ITab, IUiService
         ImGui.SetCursorPos(new Vector2(xPos, 4 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
+
+        ImGui.SetCursorPos(new Vector2(xPos, 5 * ImGui.GetFrameHeightWithSpacing()));
+        CustomGui.DrawKofiPatreonButton(Penumbra.Messager, new Vector2(width, 0));
     }
 
     private void DrawPredefinedTagsSection()
