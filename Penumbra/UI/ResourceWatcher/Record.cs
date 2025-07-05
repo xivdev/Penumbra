@@ -1,6 +1,7 @@
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Enums;
+using Penumbra.Interop;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -34,6 +35,7 @@ internal unsafe struct Record
     public OptionalBool         ReturnValue;
     public OptionalBool         CustomLoad;
     public LoadState            LoadState;
+    public uint                 OsThreadId;
 
 
     public static Record CreateRequest(CiByteString path, bool sync)
@@ -54,6 +56,7 @@ internal unsafe struct Record
             AssociatedGameObject = string.Empty,
             LoadState            = LoadState.None,
             Crc64                = 0,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
     public static Record CreateRequest(CiByteString path, bool sync, FullPath fullPath, ResolveData resolve)
@@ -74,6 +77,7 @@ internal unsafe struct Record
             AssociatedGameObject = string.Empty,
             LoadState            = LoadState.None,
             Crc64                = fullPath.Crc64,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
     public static Record CreateDefaultLoad(CiByteString path, ResourceHandle* handle, ModCollection collection, string associatedGameObject)
@@ -96,6 +100,7 @@ internal unsafe struct Record
             AssociatedGameObject = associatedGameObject,
             LoadState            = handle->LoadState,
             Crc64                = 0,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
     }
 
@@ -118,6 +123,7 @@ internal unsafe struct Record
             AssociatedGameObject = associatedGameObject,
             LoadState            = handle->LoadState,
             Crc64                = path.Crc64,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
     public static Record CreateDestruction(ResourceHandle* handle)
@@ -140,6 +146,7 @@ internal unsafe struct Record
             AssociatedGameObject = string.Empty,
             LoadState            = handle->LoadState,
             Crc64                = 0,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
     }
 
@@ -161,6 +168,7 @@ internal unsafe struct Record
             AssociatedGameObject = string.Empty,
             LoadState            = handle->LoadState,
             Crc64                = 0,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
     public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath, ReadOnlySpan<byte> additionalData)
@@ -181,6 +189,7 @@ internal unsafe struct Record
             AssociatedGameObject = string.Empty,
             LoadState            = handle->LoadState,
             Crc64                = 0,
+            OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
     private static CiByteString CombinedPath(CiByteString path, ReadOnlySpan<byte> additionalData)
