@@ -188,7 +188,8 @@ internal unsafe partial record ResolveContext(
         return GetOrCreateNode(ResourceType.Tex, (nint)tex->Texture, &tex->ResourceHandle, gamePath);
     }
 
-    public ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc, TextureResourceHandle* decalHandle, ResourceHandle* mpapHandle)
+    public ResourceNode? CreateNodeFromModel(Model* mdl, ResourceHandle* imc, TextureResourceHandle* decalHandle,
+        MaterialResourceHandle* skinMtrlHandle, ResourceHandle* mpapHandle)
     {
         if (mdl is null || mdl->ModelResourceHandle is null)
             return null;
@@ -217,6 +218,12 @@ internal unsafe partial record ResolveContext(
                 node.Children.Add(mtrlNode);
             }
         }
+
+        if (skinMtrlHandle is not null
+         && Utf8GamePath.FromByteString(CharacterBase->ResolveSkinMtrlPathAsByteString(SlotIndex), out var skinMtrlPath)
+         && CreateNodeFromMaterial(skinMtrlHandle->Material, skinMtrlPath) is
+                { } skinMaaterialNode)
+            node.Children.Add(skinMaaterialNode);
 
         if (CreateNodeFromDecal(decalHandle, imc) is { } decalNode)
             node.Children.Add(decalNode);
