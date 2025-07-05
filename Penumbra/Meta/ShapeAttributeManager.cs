@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
@@ -5,6 +6,8 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.PostProcessing;
+using Penumbra.Interop.Structs;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta;
@@ -58,10 +61,71 @@ public unsafe class ShapeAttributeManager : IRequiredService, IDisposable
             _ids[(int)_modelIndex] = model.GetModelId(_modelIndex);
             CheckShapes(collection.MetaCache!.Shp);
             CheckAttributes(collection.MetaCache!.Atr);
+            if (_modelIndex is <= HumanSlot.LFinger and >= HumanSlot.Ears)
+                AccessoryImcCheck(model);
         }
 
         UpdateDefaultMasks(model, collection.MetaCache!.Shp);
     }
+
+    private void AccessoryImcCheck(Model model)
+    {
+        var imcMask = (ushort)(0x03FF & *(ushort*)(model.Address + 0xAAC + 6 * (int)_modelIndex));
+
+        Span<byte> attr =
+        [
+            (byte)'a',
+            (byte)'t',
+            (byte)'r',
+            (byte)'_',
+            AccessoryByte(_modelIndex),
+            (byte)'v',
+            (byte)'_',
+            (byte)'a',
+            0,
+        ];
+        for (var i = 1; i < 10; ++i)
+        {
+            var flag = (ushort)(1 << i);
+            if ((imcMask & flag) is not 0)
+                continue;
+
+            attr[^2] = (byte)('a' + i);
+
+            foreach (var (attribute, index) in _model->ModelResourceHandle->Attributes)
+            {
+                if (!EqualAttribute(attr, attribute.Value))
+                    continue;
+
+                _model->EnabledAttributeIndexMask &= ~(1u << index);
+                break;
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+    private static bool EqualAttribute(Span<byte> needle, byte* haystack)
+    {
+        foreach (var character in needle)
+        {
+            if (*haystack++ != character)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static byte AccessoryByte(HumanSlot slot)
+        => slot switch
+        {
+            HumanSlot.Head    => (byte)'m',
+            HumanSlot.Ears    => (byte)'e',
+            HumanSlot.Neck    => (byte)'n',
+            HumanSlot.Wrists  => (byte)'w',
+            HumanSlot.RFinger => (byte)'r',
+            HumanSlot.LFinger => (byte)'r',
+            _                 => 0,
+        };
 
     private void CheckAttributes(AtrCache attributeCache)
     {

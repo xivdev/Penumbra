@@ -234,7 +234,54 @@ public static class EquipmentSwap
                 mdl.ChildSwaps.Add(mtrl);
         }
 
+        FixAttributes(mdl, slotFrom, slotTo);
+
         return mdl;
+    }
+
+    private static void FixAttributes(FileSwap swap, EquipSlot slotFrom, EquipSlot slotTo)
+    {
+        if (slotFrom == slotTo)
+            return;
+
+        var needle = slotTo switch
+        {
+            EquipSlot.Head                         => "atr_mv_",
+            EquipSlot.Ears                         => "atr_ev_",
+            EquipSlot.Neck                         => "atr_nv_",
+            EquipSlot.Wrists                       => "atr_wv_",
+            EquipSlot.RFinger or EquipSlot.LFinger => "atr_rv_",
+            _                                      => string.Empty,
+        };
+
+        var replacement = slotFrom switch
+        {
+            EquipSlot.Head                         => 'm',
+            EquipSlot.Ears                         => 'e',
+            EquipSlot.Neck                         => 'n',
+            EquipSlot.Wrists                       => 'w',
+            EquipSlot.RFinger or EquipSlot.LFinger => 'r',
+            _                                      => 'm',
+        };
+
+        var attributes = swap.AsMdl()!.Attributes;
+        for (var i = 0; i < attributes.Length; ++i)
+        {
+            if (FixAttribute(ref attributes[i], needle, replacement))
+                swap.DataWasChanged = true;
+        }
+    }
+
+    private static unsafe bool FixAttribute(ref string attribute, string from, char to)
+    {
+        if (!attribute.StartsWith(from) || attribute.Length != from.Length + 1 || attribute[^1] is < 'a' or > 'j')
+            return false;
+
+        Span<char> stack = stackalloc char[attribute.Length];
+        attribute.CopyTo(stack);
+        stack[4]  = to;
+        attribute = new string(stack);
+        return true;
     }
 
     private static void LookupItem(EquipItem i, out EquipSlot slot, out PrimaryId modelId, out Variant variant)
@@ -399,7 +446,7 @@ public static class EquipmentSwap
             return null;
 
         var folderTo = GamePaths.Mtrl.GearFolder(slotTo, idTo, variantTo);
-        var pathTo = $"{folderTo}{fileName}";
+        var pathTo   = $"{folderTo}{fileName}";
 
         var folderFrom  = GamePaths.Mtrl.GearFolder(slotFrom, idFrom, variantTo);
         var newFileName = ItemSwap.ReplaceId(fileName, prefix, idTo, idFrom);
