@@ -73,6 +73,12 @@ public class ResourceTree(
         // TODO ClientStructs-ify (aers/FFXIVClientStructs#1312)
         var mpapArrayPtr = *(ResourceHandle***)((nint)model + 0x948);
         var mpapArray    = mpapArrayPtr is not null ? new ReadOnlySpan<Pointer<ResourceHandle>>(mpapArrayPtr, model->SlotCount) : [];
+        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1474)
+        var skinMtrlArray = modelType switch
+        {
+            ModelType.Human => new ReadOnlySpan<Pointer<MaterialResourceHandle>>((MaterialResourceHandle**)((nint)model + 0xB48), 5),
+            _               => [],
+        };
         var decalArray = modelType switch
         {
             ModelType.Human     => human->SlotDecalsSpan,
@@ -108,7 +114,8 @@ public class ResourceTree(
 
             var mdl = model->Models[i];
             if (slotContext.CreateNodeFromModel(mdl, imc, i < decalArray.Length ? decalArray[(int)i].Value : null,
-                    i < mpapArray.Length ? mpapArray[(int)i].Value : null) is { } mdlNode)
+                    i < skinMtrlArray.Length ? skinMtrlArray[(int)i].Value : null, i < mpapArray.Length ? mpapArray[(int)i].Value : null) is
+                { } mdlNode)
             {
                 if (globalContext.WithUiData)
                     mdlNode.FallbackName = $"Model #{i}";
@@ -166,7 +173,8 @@ public class ResourceTree(
                 }
 
                 var mdl = subObject->Models[i];
-                if (slotContext.CreateNodeFromModel(mdl, imc, weapon->Decal, i < mpapArray.Length ? mpapArray[i].Value : null) is { } mdlNode)
+                if (slotContext.CreateNodeFromModel(mdl, imc, weapon->Decal, null, i < mpapArray.Length ? mpapArray[i].Value : null) is
+                    { } mdlNode)
                 {
                     if (globalContext.WithUiData)
                         mdlNode.FallbackName = $"Weapon #{weaponIndex}, Model #{i}";
