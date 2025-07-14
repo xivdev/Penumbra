@@ -95,7 +95,8 @@ public static class TexFileParser
 
             if (width == minSize && height == minSize)
             {
-                newSize = totalSize;
+                ++i;
+                newSize = totalSize + requiredSize;
                 if (header.MipCount != i)
                 {
                     Penumbra.Log.Debug($"-- Reduced number of Mip Maps from {header.MipCount} to {i} due to minimum size constraints.");
