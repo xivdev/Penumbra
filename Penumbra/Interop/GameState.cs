@@ -60,7 +60,7 @@ public class GameState : IService
     private readonly ThreadLocal<ResolveData> _characterSoundData = new(() => ResolveData.Invalid, true);
 
     public ResolveData SoundData
-        => _animationLoadData.Value;
+        => _characterSoundData.Value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public ResolveData SetSoundData(ResolveData data)
