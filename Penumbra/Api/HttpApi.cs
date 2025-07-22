@@ -19,6 +19,7 @@ public class HttpApi : IDisposable, IApiService
         [Route( HttpVerbs.Post, "/reloadmod"  )] public partial Task    ReloadMod();
         [Route( HttpVerbs.Post, "/installmod" )] public partial Task    InstallMod();
         [Route( HttpVerbs.Post, "/openwindow" )] public partial void    OpenWindow();
+        [Route( HttpVerbs.Post, "/focusmod"   )] public partial Task    FocusMod();
         // @formatter:on
     }
 
@@ -115,10 +116,24 @@ public class HttpApi : IDisposable, IApiService
             Penumbra.Log.Debug($"[HTTP] {nameof(OpenWindow)} triggered.");
             api.Ui.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
         }
+        public async partial Task FocusMod()
+        {
+            var data = await HttpContext.GetRequestDataAsync<ModFocusData>().ConfigureAwait(false);
+            Penumbra.Log.Debug($"[HTTP] {nameof(FocusMod)} triggered.");
+            if (data.Path.Length != 0)
+                api.Ui.OpenMainWindow(TabType.Mods, data.Path, data.Name);
+        }
 
         private record ModReloadData(string Path, string Name)
         {
             public ModReloadData()
+                : this(string.Empty, string.Empty)
+            { }
+        }
+
+        private record ModFocusData(string Path, string Name)
+        {
+            public ModFocusData()
                 : this(string.Empty, string.Empty)
             { }
         }
