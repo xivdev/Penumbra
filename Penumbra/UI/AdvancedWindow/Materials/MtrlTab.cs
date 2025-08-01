@@ -1,3 +1,4 @@
+using Dalamud.Interface.Components;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
@@ -119,11 +120,22 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         using var dis = ImRaii.Disabled(disabled);
 
         var tmp = shaderFlags.EnableTransparency;
-        if (ImUtf8.Checkbox("Enable Transparency"u8, ref tmp))
+
+        // guardrail: the game crashes if transparency is enabled on characterstockings.shpk
+        var disallowTransparency = Mtrl.ShaderPackage.Name == "characterstockings.shpk";
+        using (ImRaii.Disabled(disallowTransparency))
         {
-            shaderFlags.EnableTransparency = tmp;
-            ret                            = true;
-            SetShaderPackageFlags(Mtrl.ShaderPackage.Flags);
+            if (ImUtf8.Checkbox("Enable Transparency"u8, ref tmp))
+            {
+                shaderFlags.EnableTransparency = tmp;
+                ret                            = true;
+                SetShaderPackageFlags(Mtrl.ShaderPackage.Flags);
+            }
+        }
+
+        if (disallowTransparency)
+        {
+            ImGuiComponents.HelpMarker("Enabling transparency for shader package characterstockings.shpk will crash the game.");
         }
 
         ImGui.SameLine(200 * UiHelpers.Scale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
