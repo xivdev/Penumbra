@@ -319,7 +319,7 @@ public class VertexAttribute
 
         var normals = normalAccessor.AsVector3Array();
         var tangents = accessors.TryGetValue("TANGENT", out var accessor)
-            ? accessor.AsVector4Array()
+            ? accessor.AsVector4Array().ToArray()
             : CalculateTangents(accessors, indices, normals, notifier);
 
         if (tangents == null)
