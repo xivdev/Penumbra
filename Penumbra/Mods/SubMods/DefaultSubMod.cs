@@ -27,6 +27,9 @@ public class DefaultSubMod(IMod mod) : IModDataContainer
     public string GetName()
         => FullName;
 
+    public string GetDirectoryName()
+        => GetName();
+
     public string GetFullName()
         => FullName;
 

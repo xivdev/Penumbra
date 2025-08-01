@@ -15,6 +15,7 @@ public interface IModDataContainer
     public MetaDictionary                     Manipulations { get; set; }
 
     public string                          GetName();
+    public string                          GetDirectoryName();
     public string                          GetFullName();
     public (int GroupIndex, int DataIndex) GetDataIndices();
 }

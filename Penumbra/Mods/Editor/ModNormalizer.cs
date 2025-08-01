@@ -76,7 +76,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
             else
             {
                 var groupDir  = ModCreator.NewOptionDirectory(mod.ModPath, container.Group.Name, config.ReplaceNonAsciiOnImport);
-                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetName(),  config.ReplaceNonAsciiOnImport);
+                var optionDir = ModCreator.NewOptionDirectory(groupDir,    container.GetDirectoryName(),  config.ReplaceNonAsciiOnImport);
                 containers[container] = optionDir.FullName;
             }
         }
@@ -286,7 +286,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
 
         void HandleSubMod(DirectoryInfo groupDir, IModDataContainer option, Dictionary<Utf8GamePath, FullPath> newDict)
         {
-            var name      = option.GetName();
+            var name      = option.GetDirectoryName();
             var optionDir = ModCreator.CreateModFolder(groupDir, name, config.ReplaceNonAsciiOnImport, true);
 
             newDict.Clear();

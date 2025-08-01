@@ -48,6 +48,25 @@ public class CombinedDataContainer(IModGroup group) : IModDataContainer
         return sb.ToString(0, sb.Length - 3);
     }
 
+    public unsafe string GetDirectoryName()
+    {
+        if (Name.Length > 0)
+            return Name;
+
+        var index = GetDataIndex();
+        if (index == 0)
+            return "None";
+
+        var text = stackalloc char[IModGroup.MaxCombiningOptions].Slice(0, Group.Options.Count);
+        for (var i = 0; i < Group.Options.Count; ++i)
+        {
+            text[Group.Options.Count - 1 - i] =   (index & 1) is 0 ? '0' : '1';
+            index   >>= 1;
+        }
+
+        return new string(text);
+    }
+
     public string GetFullName()
         => $"{Group.Name}: {GetName()}";
 

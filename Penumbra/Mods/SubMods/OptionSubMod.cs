@@ -41,6 +41,9 @@ public abstract class OptionSubMod(IModGroup group) : IModOption, IModDataContai
     public string GetName()
         => Name;
 
+    public string GetDirectoryName()
+        => GetName();
+
     public string GetFullName()
         => FullName;
 
