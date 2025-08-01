@@ -340,39 +340,6 @@ public class MeshExporter
 
         return typeof(VertexPositionNormalTangent);
     }
-    
-    private const float UnitLengthThresholdVec3 = 0.00674f;
-    internal static bool _IsFinite(float value)
-    {
-        return float.IsFinite(value);
-    }
-    
-    internal static bool _IsFinite(Vector2 v)
-    {
-        return _IsFinite(v.X) && _IsFinite(v.Y);
-    }
-
-    internal static bool _IsFinite(Vector3 v)
-    {
-        return _IsFinite(v.X) && _IsFinite(v.Y) && _IsFinite(v.Z);
-    }
-    internal static Boolean IsNormalized(Vector3 normal)
-    {
-        if (!_IsFinite(normal)) return false;
-
-        return Math.Abs(normal.Length() - 1) <= UnitLengthThresholdVec3;
-    }
-    internal static Vector3 SanitizeNormal(Vector3 normal)
-    {
-        if (normal == Vector3.Zero) return Vector3.UnitX;
-        return IsNormalized(normal) ? normal : Vector3.Normalize(normal);
-    }
-    internal static Vector4 SanitizeTangent(Vector4 tangent)
-    {
-        var n = SanitizeNormal(new Vector3(tangent.X, tangent.Y, tangent.Z));
-        var s = float.IsNaN(tangent.W) ? 1 : tangent.W;
-        return new Vector4(n, s > 0 ? 1 : -1);
-    }
 
     /// <summary> Build a geometry vertex from a vertex's attributes. </summary>
     private IVertexGeometry BuildVertexGeometry(IReadOnlyDictionary<MdlFile.VertexUsage, List<object>> attributes)
@@ -385,21 +352,19 @@ public class MeshExporter
         if (_geometryType == typeof(VertexPositionNormal))
             return new VertexPositionNormal(
                 ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Position)),
-                SanitizeNormal(ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal)))
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal))
             );
 
         if (_geometryType == typeof(VertexPositionNormalTangent))
         {
             // (Bi)tangents are universally stored as ByteFloat4, which uses 0..1 to represent the full -1..1 range.
             // TODO: While this assumption is safe, it would be sensible to actually check.
-            // var bitangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)) * 2 - Vector4.One;
-            var vec4      = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1));
-            var bitangent = vec4 with { W = vec4.W == 1 ? 1 : -1 };
+            var bitangent = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Tangent1)) * 2 - Vector4.One;
             
             return new VertexPositionNormalTangent(
                 ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Position)),
-                SanitizeNormal(ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal))),
-                SanitizeTangent(bitangent)
+                ToVector3(GetFirstSafe(attributes, MdlFile.VertexUsage.Normal)),
+                bitangent.SanitizeTangent()
             );
         }
 
