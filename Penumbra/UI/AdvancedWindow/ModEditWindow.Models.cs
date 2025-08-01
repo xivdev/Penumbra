@@ -168,6 +168,14 @@ public partial class ModEditWindow
           + "It is primarily intended to allow exporting models weighted to bones that do not exist.\n"
           + "Before enabling, ensure dependencies are enabled in the current collection, and EST metadata is correctly configured.");
 
+        ImGui.SameLine(200 * UiHelpers.Scale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+
+        ImGui.Checkbox("##tryFixValidation", ref tab.ExportConfig.LenientMode);
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("Lenient mode",
+            "Try fixing potential errors during model validation and ignore superfluous color information.\n"
+          + "This may result in a broken model, or one missing information, so use with care!");
+
         var gamePath = tab.GamePathIndex >= 0 && tab.GamePathIndex < tab.GamePaths.Count
             ? tab.GamePaths[tab.GamePathIndex]
             : _customGamePath;
