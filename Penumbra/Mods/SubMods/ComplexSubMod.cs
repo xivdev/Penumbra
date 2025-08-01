@@ -1,8 +1,6 @@
-using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Extensions;
 using Penumbra.Mods.Groups;
-using Penumbra.Mods.Settings;
 
 namespace Penumbra.Mods.SubMods;
 

@@ -509,19 +509,19 @@ public class SettingsTab : ITab, IUiService
     {
         var sortMode = _config.SortMode;
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
-        using (var combo = ImRaii.Combo("##sortMode", sortMode.Name))
+        using (var combo = ImUtf8.Combo("##sortMode", sortMode.Name))
         {
             if (combo)
                 foreach (var val in Configuration.Constants.ValidSortModes)
                 {
-                    if (ImGui.Selectable(val.Name, val.GetType() == sortMode.GetType()) && val.GetType() != sortMode.GetType())
+                    if (ImUtf8.Selectable(val.Name, val.GetType() == sortMode.GetType()) && val.GetType() != sortMode.GetType())
                     {
                         _config.SortMode = val;
                         _selector.SetFilterDirty();
                         _config.Save();
                     }
 
-                    ImGuiUtil.HoverTooltip(val.Description);
+                    ImUtf8.HoverTooltip(val.Description);
                 }
         }
 

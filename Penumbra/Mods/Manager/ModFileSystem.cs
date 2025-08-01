@@ -37,11 +37,11 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
 
     public struct ImportDate : ISortMode<Mod>
     {
-        public string Name
-            => "Import Date (Older First)";
+        public ReadOnlySpan<byte> Name
+            => "Import Date (Older First)"u8;
 
-        public string Description
-            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their import date.";
+        public ReadOnlySpan<byte> Description
+            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their import date."u8;
 
         public IEnumerable<IPath> GetChildren(Folder f)
             => f.GetSubFolders().Cast<IPath>().Concat(f.GetLeaves().OrderBy(l => l.Value.ImportDate));
@@ -49,11 +49,11 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
 
     public struct InverseImportDate : ISortMode<Mod>
     {
-        public string Name
-            => "Import Date (Newer First)";
+        public ReadOnlySpan<byte> Name
+            => "Import Date (Newer First)"u8;
 
-        public string Description
-            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their inverse import date.";
+        public ReadOnlySpan<byte> Description
+            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their inverse import date."u8;
 
         public IEnumerable<IPath> GetChildren(Folder f)
             => f.GetSubFolders().Cast<IPath>().Concat(f.GetLeaves().OrderByDescending(l => l.Value.ImportDate));
