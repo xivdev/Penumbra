@@ -12,8 +12,8 @@ public record class IoNotifier
         => this with { _context = $"{_context}{context}: "};
 
     /// <summary> Send a warning with any current context to notification channels. </summary>
-    public void Warning(string content)
-        => SendMessage(content, Logger.LogLevel.Warning);
+    public void Warning(string content, bool ignoreDuplicates = false)
+        => SendMessage(content, Logger.LogLevel.Warning, ignoreDuplicates);
 
     /// <summary> Get the current warnings for this notifier. </summary>
     /// <remarks> This does not currently filter to notifications with the current notifier's context - it will return all IO notifications from all notifiers. </remarks>
@@ -31,9 +31,15 @@ public record class IoNotifier
         where TException : Exception, new()
         => (TException)Activator.CreateInstance(typeof(TException), $"{_context}{message}")!;
 
-    private void SendMessage(string message, Logger.LogLevel type)
+    private void SendMessage(string message, Logger.LogLevel type, bool ignoreDuplicates = false)
     {
         var fullText = $"{_context}{message}";
+        
+        if (ignoreDuplicates && _messages.Contains(fullText))
+        {
+            return;
+        }
+        
         Penumbra.Log.Message(type, fullText);
         _messages.Add(fullText);
     }

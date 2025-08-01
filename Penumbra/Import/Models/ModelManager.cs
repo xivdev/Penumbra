@@ -16,6 +16,7 @@ using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using SharpGLTF.Scenes;
+using SharpGLTF.Validation;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -216,7 +217,10 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
 
             Penumbra.Log.Debug("[GLTF Export] Saving...");
             var gltfModel = scene.ToGltf2();
-            gltfModel.Save(outputPath);
+            gltfModel.Save(outputPath, new Schema2.WriteSettings()
+            {
+                Validation = config.LenientMode ? ValidationMode.TryFix : ValidationMode.Strict,
+            });
             Penumbra.Log.Debug("[GLTF Export] Done.");
         }
 

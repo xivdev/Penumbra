@@ -445,7 +445,7 @@ public class MeshExporter
             return new VertexTexture2ColorFfxiv(
                 new Vector2(uv.X, uv.Y),
                 new Vector2(uv.Z, uv.W),
-                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
+                ToVector4(_config.LenientMode ? GetFirstUnsafe(attributes, MdlFile.VertexUsage.Color) : GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
         }
         if (_materialType == typeof(VertexTexture3))
@@ -468,7 +468,7 @@ public class MeshExporter
                 new Vector2(uv0.X, uv0.Y),
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
-                ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)) 
+                ToVector4(_config.LenientMode ? GetFirstUnsafe(attributes, MdlFile.VertexUsage.Color) : GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
         }
 
@@ -534,6 +534,23 @@ public class MeshExporter
         var list = attributes[usage];
         if (list.Count != 1)
             throw _notifier.Exception($"Multiple usage indices encountered for {usage}.");
+
+        return list[0];
+    }
+    
+    /// <summary> Check that the list has length 1 for any case where this is expected and return the one entry. Otherwise, report a warning. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private T GetFirstUnsafe<T>(IReadOnlyDictionary<MdlFile.VertexUsage, List<T>> attributes, MdlFile.VertexUsage usage)
+    {
+        var list = attributes[usage];
+        switch (list.Count)
+        {
+            case > 1:
+                _notifier.Warning($"Multiple usage indices encountered for {usage}.", true);
+                break;
+            case 0:
+                throw _notifier.Exception($"No usage indices encountered for {usage}");
+        }
 
         return list[0];
     }
