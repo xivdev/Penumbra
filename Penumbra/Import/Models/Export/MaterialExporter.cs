@@ -1,6 +1,7 @@
 using Lumina.Data.Parsing;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.MaterialStructs;
+using Penumbra.UI.AdvancedWindow.Materials;
 using SharpGLTF.Materials;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -140,13 +141,13 @@ public class MaterialExporter
 
                 // Lerp between table row values to fetch final pixel values for each subtexture.
                 var lerpedDiffuse = Vector3.Lerp((Vector3)prevRow.DiffuseColor, (Vector3)nextRow.DiffuseColor, rowBlend);
-                baseColorSpan[x].FromVector4(new Vector4(lerpedDiffuse, 1));
+                baseColorSpan[x].FromVector4(new Vector4(MtrlTab.PseudoSqrtRgb(lerpedDiffuse), 1));
 
                 var lerpedSpecularColor = Vector3.Lerp((Vector3)prevRow.SpecularColor, (Vector3)nextRow.SpecularColor, rowBlend);
-                specularSpan[x].FromVector4(new Vector4(lerpedSpecularColor, 1));
+                specularSpan[x].FromVector4(new Vector4(MtrlTab.PseudoSqrtRgb(lerpedSpecularColor), 1));
 
                 var lerpedEmissive = Vector3.Lerp((Vector3)prevRow.EmissiveColor, (Vector3)nextRow.EmissiveColor, rowBlend);
-                emissiveSpan[x].FromVector4(new Vector4(lerpedEmissive, 1));
+                emissiveSpan[x].FromVector4(new Vector4(MtrlTab.PseudoSqrtRgb(lerpedEmissive), 1));
             }
         }
     }
