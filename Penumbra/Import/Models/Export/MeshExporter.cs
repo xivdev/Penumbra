@@ -390,23 +390,30 @@ public class MeshExporter
             }
         }
 
+        usages.TryGetValue(MdlFile.VertexUsage.Color, out var colours);
+        var nColors = colours?.Count ?? 0;
+
         var materialUsages = (
             uvCount,
-            usages.ContainsKey(MdlFile.VertexUsage.Color)
+            nColors
         );
 
         return materialUsages switch
         {
-            (3, true) => typeof(VertexTexture3ColorFfxiv),
-            (3, false) => typeof(VertexTexture3),
-            (2, true)  => typeof(VertexTexture2ColorFfxiv),
-            (2, false) => typeof(VertexTexture2),
-            (1, true)  => typeof(VertexTexture1ColorFfxiv),
-            (1, false) => typeof(VertexTexture1),
-            (0, true)  => typeof(VertexColorFfxiv),
-            (0, false) => typeof(VertexEmpty),
+            (3, 2) => typeof(VertexTexture3Color2Ffxiv),
+            (3, 1) => typeof(VertexTexture3ColorFfxiv),
+            (3, 0) => typeof(VertexTexture3),
+            (2, 2) => typeof(VertexTexture2Color2Ffxiv),
+            (2, 1)  => typeof(VertexTexture2ColorFfxiv),
+            (2, 0) => typeof(VertexTexture2),
+            (1, 2) => typeof(VertexTexture1Color2Ffxiv),
+            (1, 1)  => typeof(VertexTexture1ColorFfxiv),
+            (1, 0) => typeof(VertexTexture1),
+            (0, 2) => typeof(VertexColor2Ffxiv),
+            (0, 1)  => typeof(VertexColorFfxiv),
+            (0, 0) => typeof(VertexEmpty),
 
-            _ => throw _notifier.Exception($"Unhandled UV count of {uvCount} encountered."),
+            _ => throw _notifier.Exception($"Unhandled UV/color count of {uvCount}/{nColors} encountered."),
         };
     }
 
@@ -419,6 +426,12 @@ public class MeshExporter
         if (_materialType == typeof(VertexColorFfxiv))
             return new VertexColorFfxiv(ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)));
 
+        if (_materialType == typeof(VertexColor2Ffxiv))
+        {
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            return new VertexColor2Ffxiv(ToVector4(color0), ToVector4(color1));
+        }
+
         if (_materialType == typeof(VertexTexture1))
             return new VertexTexture1(ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)));
 
@@ -428,6 +441,16 @@ public class MeshExporter
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
 
+        if (_materialType == typeof(VertexTexture1Color2Ffxiv))
+        {
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            return new VertexTexture1Color2Ffxiv(
+                ToVector2(GetFirstSafe(attributes, MdlFile.VertexUsage.UV)),
+                ToVector4(color0),
+                ToVector4(color1)
+            );
+        }
+        
         // XIV packs two UVs into a single vec4 attribute.
 
         if (_materialType == typeof(VertexTexture2))
@@ -448,6 +471,20 @@ public class MeshExporter
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color))
             );
         }
+        
+        if (_materialType == typeof(VertexTexture2Color2Ffxiv))
+        {
+            var uv         = ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.UV));
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+
+            return new VertexTexture2Color2Ffxiv(
+                new Vector2(uv.X, uv.Y),
+                new Vector2(uv.Z, uv.W),
+                ToVector4(color0),
+                ToVector4(color1)
+            );
+        }
+        
         if (_materialType == typeof(VertexTexture3))
         {
             // Not 100% sure about this
@@ -469,6 +506,21 @@ public class MeshExporter
                 new Vector2(uv0.Z, uv0.W),
                 new Vector2(uv1.X, uv1.Y),
                 ToVector4(GetFirstSafe(attributes, MdlFile.VertexUsage.Color)) 
+            );
+        }
+
+        if (_materialType == typeof(VertexTexture3Color2Ffxiv))
+        {
+            var uv0 = ToVector4(attributes[MdlFile.VertexUsage.UV][0]);
+            var uv1 = ToVector4(attributes[MdlFile.VertexUsage.UV][1]);
+            var (color0, color1) = GetBothSafe(attributes, MdlFile.VertexUsage.Color);
+            
+            return new VertexTexture3Color2Ffxiv(
+                new Vector2(uv0.X, uv0.Y),
+                new Vector2(uv0.Z, uv0.W),
+                new Vector2(uv1.X, uv1.Y),
+                ToVector4(color0),
+                ToVector4(color1)
             );
         }
 
@@ -536,6 +588,17 @@ public class MeshExporter
             throw _notifier.Exception($"Multiple usage indices encountered for {usage}.");
 
         return list[0];
+    }
+    
+    /// <summary> Check that the list has length 2 for any case where this is expected and return both entries. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private (T First, T Second) GetBothSafe<T>(IReadOnlyDictionary<MdlFile.VertexUsage, List<T>> attributes, MdlFile.VertexUsage usage)
+    {
+        var list = attributes[usage];
+        if (list.Count != 2)
+            throw _notifier.Exception($"{list.Count} usage indices encountered for {usage}, but expected 2.");
+
+        return (list[0], list[1]);
     }
 
     /// <summary> Convert a vertex attribute value to a Vector2. Supported inputs are Vector2, Vector3, and Vector4. </summary>
