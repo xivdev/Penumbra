@@ -594,7 +594,7 @@ public partial class MtrlTab
     internal static float PseudoSqrtRgb(float x)
         => x < 0.0f ? -MathF.Sqrt(-x) : MathF.Sqrt(x);
 
-    internal static Vector3 PseudoSqrtRgb(Vector3 vec)
+    public static Vector3 PseudoSqrtRgb(Vector3 vec)
         => new(PseudoSqrtRgb(vec.X), PseudoSqrtRgb(vec.Y), PseudoSqrtRgb(vec.Z));
 
     internal static Vector4 PseudoSqrtRgb(Vector4 vec)
