@@ -1,3 +1,4 @@
+using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using OtterGui.Services;
 using SharpDX.Direct3D;
@@ -16,7 +17,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
     private readonly HashSet<(nint XivTexture, byte SliceIndex)>                _expiredKeys  = [];
 
     /// <remarks> Caching this across frames will cause a crash to desktop. </remarks>
-    public nint GetImGuiHandle(Texture* texture, byte sliceIndex)
+    public ImTextureID GetImGuiHandle(Texture* texture, byte sliceIndex)
     {
         if (texture == null)
             throw new ArgumentNullException(nameof(texture));
@@ -25,7 +26,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
         if (_activeSlices.TryGetValue(((nint)texture, sliceIndex), out var state))
         {
             state.Refresh();
-            return (nint)state.ShaderResourceView;
+            return new ImTextureID((nint)state.ShaderResourceView);
         }
         var srv = (ShaderResourceView)(nint)texture->D3D11ShaderResourceView;
         var description = srv.Description;
@@ -60,7 +61,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
         }
         state = new SliceState(new ShaderResourceView(srv.Device, srv.Resource, description));
         _activeSlices.Add(((nint)texture, sliceIndex), state);
-        return (nint)state.ShaderResourceView;
+        return new ImTextureID((nint)state.ShaderResourceView);
     }
 
     public void Tick()

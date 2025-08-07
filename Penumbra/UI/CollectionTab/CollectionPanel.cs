@@ -6,7 +6,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
@@ -346,7 +346,7 @@ public sealed class CollectionPanel(
         if (!source)
             return;
 
-        ImGui.SetDragDropPayload("DragIndividual", nint.Zero, 0);
+        ImGui.SetDragDropPayload("DragIndividual", null, 0);
         ImGui.TextUnformatted($"Re-ordering {text}...");
         _draggedIndividualAssignment = _active.Individuals.Index(id);
     }

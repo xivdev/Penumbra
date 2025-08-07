@@ -1,5 +1,5 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using ImGuiNET;
 using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
@@ -20,7 +20,7 @@ public static class TextureDrawer
         {
             size = texture.TextureWrap.Size.Contain(size);
 
-            ImGui.Image(texture.TextureWrap.ImGuiHandle, size);
+            ImGui.Image(texture.TextureWrap.Handle, size);
             DrawData(texture);
         }
         else if (texture.LoadError != null)

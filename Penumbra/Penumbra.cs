@@ -1,5 +1,6 @@
 using Dalamud.Plugin;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Game;
 using OtterGui;
 using OtterGui.Log;
 using OtterGui.Services;
@@ -20,6 +21,7 @@ using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;

@@ -1,6 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
@@ -73,7 +73,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         ImGui.TableNextColumn();
         using var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderLine.Value());
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(selector.Selected!.Name);
+        ImGui.TextUnformatted(selector.Selected!.Name.Text);
         ImGui.TableNextColumn();
         var actualSettings = collectionManager.Active.Current.GetActualSettings(selector.Selected!.Index).Settings!;
         var priority       = actualSettings.Priority.Value;
@@ -81,7 +81,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         using (ImRaii.Disabled(actualSettings is TemporaryModSettings))
         {
             ImGui.SetNextItemWidth(priorityWidth);
-            if (ImGui.InputInt("##priority", ref priority, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
+            if (ImGui.InputInt("##priority", ref priority, 0, 0, flags: ImGuiInputTextFlags.EnterReturnsTrue))
                 _currentPriority = priority;
 
             if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
@@ -104,7 +104,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
     private void DrawConflictSelectable(ModConflicts conflict)
     {
         ImGui.AlignTextToFramePadding();
-        if (ImGui.Selectable(conflict.Mod2.Name) && conflict.Mod2 is Mod otherMod)
+        if (ImGui.Selectable(conflict.Mod2.Name.Text) && conflict.Mod2 is Mod otherMod)
             selector.SelectByValue(otherMod);
         var hovered      = ImGui.IsItemHovered();
         var rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);
@@ -172,7 +172,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         var       priority = _currentPriority ?? GetPriority(conflict).Value;
 
         ImGui.SetNextItemWidth(priorityWidth);
-        if (ImGui.InputInt("##priority", ref priority, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
+        if (ImGui.InputInt("##priority", ref priority, 0, 0, flags: ImGuiInputTextFlags.EnterReturnsTrue))
             _currentPriority = priority;
 
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)

@@ -1,4 +1,4 @@
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
@@ -85,7 +85,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         if (source)
         {
             _dragging = Items[idx];
-            ImGui.SetDragDropPayload(PayloadString, nint.Zero, 0);
+            ImGui.SetDragDropPayload(PayloadString, null, 0);
             ImGui.TextUnformatted($"Assigning {Name(_dragging)} to...");
         }
 

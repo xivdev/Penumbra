@@ -1,7 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiNotification;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
@@ -325,7 +325,7 @@ public class ModPanelEditTab(
             var tmp = field == _currentField && option == _optionIndex ? _currentEdit ?? oldValue : oldValue;
             ImGui.SetNextItemWidth(width);
 
-            if (ImGui.InputText(label, ref tmp, maxLength))
+            if (ImGui.InputText(label, ref tmp))
             {
                 _currentEdit  = tmp;
                 _optionIndex  = option;

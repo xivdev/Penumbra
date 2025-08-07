@@ -59,7 +59,7 @@ internal unsafe partial record ResolveContext(
         if (!Utf8GamePath.FromByteString(CiByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path))
             return null;
 
-        return GetOrCreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->ResourceHandle, path);
+        return GetOrCreateNode(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, (ResourceHandle*)resourceHandle, path);
     }
 
     [SkipLocalsInit]
@@ -245,7 +245,7 @@ internal unsafe partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)resource), out var cached))
             return cached;
 
-        var node     = CreateNode(ResourceType.Mtrl, (nint)mtrl, &resource->ResourceHandle, path, false);
+        var node     = CreateNode(ResourceType.Mtrl, (nint)mtrl, (ResourceHandle*)resource, path, false);
         var shpkNode = CreateNodeFromShpk(resource->ShaderPackageResourceHandle, new CiByteString(resource->ShpkName.Value));
         if (shpkNode is not null)
         {

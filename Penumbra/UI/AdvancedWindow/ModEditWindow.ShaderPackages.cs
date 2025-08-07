@@ -1,6 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Classes;
@@ -147,7 +147,7 @@ public partial class ModEditWindow
 
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
         var       size = new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 20);
-        ImGuiNative.igInputTextMultiline(DisassemblyLabel.Path, shader.Disassembly!.RawDisassembly.Path,
+        ImGuiNative.InputTextMultiline(DisassemblyLabel.Path, shader.Disassembly!.RawDisassembly.Path,
             (uint)shader.Disassembly!.RawDisassembly.Length + 1, size,
             ImGuiInputTextFlags.ReadOnly, null, null);
     }

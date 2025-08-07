@@ -72,15 +72,14 @@ public class ResourceTree(
 
         var mpapArrayPtr = model->MaterialAnimationPacks;
         var mpapArray    = mpapArrayPtr is not null ? new ReadOnlySpan<Pointer<ResourceHandle>>(mpapArrayPtr, model->SlotCount) : [];
-        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1474)
         var skinMtrlArray = modelType switch
         {
-            ModelType.Human => new ReadOnlySpan<Pointer<MaterialResourceHandle>>((MaterialResourceHandle**)((nint)model + 0xB48), 5),
+            ModelType.Human => ((Human*) model)->SlotSkinMaterials,
             _               => [],
         };
         var decalArray = modelType switch
         {
-            ModelType.Human     => human->SlotDecalsSpan,
+            ModelType.Human     => human->SlotDecals,
             ModelType.DemiHuman => ((Demihuman*)model)->SlotDecals,
             ModelType.Weapon    => [((Weapon*)model)->Decal],
             ModelType.Monster   => [((Monster*)model)->Decal],

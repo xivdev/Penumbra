@@ -1,10 +1,9 @@
-using Dalamud.Hooking;
+using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
-using ImGuiNET;
 using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Interop.Services;

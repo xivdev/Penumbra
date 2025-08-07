@@ -1,6 +1,6 @@
-﻿using Dalamud.Interface;
+﻿using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using ImGuiNET;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;

@@ -1,5 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Enums;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui.Custom;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;

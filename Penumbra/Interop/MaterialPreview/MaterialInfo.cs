@@ -85,7 +85,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
                         if (mtrlHandle == null)
                             continue;
 
-                        PathDataHandler.Split(mtrlHandle->ResourceHandle.FileName.AsSpan(), out var path, out _);
+                        PathDataHandler.Split(mtrlHandle->FileName.AsSpan(), out var path, out _);
                         var fileName = CiByteString.FromSpanUnsafe(path, true);
                         if (fileName == needle)
                             result.Add(new MaterialInfo(index, type, i, j));

@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui.Text;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;

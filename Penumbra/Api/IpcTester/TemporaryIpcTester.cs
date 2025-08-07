@@ -1,6 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Plugin;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
@@ -282,7 +282,7 @@ public class TemporaryIpcTester(
             foreach (var mod in list)
             {
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(mod.Name);
+                ImGui.TextUnformatted(mod.Name.Text);
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(mod.Priority.ToString());
                 ImGui.TableNextColumn();

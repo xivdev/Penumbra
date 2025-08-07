@@ -1,5 +1,5 @@
 using Dalamud.Interface;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
@@ -288,7 +288,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         if (!source)
             return;
 
-        ImGui.SetDragDropPayload(InheritanceDragDropLabel, nint.Zero, 0);
+        ImGui.SetDragDropPayload(InheritanceDragDropLabel, null, 0);
         _movedInheritance = collection;
         ImGui.TextUnformatted($"Moving {(_movedInheritance != null ? Name(_movedInheritance) : "Unknown")}...");
     }

@@ -1,6 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
@@ -13,11 +13,11 @@ public static class UiHelpers
 {
     /// <summary> Draw text given by a ByteString. </summary>
     public static unsafe void Text(ByteString s)
-        => ImGuiNative.igTextUnformatted(s.Path, s.Path + s.Length);
+        => ImGuiNative.TextUnformatted(s.Path, s.Path + s.Length);
 
     /// <summary> Draw text given by a byte pointer and length. </summary>
     public static unsafe void Text(byte* s, int length)
-        => ImGuiNative.igTextUnformatted(s, s + length);
+        => ImGuiNative.TextUnformatted(s, s + length);
 
     /// <summary> Draw text given by a byte span. </summary>
     public static unsafe void Text(ReadOnlySpan<byte> s)
@@ -36,7 +36,7 @@ public static class UiHelpers
     public static unsafe bool Selectable(ByteString s, bool selected)
     {
         var tmp = (byte)(selected ? 1 : 0);
-        return ImGuiNative.igSelectable_Bool(s.Path, tmp, ImGuiSelectableFlags.None, Vector2.Zero) != 0;
+        return ImGuiNative.Selectable(s.Path, tmp, ImGuiSelectableFlags.None, Vector2.Zero) != 0;
     }
 
     /// <summary>
@@ -45,8 +45,8 @@ public static class UiHelpers
     /// </summary>
     public static unsafe void CopyOnClickSelectable(ByteString text)
     {
-        if (ImGuiNative.igSelectable_Bool(text.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero) != 0)
-            ImGuiNative.igSetClipboardText(text.Path);
+        if (ImGuiNative.Selectable(text.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero) != 0)
+            ImGuiNative.SetClipboardText(text.Path);
 
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Click to copy to clipboard.");

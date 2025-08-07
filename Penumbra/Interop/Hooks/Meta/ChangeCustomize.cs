@@ -16,7 +16,7 @@ public sealed unsafe class ChangeCustomize : FastHook<ChangeCustomize.Delegate>
     {
         _collectionResolver = collectionResolver;
         _metaState          = metaState;
-        Task                = hooks.CreateHook<Delegate>("Change Customize", Sigs.ChangeCustomize, Detour, !HookOverrides.Instance.Meta.ChangeCustomize);
+        Task                = hooks.CreateHook<Delegate>("Change Customize", Sigs.UpdateDrawData, Detour, !HookOverrides.Instance.Meta.ChangeCustomize);
     }
 
     public delegate bool Delegate(Human* human, CustomizeArray* data, byte skipEquipment);

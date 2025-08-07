@@ -3,7 +3,7 @@ using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Classes;
@@ -107,11 +107,11 @@ public class ChangedItemDrawer : IDisposable, IUiService
             return;
         }
 
-        ImGui.Image(icon.ImGuiHandle, new Vector2(height));
+        ImGui.Image(icon.Handle, new Vector2(height));
         if (ImGui.IsItemHovered())
         {
             using var tt = ImRaii.Tooltip();
-            ImGui.Image(icon.ImGuiHandle, new Vector2(_smallestIconWidth));
+            ImGui.Image(icon.Handle, new Vector2(_smallestIconWidth));
             ImGui.SameLine();
             ImGuiUtil.DrawTextButton(iconFlagType.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
         }
@@ -193,7 +193,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
         }
 
         ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
-        ImGui.Image(_icons[ChangedItemFlagExtensions.AllFlags].ImGuiHandle, size, Vector2.Zero, Vector2.One,
+        ImGui.Image(_icons[ChangedItemFlagExtensions.AllFlags].Handle, size, Vector2.Zero, Vector2.One,
             typeFilter switch
             {
                 0                                  => new Vector4(0.6f,  0.3f,  0.3f,  1f),
@@ -213,7 +213,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             var localRet = false;
             var icon     = _icons[type];
             var flag     = typeFilter.HasFlag(type);
-            ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
+            ImGui.Image(icon.Handle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             {
                 typeFilter = flag ? typeFilter & ~type : typeFilter | type;
@@ -232,7 +232,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             if (ImGui.IsItemHovered())
             {
                 using var tt = ImRaii.Tooltip();
-                ImGui.Image(icon.ImGuiHandle, new Vector2(_smallestIconWidth));
+                ImGui.Image(icon.Handle, new Vector2(_smallestIconWidth));
                 ImGui.SameLine();
                 ImGuiUtil.DrawTextButton(type.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
             }

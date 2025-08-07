@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
@@ -6,8 +5,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.PostProcessing;
-using Penumbra.Interop.Structs;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta;

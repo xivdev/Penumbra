@@ -406,7 +406,7 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
         // See https://github.com/microsoft/DirectXTex/wiki/Compress#parameters for the format condition.
         if (format is DXGIFormat.BC6HUF16 or DXGIFormat.BC6HSF16 or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB)
         {
-            var device     = uiBuilder.Device;
+            var device     = new Device(uiBuilder.DeviceHandle);
             var dxgiDevice = device.QueryInterface<DxgiDevice>();
 
             using var deviceClone = new Device(dxgiDevice.Adapter, device.CreationFlags, device.FeatureLevel);

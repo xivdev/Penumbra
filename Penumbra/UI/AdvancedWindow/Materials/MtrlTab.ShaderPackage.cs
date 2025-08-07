@@ -1,6 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Classes;
@@ -384,7 +384,7 @@ public partial class MtrlTab
         var shpkFlags = (int)Mtrl.ShaderPackage.Flags;
         ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
         if (!ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
-                ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
+                flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
             return false;
 
         Mtrl.ShaderPackage.Flags = (uint)shpkFlags;

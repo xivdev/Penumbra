@@ -1,9 +1,9 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
-using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Services;

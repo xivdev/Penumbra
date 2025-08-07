@@ -1,6 +1,6 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;
