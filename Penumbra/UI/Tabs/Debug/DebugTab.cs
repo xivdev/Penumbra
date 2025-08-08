@@ -726,6 +726,9 @@ public class DebugTab : Window, ITab, IUiService
                 if (agent->Data == null)
                     agent = &AgentBannerMIP.Instance()->AgentBannerInterface;
 
+                ImUtf8.Text("Agent: ");
+                ImGui.SameLine(0, 0);
+                Penumbra.Dynamis.DrawPointer((nint)agent);
                 if (agent->Data != null)
                 {
                     using var table = Table("###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit);
