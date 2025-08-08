@@ -62,9 +62,36 @@ public class PenumbraChangelog : IUiService
         Add1_3_6_0(Changelog);
         Add1_3_6_4(Changelog);
         Add1_4_0_0(Changelog);
+        Add1_5_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_5_0_0(Changelog log)
+        => log.NextVersion("Version 1.5.0.0")
+            .RegisterImportant("Updated for game version 7.30 and Dalamud API13, which uses a new GUI backend. Some things may not work as expected. Please let me know any issues you encounter.")
+            .RegisterEntry("Added support for exporting models using two vertex color schemes (thanks zeroeightysix!).")
+            .RegisterEntry("Possibly improved the color accuracy of the basecolor texture created when exporting models (thanks zeroeightysix!).")
+            .RegisterEntry("Disabled enabling transparency for materials that use the characterstockings shader due to crashes (thanks zeroeightysix!).")
+            .RegisterEntry("Fixed some issues with model i/o and invalid tangents (thanks PassiveModding!)")
+            .RegisterEntry("Changed the behavior for default directory names when using the mod normalizer with combining groups.")
+            .RegisterEntry("Added jumping to specific mods to the HTTP API.")
+            .RegisterEntry("Fixed an issue with character sound modding (1.4.0.6).")
+            .RegisterHighlight("Added support for IMC-toggle attributes to accessories beyond the first toggle (1.4.0.5).")
+            .RegisterEntry("Fixed up some slot-specific attributes and shapes in models when swapping items between slots (1.4.0.5).")
+            .RegisterEntry("Added handling for human skin materials to the OnScreen tab and similar functionality (thanks Ny!) (1.4.0.5).")
+            .RegisterEntry("The OS thread ID a resource was loaded from was added to the resource logger (1.4.0.5).")
+            .RegisterEntry("A button linking to my (Ottermandias') Ko-Fi and Patreon was added in the settings tab. Feel free, but not pressured, to use it! :D ")
+            .RegisterHighlight("Mod setting combos now support mouse-wheel scrolling with Control and have filters (1.4.0.4).")
+            .RegisterEntry("Using the middle mouse button to toggle designs now works correctly with temporary settings (1.4.0.4).")
+            .RegisterEntry("Updated some BNPC associations (1.4.0.3).")
+            .RegisterEntry("Fixed further issues with shapes and attributes (1.4.0.4).")
+            .RegisterEntry("Penumbra now handles textures with MipMap offsets broken by TexTools on import and removes unnecessary MipMaps (1.4.0.3).")
+            .RegisterEntry("Updated the Mod Merger for the new group types (1.4.0.3).")
+            .RegisterEntry("Added querying Penumbra for supported features via IPC (1.4.0.3).")
+            .RegisterEntry("Shape names can now be edited in Penumbras model editor (1.4.0.2).")
+            .RegisterEntry("Attributes and Shapes can be fully toggled (1.4.0.2).")
+            .RegisterEntry("Fixed several issues with attributes and shapes (1.4.0.1).");
 
     private static void Add1_4_0_0(Changelog log)
         => log.NextVersion("Version 1.4.0.0")
