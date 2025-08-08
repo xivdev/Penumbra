@@ -1048,7 +1048,7 @@ public class DebugTab : Window, ITab, IUiService
             if (t1)
             {
                 ImGuiUtil.DrawTableColumn("Flags");
-                ImGuiUtil.DrawTableColumn($"{model->UnkFlags_01:X2}");
+                ImGuiUtil.DrawTableColumn($"{model->StateFlags}");
                 ImGuiUtil.DrawTableColumn("Has Model In Slot Loaded");
                 ImGuiUtil.DrawTableColumn($"{model->HasModelInSlotLoaded:X8}");
                 ImGuiUtil.DrawTableColumn("Has Model Files In Slot Loaded");
