@@ -280,6 +280,7 @@ public partial class MtrlTab
                     }
                 }
             }
+            _shadersKnown |= Mtrl.ShaderPackage.Name.Equals("characterinc.shpk");  //temp patch to fix characterinc editing
         }
 
         if (_shadersKnown)
