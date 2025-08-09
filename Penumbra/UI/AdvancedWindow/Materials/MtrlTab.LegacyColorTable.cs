@@ -67,7 +67,7 @@ public partial class MtrlTab
     private static void DrawLegacyColorTableHeader(bool hasDyeTable)
     {
         ImGui.TableNextColumn();
-        ImUtf8.TableHeader(default(ReadOnlySpan<byte>));
+        ImUtf8.TableHeader(""u8);
         ImGui.TableNextColumn();
         ImUtf8.TableHeader("Row"u8);
         ImGui.TableNextColumn();
