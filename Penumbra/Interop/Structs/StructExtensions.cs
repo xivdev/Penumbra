@@ -36,10 +36,8 @@ internal static class StructExtensions
 
     public static unsafe CiByteString ResolveSkinMtrlPathAsByteString(ref this CharacterBase character, uint slotIndex)
     {
-        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1474)
-        var vf91       = (delegate* unmanaged<CharacterBase*, byte*, nuint, uint, byte*>)((nint*)character.VirtualTable)[91];
         var pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
-        return ToOwnedByteString(vf91((CharacterBase*)Unsafe.AsPointer(ref character), pathBuffer, CharacterBase.PathBufferSize, slotIndex));
+        return ToOwnedByteString(character.ResolveSkinMtrlPath(pathBuffer, CharacterBase.PathBufferSize, slotIndex));
     }
 
     public static CiByteString ResolveMaterialPapPathAsByteString(ref this CharacterBase character, uint slotIndex, uint unkSId)

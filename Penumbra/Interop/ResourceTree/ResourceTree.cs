@@ -258,8 +258,7 @@ public class ResourceTree(
 
         for (var i = 0; i < skeleton->PartialSkeletonCount; ++i)
         {
-            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1475)
-            var phybHandle = physics != null ? ((ResourceHandle**)((nint)physics + 0x190))[i] : null;
+            var phybHandle = physics != null ? physics->BonePhysicsResourceHandles[i] : null;
             if (context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], phybHandle, (uint)i) is { } sklbNode)
             {
                 if (context.Global.WithUiData)
