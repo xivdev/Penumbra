@@ -126,6 +126,7 @@ public class MetaDictionary
         {
             _data = null;
             Count = 0;
+            return;
         }
 
         Count = GlobalEqp.Count + Shp.Count + Atr.Count;
