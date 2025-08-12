@@ -1,4 +1,5 @@
 using Dalamud.Hooking;
+using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -85,7 +86,8 @@ public unsafe class ResourceService : IDisposable, IRequiredService
         ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, nint unk7, uint unk8);
 
     private delegate ResourceHandle* GetResourceAsyncPrototype(ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, byte isUnknown, nint unk8, uint unk9);
+        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, byte isUnknown, nint unk8,
+        uint unk9);
 
     [Signature(Sigs.GetResourceSync, DetourName = nameof(GetResourceSyncDetour))]
     private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook = null!;
@@ -118,18 +120,26 @@ public unsafe class ResourceService : IDisposable, IRequiredService
                     unk9);
         }
 
-        var original = gamePath;
+        if (gamePath.IsEmpty)
+        {
+            Penumbra.Log.Error($"[ResourceService] Empty resource path requested with category {*categoryId}, type {*resourceType}, hash {*resourceHash}.");
+            return null;
+        }
+
+        var             original    = gamePath;
         ResourceHandle* returnValue = null;
         ResourceRequested?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref gamePath, original, pGetResParams, ref isSync,
             ref returnValue);
         if (returnValue != null)
             return returnValue;
 
-        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, isUnk, unk8, unk9);
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, isUnk, unk8,
+            unk9);
     }
 
     /// <summary> Call the original GetResource function. </summary>
-    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path, Utf8GamePath original,
+    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path,
+        Utf8GamePath original,
         GetResourceParameters* resourceParameters = null, byte unk = 0, nint unk8 = 0, uint unk9 = 0)
     {
         var previous = _currentGetResourcePath.Value;
@@ -141,7 +151,8 @@ public unsafe class ResourceService : IDisposable, IRequiredService
                     resourceParameters, unk8, unk9)
                 : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
                     resourceParameters, unk, unk8, unk9);
-        } finally
+        }
+        finally
         {
             _currentGetResourcePath.Value = previous;
         }
@@ -163,7 +174,8 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     /// <param name="syncOriginal">The original game path of the resource, if loaded synchronously.</param>
     /// <param name="previousState">The previous state of the resource.</param>
     /// <param name="returnValue">The return value to use.</param>
-    public delegate void ResourceStateUpdatedDelegate(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte UnkState, LoadState LoadState) previousState, ref uint returnValue);
+    public delegate void ResourceStateUpdatedDelegate(ResourceHandle* handle, Utf8GamePath syncOriginal,
+        (byte UnkState, LoadState LoadState) previousState, ref uint returnValue);
 
     /// <summary>
     /// <inheritdoc cref="ResourceStateUpdatingDelegate"/> <para/>
@@ -185,7 +197,7 @@ public unsafe class ResourceService : IDisposable, IRequiredService
     private uint UpdateResourceStateDetour(ResourceHandle* handle, byte offFileThread)
     {
         var previousState = (handle->UnkState, handle->LoadState);
-        var syncOriginal = _currentGetResourcePath.IsValueCreated ? _currentGetResourcePath.Value : Utf8GamePath.Empty;
+        var syncOriginal  = _currentGetResourcePath.IsValueCreated ? _currentGetResourcePath.Value : Utf8GamePath.Empty;
         ResourceStateUpdating?.Invoke(handle, syncOriginal);
         var ret = _updateResourceStateHook.OriginalDisposeSafe(handle, offFileThread);
         ResourceStateUpdated?.Invoke(handle, syncOriginal, previousState, ref ret);
