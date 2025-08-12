@@ -35,14 +35,14 @@ public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Cha
     public bool Finished
         => _task.IsCompletedSuccessfully;
 
-    private delegate void Delegate(DrawDataContainer* drawData, uint slot, ulong weapon, byte d, byte e, byte f, byte g);
+    private delegate void Delegate(DrawDataContainer* drawData, uint slot, ulong weapon, byte d, byte e, byte f, byte g, byte h);
 
-    private void Detour(DrawDataContainer* drawData, uint slot, ulong weapon, byte d, byte e, byte f, byte g)
+    private void Detour(DrawDataContainer* drawData, uint slot, ulong weapon, byte d, byte e, byte f, byte g, byte h)
     {
         var gameObject = drawData->OwnerObject;
-        Penumbra.Log.Verbose($"[{Name}] Triggered with drawData: 0x{(nint)drawData:X}, {slot}, {weapon}, {d}, {e}, {f}, {g}.");
+        Penumbra.Log.Verbose($"[{Name}] Triggered with drawData: 0x{(nint)drawData:X}, {slot}, {weapon}, {d}, {e}, {f}, {g}, {h}.");
         Invoke(drawData, gameObject, (CharacterWeapon*)(&weapon));
-        _task.Result.Original(drawData, slot, weapon, d, e, f, g);
+        _task.Result.Original(drawData, slot, weapon, d, e, f, g, h);
         _postEvent.Invoke(drawData, gameObject);
     }
 
