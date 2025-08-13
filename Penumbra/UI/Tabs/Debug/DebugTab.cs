@@ -1236,16 +1236,12 @@ public class DebugTab : Window, ITab, IUiService
     }
 
     public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, void* address)
-    {
-        using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
-        {
-            if (ImUtf8.Selectable($"0x{(nint)address:X16}    {label}"))
-                ImUtf8.SetClipboardText($"0x{(nint)address:X16}");
-        }
-
-        ImUtf8.HoverTooltip("Click to copy address to clipboard."u8);
-    }
+        => DrawCopyableAddress(label, (nint)address);
 
     public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, nint address)
-        => DrawCopyableAddress(label, (void*)address);
+    {
+        Penumbra.Dynamis.DrawPointer(address);
+        ImUtf8.SameLineInner();
+        ImUtf8.Text(label);
+    }
 }

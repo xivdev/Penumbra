@@ -27,14 +27,31 @@ public unsafe class GlobalVariablesDrawer(
             return;
 
         var actionManager = (ActionTimelineManager**)ActionTimelineManager.Instance();
-        DebugTab.DrawCopyableAddress("CharacterUtility"u8,             characterUtility.Address);
-        DebugTab.DrawCopyableAddress("ResidentResourceManager"u8,      residentResources.Address);
-        DebugTab.DrawCopyableAddress("ScheduleManagement"u8,           ScheduleManagement.Instance());
-        DebugTab.DrawCopyableAddress("ActionTimelineManager*"u8,       actionManager);
-        DebugTab.DrawCopyableAddress("ActionTimelineManager"u8,        actionManager != null ? *actionManager : null);
-        DebugTab.DrawCopyableAddress("SchedulerResourceManagement*"u8, scheduler.Address);
-        DebugTab.DrawCopyableAddress("SchedulerResourceManagement"u8,  scheduler.Address != null ? *scheduler.Address : null);
-        DebugTab.DrawCopyableAddress("Device"u8,                       Device.Instance());
+        using (ImUtf8.Group())
+        {
+            Penumbra.Dynamis.DrawPointer(characterUtility.Address);
+            Penumbra.Dynamis.DrawPointer(residentResources.Address);
+            Penumbra.Dynamis.DrawPointer(ScheduleManagement.Instance());
+            Penumbra.Dynamis.DrawPointer(actionManager);
+            Penumbra.Dynamis.DrawPointer(actionManager != null ? *actionManager : null);
+            Penumbra.Dynamis.DrawPointer(scheduler.Address);
+            Penumbra.Dynamis.DrawPointer(scheduler.Address != null ? *scheduler.Address : null);
+            Penumbra.Dynamis.DrawPointer(Device.Instance());
+        }
+
+        ImGui.SameLine();
+        using (ImUtf8.Group())
+        {
+            ImUtf8.Text("CharacterUtility"u8);
+            ImUtf8.Text("ResidentResourceManager"u8);
+            ImUtf8.Text("ScheduleManagement"u8);
+            ImUtf8.Text("ActionTimelineManager*"u8);
+            ImUtf8.Text("ActionTimelineManager"u8);
+            ImUtf8.Text("SchedulerResourceManagement*"u8);
+            ImUtf8.Text("SchedulerResourceManagement"u8);
+            ImUtf8.Text("Device"u8);
+        }
+
         DrawCharacterUtility();
         DrawResidentResources();
         DrawSchedulerResourcesMap();
@@ -63,7 +80,7 @@ public unsafe class GlobalVariablesDrawer(
             var resource = characterUtility.Address->Resource(idx);
             ImUtf8.DrawTableColumn($"[{idx}]");
             ImGui.TableNextColumn();
-            ImUtf8.CopyOnClickSelectable($"0x{(ulong)resource:X}");
+            Penumbra.Dynamis.DrawPointer(resource);
             if (resource == null)
             {
                 ImGui.TableNextRow();
@@ -74,25 +91,12 @@ public unsafe class GlobalVariablesDrawer(
             ImGui.TableNextColumn();
             var data   = (nint)resource->CsHandle.GetData();
             var length = resource->CsHandle.GetLength();
-            if (ImUtf8.Selectable($"0x{data:X}"))
-                if (data != nint.Zero && length > 0)
-                    ImUtf8.SetClipboardText(string.Join("\n",
-                        new ReadOnlySpan<byte>((byte*)data, (int)length).ToArray().Select(b => b.ToString("X2"))));
-
-            ImUtf8.HoverTooltip("Click to copy bytes to clipboard."u8);
+            Penumbra.Dynamis.DrawPointer(data);
             ImUtf8.DrawTableColumn(length.ToString());
-
             ImGui.TableNextColumn();
             if (intern.Value != -1)
             {
-                ImUtf8.Selectable($"0x{characterUtility.DefaultResource(intern).Address:X}");
-                if (ImGui.IsItemClicked())
-                    ImUtf8.SetClipboardText(string.Join("\n",
-                        new ReadOnlySpan<byte>((byte*)characterUtility.DefaultResource(intern).Address,
-                            characterUtility.DefaultResource(intern).Size).ToArray().Select(b => b.ToString("X2"))));
-
-                ImUtf8.HoverTooltip("Click to copy bytes to clipboard."u8);
-
+                Penumbra.Dynamis.DrawPointer(characterUtility.DefaultResource(intern).Address);
                 ImUtf8.DrawTableColumn($"{characterUtility.DefaultResource(intern).Size}");
             }
             else
@@ -122,7 +126,7 @@ public unsafe class GlobalVariablesDrawer(
             var resource = residentResources.Address->ResourceList[idx];
             ImUtf8.DrawTableColumn($"[{idx}]");
             ImGui.TableNextColumn();
-            ImUtf8.CopyOnClickSelectable($"0x{(ulong)resource:X}");
+            Penumbra.Dynamis.DrawPointer(resource);
             if (resource == null)
             {
                 ImGui.TableNextRow();
@@ -133,12 +137,7 @@ public unsafe class GlobalVariablesDrawer(
             ImGui.TableNextColumn();
             var data   = (nint)resource->CsHandle.GetData();
             var length = resource->CsHandle.GetLength();
-            if (ImUtf8.Selectable($"0x{data:X}"))
-                if (data != nint.Zero && length > 0)
-                    ImUtf8.SetClipboardText(string.Join("\n",
-                        new ReadOnlySpan<byte>((byte*)data, (int)length).ToArray().Select(b => b.ToString("X2"))));
-
-            ImUtf8.HoverTooltip("Click to copy bytes to clipboard."u8);
+            Penumbra.Dynamis.DrawPointer(data);
             ImUtf8.DrawTableColumn(length.ToString());
         }
     }
@@ -184,15 +183,15 @@ public unsafe class GlobalVariablesDrawer(
                 ImUtf8.DrawTableColumn($"{resource->Consumers}");
                 ImUtf8.DrawTableColumn($"{resource->Unk1}"); // key
                 ImGui.TableNextColumn();
-                ImUtf8.CopyOnClickSelectable($"0x{(ulong)resource:X}");
+                Penumbra.Dynamis.DrawPointer(resource);
                 ImGui.TableNextColumn();
                 var resourceHandle = *((ResourceHandle**)resource + 3);
-                ImUtf8.CopyOnClickSelectable($"0x{(ulong)resourceHandle:X}");
+                Penumbra.Dynamis.DrawPointer(resourceHandle);
                 ImGui.TableNextColumn();
                 ImUtf8.CopyOnClickSelectable(resourceHandle->FileName().Span);
                 ImGui.TableNextColumn();
                 uint dataLength = 0;
-                ImUtf8.CopyOnClickSelectable($"0x{(ulong)resource->GetResourceData(&dataLength):X}");
+                Penumbra.Dynamis.DrawPointer(resource->GetResourceData(&dataLength));
                 ImUtf8.DrawTableColumn($"{dataLength}");
                 ++_shownResourcesMap;
             }
@@ -233,15 +232,15 @@ public unsafe class GlobalVariablesDrawer(
                 ImUtf8.DrawTableColumn($"{resource->Consumers}");
                 ImUtf8.DrawTableColumn($"{resource->Unk1}"); // key
                 ImGui.TableNextColumn();
-                ImUtf8.CopyOnClickSelectable($"0x{(ulong)resource:X}");
+                Penumbra.Dynamis.DrawPointer(resource);
                 ImGui.TableNextColumn();
                 var resourceHandle = *((ResourceHandle**)resource + 3);
-                ImUtf8.CopyOnClickSelectable($"0x{(ulong)resourceHandle:X}");
+                Penumbra.Dynamis.DrawPointer(resourceHandle);
                 ImGui.TableNextColumn();
                 ImUtf8.CopyOnClickSelectable(resourceHandle->FileName().Span);
                 ImGui.TableNextColumn();
                 uint dataLength = 0;
-                ImUtf8.CopyOnClickSelectable($"0x{(ulong)resource->GetResourceData(&dataLength):X}");
+                Penumbra.Dynamis.DrawPointer(resource->GetResourceData(&dataLength));
                 ImUtf8.DrawTableColumn($"{dataLength}");
                 ++_shownResourcesList;
             }

@@ -8,6 +8,7 @@ using OtterGui.Compression;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
@@ -80,7 +81,7 @@ public class FileEditor<T>(
     private Exception?    _currentException;
     private bool          _changed;
 
-    private string       _defaultPath = string.Empty;
+    private string       _defaultPath = typeof(T) == typeof(ModEditWindow.PbdTab) ? GamePaths.Pbd.Path : string.Empty;
     private bool         _inInput;
     private Utf8GamePath _defaultPathUtf8;
     private bool         _isDefaultPathUtf8Valid;

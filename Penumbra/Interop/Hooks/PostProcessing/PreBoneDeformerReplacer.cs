@@ -63,7 +63,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
         if (!_framework.IsInFrameworkUpdateThread)
             Penumbra.Log.Warning(
                 $"{nameof(PreBoneDeformerReplacer)}.{nameof(SetupHssReplacements)}(0x{(nint)drawObject:X}, {slotIndex}) called out of framework thread");
-
+        
         var preBoneDeformer = GetPreBoneDeformerForCharacter(drawObject);
         try
         {
