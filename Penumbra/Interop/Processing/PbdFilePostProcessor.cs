@@ -32,14 +32,14 @@ public sealed class PbdFilePostProcessor : IFilePostProcessor
 
         if (resource->LoadState is not LoadState.Success)
         {
-            Penumbra.Log.Warning($"[ResourceLoader] Requested PBD at {originalGamePath} failed load ({resource->LoadState}).");
+            Penumbra.Log.Warning($"[ResourceLoader] Requested PBD at {resource->FileName()} failed load ({resource->LoadState}).");
             return;
         }
 
         var (data, length) = resource->GetData();
         if (length is 0 || data == nint.Zero)
         {
-            Penumbra.Log.Warning($"[ResourceLoader] Requested PBD at {originalGamePath} succeeded load but has no data.");
+            Penumbra.Log.Warning($"[ResourceLoader] Requested PBD at {resource->FileName()} succeeded load but has no data.");
             return;
         }
 
@@ -47,7 +47,7 @@ public sealed class PbdFilePostProcessor : IFilePostProcessor
         var reader = new PackReader(span);
         if (reader.HasData)
         {
-            Penumbra.Log.Excessive($"[ResourceLoader] Successfully loaded PBD at {originalGamePath} with EPBD data.");
+            Penumbra.Log.Excessive($"[ResourceLoader] Successfully loaded PBD at {resource->FileName()} with EPBD data.");
             return;
         }
 
@@ -63,12 +63,12 @@ public sealed class PbdFilePostProcessor : IFilePostProcessor
                 _loadEpbdData(resource);
                 // Free original data.
                 _allocator.Release((void*)data, length);
-                Penumbra.Log.Verbose($"[ResourceLoader] Loaded {originalGamePath} from file and appended default EPBD data.");
+                Penumbra.Log.Debug($"[ResourceLoader] Loaded {resource->FileName()} from file and appended default EPBD data.");
             }
             else
             {
                 Penumbra.Log.Warning(
-                    $"[ResourceLoader] Failed to append EPBD data to custom PBD at {originalGamePath}.");
+                    $"[ResourceLoader] Failed to append EPBD data to custom PBD at {resource->FileName()}.");
             }
         }
     }
