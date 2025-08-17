@@ -69,7 +69,7 @@ public class ModPanelEditTab(
         FeatureChecker.DrawFeatureFlagInput(modManager.DataEditor, _mod, UiHelpers.InputTextWidth.X);
 
         UiHelpers.DefaultLineSpace();
-        var sharedTagsEnabled     = predefinedTagManager.Count > 0;
+        var sharedTagsEnabled     = predefinedTagManager.Enabled;
         var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
