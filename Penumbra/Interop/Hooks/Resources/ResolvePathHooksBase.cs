@@ -6,6 +6,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Interop.Processing;
 using static FFXIVClientStructs.FFXIV.Client.Game.Character.ActionEffectHandler;
 
 namespace Penumbra.Interop.Hooks.Resources;
@@ -159,7 +160,13 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
         => ResolvePath(drawObject, _resolveMtrlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex, mtrlFileName));
 
     private nint ResolveSkinMtrl(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
-        => ResolvePath(drawObject, _resolveSkinMtrlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex));
+    {
+        var finalPathBuffer = _resolveSkinMtrlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex);
+        if (DebugConfiguration.UseSkinMaterialProcessing && finalPathBuffer != nint.Zero && finalPathBuffer == pathBuffer)
+            SkinMtrlPathEarlyProcessing.Process(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), (CharacterBase*)drawObject, slotIndex);
+
+        return ResolvePath(drawObject, finalPathBuffer);
+    }
 
     private nint ResolvePap(nint drawObject, nint pathBuffer, nint pathBufferSize, uint unkAnimationIndex, nint animationName)
         => ResolvePath(drawObject, _resolvePapPathHook.Original(drawObject, pathBuffer, pathBufferSize, unkAnimationIndex, animationName));

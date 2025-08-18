@@ -131,7 +131,7 @@ public sealed unsafe class MaterialTemplatePickers : IUiService
             if (texture == null)
                 continue;
             var handle = _textureArraySlicer.GetImGuiHandle(texture, sliceIndex);
-            if (handle == 0)
+            if (handle.IsNull)
                 continue;
 
             var position =  regionStart with { X = regionStart.X + (itemSize.X + itemSpacing) * j };
