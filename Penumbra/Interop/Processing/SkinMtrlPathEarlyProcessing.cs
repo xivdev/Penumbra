@@ -7,7 +7,7 @@ public static unsafe class SkinMtrlPathEarlyProcessing
 {
     public static void Process(Span<byte> path, CharacterBase* character, uint slotIndex)
     {
-        var end = path.IndexOf(".mtrl\0"u8);
+        var end = path.IndexOf(MaterialExtension());
         if (end < 0)
             return;
 
@@ -23,16 +23,22 @@ public static unsafe class SkinMtrlPathEarlyProcessing
         if (skinSuffix.IsEmpty || skinSuffix.Length > path.Length - suffixPos - 7)
             return;
 
-        skinSuffix.CopyTo(path[(suffixPos + 1)..]);
-        ".mtrl\0"u8.CopyTo(path[(suffixPos + 1 + skinSuffix.Length)..]);
+        ++suffixPos;
+        skinSuffix.CopyTo(path[suffixPos..]);
+        suffixPos += skinSuffix.Length;
+        MaterialExtension().CopyTo(path[suffixPos..]);
+        return;
+
+        static ReadOnlySpan<byte> MaterialExtension()
+            => ".mtrl\0"u8;
     }
 
     private static ModelResourceHandle* GetModelResourceHandle(CharacterBase* character, uint slotIndex)
     {
-        if (character == null)
+        if (character is null)
             return null;
 
-        if (character->TempSlotData != null)
+        if (character->TempSlotData is not null)
         {
             // TODO ClientStructs-ify
             var handle = *(ModelResourceHandle**)((nint)character->TempSlotData + 0xE0 * slotIndex + 0x8);
@@ -41,10 +47,7 @@ public static unsafe class SkinMtrlPathEarlyProcessing
         }
 
         var model = character->Models[slotIndex];
-        if (model == null)
-            return null;
-
-        return model->ModelResourceHandle;
+        return model is null ? null : model->ModelResourceHandle;
     }
 
     private static ReadOnlySpan<byte> GetSkinSuffix(ModelResourceHandle* handle)

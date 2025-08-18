@@ -162,7 +162,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     private nint ResolveSkinMtrl(nint drawObject, nint pathBuffer, nint pathBufferSize, uint slotIndex)
     {
         var finalPathBuffer = _resolveSkinMtrlPathHook.Original(drawObject, pathBuffer, pathBufferSize, slotIndex);
-        if (finalPathBuffer != 0 && finalPathBuffer == pathBuffer)
+        if (DebugConfiguration.UseSkinMaterialProcessing && finalPathBuffer != nint.Zero && finalPathBuffer == pathBuffer)
             SkinMtrlPathEarlyProcessing.Process(new Span<byte>((void*)pathBuffer, (int)pathBufferSize), (CharacterBase*)drawObject, slotIndex);
 
         return ResolvePath(drawObject, finalPathBuffer);
