@@ -30,7 +30,7 @@ public class ModPanelDescriptionTab(
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
 
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
-        var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Count > 0
+        var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
             ? (true, ImGui.GetFrameHeight() + ImGui.GetStyle().WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0))
             : (false, 0);
         var tagIdx = _localTags.Draw("Local Tags: ",

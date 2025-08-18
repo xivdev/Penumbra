@@ -8,6 +8,8 @@ using OtterGui.Classes;
 using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Services;
+using OtterGui.Text;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -51,6 +53,9 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
         };
         jObj.WriteTo(jWriter);
     }
+
+    public bool Enabled
+        => Count > 0;
 
     public void Save()
         => _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
@@ -98,9 +103,9 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
     }
 
     public void DrawAddFromSharedTagsAndUpdateTags(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal,
-        Mods.Mod mod)
+        Mod mod)
     {
-        DrawToggleButton();
+        DrawToggleButtonTopRight();
         if (!DrawList(localTags, modTags, editLocal, out var changedTag, out var index))
             return;
 
@@ -110,15 +115,20 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
             _modManager.DataEditor.ChangeModTag(mod, index, changedTag);
     }
 
-    private void DrawToggleButton()
+    public void DrawToggleButton()
     {
-        ImGui.SameLine(ImGui.GetContentRegionMax().X
-          - ImGui.GetFrameHeight()
-          - (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ItemInnerSpacing.X : 0));
         using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), _isListOpen);
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Tags.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
                 "Add Predefined Tags...", false, true))
             _isListOpen = !_isListOpen;
+    }
+
+    private void DrawToggleButtonTopRight()
+    {
+        ImGui.SameLine(ImGui.GetContentRegionMax().X
+          - ImGui.GetFrameHeight()
+          - (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ItemInnerSpacing.X : 0));
+        DrawToggleButton();
     }
 
     private bool DrawList(IReadOnlyCollection<string> localTags, IReadOnlyCollection<string> modTags, bool editLocal, out string changedTag,
@@ -130,7 +140,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
         if (!_isListOpen)
             return false;
 
-        ImGui.TextUnformatted("Predefined Tags");
+        ImUtf8.Text("Predefined Tags"u8);
         ImGui.Separator();
 
         var ret = false;
@@ -153,6 +163,101 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
         ImGui.NewLine();
         ImGui.Separator();
         return ret;
+    }
+
+    private readonly List<Mod>                        _selectedMods = [];
+    private readonly List<(int Index, int DataIndex)> _countedMods  = [];
+
+    private void PrepareLists(IEnumerable<Mod> selection)
+    {
+        _selectedMods.Clear();
+        _selectedMods.AddRange(selection);
+        _countedMods.EnsureCapacity(_selectedMods.Count);
+        while (_countedMods.Count < _selectedMods.Count)
+            _countedMods.Add((-1, -1));
+    }
+
+    public void DrawListMulti(IEnumerable<Mod> selection)
+    {
+        if (!_isListOpen)
+            return;
+
+        ImUtf8.Text("Predefined Tags"u8);
+        PrepareLists(selection);
+
+        _enabledColor  = ColorId.PredefinedTagAdd.Value();
+        _disabledColor = ColorId.PredefinedTagRemove.Value();
+        using var color = new ImRaii.Color();
+        foreach (var (tag, idx) in _predefinedTags.Keys.WithIndex())
+        {
+            var alreadyContained = 0;
+            var inModData        = 0;
+            var missing          = 0;
+
+            foreach (var (modIndex, mod) in _selectedMods.Index())
+            {
+                var tagIdx = mod.LocalTags.IndexOf(tag);
+                if (tagIdx >= 0)
+                {
+                    ++alreadyContained;
+                    _countedMods[modIndex] = (tagIdx, -1);
+                }
+                else
+                {
+                    var dataIdx = mod.ModTags.IndexOf(tag);
+                    if (dataIdx >= 0)
+                    {
+                        ++inModData;
+                        _countedMods[modIndex] = (-1, dataIdx);
+                    }
+                    else
+                    {
+                        ++missing;
+                        _countedMods[modIndex] = (-1, -1);
+                    }
+                }
+            }
+
+            using var id          = ImRaii.PushId(idx);
+            var       buttonWidth = CalcTextButtonWidth(tag);
+            // Prevent adding a new tag past the right edge of the popup
+            if (buttonWidth + ImGui.GetStyle().ItemSpacing.X >= ImGui.GetContentRegionAvail().X)
+                ImGui.NewLine();
+
+            var (usedColor, disabled, tt) = (missing, alreadyContained) switch
+            {
+                (> 0, _) => (_enabledColor, false,
+                    $"Add this tag to {missing} mods.{(inModData > 0 ? $" {inModData} mods contain it in their mod tags and are untouched." : string.Empty)}"),
+                (_, > 0) => (_disabledColor, false,
+                    $"Remove this tag from {alreadyContained} mods.{(inModData > 0 ? $" {inModData} mods contain it in their mod tags and are untouched." : string.Empty)}"),
+                _ => (_disabledColor, true, "This tag is already present in the mod tags of all selected mods."),
+            };
+            color.Push(ImGuiCol.Button, usedColor);
+            if (ImUtf8.ButtonEx(tag, tt, new Vector2(buttonWidth, 0), disabled))
+            {
+                if (missing > 0)
+                    foreach (var (mod, (localIdx, _)) in _selectedMods.Zip(_countedMods))
+                    {
+                        if (localIdx >= 0)
+                            continue;
+
+                        _modManager.DataEditor.ChangeLocalTag(mod, mod.LocalTags.Count, tag);
+                    }
+                else
+                    foreach (var (mod, (localIdx, _)) in _selectedMods.Zip(_countedMods))
+                    {
+                        if (localIdx < 0)
+                            continue;
+
+                        _modManager.DataEditor.ChangeLocalTag(mod, localIdx, string.Empty);
+                    }
+            }
+            ImGui.SameLine();
+
+            color.Pop();
+        }
+
+        ImGui.NewLine();
     }
 
     private bool DrawColoredButton(string buttonLabel, int index, int tagIdx, bool inOther)
