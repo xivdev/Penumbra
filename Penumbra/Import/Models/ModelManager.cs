@@ -113,11 +113,17 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
     {
         // TODO: this should probably be chosen in the export settings
         var variantId = 1;
+        
+        //Lumina expects strings to be at least 15 chars, we assume it's not a vanilla material if its less than that as a temporary fix
+        string? absolutePath = null;
+        if (rawPath.Length > 14)
+        {
+            // Get standardised paths
+             absolutePath = rawPath.StartsWith('/')
+                ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
+                : rawPath;
+        }
 
-        // Get standardised paths
-        var absolutePath = rawPath.StartsWith('/')
-            ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
-            : rawPath;
         var relativePath = rawPath.StartsWith('/')
             ? rawPath
             : '/' + Path.GetFileName(rawPath);
