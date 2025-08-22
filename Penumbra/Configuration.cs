@@ -88,6 +88,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool           OpenFoldersByDefault          { get; set; } = false;
     public int            SingleGroupRadioMax           { get; set; } = 2;
     public string         DefaultImportFolder           { get; set; } = string.Empty;
+    public string         PcpFolderName                 { get; set; } = "PCP";
     public string         QuickMoveFolder1              { get; set; } = string.Empty;
     public string         QuickMoveFolder2              { get; set; } = string.Empty;
     public string         QuickMoveFolder3              { get; set; } = string.Empty;

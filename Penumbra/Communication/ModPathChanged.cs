@@ -3,6 +3,7 @@ using Penumbra.Api;
 using Penumbra.Api.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 
 namespace Penumbra.Communication;
 
@@ -20,11 +21,14 @@ public sealed class ModPathChanged()
 {
     public enum Priority
     {
+        /// <seealso cref="PcpService.OnModPathChange"/>
+        PcpService = int.MinValue,
+
         /// <seealso cref="ModsApi.OnModPathChange"/>
-        ApiMods = int.MinValue,
+        ApiMods = int.MinValue + 1,
 
         /// <seealso cref="ModSettingsApi.OnModPathChange"/>
-        ApiModSettings = int.MinValue,
+        ApiModSettings = int.MinValue + 1,
 
         /// <seealso cref="EphemeralConfig.OnModPathChanged"/>
         EphemeralConfig = -500,

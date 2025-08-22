@@ -9,8 +9,9 @@ public class ResourceTreeViewerFactory(
     ResourceTreeFactory treeFactory,
     ChangedItemDrawer changedItemDrawer,
     IncognitoService incognito,
-    CommunicatorService communicator) : IService
+    CommunicatorService communicator,
+    PcpService pcpService) : IService
 {
     public ResourceTreeViewer Create(int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
-        => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, communicator);
+        => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, communicator, pcpService);
 }

@@ -12,7 +12,6 @@ using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
-using OtterGuiInternal.Enums;
 using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.PostProcessing;
@@ -21,7 +20,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
-using ImGuiId = OtterGuiInternal.Enums.ImGuiId;
 
 namespace Penumbra.UI.Tabs;
 
@@ -603,6 +601,7 @@ public class SettingsTab : ITab, IUiService
         DrawDefaultModImportPath();
         DrawDefaultModAuthor();
         DrawDefaultModImportFolder();
+        DrawPcpFolder();
         DrawDefaultModExportPath();
     }
 
@@ -710,6 +709,21 @@ public class SettingsTab : ITab, IUiService
 
         ImGuiUtil.LabeledHelpMarker("Default Mod Import Organizational Folder",
             "Set the default Penumbra mod folder to place newly imported mods into.\nLeave blank to import into Root.");
+    }
+
+    /// <summary> Draw input for the default folder to sort put newly imported mods into. </summary>
+    private void DrawPcpFolder()
+    {
+        var tmp = _config.PcpFolderName;
+        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        if (ImUtf8.InputText("##pcpFolder"u8, ref tmp))
+            _config.PcpFolderName = tmp;
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            _config.Save();
+
+        ImGuiUtil.LabeledHelpMarker("Default PCP Organizational Folder",
+            "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root.");
     }
 
 
@@ -1055,7 +1069,7 @@ public class SettingsTab : ITab, IUiService
         if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
 
-        ImGui.SetCursorPos(new Vector2(xPos, 5 * ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos,                                  5 * ImGui.GetFrameHeightWithSpacing()));
         CustomGui.DrawKofiPatreonButton(Penumbra.Messager, new Vector2(width, 0));
     }
 

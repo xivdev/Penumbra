@@ -1,15 +1,19 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Raii;
+using Dalamud.Interface;
+using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.Utility;
 using OtterGui;
+using OtterGui.Classes;
+using OtterGui.Extensions;
+using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
-using Penumbra.UI.Classes;
 using Penumbra.String;
-using OtterGui.Extensions;
+using Penumbra.UI.Classes;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -21,12 +25,13 @@ public class ResourceTreeViewer(
     int actionCapacity,
     Action onRefresh,
     Action<ResourceNode, Vector2> drawActions,
-    CommunicatorService communicator)
+    CommunicatorService communicator,
+    PcpService pcpService)
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
         ResourceTreeFactory.Flags.RedactExternalPaths | ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
 
-    private readonly HashSet<nint>       _unfolded     = [];
+    private readonly HashSet<nint> _unfolded = [];
 
     private readonly Dictionary<nint, NodeVisibility> _filterCache = [];
 
@@ -34,6 +39,7 @@ public class ResourceTreeViewer(
     private ChangedItemIconFlag _typeFilter     = ChangedItemFlagExtensions.AllFlags;
     private string              _nameFilter     = string.Empty;
     private string              _nodeFilter     = string.Empty;
+    private string              _note           = string.Empty;
 
     private Task<ResourceTree[]>? _task;
 
@@ -83,7 +89,28 @@ public class ResourceTreeViewer(
 
                 using var id = ImRaii.PushId(index);
 
-                ImGui.TextUnformatted($"Collection: {(incognito.IncognitoMode ? tree.AnonymizedCollectionName : tree.CollectionName)}");
+                ImUtf8.TextFrameAligned($"Collection: {(incognito.IncognitoMode ? tree.AnonymizedCollectionName : tree.CollectionName)}");
+                ImGui.SameLine();
+                if (ImUtf8.ButtonEx("Export Character Pack"u8,
+                        "Note that this recomputes the current data of the actor if it still exists, and does not use the cached data."u8))
+                {
+                    pcpService.CreatePcp((ObjectIndex)tree.GameObjectIndex, _note).ContinueWith(t =>
+                    {
+
+                        var (success, text) = t.Result;
+
+                        if (success)
+                            Penumbra.Messager.NotificationMessage($"Created {text}.", NotificationType.Success, false);
+                        else
+                            Penumbra.Messager.NotificationMessage(text, NotificationType.Error, false);
+                    });
+                    _note = string.Empty;
+                }
+
+                ImUtf8.SameLineInner();
+                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                ImUtf8.InputText("##note"u8, ref _note, "Export note..."u8);
+
 
                 using var table = ImRaii.Table("##ResourceTree", actionCapacity > 0 ? 4 : 3,
                     ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
@@ -263,7 +290,8 @@ public class ResourceTreeViewer(
                     using var group   = ImUtf8.Group();
                     using (var color = ImRaii.PushColor(ImGuiCol.Text, (hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
                     {
-                        ImUtf8.Selectable(modName, false, ImGuiSelectableFlags.AllowItemOverlap, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                        ImUtf8.Selectable(modName, false, ImGuiSelectableFlags.AllowItemOverlap,
+                            new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                     }
 
                     ImGui.SameLine();
@@ -272,7 +300,8 @@ public class ResourceTreeViewer(
                 }
                 else
                 {
-                    ImGui.Selectable(resourceNode.FullPath.ToPath(), false, ImGuiSelectableFlags.AllowItemOverlap, new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
+                    ImGui.Selectable(resourceNode.FullPath.ToPath(), false, ImGuiSelectableFlags.AllowItemOverlap,
+                        new Vector2(ImGui.GetContentRegionAvail().X, cellHeight));
                 }
 
                 if (ImGui.IsItemClicked())
@@ -365,9 +394,10 @@ public class ResourceTreeViewer(
     private static string GetPathStatusDescription(ResourceNode.PathStatus status)
         => status switch
         {
-            ResourceNode.PathStatus.External    => "The actual path to this file is unavailable, because it is managed by external tools.",
-            ResourceNode.PathStatus.NonExistent => "The actual path to this file is unavailable, because it seems to have been moved or deleted since it was loaded.",
-            _                                   => "The actual path to this file is unavailable.",
+            ResourceNode.PathStatus.External => "The actual path to this file is unavailable, because it is managed by external tools.",
+            ResourceNode.PathStatus.NonExistent =>
+                "The actual path to this file is unavailable, because it seems to have been moved or deleted since it was loaded.",
+            _ => "The actual path to this file is unavailable.",
         };
 
     [Flags]
