@@ -68,6 +68,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
     public bool            DefaultTemporaryMode                 { get; set; } = false;
     public bool            EnableCustomShapes                   { get; set; } = true;
+    public bool            DisablePcpHandling                   { get; set; } = false;
     public RenameField     ShowRename                           { get; set; } = RenameField.BothDataPrio;
     public ChangedItemMode ChangedItemDisplay                   { get; set; } = ChangedItemMode.GroupedCollapsed;
     public int             OptionGroupCollapsibleMin            { get; set; } = 5;

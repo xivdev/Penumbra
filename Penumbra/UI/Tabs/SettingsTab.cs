@@ -598,6 +598,9 @@ public class SettingsTab : ITab, IUiService
         Checkbox("Always Open Import at Default Directory",
             "Open the import window at the location specified here every time, forgetting your previous path.",
             _config.AlwaysOpenDefaultImport, v => _config.AlwaysOpenDefaultImport = v);
+        Checkbox("Handle PCP Files",
+            "When encountering specific mods, usually but not necessarily denoted by a .pcp file ending, Penumbra will automatically try to create an associated collection and assign it to a specific character for this mod package. This can turn this behaviour off if unwanted.",
+            !_config.DisablePcpHandling, v => _config.DisablePcpHandling = !v);
         DrawDefaultModImportPath();
         DrawDefaultModAuthor();
         DrawDefaultModImportFolder();

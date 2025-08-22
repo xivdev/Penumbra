@@ -71,7 +71,7 @@ public class PcpService : IApiService, IDisposable
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
     {
-        if (type is not ModPathChangeType.Added || newDirectory is null)
+        if (type is not ModPathChangeType.Added || _config.DisablePcpHandling || newDirectory is null)
             return;
 
         try
