@@ -52,6 +52,7 @@ public class SettingsTab : ITab, IUiService
     private readonly CollectionAutoSelector      _autoSelector;
     private readonly CleanupService              _cleanupService;
     private readonly AttributeHook               _attributeHook;
+    private readonly PcpService                  _pcpService;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -64,7 +65,7 @@ public class SettingsTab : ITab, IUiService
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
-        AttributeHook attributeHook)
+        AttributeHook attributeHook, PcpService pcpService)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -90,6 +91,7 @@ public class SettingsTab : ITab, IUiService
         _autoSelector         = autoSelector;
         _cleanupService       = cleanupService;
         _attributeHook        = attributeHook;
+        _pcpService           = pcpService;
     }
 
     public void DrawHeader()
@@ -601,6 +603,23 @@ public class SettingsTab : ITab, IUiService
         Checkbox("Handle PCP Files",
             "When encountering specific mods, usually but not necessarily denoted by a .pcp file ending, Penumbra will automatically try to create an associated collection and assign it to a specific character for this mod package. This can turn this behaviour off if unwanted.",
             !_config.DisablePcpHandling, v => _config.DisablePcpHandling = !v);
+
+        var active = _config.DeleteModModifier.IsActive();
+        ImGui.SameLine();
+        if (ImUtf8.ButtonEx("Delete all PCP Mods"u8, "Deletes all mods tagged with 'PCP' from the mod list."u8, disabled: !active))
+            _pcpService.CleanPcpMods();
+        if (!active)
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
+
+        ImGui.SameLine();
+        if (ImUtf8.ButtonEx("Delete all PCP Collections"u8, "Deletes all collections whose name starts with 'PCP/' from the collection list."u8, disabled: !active))
+            _pcpService.CleanPcpCollections();
+        if (!active)
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
+
+        Checkbox("Allow Other Plugins Access to PCP Handling",
+            "When creating or importing PCP files, other plugins can add and interpret their own data to the character.json file.",
+            _config.AllowPcpIpc, v => _config.AllowPcpIpc = v);
         DrawDefaultModImportPath();
         DrawDefaultModAuthor();
         DrawDefaultModImportFolder();

@@ -38,6 +38,7 @@ public class PcpService : IApiService, IDisposable
     private readonly CommunicatorService _communicator;
     private readonly SHA1                _sha1 = SHA1.Create();
     private readonly ModFileSystem       _fileSystem;
+    private readonly ModManager          _mods;
 
     public PcpService(Configuration config,
         SaveService files,
@@ -50,7 +51,8 @@ public class PcpService : IApiService, IDisposable
         ModCreator modCreator,
         ModExportManager modExport,
         CommunicatorService communicator,
-        ModFileSystem fileSystem)
+        ModFileSystem fileSystem,
+        ModManager mods)
     {
         _config             = config;
         _files              = files;
@@ -64,8 +66,25 @@ public class PcpService : IApiService, IDisposable
         _modExport          = modExport;
         _communicator       = communicator;
         _fileSystem         = fileSystem;
+        _mods               = mods;
 
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.PcpService);
+    }
+
+    public void CleanPcpMods()
+    {
+        var mods = _mods.Where(m => m.ModTags.Contains("PCP")).ToList();
+        Penumbra.Log.Information($"[PCPService] Deleting {mods.Count} mods containing the tag PCP.");
+        foreach (var mod in mods)
+            _mods.DeleteMod(mod);
+    }
+
+    public void CleanPcpCollections()
+    {
+        var collections = _collections.Storage.Where(c => c.Identity.Name.StartsWith("PCP/")).ToList();
+        Penumbra.Log.Information($"[PCPService] Deleting {collections.Count} mods containing the tag PCP.");
+        foreach (var collection in collections)
+            _collections.Storage.Delete(collection);
     }
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
@@ -80,12 +99,14 @@ public class PcpService : IApiService, IDisposable
             {
                 // First version had collection.json, changed.
                 var oldFile = Path.Combine(newDirectory.FullName, "collection.json");
+                Penumbra.Log.Information("[PCPService] Renaming old PCP file from collection.json to character.json.");
                 if (File.Exists(oldFile))
                     File.Move(oldFile, file, true);
                 else
                     return;
             }
 
+            Penumbra.Log.Information($"[PCPService] Found a PCP file for {mod.Name}, applying.");
             var text       = File.ReadAllText(file);
             var jObj       = JObject.Parse(text);
             var identifier = _actors.FromJson(jObj["Actor"] as JObject);
@@ -116,6 +137,7 @@ public class PcpService : IApiService, IDisposable
                     // ignored.
                 }
             }
+
             if (_config.AllowPcpIpc)
                 _communicator.PcpParsing.Invoke(jObj, mod.Identifier, collection.Identity.Id);
         }
@@ -132,6 +154,7 @@ public class PcpService : IApiService, IDisposable
     {
         try
         {
+            Penumbra.Log.Information($"[PCPService] Creating PCP file for game object {objectIndex.Index}.");
             var (identifier, tree, collection) = await _framework.Framework.RunOnFrameworkThread(() =>
             {
                 var (actor, identifier) = CheckActor(objectIndex);
@@ -178,6 +201,7 @@ public class PcpService : IApiService, IDisposable
         {
             ["Version"]    = 1,
             ["Actor"]      = actor.ToJson(),
+            ["Mod"]        = directory.Name,
             ["Collection"] = note.Length > 0 ? $"{actor.ToName()}: {note}" : actor.ToName(),
             ["Time"]       = time,
             ["Note"]       = note,
