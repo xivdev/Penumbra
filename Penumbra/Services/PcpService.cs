@@ -1,4 +1,3 @@
-using System.Buffers.Text;
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Newtonsoft.Json;
@@ -76,9 +75,16 @@ public class PcpService : IApiService, IDisposable
 
         try
         {
-            var file = Path.Combine(newDirectory.FullName, "collection.json");
+            var file = Path.Combine(newDirectory.FullName, "character.json");
             if (!File.Exists(file))
-                return;
+            {
+                // First version had collection.json, changed.
+                var oldFile = Path.Combine(newDirectory.FullName, "collection.json");
+                if (File.Exists(oldFile))
+                    File.Move(oldFile, file, true);
+                else
+                    return;
+            }
 
             var text       = File.ReadAllText(file);
             var jObj       = JObject.Parse(text);
@@ -110,10 +116,12 @@ public class PcpService : IApiService, IDisposable
                     // ignored.
                 }
             }
+            if (_config.AllowPcpIpc)
+                _communicator.PcpParsing.Invoke(jObj, mod.Identifier, collection.Identity.Id);
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"Error reading the collection.json file from {mod.Identifier}:\n{ex}");
+            Penumbra.Log.Error($"Error reading the character.json file from {mod.Identifier}:\n{ex}");
         }
     }
 
@@ -145,7 +153,7 @@ public class PcpService : IApiService, IDisposable
             var time         = DateTime.Now;
             var modDirectory = CreateMod(identifier, note, time);
             await CreateDefaultMod(modDirectory, collection.ModCollection, tree, cancel);
-            await CreateCollectionInfo(modDirectory, identifier, note, time, cancel);
+            await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
             var file = ZipUp(modDirectory);
             return (true, file);
         }
@@ -163,7 +171,7 @@ public class PcpService : IApiService, IDisposable
         return fileName;
     }
 
-    private static async Task CreateCollectionInfo(DirectoryInfo directory, ActorIdentifier actor, string note, DateTime time,
+    private async Task CreateCollectionInfo(DirectoryInfo directory, ObjectIndex index, ActorIdentifier actor, string note, DateTime time,
         CancellationToken cancel = default)
     {
         var jObj = new JObject
@@ -176,7 +184,9 @@ public class PcpService : IApiService, IDisposable
         };
         if (note.Length > 0)
             cancel.ThrowIfCancellationRequested();
-        var             filePath = Path.Combine(directory.FullName, "collection.json");
+        if (_config.AllowPcpIpc)
+            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(jObj, index.Index));
+        var             filePath = Path.Combine(directory.FullName, "character.json");
         await using var file     = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
         await using var stream   = new StreamWriter(file);
         await using var json     = new JsonTextWriter(stream);

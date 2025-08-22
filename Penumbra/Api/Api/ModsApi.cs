@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using OtterGui.Compression;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
@@ -33,12 +34,8 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     {
         switch (type)
         {
-            case ModPathChangeType.Deleted when oldDirectory != null:
-                ModDeleted?.Invoke(oldDirectory.Name);
-                break;
-            case ModPathChangeType.Added when newDirectory != null:
-                ModAdded?.Invoke(newDirectory.Name);
-                break;
+            case ModPathChangeType.Deleted when oldDirectory != null: ModDeleted?.Invoke(oldDirectory.Name); break;
+            case ModPathChangeType.Added when newDirectory != null:   ModAdded?.Invoke(newDirectory.Name); break;
             case ModPathChangeType.Moved when newDirectory != null && oldDirectory != null:
                 ModMoved?.Invoke(oldDirectory.Name, newDirectory.Name);
                 break;
@@ -46,7 +43,9 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     }
 
     public void Dispose()
-        => _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
+    {
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
+    }
 
     public Dictionary<string, string> GetModList()
         => _modManager.ToDictionary(m => m.ModPath.Name, m => m.Name.Text);
@@ -108,6 +107,18 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public event Action<string>?         ModDeleted;
     public event Action<string>?         ModAdded;
     public event Action<string, string>? ModMoved;
+
+    public event Action<JObject, ushort>? CreatingPcp
+    {
+        add => _communicator.PcpCreation.Subscribe(value!, PcpCreation.Priority.ModsApi);
+        remove => _communicator.PcpCreation.Unsubscribe(value!);
+    }
+
+    public event Action<JObject, string, Guid>? ParsingPcp
+    {
+        add => _communicator.PcpParsing.Subscribe(value!, PcpParsing.Priority.ModsApi);
+        remove => _communicator.PcpParsing.Unsubscribe(value!);
+    }
 
     public (PenumbraApiEc, string, bool, bool) GetModPath(string modDirectory, string modName)
     {
