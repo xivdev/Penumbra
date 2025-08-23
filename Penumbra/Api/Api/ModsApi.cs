@@ -108,7 +108,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public event Action<string>?         ModAdded;
     public event Action<string, string>? ModMoved;
 
-    public event Action<JObject, ushort>? CreatingPcp
+    public event Action<JObject, ushort, string>? CreatingPcp
     {
         add => _communicator.PcpCreation.Subscribe(value!, PcpCreation.Priority.ModsApi);
         remove => _communicator.PcpCreation.Unsubscribe(value!);

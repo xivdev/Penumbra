@@ -89,7 +89,7 @@ public class PcpService : IApiService, IDisposable
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
     {
-        if (type is not ModPathChangeType.Added || _config.DisablePcpHandling || newDirectory is null)
+        if (type is not ModPathChangeType.Added || _config.PcpSettings.DisableHandling || newDirectory is null)
             return;
 
         try
@@ -107,29 +107,37 @@ public class PcpService : IApiService, IDisposable
             }
 
             Penumbra.Log.Information($"[PCPService] Found a PCP file for {mod.Name}, applying.");
-            var text       = File.ReadAllText(file);
-            var jObj       = JObject.Parse(text);
-            var identifier = _actors.FromJson(jObj["Actor"] as JObject);
-            if (!identifier.IsValid)
-                return;
+            var text = File.ReadAllText(file);
+            var jObj = JObject.Parse(text);
+            var collection = ModCollection.Empty;
+            // Create collection.
+            if (_config.PcpSettings.CreateCollection)
+            {
+                var identifier = _actors.FromJson(jObj["Actor"] as JObject);
+                if (identifier.IsValid && jObj["Collection"]?.ToObject<string>() is { } collectionName)
+                {
+                    var name = $"PCP/{collectionName}";
+                    if (_collections.Storage.AddCollection(name, null))
+                    {
+                        collection = _collections.Storage[^1];
+                        _collections.Editor.SetModState(collection, mod, true);
 
-            if (jObj["Collection"]?.ToObject<string>() is not { } collectionName)
-                return;
+                        // Assign collection.
+                        if (_config.PcpSettings.AssignCollection)
+                        {
+                            var identifierGroup = _collections.Active.Individuals.GetGroup(identifier);
+                            _collections.Active.SetCollection(collection, CollectionType.Individual, identifierGroup);
+                        }
+                    }
+                }
+            }
 
-            var name = $"PCP/{collectionName}";
-            if (!_collections.Storage.AddCollection(name, null))
-                return;
-
-            var collection = _collections.Storage[^1];
-            _collections.Editor.SetModState(collection, mod, true);
-
-            var identifierGroup = _collections.Active.Individuals.GetGroup(identifier);
-            _collections.Active.SetCollection(collection, CollectionType.Individual, identifierGroup);
+            // Move to folder.
             if (_fileSystem.TryGetValue(mod, out var leaf))
             {
                 try
                 {
-                    var folder = _fileSystem.FindOrCreateAllFolders(_config.PcpFolderName);
+                    var folder = _fileSystem.FindOrCreateAllFolders(_config.PcpSettings.FolderName);
                     _fileSystem.Move(leaf, folder);
                 }
                 catch
@@ -138,7 +146,8 @@ public class PcpService : IApiService, IDisposable
                 }
             }
 
-            if (_config.AllowPcpIpc)
+            // Invoke IPC.
+            if (_config.PcpSettings.AllowIpc)
                 _communicator.PcpParsing.Invoke(jObj, mod.Identifier, collection.Identity.Id);
         }
         catch (Exception ex)
@@ -208,8 +217,8 @@ public class PcpService : IApiService, IDisposable
         };
         if (note.Length > 0)
             cancel.ThrowIfCancellationRequested();
-        if (_config.AllowPcpIpc)
-            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(jObj, index.Index));
+        if (_config.PcpSettings.AllowIpc)
+            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(jObj, index.Index, directory.FullName));
         var             filePath = Path.Combine(directory.FullName, "character.json");
         await using var file     = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
         await using var stream   = new StreamWriter(file);
