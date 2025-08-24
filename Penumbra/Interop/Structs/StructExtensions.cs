@@ -64,6 +64,15 @@ internal static class StructExtensions
         return ToOwnedByteString(character.ResolvePhybPath(pathBuffer, partialSkeletonIndex));
     }
 
+    public static unsafe CiByteString ResolveKdbPathAsByteString(ref this CharacterBase character, uint partialSkeletonIndex)
+    {
+        // TODO ClientStructs-ify (aers/FFXIVClientStructs#1561)
+        var vf80       = (delegate* unmanaged<CharacterBase*, byte*, nuint, uint, byte*>)((nint*)character.VirtualTable)[80];
+        var pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
+        return ToOwnedByteString(vf80((CharacterBase*)Unsafe.AsPointer(ref character), pathBuffer, CharacterBase.PathBufferSize,
+            partialSkeletonIndex));
+    }
+
     private static unsafe CiByteString ToOwnedByteString(CStringPointer str)
         => str.HasValue ? new CiByteString(str.Value).Clone() : CiByteString.Empty;
 

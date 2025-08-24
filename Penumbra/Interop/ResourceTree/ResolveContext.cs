@@ -371,7 +371,8 @@ internal unsafe partial record ResolveContext(
         return node;
     }
 
-    public ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, ResourceHandle* phybHandle, uint partialSkeletonIndex)
+    public ResourceNode? CreateNodeFromPartialSkeleton(PartialSkeleton* sklb, ResourceHandle* phybHandle, ResourceHandle* kdbHandle,
+        uint partialSkeletonIndex)
     {
         if (sklb is null || sklb->SkeletonResourceHandle is null)
             return null;
@@ -386,6 +387,8 @@ internal unsafe partial record ResolveContext(
             node.Children.Add(skpNode);
         if (CreateNodeFromPhyb(phybHandle, partialSkeletonIndex) is { } phybNode)
             node.Children.Add(phybNode);
+        if (CreateNodeFromKdb(kdbHandle, partialSkeletonIndex) is { } kdbNode)
+            node.Children.Add(kdbNode);
         Global.Nodes.Add((path, (nint)sklb->SkeletonResourceHandle), node);
 
         return node;
@@ -423,6 +426,24 @@ internal unsafe partial record ResolveContext(
         if (Global.WithUiData)
             node.FallbackName = "Physics Module";
         Global.Nodes.Add((path, (nint)phybHandle), node);
+
+        return node;
+    }
+
+    private ResourceNode? CreateNodeFromKdb(ResourceHandle* kdbHandle, uint partialSkeletonIndex)
+    {
+        if (kdbHandle is null)
+            return null;
+
+        var path = ResolveKineDriverModulePath(partialSkeletonIndex);
+
+        if (Global.Nodes.TryGetValue((path, (nint)kdbHandle), out var cached))
+            return cached;
+
+        var node = CreateNode(ResourceType.Phyb, 0, kdbHandle, path, false);
+        if (Global.WithUiData)
+            node.FallbackName = "KineDriver Module";
+        Global.Nodes.Add((path, (nint)kdbHandle), node);
 
         return node;
     }
