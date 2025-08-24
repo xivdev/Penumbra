@@ -107,8 +107,8 @@ public class PcpService : IApiService, IDisposable
             }
 
             Penumbra.Log.Information($"[PCPService] Found a PCP file for {mod.Name}, applying.");
-            var text = File.ReadAllText(file);
-            var jObj = JObject.Parse(text);
+            var text       = File.ReadAllText(file);
+            var jObj       = JObject.Parse(text);
             var collection = ModCollection.Empty;
             // Create collection.
             if (_config.PcpSettings.CreateCollection)
@@ -164,7 +164,7 @@ public class PcpService : IApiService, IDisposable
         try
         {
             Penumbra.Log.Information($"[PCPService] Creating PCP file for game object {objectIndex.Index}.");
-            var (identifier, tree, collection) = await _framework.Framework.RunOnFrameworkThread(() =>
+            var (identifier, tree, meta) = await _framework.Framework.RunOnFrameworkThread(() =>
             {
                 var (actor, identifier) = CheckActor(objectIndex);
                 cancel.ThrowIfCancellationRequested();
@@ -178,13 +178,14 @@ public class PcpService : IApiService, IDisposable
                     if (_treeFactory.FromCharacter(actor, 0) is not { } tree)
                         throw new Exception($"Unable to fetch modded resources for {identifier}.");
 
-                    return (identifier.CreatePermanent(), tree, collection);
+                    var meta = new MetaDictionary(collection.ModCollection.MetaCache, actor.Address);
+                    return (identifier.CreatePermanent(), tree, meta);
                 }
             });
             cancel.ThrowIfCancellationRequested();
             var time         = DateTime.Now;
             var modDirectory = CreateMod(identifier, note, time);
-            await CreateDefaultMod(modDirectory, collection.ModCollection, tree, cancel);
+            await CreateDefaultMod(modDirectory, meta, tree, cancel);
             await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
             var file = ZipUp(modDirectory);
             return (true, file);
@@ -242,11 +243,15 @@ public class PcpService : IApiService, IDisposable
          ?? throw new Exception($"Unable to create mod {modName} in {directory.FullName}.");
     }
 
-    private async Task CreateDefaultMod(DirectoryInfo modDirectory, ModCollection collection, ResourceTree tree,
+    private async Task CreateDefaultMod(DirectoryInfo modDirectory, MetaDictionary meta, ResourceTree tree,
         CancellationToken cancel = default)
     {
         var subDirectory = modDirectory.CreateSubdirectory("files");
-        var subMod       = new DefaultSubMod(null!);
+        var subMod = new DefaultSubMod(null!)
+        {
+            Manipulations = meta,
+        };
+
         foreach (var node in tree.FlatNodes)
         {
             cancel.ThrowIfCancellationRequested();
@@ -269,7 +274,6 @@ public class PcpService : IApiService, IDisposable
         }
 
         cancel.ThrowIfCancellationRequested();
-        subMod.Manipulations = new MetaDictionary(collection.MetaCache);
 
         var saveGroup = new ModSaveGroup(modDirectory, subMod, _config.ReplaceNonAsciiOnImport);
         var filePath  = _files.FileNames.OptionGroupFile(modDirectory.FullName, -1, string.Empty, _config.ReplaceNonAsciiOnImport);
