@@ -121,7 +121,7 @@ public class ResourceTree(
             }
         }
 
-        AddSkeleton(Nodes, genericContext, model->EID, model->Skeleton, model->BonePhysicsModule);
+        AddSkeleton(Nodes, genericContext, model);
         AddMaterialAnimationSkeleton(Nodes, genericContext, model->MaterialAnimationSkeleton);
 
         AddWeapons(globalContext, model);
@@ -178,8 +178,7 @@ public class ResourceTree(
                 }
             }
 
-            AddSkeleton(weaponNodes, genericContext, subObject->EID, subObject->Skeleton, subObject->BonePhysicsModule,
-                $"Weapon #{weaponIndex}, ");
+            AddSkeleton(weaponNodes, genericContext, subObject, $"Weapon #{weaponIndex}, ");
             AddMaterialAnimationSkeleton(weaponNodes, genericContext, subObject->MaterialAnimationSkeleton,
                 $"Weapon #{weaponIndex}, ");
 
@@ -242,8 +241,11 @@ public class ResourceTree(
         }
     }
 
+    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, CharacterBase* model, string prefix = "")
+        => AddSkeleton(nodes, context, model->EID, model->Skeleton, model->BonePhysicsModule, *(void**)((nint)model + 0x160), prefix);
+
     private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, BonePhysicsModule* physics,
-        string prefix = "")
+        void* kineDriver, string prefix = "")
     {
         var eidNode = context.CreateNodeFromEid((ResourceHandle*)eid);
         if (eidNode != null)
@@ -259,7 +261,9 @@ public class ResourceTree(
         for (var i = 0; i < skeleton->PartialSkeletonCount; ++i)
         {
             var phybHandle = physics != null ? physics->BonePhysicsResourceHandles[i] : null;
-            if (context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], phybHandle, (uint)i) is { } sklbNode)
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1562)
+            var kdbHandle = kineDriver != null ? *(ResourceHandle**)((nint)kineDriver + 0x20 + 0x18 * i) : null;
+            if (context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], phybHandle, kdbHandle, (uint)i) is { } sklbNode)
             {
                 if (context.Global.WithUiData)
                     sklbNode.FallbackName = $"{prefix}Skeleton #{i}";

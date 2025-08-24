@@ -40,7 +40,7 @@ public static unsafe class SkinMtrlPathEarlyProcessing
 
         if (character->TempSlotData is not null)
         {
-            // TODO ClientStructs-ify
+            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1564)
             var handle = *(ModelResourceHandle**)((nint)character->TempSlotData + 0xE0 * slotIndex + 0x8);
             if (handle != null)
                 return handle;

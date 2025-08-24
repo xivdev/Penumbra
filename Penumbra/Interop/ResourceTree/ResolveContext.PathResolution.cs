@@ -338,6 +338,34 @@ internal partial record ResolveContext
         return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
     }
 
+    private Utf8GamePath ResolveKineDriverModulePath(uint partialSkeletonIndex)
+    {
+        // Correctness and Safety:
+        // Resolving a KineDriver module path through the game's code can use EST metadata for human skeletons.
+        // Additionally, it can dereference null pointers for human equipment skeletons.
+        return ModelType switch
+        {
+            ModelType.Human => ResolveHumanKineDriverModulePath(partialSkeletonIndex),
+            _               => ResolveKineDriverModulePathNative(partialSkeletonIndex),
+        };
+    }
+
+    private Utf8GamePath ResolveHumanKineDriverModulePath(uint partialSkeletonIndex)
+    {
+        var (raceCode, slot, set) = ResolveHumanSkeletonData(partialSkeletonIndex);
+        if (set.Id is 0)
+            return Utf8GamePath.Empty;
+
+        var path = GamePaths.Kdb.Customization(raceCode, slot, set);
+        return Utf8GamePath.FromString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
+    }
+
+    private unsafe Utf8GamePath ResolveKineDriverModulePathNative(uint partialSkeletonIndex)
+    {
+        var path = CharacterBase->ResolveKdbPathAsByteString(partialSkeletonIndex);
+        return Utf8GamePath.FromByteString(path, out var gamePath) ? gamePath : Utf8GamePath.Empty;
+    }
+
     private unsafe Utf8GamePath ResolveMaterialAnimationPath(ResourceHandle* imc)
     {
         var animation = ResolveImcData(imc).MaterialAnimationId;
