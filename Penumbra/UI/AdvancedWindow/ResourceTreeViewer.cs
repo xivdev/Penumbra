@@ -1,7 +1,9 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
+using Dalamud.Plugin.Services;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
@@ -13,7 +15,6 @@ using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.UI.Classes;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -26,7 +27,8 @@ public class ResourceTreeViewer(
     Action onRefresh,
     Action<ResourceNode, Vector2> drawActions,
     CommunicatorService communicator,
-    PcpService pcpService)
+    PcpService pcpService,
+    IDataManager gameData)
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
         ResourceTreeFactory.Flags.RedactExternalPaths | ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
@@ -45,6 +47,7 @@ public class ResourceTreeViewer(
 
     public void Draw()
     {
+        DrawModifiedGameFilesWarning();
         DrawControls();
         _task ??= RefreshCharacterList();
 
@@ -128,6 +131,24 @@ public class ResourceTreeViewer(
                 DrawNodes(tree.Nodes, 0, unchecked(tree.DrawObjectAddress * 31), 0);
             }
         }
+    }
+
+    private void DrawModifiedGameFilesWarning()
+    {
+        if (!gameData.HasModifiedGameDataFiles)
+            return;
+
+        using var style = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudOrange);
+
+        ImUtf8.TextWrapped(
+            "Dalamud is reporting your FFXIV installation has modified game files. Any mods installed through TexTools will produce this message."u8);
+        ImUtf8.TextWrapped("Penumbra and some other plugins assume your FFXIV installation is unmodified in order to work."u8);
+        ImUtf8.TextWrapped(
+            "Data displayed here may be inaccurate because of this, which, in turn, can break functionality relying on it, such as Character Pack exports/imports, or mod synchronization functions provided by other plugins."u8);
+        ImUtf8.TextWrapped(
+            "Exit the game, open XIVLauncher, click the arrow next to Log In and select \"repair game files\" to resolve this issue. Afterwards, do not install any mods with TexTools. Your plugin configurations will remain, as will mods enabled in Penumbra."u8);
+
+        ImGui.Separator();
     }
 
     private void DrawControls()
