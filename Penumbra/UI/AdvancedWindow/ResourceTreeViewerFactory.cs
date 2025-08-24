@@ -1,3 +1,4 @@
+using Dalamud.Plugin.Services;
 using OtterGui.Services;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
@@ -10,8 +11,9 @@ public class ResourceTreeViewerFactory(
     ChangedItemDrawer changedItemDrawer,
     IncognitoService incognito,
     CommunicatorService communicator,
-    PcpService pcpService) : IService
+    PcpService pcpService,
+    IDataManager gameData) : IService
 {
     public ResourceTreeViewer Create(int actionCapacity, Action onRefresh, Action<ResourceNode, Vector2> drawActions)
-        => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, communicator, pcpService);
+        => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, communicator, pcpService, gameData);
 }
