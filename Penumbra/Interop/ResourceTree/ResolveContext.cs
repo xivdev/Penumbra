@@ -440,7 +440,7 @@ internal unsafe partial record ResolveContext(
         if (Global.Nodes.TryGetValue((path, (nint)kdbHandle), out var cached))
             return cached;
 
-        var node = CreateNode(ResourceType.Phyb, 0, kdbHandle, path, false);
+        var node = CreateNode(ResourceType.Kdb, 0, kdbHandle, path, false);
         if (Global.WithUiData)
             node.FallbackName = "KineDriver Module";
         Global.Nodes.Add((path, (nint)kdbHandle), node);
