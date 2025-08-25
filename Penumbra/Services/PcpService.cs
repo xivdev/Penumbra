@@ -99,9 +99,11 @@ public class PcpService : IApiService, IDisposable
             {
                 // First version had collection.json, changed.
                 var oldFile = Path.Combine(newDirectory.FullName, "collection.json");
-                Penumbra.Log.Information("[PCPService] Renaming old PCP file from collection.json to character.json.");
                 if (File.Exists(oldFile))
+                {
+                    Penumbra.Log.Information("[PCPService] Renaming old PCP file from collection.json to character.json.");
                     File.Move(oldFile, file, true);
+                }
                 else
                     return;
             }
