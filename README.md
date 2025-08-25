@@ -8,7 +8,7 @@ Solution3 is a runtime mod loader for FINAL FANTASY XIV, with a bunch of other u
 * Files can be edited and are often replicated in-game after a map change or closing and reopening a window
 
 ## Support
-Either open an issue here or contact me on [Bluesky](https://bsky.app/profile/star-preservation.bsky.social) [@star-preservation.bsky.social](https://bsky.app/profile/star-preservation.bsky.social)
+Either open an issue here or contact me on [@star-preservation.bsky.social](https://bsky.app/profile/star-preservation.bsky.social)
 
 ## Contributing
 Contributions are welcome, but please make an issue first before writing any code. It's possible what you want to implement is out of scope for this project, or could be reworked so that it would provide greater benefit.
