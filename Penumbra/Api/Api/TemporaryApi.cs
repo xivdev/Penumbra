@@ -20,8 +20,16 @@ public class TemporaryApi(
     ApiHelpers apiHelpers,
     ModManager modManager) : IPenumbraApiTemporary, IApiService
 {
-    public Guid CreateTemporaryCollection(string name)
-        => tempCollections.CreateTemporaryCollection(name);
+    public (PenumbraApiEc, Guid) CreateTemporaryCollection(string identity, string name)
+    {
+        if (!IdentityChecker.Check(identity))
+            return (PenumbraApiEc.InvalidCredentials, Guid.Empty);
+
+        var collection = tempCollections.CreateTemporaryCollection(name);
+        if (collection == Guid.Empty)
+            return (PenumbraApiEc.UnknownError, collection);
+        return (PenumbraApiEc.Success, collection);
+    }
 
     public PenumbraApiEc DeleteTemporaryCollection(Guid collectionId)
         => tempCollections.RemoveTemporaryCollection(collectionId)
