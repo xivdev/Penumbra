@@ -63,9 +63,27 @@ public class PenumbraChangelog : IUiService
         Add1_3_6_4(Changelog);
         Add1_4_0_0(Changelog);
         Add1_5_0_0(Changelog);
+        Add1_5_1_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_5_1_0(Changelog log)
+        => log.NextVersion("Version 1.5.1.0")
+            .RegisterHighlight("Added the option to export a characters current data as a .pcp modpack in the On-Screen tab.")
+            .RegisterEntry("Other plugins can attach to this functionality and package and interpret their own data.", 1)
+            .RegisterEntry("When a .pcp modpack is installed, it can create and assign collections for the corresponding character it was created for.", 1)
+            .RegisterEntry("This basically provides an easier way to manually synchronize other players, but does not contain any automation.", 1)
+            .RegisterEntry("The settings provide some fine control about what happens when a PCP is installed, as well as buttons to cleanup any PCP-created data.", 1)
+            .RegisterEntry("Added a warning message when the game's integrity is corrupted to the On-Screen tab.")
+            .RegisterEntry("Added .kdb files to the On-Screen tab and associated functionality (thanks Ny!).")
+            .RegisterEntry("Updated the creation of temporary collections to require a passed identity.")
+            .RegisterEntry("Added the option to change the skin material suffix in models using the stockings shader by adding specific attributes (thanks Ny!).")
+            .RegisterEntry("Added predefined tag utility to the multi-mod selection.")
+            .RegisterEntry("Fixed an issue with the automatic collection selection on character login when no mods are assigned.")
+            .RegisterImportant(
+                "Fixed issue with new deformer data that makes modded deformers not containing this data work implicitly. Updates are still recommended (1.5.0.5).")
+            .RegisterEntry("Fixed various issues after patch (1.5.0.1 - 1.5.0.4).");
 
     private static void Add1_5_0_0(Changelog log)
         => log.NextVersion("Version 1.5.0.0")
