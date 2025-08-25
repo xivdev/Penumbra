@@ -17,9 +17,6 @@ Contributions are welcome, but please make an issue first before writing any cod
 Solution3 has support for most TexTools modpacks however this is provided on a best-effort basis and support is not guaranteed. Built in tooling will be added to Penumbra over time to avoid many common TexTools use cases.
 
 ## Installing 
-While this project is still a work in progress, you can use it by adding the following URL to the custom plugin repositories list in your Dalamud settings
-An image-based install (and usage) guide to do this is provided by unaffiliated user Serenity: https://reniguide.info/
-
 1. `/xlsettings` -> Experimental tab
 2. Copy and paste the repo.json link below
 3. Click on the + button
