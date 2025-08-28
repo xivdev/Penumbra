@@ -84,7 +84,7 @@ public class PcpService : IApiService, IDisposable
         var collections = _collections.Storage.Where(c => c.Identity.Name.StartsWith("PCP/")).ToList();
         Penumbra.Log.Information($"[PCPService] Deleting {collections.Count} mods containing the tag PCP.");
         foreach (var collection in collections)
-            _collections.Storage.Delete(collection);
+            _collections.Storage.RemoveCollection(collection);
     }
 
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
