@@ -287,6 +287,17 @@ public partial class ModEditWindow
             using var font = ImRaii.PushFont(UiBuilder.IconFont);
             ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
         }
+        else if (tmp.Length > 0 && Path.GetExtension(tmp) != registry.File.Extension)
+        {
+            ImGui.SameLine();
+            ImGui.SetCursorPosX(pos);
+            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            {
+                ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
+            }
+
+            ImUtf8.HoverTooltip("The game path and the file do not have the same extension."u8);
+        }
     }
 
     private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer subMod)
@@ -318,6 +329,17 @@ public partial class ModEditWindow
             ImGui.SetCursorPosX(pos);
             using var font = ImRaii.PushFont(UiBuilder.IconFont);
             ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
+        }
+        else if (tmp.Length > 0 && Path.GetExtension(tmp) != registry.File.Extension)
+        {
+            ImGui.SameLine();
+            ImGui.SetCursorPosX(pos);
+            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            {
+                ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
+            }
+
+            ImUtf8.HoverTooltip("The game path and the file do not have the same extension."u8);
         }
     }
 
