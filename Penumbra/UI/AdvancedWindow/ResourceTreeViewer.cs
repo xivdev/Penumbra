@@ -325,6 +325,18 @@ public class ResourceTreeViewer(
                     ImGui.SetCursorPosX(textPos);
                     ImUtf8.Text(resourceNode.ModRelativePath);
                 }
+                else if (resourceNode.FullPath.IsRooted)
+                {
+                    var path                   = resourceNode.FullPath.FullName;
+                    var lastDirectorySeparator = path.LastIndexOf('\\');
+                    var secondLastDirectorySeparator = lastDirectorySeparator > 0
+                        ? path.LastIndexOf('\\', lastDirectorySeparator - 1)
+                        : -1;
+                    if (secondLastDirectorySeparator >= 0)
+                        path = $"…{path.AsSpan(secondLastDirectorySeparator)}";
+                    ImGui.Selectable(path.AsSpan(), false, ImGuiSelectableFlags.AllowItemOverlap,
+                        new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
+                }
                 else
                 {
                     ImGui.Selectable(resourceNode.FullPath.ToPath(), false, ImGuiSelectableFlags.AllowItemOverlap,
