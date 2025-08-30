@@ -37,7 +37,7 @@ public class ResourceTreeViewer(
     FileCompactor compactor)
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
-        ResourceTreeFactory.Flags.RedactExternalPaths | ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
+        ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
 
     private readonly HashSet<nint> _unfolded = [];
 
