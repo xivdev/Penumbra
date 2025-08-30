@@ -667,7 +667,7 @@ public partial class ModEditWindow : Window, IDisposable, IUiService
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
         _resourceTreeFactory = resourceTreeFactory;
-        _quickImportViewer   = resourceTreeViewerFactory.Create(2, OnQuickImportRefresh, DrawQuickImportActions);
+        _quickImportViewer   = resourceTreeViewerFactory.Create(1, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
         IsOpen = _config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true };
         if (IsOpen && selection.Mod != null)

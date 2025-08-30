@@ -17,7 +17,6 @@ public partial class ModEditWindow
     private readonly FileDialogService                                         _fileDialog;
     private readonly ResourceTreeFactory                                       _resourceTreeFactory;
     private readonly ResourceTreeViewer                                        _quickImportViewer;
-    private readonly Dictionary<FullPath, IWritable?>                          _quickImportWritables = new();
     private readonly Dictionary<(Utf8GamePath, IWritable?), QuickImportAction> _quickImportActions   = new();
 
     private HashSet<string> GetPlayerResourcesOfType(ResourceType type)
@@ -56,52 +55,11 @@ public partial class ModEditWindow
 
     private void OnQuickImportRefresh()
     {
-        _quickImportWritables.Clear();
         _quickImportActions.Clear();
     }
 
-    private void DrawQuickImportActions(ResourceNode resourceNode, Vector2 buttonSize)
+    private void DrawQuickImportActions(ResourceNode resourceNode, IWritable? writable, Vector2 buttonSize)
     {
-        if (!_quickImportWritables!.TryGetValue(resourceNode.FullPath, out var writable))
-        {
-            var path = resourceNode.FullPath.ToPath();
-            if (resourceNode.FullPath.IsRooted)
-            {
-                writable = new RawFileWritable(path);
-            }
-            else
-            {
-                var file = _gameData.GetFile(path);
-                writable = file is null ? null : new RawGameFileWritable(file);
-            }
-
-            _quickImportWritables.Add(resourceNode.FullPath, writable);
-        }
-
-        if (ImUtf8.IconButton(FontAwesomeIcon.Save, "Export this file."u8, buttonSize,
-                resourceNode.FullPath.FullName.Length is 0 || writable is null))
-        {
-            var fullPathStr = resourceNode.FullPath.FullName;
-            var ext = resourceNode.PossibleGamePaths.Length == 1
-                ? Path.GetExtension(resourceNode.GamePath.ToString())
-                : Path.GetExtension(fullPathStr);
-            _fileDialog.OpenSavePicker($"Export {Path.GetFileName(fullPathStr)} to...", ext, Path.GetFileNameWithoutExtension(fullPathStr), ext,
-                (success, name) =>
-                {
-                    if (!success)
-                        return;
-
-                    try
-                    {
-                        _editor.Compactor.WriteAllBytes(name, writable!.Write());
-                    }
-                    catch (Exception e)
-                    {
-                        Penumbra.Log.Error($"Could not export {fullPathStr}:\n{e}");
-                    }
-                }, null, false);
-        }
-
         ImGui.SameLine();
         if (!_quickImportActions!.TryGetValue((resourceNode.GamePath, writable), out var quickImport))
         {
@@ -119,24 +77,6 @@ public partial class ModEditWindow
             quickImport.Execute();
             _quickImportActions.Remove((resourceNode.GamePath, writable));
         }
-    }
-
-    private record RawFileWritable(string Path) : IWritable
-    {
-        public bool Valid
-            => true;
-
-        public byte[] Write()
-            => File.ReadAllBytes(Path);
-    }
-
-    private record RawGameFileWritable(FileResource FileResource) : IWritable
-    {
-        public bool Valid
-            => true;
-
-        public byte[] Write()
-            => FileResource.Data;
     }
 
     public class QuickImportAction
