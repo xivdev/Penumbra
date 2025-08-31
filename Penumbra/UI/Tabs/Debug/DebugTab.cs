@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Colors;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
@@ -41,6 +42,7 @@ using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
+using Penumbra.Interop;
 using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
 
@@ -206,6 +208,7 @@ public class DebugTab : Window, ITab, IUiService
         _hookOverrides.Draw();
         DrawPlayerModelInfo();
         _globalVariablesDrawer.Draw();
+        DrawCloudApi();
         DrawDebugTabIpc();
     }
 
@@ -1196,6 +1199,42 @@ public class DebugTab : Window, ITab, IUiService
                     UiHelpers.Text(ptr, (int)name.Length);
                 }
         });
+    }
+
+
+    private string     _cloudTesterPath = string.Empty;
+    private bool?      _cloudTesterReturn;
+    private Exception? _cloudTesterError;
+    
+    private void DrawCloudApi()
+    {
+        if (!ImUtf8.CollapsingHeader("Cloud API"u8))
+            return;
+
+        using var id = ImRaii.PushId("CloudApiTester"u8);
+
+        if (ImUtf8.InputText("Path"u8, ref _cloudTesterPath, flags: ImGuiInputTextFlags.EnterReturnsTrue))
+        {
+            try
+            {
+                _cloudTesterReturn = CloudApi.IsCloudSynced(_cloudTesterPath);
+                _cloudTesterError  = null;
+            }
+            catch (Exception e)
+            {
+                _cloudTesterReturn = null;
+                _cloudTesterError  = e;
+            }
+        }
+
+        if (_cloudTesterReturn.HasValue)
+            ImUtf8.Text($"Is Cloud Synced? {_cloudTesterReturn}");
+
+        if (_cloudTesterError is not null)
+        {
+            using var color = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+            ImUtf8.Text($"{_cloudTesterError}");
+        }
     }
 
 
