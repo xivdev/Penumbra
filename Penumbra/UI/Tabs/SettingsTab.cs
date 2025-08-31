@@ -14,6 +14,7 @@ using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections;
+using Penumbra.Interop;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
@@ -58,6 +59,9 @@ public class SettingsTab : ITab, IUiService
     private int _minimumY = int.MaxValue;
 
     private readonly TagButtons _sharedTags = new();
+
+    private string _lastCloudSyncTestedPath = string.Empty;
+    private bool   _lastCloudSyncTestResult = false;
 
     public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
@@ -207,6 +211,15 @@ public class SettingsTab : ITab, IUiService
         var gameDir = _gameData.GameData.DataPath.Parent!.Parent!.FullName;
         if (IsSubPathOf(gameDir, newName))
             return ("Path is not allowed to be inside your game folder.", false);
+
+        if (_lastCloudSyncTestedPath != newName)
+        {
+            _lastCloudSyncTestResult = CloudApi.IsCloudSynced(newName);
+            _lastCloudSyncTestedPath = newName;
+        }
+
+        if (_lastCloudSyncTestResult)
+            return ("Path is not allowed to be cloud-synced.", false);
 
         return selected
             ? ($"Press Enter or Click Here to Save (Current Directory: {old})", true)
