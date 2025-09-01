@@ -23,6 +23,7 @@ using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
+using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
@@ -211,10 +212,11 @@ public class Penumbra : IDalamudPlugin
 
     public string GatherSupportInformation()
     {
-        var sb         = new StringBuilder(10240);
-        var exists     = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
-        var hdrEnabler = _services.GetService<RenderTargetHdrEnabler>();
-        var drive      = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
+        var sb          = new StringBuilder(10240);
+        var exists      = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
+        var cloudSynced = exists && CloudApi.IsCloudSynced(_config.ModDirectory);
+        var hdrEnabler  = _services.GetService<RenderTargetHdrEnabler>();
+        var drive       = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
         sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
@@ -223,7 +225,8 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");
         if (Dalamud.Utility.Util.IsWine())
             sb.Append($"> **`Locale Environment Variables:`** {CollectLocaleEnvironmentVariables()}\n");
-        sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
+        sb.Append(
+            $"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}{(cloudSynced ? ", Cloud-Synced" : "")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
         sb.Append($"> **`Game Data Files:             `** {(_gameData.HasModifiedGameDataFiles ? "Modified" : "Pristine")}\n");
