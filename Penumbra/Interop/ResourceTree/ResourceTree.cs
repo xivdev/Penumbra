@@ -261,8 +261,7 @@ public class ResourceTree(
         for (var i = 0; i < skeleton->PartialSkeletonCount; ++i)
         {
             var phybHandle = physics != null ? physics->BonePhysicsResourceHandles[i] : null;
-            // TODO ClientStructs-ify (aers/FFXIVClientStructs#1562)
-            var kdbHandle = kineDriver != null ? *(ResourceHandle**)((nint)kineDriver + 0x20 + 0x18 * i) : null;
+            var kdbHandle = kineDriver != null ? kineDriver->PartialSkeletonEntries[i].KineDriverResourceHandle : null;
             if (context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i], phybHandle, kdbHandle, (uint)i) is { } sklbNode)
             {
                 if (context.Global.WithUiData)
