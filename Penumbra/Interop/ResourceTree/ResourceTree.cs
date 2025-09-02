@@ -242,10 +242,10 @@ public class ResourceTree(
     }
 
     private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, CharacterBase* model, string prefix = "")
-        => AddSkeleton(nodes, context, model->EID, model->Skeleton, model->BonePhysicsModule, *(void**)((nint)model + 0x160), prefix);
+        => AddSkeleton(nodes, context, model->EID, model->Skeleton, model->BonePhysicsModule, model->BoneKineDriverModule, prefix);
 
     private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, void* eid, Skeleton* skeleton, BonePhysicsModule* physics,
-        void* kineDriver, string prefix = "")
+        BoneKineDriverModule* kineDriver, string prefix = "")
     {
         var eidNode = context.CreateNodeFromEid((ResourceHandle*)eid);
         if (eidNode != null)

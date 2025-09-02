@@ -434,7 +434,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
     private static MaterialResourceHandle* GetMaterialResourceHandle(ModelRendererStructs.UnkPayload* unkPayload)
     {
         // TODO ClientStructs-ify
-        var unkPointer    = *(nint*)((nint)unkPayload->ModelResourceHandle + 0xE8) + unkPayload->UnkIndex * 0x24;
+        var unkPointer    = unkPayload->ModelResourceHandle.*(nint*)((nint)unkPayload->ModelResourceHandle + 0xE8) + unkPayload->UnkIndex * 0x24;
         var materialIndex = *(ushort*)(unkPointer + 8);
         var material      = unkPayload->Params->Model->Materials[materialIndex];
         if (material == null)

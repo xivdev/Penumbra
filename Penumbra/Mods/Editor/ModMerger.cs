@@ -372,7 +372,6 @@ public class ModMerger : IDisposable, IService
                     }
                     else
                     {
-                        // TODO DataContainer <> Option.
                         var (group, _, _)  = _editor.FindOrAddModGroup(result, originalGroup.Type, originalGroup.Name);
                         var (option, _, _) = _editor.FindOrAddOption(group!, originalOption.GetName());
                         var folder = Path.Combine(dir.FullName, group!.Name, option!.Name);
