@@ -1,6 +1,5 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
-using OtterGui.Extensions;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
@@ -229,7 +228,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
                 .Select(read)
                 .Where(bytes => bytes != null)
                 .Select(bytes => new SklbFile(bytes!))
-                .WithIndex()
+                .Index()
                 .Select(CreateHavokTask)
                 .ToArray();
 
@@ -240,7 +239,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
             // finicky at the best of times, and can outright cause a CTD if they
             // get upset. Running each conversion on its own tick seems to make
             // this consistently non-crashy across my testing.
-            Task<string> CreateHavokTask((SklbFile Sklb, int Index) pair)
+            Task<string> CreateHavokTask((int Index, SklbFile Sklb) pair)
                 => manager._framework.RunOnTick(
                     () => HavokConverter.HkxToXml(pair.Sklb.Skeleton),
                     delayTicks: pair.Index, cancellationToken: cancel);

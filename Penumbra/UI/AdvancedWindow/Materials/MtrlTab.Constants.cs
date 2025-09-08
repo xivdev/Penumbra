@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Text.Widget.Editors;
@@ -40,7 +39,7 @@ public partial class MtrlTab
         {
             mpPrefix = MaterialParamsConstantName.Value!;
             var fcGroup = FindOrAddGroup(Constants, "Further Constants");
-            foreach (var (constant, index) in Mtrl.ShaderPackage.Constants.WithIndex())
+            foreach (var (index, constant) in Mtrl.ShaderPackage.Constants.Index())
             {
                 var values = Mtrl.GetConstantValue<float>(constant);
                 for (var i = 0; i < values.Length; i += 4)

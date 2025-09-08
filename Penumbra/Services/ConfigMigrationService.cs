@@ -55,13 +55,13 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         // because it stayed alive for a bunch of people for some reason.
         DeleteMetaTmp();
 
-        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(saveService.FileNames.ConfigFile))
+        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(saveService.FileNames.ConfigurationFile))
         {
             AddColors(config, false);
             return;
         }
 
-        _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigFile));
+        _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigurationFile));
         CreateBackup();
 
         Version0To1();
@@ -392,7 +392,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Create a backup of the configuration file specifically.
     private void CreateBackup()
     {
-        var name    = saveService.FileNames.ConfigFile;
+        var name    = saveService.FileNames.ConfigurationFile;
         var bakName = name + ".bak";
         try
         {

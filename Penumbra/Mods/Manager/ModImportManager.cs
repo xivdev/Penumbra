@@ -1,5 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Import;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;

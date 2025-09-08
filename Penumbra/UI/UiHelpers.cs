@@ -1,8 +1,8 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Interop.Structs;
 using Penumbra.String;

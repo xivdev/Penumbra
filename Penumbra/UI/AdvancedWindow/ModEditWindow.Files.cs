@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods.Editor;
@@ -31,8 +30,8 @@ public partial class ModEditWindow
     private bool CheckFilter(FileRegistry registry)
         => _fileFilter.IsEmpty || registry.File.FullName.Contains(_fileFilter.Lower, StringComparison.OrdinalIgnoreCase);
 
-    private bool CheckFilter((FileRegistry, int) p)
-        => CheckFilter(p.Item1);
+    private bool CheckFilter((int, FileRegistry) p)
+        => CheckFilter(p.Item2);
 
     private void DrawFileTab()
     {
@@ -121,7 +120,7 @@ public partial class ModEditWindow
         if (!list)
             return;
 
-        foreach (var (registry, i) in _editor.Files.Available.WithIndex().Where(CheckFilter))
+        foreach (var (i, registry) in _editor.Files.Available.Index().Where(CheckFilter))
         {
             using var id = ImRaii.PushId(i);
             ImGui.TableNextColumn();

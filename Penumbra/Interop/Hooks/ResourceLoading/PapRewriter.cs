@@ -1,7 +1,7 @@
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using Iced.Intel;
-using OtterGui.Extensions;
+using Luna;
 using Penumbra.String.Classes;
 using Swan;
 
@@ -87,7 +87,7 @@ public sealed class PapRewriter(PeSigScanner sigScanner, PapRewriter.PapResource
 
     private void UpdatePathAddresses(IEnumerable<Instruction> stackAccesses, nint stringAllocation, string name)
     {
-        foreach (var (stackAccess, index) in stackAccesses.WithIndex())
+        foreach (var (index, stackAccess) in stackAccesses.Index())
         {
             var hookAddress = new IntPtr((long)stackAccess.IP + stackAccess.Length);
 

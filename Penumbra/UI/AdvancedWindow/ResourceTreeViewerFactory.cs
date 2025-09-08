@@ -1,5 +1,5 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Compression;
+using Luna;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;

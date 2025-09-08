@@ -1,10 +1,9 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using Newtonsoft.Json.Linq;
 using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.GameData;
@@ -220,7 +219,7 @@ public partial class MtrlTab
                     !hasDkLabel, values));
             }
         else
-            foreach (var (key, index) in Mtrl.ShaderPackage.ShaderKeys.WithIndex())
+            foreach (var (index, key) in Mtrl.ShaderPackage.ShaderKeys.Index())
             {
                 var keyName   = Names.KnownNames.TryResolve(key.Key);
                 var valueName = keyName.WithKnownSuffixes().TryResolve(Names.KnownNames, key.Value);

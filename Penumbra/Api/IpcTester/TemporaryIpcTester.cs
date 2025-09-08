@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Api;
@@ -246,7 +245,7 @@ public class TemporaryIpcTester(
         if (!table)
             return;
 
-        foreach (var (collection, idx) in tempCollections.Values.WithIndex())
+        foreach (var (idx, collection) in tempCollections.Values.Index())
         {
             using var id = ImRaii.PushId(idx);
             ImGui.TableNextColumn();

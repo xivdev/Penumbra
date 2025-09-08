@@ -1,4 +1,3 @@
-using OtterGui.Extensions;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -159,7 +158,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
                 savedSettings.Value.ToSettings(targetMod, out var settings);
                 SetModState(collection, targetMod, settings.Enabled);
                 SetModPriority(collection, targetMod, settings.Priority);
-                foreach (var (value, index) in settings.Settings.WithIndex())
+                foreach (var (index, value) in settings.Settings.Index())
                     SetModSetting(collection, targetMod, index, value);
             }
             else

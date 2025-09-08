@@ -1,6 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
-using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Enums;
@@ -14,7 +14,7 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
-public class EphemeralConfig : ISavable, IDisposable, Luna.IService
+public class EphemeralConfig : ISavable, IDisposable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;
@@ -94,7 +94,7 @@ public class EphemeralConfig : ISavable, IDisposable, Luna.IService
         => _saveService.DelaySave(this, TimeSpan.FromSeconds(5));
 
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.EphemeralConfigFile;
 
     public void Save(StreamWriter writer)

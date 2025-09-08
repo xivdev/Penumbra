@@ -1,8 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Meta.Manipulations;
@@ -115,7 +114,7 @@ public sealed class MultiModGroup(Mod mod) : IModGroup, ITexToolsGroup
 
     public void AddData(Setting setting, Dictionary<Utf8GamePath, FullPath> redirections, MetaDictionary manipulations)
     {
-        foreach (var (option, index) in OptionData.WithIndex().OrderByDescending(o => o.Value.Priority))
+        foreach (var (index, option) in OptionData.Index().OrderByDescending(o => o.Item.Priority))
         {
             if (setting.HasFlag(index))
                 option.AddDataTo(redirections, manipulations);

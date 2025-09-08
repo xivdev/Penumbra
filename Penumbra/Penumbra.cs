@@ -1,9 +1,6 @@
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game;
 using OtterGui;
-using OtterGui.Log;
-using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -21,17 +18,20 @@ using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
+using Luna;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Interop.Hooks.ResourceLoading;
+using DynamisIpc = OtterGui.Services.DynamisIpc;
+using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
-    public static readonly Logger         Log = new();
+    public static readonly OtterGui.Log.Logger         Log = new();
     public static          MessageService Messager { get; private set; } = null!;
     public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 
@@ -56,7 +56,7 @@ public class Penumbra : IDalamudPlugin
         try
         {
             HookOverrides.Instance = HookOverrides.LoadFile(pluginInterface);
-            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
+            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, new());
             // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
             _services.GetService<IpcLaunchingProvider>();
             Messager         = _services.GetService<MessageService>();

@@ -2,14 +2,14 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
-using OtterGui.Extensions;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.UI;
 
-public class FileDialogService : IDisposable, Luna.IUiService
+public class FileDialogService : IDisposable, IUiService
 {
     private readonly CommunicatorService                  _communicator;
     private readonly FileDialogManager                    _manager;
@@ -126,7 +126,7 @@ public class FileDialogService : IDisposable, Luna.IUiService
             fileManager.CustomSideBarItems.Add(("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1));
 
         if (Functions.GetQuickAccessFolders(out var folders))
-            foreach (var ((name, path), idx) in folders.WithIndex())
+            foreach (var (idx, (name, path)) in folders.Index())
                 fileManager.CustomSideBarItems.Add(($"{name}##{idx}", path, FontAwesomeIcon.Folder, -1));
 
         // Add Penumbra Root. This is not updated if the root changes right now.

@@ -1,5 +1,4 @@
-using OtterGui.Compression;
-using OtterGui.Extensions;
+using Luna;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
@@ -43,7 +42,7 @@ public class ModelMaterialInfo
         if (!Changed)
             return;
 
-        foreach (var (idx, i) in _materialIndices.WithIndex())
+        foreach (var (i, idx) in _materialIndices.Index())
             File.Materials[idx] = _currentMaterials[i];
 
         try
@@ -64,7 +63,7 @@ public class ModelMaterialInfo
         if (!Changed)
             return;
 
-        foreach (var (idx, i) in _materialIndices.WithIndex())
+        foreach (var (i, idx) in _materialIndices.Index())
             _currentMaterials[i] = File.Materials[idx];
 
         Changed = false;

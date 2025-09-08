@@ -12,5 +12,5 @@ public class MessagesTab(MessageService messages) : ITab, Luna.IUiService
         => messages.Count > 0;
 
     public void DrawContent()
-        => messages.Draw();
+        => messages.DrawNotificationLog();
 }

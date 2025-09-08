@@ -10,7 +10,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
 {
     public const uint FileVersion = 3;
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.ModMetaPath(mod);
 
     public void Save(StreamWriter writer)

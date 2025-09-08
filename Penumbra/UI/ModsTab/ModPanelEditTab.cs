@@ -2,10 +2,10 @@ using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using OtterGui.Classes;
 using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -28,7 +28,7 @@ public class ModPanelEditTab(
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
     AddGroupDrawer addGroupDrawer)
-    : ITab, Luna.IUiService
+    : ITab, IUiService
 {
     private readonly TagButtons _modTags = new();
 

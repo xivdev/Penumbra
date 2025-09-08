@@ -1,12 +1,12 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
+using Luna;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, Luna.IService
+public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, IService
 {
     private readonly ModManager          _modManager;
     private readonly CommunicatorService _communicator;
@@ -134,7 +134,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, Luna
     public static bool ModHasDefaultPath(Mod mod, string fullPath)
     {
         var regex = new Regex($@"^{Regex.Escape(ModToName(mod))}( \(\d+\))?$");
-        return regex.IsMatch(fullPath);
+        return regex.IsMatch(fullPath); 
     }
 
     private static (string, bool) SaveMod(Mod mod, string fullPath)
@@ -143,7 +143,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, Luna
             ? (string.Empty, false)
             : (ModToIdentifier(mod), true);
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.FilesystemFile;
 
     public void Save(StreamWriter writer)

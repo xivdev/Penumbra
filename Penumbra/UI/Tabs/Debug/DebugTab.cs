@@ -13,7 +13,6 @@ using Dalamud.Interface.Colors;
 using Luna;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
@@ -333,7 +332,7 @@ public class DebugTab : Window, ITab, IUiService
         }
 
 
-        var issues = _modManager.WithIndex().Count(p => p.Index != p.Value.Index);
+        var issues = _modManager.Index().Count(p => p.Index != p.Item.Index);
         using (var tree = TreeNode($"Mods ({issues} Issues)###Mods"))
         {
             if (tree)
@@ -370,7 +369,7 @@ public class DebugTab : Window, ITab, IUiService
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted("Import Batches");
                     ImGui.TableNextColumn();
-                    foreach (var (batch, index) in _modImporter.ModBatches.WithIndex())
+                    foreach (var (index, batch) in _modImporter.ModBatches.Index())
                     {
                         foreach (var mod in batch)
                             PrintValue(index.ToString(), mod);
@@ -399,7 +398,7 @@ public class DebugTab : Window, ITab, IUiService
                     foreach (var important in _framework.Important)
                         PrintValue(important, "Immediate");
 
-                    foreach (var (onTick, idx) in _framework.OnTick.WithIndex())
+                    foreach (var (idx, onTick) in _framework.OnTick.Index())
                         PrintValue(onTick, $"{idx + 1} Tick(s) From Now");
 
                     foreach (var (time, name) in _framework.Delayed)
@@ -440,7 +439,7 @@ public class DebugTab : Window, ITab, IUiService
                     ImGuiUtil.DrawTableColumn(_redraws.Target.ToString());
                     ImGui.TableNextColumn();
 
-                    foreach (var (objectIdx, idx) in _redraws.Queue.WithIndex())
+                    foreach (var (idx, objectIdx) in _redraws.Queue.Index())
                     {
                         var (actualIdx, state) = objectIdx < 0 ? (~objectIdx, "Queued") : (objectIdx, "Invisible");
                         ImGuiUtil.DrawTableColumn($"Redraw Queue #{idx}");
@@ -448,7 +447,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGuiUtil.DrawTableColumn(state);
                     }
 
-                    foreach (var (objectIdx, idx) in _redraws.AfterGPoseQueue.WithIndex())
+                    foreach (var (idx, objectIdx) in _redraws.AfterGPoseQueue.Index())
                     {
                         var (actualIdx, state) = objectIdx < 0 ? (~objectIdx, "Queued") : (objectIdx, "Invisible");
                         ImGuiUtil.DrawTableColumn($"GPose Queue #{idx}");
@@ -456,7 +455,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGuiUtil.DrawTableColumn(state);
                     }
 
-                    foreach (var (name, idx) in _redraws.GPoseNames.OfType<string>().WithIndex())
+                    foreach (var (idx, name) in _redraws.GPoseNames.OfType<string>().Index())
                     {
                         ImGuiUtil.DrawTableColumn($"GPose Name #{idx}");
                         ImGuiUtil.DrawTableColumn(name);

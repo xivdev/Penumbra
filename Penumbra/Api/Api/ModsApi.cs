@@ -1,5 +1,5 @@
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Compression;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods;
@@ -8,7 +8,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class ModsApi : IPenumbraApiMods, Luna.IApiService, IDisposable
+public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
@@ -16,9 +16,10 @@ public class ModsApi : IPenumbraApiMods, Luna.IApiService, IDisposable
     private readonly Configuration       _config;
     private readonly ModFileSystem       _modFileSystem;
     private readonly MigrationManager    _migrationManager;
+    private readonly Logger              _log;
 
     public ModsApi(ModManager modManager, ModImportManager modImportManager, Configuration config, ModFileSystem modFileSystem,
-        CommunicatorService communicator, MigrationManager migrationManager)
+        CommunicatorService communicator, MigrationManager migrationManager, Logger log)
     {
         _modManager       = modManager;
         _modImportManager = modImportManager;
@@ -26,6 +27,7 @@ public class ModsApi : IPenumbraApiMods, Luna.IApiService, IDisposable
         _modFileSystem    = modFileSystem;
         _communicator     = communicator;
         _migrationManager = migrationManager;
+        _log              = log;
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiMods);
     }
 
@@ -88,7 +90,7 @@ public class ModsApi : IPenumbraApiMods, Luna.IApiService, IDisposable
         }
 
         if (_config.UseFileSystemCompression)
-            new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
+            new FileCompactor(_log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
                 CompressionAlgorithm.Xpress8K, false);
 
         return ApiHelpers.Return(PenumbraApiEc.Success, args);

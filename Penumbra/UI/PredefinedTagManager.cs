@@ -1,11 +1,10 @@
 ﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods;
@@ -15,7 +14,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
-public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, Luna.IService
+public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, IService
 {
     public const int Version = 1;
 
@@ -25,7 +24,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, Luna
     private readonly ModManager  _modManager;
     private readonly SaveService _saveService;
 
-    private bool _isListOpen = false;
+    private bool _isListOpen;
     private uint _enabledColor;
     private uint _disabledColor;
 
@@ -38,7 +37,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, Luna
         Load();
     }
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.PredefinedTagFile;
 
     public void Save(StreamWriter writer)
@@ -146,7 +145,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, Luna
         _enabledColor        = ColorId.PredefinedTagAdd.Value();
         _disabledColor       = ColorId.PredefinedTagRemove.Value();
         var (edited, others) = editLocal ? (localTags, modTags) : (modTags, localTags);
-        foreach (var (tag, idx) in _predefinedTags.Keys.WithIndex())
+        foreach (var (idx, tag) in _predefinedTags.Keys.Index())
         {
             var tagIdx  = edited.IndexOf(tag);
             var inOther = tagIdx < 0 && others.IndexOf(tag) >= 0;
@@ -187,7 +186,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, Luna
         _enabledColor  = ColorId.PredefinedTagAdd.Value();
         _disabledColor = ColorId.PredefinedTagRemove.Value();
         using var color = new ImRaii.Color();
-        foreach (var (tag, idx) in _predefinedTags.Keys.WithIndex())
+        foreach (var (idx, tag) in _predefinedTags.Keys.Index())
         {
             var alreadyContained = 0;
             var inModData        = 0;

@@ -1,20 +1,17 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
-using OtterGui.Log;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
-using Notification = OtterGui.Classes.Notification;
 
 namespace Penumbra.Services;
 
-public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INotificationManager notificationManager)
-    : OtterGui.Classes.MessageService(log, builder, chat, notificationManager), Luna.IService
+public class MessageService(Luna.Logger log, IChatGui chat, INotificationManager notificationManager)
+    : Luna.MessageService(log, chat, notificationManager), Luna.IService
 {
     public void LinkItem(in Item item)
     {
@@ -50,7 +47,7 @@ public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INoti
             return;
 
         AddTaggedMessage($"{fullPath}.{messageComplement}",
-            new Notification(
+            new Luna.Notification(
                 $"Cowardly refusing to load replacement for {originalGamePath.Filename().ToString().ToLowerInvariant()} by {mod.Name}{(messageComplement.Length > 0 ? ":\n" : ".")}{messageComplement}",
                 NotificationType.Warning, 10000));
     }

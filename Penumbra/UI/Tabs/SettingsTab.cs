@@ -5,8 +5,9 @@ using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using Luna;
+using Luna.Widgets;
 using OtterGui;
-using OtterGui.Compression;
 using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -23,7 +24,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Tabs;
 
-public class SettingsTab : ITab, Luna.IUiService
+public class SettingsTab : ITab, IUiService
 {
     public const int RootDirectoryMaxLength = 64;
 
@@ -60,7 +61,7 @@ public class SettingsTab : ITab, Luna.IUiService
     private readonly TagButtons _sharedTags = new();
 
     private string _lastCloudSyncTestedPath = string.Empty;
-    private bool   _lastCloudSyncTestResult = false;
+    private bool   _lastCloudSyncTestResult;
 
     public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
@@ -1096,10 +1097,10 @@ public class SettingsTab : ITab, Luna.IUiService
         UiHelpers.DrawSupportButton(_penumbra);
 
         ImGui.SetCursorPos(new Vector2(xPos, 0));
-        CustomGui.DrawDiscordButton(Penumbra.Messager, width);
+        SupportButton.Discord(Penumbra.Messager, width);
 
         ImGui.SetCursorPos(new Vector2(xPos, 2 * ImGui.GetFrameHeightWithSpacing()));
-        CustomGui.DrawGuideButton(Penumbra.Messager, width);
+        SupportButton.ReniGuide(Penumbra.Messager, width);
 
         ImGui.SetCursorPos(new Vector2(xPos, 3 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))
@@ -1112,8 +1113,8 @@ public class SettingsTab : ITab, Luna.IUiService
         if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
 
-        ImGui.SetCursorPos(new Vector2(xPos,                                  5 * ImGui.GetFrameHeightWithSpacing()));
-        CustomGui.DrawKofiPatreonButton(Penumbra.Messager, new Vector2(width, 0));
+        ImGui.SetCursorPos(new Vector2(xPos,                                      5 * ImGui.GetFrameHeightWithSpacing()));
+        SupportButton.KoFiPatreon(Penumbra.Messager, new Vector2(width, 0));
     }
 
     private void DrawPredefinedTagsSection()

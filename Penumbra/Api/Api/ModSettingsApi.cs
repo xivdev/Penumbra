@@ -1,4 +1,4 @@
-using OtterGui.Extensions;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Collections;
@@ -16,7 +16,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class ModSettingsApi : IPenumbraApiModSettings, Luna.IApiService, IDisposable
+public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
 {
     private readonly CollectionResolver  _collectionResolver;
     private readonly ModManager          _modManager;

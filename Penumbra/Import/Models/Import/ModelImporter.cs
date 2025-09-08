@@ -1,5 +1,4 @@
 using Lumina.Data.Parsing;
-using OtterGui.Extensions;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Schema2;
@@ -45,7 +44,7 @@ public partial class ModelImporter(ModelRoot model, IoNotifier notifier)
     private MdlFile Create()
     {
         // Group and build out meshes in this model.
-        foreach (var (subMeshNodes, index) in GroupedMeshNodes().WithIndex())
+        foreach (var (index, subMeshNodes) in GroupedMeshNodes().Index())
             BuildMeshForGroup(subMeshNodes, index);
 
         // Now that all the meshes have been built, we can build some of the model-wide metadata.

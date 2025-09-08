@@ -1,5 +1,5 @@
+using Luna;
 using OtterGui.Classes;
-using OtterGui.Extensions;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -74,7 +74,7 @@ public sealed class Mod : IMod
     public IReadOnlyList<string> LocalTags             { get; internal set; } = [];
     public string                Note                  { get; internal set; } = string.Empty;
     public HashSet<CustomItemId> PreferredChangedItems { get; internal set; } = [];
-    public bool                  Favorite              { get; internal set; } = false;
+    public bool                  Favorite              { get; internal set; }
 
     // Options
     public readonly DefaultSubMod   Default;
@@ -104,7 +104,7 @@ public sealed class Mod : IMod
 
         var dictRedirections = new Dictionary<Utf8GamePath, FullPath>(TotalFileCount);
         var setManips        = new MetaDictionary();
-        foreach (var (group, groupIndex) in Groups.WithIndex().Reverse().OrderByDescending(g => g.Value.Priority))
+        foreach (var (groupIndex, group) in Groups.Index().Reverse().OrderByDescending(g => g.Item.Priority))
         {
             var config = settings.Settings[groupIndex];
             group.AddData(config, dictRedirections, setManips);

@@ -1,5 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Communication;
@@ -7,7 +7,6 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using Penumbra.GameData.Data;
-using OtterGui.Extensions;
 
 namespace Penumbra.Collections.Cache;
 
@@ -20,14 +19,14 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// </summary>
 public sealed class CollectionCache : IDisposable
 {
-    private readonly CollectionCacheManager                                          _manager;
-    private readonly ModCollection                                                   _collection;
-    public readonly  CollectionModData                                               ModData       = new();
+    private readonly CollectionCacheManager                                         _manager;
+    private readonly ModCollection                                                  _collection;
+    public readonly  CollectionModData                                              ModData       = new();
     private readonly SortedList<string, (SingleArray<IMod>, IIdentifiedObjectData)> _changedItems = [];
-    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>                     ResolvedFiles = new();
-    public readonly  CustomResourceCache                                             CustomResources;
-    public readonly  MetaCache                                                       Meta;
-    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>                     ConflictDict = [];
+    public readonly  ConcurrentDictionary<Utf8GamePath, ModPath>                    ResolvedFiles = new();
+    public readonly  CustomResourceCache                                            CustomResources;
+    public readonly  MetaCache                                                      Meta;
+    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>                    ConflictDict = [];
 
     public int Calculating = -1;
 
@@ -110,7 +109,7 @@ public sealed class CollectionCache : IDisposable
 
         var ret  = new HashSet<Utf8GamePath>[fullPaths.Count];
         var dict = new Dictionary<FullPath, int>(fullPaths.Count);
-        foreach (var (path, idx) in fullPaths.WithIndex())
+        foreach (var (idx, path) in fullPaths.Index())
         {
             dict[new FullPath(path)] = idx;
             ret[idx] = !Path.IsPathRooted(path) && Utf8GamePath.FromString(path, out var utf8)

@@ -1,8 +1,8 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
+using Luna.Widgets;
 using OtterGui;
-using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
@@ -150,7 +150,7 @@ public sealed class ConfigWindow : Window, Luna.IUiService
 
         ImGui.NewLine();
         ImGui.NewLine();
-        CustomGui.DrawDiscordButton(Penumbra.Messager, 0);
+        SupportButton.Discord(Penumbra.Messager, 0);
         ImGui.SameLine();
         UiHelpers.DrawSupportButton(_penumbra!);
         ImGui.NewLine();

@@ -1,7 +1,6 @@
 using Dalamud.Utility;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
-using OtterGui.Extensions;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.GameData.Interop;
@@ -180,7 +179,7 @@ public partial class ModEditWindow
 
             MalformedParameters.Clear();
             UsedIds.Clear();
-            foreach (var (param, idx) in Shpk.MaterialParams.WithIndex())
+            foreach (var (idx, param) in Shpk.MaterialParams.Index())
             {
                 UsedIds.Add(param.Id);
                 var iStart = param.ByteOffset >> 4;

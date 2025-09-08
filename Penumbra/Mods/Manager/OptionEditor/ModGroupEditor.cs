@@ -1,5 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
+using Luna.Files;
+using Luna;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
@@ -93,7 +94,7 @@ public class ModGroupEditor(
     {
         var mod     = group.Mod;
         var idxFrom = group.GetIndex();
-        if (!mod.Groups.Move(ref idxFrom, ref groupIdxTo))
+        if (!ListExtensions.Move(mod.Groups, ref idxFrom, ref groupIdxTo))
             return;
 
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);

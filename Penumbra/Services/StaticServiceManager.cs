@@ -13,7 +13,6 @@ using Penumbra.Interop.PathResolving;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
 using IPenumbraApi = Penumbra.Api.Api.IPenumbraApi;
-using Logger = OtterGui.Log.Logger;
 
 namespace Penumbra.Services;
 
@@ -23,10 +22,12 @@ public static class StaticServiceManager
 {
     public static ServiceManager CreateProvider(Penumbra penumbra, IDalamudPluginInterface pi, Logger log)
     {
-        var services = new ServiceManager(new Luna.Logger())
+        var services = new ServiceManager(log)
             .AddDalamudServices(pi)
             .AddExistingService(log)
             .AddExistingService(penumbra);
+        // TODO Remove this when migration done
+        services.AddExistingService(Penumbra.Log);
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
         services.AddIServices<OtterGui.Services.IService>(typeof(Penumbra).Assembly);

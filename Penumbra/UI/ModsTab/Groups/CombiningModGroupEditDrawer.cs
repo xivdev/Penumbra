@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods.Groups;
@@ -13,7 +12,7 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
 {
     public void Draw()
     {
-        foreach (var (option, optionIdx) in group.OptionData.WithIndex())
+        foreach (var (optionIdx, option) in group.OptionData.Index())
         {
             using var id = ImUtf8.PushId(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);

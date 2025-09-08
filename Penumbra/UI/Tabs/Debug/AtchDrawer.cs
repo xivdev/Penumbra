@@ -1,5 +1,4 @@
 using Dalamud.Bindings.ImGui;
-using OtterGui.Extensions;
 using OtterGui.Text;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;
@@ -29,14 +28,14 @@ public static class AtchDrawer
             ImUtf8.Text($"{file.Points[0].Entries.Length}");
         }
 
-        foreach (var (entry, index) in file.Points.WithIndex())
+        foreach (var (index, entry) in file.Points.Index())
         {
             using var id   = ImUtf8.PushId(index);
             using var tree = ImUtf8.TreeNode($"{index:D3}: {entry.Type.ToName()}");
             if (tree)
             {
                 ImUtf8.TreeNode(entry.Accessory ? "Accessory"u8 : "Weapon"u8, ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-                foreach (var (state, i) in entry.Entries.WithIndex())
+                foreach (var (i, state) in entry.Entries.Index())
                 {
                     id.Push(i);
                     using var t = ImUtf8.TreeNode(state.Bone);

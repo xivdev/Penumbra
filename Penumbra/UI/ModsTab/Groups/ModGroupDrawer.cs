@@ -1,7 +1,6 @@
 using Dalamud.Interface.Components;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -75,7 +74,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
         _temporary    = tempSettings != null;
         _locked       = (tempSettings?.Lock ?? 0) > 0;
         var useDummy = true;
-        foreach (var (group, idx) in mod.Groups.WithIndex())
+        foreach (var (idx, group) in mod.Groups.Index())
         {
             if (!group.IsOption)
                 continue;

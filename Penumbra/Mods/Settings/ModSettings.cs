@@ -1,4 +1,3 @@
-using OtterGui.Extensions;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Mods.Editor;
@@ -186,7 +185,7 @@ public class ModSettings
     public (bool Enabled, ModPriority Priority, Dictionary<string, List<string>> Settings) ConvertToShareable(Mod mod)
     {
         var dict = new Dictionary<string, List<string>>(Settings.Count);
-        foreach (var (setting, idx) in Settings.WithIndex())
+        foreach (var (idx, setting) in Settings.Index())
         {
             if (idx >= mod.Groups.Count)
                 break;
@@ -197,7 +196,7 @@ public class ModSettings
                     dict.Add(single.Name, [single.Options[setting.AsIndex].Name]);
                     break;
                 case { Behaviour: GroupDrawBehaviour.MultiSelection } multi:
-                    var list = multi.Options.WithIndex().Where(p => setting.HasFlag(p.Index)).Select(p => p.Value.Name).ToList();
+                    var list = multi.Options.Index().Where(p => setting.HasFlag(p.Index)).Select(p => p.Item.Name).ToList();
                     dict.Add(multi.Name, list);
                     break;
             }

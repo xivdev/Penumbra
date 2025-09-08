@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.UI.AdvancedWindow.Materials;
@@ -41,7 +40,7 @@ public partial class ModEditWindow
         if (!table)
             return;
 
-        foreach (var (info, idx) in _editor.MdlMaterialEditor.ModelFiles.WithIndex())
+        foreach (var (idx, info) in _editor.MdlMaterialEditor.ModelFiles.Index())
         {
             using var id = ImRaii.PushId(idx);
             ImGui.TableNextColumn();

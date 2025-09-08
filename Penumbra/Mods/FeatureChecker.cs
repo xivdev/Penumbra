@@ -1,11 +1,11 @@
 using System.Collections.Frozen;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Bindings.ImGui;
 using OtterGui.Text;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
-using Notification = OtterGui.Classes.Notification;
+using Notification = Luna.Notification;
 
 namespace Penumbra.Mods;
 

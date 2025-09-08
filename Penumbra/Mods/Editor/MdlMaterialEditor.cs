@@ -1,5 +1,4 @@
-using OtterGui.Compression;
-using OtterGui.Extensions;
+using Luna;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 
@@ -73,8 +72,8 @@ public partial class MdlMaterialEditor(ModFileCollection files) : Luna.IService
             {
                 var bytes   = File.ReadAllBytes(file.File.FullName);
                 var mdlFile = new MdlFile(bytes);
-                var materials = mdlFile.Materials.WithIndex().Where(p => MaterialRegex().IsMatch((string)p.Item1))
-                    .Select(p => p.Item2).ToArray();
+                var materials = mdlFile.Materials.Index().Where(p => MaterialRegex().IsMatch(p.Item2))
+                    .Select(p => p.Item1).ToArray();
                 if (materials.Length > 0)
                     _modelFiles.Add(new ModelMaterialInfo(file.File, mdlFile, materials));
             }

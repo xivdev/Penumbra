@@ -1,9 +1,9 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui.Raii;
 using OtterGui;
-using OtterGui.Classes;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Interop;
@@ -12,7 +12,6 @@ using static Penumbra.GameData.Files.ShpkFile;
 using OtterGui.Widgets;
 using OtterGui.Text;
 using Penumbra.GameData.Structs;
-using OtterGui.Extensions;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -158,28 +157,28 @@ public partial class ModEditWindow
         {
             if (node)
             {
-                foreach (var (key, keyIdx) in shader.SystemValues!.WithIndex())
+                foreach (var (keyIdx, key) in shader.SystemValues!.Index())
                 {
                     ImUtf8.TreeNode(
                         $"Used with System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
 
-                foreach (var (key, keyIdx) in shader.SceneValues!.WithIndex())
+                foreach (var (keyIdx, key) in shader.SceneValues!.Index())
                 {
                     ImUtf8.TreeNode(
                         $"Used with Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
 
-                foreach (var (key, keyIdx) in shader.MaterialValues!.WithIndex())
+                foreach (var (keyIdx, key) in shader.MaterialValues!.Index())
                 {
                     ImUtf8.TreeNode(
                         $"Used with Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
                 }
 
-                foreach (var (key, keyIdx) in shader.SubViewValues!.WithIndex())
+                foreach (var (keyIdx, key) in shader.SubViewValues!.Index())
                 {
                     ImUtf8.TreeNode($"Used with Sub-View Key #{keyIdx} \u2208 {{ {tab.NameSetToString(key)} }}",
                         ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
@@ -195,16 +194,16 @@ public partial class ModEditWindow
         if (!ImUtf8.CollapsingHeader(tab.FilterPopCount == tab.FilterMaximumPopCount ? "Filters###Filters"u8 : "Filters (ACTIVE)###Filters"u8))
             return;
 
-        foreach (var (key, keyIdx) in tab.Shpk.SystemKeys.WithIndex())
+        foreach (var (keyIdx, key) in tab.Shpk.SystemKeys.Index())
             DrawShaderPackageFilterSet(tab, $"System Key {tab.TryResolveName(key.Id)}", ref tab.FilterSystemValues[keyIdx]);
 
-        foreach (var (key, keyIdx) in tab.Shpk.SceneKeys.WithIndex())
+        foreach (var (keyIdx, key) in tab.Shpk.SceneKeys.Index())
             DrawShaderPackageFilterSet(tab, $"Scene Key {tab.TryResolveName(key.Id)}", ref tab.FilterSceneValues[keyIdx]);
 
-        foreach (var (key, keyIdx) in tab.Shpk.MaterialKeys.WithIndex())
+        foreach (var (keyIdx, key) in tab.Shpk.MaterialKeys.Index())
             DrawShaderPackageFilterSet(tab, $"Material Key {tab.TryResolveName(key.Id)}", ref tab.FilterMaterialValues[keyIdx]);
 
-        foreach (var (_, keyIdx) in tab.Shpk.SubViewKeys.WithIndex())
+        foreach (var (keyIdx, _) in tab.Shpk.SubViewKeys.Index())
             DrawShaderPackageFilterSet(tab, $"Sub-View Key #{keyIdx}", ref tab.FilterSubViewValues[keyIdx]);
 
         DrawShaderPackageFilterSet(tab, "Passes", ref tab.FilterPasses);
@@ -497,7 +496,7 @@ public partial class ModEditWindow
             ImGui.SetNextItemWidth(UiHelpers.Scale * 400);
             using var c = ImUtf8.Combo("##Start", tab.Orphans[tab.NewMaterialParamStart].Name);
             if (c)
-                foreach (var (start, idx) in tab.Orphans.WithIndex())
+                foreach (var(idx, start) in tab.Orphans.Index())
                 {
                     if (ImGui.Selectable(start.Name, idx == tab.NewMaterialParamStart))
                         tab.UpdateOrphanStart(idx);
@@ -615,7 +614,7 @@ public partial class ModEditWindow
             return;
 
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-        foreach (var (key, idx) in keys.WithIndex())
+        foreach (var (idx, key) in keys.Index())
         {
             using var t2 = ImUtf8.TreeNode(withId ? $"#{idx}: {tab.TryResolveName(key.Id)} (0x{key.Id:X8})" : $"#{idx}");
             if (t2)
@@ -639,7 +638,7 @@ public partial class ModEditWindow
 
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
 
-        foreach (var (node, idx) in tab.Shpk.Nodes.WithIndex())
+        foreach (var (idx, node) in tab.Shpk.Nodes.Index())
         {
             if (!tab.IsFilterMatch(node))
                 continue;
@@ -648,28 +647,28 @@ public partial class ModEditWindow
             if (!t2)
                 continue;
 
-            foreach (var (key, keyIdx) in node.SystemKeys.WithIndex())
+            foreach (var (keyIdx, key) in node.SystemKeys.Index())
             {
                 ImUtf8.TreeNode(
                     $"System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SystemValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
-            foreach (var (key, keyIdx) in node.SceneKeys.WithIndex())
+            foreach (var (keyIdx, key) in node.SceneKeys.Index())
             {
                 ImUtf8.TreeNode(
                     $"Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SceneValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
-            foreach (var (key, keyIdx) in node.MaterialKeys.WithIndex())
+            foreach (var (keyIdx, key) in node.MaterialKeys.Index())
             {
                 ImUtf8.TreeNode(
                     $"Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.MaterialValues![keyIdx])} }}",
                     ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
             }
 
-            foreach (var (key, keyIdx) in node.SubViewKeys.WithIndex())
+            foreach (var (keyIdx, key) in node.SubViewKeys.Index())
             {
                 ImUtf8.TreeNode(
                     $"Sub-View Key #{keyIdx} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SubViewValues![keyIdx])} }}",
@@ -678,7 +677,7 @@ public partial class ModEditWindow
 
             ImUtf8.TreeNode($"Pass Indices: {string.Join(' ', node.PassIndices.Select(c => $"{c:X2}"))}",
                 ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet).Dispose();
-            foreach (var (pass, passIdx) in node.Passes.WithIndex())
+            foreach (var (passIdx, pass) in node.Passes.Index())
             {
                 ImUtf8.TreeNode(
                         $"Pass #{passIdx}: ID: {tab.TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}",
@@ -733,7 +732,7 @@ public partial class ModEditWindow
         var sb              = new StringBuilder(256);
         if (withSize)
         {
-            foreach (var (components, i) in (used ?? Array.Empty<DisassembledShader.VectorComponents>()).WithIndex())
+            foreach (var (i, components) in (used ?? []).Index())
             {
                 switch (components)
                 {

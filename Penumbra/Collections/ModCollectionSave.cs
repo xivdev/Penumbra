@@ -11,7 +11,7 @@ namespace Penumbra.Collections;
 /// </summary>
 internal readonly struct ModCollectionSave(ModStorage modStorage, ModCollection modCollection) : ISavable
 {
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.CollectionFile(modCollection);
 
     public string LogName(string _)

@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Lumina.Extensions;
-using OtterGui.Extensions;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Geometry;
@@ -115,7 +114,7 @@ public class MeshExporter
         var indexMap = new Dictionary<ushort, int>();
         // #TODO @ackwell maybe fix for V6 Models, I think this works fine.
 
-        foreach (var (xivBoneIndex, tableIndex) in xivBoneTable.BoneIndex.Take((int)xivBoneTable.BoneCount).WithIndex())
+        foreach (var (tableIndex, xivBoneIndex) in xivBoneTable.BoneIndex.Take((int)xivBoneTable.BoneCount).Index())
         {
             var boneName = _mdl.Bones[xivBoneIndex];
             if (!skeleton.Names.TryGetValue(boneName, out var gltfBoneIndex))
@@ -151,10 +150,10 @@ public class MeshExporter
         return _mdl.SubMeshes
             .Skip(XivMesh.SubMeshIndex)
             .Take(XivMesh.SubMeshCount)
-            .WithIndex()
+            .Index()
             .Select(subMesh => BuildMesh($"mesh {_meshIndex}.{subMesh.Index}", indices, vertices,
-                (int)(subMesh.Value.IndexOffset - XivMesh.StartIndex),         (int)subMesh.Value.IndexCount,
-                subMesh.Value.AttributeIndexMask))
+                (int)(subMesh.Item.IndexOffset - XivMesh.StartIndex),         (int)subMesh.Item.IndexCount,
+                subMesh.Item.AttributeIndexMask))
             .ToArray();
     }
 
@@ -219,7 +218,7 @@ public class MeshExporter
             var morphBuilder = meshBuilder.UseMorphTarget(shapeNames.Count);
             shapeNames.Add(shape.ShapeName);
 
-            foreach (var (shapeValue, shapeValueIndex) in shapeValues.WithIndex())
+            foreach (var (shapeValueIndex, shapeValue) in shapeValues.Index())
             {
                 var gltfIndex = gltfIndices[shapeValue.BaseIndicesIndex - indexBase];
 

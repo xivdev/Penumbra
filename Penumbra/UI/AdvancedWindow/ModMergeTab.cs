@@ -1,7 +1,6 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods.Editor;
@@ -189,7 +188,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
         ImGui.TableSetupColumn("#Swaps",       ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale);
         ImGui.TableSetupColumn("#Manips",      ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale);
         ImGui.TableHeadersRow();
-        foreach (var (option, idx) in options.WithIndex())
+        foreach (var (idx, option) in options.Index())
         {
             using var id       = ImRaii.PushId(idx);
             var       selected = modMerger.SelectedOptions.Contains(option);

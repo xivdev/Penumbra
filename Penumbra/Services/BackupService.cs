@@ -1,10 +1,9 @@
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
-using OtterGui.Log;
 
 namespace Penumbra.Services;
 
-public class BackupService : Luna.IAsyncService
+public class BackupService : IAsyncService
 {
     private readonly Logger                  _logger;
     private readonly DirectoryInfo           _configDirectory;
@@ -22,8 +21,8 @@ public class BackupService : Luna.IAsyncService
     {
         _logger          = logger;
         _fileNames       = PenumbraFiles(fileNames);
-        _configDirectory = new DirectoryInfo(fileNames.ConfigDirectory);
-        Awaiter          = Task.Run(() => Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigDirectory), _fileNames));
+        _configDirectory = new DirectoryInfo(fileNames.ConfigurationDirectory);
+        Awaiter          = Task.Run(() => Backup.CreateAutomaticBackup(logger, new DirectoryInfo(fileNames.ConfigurationDirectory), _fileNames));
     }
 
     /// <summary> Create a permanent backup with a given name for migrations. </summary>
@@ -35,7 +34,7 @@ public class BackupService : Luna.IAsyncService
     {
         var list = fileNames.CollectionFiles.ToList();
         list.AddRange(fileNames.LocalDataFiles);
-        list.Add(new FileInfo(fileNames.ConfigFile));
+        list.Add(new FileInfo(fileNames.ConfigurationFile));
         list.Add(new FileInfo(fileNames.FilesystemFile));
         list.Add(new FileInfo(fileNames.ActiveCollectionsFile));
         list.Add(new FileInfo(fileNames.PredefinedTagFile));
@@ -57,7 +56,7 @@ public class BackupService : Luna.IAsyncService
         catch (Exception ex)
         {
             Penumbra.Log.Error($"Failed to load {fileName}, trying to restore from backup:\n{ex}");
-            Backup.TryGetFile(new DirectoryInfo(fileNames.ConfigDirectory), fileName, out ret, out var messages, JObject.Parse);
+            Backup.TryGetFile(new DirectoryInfo(fileNames.ConfigurationDirectory), fileName, out ret, out var messages, JObject.Parse);
             Penumbra.Messager.NotificationMessage(messages);
         }
 

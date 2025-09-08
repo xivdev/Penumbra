@@ -7,9 +7,8 @@ using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Collections;
@@ -17,7 +16,6 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
@@ -547,7 +545,7 @@ public sealed class CollectionPanel(
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 1 * ImGuiHelpers.GlobalScale)
             .Push(ImGuiStyleVar.ButtonTextAlign, Vector2.Zero);
 
-        foreach (var ((type, id), idx) in _inUseCache.WithIndex())
+        foreach (var (idx, (type, id)) in _inUseCache.Index())
         {
             var name  = type == CollectionType.Individual ? Name(id, null) : Buttons[type].Name;
             var color = Buttons.TryGetValue(type, out var p) ? p.Border : 0;

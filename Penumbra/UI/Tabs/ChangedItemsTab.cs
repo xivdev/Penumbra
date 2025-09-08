@@ -73,12 +73,12 @@ public class ChangedItemsTab(
     }
 
     /// <summary> Apply the current filters. </summary>
-    private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData)> item)
+    private bool FilterChangedItem(KeyValuePair<string, (Luna.SingleArray<IMod>, IIdentifiedObjectData)> item)
         => drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
          && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
 
     /// <summary> Draw a full column for a changed item. </summary>
-    private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, IIdentifiedObjectData)> item)
+    private void DrawChangedItemColumn(KeyValuePair<string, (Luna.SingleArray<IMod>, IIdentifiedObjectData)> item)
     {
         ImGui.TableNextColumn();
         drawer.DrawCategoryIcon(item.Value.Item2, _buttonSize.Y);
@@ -94,7 +94,7 @@ public class ChangedItemsTab(
         ChangedItemDrawer.DrawModelData(item.Value.Item2, _buttonSize.Y);
     }
 
-    private void DrawModColumn(SingleArray<IMod> mods)
+    private void DrawModColumn(Luna.SingleArray<IMod> mods)
     {
         if (mods.Count <= 0)
             return;

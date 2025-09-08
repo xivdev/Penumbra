@@ -1,8 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Extensions;
 using Penumbra.Api.Enums;
-using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -40,7 +38,7 @@ public static partial class ModMigration
             return false;
 
         if (!saveService.FileNames.GetOptionGroupFiles(mod).All(g => GroupRegex().IsMatch(g.Name)))
-            foreach (var (group, index) in saveService.FileNames.GetOptionGroupFiles(mod).WithIndex().ToArray())
+            foreach (var (index, group) in saveService.FileNames.GetOptionGroupFiles(mod).Index().ToArray())
             {
                 var newName = GroupStartRegex().Replace(group.Name, $"group_{index + 1:D3}_");
                 try

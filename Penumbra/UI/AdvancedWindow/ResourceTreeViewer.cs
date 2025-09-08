@@ -5,10 +5,8 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin.Services;
 using Lumina.Data;
+using Luna;
 using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Compression;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
@@ -76,7 +74,7 @@ public class ResourceTreeViewer(
         else if (_task.IsCompletedSuccessfully)
         {
             var debugMode = config.DebugMode;
-            foreach (var (tree, index) in _task.Result.WithIndex())
+            foreach (var (index, tree) in _task.Result.Index())
             {
                 var category = Classify(tree);
                 if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase))
@@ -229,7 +227,7 @@ public class ResourceTreeViewer(
         var debugMode   = config.DebugMode;
         var frameHeight = ImGui.GetFrameHeight();
 
-        foreach (var (resourceNode, index) in resourceNodes.WithIndex())
+        foreach (var (index, resourceNode) in resourceNodes.Index())
         {
             var nodePathHash = unchecked(pathHash + resourceNode.ResourceHandle);
 

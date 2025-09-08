@@ -1,9 +1,9 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Lumina.Data.Parsing;
+using Luna.Widgets;
 using OtterGui;
 using OtterGui.Custom;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -200,7 +200,7 @@ public partial class ModEditWindow
             borderColor: Colors.RegexWarningBorder);
 
         var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
-        foreach (var (exception, index) in tab.IoExceptions.WithIndex())
+        foreach (var (index, exception) in tab.IoExceptions.Index())
         {
             using var id       = ImRaii.PushId(index);
             var       message  = $"{exception.GetType().Name}: {exception.Message}";
@@ -226,7 +226,7 @@ public partial class ModEditWindow
         using var frame = ImRaii.FramedGroup("Warnings", size, headerPreIcon: FontAwesomeIcon.ExclamationCircle, borderColor: 0xFF40FFFF);
 
         var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
-        foreach (var (warning, index) in tab.IoWarnings.WithIndex())
+        foreach (var (index, warning) in tab.IoWarnings.Index())
         {
             using var id       = ImRaii.PushId(index);
             var       textSize = ImGui.CalcTextSize(warning).X;
@@ -287,7 +287,7 @@ public partial class ModEditWindow
             ImGui.SetNextItemWidth(buttonWidth);
             using var combo = ImRaii.Combo("Game Path", preview);
             if (combo.Success)
-                foreach (var (path, index) in tab.GamePaths.WithIndex())
+                foreach (var (index, path) in tab.GamePaths.Index())
                 {
                     if (!ImGui.Selectable(path.ToString(), index == tab.GamePathIndex))
                         continue;
@@ -310,7 +310,7 @@ public partial class ModEditWindow
 
         // Draw the link button. We set the background colour to transparent to mimic the look of a link.
         using var color = ImRaii.PushColor(ImGuiCol.Button, 0x00000000);
-        CustomGui.DrawLinkButton(Penumbra.Messager, text, address, width);
+        SupportButton.Link(Penumbra.Messager, text, address, width, ""u8);
 
         // Draw an underline for the text.
         var lineStart = ImGui.GetItemRectMax();
@@ -541,7 +541,7 @@ public partial class ModEditWindow
             return false;
 
         var ret = false;
-        foreach (var (material, materialIndex) in tab.Mdl.Materials.WithIndex())
+        foreach (var (materialIndex, material) in tab.Mdl.Materials.Index())
         {
             if (!ImGui.Selectable(material, mesh.MaterialIndex == materialIndex))
                 continue;
@@ -636,7 +636,7 @@ public partial class ModEditWindow
                 ImGuiUtil.DrawTableColumn(data.LastFile.VertexDeclarations.Length.ToString());
                 ImGuiUtil.DrawTableColumn("Stack Size");
                 ImGuiUtil.DrawTableColumn(data.LastFile.StackSize.ToString());
-                foreach (var (triCount, lod) in data.LodTriCount.WithIndex())
+                foreach (var (lod, triCount) in data.LodTriCount.Index())
                 {
                     ImGuiUtil.DrawTableColumn($"LOD #{lod + 1} Triangle Count");
                     ImGuiUtil.DrawTableColumn(triCount.ToString());

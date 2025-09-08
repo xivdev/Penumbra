@@ -1,7 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using OtterGui.Classes;
+using Luna;
 
 namespace Penumbra.Services;
 

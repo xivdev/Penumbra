@@ -3,8 +3,8 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
@@ -227,7 +227,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         {
             _modManager.SetKnown(leaf.Value);
             var (setting, collection) = _collectionManager.Active.Current.GetActualSettings(leaf.Value.Index);
-            if (_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
+            if (_config.DeleteModModifier.ForcedModifier(new OtterGui.Classes.DoubleModifier(OtterGui.Classes.ModifierHotkey.Control, OtterGui.Classes.ModifierHotkey.Shift)).IsActive())
             {
                 // Delete temporary settings if they exist, regardless of mode, or set to inheriting if none exist.
                 if (_collectionManager.Active.Current.GetTempSettings(leaf.Value.Index) is not null)
@@ -472,7 +472,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImUtf8.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled."u8);
             indent.Push();
             ImUtf8.BulletText(
-                $"Holding {_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
+                $"Holding {_config.DeleteModModifier.ForcedModifier(new OtterGui.Classes.DoubleModifier(OtterGui.Classes.ModifierHotkey.Control, OtterGui.Classes.ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
             indent.Pop(1);
             ImUtf8.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number."u8);
             indent.Push();

@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using OtterGui.Extensions;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -17,7 +16,7 @@ public sealed class ShapeAttributeHashSet : Dictionary<(HumanSlot Slot, PrimaryI
     ];
 
     public static readonly FrozenDictionary<GenderRace, int> GenderRaceIndices =
-        GenderRaceValues.WithIndex().ToFrozenDictionary(p => p.Value, p => p.Index);
+        GenderRaceValues.Index().ToFrozenDictionary(p => p.Item, p => p.Index);
 
     private readonly BitArray _allIds = new(2 * (ShapeAttributeManager.ModelSlotSize + 1) * GenderRaceValues.Count);
 

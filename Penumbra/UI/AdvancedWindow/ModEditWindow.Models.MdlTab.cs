@@ -1,4 +1,3 @@
-using OtterGui.Extensions;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
@@ -356,7 +355,7 @@ public partial class ModEditWindow
         {
             var allAttributes = new List<string>();
 
-            foreach (var (attributes, subMeshIndex) in _attributes.WithIndex())
+            foreach (var (subMeshIndex, attributes) in _attributes.Index())
             {
                 if (attributes == null)
                     continue;

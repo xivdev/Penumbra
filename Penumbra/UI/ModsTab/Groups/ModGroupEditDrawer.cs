@@ -1,9 +1,8 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Text.EndObjects;
@@ -66,7 +65,7 @@ public sealed class ModGroupEditDrawer(
         PrepareStyle();
 
         using var id = ImUtf8.PushId("##GroupEdit"u8);
-        foreach (var (group, groupIdx) in mod.Groups.WithIndex())
+        foreach (var (groupIdx, group) in mod.Groups.Index())
             DrawGroup(group, groupIdx);
 
         while (ActionQueue.TryDequeue(out var action))

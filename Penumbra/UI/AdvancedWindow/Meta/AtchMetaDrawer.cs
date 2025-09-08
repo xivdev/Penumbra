@@ -1,8 +1,7 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -15,7 +14,7 @@ using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
-using Notification = OtterGui.Classes.Notification;
+using Notification = Luna.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
@@ -65,7 +64,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, Luna
             var file = new AtchFile(text);
             foreach (var point in file.Points)
             {
-                foreach (var (entry, index) in point.Entries.WithIndex())
+                foreach (var (index, entry) in point.Entries.Index())
                 {
                     var identifier   = new AtchIdentifier(point.Type, gr, (ushort)index);
                     var defaultValue = AtchCache.GetDefault(MetaFiles, identifier);

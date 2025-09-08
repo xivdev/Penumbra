@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.GameData.Files.MaterialStructs;
@@ -33,7 +32,7 @@ public partial class MtrlTab
             if (Mtrl.Table != null)
                 TextureIds.Add(TableSamplerId);
 
-            foreach (var (sampler, index) in Mtrl.ShaderPackage.Samplers.WithIndex())
+            foreach (var (index, sampler) in Mtrl.ShaderPackage.Samplers.Index())
                 Textures.Add(($"0x{sampler.SamplerId:X8}", sampler.TextureIndex, index, string.Empty, true));
         }
         else

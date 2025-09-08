@@ -9,7 +9,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.ModsTab.Groups;
-using OtterGui.Extensions;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -242,7 +241,7 @@ public class ModPanelSettingsTab(
                 {
                     collectionManager.Editor.SetModState(collectionManager.Active.Current, selection.Mod, settings.Enabled);
                     collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selection.Mod, settings.Priority);
-                    foreach (var (setting, index) in settings.Settings.WithIndex())
+                    foreach (var (index, setting) in settings.Settings.Index())
                         collectionManager.Editor.SetModSetting(collectionManager.Active.Current, selection.Mod, index, setting);
                 }
 

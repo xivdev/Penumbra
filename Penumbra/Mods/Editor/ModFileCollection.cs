@@ -1,4 +1,4 @@
-using OtterGui.Extensions;
+using Luna;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 

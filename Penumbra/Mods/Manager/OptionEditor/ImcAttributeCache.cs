@@ -1,4 +1,3 @@
-using OtterGui.Extensions;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
@@ -21,7 +20,7 @@ public unsafe ref struct ImcAttributeCache
             _option[i]    = byte.MaxValue;
 
             var flag = (ushort)(1 << i);
-            foreach (var (option, idx) in group.OptionData.WithIndex())
+            foreach (var (idx, option) in group.OptionData.Index())
             {
                 if ((option.AttributeMask & flag) == 0)
                     continue;

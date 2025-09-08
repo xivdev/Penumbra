@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
+using Luna;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterTex;
 using Penumbra.Import.Textures;
@@ -50,7 +50,7 @@ public partial class ModEditWindow
             ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
             ImGui.NewLine();
 
-            using (var disabled = ImRaii.Disabled(!_center.SaveTask.IsCompleted))
+            using (ImRaii.Disabled(!_center.SaveTask.IsCompleted))
             {
                 TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
                     "Can import game paths as well as your own files.", Mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
@@ -85,7 +85,7 @@ public partial class ModEditWindow
         if (!combo)
             return;
 
-        foreach (var ((newText, newDesc), idx) in SaveAsStrings.WithIndex())
+        foreach (var (idx, (newText, newDesc)) in SaveAsStrings.Index())
         {
             if (ImGui.Selectable(newText, idx == _currentSaveAs))
                 _currentSaveAs = idx;

@@ -1,8 +1,7 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using OtterGui.Filesystem;
 using OtterGui.Widgets;
 using Penumbra.Import.Structs;
@@ -27,7 +26,7 @@ public record PcpSettings
 }
 
 [Serializable]
-public class Configuration : IPluginConfiguration, ISavable, Luna.IService
+public class Configuration : IPluginConfiguration, ISavable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;
@@ -94,19 +93,19 @@ public class Configuration : IPluginConfiguration, ISavable, Luna.IService
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode<Mod> SortMode = ISortMode<Mod>.FoldersFirst;
 
-    public bool           OpenFoldersByDefault          { get; set; } = false;
-    public int            SingleGroupRadioMax           { get; set; } = 2;
-    public string         DefaultImportFolder           { get; set; } = string.Empty;
-    public string         QuickMoveFolder1              { get; set; } = string.Empty;
-    public string         QuickMoveFolder2              { get; set; } = string.Empty;
-    public string         QuickMoveFolder3              { get; set; } = string.Empty;
-    public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
-    public DoubleModifier IncognitoModifier             { get; set; } = new(ModifierHotkey.Control);
-    public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
-    public bool           AutoDeduplicateOnImport       { get; set; } = true;
-    public bool           AutoReduplicateUiOnImport     { get; set; } = true;
-    public bool           UseFileSystemCompression      { get; set; } = true;
-    public bool           EnableHttpApi                 { get; set; } = true;
+    public bool                            OpenFoldersByDefault          { get; set; } = false;
+    public int                             SingleGroupRadioMax           { get; set; } = 2;
+    public string                          DefaultImportFolder           { get; set; } = string.Empty;
+    public string                          QuickMoveFolder1              { get; set; } = string.Empty;
+    public string                          QuickMoveFolder2              { get; set; } = string.Empty;
+    public string                          QuickMoveFolder3              { get; set; } = string.Empty;
+    public OtterGui.Classes.DoubleModifier DeleteModModifier             { get; set; } = new(OtterGui.Classes.ModifierHotkey.Control, OtterGui.Classes.ModifierHotkey.Shift);
+    public OtterGui.Classes.DoubleModifier IncognitoModifier             { get; set; } = new(OtterGui.Classes.ModifierHotkey.Control);
+    public bool                            PrintSuccessfulCommandsToChat { get; set; } = true;
+    public bool                            AutoDeduplicateOnImport       { get; set; } = true;
+    public bool                            AutoReduplicateUiOnImport     { get; set; } = true;
+    public bool                            UseFileSystemCompression      { get; set; } = true;
+    public bool                            EnableHttpApi                 { get; set; } = true;
 
     public bool MigrateImportedModelsToV6        { get; set; } = true;
     public bool MigrateImportedMaterialsToLegacy { get; set; } = true;
@@ -141,10 +140,10 @@ public class Configuration : IPluginConfiguration, ISavable, Luna.IService
             errorArgs.ErrorContext.Handled = true;
         }
 
-        if (File.Exists(_saveService.FileNames.ConfigFile))
+        if (File.Exists(_saveService.FileNames.ConfigurationFile))
             try
             {
-                var text = File.ReadAllText(_saveService.FileNames.ConfigFile);
+                var text = File.ReadAllText(_saveService.FileNames.ConfigurationFile);
                 JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
                 {
                     Error = HandleDeserializationError,
@@ -213,8 +212,8 @@ public class Configuration : IPluginConfiguration, ISavable, Luna.IService
         }
     }
 
-    public string ToFilename(FilenameService fileNames)
-        => fileNames.ConfigFile;
+    public string ToFilePath(FilenameService fileNames)
+        => fileNames.ConfigurationFile;
 
     public void Save(StreamWriter writer)
     {

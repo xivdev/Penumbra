@@ -1,8 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
-using OtterGui.Extensions;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
@@ -11,7 +10,7 @@ using Penumbra.UI;
 
 namespace Penumbra.Collections.Manager;
 
-public class ActiveCollectionData : Luna.IService
+public class ActiveCollectionData : IService
 {
     public ModCollection Current   { get; internal set; } = ModCollection.Empty;
     public ModCollection Default   { get; internal set; } = ModCollection.Empty;
@@ -20,7 +19,7 @@ public class ActiveCollectionData : Luna.IService
     public readonly ModCollection?[] SpecialCollections = new ModCollection?[Enum.GetValues<Api.Enums.ApiCollectionType>().Length - 3];
 }
 
-public class ActiveCollections : ISavable, IDisposable, Luna.IService
+public class ActiveCollections : ISavable, IDisposable, IService
 {
     public const int Version = 2;
 
@@ -223,23 +222,15 @@ public class ActiveCollections : ISavable, IDisposable, Luna.IService
 
         switch (collectionType)
         {
-            case CollectionType.Default:
-                Default = collection;
-                break;
-            case CollectionType.Interface:
-                Interface = collection;
-                break;
-            case CollectionType.Current:
-                Current = collection;
-                break;
+            case CollectionType.Default:   Default   = collection; break;
+            case CollectionType.Interface: Interface = collection; break;
+            case CollectionType.Current:   Current   = collection; break;
             case CollectionType.Individual:
                 if (!Individuals.ChangeCollection(individualIndex, collection))
                     return;
 
                 break;
-            default:
-                SpecialCollections[(int)collectionType] = collection;
-                break;
+            default: SpecialCollections[(int)collectionType] = collection; break;
         }
 
         UpdateCurrentCollectionInUse();
@@ -247,7 +238,7 @@ public class ActiveCollections : ISavable, IDisposable, Luna.IService
             collectionType == CollectionType.Individual ? Individuals[individualIndex].DisplayName : string.Empty);
     }
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.ActiveCollectionsFile;
 
     public string TypeName
@@ -265,8 +256,8 @@ public class ActiveCollections : ISavable, IDisposable, Luna.IService
             { nameof(Interface), Interface.Identity.Id },
             { nameof(Current), Current.Identity.Id },
         };
-        foreach (var (type, collection) in SpecialCollections.WithIndex().Where(p => p.Value != null)
-                     .Select(p => ((CollectionType)p.Index, p.Value!)))
+        foreach (var (type, collection) in SpecialCollections.Index().Where(p => p.Item != null)
+                     .Select(p => ((CollectionType)p.Index, p.Item!)))
             jObj.Add(type.ToString(), collection.Identity.Id);
 
         jObj.Add(nameof(Individuals), Individuals.ToJObject());
@@ -299,7 +290,8 @@ public class ActiveCollections : ISavable, IDisposable, Luna.IService
                 if (oldCollection == Interface)
                     SetCollection(ModCollection.Empty, CollectionType.Interface);
                 if (oldCollection == Current)
-                    SetCollection(Default.Identity.Index > ModCollection.Empty.Identity.Index ? Default : _storage.DefaultNamed, CollectionType.Current);
+                    SetCollection(Default.Identity.Index > ModCollection.Empty.Identity.Index ? Default : _storage.DefaultNamed,
+                        CollectionType.Current);
 
                 for (var i = 0; i < SpecialCollections.Length; ++i)
                 {
@@ -490,15 +482,9 @@ public class ActiveCollections : ISavable, IDisposable, Luna.IService
         var changed       = false;
         switch (version)
         {
-            case 1:
-                changed = LoadCollectionsV1(jObject);
-                break;
-            case 2:
-                changed = LoadCollectionsV2(jObject);
-                break;
-            case 0 when configChanged:
-                changed = LoadCollectionsNew();
-                break;
+            case 1:                    changed = LoadCollectionsV1(jObject); break;
+            case 2:                    changed = LoadCollectionsV2(jObject); break;
+            case 0 when configChanged: changed = LoadCollectionsNew(); break;
             case 0:
                 Penumbra.Messager.NotificationMessage("Active Collections File has unknown version and will be reset.",
                     NotificationType.Warning);

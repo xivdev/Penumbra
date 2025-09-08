@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
-using OtterGui.Extensions;
 using OtterGui.Text;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
@@ -203,7 +202,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 ImUtf8.DrawTableColumn($"{human.GetModelId((HumanSlot)i):D4}");
                 ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Shapes.Count}");
                 ImGui.TableNextColumn();
-                foreach (var ((shape, flag), idx) in model->ModelResourceHandle->Shapes.WithIndex())
+                foreach (var (idx, (shape, flag)) in model->ModelResourceHandle->Shapes.Index())
                 {
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImRaii.PushColor(ImGuiCol.Text, disabledColor, disabled);
@@ -260,7 +259,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 ImUtf8.DrawTableColumn($"{human.GetModelId((HumanSlot)i):D4}");
                 ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Attributes.Count}");
                 ImGui.TableNextColumn();
-                foreach (var ((attribute, flag), idx) in model->ModelResourceHandle->Attributes.WithIndex())
+                foreach (var (idx, (attribute, flag)) in model->ModelResourceHandle->Attributes.Index())
                 {
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImRaii.PushColor(ImGuiCol.Text, disabledColor, disabled);

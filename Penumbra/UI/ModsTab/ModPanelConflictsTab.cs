@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -58,9 +57,9 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
 
         // Can not be null because otherwise the tab bar is never drawn.
         var mod = selector.Selected!;
-        foreach (var (conflict, index) in collectionManager.Active.Current.Conflicts(mod).Where(c => !c.Mod2.Priority.IsHidden)
+        foreach (var (index, conflict) in collectionManager.Active.Current.Conflicts(mod).Where(c => !c.Mod2.Priority.IsHidden)
                      .OrderByDescending(GetPriority)
-                     .ThenBy(c => c.Mod2.Name.Lower).WithIndex())
+                     .ThenBy(c => c.Mod2.Name.Lower).Index())
         {
             using var id = ImRaii.PushId(index);
             DrawConflictRow(conflict, priorityWidth, buttonSize);

@@ -1,6 +1,5 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Text.Widget;
@@ -93,7 +92,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         using (ImUtf8.Group())
         {
             DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, group.DefaultEntry.AttributeMask, group);
-            foreach (var (option, idx) in group.OptionData.WithIndex().Where(o => !o.Value.IsDisableSubMod))
+            foreach (var (idx, option) in group.OptionData.Index().Where(o => !o.Item.IsDisableSubMod))
             {
                 using var id = ImUtf8.PushId(idx);
                 DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, option.AttributeMask, option,
@@ -104,7 +103,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
 
     private void DrawOptions()
     {
-        foreach (var (option, optionIdx) in group.OptionData.WithIndex())
+        foreach (var (optionIdx, option) in group.OptionData.Index())
         {
             using var id = ImRaii.PushId(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);

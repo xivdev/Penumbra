@@ -10,7 +10,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
 {
     public const int FileVersion = 3;
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.LocalDataFile(mod);
 
     public void Save(StreamWriter writer)

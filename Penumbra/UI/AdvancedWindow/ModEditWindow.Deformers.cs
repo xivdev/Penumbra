@@ -3,7 +3,6 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
-using OtterGui.Extensions;
 using OtterGui.Text;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -45,7 +44,7 @@ public partial class ModEditWindow
             return;
 
         var metaColor = ColorId.ItemId.Value();
-        foreach (var (deformer, index) in tab.File.Deformers.WithIndex())
+        foreach (var (index, deformer) in tab.File.Deformers.Index())
         {
             var name     = deformer.GenderRace.ToName();
             var raceCode = deformer.GenderRace.ToRaceCode();
@@ -167,7 +166,7 @@ public partial class ModEditWindow
                 if (!deformer.RacialDeformer.DeformMatrices.TryAdd(_pbdData.NewBoneName, existingMatrix)
                  && deformer.RacialDeformer.DeformMatrices.TryGetValue(_pbdData.NewBoneName, out var newBoneMatrix)
                  && !newBoneMatrix.Equals(existingMatrix))
-                    Penumbra.Messager.AddMessage(new Notification(
+                    Penumbra.Messager.AddMessage(new Luna.Notification(
                         $"Could not add deformer matrix to {deformer.GenderRace.ToName()}, Bone {_pbdData.NewBoneName} because it already has a deformer that differs from the intended one.",
                         NotificationType.Warning));
                 else

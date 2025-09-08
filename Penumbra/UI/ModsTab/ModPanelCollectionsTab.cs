@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
-using OtterGui.Extensions;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -52,7 +51,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         ImGui.TableSetupColumn("Inherited From", ImGuiTableColumnFlags.WidthFixed, collectionSize);
 
         ImGui.TableHeadersRow();
-        foreach (var ((collection, parent, color, state), idx) in _cache.WithIndex())
+        foreach (var (idx, (collection, parent, color, state)) in _cache.Index())
         {
             using var id = ImUtf8.PushId(idx);
             ImUtf8.DrawTableColumn(collection.Identity.Name);
@@ -60,7 +59,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
             ImGui.TableNextColumn();
             ImUtf8.Text(ToText(state), color);
 
-            using (var context = ImUtf8.PopupContextItem("Context"u8, ImGuiPopupFlags.MouseButtonRight))
+            using (var context = ImUtf8.PopupContextItem("Context"u8))
             {
                 if (context)
                 {

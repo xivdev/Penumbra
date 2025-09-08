@@ -1,15 +1,14 @@
 using Dalamud.Plugin;
+using Luna.Files;
 using Penumbra.Collections;
 using Penumbra.Mods;
 
 namespace Penumbra.Services;
 
-public class FilenameService(IDalamudPluginInterface pi) : Luna.IService
+public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathProvider(pi)
 {
-    public readonly string ConfigDirectory       = pi.ConfigDirectory.FullName;
     public readonly string CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");
     public readonly string LocalDataDirectory    = Path.Combine(pi.ConfigDirectory.FullName, "mod_data");
-    public readonly string ConfigFile            = pi.ConfigFile.FullName;
     public readonly string EphemeralConfigFile   = Path.Combine(pi.ConfigDirectory.FullName, "ephemeral_config.json");
     public readonly string FilesystemFile        = Path.Combine(pi.ConfigDirectory.FullName, "sort_order.json");
     public readonly string ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
