@@ -1,11 +1,10 @@
 using Dalamud.Plugin;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Mods;
 
 namespace Penumbra.Services;
 
-public class FilenameService(IDalamudPluginInterface pi) : IService
+public class FilenameService(IDalamudPluginInterface pi) : Luna.IService
 {
     public readonly string ConfigDirectory       = pi.ConfigDirectory.FullName;
     public readonly string CollectionDirectory   = Path.Combine(pi.ConfigDirectory.FullName, "collections");

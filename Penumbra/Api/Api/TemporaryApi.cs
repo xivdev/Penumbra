@@ -1,5 +1,4 @@
 using OtterGui.Log;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -18,7 +17,7 @@ public class TemporaryApi(
     CollectionManager collectionManager,
     TempModManager tempMods,
     ApiHelpers apiHelpers,
-    ModManager modManager) : IPenumbraApiTemporary, IApiService
+    ModManager modManager) : IPenumbraApiTemporary, Luna.IApiService
 {
     public (PenumbraApiEc, Guid) CreateTemporaryCollection(string identity, string name)
     {

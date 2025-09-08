@@ -1,5 +1,4 @@
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
@@ -14,7 +13,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
-public class AddGroupDrawer : IUiService
+public class AddGroupDrawer : Luna.IUiService
 {
     private string _groupName = string.Empty;
     private bool   _groupNameValid;

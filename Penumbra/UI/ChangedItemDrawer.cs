@@ -8,7 +8,6 @@ using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
@@ -17,7 +16,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
-public class ChangedItemDrawer : IDisposable, IUiService
+public class ChangedItemDrawer : IDisposable, Luna.IUiService
 {
     private static readonly string[] LowerNames = ChangedItemFlagExtensions.Order.Select(f => f.ToDescription().ToLowerInvariant()).ToArray();
 
@@ -90,7 +89,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
     public bool FilterChangedItem(string name, IIdentifiedObjectData data, LowerString filter)
         => (_config.Ephemeral.ChangedItemFilter == ChangedItemFlagExtensions.AllFlags
              || _config.Ephemeral.ChangedItemFilter.HasFlag(data.GetIcon().ToFlag()))
-         && (filter.IsEmpty || !data.IsFilteredOut(name, filter));
+         && (filter.IsEmpty || !data.IsFilteredOut(name, filter.Text));
 
     /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
     public void DrawCategoryIcon(IIdentifiedObjectData data, float height)

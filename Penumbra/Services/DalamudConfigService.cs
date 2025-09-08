@@ -1,9 +1,8 @@
 using Dalamud.Plugin;
-using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class DalamudConfigService : IService
+public class DalamudConfigService : Luna.IService
 {
     public DalamudConfigService()
     {

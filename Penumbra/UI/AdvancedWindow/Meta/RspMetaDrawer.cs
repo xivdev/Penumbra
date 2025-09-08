@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta;
@@ -14,7 +13,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<RspIdentifier, RspEntry>(editor, metaFiles), IService
+    : MetaDrawer<RspIdentifier, RspEntry>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Racial Scaling Edits (RSP)###RSP"u8;

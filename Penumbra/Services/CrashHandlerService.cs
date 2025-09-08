@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Communication;
 using Penumbra.CrashHandler;
@@ -16,7 +15,7 @@ using FileMode = System.IO.FileMode;
 
 namespace Penumbra.Services;
 
-public sealed class CrashHandlerService : IDisposable, IService
+public sealed class CrashHandlerService : IDisposable, Luna.IService
 {
     private readonly FilenameService     _files;
     private readonly CommunicatorService _communicator;

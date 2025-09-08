@@ -1,6 +1,5 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
@@ -9,7 +8,7 @@ using Penumbra.Mods.SubMods;
 
 namespace Penumbra.UI.ModsTab;
 
-public class DescriptionEditPopup(ModManager modManager) : IUiService
+public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
 {
     private static ReadOnlySpan<byte> PopupId
         => "PenumbraEditDescription"u8;

@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Files;
@@ -13,7 +12,7 @@ using Newtonsoft.Json.Linq;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<GmpIdentifier, GmpEntry>(editor, metaFiles), IService
+    : MetaDrawer<GmpIdentifier, GmpEntry>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Visor/Gimmick Edits (GMP)###GMP"u8;

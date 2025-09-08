@@ -1,11 +1,10 @@
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Classes;
 
-public class MigrationSectionDrawer(MigrationManager migrationManager, Configuration config) : IUiService
+public class MigrationSectionDrawer(MigrationManager migrationManager, Configuration config) : Luna.IUiService
 {
     private bool    _createBackups = true;
     private Vector2 _buttonSize;

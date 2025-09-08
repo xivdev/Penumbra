@@ -1,11 +1,10 @@
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using OtterGui.Log;
-using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class BackupService : IAsyncService
+public class BackupService : Luna.IAsyncService
 {
     private readonly Logger                  _logger;
     private readonly DirectoryInfo           _configDirectory;

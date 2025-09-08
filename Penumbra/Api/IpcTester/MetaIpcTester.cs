@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Api;
 using Penumbra.Api.IpcSubscribers;
@@ -9,7 +8,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Api.IpcTester;
 
-public class MetaIpcTester(IDalamudPluginInterface pi) : IUiService
+public class MetaIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 {
     private int            _gameObjectIndex;
     private string         _metaBase64    = string.Empty;

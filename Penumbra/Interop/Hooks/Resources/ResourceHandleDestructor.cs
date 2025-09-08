@@ -1,13 +1,12 @@
 using Dalamud.Hooking;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.ResourceWatcher;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
-public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHandle, ResourceHandleDestructor.Priority>, IHookService
+public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHandle, ResourceHandleDestructor.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -24,7 +23,7 @@ public sealed unsafe class ResourceHandleDestructor : EventWrapperPtr<ResourceHa
         ResourceWatcher,
     }
 
-    public ResourceHandleDestructor(HookManager hooks)
+    public ResourceHandleDestructor(Luna.HookManager hooks)
         : base("Destroy ResourceHandle")
         => _task = hooks.CreateHook<Delegate>(Name, Sigs.ResourceHandleDestructor, Detour,
             !HookOverrides.Instance.Resources.ResourceHandleDestructor);

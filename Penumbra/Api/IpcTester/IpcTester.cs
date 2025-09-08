@@ -1,7 +1,5 @@
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using Penumbra.Api.Api;
 
 namespace Penumbra.Api.IpcTester;
@@ -21,7 +19,7 @@ public class IpcTester(
     EditingIpcTester editingIpcTester,
     TemporaryIpcTester temporaryIpcTester,
     ResourceTreeIpcTester resourceTreeIpcTester,
-    IFramework framework) : IUiService
+    IFramework framework) : Luna.IUiService
 {
     private readonly IpcProviders _ipcProviders = ipcProviders;
     private          DateTime     _lastUpdate;

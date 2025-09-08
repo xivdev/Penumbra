@@ -2,7 +2,6 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
@@ -31,7 +30,7 @@ public sealed unsafe class CollectionResolver(
     TempCollectionManager tempCollections,
     DrawObjectState drawObjectState,
     HumanModelList humanModels)
-    : IService
+    : Luna.IService
 {
     /// <summary>
     /// Get the collection applying to the current player character

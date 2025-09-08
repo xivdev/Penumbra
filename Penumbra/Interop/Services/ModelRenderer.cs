@@ -1,12 +1,11 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using OtterGui.Services;
 using ModelRendererData = FFXIVClientStructs.FFXIV.Client.Graphics.Render.ModelRenderer;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class ModelRenderer : IDisposable, IRequiredService
+public unsafe class ModelRenderer : IDisposable, Luna.IRequiredService
 {
     public bool Ready { get; private set; }
 

@@ -1,5 +1,4 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
@@ -17,7 +16,7 @@ public sealed class MtrlTabFactory(
     ResourceTreeFactory resourceTreeFactory,
     FileDialogService fileDialog,
     MaterialTemplatePickers materialTemplatePickers,
-    Configuration config) : IUiService
+    Configuration config) : Luna.IUiService
 {
     public MtrlTab Create(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
         => new(gameData, framework, objects, characterBaseDestructor, stainService, resourceTreeFactory, fileDialog,

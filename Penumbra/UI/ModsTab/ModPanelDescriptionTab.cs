@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using OtterGui.Raii;
 using OtterGui;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Mods.Manager;
 
@@ -13,7 +12,7 @@ public class ModPanelDescriptionTab(
     TutorialService tutorial,
     ModManager modManager,
     PredefinedTagManager predefinedTagsConfig)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     private readonly TagButtons _localTags = new();
     private readonly TagButtons _modTags   = new();

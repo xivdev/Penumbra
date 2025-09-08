@@ -1,5 +1,4 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.Resources;
@@ -12,7 +11,7 @@ using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceLoader : IDisposable, IService
+public unsafe class ResourceLoader : IDisposable, Luna.IService
 {
     private readonly ResourceService          _resources;
     private readonly FileReadService          _fileReadService;

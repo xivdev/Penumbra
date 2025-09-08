@@ -1,4 +1,3 @@
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
@@ -9,7 +8,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta;
 
-public unsafe class ShapeAttributeManager : IRequiredService, IDisposable
+public unsafe class ShapeAttributeManager : Luna.IRequiredService, IDisposable
 {
     public const     int           NumSlots      = 14;
     public const     int           ModelSlotSize = 18;

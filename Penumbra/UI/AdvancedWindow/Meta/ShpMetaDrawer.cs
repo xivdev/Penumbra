@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
@@ -16,7 +15,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<ShpIdentifier, ShpEntry>(editor, metaFiles), IService
+    : MetaDrawer<ShpIdentifier, ShpEntry>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Shape Keys (SHP)###SHP"u8;

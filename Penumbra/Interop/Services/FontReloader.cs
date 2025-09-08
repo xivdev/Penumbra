@@ -1,8 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using OtterGui.Services;
-using Penumbra.GameData;
 
 namespace Penumbra.Interop.Services;
 
@@ -10,7 +8,7 @@ namespace Penumbra.Interop.Services;
 /// Handle font reloading via game functions.
 /// May cause a interface flicker while reloading.
 /// </summary>
-public unsafe class FontReloader : IService
+public unsafe class FontReloader : Luna.IService
 {
     public bool Valid
         => _reloadFontsFunc != null;

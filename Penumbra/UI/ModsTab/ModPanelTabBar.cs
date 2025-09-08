@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -10,7 +9,7 @@ using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelTabBar : IUiService
+public class ModPanelTabBar : Luna.IUiService
 {
     private enum ModPanelTabType
     {

@@ -4,7 +4,6 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.GameData.Files.MaterialStructs;
@@ -18,7 +17,7 @@ using ModelRenderer = Penumbra.Interop.Services.ModelRenderer;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredService
+public sealed unsafe class ShaderReplacementFixer : IDisposable, Luna.IRequiredService
 {
     public static ReadOnlySpan<byte> SkinShpkName
         => "skin.shpk"u8;
@@ -107,7 +106,7 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
         => _hairMaskState.MaterialCount;
 
     public ShaderReplacementFixer(ResourceHandleDestructor resourceHandleDestructor, CharacterUtility utility, ModelRenderer modelRenderer,
-        CommunicatorService communicator, HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
+        CommunicatorService communicator, Luna.HookManager hooks, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _resourceHandleDestructor = resourceHandleDestructor;
         _communicator             = communicator;

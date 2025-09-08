@@ -2,13 +2,12 @@ using Dalamud.Plugin.Services;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
-using OtterGui.Services;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 
 namespace Penumbra.Api;
 
-public class HttpApi : IDisposable, IApiService
+public class HttpApi : IDisposable, Luna.IApiService
 {
     private partial class Controller : WebApiController
     {

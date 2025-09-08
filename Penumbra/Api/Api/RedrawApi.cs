@@ -1,12 +1,11 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
 
 namespace Penumbra.Api.Api;
 
-public class RedrawApi(RedrawService redrawService, IFramework framework) : IPenumbraApiRedraw, IApiService
+public class RedrawApi(RedrawService redrawService, IFramework framework) : IPenumbraApiRedraw, Luna.IApiService
 {
     public void RedrawObject(int gameObjectIndex, RedrawType setting)
     {

@@ -3,7 +3,6 @@ using Dalamud.Interface;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
@@ -17,7 +16,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.Tabs;
 
 public class EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     public ReadOnlySpan<byte> Label
         => "Effective Changes"u8;

@@ -1,8 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using OtterGui.Classes;
-using OtterGui.FileSystem.Selector;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Enums;
@@ -16,7 +14,7 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
-public class EphemeralConfig : ISavable, IDisposable, IService
+public class EphemeralConfig : ISavable, IDisposable, Luna.IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;

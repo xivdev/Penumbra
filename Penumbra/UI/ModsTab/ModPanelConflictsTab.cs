@@ -4,7 +4,6 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
@@ -18,7 +17,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab, IUiService
+public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab, Luna.IUiService
 {
     private int? _currentPriority;
 

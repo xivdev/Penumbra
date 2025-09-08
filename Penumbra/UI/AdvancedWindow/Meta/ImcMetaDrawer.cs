@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -14,7 +13,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<ImcIdentifier, ImcEntry>(editor, metaFiles), IService
+    : MetaDrawer<ImcIdentifier, ImcEntry>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Variant Edits (IMC)###IMC"u8;
@@ -36,7 +35,8 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy all current IMC manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Imc)));
+        CopyToClipboardButton("Copy all current IMC manipulations to clipboard."u8,
+            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Imc)));
         ImGui.TableNextColumn();
         var canAdd = _fileExists && !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : !_fileExists ? "This IMC file does not exist."u8 : "This entry is already edited."u8;
@@ -161,11 +161,11 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         {
             var (equipSlot, secondaryId) = type switch
             {
-                ObjectType.Equipment => (identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head, (SecondaryId)0),
+                ObjectType.Equipment => (identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head, SecondaryId.Zero),
                 ObjectType.DemiHuman => (identifier.EquipSlot.IsEquipment() ? identifier.EquipSlot : EquipSlot.Head,
-                    identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId),
-                ObjectType.Accessory => (identifier.EquipSlot.IsAccessory() ? identifier.EquipSlot : EquipSlot.Ears, (SecondaryId)0),
-                _                    => (EquipSlot.Unknown, identifier.SecondaryId == 0 ? 1 : identifier.SecondaryId),
+                    identifier.SecondaryId == 0 ? (SecondaryId)1 : identifier.SecondaryId),
+                ObjectType.Accessory => (identifier.EquipSlot.IsAccessory() ? identifier.EquipSlot : EquipSlot.Ears, SecondaryId.Zero),
+                _                    => (EquipSlot.Unknown, identifier.SecondaryId == 0 ? (SecondaryId)1 : identifier.SecondaryId),
             };
             identifier = identifier with
             {
@@ -217,10 +217,8 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             case ObjectType.DemiHuman:
                 ret = Combos.EqpEquipSlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
                 break;
-            case ObjectType.Accessory:
-                ret = Combos.AccessorySlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
-                break;
-            default: return false;
+            case ObjectType.Accessory: ret = Combos.AccessorySlot("##slot", identifier.EquipSlot, out slot, unscaledWidth); break;
+            default:                   return false;
         }
 
         ImUtf8.HoverTooltip("Equip Slot"u8);

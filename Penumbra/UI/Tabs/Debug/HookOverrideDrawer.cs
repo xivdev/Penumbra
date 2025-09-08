@@ -1,12 +1,11 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Interop.Hooks;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : IUiService
+public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : Luna.IUiService
 {
     private HookOverrides? _overrides;
 

@@ -1,5 +1,4 @@
 using OtterGui.Log;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -13,7 +12,7 @@ public class ApiHelpers(
     CollectionManager collectionManager,
     ObjectManager objects,
     CollectionResolver collectionResolver,
-    ActorManager actors) : IApiService
+    ActorManager actors) : Luna.IApiService
 {
     /// <summary> Return the associated identifier for an object given by its index. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

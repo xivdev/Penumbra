@@ -1,9 +1,7 @@
 using Dalamud.Hooking;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.Interop.SafeHandles;
@@ -15,7 +13,7 @@ using CSResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceService : IDisposable, IRequiredService
+public unsafe class ResourceService : IDisposable, Luna.IRequiredService
 {
     private readonly PerformanceTracker     _performance;
     private readonly ResourceManagerService _resourceManager;

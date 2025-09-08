@@ -1,7 +1,6 @@
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
 using Penumbra.GameData.Interop;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
@@ -9,7 +8,7 @@ using Penumbra.Interop.Hooks.Objects;
 
 namespace Penumbra.Interop.PathResolving;
 
-public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (Actor, ObjectIndex, bool)>, IService
+public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (Actor, ObjectIndex, bool)>, Luna.IService
 {
     private readonly ObjectManager           _objects;
     private readonly CreateCharacterBase     _createCharacterBase;

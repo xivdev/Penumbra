@@ -4,7 +4,6 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Lumina.Data.Files;
 using OtterGui.Log;
-using OtterGui.Services;
 using OtterGui.Tasks;
 using OtterTex;
 using SharpDX.Direct3D11;
@@ -18,7 +17,7 @@ using Image = SixLabors.ImageSharp.Image;
 namespace Penumbra.Import.Textures;
 
 public sealed class TextureManager(IDataManager gameData, Logger logger, ITextureProvider textureProvider, IUiBuilder uiBuilder)
-    : SingleTaskQueue, IDisposable, IService
+    : SingleTaskQueue, IDisposable, Luna.IService
 {
     private readonly Logger _logger = logger;
 

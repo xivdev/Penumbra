@@ -1,10 +1,9 @@
-using OtterGui.Services;
 using Penumbra.Import.Textures;
 using TextureType = Penumbra.Api.Enums.TextureType;
 
 namespace Penumbra.Api.Api;
 
-public class EditingApi(TextureManager textureManager) : IPenumbraApiEditing, IApiService
+public class EditingApi(TextureManager textureManager) : IPenumbraApiEditing, Luna.IApiService
 {
     public Task ConvertTextureFile(string inputFile, string outputFile, TextureType textureType, bool mipMaps)
         => textureType switch

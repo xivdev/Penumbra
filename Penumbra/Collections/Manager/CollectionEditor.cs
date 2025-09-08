@@ -1,5 +1,4 @@
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -8,7 +7,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
 
-public class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : IService
+public class CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage) : Luna.IService
 {
     /// <summary> Enable or disable the mod inheritance of mod idx. </summary>
     public bool SetModInheritance(ModCollection collection, Mod mod, bool inherit)

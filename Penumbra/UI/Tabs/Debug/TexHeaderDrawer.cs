@@ -2,13 +2,12 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.Utility.Raii;
 using Lumina.Data.Files;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class TexHeaderDrawer(IDragDropManager dragDrop) : IUiService
+public class TexHeaderDrawer(IDragDropManager dragDrop) : Luna.IUiService
 {
     private string?           _path;
     private TexFile.TexHeader _header;

@@ -1,4 +1,3 @@
-using OtterGui.Services;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
@@ -13,7 +12,7 @@ public class MetaDrawers(
     RspMetaDrawer rsp,
     AtchMetaDrawer atch,
     ShpMetaDrawer shp,
-    AtrMetaDrawer atr) : IService
+    AtrMetaDrawer atr) : Luna.IService
 {
     public readonly EqdpMetaDrawer      Eqdp      = eqdp;
     public readonly EqpMetaDrawer       Eqp       = eqp;

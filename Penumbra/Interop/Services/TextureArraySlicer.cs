@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using OtterGui.Services;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 
@@ -9,7 +8,7 @@ namespace Penumbra.Interop.Services;
 /// <summary>
 /// Creates ImGui handles over slices of array textures, and manages their lifetime.
 /// </summary>
-public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
+public sealed unsafe class TextureArraySlicer : Luna.IUiService, IDisposable
 {
     private const uint InitialTimeToLive = 2;
 

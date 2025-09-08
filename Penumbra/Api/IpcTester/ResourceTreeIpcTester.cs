@@ -6,7 +6,6 @@ using Dalamud.Plugin;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -16,7 +15,7 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager objects) : IUiService
+public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager objects) : Luna.IUiService
 {
     private readonly Stopwatch _stopwatch = new();
 

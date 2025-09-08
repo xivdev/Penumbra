@@ -1,11 +1,11 @@
 using Dalamud.Hooking;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Hooks;
 
 #if DEBUG
-public sealed unsafe class DebugHook : IHookService
+public sealed unsafe class DebugHook : Luna.IHookService
 {
     public const string Signature = "";
 

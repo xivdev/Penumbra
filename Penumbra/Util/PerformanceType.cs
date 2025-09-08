@@ -1,9 +1,8 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 
 namespace Penumbra.Util;
 
-public sealed class PerformanceTracker(IFramework framework) : OtterGui.Classes.PerformanceTracker<PerformanceType>(framework), IService;
+public sealed class PerformanceTracker(IFramework framework) : OtterGui.Classes.PerformanceTracker<PerformanceType>(framework), Luna.IService;
 
 public enum PerformanceType
 {

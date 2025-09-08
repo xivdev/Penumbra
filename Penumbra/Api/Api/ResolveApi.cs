@@ -1,5 +1,4 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -14,7 +13,7 @@ public class ResolveApi(
     Configuration config,
     CollectionResolver collectionResolver,
     ApiHelpers helpers,
-    IFramework framework) : IPenumbraApiResolve, IApiService
+    IFramework framework) : IPenumbraApiResolve, Luna.IApiService
 {
     public string ResolveDefaultPath(string gamePath)
         => ResolvePath(gamePath, modManager, collectionManager.Active.Default);

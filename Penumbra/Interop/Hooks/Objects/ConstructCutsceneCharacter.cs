@@ -1,14 +1,13 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Character, ConstructCutsceneCharacter.Priority>, IHookService
+public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Character, ConstructCutsceneCharacter.Priority>, Luna.IHookService
 {
     private readonly GameState     _gameState;
     private readonly ObjectManager _objects;
@@ -19,7 +18,7 @@ public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Characte
         CutsceneService = 0,
     }
 
-    public ConstructCutsceneCharacter(GameState gameState, HookManager hooks, ObjectManager objects)
+    public ConstructCutsceneCharacter(GameState gameState, Luna.HookManager hooks, ObjectManager objects)
         : base("ConstructCutsceneCharacter")
     {
         _gameState = gameState;

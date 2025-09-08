@@ -1,14 +1,13 @@
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.String;
 
 namespace Penumbra.UI.Knowledge;
 
 /// <summary> Draw the progress information for import. </summary>
-public sealed class KnowledgeWindow : Window, IUiService
+public sealed class KnowledgeWindow : Window, Luna.IUiService
 {
     private readonly IReadOnlyList<IKnowledgeTab> _tabs =
     [

@@ -1,12 +1,10 @@
-using OtterGui;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModFileCollection : IDisposable, IService
+public class ModFileCollection : IDisposable, Luna.IService
 {
     private readonly List<FileRegistry> _available = [];
     private readonly List<FileRegistry> _mtrl      = [];

@@ -1,7 +1,6 @@
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
@@ -11,7 +10,7 @@ using TextureResourceHandle = Penumbra.Interop.Structs.TextureResourceHandle;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class RsfService : IDisposable, IRequiredService
+public unsafe class RsfService : IDisposable, Luna.IRequiredService
 {
     /// <summary>
     /// We need to be able to obtain the requested LoD level.

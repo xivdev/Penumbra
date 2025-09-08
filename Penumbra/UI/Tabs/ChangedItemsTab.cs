@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -20,7 +19,7 @@ public class ChangedItemsTab(
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
     CommunicatorService communicator)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;

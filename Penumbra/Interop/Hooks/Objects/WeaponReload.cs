@@ -1,12 +1,11 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Character, CharacterWeapon, WeaponReload.Priority>, IHookService
+public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Character, CharacterWeapon, WeaponReload.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -14,7 +13,7 @@ public sealed unsafe class WeaponReload : EventWrapperPtr<DrawDataContainer, Cha
         DrawObjectState = 0,
     }
 
-    public WeaponReload(HookManager hooks)
+    public WeaponReload(Luna.HookManager hooks)
         : base("Reload Weapon")
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.WeaponReload);
 

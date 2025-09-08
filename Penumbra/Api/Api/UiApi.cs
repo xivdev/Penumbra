@@ -1,4 +1,3 @@
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
@@ -8,7 +7,7 @@ using Penumbra.UI;
 
 namespace Penumbra.Api.Api;
 
-public class UiApi : IPenumbraApiUi, IApiService, IDisposable
+public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly ConfigWindow        _configWindow;

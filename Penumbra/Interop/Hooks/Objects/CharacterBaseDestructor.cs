@@ -1,11 +1,10 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
-using OtterGui.Services;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBase, CharacterBaseDestructor.Priority>, IHookService
+public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBase, CharacterBaseDestructor.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -16,7 +15,7 @@ public sealed unsafe class CharacterBaseDestructor : EventWrapperPtr<CharacterBa
         MtrlTab = -1000,
     }
 
-    public CharacterBaseDestructor(HookManager hooks)
+    public CharacterBaseDestructor(Luna.HookManager hooks)
         : base("Destroy CharacterBase")
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CharacterBaseDestructor);
 

@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -15,7 +14,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EqpIdentifier, EqpEntryInternal>(editor, metaFiles), IService
+    : MetaDrawer<EqpIdentifier, EqpEntryInternal>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Equipment Parameter Edits (EQP)###EQP"u8;

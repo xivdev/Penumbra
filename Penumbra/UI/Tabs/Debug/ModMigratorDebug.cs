@@ -1,11 +1,10 @@
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class ModMigratorDebug(ModMigrator migrator) : IUiService
+public class ModMigratorDebug(ModMigrator migrator) : Luna.IUiService
 {
     private string _inputPath  = string.Empty;
     private string _outputPath = string.Empty;

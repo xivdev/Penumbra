@@ -1,7 +1,5 @@
-using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -10,7 +8,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class CombiningModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<CombiningModGroup, CombiningSubMod>(communicator, saveService, config), IService
+    : ModOptionEditor<CombiningModGroup, CombiningSubMod>(communicator, saveService, config), Luna.IService
 {
     protected override CombiningModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)

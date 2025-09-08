@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -15,7 +14,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EqdpIdentifier, EqdpEntryInternal>(editor, metaFiles), IService
+    : MetaDrawer<EqdpIdentifier, EqdpEntryInternal>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Racial Model Edits (EQDP)###EQDP"u8;

@@ -2,11 +2,10 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using OtterGui.Classes;
-using OtterGui.Services;
 
 namespace Penumbra.Services;
 
-public class ValidityChecker : IService
+public class ValidityChecker : Luna.IService
 {
     public const string Repository      = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
     public const string SeaOfStars      = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";

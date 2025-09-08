@@ -1,5 +1,4 @@
 using Dalamud.Plugin;
-using OtterGui.Services;
 using Penumbra.Api.Api;
 using Penumbra.Api.Helpers;
 using Penumbra.Communication;
@@ -7,7 +6,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Api;
 
-public sealed class IpcProviders : IDisposable, IApiService
+public sealed class IpcProviders : IDisposable, Luna.IApiService
 {
     private readonly List<IDisposable> _providers;
 

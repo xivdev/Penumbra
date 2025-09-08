@@ -1,9 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Utility;
-using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Groups;
@@ -15,7 +13,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModMerger : IDisposable, IService
+public class ModMerger : IDisposable, Luna.IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

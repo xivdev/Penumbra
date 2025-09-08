@@ -1,11 +1,9 @@
 using Dalamud.Interface.ImGuiNotification;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
@@ -26,7 +24,7 @@ public partial class ModCreator(
     Configuration config,
     ModDataEditor dataEditor,
     MetaFileManager metaFileManager,
-    GamePathParser gamePathParser) : IService
+    GamePathParser gamePathParser) : Luna.IService
 {
     public const    FeatureFlags  SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
     public readonly Configuration Config            = config;

@@ -1,12 +1,11 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Collections;
 
-public sealed class CollectionAutoSelector : IService, IDisposable
+public sealed class CollectionAutoSelector : Luna.IService, IDisposable
 {
     private readonly Configuration      _config;
     private readonly ActiveCollections  _collections;

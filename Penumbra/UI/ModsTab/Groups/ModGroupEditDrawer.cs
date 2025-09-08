@@ -5,7 +5,6 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Text.EndObjects;
 using Penumbra.Meta;
@@ -25,7 +24,7 @@ public sealed class ModGroupEditDrawer(
     Configuration config,
     FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
-    ImcChecker imcChecker) : IUiService
+    ImcChecker imcChecker) : Luna.IUiService
 {
     private static ReadOnlySpan<byte> AcrossGroupsLabel
         => "##DragOptionAcross"u8;

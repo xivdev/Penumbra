@@ -1,4 +1,3 @@
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -6,7 +5,7 @@ using Penumbra.Mods;
 
 namespace Penumbra.Api.Api;
 
-public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : IPenumbraApiCollection, IApiService
+public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : IPenumbraApiCollection, Luna.IApiService
 {
     public Dictionary<Guid, string> GetCollections()
         => collections.Storage.ToDictionary(c => c.Identity.Id, c => c.Identity.Name);

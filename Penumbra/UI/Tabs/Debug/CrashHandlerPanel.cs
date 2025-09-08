@@ -3,13 +3,12 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.DragDrop;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.CrashHandler;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class CrashHandlerPanel(CrashHandlerService _service, Configuration _config, IDragDropManager _dragDrop) : IService
+public class CrashHandlerPanel(CrashHandlerService service, Configuration config, IDragDropManager dragDrop) : Luna.IService
 {
     private CrashData? _lastDump;
     private string     _lastLoadedFile = string.Empty;
@@ -43,38 +42,38 @@ public class CrashHandlerPanel(CrashHandlerService _service, Configuration _conf
         if (!table)
             return;
 
-        PrintValue("Enabled",                  _config.UseCrashHandler);
-        PrintValue("Copied Executable Path",   _service.CopiedExe);
-        PrintValue("Original Executable Path", _service.OriginalExe);
-        PrintValue("Log File Path",            _service.LogPath);
-        PrintValue("XIV Process ID",           _service.ProcessId.ToString());
-        PrintValue("Crash Handler Running",    _service.IsRunning.ToString());
-        PrintValue("Crash Handler Process ID", _service.ChildProcessId.ToString());
-        PrintValue("Crash Handler Exit Code",  _service.ChildExitCode.ToString());
+        PrintValue("Enabled",                  config.UseCrashHandler);
+        PrintValue("Copied Executable Path",   service.CopiedExe);
+        PrintValue("Original Executable Path", service.OriginalExe);
+        PrintValue("Log File Path",            service.LogPath);
+        PrintValue("XIV Process ID",           service.ProcessId.ToString());
+        PrintValue("Crash Handler Running",    service.IsRunning.ToString());
+        PrintValue("Crash Handler Process ID", service.ChildProcessId.ToString());
+        PrintValue("Crash Handler Exit Code",  service.ChildExitCode.ToString());
     }
 
     private void DrawButtons()
     {
         if (ImGui.Button("Dump Crash Handler Memory"))
-            _lastDump = _service.Dump()?.Deserialize<CrashData>();
+            _lastDump = service.Dump()?.Deserialize<CrashData>();
 
         if (ImGui.Button("Enable"))
-            _service.Enable();
+            service.Enable();
 
         ImGui.SameLine();
         if (ImGui.Button("Disable"))
-            _service.Disable();
+            service.Disable();
 
         if (ImGui.Button("Shutdown Crash Handler"))
-            _service.CloseCrashHandler();
+            service.CloseCrashHandler();
         ImGui.SameLine();
         if (ImGui.Button("Relaunch Crash Handler"))
-            _service.LaunchCrashHandler();
+            service.LaunchCrashHandler();
     }
 
     private void DrawDropSource()
     {
-        _dragDrop.CreateImGuiSource("LogDragDrop", m => m.Files.Any(f => f.EndsWith("Penumbra.log")), m =>
+        dragDrop.CreateImGuiSource("LogDragDrop", m => m.Files.Any(f => f.EndsWith("Penumbra.log")), m =>
         {
             ImGui.TextUnformatted("Dragging Penumbra.log for import.");
             return true;
@@ -83,7 +82,7 @@ public class CrashHandlerPanel(CrashHandlerService _service, Configuration _conf
 
     private void DrawDropTarget()
     {
-        if (!_dragDrop.CreateImGuiTarget("LogDragDrop", out var files, out _))
+        if (!dragDrop.CreateImGuiTarget("LogDragDrop", out var files, out _))
             return;
 
         var file = files.FirstOrDefault(f => f.EndsWith("Penumbra.log"));
@@ -93,7 +92,7 @@ public class CrashHandlerPanel(CrashHandlerService _service, Configuration _conf
         _lastLoadedFile = file;
         try
         {
-            var jObj = _service.Load(file);
+            var jObj = service.Load(file);
             _lastLoad          = jObj?.Deserialize<CrashData>();
             _lastLoadException = null;
         }

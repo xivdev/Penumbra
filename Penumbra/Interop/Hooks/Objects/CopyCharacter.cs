@@ -1,11 +1,10 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Classes;
-using OtterGui.Services;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character, CopyCharacter.Priority>, IHookService
+public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character, CopyCharacter.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -13,7 +12,7 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
         CutsceneService = 0,
     }
 
-    public CopyCharacter(HookManager hooks)
+    public CopyCharacter(Luna.HookManager hooks)
         : base("Copy Character")
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CopyCharacter);
 

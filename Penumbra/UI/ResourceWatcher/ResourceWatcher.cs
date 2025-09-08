@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -17,7 +16,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
-public sealed class ResourceWatcher : IDisposable, ITab, IUiService
+public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
 {
     public const int        DefaultMaxEntries = 1024;
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;

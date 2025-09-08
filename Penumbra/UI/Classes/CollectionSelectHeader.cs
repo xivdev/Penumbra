@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -12,7 +11,7 @@ using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Classes;
 
-public class CollectionSelectHeader : IUiService
+public class CollectionSelectHeader : Luna.IUiService
 {
     private readonly CollectionCombo    _collectionCombo;
     private readonly ActiveCollections  _activeCollections;

@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
@@ -12,7 +11,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSelector selector) : ITab, IUiService
+public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSelector selector) : ITab, Luna.IUiService
 {
     private enum ModState
     {

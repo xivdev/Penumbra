@@ -1,14 +1,13 @@
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using OtterGui.Services;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.Util;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class FileReadService : IDisposable, IRequiredService
+public unsafe class FileReadService : IDisposable, Luna.IRequiredService
 {
     public FileReadService(PerformanceTracker performance, ResourceManagerService resourceManager, IGameInteropProvider interop)
     {

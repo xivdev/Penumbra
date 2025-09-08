@@ -1,5 +1,4 @@
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
@@ -9,7 +8,7 @@ using Penumbra.String;
 
 namespace Penumbra.Collections.Manager;
 
-public class TempCollectionManager : IDisposable, IService
+public class TempCollectionManager : IDisposable, Luna.IService
 {
     public          int                   GlobalChangeCounter { get; private set; }
     public readonly IndividualCollections Collections;

@@ -4,14 +4,13 @@ using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class PluginStateIpcTester : IUiService, IDisposable
+public class PluginStateIpcTester : Luna.IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface       _pi;
     public readonly  EventSubscriber<string, bool> ModDirectoryChanged;

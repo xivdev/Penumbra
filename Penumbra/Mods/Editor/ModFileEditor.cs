@@ -1,4 +1,3 @@
-using OtterGui.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
@@ -6,7 +5,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModFileEditor(ModFileCollection files, ModManager modManager, CommunicatorService communicator) : IService
+public class ModFileEditor(ModFileCollection files, ModManager modManager, CommunicatorService communicator) : Luna.IService
 {
     public bool Changes { get; private set; }
 

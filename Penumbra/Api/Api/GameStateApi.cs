@@ -1,5 +1,4 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.ResourceLoading;
@@ -10,7 +9,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Api.Api;
 
-public class GameStateApi : IPenumbraApiGameState, IApiService, IDisposable
+public class GameStateApi : IPenumbraApiGameState, Luna.IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly CollectionResolver  _collectionResolver;

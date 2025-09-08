@@ -10,11 +10,10 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
+using Luna;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
@@ -45,6 +44,7 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop;
 using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
+using FrameworkManager = OtterGui.Classes.FrameworkManager;
 
 namespace Penumbra.UI.Tabs.Debug;
 

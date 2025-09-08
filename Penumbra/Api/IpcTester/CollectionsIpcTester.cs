@@ -4,7 +4,6 @@ using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Collections.Manager;
@@ -13,7 +12,7 @@ using ImGuiClip = OtterGui.ImGuiClip;
 
 namespace Penumbra.Api.IpcTester;
 
-public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
+public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 {
     private int               _objectIdx;
     private string            _collectionIdString = string.Empty;

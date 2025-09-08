@@ -1,10 +1,9 @@
-using OtterGui.Services;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
-public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections) : IService
+public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections) : Luna.IService
 {
     private CancellationTokenSource _cancel = new();
     private Task?                   _task;

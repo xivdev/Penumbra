@@ -1,7 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -13,7 +12,7 @@ namespace Penumbra.Collections.Manager;
 /// This is transitive, so a collection A inheriting from B also inherits from everything B inherits.
 /// Circular dependencies are resolved by distinctness.
 /// </summary>
-public class InheritanceManager : IDisposable, IService
+public class InheritanceManager : IDisposable, Luna.IService
 {
     public enum ValidInheritance
     {

@@ -22,7 +22,7 @@ public class ModPanelChangedItemsTab(
     ImGuiCacheService cacheService,
     Configuration config,
     ModDataEditor dataEditor)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     private readonly ImGuiCacheService.CacheId _cacheId = cacheService.GetNewId();
 

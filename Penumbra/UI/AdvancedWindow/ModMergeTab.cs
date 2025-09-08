@@ -3,7 +3,6 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
@@ -12,7 +11,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ModMergeTab(ModMerger modMerger) : IUiService
+public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
 {
     private readonly ModCombo _modCombo   = new(() => modMerger.ModsWithoutCurrent.ToList());
     private          string   _newModName = string.Empty;

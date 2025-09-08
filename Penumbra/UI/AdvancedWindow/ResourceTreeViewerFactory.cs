@@ -1,6 +1,5 @@
 using Dalamud.Plugin.Services;
 using OtterGui.Compression;
-using OtterGui.Services;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
@@ -16,7 +15,7 @@ public class ResourceTreeViewerFactory(
     PcpService pcpService,
     IDataManager gameData,
     FileDialogService fileDialog,
-    FileCompactor compactor) : IService
+    FileCompactor compactor) : Luna.IService
 {
     public ResourceTreeViewer Create(int actionCapacity, Action onRefresh, Action<ResourceNode, IWritable?, Vector2> drawActions)
         => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, communicator, pcpService, gameData,

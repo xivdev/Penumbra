@@ -1,9 +1,6 @@
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
 using OtterGui.Raii;
-using OtterGui.Services;
-using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.GameData.Interop;
@@ -11,7 +8,7 @@ using Penumbra.UI;
 
 namespace Penumbra.Api.IpcTester;
 
-public class RedrawingIpcTester : IUiService, IDisposable
+public class RedrawingIpcTester : Luna.IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface     _pi;
     private readonly ObjectManager              _objects;

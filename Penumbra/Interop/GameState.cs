@@ -1,5 +1,4 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
@@ -7,7 +6,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop;
 
-public class GameState : IService
+public class GameState : Luna.IService
 {
     #region Last Game Object
 

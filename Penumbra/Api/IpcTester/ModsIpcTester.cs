@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
@@ -10,7 +9,7 @@ using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ModsIpcTester : IUiService, IDisposable
+public class ModsIpcTester : Luna.IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface _pi;
 

@@ -1,6 +1,5 @@
 using OtterGui.Classes;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -9,7 +8,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<MultiModGroup, MultiSubMod>(communicator, saveService, config), IService
+    : ModOptionEditor<MultiModGroup, MultiSubMod>(communicator, saveService, config), Luna.IService
 {
     public void ChangeToSingle(MultiModGroup group)
     {

@@ -3,7 +3,6 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -29,7 +28,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ItemSwapTab : IDisposable, ITab, IUiService
+public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

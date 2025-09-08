@@ -4,13 +4,12 @@ using Dalamud.Utility;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.UI;
 
-public class FileDialogService : IDisposable, IUiService
+public class FileDialogService : IDisposable, Luna.IUiService
 {
     private readonly CommunicatorService                  _communicator;
     private readonly FileDialogManager                    _manager;

@@ -1,6 +1,5 @@
 using Dalamud.Plugin.Services;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -13,7 +12,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
-public class ModMigrator(IDataManager gameData, TextureManager textures) : IService
+public class ModMigrator(IDataManager gameData, TextureManager textures) : Luna.IService
 {
     private sealed class FileDataDict : MultiDictionary<string, (string GamePath, IModDataContainer Container)>;
 

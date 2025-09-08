@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.UI.Classes;
@@ -22,7 +21,7 @@ public class ModPanelSettingsTab(
     CommunicatorService communicator,
     ModGroupDrawer modGroupDrawer,
     Configuration config)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     private bool _inherited;
     private bool _temporary;

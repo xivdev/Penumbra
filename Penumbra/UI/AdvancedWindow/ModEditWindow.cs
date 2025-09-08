@@ -9,9 +9,7 @@ using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Log;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -36,7 +34,7 @@ using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public partial class ModEditWindow : Window, IDisposable, IUiService
+public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
 

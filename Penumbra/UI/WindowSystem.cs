@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using OtterGui.Services;
 using Penumbra.Interop.Services;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Knowledge;
@@ -9,7 +8,7 @@ using Penumbra.UI.Tabs.Debug;
 
 namespace Penumbra.UI;
 
-public class PenumbraWindowSystem : IDisposable, IUiService
+public class PenumbraWindowSystem : IDisposable, Luna.IUiService
 {
     private readonly IUiBuilder         _uiBuilder;
     private readonly WindowSystem       _windowSystem;

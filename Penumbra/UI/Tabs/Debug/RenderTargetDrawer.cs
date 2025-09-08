@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using OtterGui;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
@@ -10,7 +9,7 @@ using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, DalamudConfigService dalamudConfig, Configuration config) : IUiService
+public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, DalamudConfigService dalamudConfig, Configuration config) : Luna.IUiService
 {
     private void DrawStatistics()
     {

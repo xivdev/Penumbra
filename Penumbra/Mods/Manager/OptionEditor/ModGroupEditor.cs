@@ -1,7 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
@@ -40,7 +39,7 @@ public class ModGroupEditor(
     CombiningModGroupEditor combiningEditor,
     CommunicatorService communicator,
     SaveService saveService,
-    Configuration config) : IService
+    Configuration config) : Luna.IService
 {
     public SingleModGroupEditor SingleEditor
         => singleEditor;

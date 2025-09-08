@@ -1,12 +1,11 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CharacterDestructor : EventWrapperPtr<Character, CharacterDestructor.Priority>, IHookService
+public sealed unsafe class CharacterDestructor : EventWrapperPtr<Character, CharacterDestructor.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -20,7 +19,7 @@ public sealed unsafe class CharacterDestructor : EventWrapperPtr<Character, Char
         DrawObjectState = 0,
     }
 
-    public CharacterDestructor(HookManager hooks)
+    public CharacterDestructor(Luna.HookManager hooks)
         : base("Character Destructor")
         => _task = hooks.CreateHook<Delegate>(Name, Sigs.CharacterDestructor, Detour, !HookOverrides.Instance.Objects.CharacterDestructor);
 

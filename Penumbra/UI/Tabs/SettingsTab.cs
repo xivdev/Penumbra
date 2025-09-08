@@ -9,7 +9,6 @@ using OtterGui;
 using OtterGui.Compression;
 using OtterGui.Custom;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
@@ -24,7 +23,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Tabs;
 
-public class SettingsTab : ITab, IUiService
+public class SettingsTab : ITab, Luna.IUiService
 {
     public const int RootDirectoryMaxLength = 64;
 

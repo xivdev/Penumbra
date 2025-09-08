@@ -2,12 +2,11 @@ using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using Penumbra.UI.Classes;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 
 namespace Penumbra.UI;
 
-public class IncognitoService(TutorialService tutorial, Configuration config) : IService
+public class IncognitoService(TutorialService tutorial, Configuration config) : Luna.IService
 {
     public bool IncognitoMode
         => config.Ephemeral.IncognitoMode;

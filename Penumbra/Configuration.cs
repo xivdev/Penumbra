@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using OtterGui.Classes;
 using OtterGui.Extensions;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
@@ -28,7 +27,7 @@ public record PcpSettings
 }
 
 [Serializable]
-public class Configuration : IPluginConfiguration, ISavable, IService
+public class Configuration : IPluginConfiguration, ISavable, Luna.IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;

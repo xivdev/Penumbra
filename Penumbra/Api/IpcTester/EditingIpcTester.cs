@@ -2,13 +2,12 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class EditingIpcTester(IDalamudPluginInterface pi) : IUiService
+public class EditingIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 {
     private string _inputPath   = string.Empty;
     private string _inputPath2  = string.Empty;

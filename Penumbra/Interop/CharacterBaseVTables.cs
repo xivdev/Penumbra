@@ -1,11 +1,10 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using OtterGui.Services;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop;
 
-public sealed unsafe class CharacterBaseVTables : IService
+public sealed unsafe class CharacterBaseVTables : Luna.IService
 {
     [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
     public readonly nint* HumanVTable = null!;

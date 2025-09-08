@@ -1,13 +1,12 @@
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ResolveIpcTester(IDalamudPluginInterface pi) : IUiService
+public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 {
     private string                       _currentResolvePath = string.Empty;
     private string                       _currentReversePath = string.Empty;

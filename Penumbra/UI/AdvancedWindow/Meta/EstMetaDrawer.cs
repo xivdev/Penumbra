@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta;
@@ -14,7 +13,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EstIdentifier, EstEntry>(editor, metaFiles), IService
+    : MetaDrawer<EstIdentifier, EstEntry>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Extra Skeleton Parameters (EST)###EST"u8;

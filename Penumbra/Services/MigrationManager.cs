@@ -1,7 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Lumina.Data.Files;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Lumina.Extensions;
 using Penumbra.GameData.Files.Utility;
 using Penumbra.Import.Textures;
@@ -12,7 +11,7 @@ using MtrlFile = Penumbra.GameData.Files.MtrlFile;
 
 namespace Penumbra.Services;
 
-public class MigrationManager(Configuration config) : IService
+public class MigrationManager(Configuration config) : Luna.IService
 {
     public enum TaskType : byte
     {

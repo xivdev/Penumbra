@@ -2,7 +2,6 @@ using Dalamud.Plugin.Services;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Files.AtchStructs;
@@ -14,7 +13,7 @@ using Penumbra.Meta.Manipulations;
 namespace Penumbra.Api.Api;
 
 public class MetaApi(IFramework framework, CollectionResolver collectionResolver, ApiHelpers helpers)
-    : IPenumbraApiMeta, IApiService
+    : IPenumbraApiMeta, Luna.IApiService
 {
     public string GetPlayerMetaManipulations()
     {

@@ -1,7 +1,6 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
@@ -18,7 +17,7 @@ namespace Penumbra.Interop.Hooks.PostProcessing;
 ///     <item>Parameter is the collection associated with the game object. </item>
 ///     <item>Parameter is the slot that was recomputed. If this is Unknown, it is a general new update call. </item>
 /// </list> </summary>
-public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollection, AttributeHook.Priority>, IHookService
+public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollection, AttributeHook.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -29,7 +28,7 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
     private readonly CollectionResolver _resolver;
     private readonly Configuration      _config;
 
-    public AttributeHook(HookManager hooks, Configuration config, CollectionResolver resolver)
+    public AttributeHook(Luna.HookManager hooks, Configuration config, CollectionResolver resolver)
         : base("Update Model Attributes")
     {
         _config   = config;

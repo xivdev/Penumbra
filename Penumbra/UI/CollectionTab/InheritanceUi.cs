@@ -3,14 +3,13 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.CollectionTab;
 
-public class InheritanceUi(CollectionManager collectionManager, IncognitoService incognito) : IUiService
+public class InheritanceUi(CollectionManager collectionManager, IncognitoService incognito) : Luna.IUiService
 {
     private const int    InheritedCollectionHeight = 9;
     private const string InheritanceDragDropLabel  = "##InheritanceMove";

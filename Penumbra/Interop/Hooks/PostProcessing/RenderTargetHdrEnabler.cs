@@ -2,17 +2,15 @@ using System.Collections.Immutable;
 using Dalamud.Hooking;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
-using OtterGui.Services;
 using Penumbra.GameData;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public unsafe class RenderTargetHdrEnabler : IService, IDisposable
+public unsafe class RenderTargetHdrEnabler : Luna.IService, IDisposable
 {
     /// <remarks> This array must be sorted by CreationOrder ascending. </remarks>
     private static readonly ImmutableArray<ForcedTextureConfig> ForcedTextureConfigs =

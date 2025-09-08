@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -22,7 +21,7 @@ namespace Penumbra.Services;
 /// Contains everything to migrate from older versions of the config to the current,
 /// including deprecated fields.
 /// </summary>
-public class ConfigMigrationService(SaveService saveService, BackupService backupService) : IService
+public class ConfigMigrationService(SaveService saveService, BackupService backupService) : Luna.IService
 {
     private Configuration _config = null!;
     private JObject       _data   = null!;

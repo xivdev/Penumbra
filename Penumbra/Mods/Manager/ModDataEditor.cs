@@ -1,6 +1,5 @@
 using Dalamud.Utility;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Services;
@@ -29,7 +28,7 @@ public enum ModDataChangeType : ushort
     RequiredFeatures      = 0x8000,
 }
 
-public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData) : IService
+public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData) : Luna.IService
 {
     public SaveService SaveService
         => saveService;

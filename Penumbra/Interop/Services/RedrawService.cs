@@ -6,7 +6,6 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using OtterGui.Services;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
@@ -20,7 +19,7 @@ using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe partial class RedrawService : IService
+public unsafe partial class RedrawService : Luna.IService
 {
     public const int GPosePlayerIdx = 201;
     public const int GPoseSlots     = 42;

@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using OtterGui.Extensions;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
@@ -13,7 +12,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) : IUiService
+public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) : Luna.IUiService
 {
     private int _objectIndex;
 

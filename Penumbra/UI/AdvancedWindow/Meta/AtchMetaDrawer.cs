@@ -4,7 +4,6 @@ using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
@@ -20,7 +19,7 @@ using Notification = OtterGui.Classes.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
-public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, IService
+public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Attachment Points (ATCH)###ATCH"u8;

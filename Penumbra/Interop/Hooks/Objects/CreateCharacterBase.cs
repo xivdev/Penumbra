@@ -1,12 +1,11 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, CustomizeArray, CharacterArmor, CreateCharacterBase.Priority>, IHookService
+public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, CustomizeArray, CharacterArmor, CreateCharacterBase.Priority>, Luna.IHookService
 {
     public enum Priority
     {
@@ -14,7 +13,7 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
         MetaState = 0,
     }
 
-    public CreateCharacterBase(HookManager hooks)
+    public CreateCharacterBase(Luna.HookManager hooks)
         : base("Create CharacterBase")
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CreateCharacterBase);
 

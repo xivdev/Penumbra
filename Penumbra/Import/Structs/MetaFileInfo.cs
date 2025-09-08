@@ -51,7 +51,7 @@ public partial struct MetaFileInfo
     public MetaFileInfo(GamePathParser parser, string fileName)
     {
         // Set the primary type from the gamePath start.
-        PrimaryType   = parser.PathToObjectType(fileName);
+        PrimaryType   = GamePathParser.PathToObjectType(fileName);
         PrimaryId     = 0;
         SecondaryType = BodySlot.Unknown;
         SecondaryId   = 0;

@@ -6,7 +6,6 @@ using Penumbra.UI.Classes;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
@@ -31,7 +30,7 @@ public class ModsTab(
     CollectionSelectHeader collectionHeader,
     ITargetManager targets,
     ObjectManager objects)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     private readonly ActiveCollections _activeCollections = collectionManager.Active;
 

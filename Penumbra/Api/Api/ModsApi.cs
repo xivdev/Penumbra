@@ -1,6 +1,5 @@
 using Newtonsoft.Json.Linq;
 using OtterGui.Compression;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods;
@@ -9,7 +8,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
+public class ModsApi : IPenumbraApiMods, Luna.IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;

@@ -1,7 +1,6 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
@@ -24,7 +23,7 @@ public class ResourceTreeFactory(
     ActorManager actors,
     PathState pathState,
     IFramework framework,
-    ModManager modManager) : IService
+    ModManager modManager) : Luna.IService
 {
     private static readonly string ParentDirectoryPrefix = $"..{Path.DirectorySeparatorChar}";
 

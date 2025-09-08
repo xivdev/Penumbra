@@ -1,6 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Newtonsoft.Json.Linq;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.GameData.Interop;
@@ -8,7 +7,7 @@ using Penumbra.Interop.ResourceTree;
 
 namespace Penumbra.Api.Api;
 
-public class ResourceTreeApi(ResourceTreeFactory resourceTreeFactory, ObjectManager objects) : IPenumbraApiResourceTree, IApiService
+public class ResourceTreeApi(ResourceTreeFactory resourceTreeFactory, ObjectManager objects) : IPenumbraApiResourceTree, Luna.IApiService
 {
     public Dictionary<string, HashSet<string>>?[] GetGameObjectResourcePaths(params ushort[] gameObjects)
     {

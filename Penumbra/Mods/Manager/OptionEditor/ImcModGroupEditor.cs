@@ -1,6 +1,5 @@
 using OtterGui.Classes;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
@@ -11,7 +10,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), IService
+    : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), Luna.IService
 {
     /// <summary> Add a new, empty imc group with the given manipulation data. </summary>
     public ImcModGroup? AddModGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry,

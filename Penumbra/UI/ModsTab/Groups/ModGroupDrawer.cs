@@ -3,7 +3,6 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Collections;
@@ -15,7 +14,7 @@ using Penumbra.Mods.SubMods;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
-public sealed class ModGroupDrawer : IUiService
+public sealed class ModGroupDrawer : Luna.IUiService
 {
     private readonly List<(IModGroup, int)> _blockGroupCache = [];
     private          bool                   _temporary;

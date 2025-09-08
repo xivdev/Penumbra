@@ -1,13 +1,12 @@
 using System.Collections.Frozen;
 using Newtonsoft.Json;
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class PluginStateApi(Configuration config, CommunicatorService communicator) : IPenumbraApiPluginState, IApiService
+public class PluginStateApi(Configuration config, CommunicatorService communicator) : IPenumbraApiPluginState, Luna.IApiService
 {
     public string GetModDirectory()
         => config.ModDirectory;

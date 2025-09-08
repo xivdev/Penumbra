@@ -1,14 +1,13 @@
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class UiIpcTester : IUiService, IDisposable
+public class UiIpcTester : Luna.IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface                              _pi;
     public readonly  EventSubscriber<string, float, float>               PreSettingsTabBar;

@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Plugin;
 using OtterGui.Raii;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -10,7 +9,7 @@ using Penumbra.String;
 
 namespace Penumbra.Api.IpcTester;
 
-public class GameStateIpcTester : IUiService, IDisposable
+public class GameStateIpcTester : Luna.IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface                        _pi;
     public readonly  EventSubscriber<nint, Guid, nint, nint, nint> CharacterBaseCreating;

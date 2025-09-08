@@ -1,5 +1,4 @@
 using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
@@ -9,7 +8,7 @@ using Watcher = Penumbra.UI.ResourceWatcher.ResourceWatcher;
 
 namespace Penumbra.UI.Tabs;
 
-public class ConfigTabBar : IDisposable, IUiService
+public class ConfigTabBar : IDisposable, Luna.IUiService
 {
     private readonly CommunicatorService _communicator;
 

@@ -4,7 +4,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Scheduler;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
@@ -16,7 +15,7 @@ namespace Penumbra.UI.Tabs.Debug;
 public unsafe class GlobalVariablesDrawer(
     CharacterUtility characterUtility,
     ResidentResourceManager residentResources,
-    SchedulerResourceManagementService scheduler) : IUiService
+    SchedulerResourceManagementService scheduler) : Luna.IUiService
 {
     /// <summary> Draw information about some game global variables. </summary>
     public void Draw()

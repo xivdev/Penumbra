@@ -4,7 +4,6 @@ using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
@@ -24,7 +23,7 @@ public class TemporaryIpcTester(
     TempCollectionManager tempCollections,
     SaveService saveService,
     Configuration config)
-    : IUiService
+    : Luna.IUiService
 {
     public Guid LastCreatedCollectionId = Guid.Empty;
 

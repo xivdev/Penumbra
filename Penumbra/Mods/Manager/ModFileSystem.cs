@@ -1,13 +1,12 @@
 using Dalamud.Interface.ImGuiNotification;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, IService
+public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, Luna.IService
 {
     private readonly ModManager          _modManager;
     private readonly CommunicatorService _communicator;

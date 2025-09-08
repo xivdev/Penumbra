@@ -6,7 +6,6 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using OtterGui.Log;
-using OtterGui.Services;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
@@ -15,7 +14,7 @@ using Notification = OtterGui.Classes.Notification;
 namespace Penumbra.Services;
 
 public class MessageService(Logger log, IUiBuilder builder, IChatGui chat, INotificationManager notificationManager)
-    : OtterGui.Classes.MessageService(log, builder, chat, notificationManager), IService
+    : OtterGui.Classes.MessageService(log, builder, chat, notificationManager), Luna.IService
 {
     public void LinkItem(in Item item)
     {

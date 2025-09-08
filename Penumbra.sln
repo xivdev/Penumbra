@@ -55,6 +55,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "structs", "structs", "{B03F
 		schemas\structs\option.json = schemas\structs\option.json
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luna", "Luna\Luna\Luna.csproj", "{DEA936D7-1386-55A1-7451-E0C240F56E9D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luna.Generators", "Luna\Luna.Generators\Luna.Generators.csproj", "{744CE38E-DCA8-C17D-7B02-741F36243CF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -85,6 +89,14 @@ Global
 		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Debug|x64.Build.0 = Debug|x64
 		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Release|x64.ActiveCfg = Release|x64
 		{EE834491-A98F-4395-BE0D-6861AE5AD953}.Release|x64.Build.0 = Release|x64
+		{DEA936D7-1386-55A1-7451-E0C240F56E9D}.Debug|x64.ActiveCfg = Debug|x64
+		{DEA936D7-1386-55A1-7451-E0C240F56E9D}.Debug|x64.Build.0 = Debug|x64
+		{DEA936D7-1386-55A1-7451-E0C240F56E9D}.Release|x64.ActiveCfg = Release|x64
+		{DEA936D7-1386-55A1-7451-E0C240F56E9D}.Release|x64.Build.0 = Release|x64
+		{744CE38E-DCA8-C17D-7B02-741F36243CF6}.Debug|x64.ActiveCfg = Debug|x64
+		{744CE38E-DCA8-C17D-7B02-741F36243CF6}.Debug|x64.Build.0 = Debug|x64
+		{744CE38E-DCA8-C17D-7B02-741F36243CF6}.Release|x64.ActiveCfg = Release|x64
+		{744CE38E-DCA8-C17D-7B02-741F36243CF6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

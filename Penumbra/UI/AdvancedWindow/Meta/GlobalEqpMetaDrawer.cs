@@ -1,8 +1,8 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json.Linq;
-using OtterGui.Services;
 using OtterGui.Text;
+using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -10,7 +10,7 @@ using Penumbra.Mods.Editor;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<GlobalEqpManipulation, byte>(editor, metaFiles), IService
+    : MetaDrawer<GlobalEqpManipulation, byte>(editor, metaFiles), Luna.IService
 {
     public override ReadOnlySpan<byte> Label
         => "Global Equipment Parameter Edits (Global EQP)###GEQP"u8;
@@ -97,7 +97,7 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
                 identifier = new GlobalEqpManipulation
                 {
                     Type      = type,
-                    Condition = type.HasCondition() ? identifier.Type.HasCondition() ? identifier.Condition : 1 : 0,
+                    Condition = type.HasCondition() ? identifier.Type.HasCondition() ? identifier.Condition : new PrimaryId(1) : PrimaryId.Zero,
                 };
                 ret = true;
             }

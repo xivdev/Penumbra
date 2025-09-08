@@ -6,7 +6,6 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using OtterGui.Classes;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -29,7 +28,7 @@ public class ModPanelEditTab(
     ModGroupEditDrawer groupEditDrawer,
     DescriptionEditPopup descriptionPopup,
     AddGroupDrawer addGroupDrawer)
-    : ITab, IUiService
+    : ITab, Luna.IUiService
 {
     private readonly TagButtons _modTags = new();
 

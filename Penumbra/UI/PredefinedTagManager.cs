@@ -7,7 +7,6 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -16,7 +15,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
-public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, IService
+public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, Luna.IService
 {
     public const int Version = 1;
 

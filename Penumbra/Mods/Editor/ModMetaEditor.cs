@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.Collections.Cache;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
@@ -9,13 +8,12 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.Mods.Editor;
 
 public class ModMetaEditor(
     ModGroupEditor groupEditor,
-    MetaFileManager metaFileManager) : MetaDictionary, IService
+    MetaFileManager metaFileManager) : MetaDictionary, Luna.IService
 {
     public sealed class OtherOptionData : HashSet<string>
     {

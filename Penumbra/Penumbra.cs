@@ -21,7 +21,6 @@ using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
-using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
@@ -32,9 +31,6 @@ namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
-    public string Name
-        => "Penumbra";
-
     public static readonly Logger         Log = new();
     public static          MessageService Messager { get; private set; } = null!;
     public static          DynamisIpc     Dynamis  { get; private set; } = null!;
@@ -53,7 +49,7 @@ public class Penumbra : IDalamudPlugin
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
-    private readonly ServiceManager _services;
+    private readonly Luna.ServiceManager _services;
 
     public Penumbra(IDalamudPluginInterface pluginInterface)
     {
@@ -67,7 +63,7 @@ public class Penumbra : IDalamudPlugin
             Dynamis          = _services.GetService<DynamisIpc>();
             _validityChecker = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
-
+            
             var startup = _services.GetService<DalamudConfigService>()
                 .GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
@@ -90,21 +86,21 @@ public class Penumbra : IDalamudPlugin
             _services.GetService<ModCacheManager>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
-
+            
             _services.GetService<DalamudSubstitutionProvider>(); // Initialize before Interface.
-
-            foreach (var service in _services.GetServicesImplementing<IAwaitedService>())
+            
+            foreach (var service in _services.GetServicesImplementing<Luna.IAwaitedService>())
                 service.Awaiter.Wait();
-
+            
             SetupInterface();
             SetupApi();
-
+            
             _validityChecker.LogExceptions();
             Log.Information(
                 $"Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
             OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
             Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
-
+            
             if (_characterUtility.Ready)
                 _residentResources.Reload();
         }

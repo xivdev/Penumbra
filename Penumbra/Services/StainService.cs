@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 using OtterGui.Widgets;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
@@ -13,7 +12,7 @@ using Penumbra.UI.AdvancedWindow.Materials;
 
 namespace Penumbra.Services;
 
-public class StainService : IService
+public class StainService : Luna.IService
 {
     public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile)
         : FilterComboCache<StmKeyType>(stmFile.Entries.Keys.Prepend(0), MouseWheelType.None, Penumbra.Log)

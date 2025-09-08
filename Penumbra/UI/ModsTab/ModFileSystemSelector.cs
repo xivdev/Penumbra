@@ -8,7 +8,6 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Text.Widget;
 using Penumbra.Api.Enums;
@@ -24,7 +23,7 @@ using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI.ModsTab;
 
-public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>, IUiService
+public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>, Luna.IUiService
 {
     private readonly CommunicatorService     _communicator;
     private readonly Configuration           _config;

@@ -2,16 +2,14 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using OtterGui.Extensions;
-using OtterGui.Filesystem;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
 
-public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor, PredefinedTagManager tagManager) : IUiService
+public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor, PredefinedTagManager tagManager) : Luna.IUiService
 {
     public void Draw()
     {

@@ -2,7 +2,6 @@ using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;
@@ -13,7 +12,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 
-public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredService
+public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequiredService
 {
     public static readonly Utf8GamePath PreBoneDeformerPath =
         Utf8GamePath.FromSpan("chara/xls/boneDeformer/human.pbd"u8, MetaDataComputation.All, out var p) ? p : Utf8GamePath.Empty;
@@ -30,7 +29,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, IRequiredServi
     private readonly HumanSetupScalingHook _humanSetupScalingHook;
 
     public PreBoneDeformerReplacer(CharacterUtility utility, CollectionResolver collectionResolver, ResourceLoader resourceLoader,
-        HookManager hooks, IFramework framework, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
+        Luna.HookManager hooks, IFramework framework, CharacterBaseVTables vTables, HumanSetupScalingHook humanSetupScalingHook)
     {
         _utility                                 =  utility;
         _collectionResolver                      =  collectionResolver;

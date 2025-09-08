@@ -3,7 +3,6 @@ using FFXIVClientStructs.Interop;
 using Dalamud.Bindings.ImGui;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Text.Widget.Editors;
 using Penumbra.Interop.Services;
@@ -11,7 +10,7 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.UI.AdvancedWindow.Materials;
 
-public sealed unsafe class MaterialTemplatePickers : IUiService
+public sealed unsafe class MaterialTemplatePickers : Luna.IUiService
 {
     private const float MaximumTextureSize = 64.0f;
 

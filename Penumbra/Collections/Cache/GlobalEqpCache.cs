@@ -1,12 +1,11 @@
 using OtterGui.Classes;
-using OtterGui.Services;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 
 namespace Penumbra.Collections.Cache;
 
-public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, IService
+public class GlobalEqpCache : ReadWriteDictionary<GlobalEqpManipulation, IMod>, Luna.IService
 {
     private readonly HashSet<PrimaryId> _doNotHideEarrings  = [];
     private readonly HashSet<PrimaryId> _doNotHideNecklace  = [];

@@ -1,9 +1,6 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Textures;
-using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 
 namespace Penumbra.UI;
 
@@ -11,7 +8,7 @@ namespace Penumbra.UI;
 /// A Launch Button used in the title screen of the game,
 /// using the Dalamud-provided collapsible submenu.
 /// </summary>
-public class LaunchButton : IDisposable, IUiService
+public class LaunchButton : IDisposable, Luna.IUiService
 {
     private readonly ConfigWindow     _configWindow;
     private readonly IUiBuilder       _uiBuilder;

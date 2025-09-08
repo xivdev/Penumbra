@@ -3,7 +3,6 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using Lumina.Excel.Sheets;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Communication;
 using Penumbra.GameData;
@@ -14,7 +13,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class SchedulerResourceManagementService : IService, IDisposable
+public unsafe class SchedulerResourceManagementService : Luna.IService, IDisposable
 {
     private static readonly CiByteString TmbExtension = new(".tmb"u8, MetaDataComputation.All);
     private static readonly CiByteString FolderPrefix = new("chara/action/"u8, MetaDataComputation.All);
