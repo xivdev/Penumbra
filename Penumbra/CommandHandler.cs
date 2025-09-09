@@ -2,7 +2,7 @@ using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -16,7 +16,7 @@ using Penumbra.UI.Knowledge;
 
 namespace Penumbra;
 
-public class CommandHandler : IDisposable, Luna.IApiService
+public class CommandHandler : IDisposable, IApiService
 {
     private const string CommandName = "/penumbra";
 

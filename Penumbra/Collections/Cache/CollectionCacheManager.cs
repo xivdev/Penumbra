@@ -1,5 +1,5 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
@@ -17,7 +17,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
-public class CollectionCacheManager : IDisposable, Luna.IService
+public class CollectionCacheManager : IDisposable, IService
 {
     private readonly  FrameworkManager    _framework;
     private readonly  CommunicatorService _communicator;

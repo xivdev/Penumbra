@@ -1,4 +1,4 @@
-using OtterGui.Classes;
+using Luna;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;

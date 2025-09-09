@@ -1,8 +1,8 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -20,7 +20,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
-public class PcpService : Luna.IApiService, IDisposable
+public class PcpService : IApiService, IDisposable
 {
     public const string Extension = ".pcp";
 
