@@ -1,5 +1,4 @@
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -80,15 +79,15 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    private void CollectionChangeClear(CollectionType type, ModCollection? _1, ModCollection? _2, string _3)
+    private void CollectionChangeClear(in CollectionChange.Arguments arguments)
     {
-        if (type is not (CollectionType.Current or CollectionType.Interface or CollectionType.Inactive))
+        if (arguments.Type is not (CollectionType.Current or CollectionType.Interface or CollectionType.Inactive))
             _dirty = _cache.Count > 0;
     }
 
     private void TerritoryClear(ushort _2)
         => _dirty = _cache.Count > 0;
 
-    private void OnCharacterDestructor(Character* character)
-        => _cache.Remove((nint)character);
+    private void OnCharacterDestructor(in CharacterDestructor.Arguments arguments)
+        => _cache.Remove(arguments.Character);
 }

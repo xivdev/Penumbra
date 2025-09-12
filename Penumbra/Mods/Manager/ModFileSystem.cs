@@ -77,21 +77,21 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
     }
 
     // Update sort order when defaulted mod names change.
-    private void OnModDataChange(ModDataChangeType type, Mod mod, string? oldName)
+    private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
-        if (!type.HasFlag(ModDataChangeType.Name) || oldName == null || !TryGetValue(mod, out var leaf))
+        if (!arguments.Type.HasFlag(ModDataChangeType.Name) || arguments.OldName == null || !TryGetValue(arguments.Mod, out var leaf))
             return;
 
-        var old = oldName.FixName();
+        var old = arguments.OldName.FixName();
         if (old == leaf.Name || leaf.Name.IsDuplicateName(out var baseName, out _) && baseName == old)
-            RenameWithDuplicates(leaf, mod.Name.Text);
+            RenameWithDuplicates(leaf, arguments.Mod.Name.Text);
     }
 
     // Update the filesystem if a mod has been added or removed.
     // Save it, if the mod directory has been moved, since this will change the save format.
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldPath, DirectoryInfo? newPath)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModPathChangeType.Added:
                 var parent = Root;
@@ -103,14 +103,14 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
                     catch (Exception e)
                     {
                         Penumbra.Messager.NotificationMessage(e,
-                            $"Could not move newly imported mod {mod.Name} to default import folder {_config.DefaultImportFolder}.",
+                            $"Could not move newly imported mod {arguments.Mod.Name} to default import folder {_config.DefaultImportFolder}.",
                             NotificationType.Warning);
                     }
 
-                CreateDuplicateLeaf(parent, mod.Name.Text, mod);
+                CreateDuplicateLeaf(parent, arguments.Mod.Name.Text, arguments.Mod);
                 break;
             case ModPathChangeType.Deleted:
-                if (TryGetValue(mod, out var leaf))
+                if (TryGetValue(arguments.Mod, out var leaf))
                     Delete(leaf);
 
                 break;

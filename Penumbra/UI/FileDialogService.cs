@@ -140,18 +140,18 @@ public class FileDialogService : IDisposable, IUiService
     }
 
     /// <summary> Update the Root Directory link on changes. </summary>
-    private void OnModDirectoryChange(string directory, bool valid)
+    private void OnModDirectoryChange(in ModDirectoryChanged.Arguments arguments)
     {
         var idx = _manager.CustomSideBarItems.IndexOf(t => t.Name == "Root Directory");
         if (idx >= 0)
             _manager.CustomSideBarItems.RemoveAt(idx);
 
-        if (!valid)
+        if (!arguments.Valid)
             return;
 
         if (idx >= 0)
-            _manager.CustomSideBarItems.Insert(idx, ("Root Directory", directory, FontAwesomeIcon.Gamepad, 0));
+            _manager.CustomSideBarItems.Insert(idx, ("Root Directory", arguments.Directory, FontAwesomeIcon.Gamepad, 0));
         else
-            _manager.CustomSideBarItems.Add(("Root Directory", directory, FontAwesomeIcon.Gamepad, 0));
+            _manager.CustomSideBarItems.Add(("Root Directory", arguments.Directory, FontAwesomeIcon.Gamepad, 0));
     }
 }

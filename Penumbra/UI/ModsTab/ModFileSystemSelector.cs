@@ -10,7 +10,6 @@ using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Text.Widget;
-using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -23,7 +22,7 @@ using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI.ModsTab;
 
-public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>, Luna.IUiService
+public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>, IUiService
 {
     private readonly CommunicatorService     _communicator;
     private readonly Configuration           _config;
@@ -507,13 +506,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     #region Automatic cache update functions.
 
-    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool inherited)
+    private void OnSettingChange(in ModSettingChanged.Arguments arguments)
     {
-        if (collection == _collectionManager.Active.Current)
+        if (arguments.Collection == _collectionManager.Active.Current)
             SetFilterDirty();
     }
 
-    private void OnModDataChange(ModDataChangeType type, Mod mod, string? oldName)
+    private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
         const ModDataChangeType relevantFlags =
             ModDataChangeType.Name
@@ -522,19 +521,19 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
           | ModDataChangeType.LocalTags
           | ModDataChangeType.Favorite
           | ModDataChangeType.ImportDate;
-        if ((type & relevantFlags) != 0)
+        if ((arguments.Type & relevantFlags) is not 0)
             SetFilterDirty();
     }
 
-    private void OnInheritanceChange(ModCollection collection, bool _)
+    private void OnInheritanceChange(in CollectionInheritanceChanged.Arguments arguments)
     {
-        if (collection == _collectionManager.Active.Current)
+        if (arguments.Collection == _collectionManager.Active.Current)
             SetFilterDirty();
     }
 
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string _)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is CollectionType.Current && oldCollection != newCollection)
+        if (arguments.Type is CollectionType.Current && arguments.OldCollection != arguments.NewCollection)
             SetFilterDirty();
     }
 
@@ -636,7 +635,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     /// <summary> Apply the string filters. </summary>
-    private bool ApplyStringFilters(ModFileSystem.Leaf leaf, Mod mod)
+    private bool ApplyStringFilters(ModFileSystem.Leaf leaf, Mod _)
         => !_filter.IsVisible(leaf);
 
     /// <summary> Only get the text color for a mod if no filters are set. </summary>

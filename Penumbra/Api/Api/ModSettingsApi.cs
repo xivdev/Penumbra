@@ -6,12 +6,10 @@ using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Mods;
-using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
-using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
@@ -264,19 +262,18 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             ModSettingChanged?.Invoke(ModSettingChange.Edited, collection.Identity.Id, mod.Identifier, parent != collection);
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (type == ModPathChangeType.Reloaded)
-            TriggerSettingEdited(mod);
+        if (arguments.Type is ModPathChangeType.Reloaded)
+            TriggerSettingEdited(arguments.Mod);
     }
 
-    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting _1, int _2, bool inherited)
-        => ModSettingChanged?.Invoke(type, collection.Identity.Id, mod?.ModPath.Name ?? string.Empty, inherited);
+    private void OnModSettingChange(in ModSettingChanged.Arguments arguments)
+        => ModSettingChanged?.Invoke(arguments.Type, arguments.Collection.Identity.Id, arguments.Mod?.Identifier ?? string.Empty, arguments.Inherited);
 
-    private void OnModOptionEdited(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
-        int moveIndex)
+    private void OnModOptionEdited(in ModOptionChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModOptionChangeType.GroupDeleted:
             case ModOptionChangeType.GroupMoved:
@@ -288,17 +285,17 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
             case ModOptionChangeType.OptionFilesAdded:
             case ModOptionChangeType.OptionSwapsChanged:
             case ModOptionChangeType.OptionMetaChanged:
-                TriggerSettingEdited(mod);
+                TriggerSettingEdited(arguments.Mod);
                 break;
         }
     }
 
-    private void OnModFileChanged(Mod mod, FileRegistry file)
+    private void OnModFileChanged(in ModFileChanged.Arguments arguments)
     {
-        if (file.CurrentUsage == 0)
+        if (arguments.File.CurrentUsage == 0)
             return;
 
-        TriggerSettingEdited(mod);
+        TriggerSettingEdited(arguments.Mod);
     }
 
     public static PenumbraApiEc ConvertModSetting(Mod mod, string groupName, IReadOnlyList<string> optionNames, out int groupIndex,

@@ -1,6 +1,6 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
@@ -17,7 +17,7 @@ namespace Penumbra.Interop.Hooks.PostProcessing;
 ///     <item>Parameter is the collection associated with the game object. </item>
 ///     <item>Parameter is the slot that was recomputed. If this is Unknown, it is a general new update call. </item>
 /// </list> </summary>
-public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollection, AttributeHook.Priority>, Luna.IHookService
+public sealed unsafe class AttributeHook : EventBase<AttributeHook.Arguments, AttributeHook.Priority>, IHookService
 {
     public enum Priority
     {
@@ -28,8 +28,8 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
     private readonly CollectionResolver _resolver;
     private readonly Configuration      _config;
 
-    public AttributeHook(Luna.HookManager hooks, Configuration config, CollectionResolver resolver)
-        : base("Update Model Attributes")
+    public AttributeHook(Logger log, HookManager hooks, Configuration config, CollectionResolver resolver)
+        : base("Update Model Attributes", log)
     {
         _config   = config;
         _resolver = resolver;
@@ -76,8 +76,10 @@ public sealed unsafe class AttributeHook : EventWrapper<Actor, Model, ModCollect
         var identifiedActor      = resolveData.AssociatedGameObject;
         var identifiedCollection = resolveData.ModCollection;
         Penumbra.Log.Excessive($"[{Name}] Invoked on 0x{(ulong)human:X} (0x{identifiedActor:X}).");
-        Invoke(identifiedActor, human, identifiedCollection);
+        Invoke(new Arguments(identifiedActor, human, identifiedCollection));
     }
+
+    public readonly record struct Arguments(Actor Character, Model Human, ModCollection Collection);
 
     protected override void Dispose(bool disposing)
         => _task.Result.Dispose();

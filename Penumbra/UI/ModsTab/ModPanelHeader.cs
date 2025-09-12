@@ -47,7 +47,7 @@ public class ModPanelHeader : IDisposable
             DrawSecondRow(offset);
         }
 
-        _communicator.PreSettingsTabBarDraw.Invoke(_mod.Identifier, ImGui.GetItemRectSize().X, _nameWidth);
+        _communicator.PreSettingsTabBarDraw.Invoke(new PreSettingsTabBarDraw.Arguments(_mod, ImGui.GetItemRectSize().X, _nameWidth));
         _lastPreSettingsHeight = ImGui.GetCursorPosY();
     }
 
@@ -260,10 +260,10 @@ public class ModPanelHeader : IDisposable
     }
 
     /// <summary> Just update the data when any relevant field changes. </summary>
-    private void OnModDataChange(ModDataChangeType changeType, Mod mod, string? _2)
+    private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
         const ModDataChangeType relevantChanges =
             ModDataChangeType.Author | ModDataChangeType.Name | ModDataChangeType.Website | ModDataChangeType.Version;
-        _dirty     = (changeType & relevantChanges) != 0;
+        _dirty     = (arguments.Type & relevantChanges) is not 0;
     }
 }

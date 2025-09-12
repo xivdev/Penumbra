@@ -248,18 +248,18 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
         }
     }
 
-    private void OnCreatingCharacterBase(nint address, Guid collection, nint _1, nint _2, nint _3)
+    private void OnCreatingCharacterBase(in CreatingCharacterBase.Arguments arguments)
     {
-        if (_eventWriter == null)
+        if (_eventWriter is null)
             return;
 
         try
         {
-            var name = GetActorName(address);
+            var name = GetActorName(arguments.GameObject);
 
             lock (_eventWriter)
             {
-                _eventWriter?.CharacterBase.WriteLine(address, name.Span, collection);
+                _eventWriter?.CharacterBase.WriteLine(arguments.GameObject, name.Span, arguments.Collection.Identity.Id);
             }
         }
         catch (Exception ex)

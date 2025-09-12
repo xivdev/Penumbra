@@ -2,7 +2,6 @@ using Luna;
 using Newtonsoft.Json.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 
@@ -29,16 +28,24 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         _migrationManager = migrationManager;
         _log              = log;
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiMods);
+        _communicator.PcpCreation.Subscribe(OnPcpCreation, PcpCreation.Priority.ApiMods);
+        _communicator.PcpParsing.Subscribe(OnPcpParsing, PcpParsing.Priority.ApiMods);
     }
 
-    private void OnModPathChanged(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
+    private void OnPcpParsing(in PcpParsing.Arguments arguments)
+        => ParsingPcp?.Invoke(arguments.JObject, arguments.Mod.Identifier, arguments.Collection?.Identity.Id ?? Guid.Empty);
+
+    private void OnPcpCreation(in PcpCreation.Arguments arguments)
+        => CreatingPcp?.Invoke(arguments.JObject, arguments.ObjectIndex, arguments.DirectoryPath);
+
+    private void OnModPathChanged(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
-            case ModPathChangeType.Deleted when oldDirectory != null: ModDeleted?.Invoke(oldDirectory.Name); break;
-            case ModPathChangeType.Added when newDirectory != null:   ModAdded?.Invoke(newDirectory.Name); break;
-            case ModPathChangeType.Moved when newDirectory != null && oldDirectory != null:
-                ModMoved?.Invoke(oldDirectory.Name, newDirectory.Name);
+            case ModPathChangeType.Deleted when arguments.OldDirectory is not null: ModDeleted?.Invoke(arguments.OldDirectory.Name); break;
+            case ModPathChangeType.Added when arguments.NewDirectory is not null:   ModAdded?.Invoke(arguments.NewDirectory.Name); break;
+            case ModPathChangeType.Moved when arguments is { NewDirectory: not null, OldDirectory: not null }:
+                ModMoved?.Invoke(arguments.OldDirectory.Name, arguments.NewDirectory.Name);
                 break;
         }
     }
@@ -46,6 +53,8 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public void Dispose()
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
+        _communicator.PcpCreation.Unsubscribe(OnPcpCreation);
+        _communicator.PcpParsing.Unsubscribe(OnPcpParsing);
     }
 
     public Dictionary<string, string> GetModList()
@@ -105,21 +114,11 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         return ApiHelpers.Return(PenumbraApiEc.Success, ApiHelpers.Args("ModDirectory", modDirectory, "ModName", modName));
     }
 
-    public event Action<string>?         ModDeleted;
-    public event Action<string>?         ModAdded;
-    public event Action<string, string>? ModMoved;
-
-    public event Action<JObject, ushort, string>? CreatingPcp
-    {
-        add => _communicator.PcpCreation.Subscribe(value!, PcpCreation.Priority.ModsApi);
-        remove => _communicator.PcpCreation.Unsubscribe(value!);
-    }
-
-    public event Action<JObject, string, Guid>? ParsingPcp
-    {
-        add => _communicator.PcpParsing.Subscribe(value!, PcpParsing.Priority.ModsApi);
-        remove => _communicator.PcpParsing.Unsubscribe(value!);
-    }
+    public event Action<string>?                  ModDeleted;
+    public event Action<string>?                  ModAdded;
+    public event Action<string, string>?          ModMoved;
+    public event Action<JObject, ushort, string>? CreatingPcp;
+    public event Action<JObject, string, Guid>?   ParsingPcp;
 
     public (PenumbraApiEc, string, bool, bool) GetModPath(string modDirectory, string modName)
     {
@@ -155,7 +154,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
     public Dictionary<string, object?> GetChangedItems(string modDirectory, string modName)
         => _modManager.TryGetMod(modDirectory, modName, out var mod)
-            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToInternalObject())
+            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToInternalObject())
             : [];
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> GetChangedItemAdapterDictionary()

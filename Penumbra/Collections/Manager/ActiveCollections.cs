@@ -126,7 +126,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
             return false;
 
         SpecialCollections[(int)collectionType] = Default;
-        _communicator.CollectionChange.Invoke(collectionType, null, Default, string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(collectionType, null, Default, string.Empty));
         return true;
     }
 
@@ -141,14 +141,14 @@ public class ActiveCollections : ISavable, IDisposable, IService
             return;
 
         SpecialCollections[(int)collectionType] = null;
-        _communicator.CollectionChange.Invoke(collectionType, old, null, string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(collectionType, old, null, string.Empty));
     }
 
     /// <summary>Create an individual collection if possible. </summary>
     public void CreateIndividualCollection(params ActorIdentifier[] identifiers)
     {
         if (Individuals.Add(identifiers, Default))
-            _communicator.CollectionChange.Invoke(CollectionType.Individual, null, Default, Individuals.Last().DisplayName);
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Individual, null, Default, Individuals.Last().DisplayName));
     }
 
     /// <summary> Remove an individual collection if it exists. </summary>
@@ -159,7 +159,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
 
         var (name, old) = Individuals[individualIndex];
         if (Individuals.Delete(individualIndex))
-            _communicator.CollectionChange.Invoke(CollectionType.Individual, old, null, name);
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Individual, old, null, name));
     }
 
     /// <summary> Move an individual collection from one index to another. </summary>
@@ -234,8 +234,8 @@ public class ActiveCollections : ISavable, IDisposable, IService
         }
 
         UpdateCurrentCollectionInUse();
-        _communicator.CollectionChange.Invoke(collectionType, oldCollection, collection,
-            collectionType == CollectionType.Individual ? Individuals[individualIndex].DisplayName : string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(collectionType, oldCollection, collection,
+            collectionType == CollectionType.Individual ? Individuals[individualIndex].DisplayName : string.Empty));
     }
 
     public string ToFilePath(FilenameService fileNames)
@@ -275,38 +275,38 @@ public class ActiveCollections : ISavable, IDisposable, IService
             .SelectMany(c => c.Inheritance.FlatHierarchy).Contains(Current);
 
     /// <summary> Save if any of the active collections is changed and set new collections to Current. </summary>
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string _3)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is CollectionType.Inactive)
+        if (arguments.Type is CollectionType.Inactive)
         {
-            if (newCollection != null)
+            if (arguments.NewCollection is not null)
             {
-                SetCollection(newCollection, CollectionType.Current);
+                SetCollection(arguments.NewCollection, CollectionType.Current);
             }
-            else if (oldCollection != null)
+            else if (arguments.OldCollection != null)
             {
-                if (oldCollection == Default)
+                if (arguments.OldCollection == Default)
                     SetCollection(ModCollection.Empty, CollectionType.Default);
-                if (oldCollection == Interface)
+                if (arguments.OldCollection == Interface)
                     SetCollection(ModCollection.Empty, CollectionType.Interface);
-                if (oldCollection == Current)
+                if (arguments.OldCollection == Current)
                     SetCollection(Default.Identity.Index > ModCollection.Empty.Identity.Index ? Default : _storage.DefaultNamed,
                         CollectionType.Current);
 
                 for (var i = 0; i < SpecialCollections.Length; ++i)
                 {
-                    if (oldCollection == SpecialCollections[i])
+                    if (arguments.OldCollection == SpecialCollections[i])
                         SetCollection(ModCollection.Empty, (CollectionType)i);
                 }
 
                 for (var i = 0; i < Individuals.Count; ++i)
                 {
-                    if (oldCollection == Individuals[i].Collection)
+                    if (arguments.OldCollection == Individuals[i].Collection)
                         SetCollection(ModCollection.Empty, CollectionType.Individual, i);
                 }
             }
         }
-        else if (collectionType is not CollectionType.Temporary)
+        else if (arguments.Type is not CollectionType.Temporary)
         {
             _saveService.DelaySave(this);
         }

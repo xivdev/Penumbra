@@ -3,17 +3,16 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using Lumina.Excel.Sheets;
-using Penumbra.Collections;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData;
-using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class SchedulerResourceManagementService : Luna.IService, IDisposable
+public unsafe class SchedulerResourceManagementService : IService, IDisposable
 {
     private static readonly CiByteString TmbExtension = new(".tmb"u8, MetaDataComputation.All);
     private static readonly CiByteString FolderPrefix = new("chara/action/"u8, MetaDataComputation.All);
@@ -40,16 +39,15 @@ public unsafe class SchedulerResourceManagementService : Luna.IService, IDisposa
         interop.InitializeFromAttributes(this);
     }
 
-    private void OnResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath gamePath, FullPath oldPath,
-        FullPath newPath, IMod? mod)
+    private void OnResolvedFileChange(in ResolvedFileChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ResolvedFileChanged.Type.Added:
-                CheckFile(gamePath);
+                CheckFile(arguments.GamePath);
                 return;
             case ResolvedFileChanged.Type.FullRecomputeFinished:
-                foreach (var path in collection.ResolvedFiles.Keys)
+                foreach (var path in arguments.Collection.ResolvedFiles.Keys)
                     CheckFile(path);
                 return;
         }

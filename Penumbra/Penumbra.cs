@@ -19,6 +19,7 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using Luna;
+using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
@@ -31,9 +32,9 @@ namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
-    public static readonly OtterGui.Log.Logger         Log = new();
-    public static          MessageService Messager { get; private set; } = null!;
-    public static          DynamisIpc     Dynamis  { get; private set; } = null!;
+    public static readonly OtterGui.Log.Logger Log = new();
+    public static          MessageService      Messager { get; private set; } = null!;
+    public static          DynamisIpc          Dynamis  { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
     private readonly ResidentResourceManager _residentResources;
@@ -49,14 +50,14 @@ public class Penumbra : IDalamudPlugin
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
-    private readonly Luna.ServiceManager _services;
+    private readonly ServiceManager _services;
 
     public Penumbra(IDalamudPluginInterface pluginInterface)
     {
         try
         {
             HookOverrides.Instance = HookOverrides.LoadFile(pluginInterface);
-            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, new("Penumbra"));
+            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, new Logger("Penumbra"));
             // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
             _services.GetService<IpcLaunchingProvider>();
             Messager         = _services.GetService<MessageService>();
@@ -64,7 +65,7 @@ public class Penumbra : IDalamudPlugin
             _validityChecker = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
             _services.EnsureRequiredServices<OtterGui.Services.IRequiredService>();
-            
+
             var startup = _services.GetService<DalamudConfigService>()
                 .GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
@@ -87,21 +88,21 @@ public class Penumbra : IDalamudPlugin
             _services.GetService<ModCacheManager>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
-            
+
             _services.GetService<DalamudSubstitutionProvider>(); // Initialize before Interface.
-            
-            foreach (var service in _services.GetServicesImplementing<Luna.IAwaitedService>())
+
+            foreach (var service in _services.GetServicesImplementing<IAwaitedService>())
                 service.Awaiter.Wait();
-            
+
             SetupInterface();
             SetupApi();
-            
+
             _validityChecker.LogExceptions();
             Log.Information(
                 $"Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
             OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
             Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
-            
+
             if (_characterUtility.Ready)
                 _residentResources.Reload();
         }
@@ -117,15 +118,15 @@ public class Penumbra : IDalamudPlugin
     {
         _services.GetService<IpcProviders>();
         var itemSheet = _services.GetService<IDataManager>().GetExcelSheet<Item>();
-        _communicatorService.ChangedItemHover.Subscribe(it =>
+        _communicatorService.ChangedItemHover.Subscribe((in ChangedItemHover.Arguments args) =>
         {
-            if (it is IdentifiedItem { Item.Id.IsItem: true })
+            if (args.Data is IdentifiedItem { Item.Id.IsItem: true })
                 ImGui.TextUnformatted("Left Click to create an item link in chat.");
         }, ChangedItemHover.Priority.Link);
 
-        _communicatorService.ChangedItemClick.Subscribe((button, it) =>
+        _communicatorService.ChangedItemClick.Subscribe((in ChangedItemClick.Arguments args) =>
         {
-            if (button == MouseButton.Left && it is IdentifiedItem item && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)
+            if (args is { Button: MouseButton.Left, Data: IdentifiedItem item } && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)
                 Messager.LinkItem(i);
         }, ChangedItemClick.Priority.Link);
     }
@@ -169,7 +170,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         _config.Save();
-        _communicatorService.EnabledChanged.Invoke(enabled);
+        _communicatorService.EnabledChanged.Invoke(new EnabledChanged.Arguments(enabled));
 
         return true;
     }

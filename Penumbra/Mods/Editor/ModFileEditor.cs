@@ -1,3 +1,4 @@
+using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
@@ -137,7 +138,7 @@ public class ModFileEditor(ModFileCollection files, ModManager modManager, Commu
             try
             {
                 File.Delete(file.File.FullName);
-                communicator.ModFileChanged.Invoke(mod, file);
+                communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(mod, file));
                 Penumbra.Log.Debug($"[DeleteFiles] Deleted {file.File.FullName} from {mod.Name}.");
                 ++deletions;
             }

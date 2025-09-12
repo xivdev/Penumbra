@@ -681,12 +681,12 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         _center.Dispose();
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (type is not (ModPathChangeType.Reloaded or ModPathChangeType.Moved) || mod != Mod)
+        if (arguments.Type is not (ModPathChangeType.Reloaded or ModPathChangeType.Moved) || arguments.Mod != Mod)
             return;
 
         Mod = null;
-        ChangeMod(mod);
+        ChangeMod(arguments.Mod);
     }
 }

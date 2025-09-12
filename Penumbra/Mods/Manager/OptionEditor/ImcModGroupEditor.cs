@@ -1,5 +1,6 @@
-using Luna.Files;
+using Luna;
 using OtterGui.Filesystem;
+using Penumbra.Communication;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
@@ -10,7 +11,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), Luna.IService
+    : ModOptionEditor<ImcModGroup, ImcSubMod>(communicator, saveService, config), IService
 {
     /// <summary> Add a new, empty imc group with the given manipulation data. </summary>
     public ImcModGroup? AddModGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry,
@@ -23,7 +24,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         var group       = CreateGroup(mod, newName, identifier, defaultEntry, maxPriority);
         mod.Groups.Add(group);
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupAdded, mod, group, null, null, -1));
         return group;
     }
 
@@ -41,7 +42,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         };
         group.OptionData.Add(subMod);
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, group.Mod, group, subMod, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionAdded, group.Mod, group, subMod, null, -1));
         return subMod;
     }
 
@@ -55,7 +56,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1));
     }
 
     public void ChangeDefaultEntry(ImcModGroup group, in ImcEntry newEntry, SaveType saveType = SaveType.Queue)
@@ -66,7 +67,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
         group.DefaultEntry = entry;
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1));
     }
 
     public void ChangeOptionAttribute(ImcSubMod option, in ImcAttributeCache cache, int idx, bool value, SaveType saveType = SaveType.Queue)
@@ -75,7 +76,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
             return;
 
         SaveService.Save(saveType, new ModSaveGroup(option.Group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, option.Mod, option.Group, option, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, option.Mod, option.Group, option, null, -1));
     }
 
     public void ChangeAllVariants(ImcModGroup group, bool allVariants, SaveType saveType = SaveType.Queue)
@@ -85,7 +86,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
         group.AllVariants = allVariants;
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1));
     }
 
     public void ChangeOnlyAttributes(ImcModGroup group, bool onlyAttributes, SaveType saveType = SaveType.Queue)
@@ -95,7 +96,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
         group.OnlyAttributes = onlyAttributes;
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1));
     }
 
     public void ChangeCanBeDisabled(ImcModGroup group, bool canBeDisabled, SaveType saveType = SaveType.Queue)
@@ -105,7 +106,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
         group.CanBeDisabled = canBeDisabled;
         SaveService.Save(saveType, new ModSaveGroup(group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, group.Mod, group, null, null, -1));
     }
 
     protected override ImcModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
@@ -116,8 +117,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
         };
 
 
-    private static ImcModGroup CreateGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry, ModPriority priority,
-        SaveType saveType = SaveType.ImmediateSync)
+    private static ImcModGroup CreateGroup(Mod mod, string newName, ImcIdentifier identifier, ImcEntry defaultEntry, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
         => new(mod)
         {
             Name         = newName,
@@ -137,7 +137,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
     protected override bool MoveOption(ImcModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
+        if (!Extensions.Move(group.OptionData, ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);

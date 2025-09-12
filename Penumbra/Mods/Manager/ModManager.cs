@@ -93,7 +93,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
 
         mod.Index = Count;
         Mods.Add(mod);
-        _communicator.ModPathChanged.Invoke(ModPathChangeType.Added, mod, null, mod.ModPath);
+        _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Added, mod, null, mod.ModPath));
         Penumbra.Log.Debug($"Added new mod {mod.Name} from {modFolder.FullName}.");
     }
 
@@ -125,7 +125,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
     /// </summary>
     public void RemoveMod(Mod mod)
     {
-        _communicator.ModPathChanged.Invoke(ModPathChangeType.Deleted, mod, mod.ModPath, null);
+        _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Deleted, mod, mod.ModPath, null));
         foreach (var remainingMod in Mods.Skip(mod.Index + 1))
             --remainingMod.Index;
         Mods.RemoveAt(mod.Index);
@@ -140,7 +140,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
     {
         var oldName = mod.Name;
 
-        _communicator.ModPathChanged.Invoke(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath);
+        _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath));
         if (!Creator.ReloadMod(mod, true, false, out var metaChange))
         {
             if (mod.RequiredFeatures is not FeatureFlags.Invalid)
@@ -151,9 +151,9 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
             return;
         }
 
-        _communicator.ModPathChanged.Invoke(ModPathChangeType.Reloaded, mod, mod.ModPath, mod.ModPath);
+        _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Reloaded, mod, mod.ModPath, mod.ModPath));
         if (metaChange != ModDataChangeType.None)
-            _communicator.ModDataChanged.Invoke(metaChange, mod, oldName);
+            _communicator.ModDataChanged.Invoke(new ModDataChanged.Arguments(metaChange, mod, oldName));
     }
 
 
@@ -213,9 +213,9 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
             return;
         }
 
-        _communicator.ModPathChanged.Invoke(ModPathChangeType.Moved, mod, oldDirectory, dir);
+        _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Moved, mod, oldDirectory, dir));
         if (metaChange != ModDataChangeType.None)
-            _communicator.ModDataChanged.Invoke(metaChange, mod, oldName);
+            _communicator.ModDataChanged.Invoke(new ModDataChanged.Arguments(metaChange, mod, oldName));
     }
 
     /// <summary> Return the state of the new potential name of a directory. </summary>
@@ -247,16 +247,15 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
 
 
     /// <summary> Add new mods to NewMods and remove deleted mods from NewMods. </summary>
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
-        DirectoryInfo? newDirectory)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
-            case ModPathChangeType.Added:   SetNew(mod); break;
-            case ModPathChangeType.Deleted: SetKnown(mod); break;
+            case ModPathChangeType.Added:   SetNew(arguments.Mod); break;
+            case ModPathChangeType.Deleted: SetKnown(arguments.Mod); break;
             case ModPathChangeType.Moved:
-                if (oldDirectory != null && newDirectory != null)
-                    DataEditor.MoveDataFile(oldDirectory, newDirectory);
+                if (arguments.OldDirectory is not null && arguments.NewDirectory is not null)
+                    DataEditor.MoveDataFile(arguments.OldDirectory, arguments.NewDirectory);
 
                 break;
         }
@@ -313,7 +312,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
         _config.ModDirectory = newPath;
         _config.Save();
         Penumbra.Log.Information($"Set new mod base directory from {_config.ModDirectory} to {newPath}.");
-        _communicator.ModDirectoryChanged.Invoke(newPath, valid);
+        _communicator.ModDirectoryChanged.Invoke(new ModDirectoryChanged.Arguments(newPath, valid));
     }
 
 
@@ -346,7 +345,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
         catch (Exception ex)
         {
             Valid = false;
-            _communicator.ModDirectoryChanged.Invoke(BasePath.FullName, false);
+            _communicator.ModDirectoryChanged.Invoke(new ModDirectoryChanged.Arguments(BasePath.FullName, false));
             Penumbra.Log.Error($"Could not scan for mods:\n{ex}");
         }
     }

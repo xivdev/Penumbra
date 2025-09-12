@@ -430,7 +430,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         }
     }
 
-    private void OnModFileChanged(Mod _1, FileRegistry _2)
+    private void OnModFileChanged(in ModFileChanged.Arguments _)
     {
         if (!_config.Ephemeral.ForceRedrawOnFileChange)
             return;

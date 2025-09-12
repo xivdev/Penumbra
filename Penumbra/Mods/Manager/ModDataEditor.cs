@@ -1,5 +1,6 @@
 using Dalamud.Utility;
 using OtterGui.Classes;
+using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Services;
@@ -55,7 +56,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         var oldName = mod.Name;
         mod.Name = newName;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Name, mod, oldName.Text);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Name, mod, oldName.Text));
     }
 
     public void ChangeModAuthor(Mod mod, string newAuthor)
@@ -65,7 +66,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Author = newAuthor;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Author, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Author, mod, null));
     }
 
     public void ChangeModDescription(Mod mod, string newDescription)
@@ -75,7 +76,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Description = newDescription;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Description, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Description, mod, null));
     }
 
     public void ChangeModVersion(Mod mod, string newVersion)
@@ -85,7 +86,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Version = newVersion;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Version, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Version, mod, null));
     }
 
     public void ChangeModWebsite(Mod mod, string newWebsite)
@@ -95,7 +96,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Website = newWebsite;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Website, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Website, mod, null));
     }
 
     public void ChangeRequiredFeatures(Mod mod, FeatureFlags flags)
@@ -105,7 +106,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.RequiredFeatures = flags;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.RequiredFeatures, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.RequiredFeatures, mod, null));
     }
 
     public void ChangeModTag(Mod mod, int tagIdx, string newTag)
@@ -121,7 +122,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Favorite = state;
         saveService.QueueSave(new ModLocalData(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
     public void ResetModImportDate(Mod mod)
@@ -132,7 +133,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.ImportDate = newDate;
         saveService.QueueSave(new ModLocalData(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.ImportDate, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.ImportDate, mod, null));
     }
 
     public void ChangeModNote(Mod mod, string newNote)
@@ -142,7 +143,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
         mod.Note = newNote;
         saveService.QueueSave(new ModLocalData(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Favorite, mod, null));
     }
 
     private void ChangeTag(Mod mod, int tagIdx, string newTag, bool local)
@@ -170,7 +171,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             saveService.QueueSave(new ModLocalData(mod));
 
         if (flags != 0)
-            communicatorService.ModDataChanged.Invoke(flags, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(flags, mod, null));
     }
 
     public void MoveDataFile(DirectoryInfo oldMod, DirectoryInfo newMod)
@@ -196,13 +197,13 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         {
             ++mod.LastChangedItemsUpdate;
             saveService.QueueSave(new ModLocalData(mod));
-            communicatorService.ModDataChanged.Invoke(ModDataChangeType.PreferredChangedItems, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
         if (toDefault && CleanExisting(mod.DefaultPreferredItems))
         {
             saveService.QueueSave(new ModMeta(mod));
-            communicatorService.ModDataChanged.Invoke(ModDataChangeType.DefaultChangedItems, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.DefaultChangedItems, mod, null));
         }
 
         bool CleanExisting(HashSet<CustomItemId> items)
@@ -251,13 +252,13 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         {
             ++mod.LastChangedItemsUpdate;
             saveService.QueueSave(new ModLocalData(mod));
-            communicatorService.ModDataChanged.Invoke(ModDataChangeType.PreferredChangedItems, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
         if (fromDefault && mod.DefaultPreferredItems.Remove(id))
         {
             saveService.QueueSave(new ModMeta(mod));
-            communicatorService.ModDataChanged.Invoke(ModDataChangeType.DefaultChangedItems, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.DefaultChangedItems, mod, null));
         }
     }
 
@@ -271,7 +272,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
             mod.PreferredChangedItems = newSet;
             ++mod.LastChangedItemsUpdate;
             saveService.QueueSave(new ModLocalData(mod));
-            communicatorService.ModDataChanged.Invoke(ModDataChangeType.PreferredChangedItems, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
         }
 
         newSet = new HashSet<CustomItemId>(mod.DefaultPreferredItems.Count);
@@ -279,7 +280,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         {
             mod.DefaultPreferredItems = newSet;
             saveService.QueueSave(new ModMeta(mod));
-            communicatorService.ModDataChanged.Invoke(ModDataChangeType.DefaultChangedItems, mod, null);
+            communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.DefaultChangedItems, mod, null));
         }
 
         return;
@@ -308,6 +309,6 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.PreferredChangedItems.UnionWith(mod.DefaultPreferredItems);
         ++mod.LastChangedItemsUpdate;
         saveService.QueueSave(new ModLocalData(mod));
-        communicatorService.ModDataChanged.Invoke(ModDataChangeType.PreferredChangedItems, mod, null);
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.PreferredChangedItems, mod, null));
     }
 }

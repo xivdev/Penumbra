@@ -1,6 +1,7 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Communication;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
@@ -28,36 +29,24 @@ public class GameStateApi : IPenumbraApiGameState, Luna.IApiService, IDisposable
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _resourceLoader.PapRequested   += OnPapRequested;
         _communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
+        _communicator.CreatingCharacterBase.Subscribe(OnCreatingCharacterBase, Communication.CreatingCharacterBase.Priority.Api);
     }
+
+    private void OnCreatingCharacterBase(in CreatingCharacterBase.Arguments arguments)
+        => CreatingCharacterBase?.Invoke(arguments.GameObject.Address, arguments.Collection.Identity.Id, arguments.ModelCharaId, arguments.Customize,
+            arguments.EquipData);
 
     public unsafe void Dispose()
     {
         _resourceLoader.ResourceLoaded -= OnResourceLoaded;
         _resourceLoader.PapRequested   -= OnPapRequested;
         _communicator.CreatedCharacterBase.Unsubscribe(OnCreatedCharacterBase);
+        _communicator.CreatingCharacterBase.Unsubscribe(OnCreatingCharacterBase);
     }
 
     public event CreatedCharacterBaseDelegate?       CreatedCharacterBase;
     public event GameObjectResourceResolvedDelegate? GameObjectResourceResolved;
-
-    public event CreatingCharacterBaseDelegate? CreatingCharacterBase
-    {
-        add
-        {
-            if (value == null)
-                return;
-
-            _communicator.CreatingCharacterBase.Subscribe(new Action<nint, Guid, nint, nint, nint>(value),
-                Communication.CreatingCharacterBase.Priority.Api);
-        }
-        remove
-        {
-            if (value == null)
-                return;
-
-            _communicator.CreatingCharacterBase.Unsubscribe(new Action<nint, Guid, nint, nint, nint>(value));
-        }
-    }
+    public event CreatingCharacterBaseDelegate?      CreatingCharacterBase;
 
     public unsafe (nint GameObject, (Guid Id, string Name) Collection) GetDrawObjectInfo(nint drawObject)
     {
@@ -117,6 +106,6 @@ public class GameStateApi : IPenumbraApiGameState, Luna.IApiService, IDisposable
         }
     }
 
-    private void OnCreatedCharacterBase(nint gameObject, ModCollection collection, nint drawObject)
-        => CreatedCharacterBase?.Invoke(gameObject, collection.Identity.Id, drawObject);
+    private void OnCreatedCharacterBase(in CreatedCharacterBase.Arguments arguments)
+        => CreatedCharacterBase?.Invoke(arguments.GameObject, arguments.Collection.Identity.Id, arguments.DrawObject);
 }

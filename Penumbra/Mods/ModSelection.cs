@@ -1,5 +1,4 @@
-using OtterGui.Classes;
-using Penumbra.Api.Enums;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -16,14 +15,14 @@ namespace Penumbra.Mods;
 ///     <item>Parameter is the new selected mod </item>
 /// </list>
 /// </summary>
-public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
+public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Priority>
 {
     private readonly ActiveCollections   _collections;
     private readonly EphemeralConfig     _config;
     private readonly CommunicatorService _communicator;
 
-    public ModSelection(CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config)
-        : base(nameof(ModSelection))
+    public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config)
+        : base(nameof(ModSelection), log)
     {
         _communicator = communicator;
         _collections  = collections;
@@ -49,8 +48,8 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
 
         var oldMod = Mod;
         Mod = mod;
-        OnCollectionChange(CollectionType.Current, null, _collections.Current, string.Empty);
-        Invoke(oldMod, Mod);
+        OnCollectionChange(new CollectionChange.Arguments(CollectionType.Current, null, _collections.Current, string.Empty));
+        Invoke(new Arguments(oldMod, Mod));
         _config.LastModPath = mod?.ModPath.Name ?? string.Empty;
         _config.Save();
     }
@@ -62,21 +61,21 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
         _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
     }
 
-    private void OnCollectionChange(CollectionType type, ModCollection? oldCollection, ModCollection? newCollection, string _2)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (type is CollectionType.Current && oldCollection != newCollection)
+        if (arguments.Type is CollectionType.Current && arguments.OldCollection != arguments.NewCollection)
             UpdateSettings();
     }
 
-    private void OnSettingChange(ModCollection collection, ModSettingChange _1, Mod? mod, Setting _2, int _3, bool _4)
+    private void OnSettingChange(in ModSettingChanged.Arguments arguments)
     {
-        if (collection == _collections.Current && mod == Mod)
+        if (arguments.Collection == _collections.Current && arguments.Mod == Mod)
             UpdateSettings();
     }
 
-    private void OnInheritanceChange(ModCollection collection, bool arg2)
+    private void OnInheritanceChange(in CollectionInheritanceChanged.Arguments arguments)
     {
-        if (collection == _collections.Current)
+        if (arguments.Collection == _collections.Current)
             UpdateSettings();
     }
 
@@ -105,4 +104,6 @@ public class ModSelection : EventWrapper<Mod?, Mod?, ModSelection.Priority>
         /// <seealso cref="Editor.ModMerger.OnSelectionChange"/>
         ModMerger = 0,
     }
+
+    public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);
 }

@@ -1,7 +1,7 @@
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Luna;
 using Penumbra.Collections;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
@@ -34,7 +34,7 @@ namespace Penumbra.Interop.PathResolving;
 // ChangeCustomize and RspSetupCharacter, which is hooked here, as well as Character.CalculateHeight.
 
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which is SetupVisor.
-public sealed unsafe class MetaState : IDisposable, Luna.IService
+public sealed unsafe class MetaState : IDisposable, IService
 {
     public readonly  Configuration       Config;
     private readonly CommunicatorService _communicator;
@@ -92,27 +92,27 @@ public sealed unsafe class MetaState : IDisposable, Luna.IService
         _createCharacterBase.Unsubscribe(OnCharacterBaseCreated);
     }
 
-    private void OnCreatingCharacterBase(ModelCharaId* modelCharaId, CustomizeArray* customize, CharacterArmor* equipData)
+    private void OnCreatingCharacterBase(in CreateCharacterBase.Arguments arguments)
     {
         _lastCreatedCollection = _collectionResolver.IdentifyLastGameObjectCollection(true);
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero)
-            _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection.Identity.Id, (nint)modelCharaId, (nint)customize, (nint)equipData);
+            _communicator.CreatingCharacterBase.Invoke(new CreatingCharacterBase.Arguments(_lastCreatedCollection.AssociatedGameObject,
+                _lastCreatedCollection.ModCollection, (nint)Unsafe.AsPointer(ref arguments.ModelCharaId), (nint)arguments.Customize, (nint)arguments.Equipment));
 
         var decal = new DecalReverter(Config, _characterUtility, _resources, _lastCreatedCollection,
-            UsesDecal(*(uint*)modelCharaId, (nint)customize));
+            UsesDecal(arguments.ModelCharaId, (nint)arguments.Customize));
         RspCollection.Push(_lastCreatedCollection);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal);
     }
 
-    private void OnCharacterBaseCreated(ModelCharaId _1, CustomizeArray* _2, CharacterArmor* _3, CharacterBase* drawObject)
+    private void OnCharacterBaseCreated(in CreateCharacterBase.PostEvent.Arguments arguments)
     {
         _characterBaseCreateMetaChanges.Dispose();
         _characterBaseCreateMetaChanges = DisposableContainer.Empty;
-        if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && drawObject != null)
-            _communicator.CreatedCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection, (nint)drawObject);
+        if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero && arguments.CharacterBase.Valid)
+            _communicator.CreatedCharacterBase.Invoke(new CreatedCharacterBase.Arguments(_lastCreatedCollection.AssociatedGameObject,
+                _lastCreatedCollection.ModCollection, arguments.CharacterBase));
         RspCollection.Pop();
         _lastCreatedCollection = ResolveData.Invalid;
     }

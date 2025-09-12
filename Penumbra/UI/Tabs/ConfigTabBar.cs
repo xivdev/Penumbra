@@ -1,7 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
-using Penumbra.Mods;
+using Penumbra.Communication;
 using Penumbra.Services;
 using Penumbra.UI.Tabs.Debug;
 using Watcher = Penumbra.UI.ResourceWatcher.ResourceWatcher;
@@ -104,10 +104,10 @@ public class ConfigTabBar : IDisposable, Luna.IUiService
         return TabType.None;
     }
 
-    private void OnSelectTab(TabType tab, Mod? mod)
+    private void OnSelectTab(in SelectTab.Arguments arguments)
     {
-        SelectTab = tab;
-        if (mod != null)
-            Mods.SelectMod = mod;
+        SelectTab = arguments.Tab;
+        if (arguments.Mod is not null)
+            Mods.SelectMod = arguments.Mod;
     }
 }

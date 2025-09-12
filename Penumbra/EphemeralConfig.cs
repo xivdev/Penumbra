@@ -106,12 +106,13 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     }
 
     /// <summary> Overwrite the last saved mod path if it changes. </summary>
-    private void OnModPathChanged(ModPathChangeType type, Mod mod, DirectoryInfo? old, DirectoryInfo? _)
+    private void OnModPathChanged(in ModPathChanged.Arguments arguments)
     {
-        if (type is not ModPathChangeType.Moved || !string.Equals(old?.Name, LastModPath, StringComparison.OrdinalIgnoreCase))
+        if (arguments.Type is not ModPathChangeType.Moved
+         || !string.Equals(arguments.OldDirectory?.Name, LastModPath, StringComparison.OrdinalIgnoreCase))
             return;
 
-        LastModPath = mod.Identifier;
+        LastModPath = arguments.Mod.Identifier;
         Save();
     }
 }

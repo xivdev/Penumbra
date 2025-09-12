@@ -295,16 +295,16 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
             _newRecords.Enqueue(record);
     }
 
-    private unsafe void OnResourceDestroyed(ResourceHandle* resource)
+    private unsafe void OnResourceDestroyed(in ResourceHandleDestructor.Arguments arguments)
     {
-        if (_ephemeral.EnableResourceLogging && FilterMatch(resource->FileName(), out var match))
+        if (_ephemeral.EnableResourceLogging && FilterMatch(arguments.ResourceHandle->FileName(), out var match))
             Penumbra.Log.Information(
-                $"[ResourceLoader] [DEST] [{resource->FileType}] Destroyed {match} at 0x{(ulong)resource:X}.");
+                $"[ResourceLoader] [DEST] [{arguments.ResourceHandle->FileType}] Destroyed {match} at 0x{(ulong)arguments.ResourceHandle:X}.");
 
         if (!_ephemeral.EnableResourceWatcher)
             return;
 
-        var record = Record.CreateDestruction(resource);
+        var record = Record.CreateDestruction(arguments.ResourceHandle);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
             _newRecords.Enqueue(record);
     }

@@ -1,6 +1,6 @@
+using FFXIVClientStructs.FFXIV.Common.Lua;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
@@ -20,41 +20,40 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
         _modManager   = modManager;
         _communicator.ChangedItemHover.Subscribe(OnChangedItemHover, ChangedItemHover.Priority.Default);
         _communicator.ChangedItemClick.Subscribe(OnChangedItemClick, ChangedItemClick.Priority.Default);
+        _communicator.PreSettingsTabBarDraw.Subscribe(OnPreSettingsTabBarDraw, Communication.PreSettingsTabBarDraw.Priority.Default);
+        _communicator.PreSettingsPanelDraw.Subscribe(OnPreSettingsPanelDraw, Communication.PreSettingsPanelDraw.Priority.Default);
+        _communicator.PostEnabledDraw.Subscribe(OnPostEnabledDraw, Communication.PostEnabledDraw.Priority.Default);
+        _communicator.PostSettingsPanelDraw.Subscribe(OnPostSettingsPanelDraw, Communication.PostSettingsPanelDraw.Priority.Default);
     }
+
+    private void OnPostSettingsPanelDraw(in PostSettingsPanelDraw.Arguments arguments)
+        => PostSettingsPanelDraw?.Invoke(arguments.Mod.Identifier);
+
+    private void OnPostEnabledDraw(in PostEnabledDraw.Arguments arguments)
+        => PostEnabledDraw?.Invoke(arguments.Mod.Identifier);
+
+    private void OnPreSettingsPanelDraw(in PreSettingsPanelDraw.Arguments arguments)
+        => PreSettingsPanelDraw?.Invoke(arguments.Mod.Identifier);
+
+    private void OnPreSettingsTabBarDraw(in PreSettingsTabBarDraw.Arguments arguments)
+        => PreSettingsTabBarDraw?.Invoke(arguments.Mod.Identifier, arguments.HeaderWidth, arguments.TitleBoxWidth);
 
     public void Dispose()
     {
         _communicator.ChangedItemHover.Unsubscribe(OnChangedItemHover);
         _communicator.ChangedItemClick.Unsubscribe(OnChangedItemClick);
+        _communicator.PreSettingsTabBarDraw.Unsubscribe(OnPreSettingsTabBarDraw);
+        _communicator.PreSettingsPanelDraw.Unsubscribe(OnPreSettingsPanelDraw);
+        _communicator.PostEnabledDraw.Unsubscribe(OnPostEnabledDraw);
+        _communicator.PostSettingsPanelDraw.Unsubscribe(OnPostSettingsPanelDraw);
     }
 
-    public event Action<ChangedItemType, uint>? ChangedItemTooltip;
-
+    public event Action<ChangedItemType, uint>?              ChangedItemTooltip;
     public event Action<MouseButton, ChangedItemType, uint>? ChangedItemClicked;
-
-    public event Action<string, float, float>? PreSettingsTabBarDraw
-    {
-        add => _communicator.PreSettingsTabBarDraw.Subscribe(value!, Communication.PreSettingsTabBarDraw.Priority.Default);
-        remove => _communicator.PreSettingsTabBarDraw.Unsubscribe(value!);
-    }
-
-    public event Action<string>? PreSettingsPanelDraw
-    {
-        add => _communicator.PreSettingsPanelDraw.Subscribe(value!, Communication.PreSettingsPanelDraw.Priority.Default);
-        remove => _communicator.PreSettingsPanelDraw.Unsubscribe(value!);
-    }
-
-    public event Action<string>? PostEnabledDraw
-    {
-        add => _communicator.PostEnabledDraw.Subscribe(value!, Communication.PostEnabledDraw.Priority.Default);
-        remove => _communicator.PostEnabledDraw.Unsubscribe(value!);
-    }
-
-    public event Action<string>? PostSettingsPanelDraw
-    {
-        add => _communicator.PostSettingsPanelDraw.Subscribe(value!, Communication.PostSettingsPanelDraw.Priority.Default);
-        remove => _communicator.PostSettingsPanelDraw.Unsubscribe(value!);
-    }
+    public event Action<string, float, float>?               PreSettingsTabBarDraw;
+    public event Action<string>?                             PreSettingsPanelDraw;
+    public event Action<string>?                             PostEnabledDraw;
+    public event Action<string>?                             PostSettingsPanelDraw;
 
     public PenumbraApiEc OpenMainWindow(TabType tab, string modDirectory, string modName)
     {
@@ -65,13 +64,13 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
         if (tab == TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0))
         {
             if (_modManager.TryGetMod(modDirectory, modName, out var mod))
-                _communicator.SelectTab.Invoke(tab, mod);
+                _communicator.SelectTab.Invoke(new SelectTab.Arguments(tab, mod));
             else
                 return PenumbraApiEc.ModMissing;
         }
         else if (tab != TabType.None)
         {
-            _communicator.SelectTab.Invoke(tab, null);
+            _communicator.SelectTab.Invoke(new SelectTab.Arguments(tab, null));
         }
 
         return PenumbraApiEc.Success;
@@ -80,21 +79,21 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
     public void CloseMainWindow()
         => _configWindow.IsOpen = false;
 
-    private void OnChangedItemClick(MouseButton button, IIdentifiedObjectData data)
+    private void OnChangedItemClick(in ChangedItemClick.Arguments arguments)
     {
         if (ChangedItemClicked == null)
             return;
 
-        var (type, id) = data.ToApiObject();
-        ChangedItemClicked.Invoke(button, type, id);
+        var (type, id) = arguments.Data.ToApiObject();
+        ChangedItemClicked.Invoke(arguments.Button, type, id);
     }
 
-    private void OnChangedItemHover(IIdentifiedObjectData data)
+    private void OnChangedItemHover(in ChangedItemHover.Arguments arguments)
     {
         if (ChangedItemTooltip == null)
             return;
 
-        var (type, id) = data.ToApiObject();
+        var (type, id) = arguments.Data.ToApiObject();
         ChangedItemTooltip.Invoke(type, id);
     }
 }

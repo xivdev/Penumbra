@@ -1,11 +1,12 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Classes;
+using Luna;
+using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, CustomizeArray, CharacterArmor, CreateCharacterBase.Priority>, Luna.IHookService
+public sealed unsafe class CreateCharacterBase : EventBase<CreateCharacterBase.Arguments, CreateCharacterBase.Priority>, IHookService
 {
     public enum Priority
     {
@@ -13,9 +14,12 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
         MetaState = 0,
     }
 
-    public CreateCharacterBase(Luna.HookManager hooks)
-        : base("Create CharacterBase")
-        => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CreateCharacterBase);
+    public CreateCharacterBase(Logger log, HookManager hooks)
+        : base("Create CharacterBase", log)
+    {
+        _postEvent = new PostEvent("Created CharacterBase", log);
+        _task      = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CreateCharacterBase);
+    }
 
     private readonly Task<Hook<Delegate>> _task;
 
@@ -38,28 +42,29 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
 
     private CharacterBase* Detour(ModelCharaId model, CustomizeArray* customize, CharacterArmor* equipment, byte unk)
     {
-        Penumbra.Log.Verbose($"[{Name}] Triggered with model: {model.Id}, customize: 0x{(nint)customize:X}, equipment: 0x{(nint)equipment:X}, unk: {unk}.");
-        Invoke(&model, customize, equipment);
+        Penumbra.Log.Verbose(
+            $"[{Name}] Triggered with model: {model.Id}, customize: 0x{(nint)customize:X}, equipment: 0x{(nint)equipment:X}, unk: {unk}.");
+        Invoke(new Arguments(ref model, customize, equipment));
         var ret = _task.Result.Original(model, customize, equipment, unk);
-        _postEvent.Invoke(model, customize, equipment, ret);
+        _postEvent.Invoke(new PostEvent.Arguments(model, customize, equipment, ret));
         return ret;
     }
 
-    public void Subscribe(ActionPtr234<ModelCharaId, CustomizeArray, CharacterArmor, CharacterBase> subscriber, PostEvent.Priority priority)
+    public void Subscribe(InAction<PostEvent.Arguments> subscriber, PostEvent.Priority priority)
         => _postEvent.Subscribe(subscriber, priority);
 
-    public void Unsubscribe(ActionPtr234<ModelCharaId, CustomizeArray, CharacterArmor, CharacterBase> subscriber)
+    public void Unsubscribe(InAction<PostEvent.Arguments> subscriber)
         => _postEvent.Unsubscribe(subscriber);
 
 
-    private readonly PostEvent _postEvent = new("Created CharacterBase");
+    private readonly PostEvent _postEvent;
 
     protected override void Dispose(bool disposing)
     {
         _postEvent.Dispose();
     }
 
-    public class PostEvent(string name) : EventWrapperPtr234<ModelCharaId, CustomizeArray, CharacterArmor, CharacterBase, PostEvent.Priority>(name)
+    public class PostEvent(string name, Logger log) : EventBase<PostEvent.Arguments, PostEvent.Priority>(name, log)
     {
         public enum Priority
         {
@@ -69,5 +74,20 @@ public sealed unsafe class CreateCharacterBase : EventWrapperPtr<ModelCharaId, C
             /// <seealso cref="PathResolving.MetaState.OnCharacterBaseCreated"/>
             MetaState = 0,
         }
+
+        public readonly struct Arguments(ModelCharaId modelCharaId, CustomizeArray* customize, CharacterArmor* equipment, Model characterBase)
+        {
+            public readonly ModelCharaId    ModelCharaId  = modelCharaId;
+            public readonly CustomizeArray* Customize     = customize;
+            public readonly CharacterArmor* Equipment     = equipment;
+            public readonly Model           CharacterBase = characterBase;
+        }
+    }
+
+    public readonly ref struct Arguments(ref ModelCharaId modelCharaId, CustomizeArray* customize, CharacterArmor* equipment)
+    {
+        public readonly ref ModelCharaId    ModelCharaId = ref modelCharaId;
+        public readonly     CustomizeArray* Customize    = customize;
+        public readonly     CharacterArmor* Equipment    = equipment;
     }
 }

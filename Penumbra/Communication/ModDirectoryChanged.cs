@@ -1,16 +1,11 @@
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Api.Api;
 
 namespace Penumbra.Communication;
 
-/// <summary>
-/// Triggered whenever the mod root directory changes.
-/// <list type="number">
-///     <item>Parameter is the full path of the new directory. </item>
-///     <item>Parameter is whether the new directory is valid. </item>
-/// </list>
-/// </summary>
-public sealed class ModDirectoryChanged() : EventWrapper<string, bool, ModDirectoryChanged.Priority>(nameof(ModDirectoryChanged))
+/// <summary> Triggered whenever the mod root directory changes. </summary>
+public sealed class ModDirectoryChanged(Logger log)
+    : EventBase<ModDirectoryChanged.Arguments, ModDirectoryChanged.Priority>(nameof(ModDirectoryChanged), log)
 {
     public enum Priority
     {
@@ -20,4 +15,9 @@ public sealed class ModDirectoryChanged() : EventWrapper<string, bool, ModDirect
         /// <seealso cref="UI.FileDialogService.OnModDirectoryChange"/>
         FileDialogService = 0,
     }
+
+    /// <summary> The arguments for a ModFileChanged event. </summary>
+    /// <param name="Directory"> The full path of the new mod directory. </param>
+    /// <param name="Valid"> Whether the directory is valid. </param>
+    public readonly record struct Arguments(string Directory, bool Valid);
 }

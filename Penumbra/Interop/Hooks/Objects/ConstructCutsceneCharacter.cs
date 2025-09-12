@@ -1,13 +1,12 @@
 using Dalamud.Hooking;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Character, ConstructCutsceneCharacter.Priority>, Luna.IHookService
+public sealed unsafe class ConstructCutsceneCharacter : EventBase<ConstructCutsceneCharacter.Arguments, ConstructCutsceneCharacter.Priority>, IHookService
 {
     private readonly GameState     _gameState;
     private readonly ObjectManager _objects;
@@ -18,8 +17,8 @@ public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Characte
         CutsceneService = 0,
     }
 
-    public ConstructCutsceneCharacter(GameState gameState, Luna.HookManager hooks, ObjectManager objects)
-        : base("ConstructCutsceneCharacter")
+    public ConstructCutsceneCharacter(Logger log, GameState gameState, HookManager hooks, ObjectManager objects)
+        : base("ConstructCutsceneCharacter", log)
     {
         _gameState = gameState;
         _objects   = objects;
@@ -42,7 +41,7 @@ public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Characte
             var character = _objects[ret + (int)ScreenActor.CutsceneStart].AsCharacter;
             if (character != null)
             {
-                Invoke(character);
+                Invoke(new Arguments(character));
                 Penumbra.Log.Verbose(
                     $"[{Name}] Created indirect copy of player character at 0x{(nint)character}, index {character->ObjectIndex}.");
             }
@@ -66,4 +65,8 @@ public sealed unsafe class ConstructCutsceneCharacter : EventWrapperPtr<Characte
 
     public bool Finished
         => _task.IsCompletedSuccessfully;
+
+    /// <summary> The arguments for a construct cutscene character event. </summary>
+    /// <param name="Character"> The game object that is being destroyed. </param>
+    public readonly record struct Arguments(Actor Character);
 }

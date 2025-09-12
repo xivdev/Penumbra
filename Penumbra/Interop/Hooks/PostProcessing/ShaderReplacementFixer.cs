@@ -185,9 +185,9 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
             _characterOcclusionState.GetAndResetSlowPathCallDelta(),
             _hairMaskState.GetAndResetSlowPathCallDelta());
 
-    private void OnMtrlLoaded(nint mtrlResourceHandle, nint gameObject)
+    private void OnMtrlLoaded(in MtrlLoaded.Arguments arguments)
     {
-        var mtrl = (MaterialResourceHandle*)mtrlResourceHandle;
+        var mtrl = (MaterialResourceHandle*)arguments.MaterialResourceHandle;
         var shpk = mtrl->ShaderPackageResourceHandle;
         if (shpk == null)
             return;
@@ -199,20 +199,20 @@ public sealed unsafe class ShaderReplacementFixer : IDisposable, IRequiredServic
          ?? GetStateForModelRendererUnk(shpkName) ?? GetStateForColorTable(shpkName);
 
         if (shpkState != null && shpk != shpkState.DefaultShaderPackage)
-            shpkState.TryAddMaterial(mtrlResourceHandle);
+            shpkState.TryAddMaterial(arguments.MaterialResourceHandle);
     }
 
-    private void OnResourceHandleDestructor(Structs.ResourceHandle* handle)
+    private void OnResourceHandleDestructor(in ResourceHandleDestructor.Arguments arguments)
     {
-        _skinState.TryRemoveMaterial(handle);
-        _characterStockingsState.TryRemoveMaterial(handle);
-        _characterLegacyState.TryRemoveMaterial(handle);
-        _irisState.TryRemoveMaterial(handle);
-        _characterGlassState.TryRemoveMaterial(handle);
-        _characterTransparencyState.TryRemoveMaterial(handle);
-        _characterTattooState.TryRemoveMaterial(handle);
-        _characterOcclusionState.TryRemoveMaterial(handle);
-        _hairMaskState.TryRemoveMaterial(handle);
+        _skinState.TryRemoveMaterial(arguments.ResourceHandle);
+        _characterStockingsState.TryRemoveMaterial(arguments.ResourceHandle);
+        _characterLegacyState.TryRemoveMaterial(arguments.ResourceHandle);
+        _irisState.TryRemoveMaterial(arguments.ResourceHandle);
+        _characterGlassState.TryRemoveMaterial(arguments.ResourceHandle);
+        _characterTransparencyState.TryRemoveMaterial(arguments.ResourceHandle);
+        _characterTattooState.TryRemoveMaterial(arguments.ResourceHandle);
+        _characterOcclusionState.TryRemoveMaterial(arguments.ResourceHandle);
+        _hairMaskState.TryRemoveMaterial(arguments.ResourceHandle);
     }
 
     private ModdedShaderPackageState? GetStateForHumanSetup(MaterialResourceHandle* mtrlResource)

@@ -1,9 +1,9 @@
 using Dalamud.Bindings.ImGui;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.MaterialPreview;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -91,12 +91,12 @@ public partial class MtrlTab
         _colorTablePreviewers.Clear();
     }
 
-    private unsafe void UnbindFromDrawObjectMaterialInstances(CharacterBase* characterBase)
+    private unsafe void UnbindFromDrawObjectMaterialInstances(in CharacterBaseDestructor.Arguments arguments)
     {
         for (var i = _materialPreviewers.Count; i-- > 0;)
         {
             var previewer = _materialPreviewers[i];
-            if (previewer.DrawObject != characterBase)
+            if (previewer.DrawObject != arguments.CharacterBase)
                 continue;
 
             previewer.Dispose();
@@ -106,7 +106,7 @@ public partial class MtrlTab
         for (var i = _colorTablePreviewers.Count; i-- > 0;)
         {
             var previewer = _colorTablePreviewers[i];
-            if (previewer.DrawObject != characterBase)
+            if (previewer.DrawObject != arguments.CharacterBase)
                 continue;
 
             previewer.Dispose();

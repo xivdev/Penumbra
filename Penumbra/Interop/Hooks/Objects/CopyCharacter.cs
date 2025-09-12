@@ -1,10 +1,11 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using OtterGui.Classes;
+using Luna;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.Interop.Hooks.Objects;
 
-public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character, CopyCharacter.Priority>, Luna.IHookService
+public sealed unsafe class CopyCharacter : EventBase<CopyCharacter.Arguments, CopyCharacter.Priority>, IHookService
 {
     public enum Priority
     {
@@ -12,8 +13,8 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
         CutsceneService = 0,
     }
 
-    public CopyCharacter(Luna.HookManager hooks)
-        : base("Copy Character")
+    public CopyCharacter(Logger log, HookManager hooks)
+        : base("Copy Character", log)
         => _task = hooks.CreateHook<Delegate>(Name, Address, Detour, !HookOverrides.Instance.Objects.CopyCharacter);
 
     private readonly Task<Hook<Delegate>> _task;
@@ -39,7 +40,12 @@ public sealed unsafe class CopyCharacter : EventWrapperPtr<Character, Character,
     {
         var character = target->OwnerObject;
         Penumbra.Log.Verbose($"[{Name}] Triggered with target: 0x{(nint)target:X}, source : 0x{(nint)source:X} unk: {unk}.");
-        Invoke(character, source);
+        Invoke(new Arguments(character, source));
         return _task.Result.Original(target, source, unk);
     }
+
+    /// <summary> The arguments for a copy character event. </summary>
+    /// <param name="TargetCharacter"> The character that is being created by a copy. </param>
+    /// <param name="SourceCharacter"> The character that is being copied. </param>
+    public readonly record struct Arguments(Actor TargetCharacter, Actor SourceCharacter);
 }

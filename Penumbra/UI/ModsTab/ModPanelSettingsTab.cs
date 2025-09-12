@@ -4,6 +4,7 @@ using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.UI.Classes;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -51,7 +52,7 @@ public class ModPanelSettingsTab(
         DrawTemporaryWarning();
         DrawInheritedWarning();
         ImGui.Dummy(Vector2.Zero);
-        communicator.PreSettingsPanelDraw.Invoke(selection.Mod!.Identifier);
+        communicator.PreSettingsPanelDraw.Invoke(new PreSettingsPanelDraw.Arguments(selection.Mod!));
         DrawEnabledInput();
         tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
         ImGui.SameLine();
@@ -60,11 +61,11 @@ public class ModPanelSettingsTab(
         DrawRemoveSettings();
 
         ImGui.TableNextColumn();
-        communicator.PostEnabledDraw.Invoke(selection.Mod!.Identifier);
+        communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
 
         modGroupDrawer.Draw(selection.Mod!, selection.Settings, selection.TemporarySettings);
         UiHelpers.DefaultLineSpace();
-        communicator.PostSettingsPanelDraw.Invoke(selection.Mod!.Identifier);
+        communicator.PostSettingsPanelDraw.Invoke(new PostSettingsPanelDraw.Arguments(selection.Mod!));
     }
 
     /// <summary> Draw a big tinted bar if the current setting is temporary. </summary>
@@ -195,7 +196,7 @@ public class ModPanelSettingsTab(
             {
                 (true, false) => ImUtf8.ButtonEx("Inherit Settings"u8,
                     "Remove current settings from this collection so that it can inherit them.\n"u8
-                  + "If no inherited collection has settings for this mod, it will be disabled."u8, default, false),
+                  + "If no inherited collection has settings for this mod, it will be disabled."u8),
                 (false, false) => ImUtf8.ButtonEx("Inherit Settings"u8,
                     $"Remove current settings from this collection so that it can inherit them.\nHold {config.DeleteModModifier} to inherit.",
                     default, true),

@@ -86,19 +86,20 @@ public class TempModManager : IDisposable, Luna.IService
             {
                 Penumbra.Log.Verbose($"Removing temporary Mod {mod.Name} from {collection.Identity.AnonymizedName}.");
                 collection.Remove(mod);
-                _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, Setting.False, 0, false);
+                _communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(ModSettingChange.TemporaryMod, collection, null, Setting.False, 0, false));
             }
             else
             {
-                Penumbra.Log.Verbose($"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.Identity.AnonymizedName}.");
+                Penumbra.Log.Verbose(
+                    $"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.Identity.AnonymizedName}.");
                 collection.Apply(mod, created);
-                _communicator.ModSettingChanged.Invoke(collection, ModSettingChange.TemporaryMod, null, Setting.True, 0, false);
+                _communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(ModSettingChange.TemporaryMod, collection,  null, Setting.True, 0, false));
             }
         }
         else
         {
             Penumbra.Log.Verbose($"Triggering global mod change for {(created ? "new " : string.Empty)}temporary Mod {mod.Name}.");
-            _communicator.TemporaryGlobalModChange.Invoke(mod, created, removed);
+            _communicator.TemporaryGlobalModChange.Invoke(new TemporaryGlobalModChange.Arguments(mod, created, removed));
         }
     }
 
@@ -153,10 +154,11 @@ public class TempModManager : IDisposable, Luna.IService
         return mod;
     }
 
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection,
-        string _)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is CollectionType.Temporary or CollectionType.Inactive && newCollection == null && oldCollection != null)
-            _mods.Remove(oldCollection);
+        if (arguments.Type is CollectionType.Temporary or CollectionType.Inactive
+         && arguments.NewCollection is null
+         && arguments.OldCollection is not null)
+            _mods.Remove(arguments.OldCollection);
     }
 }

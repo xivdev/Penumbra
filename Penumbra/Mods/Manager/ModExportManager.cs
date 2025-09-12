@@ -79,14 +79,13 @@ public class ModExportManager : IDisposable, Luna.IService
         => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
     /// <summary> Automatically migrate the backup file to the new name if any exists. </summary>
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
-        DirectoryInfo? newDirectory)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (type is not ModPathChangeType.Moved || oldDirectory == null || newDirectory == null)
+        if (arguments.Type is not ModPathChangeType.Moved || arguments.OldDirectory is null || arguments.NewDirectory is null)
             return;
 
-        mod.ModPath = oldDirectory;
-        new ModBackup(this, mod).Move(null, newDirectory.Name);
-        mod.ModPath = newDirectory;
+        arguments.Mod.ModPath = arguments.OldDirectory;
+        new ModBackup(this, arguments.Mod).Move(null, arguments.NewDirectory.Name);
+        arguments.Mod.ModPath = arguments.NewDirectory;
     }
 }

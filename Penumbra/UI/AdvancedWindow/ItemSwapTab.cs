@@ -6,7 +6,6 @@ using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
-using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
@@ -28,7 +27,7 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
+public class ItemSwapTab : IDisposable, ITab, IUiService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -141,11 +140,16 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
         {
             var list = data.ByType[type];
             var enumerable = selector?.Selected is { } mod && mod.ChangedItems.Values.Any(o => o is IdentifiedItem i && i.Item.Type == type)
-                ? list.Select(i => (i, mod.ChangedItems.ContainsKey(i.Name), collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
+                ? list.Select(i => (i, mod.ChangedItems.ContainsKey(i.Name),
+                        collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
                     .OrderByDescending(p => p.Item2).ThenByDescending(p => p.Item3.Count)
                 : selector is null
-                    ? list.Select(i => (i, false, collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>())).OrderBy(p => p.Item3.Count)
-                    : list.Select(i => (i, false, collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>())).OrderByDescending(p => p.Item3.Count);
+                    ? list.Select(i => (i, false,
+                            collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
+                        .OrderBy(p => p.Item3.Count)
+                    : list.Select(i => (i, false,
+                            collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
+                        .OrderByDescending(p => p.Item3.Count);
             return enumerable.ToList();
         }, MouseWheelType.None, Penumbra.Log)
     {
@@ -526,7 +530,7 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
         }
 
         ImGui.TableNextColumn();
-        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Item.Name ?? string.Empty, string.Empty,
+        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Item.Name, string.Empty,
             InputWidth * 2 * UiHelpers.Scale,
             ImGui.GetTextLineHeightWithSpacing());
 
@@ -638,19 +642,6 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
         DrawGenderInput();
     }
 
-    private void DrawFaceSwap()
-    {
-        using var disabled = ImRaii.Disabled();
-        using var tab      = DrawTab(SwapType.Face);
-        if (!tab)
-            return;
-
-        using var table = ImRaii.Table("##settings", 2, ImGuiTableFlags.SizingFixedFit);
-        DrawTargetIdInput("Take this Face Type");
-        DrawSourceIdInput();
-        DrawGenderInput();
-    }
-
     private void DrawTailSwap()
     {
         using var tab = DrawTab(SwapType.Tail);
@@ -686,7 +677,7 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(InputWidth * UiHelpers.Scale);
-        if (ImGui.InputInt("##targetId", ref _targetId, 0, 0))
+        if (ImGui.InputInt("##targetId", ref _targetId))
             _targetId = Math.Clamp(_targetId, 0, byte.MaxValue);
 
         _dirty |= ImGui.IsItemDeactivatedAfterEdit();
@@ -700,7 +691,7 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(InputWidth * UiHelpers.Scale);
-        if (ImGui.InputInt("##sourceId", ref _sourceId, 0, 0))
+        if (ImGui.InputInt("##sourceId", ref _sourceId))
             _sourceId = Math.Clamp(_sourceId, 0, byte.MaxValue);
 
         _dirty |= ImGui.IsItemDeactivatedAfterEdit();
@@ -713,7 +704,7 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
         ImGui.TextUnformatted(text);
 
         ImGui.TableNextColumn();
-        _dirty |= Combos.Gender("##Gender", _currentGender, out _currentGender, InputWidth);
+        _dirty |= Combos.Gender("##Gender", _currentGender, out _currentGender);
         if (drawRace == 1)
         {
             ImGui.SameLine();
@@ -725,12 +716,11 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
             if (_currentRace is not ModelRace.Miqote and not ModelRace.AuRa and not ModelRace.Hrothgar)
                 _currentRace = ModelRace.Miqote;
 
-            _dirty |= ImGuiUtil.GenericEnumCombo("##Race", InputWidth, _currentRace, out _currentRace, new[]
-                {
+            _dirty |= ImGuiUtil.GenericEnumCombo("##Race", InputWidth, _currentRace, out _currentRace, [
                     ModelRace.Miqote,
                     ModelRace.AuRa,
                     ModelRace.Hrothgar,
-                },
+                ],
                 RaceEnumExtensions.ToName);
         }
     }
@@ -767,38 +757,40 @@ public class ItemSwapTab : IDisposable, ITab, Luna.IUiService
             DrawSwap(child);
     }
 
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection,
-        ModCollection? newCollection, string _)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is not CollectionType.Current || _mod == null || newCollection == null)
+        if (arguments.Type is not CollectionType.Current || _mod is null || arguments.NewCollection is null)
             return;
 
-        UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection.GetInheritedSettings(_mod.Index).Settings : null);
+        UpdateMod(_mod,
+            _mod.Index < arguments.NewCollection.Settings.Count ? arguments.NewCollection.GetInheritedSettings(_mod.Index).Settings : null);
     }
 
-    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, Setting oldValue, int groupIdx, bool inherited)
+    private void OnSettingChange(in ModSettingChanged.Arguments arguments)
     {
-        if (collection != _collectionManager.Active.Current || mod != _mod || type is ModSettingChange.TemporarySetting)
+        if (arguments.Collection != _collectionManager.Active.Current
+         || arguments.Mod != _mod
+         || arguments.Type is ModSettingChange.TemporarySetting)
             return;
 
         _swapData.LoadMod(_mod, _modSettings);
         _dirty = true;
     }
 
-    private void OnInheritanceChange(ModCollection collection, bool _)
+    private void OnInheritanceChange(in CollectionInheritanceChanged.Arguments arguments)
     {
-        if (collection != _collectionManager.Active.Current || _mod == null)
+        if (arguments.Collection != _collectionManager.Active.Current || _mod == null)
             return;
 
-        UpdateMod(_mod, collection.GetInheritedSettings(_mod.Index).Settings);
+        UpdateMod(_mod, arguments.Collection.GetInheritedSettings(_mod.Index).Settings);
         _swapData.LoadMod(_mod, _modSettings);
         _dirty = true;
     }
 
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
-        int fromIdx)
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        if (type is ModOptionChangeType.PrepareChange or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded || mod != _mod)
+        if (arguments.Type is ModOptionChangeType.PrepareChange or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded
+         || arguments.Mod != _mod)
             return;
 
         _swapData.LoadMod(_mod, _modSettings);

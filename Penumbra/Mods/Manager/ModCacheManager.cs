@@ -1,8 +1,6 @@
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
-using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.Util;
 
@@ -39,52 +37,51 @@ public class ModCacheManager : IDisposable, Luna.IService
         _communicator.ModDiscoveryFinished.Unsubscribe(OnModDiscoveryFinished);
     }
 
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
-        int fromIdx)
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModOptionChangeType.GroupAdded:
             case ModOptionChangeType.GroupDeleted:
             case ModOptionChangeType.OptionAdded:
             case ModOptionChangeType.OptionDeleted:
-                UpdateChangedItems(mod);
-                UpdateCounts(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateCounts(arguments.Mod);
                 break;
             case ModOptionChangeType.GroupTypeChanged:
-                UpdateHasOptions(mod);
+                UpdateHasOptions(arguments.Mod);
                 break;
             case ModOptionChangeType.OptionFilesChanged:
             case ModOptionChangeType.OptionFilesAdded:
-                UpdateChangedItems(mod);
-                UpdateFileCount(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateFileCount(arguments.Mod);
                 break;
             case ModOptionChangeType.OptionSwapsChanged:
-                UpdateChangedItems(mod);
-                UpdateSwapCount(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateSwapCount(arguments.Mod);
                 break;
             case ModOptionChangeType.OptionMetaChanged:
-                UpdateChangedItems(mod);
-                UpdateMetaCount(mod);
+                UpdateChangedItems(arguments.Mod);
+                UpdateMetaCount(arguments.Mod);
                 break;
         }
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? old, DirectoryInfo? @new)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModPathChangeType.Added:
             case ModPathChangeType.Reloaded:
-                RefreshWithChangedItems(mod);
+                RefreshWithChangedItems(arguments.Mod);
                 break;
         }
     }
 
-    private static void OnModDataChange(ModDataChangeType type, Mod mod, string? _)
+    private static void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
-        if ((type & (ModDataChangeType.LocalTags | ModDataChangeType.ModTags)) != 0)
-            UpdateTags(mod);
+        if ((arguments.Type & (ModDataChangeType.LocalTags | ModDataChangeType.ModTags)) is not 0)
+            UpdateTags(arguments.Mod);
     }
 
     private void OnModDiscoveryFinished()

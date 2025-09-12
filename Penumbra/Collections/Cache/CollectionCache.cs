@@ -188,7 +188,7 @@ public sealed class CollectionCache : IDisposable
                     Penumbra.Log.Warning(
                         $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
                 else
-                    _manager.ResolvedFileChanged.Invoke(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, mp.Path, mp.Mod);
+                    _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(ResolvedFileChanged.Type.Removed, _collection, path, FullPath.Empty, mp.Path, mp.Mod));
             }
         }
 
@@ -275,7 +275,7 @@ public sealed class CollectionCache : IDisposable
         FullPath old, IMod? mod)
     {
         if (Calculating == -1)
-            _manager.ResolvedFileChanged.Invoke(collection, type, key, value, old, mod);
+            _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(type, collection, key, value, old, mod));
     }
 
     private static bool IsRedirectionSupported(Utf8GamePath path, IMod mod)

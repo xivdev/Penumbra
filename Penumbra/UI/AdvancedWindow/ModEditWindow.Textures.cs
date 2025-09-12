@@ -3,6 +3,7 @@ using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterTex;
+using Penumbra.Communication;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
@@ -229,7 +230,7 @@ public partial class ModEditWindow
                 out var registry))
             return;
 
-        _communicator.ModFileChanged.Invoke(mod, registry);
+        _communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(mod, registry));
     }
 
     private void OpenSaveAsDialog(string defaultExtension)

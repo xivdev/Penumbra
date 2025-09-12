@@ -1,5 +1,5 @@
 using Luna;
-using Luna.Files;
+using Penumbra.Communication;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -42,6 +42,6 @@ public sealed class CombiningModGroupEditor(CommunicatorService communicator, Sa
 
         container.Name = name;
         SaveService.Save(saveType, new ModSaveGroup(container.Group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, container.Group.Mod, container.Group, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, container.Group.Mod, container.Group, null, null, -1));
     }
 }

@@ -135,9 +135,9 @@ public class IndividualAssignmentUi : IDisposable
         _ready          = true;
     }
 
-    private void UpdateIdentifiers(CollectionType type, ModCollection? _1, ModCollection? _2, string _3)
+    private void UpdateIdentifiers(in CollectionChange.Arguments arguments)
     {
-        if (type == CollectionType.Individual)
+        if (arguments.Type is CollectionType.Individual)
             UpdateIdentifiersInternal();
     }
 

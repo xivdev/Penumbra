@@ -1,5 +1,5 @@
 using Dalamud.Plugin;
-using Luna.Files;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.Mods;
 
@@ -80,4 +80,16 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
     /// <summary> Enumerate all group files for a given mod. </summary>
     public IEnumerable<FileInfo> GetOptionGroupFiles(Mod mod)
         => mod.ModPath.EnumerateFiles("group_*.json");
+
+    /// <summary> Collect all relevant files for penumbra configuration. </summary>
+    public override List<FileInfo> GetBackupFiles()
+    {
+        var list = CollectionFiles.ToList();
+        list.AddRange(LocalDataFiles);
+        list.Add(new FileInfo(ConfigurationFile));
+        list.Add(new FileInfo(FilesystemFile));
+        list.Add(new FileInfo(ActiveCollectionsFile));
+        list.Add(new FileInfo(PredefinedTagFile));
+        return list;
+    }
 }

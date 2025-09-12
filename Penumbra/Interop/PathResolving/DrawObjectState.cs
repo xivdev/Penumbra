@@ -1,6 +1,4 @@
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Interop;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 using Penumbra.GameData.Structs;
@@ -22,7 +20,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
     public nint LastGameObject
         => _gameState.LastGameObject;
 
-    public unsafe DrawObjectState(ObjectManager objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
+    public DrawObjectState(ObjectManager objects, CreateCharacterBase createCharacterBase, WeaponReload weaponReload,
         CharacterBaseDestructor characterBaseDestructor, GameState gameState, IFramework framework, CharacterDestructor characterDestructor)
     {
         _objects                 = objects;
@@ -76,7 +74,7 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
     public IEnumerable<(Actor, ObjectIndex, bool)> Values
         => _drawObjectToGameObject.Values;
 
-    public unsafe void Dispose()
+    public void Dispose()
     {
         _weaponReload.Unsubscribe(OnWeaponReloading);
         _weaponReload.Unsubscribe(OnWeaponReloaded);
@@ -89,17 +87,16 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
     /// Seems like sometimes the draw object of a game object is destroyed in frames after the original game object is already destroyed.
     /// So protect against outdated game object pointers in the dictionary.
     /// </remarks>
-    private unsafe void OnCharacterDestructor(Character* a)
+    private unsafe void OnCharacterDestructor(in CharacterDestructor.Arguments arguments)
     {
-        if (a is null)
+        if (!arguments.Character.Valid)
             return;
 
-        var character = (nint)a;
         var delete    = stackalloc nint[5];
         var current   = 0;
         foreach (var (drawObject, (gameObject, _, _)) in _drawObjectToGameObject)
         {
-            if (gameObject != character)
+            if (gameObject != arguments.Character.Address)
                 continue;
 
             delete[current++] = drawObject;
@@ -111,28 +108,27 @@ public sealed class DrawObjectState : IDisposable, IReadOnlyDictionary<Model, (A
         {
             _drawObjectToGameObject.Remove(*ptr, out var pair);
             Penumbra.Log.Excessive(
-                $"[DrawObjectState] Removed draw object 0x{*ptr:X} -> 0x{(nint)a:X} (actual: 0x{pair.GameObject.Address:X}, {pair.IsChild}).");
+                $"[DrawObjectState] Removed draw object 0x{*ptr:X} -> 0x{arguments.Character.Address:X} (actual: 0x{pair.GameObject.Address:X}, {pair.IsChild}).");
         }
     }
 
-    private unsafe void OnWeaponReloading(DrawDataContainer* _, Character* character, CharacterWeapon* _2)
-        => _gameState.QueueGameObject((nint)character);
+    private void OnWeaponReloading(in WeaponReload.Arguments arguments)
+        => _gameState.QueueGameObject(arguments.Owner);
 
-    private unsafe void OnWeaponReloaded(DrawDataContainer* _, Character* character)
+    private unsafe void OnWeaponReloaded(in WeaponReload.PostEvent.Arguments arguments)
     {
         _gameState.DequeueGameObject();
-        IterateDrawObjectTree((Object*)character->GameObject.DrawObject, (nint)character, false, false);
+        IterateDrawObjectTree((Object*)arguments.Owner.Model.Address, arguments.Owner, false, false);
     }
 
-    private unsafe void OnCharacterBaseDestructor(CharacterBase* characterBase)
-        => _drawObjectToGameObject.Remove((nint)characterBase);
+    private void OnCharacterBaseDestructor(in CharacterBaseDestructor.Arguments arguments)
+        => _drawObjectToGameObject.Remove(arguments.CharacterBase.Address);
 
-    private unsafe void OnCharacterBaseCreated(ModelCharaId modelCharaId, CustomizeArray* customize, CharacterArmor* equipment,
-        CharacterBase* drawObject)
+    private void OnCharacterBaseCreated(in CreateCharacterBase.PostEvent.Arguments arguments)
     {
         Actor gameObject = LastGameObject;
         if (gameObject.Valid)
-            _drawObjectToGameObject[(nint)drawObject] = (gameObject, gameObject.Index, false);
+            _drawObjectToGameObject[arguments.CharacterBase] = (gameObject, gameObject.Index, false);
     }
 
     /// <summary>

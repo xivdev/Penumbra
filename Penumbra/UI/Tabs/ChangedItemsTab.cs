@@ -6,6 +6,7 @@ using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
@@ -103,7 +104,7 @@ public class ChangedItemsTab(
         if (ImUtf8.Selectable(first.Name.Text, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 })
          && ImGui.GetIO().KeyCtrl
          && first is Mod mod)
-            communicator.SelectTab.Invoke(TabType.Mods, mod);
+            communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
 
         if (!ImGui.IsItemHovered())
             return;

@@ -10,6 +10,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.ResourceTree;
@@ -344,7 +345,7 @@ public class ResourceTreeViewer(
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
                 if (hasMod && ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)
-                    communicator.SelectTab.Invoke(TabType.Mods, mod);
+                    communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
 
                 ImGuiUtil.HoverTooltip(
                     $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");

@@ -85,6 +85,6 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
         }
     }
 
-    private void ResourceDestroyed(ResourceHandle* handle)
-        => _gameState.SubFileCollection.TryRemove((nint)handle, out _);
+    private void ResourceDestroyed(in ResourceHandleDestructor.Arguments arguments)
+        => _gameState.SubFileCollection.TryRemove((nint)arguments.ResourceHandle, out _);
 }

@@ -34,9 +34,9 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
 
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.CollectionSelector);
         // Set items.
-        OnCollectionChange(CollectionType.Inactive, null, null, string.Empty);
+        OnCollectionChange(new CollectionChange.Arguments(CollectionType.Inactive, null, null, string.Empty));
         // Set selection.
-        OnCollectionChange(CollectionType.Current, null, _active.Current, string.Empty);
+        OnCollectionChange(new CollectionChange.Arguments(CollectionType.Current, null, _active.Current, string.Empty));
     }
 
     protected override bool OnDelete(int idx)
@@ -85,7 +85,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         if (source)
         {
             _dragging = Items[idx];
-            ImGui.SetDragDropPayload(PayloadString, null, 0);
+            ImGui.SetDragDropPayload(PayloadString, null);
             ImGui.TextUnformatted($"Assigning {Name(_dragging)} to...");
         }
 
@@ -123,14 +123,14 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         SetCurrent(_active.Current);
     }
 
-    private void OnCollectionChange(CollectionType type, ModCollection? old, ModCollection? @new, string _3)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case CollectionType.Temporary: return;
             case CollectionType.Current:
-                if (@new != null)
-                    SetCurrent(@new);
+                if (arguments.NewCollection is not null)
+                    SetCurrent(arguments.NewCollection);
                 SetFilterDirty();
                 return;
             case CollectionType.Inactive:

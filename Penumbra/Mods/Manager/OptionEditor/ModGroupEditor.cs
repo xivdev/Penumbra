@@ -1,8 +1,8 @@
 using Dalamud.Interface.ImGuiNotification;
-using Luna.Files;
 using Luna;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -62,7 +62,7 @@ public class ModGroupEditor(
 
         group.DefaultSettings = defaultOption;
         saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.DefaultOptionChanged, group.Mod, group, null, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DefaultOptionChanged, group.Mod, group, null, null, -1));
     }
 
     /// <summary> Rename an option group if possible. </summary>
@@ -75,7 +75,7 @@ public class ModGroupEditor(
         saveService.ImmediateDelete(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
         group.Name = newName;
         saveService.ImmediateSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupRenamed, group.Mod, group, null, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupRenamed, group.Mod, group, null, null, -1));
     }
 
     /// <summary> Delete a given option group. Fires an event to prepare before actually deleting. </summary>
@@ -83,10 +83,10 @@ public class ModGroupEditor(
     {
         var mod = group.Mod;
         var idx = group.GetIndex();
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, group, null, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, mod, group, null, null, -1));
         mod.Groups.RemoveAt(idx);
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupDeleted, mod, null, null, null, idx);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupDeleted, mod, null, null, null, idx));
     }
 
     /// <summary> Move the index of a given option group. </summary>
@@ -98,7 +98,7 @@ public class ModGroupEditor(
             return;
 
         saveService.SaveAllOptionGroups(mod, false, config.ReplaceNonAsciiOnImport);
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupMoved, mod, group, null, null, idxFrom);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupMoved, mod, group, null, null, idxFrom));
     }
 
     /// <summary> Change the internal priority of the given option group. </summary>
@@ -109,7 +109,7 @@ public class ModGroupEditor(
 
         group.Priority = newPriority;
         saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PriorityChanged, group.Mod, group, null, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, group.Mod, group, null, null, -1));
     }
 
     /// <summary> Change the description of the given option group. </summary>
@@ -120,7 +120,7 @@ public class ModGroupEditor(
 
         group.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, group.Mod, group, null, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, group.Mod, group, null, null, -1));
     }
 
     /// <summary> Rename the given option. </summary>
@@ -131,7 +131,7 @@ public class ModGroupEditor(
 
         option.Name = newName;
         saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option, null, -1));
     }
 
     /// <summary> Change the description of the given option. </summary>
@@ -142,7 +142,7 @@ public class ModGroupEditor(
 
         option.Description = newDescription;
         saveService.QueueSave(new ModSaveGroup(option.Group, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option, null, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.DisplayChange, option.Mod, option.Group, option, null, -1));
     }
 
     /// <summary> Set the meta manipulations for a given option. Replaces existing manipulations. </summary>
@@ -151,10 +151,10 @@ public class ModGroupEditor(
         if (subMod.Manipulations.Equals(manipulations))
             return;
 
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
         subMod.Manipulations.SetTo(manipulations);
         saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionMetaChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
     }
 
     /// <summary> Set the file redirections for a given option. Replaces existing redirections. </summary>
@@ -163,10 +163,10 @@ public class ModGroupEditor(
         if (subMod.Files.SetEquals(replacements))
             return;
 
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
         subMod.Files.SetTo(replacements);
         saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
     }
 
     /// <summary> Forces a file save of the given container's group. </summary>
@@ -181,7 +181,7 @@ public class ModGroupEditor(
         if (oldCount != subMod.Files.Count)
         {
             saveService.QueueSave(new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-            communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesAdded, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+            communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionFilesAdded, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
         }
     }
 
@@ -191,10 +191,10 @@ public class ModGroupEditor(
         if (subMod.FileSwaps.SetEquals(swaps))
             return;
 
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PrepareChange, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
         subMod.FileSwaps.SetTo(swaps);
         saveService.Save(saveType, new ModSaveGroup(subMod, config.ReplaceNonAsciiOnImport));
-        communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionSwapsChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1);
+        communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.OptionSwapsChanged, (Mod)subMod.Mod, subMod.Group, null, subMod, -1));
     }
 
     /// <summary> Verify that a new option group name is unique in this mod. </summary>

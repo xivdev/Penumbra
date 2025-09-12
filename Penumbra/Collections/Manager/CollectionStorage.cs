@@ -1,13 +1,9 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Communication;
-using Penumbra.Mods;
-using Penumbra.Mods.Editor;
-using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
-using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 
 namespace Penumbra.Collections.Manager;
@@ -21,7 +17,7 @@ public readonly record struct LocalCollectionId(int Id) : IAdditionOperators<Loc
         => new(left.Id + right);
 }
 
-public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, Luna.IService
+public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, IService
 {
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
@@ -157,7 +153,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, Luna
         _collections.Add(newCollection);
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
         Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.Identity.AnonymizedName}.", NotificationType.Success, false);
-        _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Inactive, null, newCollection, string.Empty));
         return true;
     }
 
@@ -187,7 +183,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, Luna
         _collectionsByLocal.Remove(collection.Identity.LocalId);
 
         Penumbra.Messager.NotificationMessage($"Deleted collection {collection.Identity.AnonymizedName}.", NotificationType.Success, false);
-        _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Inactive, collection, null, string.Empty));
         return true;
     }
 
@@ -321,29 +317,29 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, Luna
     }
 
     /// <summary> Add or remove a mod from all collections, or re-save all collections where the mod has settings. </summary>
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
-        DirectoryInfo? newDirectory)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModPathChangeType.Added:
                 foreach (var collection in this)
-                    collection.Settings.AddMod(mod);
+                    collection.Settings.AddMod(arguments.Mod);
                 break;
             case ModPathChangeType.Deleted:
                 foreach (var collection in this)
-                    collection.Settings.RemoveMod(mod);
+                    collection.Settings.RemoveMod(arguments.Mod);
                 break;
             case ModPathChangeType.Moved:
-                foreach (var collection in this.Where(collection => collection.GetOwnSettings(mod.Index) != null))
+                var index = arguments.Mod.Index;
+                foreach (var collection in this.Where(collection => collection.GetOwnSettings(index) is not null))
                     _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
                 break;
             case ModPathChangeType.Reloaded:
                 foreach (var collection in this)
                 {
-                    if (collection.GetOwnSettings(mod.Index)?.Settings.FixAll(mod) ?? false)
+                    if (collection.GetOwnSettings(arguments.Mod.Index)?.Settings.FixAll(arguments.Mod) ?? false)
                         _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
-                    collection.Settings.SetTemporary(mod.Index, null);
+                    collection.Settings.SetTemporary(arguments.Mod.Index, null);
                 }
 
                 break;
@@ -351,30 +347,29 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, Luna
     }
 
     /// <summary> Save all collections where the mod has settings and the change requires saving. </summary>
-    private void OnModOptionChange(ModOptionChangeType type, Mod mod, IModGroup? group, IModOption? option, IModDataContainer? container,
-        int movedToIdx)
+    private void OnModOptionChange(in ModOptionChanged.Arguments arguments)
     {
-        type.HandlingInfo(out var requiresSaving, out _, out _);
+        arguments.Type.HandlingInfo(out var requiresSaving, out _, out _);
         if (!requiresSaving)
             return;
 
         foreach (var collection in this)
         {
-            if (collection.GetOwnSettings(mod.Index)?.HandleChanges(type, mod, group, option, movedToIdx) ?? false)
+            if (collection.GetOwnSettings(arguments.Mod.Index)?.HandleChanges(arguments.Type, arguments.Mod, arguments.Group, arguments.Option, arguments.DeletedIndex) ?? false)
                 _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
-            collection.Settings.SetTemporary(mod.Index, null);
+            collection.Settings.SetTemporary(arguments.Mod.Index, null);
         }
     }
 
     /// <summary> Update change counters when changing files. </summary>
-    private void OnModFileChanged(Mod mod, FileRegistry file)
+    private void OnModFileChanged(in ModFileChanged.Arguments arguments)
     {
-        if (file.CurrentUsage == 0)
+        if (arguments.File.CurrentUsage == 0)
             return;
 
         foreach (var collection in this)
         {
-            var (settings, _) = collection.GetActualSettings(mod.Index);
+            var (settings, _) = collection.GetActualSettings(arguments.Mod.Index);
             if (settings is { Enabled: true })
                 collection.Counters.IncrementChange();
         }

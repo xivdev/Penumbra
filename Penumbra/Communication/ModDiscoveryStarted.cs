@@ -1,9 +1,9 @@
-using OtterGui.Classes;
+using Luna;
 
 namespace Penumbra.Communication;
 
 /// <summary> Triggered whenever mods are prepared to be rediscovered. </summary>
-public sealed class ModDiscoveryStarted() : EventWrapper<ModDiscoveryStarted.Priority>(nameof(ModDiscoveryStarted))
+public sealed class ModDiscoveryStarted(Logger log) : EventBase<ModDiscoveryStarted.Priority>(nameof(ModDiscoveryStarted), log)
 {
     public enum Priority
     {

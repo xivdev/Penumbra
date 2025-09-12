@@ -1,5 +1,4 @@
-using OtterGui.Classes;
-using Penumbra.Api;
+using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -7,17 +6,9 @@ using Penumbra.Services;
 
 namespace Penumbra.Communication;
 
-/// <summary>
-/// Triggered whenever a mod is added, deleted, moved or reloaded.
-/// <list type="number">
-///     <item>Parameter is the type of change. </item>
-///     <item>Parameter is the changed mod. </item>
-///     <item>Parameter is the old directory on deletion, move or reload and null on addition. </item>
-///     <item>Parameter is the new directory on addition, move or reload and null on deletion. </item>
-/// </list>
-/// </summary>
-public sealed class ModPathChanged()
-    : EventWrapper<ModPathChangeType, Mod, DirectoryInfo?, DirectoryInfo?, ModPathChanged.Priority>(nameof(ModPathChanged))
+/// <summary> Triggered whenever a mod is added, deleted, moved or reloaded. </summary>
+public sealed class ModPathChanged(Logger log)
+    : EventBase<ModPathChanged.Arguments, ModPathChanged.Priority>(nameof(ModPathChanged), log)
 {
     public enum Priority
     {
@@ -60,4 +51,11 @@ public sealed class ModPathChanged()
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeRemoval"/>
         CollectionCacheManagerRemoval = 100,
     }
+
+    /// <summary> The arguments for a ModPathChanged event. </summary>
+    /// <param name="Type"> The type of change for the mod. </param>
+    /// <param name="Mod"> The changed mod. </param>
+    /// <param name="OldDirectory"> The old directory on deletion, move or reload and null on addition. </param>
+    /// <param name="NewDirectory"> The new directory on addition, move or reload and null on deletion. </param>
+    public readonly record struct Arguments(ModPathChangeType Type, Mod Mod, DirectoryInfo? OldDirectory, DirectoryInfo? NewDirectory);
 }

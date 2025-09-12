@@ -1,4 +1,5 @@
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
@@ -208,7 +209,7 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
     {
         if (type is not ModSettingChange.TemporarySetting)
             saveService.QueueSave(new ModCollectionSave(modStorage, changedCollection));
-        communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
+        communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, changedCollection, mod, oldValue, groupIdx, false));
         if (type is not ModSettingChange.TemporarySetting)
             RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
@@ -223,11 +224,11 @@ public class CollectionEditor(SaveService saveService, CommunicatorService commu
             {
                 case ModSettingChange.MultiInheritance:
                 case ModSettingChange.MultiEnableState:
-                    communicator.ModSettingChanged.Invoke(directInheritor, type, null, oldValue, groupIdx, true);
+                    communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, null, oldValue, groupIdx, true));
                     break;
                 default:
                     if (directInheritor.GetOwnSettings(mod!.Index) == null)
-                        communicator.ModSettingChanged.Invoke(directInheritor, type, mod, oldValue, groupIdx, true);
+                        communicator.ModSettingChanged.Invoke(new ModSettingChanged.Arguments(type, directInheritor, mod, oldValue, groupIdx, true));
                     break;
             }
 

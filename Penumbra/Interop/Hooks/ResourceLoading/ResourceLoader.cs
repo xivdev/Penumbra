@@ -347,9 +347,9 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
         returnValue = 1;
     }
 
-    private void ResourceDestructorHandler(ResourceHandle* handle)
+    private void ResourceDestructorHandler(in ResourceHandleDestructor.Arguments arguments)
     {
-        _ongoingLoads.TryRemove((nint)handle, out _);
+        _ongoingLoads.TryRemove((nint)arguments.ResourceHandle, out _);
     }
 
     /// <summary> Compute the CRC32 hash for a given path together with potential resource parameters. </summary>

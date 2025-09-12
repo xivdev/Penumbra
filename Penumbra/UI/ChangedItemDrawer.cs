@@ -10,6 +10,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -122,7 +123,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
         ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
         if (ret != MouseButton.None)
-            _communicator.ChangedItemClick.Invoke(ret, data);
+            _communicator.ChangedItemClick.Invoke(new ChangedItemClick.Arguments(ret, data));
         if (!ImGui.IsItemHovered())
             return;
 
@@ -134,7 +135,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3 * ImUtf8.GlobalScale);
         ImGui.Separator();
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3 * ImUtf8.GlobalScale);
-        _communicator.ChangedItemHover.Invoke(data);
+        _communicator.ChangedItemHover.Invoke(new ChangedItemHover.Arguments(data));
     }
 
     /// <summary> Draw the model information, right-justified. </summary>

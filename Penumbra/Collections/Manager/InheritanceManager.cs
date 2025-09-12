@@ -11,7 +11,7 @@ namespace Penumbra.Collections.Manager;
 /// This is transitive, so a collection A inheriting from B also inherits from everything B inherits.
 /// Circular dependencies are resolved by distinctness.
 /// </summary>
-public class InheritanceManager : IDisposable, Luna.IService
+public class InheritanceManager : IDisposable, IService
 {
     public enum ValidInheritance
     {
@@ -82,7 +82,7 @@ public class InheritanceManager : IDisposable, Luna.IService
     {
         var parent = inheritor.Inheritance.RemoveInheritanceAt(inheritor, idx);
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
-        _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+        _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, false));
         RecurseInheritanceChanges(inheritor, true);
         Penumbra.Log.Debug($"Removed {parent.Identity.AnonymizedName} from {inheritor.Identity.AnonymizedName} inheritances.");
     }
@@ -94,7 +94,7 @@ public class InheritanceManager : IDisposable, Luna.IService
             return;
 
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
-        _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+        _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, false));
         RecurseInheritanceChanges(inheritor, true);
         Penumbra.Log.Debug($"Moved {inheritor.Identity.AnonymizedName}s inheritance {from} to {to}.");
     }
@@ -109,7 +109,7 @@ public class InheritanceManager : IDisposable, Luna.IService
         if (invokeEvent)
         {
             _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
-            _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+            _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, false));
         }
 
         RecurseInheritanceChanges(inheritor, invokeEvent);
@@ -167,18 +167,18 @@ public class InheritanceManager : IDisposable, Luna.IService
         }
     }
 
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? old, ModCollection? newCollection, string _3)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is not CollectionType.Inactive || old == null)
+        if (arguments.Type is not CollectionType.Inactive || arguments.OldCollection is null)
             return;
 
         foreach (var c in _storage)
         {
-            var inheritedIdx = c.Inheritance.DirectlyInheritsFrom.IndexOf(old);
+            var inheritedIdx = c.Inheritance.DirectlyInheritsFrom.IndexOf(arguments.OldCollection);
             if (inheritedIdx >= 0)
                 RemoveInheritance(c, inheritedIdx);
 
-            c.Inheritance.RemoveChild(old);
+            c.Inheritance.RemoveChild(arguments.OldCollection);
         }
     }
 
@@ -189,7 +189,7 @@ public class InheritanceManager : IDisposable, Luna.IService
             ModCollectionInheritance.UpdateFlattenedInheritance(inheritor);
             RecurseInheritanceChanges(inheritor, invokeEvent);
             if (invokeEvent)
-                _communicator.CollectionInheritanceChanged.Invoke(inheritor, true);
+                _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, true));
         }
     }
 }

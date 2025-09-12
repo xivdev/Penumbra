@@ -28,7 +28,7 @@ public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
 
     public bool Ready { get; private set; }
 
-    public readonly CharacterUtilityFinished LoadingFinished = new();
+    public readonly CharacterUtilityFinished LoadingFinished;
 
     public nint DefaultHumanPbdResource               { get; private set; }
     public nint DefaultTransparentResource            { get; private set; }
@@ -56,14 +56,16 @@ public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
 
     private readonly IFramework _framework;
 
-    public CharacterUtility(IFramework framework, IGameInteropProvider interop)
+    public CharacterUtility(IFramework framework, IGameInteropProvider interop, CharacterUtilityFinished finished)
     {
+        LoadingFinished = finished;
         interop.InitializeFromAttributes(this);
         _lists = Enumerable.Range(0, RelevantIndices.Length)
             .Select(idx => new MetaList(new InternalIndex(idx)))
             .ToArray();
-        _framework      =  framework;
-        LoadingFinished.Subscribe(() => Penumbra.Log.Debug("Loading of CharacterUtility finished."), CharacterUtilityFinished.Priority.OnFinishedLoading);
+        _framework = framework;
+        LoadingFinished.Subscribe(() => Penumbra.Log.Debug("Loading of CharacterUtility finished."),
+            CharacterUtilityFinished.Priority.OnFinishedLoading);
         LoadDefaultResources(null!);
         if (!Ready)
             _framework.Update += LoadDefaultResources;

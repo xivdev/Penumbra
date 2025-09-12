@@ -1,5 +1,6 @@
-using Luna.Files;
+using Luna;
 using OtterGui.Filesystem;
+using Penumbra.Communication;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -8,7 +9,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<SingleModGroup, SingleSubMod>(communicator, saveService, config), Luna.IService
+    : ModOptionEditor<SingleModGroup, SingleSubMod>(communicator, saveService, config), IService
 {
     public void ChangeToMulti(SingleModGroup group)
     {
@@ -16,7 +17,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
         var multiGroup = group.ConvertToMulti();
         group.Mod.Groups[idx] = multiGroup;
         SaveService.QueueSave(new ModSaveGroup(multiGroup, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupTypeChanged, multiGroup.Mod, multiGroup, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, multiGroup.Mod, multiGroup, null, null, -1));
     }
 
     protected override SingleModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)
@@ -47,7 +48,7 @@ public sealed class SingleModGroupEditor(CommunicatorService communicator, SaveS
 
     protected override bool MoveOption(SingleModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
+        if (!Extensions.Move(group.OptionData, ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveSingle(optionIdxFrom, optionIdxTo);

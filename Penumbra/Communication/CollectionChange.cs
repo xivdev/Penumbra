@@ -1,19 +1,12 @@
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 
 namespace Penumbra.Communication;
 
-/// <summary>
-/// Triggered whenever collection setup is changed.
-/// <list type="number">
-///     <item>Parameter is the type of the changed collection. (Inactive or Temporary for additions or deletions)</item>
-///     <item>Parameter is the old collection, or null on additions.</item>
-///     <item>Parameter is the new collection, or null on deletions.</item>
-///     <item>Parameter is the display name for Individual collections or an empty string otherwise.</item>
-/// </list> </summary>
-public sealed class CollectionChange()
-    : EventWrapper<CollectionType, ModCollection?, ModCollection?, string, CollectionChange.Priority>(nameof(CollectionChange))
+/// <summary> Triggered whenever collection setup is changed. </summary>
+public sealed class CollectionChange(Logger log)
+    : EventBase<CollectionChange.Arguments, CollectionChange.Priority>(nameof(CollectionChange), log)
 {
     public enum Priority
     {
@@ -32,7 +25,7 @@ public sealed class CollectionChange()
         /// <seealso cref="Collections.Manager.InheritanceManager.OnCollectionChange" />
         InheritanceManager = 0,
 
-        /// <seealso cref="Interop.PathResolving.IdentifiedCollectionCache.CollectionChangeClear" />
+        /// <seealso cref="global::Penumbra.Interop.PathResolving.IdentifiedCollectionCache.CollectionChangeClear" />
         IdentifiedCollectionCache = 0,
 
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnCollectionChange" />
@@ -50,4 +43,15 @@ public sealed class CollectionChange()
         /// <seealso cref="Mods.ModSelection.OnCollectionChange"/>
         ModSelection = 10,
     }
+
+    /// <summary> The arguments for a collection change event. </summary>
+    /// <param name="Type"> The type of the changed collection (<see cref="CollectionType.Inactive"/> or <see cref="CollectionType.Temporary"/> for additions or deletions). </param>
+    /// <param name="OldCollection"> The old collection, or null on additions. </param>
+    /// <param name="NewCollection"> The new collection, or null on deletions. </param>
+    /// <param name="DisplayName"> The display name for Individual collections or an empty string otherwise. </param>
+    public readonly record struct Arguments(
+        CollectionType Type,
+        ModCollection? OldCollection,
+        ModCollection? NewCollection,
+        string DisplayName);
 }

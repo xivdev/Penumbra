@@ -25,7 +25,7 @@ public class ModPanel : IDisposable, Luna.IUiService
         _multiModPanel = multiModPanel;
         _header        = new ModPanelHeader(pi, communicator);
         _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModPanel);
-        OnSelectionChange(null, _selection.Mod);
+        OnSelectionChange(new ModSelection.Arguments(null, _selection.Mod));
     }
 
     public void Draw()
@@ -59,10 +59,10 @@ public class ModPanel : IDisposable, Luna.IUiService
     private bool _valid;
     private Mod  _mod = null!;
 
-    private void OnSelectionChange(Mod? old, Mod? mod)
+    private void OnSelectionChange(in ModSelection.Arguments arguments)
     {
         _resetCursor = true;
-        if (mod == null || _selection.Mod == null)
+        if (arguments.NewSelection is null || _selection.Mod is null)
         {
             _editWindow.IsOpen = false;
             _valid             = false;
@@ -70,9 +70,9 @@ public class ModPanel : IDisposable, Luna.IUiService
         else
         {
             if (_editWindow.IsOpen)
-                _editWindow.ChangeMod(mod);
+                _editWindow.ChangeMod(arguments.NewSelection);
             _valid = true;
-            _mod   = mod;
+            _mod   = arguments.NewSelection;
             _header.ChangeMod(_mod);
             _tabs.Settings.Reset();
             _tabs.Edit.Reset();

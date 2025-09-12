@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
+using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Mods.Editor;
@@ -216,7 +217,7 @@ public class FileEditor<T>(
     {
         compactor.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
         if (owner.Mod != null)
-            communicator.ModFileChanged.Invoke(owner.Mod, _currentPath);
+            communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, _currentPath));
         _changed = false;
     }
 

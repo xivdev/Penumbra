@@ -86,18 +86,18 @@ public class PcpService : IApiService, IDisposable
             _collections.Storage.RemoveCollection(collection);
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (type is not ModPathChangeType.Added || _config.PcpSettings.DisableHandling || newDirectory is null)
+        if (arguments.Type is not ModPathChangeType.Added || _config.PcpSettings.DisableHandling || arguments.NewDirectory is null)
             return;
 
         try
         {
-            var file = Path.Combine(newDirectory.FullName, "character.json");
+            var file = Path.Combine(arguments.NewDirectory.FullName, "character.json");
             if (!File.Exists(file))
             {
                 // First version had collection.json, changed.
-                var oldFile = Path.Combine(newDirectory.FullName, "collection.json");
+                var oldFile = Path.Combine(arguments.NewDirectory.FullName, "collection.json");
                 if (File.Exists(oldFile))
                 {
                     Penumbra.Log.Information("[PCPService] Renaming old PCP file from collection.json to character.json.");
@@ -107,7 +107,7 @@ public class PcpService : IApiService, IDisposable
                     return;
             }
 
-            Penumbra.Log.Information($"[PCPService] Found a PCP file for {mod.Name}, applying.");
+            Penumbra.Log.Information($"[PCPService] Found a PCP file for {arguments.Mod.Name}, applying.");
             var text       = File.ReadAllText(file);
             var jObj       = JObject.Parse(text);
             var collection = ModCollection.Empty;
@@ -121,7 +121,7 @@ public class PcpService : IApiService, IDisposable
                     if (_collections.Storage.AddCollection(name, null))
                     {
                         collection = _collections.Storage[^1];
-                        _collections.Editor.SetModState(collection, mod, true);
+                        _collections.Editor.SetModState(collection, arguments.Mod, true);
 
                         // Assign collection.
                         if (_config.PcpSettings.AssignCollection)
@@ -134,7 +134,7 @@ public class PcpService : IApiService, IDisposable
             }
 
             // Move to folder.
-            if (_fileSystem.TryGetValue(mod, out var leaf))
+            if (_fileSystem.TryGetValue(arguments.Mod, out var leaf))
             {
                 try
                 {
@@ -149,11 +149,11 @@ public class PcpService : IApiService, IDisposable
 
             // Invoke IPC.
             if (_config.PcpSettings.AllowIpc)
-                _communicator.PcpParsing.Invoke(jObj, mod.Identifier, collection.Identity.Id);
+                _communicator.PcpParsing.Invoke(new PcpParsing.Arguments(jObj, arguments.Mod, collection));
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"Error reading the character.json file from {mod.Identifier}:\n{ex}");
+            Penumbra.Log.Error($"Error reading the character.json file from {arguments.Mod.Identifier}:\n{ex}");
         }
     }
 
@@ -220,7 +220,7 @@ public class PcpService : IApiService, IDisposable
         if (note.Length > 0)
             cancel.ThrowIfCancellationRequested();
         if (_config.PcpSettings.AllowIpc)
-            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(jObj, index.Index, directory.FullName));
+            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(new PcpCreation.Arguments(jObj, index.Index, directory.FullName)));
         var             filePath = Path.Combine(directory.FullName, "character.json");
         await using var file     = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
         await using var stream   = new StreamWriter(file);

@@ -1,9 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
-using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
-using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -74,42 +72,41 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
     public void Dispose()
         => Unsubscribe();
 
-    private void OnCollectionChange(CollectionType type, ModCollection? oldCollection, ModCollection? newCollection, string _)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (type is not CollectionType.Interface)
+        if (arguments.Type is not CollectionType.Interface)
             return;
 
-        var enumerable = oldCollection?.ResolvedFiles.Keys ?? Array.Empty<Utf8GamePath>().AsEnumerable();
-        enumerable = enumerable.Concat(newCollection?.ResolvedFiles.Keys ?? Array.Empty<Utf8GamePath>().AsEnumerable());
+        var enumerable = arguments.OldCollection?.ResolvedFiles.Keys ?? Array.Empty<Utf8GamePath>().AsEnumerable();
+        enumerable = enumerable.Concat(arguments.NewCollection?.ResolvedFiles.Keys ?? Array.Empty<Utf8GamePath>().AsEnumerable());
         ResetSubstitutions(enumerable);
     }
 
-    private void OnResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath key, FullPath _1, FullPath _2,
-        IMod? _3)
+    private void OnResolvedFileChange(in ResolvedFileChanged.Arguments arguments)
     {
-        if (_activeCollectionData.Interface != collection)
+        if (_activeCollectionData.Interface != arguments.Collection)
             return;
 
-        switch (type)
+        switch (arguments.Type)
         {
             case ResolvedFileChanged.Type.Added:
             case ResolvedFileChanged.Type.Removed:
             case ResolvedFileChanged.Type.Replaced:
-                ResetSubstitutions([key]);
+                ResetSubstitutions([arguments.GamePath]);
                 break;
             case ResolvedFileChanged.Type.FullRecomputeStart:
             case ResolvedFileChanged.Type.FullRecomputeFinished:
-                ResetSubstitutions(collection.ResolvedFiles.Keys);
+                ResetSubstitutions(arguments.Collection.ResolvedFiles.Keys);
                 break;
         }
     }
 
-    private void OnEnabledChange(bool state)
+    private void OnEnabledChange(in EnabledChanged.Arguments arguments)
     {
-        if (state)
-            OnCollectionChange(CollectionType.Interface, null, _activeCollectionData.Interface, string.Empty);
+        if (arguments.Enabled)
+            OnCollectionChange(new CollectionChange.Arguments(CollectionType.Interface, null, _activeCollectionData.Interface, string.Empty));
         else
-            OnCollectionChange(CollectionType.Interface, _activeCollectionData.Interface, null, string.Empty);
+            OnCollectionChange(new CollectionChange.Arguments(CollectionType.Interface, _activeCollectionData.Interface, null, string.Empty));
     }
 
     private void Substitute(string path, ref string? replacementPath)
@@ -146,7 +143,7 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.DalamudSubstitutionProvider);
         _communicator.ResolvedFileChanged.Subscribe(OnResolvedFileChange, ResolvedFileChanged.Priority.DalamudSubstitutionProvider);
         _communicator.EnabledChanged.Subscribe(OnEnabledChange, EnabledChanged.Priority.DalamudSubstitutionProvider);
-        OnCollectionChange(CollectionType.Interface, null, _activeCollectionData.Interface, string.Empty);
+        OnCollectionChange(new CollectionChange.Arguments(CollectionType.Interface, null, _activeCollectionData.Interface, string.Empty));
     }
 
     private void Unsubscribe()
@@ -155,6 +152,6 @@ public class DalamudSubstitutionProvider : IDisposable, Luna.IApiService
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
         _communicator.ResolvedFileChanged.Unsubscribe(OnResolvedFileChange);
         _communicator.EnabledChanged.Unsubscribe(OnEnabledChange);
-        OnCollectionChange(CollectionType.Interface, _activeCollectionData.Interface, null, string.Empty);
+        OnCollectionChange(new CollectionChange.Arguments(CollectionType.Interface, _activeCollectionData.Interface, null, string.Empty));
     }
 }

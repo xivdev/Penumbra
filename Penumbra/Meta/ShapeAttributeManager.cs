@@ -1,4 +1,3 @@
-using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
@@ -41,27 +40,27 @@ public unsafe class ShapeAttributeManager : Luna.IRequiredService, IDisposable
     public void Dispose()
         => _attributeHook.Unsubscribe(OnAttributeComputed);
 
-    private void OnAttributeComputed(Actor actor, Model model, ModCollection collection)
+    private void OnAttributeComputed(in AttributeHook.Arguments arguments)
     {
-        if (!collection.HasCache)
+        if (!arguments.Collection.HasCache)
             return;
 
-        _genderRace = (GenderRace)model.AsHuman->RaceSexId;
+        _genderRace = (GenderRace)arguments.Human.AsHuman->RaceSexId;
         for (_slotIndex = 0; _slotIndex < NumSlots; ++_slotIndex)
         {
             _modelIndex = UsedModels[_slotIndex];
-            _model      = model.AsHuman->Models[_modelIndex.ToIndex()];
+            _model      = arguments.Human.AsHuman->Models[_modelIndex.ToIndex()];
             if (_model is null || _model->ModelResourceHandle is null)
                 continue;
 
-            _ids[(int)_modelIndex] = model.GetModelId(_modelIndex);
-            CheckShapes(collection.MetaCache!.Shp);
-            CheckAttributes(collection.MetaCache!.Atr);
+            _ids[(int)_modelIndex] = arguments.Human.GetModelId(_modelIndex);
+            CheckShapes(arguments.Collection.MetaCache!.Shp);
+            CheckAttributes(arguments.Collection.MetaCache!.Atr);
             if (_modelIndex is <= HumanSlot.LFinger and >= HumanSlot.Ears)
-                AccessoryImcCheck(model);
+                AccessoryImcCheck(arguments.Human);
         }
 
-        UpdateDefaultMasks(model, collection.MetaCache!.Shp);
+        UpdateDefaultMasks(arguments.Human, arguments.Collection.MetaCache!.Shp);
     }
 
     private void AccessoryImcCheck(Model model)
