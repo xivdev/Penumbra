@@ -1,5 +1,5 @@
 using Dalamud.Plugin.Services;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -12,9 +12,9 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Services;
 
-public class ModMigrator(IDataManager gameData, TextureManager textures) : Luna.IService
+public class ModMigrator(IDataManager gameData, TextureManager textures) : IService
 {
-    private sealed class FileDataDict : MultiDictionary<string, (string GamePath, IModDataContainer Container)>;
+    private sealed class FileDataDict : ListDictionary<string, (string GamePath, IModDataContainer Container)>;
 
     private readonly Lazy<MtrlFile> _glassReferenceMaterial = new(() =>
     {

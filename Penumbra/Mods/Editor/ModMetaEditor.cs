@@ -1,5 +1,5 @@
 using System.Collections.Frozen;
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Collections.Cache;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
@@ -13,7 +13,7 @@ namespace Penumbra.Mods.Editor;
 
 public class ModMetaEditor(
     ModGroupEditor groupEditor,
-    MetaFileManager metaFileManager) : MetaDictionary, Luna.IService
+    MetaFileManager metaFileManager) : MetaDictionary, IService
 {
     public sealed class OtherOptionData : HashSet<string>
     {
@@ -89,7 +89,7 @@ public class ModMetaEditor(
             return changes;
         }
 
-        var defaultEntries = new MultiDictionary<IMetaIdentifier, IModDataContainer>();
+        var defaultEntries = new ListDictionary<IMetaIdentifier, IModDataContainer>();
         var actualEntries  = new HashSet<IMetaIdentifier>();
         if (!FilterDefaultValues(mod.AllDataContainers, metaFileManager, defaultEntries, actualEntries))
             return false;
@@ -138,7 +138,7 @@ public class ModMetaEditor(
     }
 
     private static bool FilterDefaultValues(IEnumerable<IModDataContainer> containers, MetaFileManager metaFileManager,
-        MultiDictionary<IMetaIdentifier, IModDataContainer> defaultEntries, HashSet<IMetaIdentifier> actualEntries)
+        ListDictionary<IMetaIdentifier, IModDataContainer> defaultEntries, HashSet<IMetaIdentifier> actualEntries)
     {
         if (!metaFileManager.CharacterUtility.Ready)
         {
