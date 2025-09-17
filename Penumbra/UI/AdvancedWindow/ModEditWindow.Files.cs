@@ -1,7 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods.Editor;
@@ -15,7 +15,7 @@ public partial class ModEditWindow
 {
     private readonly HashSet<FileRegistry> _selectedFiles = new(256);
     private readonly HashSet<Utf8GamePath> _cutPaths      = [];
-    private          LowerString           _fileFilter    = LowerString.Empty;
+    private          string                _fileFilter    = string.Empty;
     private          bool                  _showGamePaths = true;
     private          string                _gamePathEdit  = string.Empty;
     private          int                   _fileIdx       = -1;
@@ -23,12 +23,12 @@ public partial class ModEditWindow
     private          int                   _folderSkip;
     private          bool                  _overviewMode;
 
-    private LowerString _fileOverviewFilter1 = LowerString.Empty;
-    private LowerString _fileOverviewFilter2 = LowerString.Empty;
-    private LowerString _fileOverviewFilter3 = LowerString.Empty;
+    private string _fileOverviewFilter1 = string.Empty;
+    private string _fileOverviewFilter2 = string.Empty;
+    private string _fileOverviewFilter3 = string.Empty;
 
     private bool CheckFilter(FileRegistry registry)
-        => _fileFilter.IsEmpty || registry.File.FullName.Contains(_fileFilter.Lower, StringComparison.OrdinalIgnoreCase);
+        => _fileFilter.Length is 0 || registry.File.FullName.Contains(_fileFilter, StringComparison.OrdinalIgnoreCase);
 
     private bool CheckFilter((int, FileRegistry) p)
         => CheckFilter(p.Item2);
@@ -105,9 +105,9 @@ public partial class ModEditWindow
         }
 
         bool Filter((string, string, string, uint) data)
-            => _fileOverviewFilter1.IsContained(data.Item1)
-             && _fileOverviewFilter2.IsContained(data.Item2)
-             && _fileOverviewFilter3.IsContained(data.Item3);
+            => data.Item1.Contains(_fileOverviewFilter1, StringComparison.OrdinalIgnoreCase)
+             && data.Item2.Contains(_fileOverviewFilter2, StringComparison.OrdinalIgnoreCase)
+             && data.Item3.Contains(_fileOverviewFilter3, StringComparison.OrdinalIgnoreCase);
 
         var end = ImGuiClip.FilteredClippedDraw(files, skips, Filter, DrawLine);
         ImGuiClip.DrawEndDummy(end, height);
@@ -252,7 +252,7 @@ public partial class ModEditWindow
         }
     }
 
-    private void PrintGamePath(int i, int j, FileRegistry registry, IModDataContainer subMod, Utf8GamePath gamePath)
+    private void PrintGamePath(int i, int j, FileRegistry registry, IModDataContainer _, Utf8GamePath gamePath)
     {
         using var id = ImRaii.PushId(j);
         ImGui.TableNextColumn();
@@ -290,7 +290,7 @@ public partial class ModEditWindow
         {
             ImGui.SameLine();
             ImGui.SetCursorPosX(pos);
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            using (ImRaii.PushFont(UiBuilder.IconFont))
             {
                 ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
             }
@@ -299,7 +299,7 @@ public partial class ModEditWindow
         }
     }
 
-    private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer subMod)
+    private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer _)
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
         var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
@@ -333,7 +333,7 @@ public partial class ModEditWindow
         {
             ImGui.SameLine();
             ImGui.SetCursorPosX(pos);
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
+            using (ImRaii.PushFont(UiBuilder.IconFont))
             {
                 ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
             }
@@ -404,7 +404,7 @@ public partial class ModEditWindow
     private void DrawFileManagementNormal()
     {
         ImGui.SetNextItemWidth(250 * UiHelpers.Scale);
-        LowerString.InputWithHint("##filter", "Filter paths...", ref _fileFilter, Utf8GamePath.MaxGamePathLength);
+        Im.Input.Text("##filter"u8, ref _fileFilter, "Filter paths..."u8);
         ImGui.SameLine();
         ImGui.Checkbox("Show Game Paths", ref _showGamePaths);
         ImGui.SameLine();
@@ -437,12 +437,12 @@ public partial class ModEditWindow
         var width = ImGui.GetContentRegionAvail().X / 8;
 
         ImGui.SetNextItemWidth(width * 3);
-        LowerString.InputWithHint("##fileFilter", "Filter file...", ref _fileOverviewFilter1, Utf8GamePath.MaxGamePathLength);
+        Im.Input.Text("##fileFilter"u8, ref _fileOverviewFilter1, "Filter file..."u8);
         ImGui.SameLine();
         ImGui.SetNextItemWidth(width * 3);
-        LowerString.InputWithHint("##pathFilter", "Filter path...", ref _fileOverviewFilter2, Utf8GamePath.MaxGamePathLength);
+        Im.Input.Text("##pathFilter"u8, ref _fileOverviewFilter2, "Filter path..."u8);
         ImGui.SameLine();
         ImGui.SetNextItemWidth(width * 2);
-        LowerString.InputWithHint("##optionFilter", "Filter option...", ref _fileOverviewFilter3, Utf8GamePath.MaxGamePathLength);
+        Im.Input.Text("##optionFilter"u8, ref _fileOverviewFilter3, "Filter option..."u8);
     }
 }

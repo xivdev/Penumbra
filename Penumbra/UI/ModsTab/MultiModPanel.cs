@@ -70,7 +70,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             {
                 using var id = ImRaii.PushId(i++);
                 var (icon, text) = path is ModFileSystem.Leaf l
-                    ? (FontAwesomeIcon.FileCircleMinus, l.Value.Name.Text)
+                    ? (FontAwesomeIcon.FileCircleMinus, l.Value.Name)
                     : (FontAwesomeIcon.FolderMinus, string.Empty);
                 ImGui.TableNextColumn();
                 if (ImUtf8.IconButton(icon, "Remove from selection."u8, sizeType))
@@ -112,7 +112,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             ? _tag.Length == 0
                 ? "No tag specified."
                 : $"All mods selected already contain the tag \"{_tag}\", either locally or as mod data."
-            : $"Add the tag \"{_tag}\" to {_addMods.Count} mods as a local tag:\n\n\t{string.Join("\n\t", _addMods.Select(m => m.Name.Text))}";
+            : $"Add the tag \"{_tag}\" to {_addMods.Count} mods as a local tag:\n\n\t{string.Join("\n\t", _addMods.Select(m => m.Name))}";
         ImUtf8.SameLineInner();
         if (ImUtf8.ButtonEx(label, tooltip, width, _addMods.Count == 0))
             foreach (var mod in _addMods)
@@ -125,7 +125,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             ? _tag.Length == 0
                 ? "No tag specified."
                 : $"No selected mod contains the tag \"{_tag}\" locally."
-            : $"Remove the local tag \"{_tag}\" from {_removeMods.Count} mods:\n\n\t{string.Join("\n\t", _removeMods.Select(m => m.Item1.Name.Text))}";
+            : $"Remove the local tag \"{_tag}\" from {_removeMods.Count} mods:\n\n\t{string.Join("\n\t", _removeMods.Select(m => m.Item1.Name))}";
         ImUtf8.SameLineInner();
         if (ImUtf8.ButtonEx(label, tooltip, width, _removeMods.Count == 0))
             foreach (var (mod, index) in _removeMods)

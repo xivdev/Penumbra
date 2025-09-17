@@ -10,7 +10,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.String;
-using Penumbra.Util;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
@@ -18,7 +17,6 @@ using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 namespace Penumbra.Interop.PathResolving;
 
 public sealed unsafe class CollectionResolver(
-    PerformanceTracker performance,
     IdentifiedCollectionCache cache,
     IClientState clientState,
     ObjectManager objects,
@@ -38,7 +36,6 @@ public sealed unsafe class CollectionResolver(
     /// </summary>
     public ModCollection PlayerCollection()
     {
-        using var performance1 = performance.Measure(PerformanceType.IdentifyCollection);
         var       gameObject   = objects[0];
         if (!gameObject.Valid)
             return collectionManager.Active.ByType(CollectionType.Yourself)
@@ -55,8 +52,6 @@ public sealed unsafe class CollectionResolver(
     /// <summary> Identify the correct collection for a game object. </summary>
     public ResolveData IdentifyCollection(GameObject* gameObject, bool useCache)
     {
-        using var t = performance.Measure(PerformanceType.IdentifyCollection);
-
         if (gameObject == null)
             return collectionManager.Active.Default.ToResolveData();
 

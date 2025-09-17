@@ -58,11 +58,11 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
             if (size - textSize < minComboSize)
             {
                 ImUtf8.Text("selected mod"u8, ColorId.FolderLine.Value());
-                ImUtf8.HoverTooltip(modMerger.MergeFromMod!.Name.Text);
+                ImUtf8.HoverTooltip(modMerger.MergeFromMod!.Name);
             }
             else
             {
-                ImUtf8.Text(modMerger.MergeFromMod!.Name.Text, ColorId.FolderLine.Value());
+                ImUtf8.Text(modMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
             }
 
             ImGui.SameLine(0, 0);
@@ -121,7 +121,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
 
     private void DrawCombo(float width)
     {
-        _modCombo.Draw("##ModSelection", _modCombo.CurrentSelection?.Name.Text ?? "Select the target Mod...", string.Empty, width,
+        _modCombo.Draw("##ModSelection", _modCombo.CurrentSelection?.Name ?? "Select the target Mod...", string.Empty, width,
             ImGui.GetTextLineHeight());
         modMerger.MergeToMod = _modCombo.CurrentSelection;
     }

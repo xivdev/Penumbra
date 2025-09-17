@@ -23,7 +23,7 @@ public partial class ModCreator(
     Configuration config,
     ModDataEditor dataEditor,
     MetaFileManager metaFileManager,
-    GamePathParser gamePathParser) : Luna.IService
+    GamePathParser gamePathParser) : IService
 {
     public const    FeatureFlags  SupportedFeatures = FeatureFlags.Atch | FeatureFlags.Shp | FeatureFlags.Atr;
     public readonly Configuration Config            = config;
@@ -139,7 +139,7 @@ public partial class ModCreator(
             name = "_";
 
         var newModFolderBase = NewOptionDirectory(outDirectory, name, onlyAscii);
-        var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
+        var newModFolder     = FileSystemUtility.ObtainUniqueFile(newModFolderBase.FullName);
         if (newModFolder.Length == 0)
             throw new IOException("Could not create mod folder: too many folders of the same name exist.");
 
@@ -236,7 +236,7 @@ public partial class ModCreator(
     public static DirectoryInfo? NewSubFolderName(DirectoryInfo parentFolder, string subFolderName, bool onlyAscii)
     {
         var newModFolderBase = NewOptionDirectory(parentFolder, subFolderName, onlyAscii);
-        var newModFolder     = newModFolderBase.FullName.ObtainUniqueFile();
+        var newModFolder     = FileSystemUtility.ObtainUniqueFile(newModFolderBase.FullName);
         return newModFolder.Length == 0 ? null : new DirectoryInfo(newModFolder);
     }
 

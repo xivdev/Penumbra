@@ -3,7 +3,6 @@ using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Newtonsoft.Json;
 using OtterGui.Filesystem;
-using OtterGui.Widgets;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
@@ -23,6 +22,7 @@ public record PcpSettings
     public bool   AllowIpc         { get; set; } = true;
     public bool   DisableHandling  { get; set; } = false;
     public string FolderName       { get; set; } = "PCP";
+    public string PcpExtension     { get; set; } = ".pcp";
 }
 
 [Serializable]
@@ -93,19 +93,19 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode<Mod> SortMode = ISortMode<Mod>.FoldersFirst;
 
-    public bool                            OpenFoldersByDefault          { get; set; } = false;
-    public int                             SingleGroupRadioMax           { get; set; } = 2;
-    public string                          DefaultImportFolder           { get; set; } = string.Empty;
-    public string                          QuickMoveFolder1              { get; set; } = string.Empty;
-    public string                          QuickMoveFolder2              { get; set; } = string.Empty;
-    public string                          QuickMoveFolder3              { get; set; } = string.Empty;
-    public OtterGui.Classes.DoubleModifier DeleteModModifier             { get; set; } = new(OtterGui.Classes.ModifierHotkey.Control, OtterGui.Classes.ModifierHotkey.Shift);
-    public OtterGui.Classes.DoubleModifier IncognitoModifier             { get; set; } = new(OtterGui.Classes.ModifierHotkey.Control);
-    public bool                            PrintSuccessfulCommandsToChat { get; set; } = true;
-    public bool                            AutoDeduplicateOnImport       { get; set; } = true;
-    public bool                            AutoReduplicateUiOnImport     { get; set; } = true;
-    public bool                            UseFileSystemCompression      { get; set; } = true;
-    public bool                            EnableHttpApi                 { get; set; } = true;
+    public bool           OpenFoldersByDefault          { get; set; } = false;
+    public int            SingleGroupRadioMax           { get; set; } = 2;
+    public string         DefaultImportFolder           { get; set; } = string.Empty;
+    public string         QuickMoveFolder1              { get; set; } = string.Empty;
+    public string         QuickMoveFolder2              { get; set; } = string.Empty;
+    public string         QuickMoveFolder3              { get; set; } = string.Empty;
+    public DoubleModifier DeleteModModifier             { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
+    public DoubleModifier IncognitoModifier             { get; set; } = new(ModifierHotkey.Control);
+    public bool           PrintSuccessfulCommandsToChat { get; set; } = true;
+    public bool           AutoDeduplicateOnImport       { get; set; } = true;
+    public bool           AutoReduplicateUiOnImport     { get; set; } = true;
+    public bool           UseFileSystemCompression      { get; set; } = true;
+    public bool           EnableHttpApi                 { get; set; } = true;
 
     public bool MigrateImportedModelsToV6        { get; set; } = true;
     public bool MigrateImportedMaterialsToLegacy { get; set; } = true;

@@ -5,13 +5,11 @@ using Penumbra.Collections.Manager;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Processing;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 
 namespace Penumbra.Interop.PathResolving;
 
 public class PathResolver : IDisposable, Luna.IService
 {
-    private readonly PerformanceTracker _performance;
     private readonly Configuration      _config;
     private readonly CollectionManager  _collectionManager;
     private readonly ResourceLoader     _loader;
@@ -23,11 +21,10 @@ public class PathResolver : IDisposable, Luna.IService
     private readonly CollectionResolver        _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
 
-    public PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ResourceLoader loader,
+    public PathResolver(Configuration config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,
         GamePathPreProcessService preprocessor)
     {
-        _performance        = performance;
         _config             = config;
         _collectionManager  = collectionManager;
         _subfileHelper      = subfileHelper;
@@ -75,10 +72,6 @@ public class PathResolver : IDisposable, Luna.IService
                 // always use the default resolver for now,
                 // except that common/font is conceptually more UI.
                 ResourceCategory.Common   => path.Path.StartsWith("common/font"u8) ? ResolveUi(path) : DefaultResolver(path),
-                ResourceCategory.BgCommon => DefaultResolver(path),
-                ResourceCategory.Bg       => DefaultResolver(path),
-                ResourceCategory.Cut      => DefaultResolver(path),
-                ResourceCategory.Music    => DefaultResolver(path),
                 _                         => DefaultResolver(path),
             }
         };
@@ -99,7 +92,6 @@ public class PathResolver : IDisposable, Luna.IService
 
     public (FullPath?, ResolveData) Resolve(Utf8GamePath gamePath, ResourceType type)
     {
-        using var performance = _performance.Measure(PerformanceType.CharacterResolver);
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
         // or if it is a face decal path and the current mod collection is set.

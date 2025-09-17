@@ -3,6 +3,7 @@ using Luna;
 using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Services;
+using FileSystemChangeType = OtterGui.Filesystem.FileSystemChangeType;
 
 namespace Penumbra.Mods.Manager;
 
@@ -82,9 +83,9 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
         if (!arguments.Type.HasFlag(ModDataChangeType.Name) || arguments.OldName == null || !TryGetValue(arguments.Mod, out var leaf))
             return;
 
-        var old = arguments.OldName.FixName();
-        if (old == leaf.Name || leaf.Name.IsDuplicateName(out var baseName, out _) && baseName == old)
-            RenameWithDuplicates(leaf, arguments.Mod.Name.Text);
+        var old = Extensions.FixName(arguments.OldName);
+        if (old == leaf.Name || Extensions.IsDuplicateName(leaf.Name, out var baseName, out _) && baseName == old)
+            RenameWithDuplicates(leaf, arguments.Mod.Name);
     }
 
     // Update the filesystem if a mod has been added or removed.
@@ -107,7 +108,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
                             NotificationType.Warning);
                     }
 
-                CreateDuplicateLeaf(parent, arguments.Mod.Name.Text, arguments.Mod);
+                CreateDuplicateLeaf(parent, arguments.Mod.Name, arguments.Mod);
                 break;
             case ModPathChangeType.Deleted:
                 if (TryGetValue(arguments.Mod, out var leaf))
@@ -128,7 +129,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
         => mod.ModPath.Name;
 
     private static string ModToName(Mod mod)
-        => mod.Name.Text.FixName();
+        => Extensions.FixName(mod.Name);
 
     // Return whether a mod has a custom path or is just a numbered default path.
     public static bool ModHasDefaultPath(Mod mod, string fullPath)

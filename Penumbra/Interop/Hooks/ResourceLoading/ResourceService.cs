@@ -8,21 +8,18 @@ using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 using CSResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public unsafe class ResourceService : IDisposable, Luna.IRequiredService
 {
-    private readonly PerformanceTracker     _performance;
     private readonly ResourceManagerService _resourceManager;
 
     private readonly ThreadLocal<Utf8GamePath> _currentGetResourcePath = new(() => Utf8GamePath.Empty);
 
-    public ResourceService(PerformanceTracker performance, ResourceManagerService resourceManager, IGameInteropProvider interop)
+    public ResourceService(ResourceManagerService resourceManager, IGameInteropProvider interop)
     {
-        _performance     = performance;
         _resourceManager = resourceManager;
         interop.InitializeFromAttributes(this);
         _incRefHook = interop.HookFromAddress<ResourceHandlePrototype>(
@@ -108,7 +105,6 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     private ResourceHandle* GetResourceHandler(bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte isUnk, nint unk8, uint unk9)
     {
-        using var performance = _performance.Measure(PerformanceType.GetResourceHandler);
         if (!Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
         {
             Penumbra.Log.Error("[ResourceService] Could not create GamePath from resource path.");

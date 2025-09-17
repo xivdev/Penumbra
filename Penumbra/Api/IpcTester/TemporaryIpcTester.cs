@@ -282,7 +282,7 @@ public class TemporaryIpcTester(
             foreach (var mod in list)
             {
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(mod.Name.Text);
+                ImGui.TextUnformatted(mod.Name);
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(mod.Priority.ToString());
                 ImGui.TableNextColumn();

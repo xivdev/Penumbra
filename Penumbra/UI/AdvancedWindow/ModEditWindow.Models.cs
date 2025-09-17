@@ -1,7 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Lumina.Data.Parsing;
-using Luna.Widgets;
+using Luna;
 using OtterGui;
 using OtterGui.Custom;
 using OtterGui.Raii;

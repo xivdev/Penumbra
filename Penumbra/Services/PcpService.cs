@@ -22,7 +22,8 @@ namespace Penumbra.Services;
 
 public class PcpService : IApiService, IDisposable
 {
-    public const string Extension = ".pcp";
+    public string Extension
+        => _config.PcpSettings.PcpExtension;
 
     private readonly Configuration       _config;
     private readonly SaveService         _files;
@@ -160,7 +161,7 @@ public class PcpService : IApiService, IDisposable
     public void Dispose()
         => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
-    public async Task<(bool, string)> CreatePcp(ObjectIndex objectIndex, string note = "", CancellationToken cancel = default)
+    public async Task<(bool, string)> CreatePcp(ObjectIndex objectIndex, string? modPath, string note = "", CancellationToken cancel = default)
     {
         try
         {
@@ -188,7 +189,7 @@ public class PcpService : IApiService, IDisposable
             var modDirectory = CreateMod(identifier, note, time);
             await CreateDefaultMod(modDirectory, meta, tree, cancel);
             await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
-            var file = ZipUp(modDirectory);
+            var file = ZipUp(modDirectory, modPath, Extension);
             return (true, file);
         }
         catch (Exception ex)
@@ -197,12 +198,15 @@ public class PcpService : IApiService, IDisposable
         }
     }
 
-    private static string ZipUp(DirectoryInfo directory)
+    private static string ZipUp(DirectoryInfo directory, string? path, string extension)
     {
-        var fileName = directory.FullName + Extension;
-        ZipFile.CreateFromDirectory(directory.FullName, fileName, CompressionLevel.Optimal, false);
+        if (path is null)
+            path = directory.FullName + extension;
+        else if (Path.GetExtension(path.AsSpan()).IsEmpty)
+            path += extension;
+        ZipFile.CreateFromDirectory(directory.FullName, path, CompressionLevel.Optimal, false);
         directory.Delete(true);
-        return fileName;
+        return path;
     }
 
     private async Task CreateCollectionInfo(DirectoryInfo directory, ObjectIndex index, ActorIdentifier actor, string note, DateTime time,
@@ -220,7 +224,8 @@ public class PcpService : IApiService, IDisposable
         if (note.Length > 0)
             cancel.ThrowIfCancellationRequested();
         if (_config.PcpSettings.AllowIpc)
-            await _framework.Framework.RunOnFrameworkThread(() => _communicator.PcpCreation.Invoke(new PcpCreation.Arguments(jObj, index.Index, directory.FullName)));
+            await _framework.Framework.RunOnFrameworkThread(()
+                => _communicator.PcpCreation.Invoke(new PcpCreation.Arguments(jObj, index.Index, directory.FullName)));
         var             filePath = Path.Combine(directory.FullName, "character.json");
         await using var file     = File.Open(filePath, File.Exists(filePath) ? FileMode.Truncate : FileMode.CreateNew);
         await using var stream   = new StreamWriter(file);
@@ -233,15 +238,20 @@ public class PcpService : IApiService, IDisposable
     {
         var directory = _modExport.ExportDirectory;
         directory.Create();
-        var actorName  = actor.ToName();
-        var authorName = _actors.GetCurrentPlayer().ToName();
-        var suffix = note.Length > 0
-            ? note
-            : time.ToString("yyyy-MM-ddTHH\\:mm", CultureInfo.InvariantCulture);
-        var modName     = $"{actorName} - {suffix}";
+        var actorName   = actor.ToName();
+        var modName     = ModName(actorName, note, time);
+        var authorName  = _actors.GetCurrentPlayer().ToName();
         var description = $"On-Screen Data for {actorName} as snapshotted on {time}.";
         return _modCreator.CreateEmptyMod(directory, modName, description, authorName, "PCP")
          ?? throw new Exception($"Unable to create mod {modName} in {directory.FullName}.");
+    }
+
+    public static string ModName(string actorName, string note, DateTime time)
+    {
+        var suffix = note.Length > 0
+            ? note
+            : time.ToString("yyyy-MM-ddTHH_mm", CultureInfo.InvariantCulture);
+        return $"{actorName} - {suffix}";
     }
 
     private async Task CreateDefaultMod(DirectoryInfo modDirectory, MetaDictionary meta, ResourceTree tree,

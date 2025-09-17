@@ -6,7 +6,6 @@ using Dalamud.Utility;
 using Dalamud.Bindings.ImGui;
 using Lumina.Data.Files;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
@@ -87,10 +86,10 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
     }
 
     /// <summary> Check if a changed item should be drawn based on its category. </summary>
-    public bool FilterChangedItem(string name, IIdentifiedObjectData data, LowerString filter)
+    public bool FilterChangedItem(string name, IIdentifiedObjectData data, string filter)
         => (_config.Ephemeral.ChangedItemFilter == ChangedItemFlagExtensions.AllFlags
              || _config.Ephemeral.ChangedItemFilter.HasFlag(data.GetIcon().ToFlag()))
-         && (filter.IsEmpty || !data.IsFilteredOut(name, filter.Text));
+         && (filter.Length is 0 || !data.IsFilteredOut(name, filter));
 
     /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
     public void DrawCategoryIcon(IIdentifiedObjectData data, float height)

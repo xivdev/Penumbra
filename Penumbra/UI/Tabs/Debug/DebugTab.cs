@@ -1,6 +1,5 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -10,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
+using ImSharp;
 using Luna;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
@@ -31,7 +31,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ImGuiClip = OtterGui.ImGuiClip;
@@ -43,7 +42,6 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop;
 using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
-using FrameworkManager = OtterGui.Classes.FrameworkManager;
 
 namespace Penumbra.UI.Tabs.Debug;
 
@@ -72,7 +70,6 @@ public class Diagnostics(ServiceManager provider) : IUiService
 
 public class DebugTab : Window, ITab, IUiService
 {
-    private readonly PerformanceTracker                 _performance;
     private readonly Configuration                      _config;
     private readonly CollectionManager                  _collectionManager;
     private readonly ModManager                         _modManager;
@@ -111,7 +108,7 @@ public class DebugTab : Window, ITab, IUiService
     private readonly ModMigratorDebug                   _modMigratorDebug;
     private readonly ShapeInspector                     _shapeInspector;
 
-    public DebugTab(PerformanceTracker performance, Configuration config, CollectionManager collectionManager, ObjectManager objects,
+    public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         ResourceManagerService resourceManager, ResourceLoader resourceLoader, CollectionResolver collectionResolver,
@@ -122,7 +119,7 @@ public class DebugTab : Window, ITab, IUiService
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector)
-        : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse)
+        : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;
         SizeConstraints = new WindowSizeConstraints
@@ -130,7 +127,6 @@ public class DebugTab : Window, ITab, IUiService
             MinimumSize = new Vector2(200,  200),
             MaximumSize = new Vector2(2000, 2000),
         };
-        _performance               = performance;
         _config                    = config;
         _collectionManager         = collectionManager;
         _validityChecker           = validityChecker;
@@ -277,7 +273,7 @@ public class DebugTab : Window, ITab, IUiService
                     foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
                     {
                         using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
-                        using var node2 = TreeNode(mod.Name.Text);
+                        using var node2 = TreeNode(mod.Name);
                         if (!node2)
                             continue;
 
@@ -503,8 +499,6 @@ public class DebugTab : Window, ITab, IUiService
             if (start)
                 ImGui.NewLine();
         }
-
-        _performance.Draw("##performance", "Enable Runtime Performance Tracking", TimingExtensions.ToName);
     }
 
     private unsafe void DrawActorsDebug()
@@ -774,7 +768,33 @@ public class DebugTab : Window, ITab, IUiService
         DrawActionTmbs();
         DrawStainTemplates();
         DrawAtch();
+        DrawFileTest();
         DrawChangedItemTest();
+    }
+
+    private string  _filePath = string.Empty;
+    private byte[]? _fileData;
+
+    private void DrawFileTest()
+    {
+        using var node = TreeNode("Game File Test");
+        if (!node)
+            return;
+
+        if (Im.Input.Text("##Path"u8, ref _filePath, "File Path..."u8))
+            _fileData = _dataManager.GetFile(_filePath)?.Data;
+
+        using (Im.Group())
+        {
+            Im.Text("Exists"u8);
+            Im.Text("File Size"u8);
+        }
+        Im.Line.SameInner();
+        using (Im.Group())
+        {
+            Im.Text($"{_fileData is not null}");
+            Im.Text($"{_fileData?.Length ?? 0}");
+        }
     }
 
     private          string                                    _changedItemPath = string.Empty;
@@ -1204,7 +1224,7 @@ public class DebugTab : Window, ITab, IUiService
     private string     _cloudTesterPath = string.Empty;
     private bool?      _cloudTesterReturn;
     private Exception? _cloudTesterError;
-    
+
     private void DrawCloudApi()
     {
         if (!ImUtf8.CollapsingHeader("Cloud API"u8))
@@ -1213,7 +1233,6 @@ public class DebugTab : Window, ITab, IUiService
         using var id = ImRaii.PushId("CloudApiTester"u8);
 
         if (ImUtf8.InputText("Path"u8, ref _cloudTesterPath, flags: ImGuiInputTextFlags.EnterReturnsTrue))
-        {
             try
             {
                 _cloudTesterReturn = CloudApi.IsCloudSynced(_cloudTesterPath);
@@ -1224,7 +1243,6 @@ public class DebugTab : Window, ITab, IUiService
                 _cloudTesterReturn = null;
                 _cloudTesterError  = e;
             }
-        }
 
         if (_cloudTesterReturn.HasValue)
             ImUtf8.Text($"Is Cloud Synced? {_cloudTesterReturn}");

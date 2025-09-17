@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -51,8 +50,8 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
     private float _effectiveArrowLength;
 
     // Filters
-    private LowerString _effectiveGamePathFilter = LowerString.Empty;
-    private LowerString _effectiveFilePathFilter = LowerString.Empty;
+    private string _effectiveGamePathFilter = string.Empty;
+    private string _effectiveFilePathFilter = string.Empty;
 
     /// <summary> Setup table sizes. </summary>
     private void SetupEffectiveSizes()
@@ -72,14 +71,14 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
     /// <summary> Draw the header line for filters. </summary>
     private void DrawFilters()
     {
-        var tmp = _effectiveGamePathFilter.Text;
+        var tmp = _effectiveGamePathFilter;
         ImGui.SetNextItemWidth(_effectiveLeftTextLength);
         if (ImGui.InputTextWithHint("##gamePathFilter", "Filter game path...", ref tmp, 256))
             _effectiveGamePathFilter = tmp;
 
         ImGui.SameLine(_effectiveArrowLength + _effectiveLeftTextLength + 3 * ImGui.GetStyle().ItemSpacing.X);
         ImGui.SetNextItemWidth(-1);
-        tmp = _effectiveFilePathFilter.Text;
+        tmp = _effectiveFilePathFilter;
         if (ImGui.InputTextWithHint("##fileFilter", "Filter file path...", ref tmp, 256))
             _effectiveFilePathFilter = tmp;
     }
@@ -144,7 +143,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
     }
 
     /// <summary> Draw a line for a path and its name. </summary>
-    private static void DrawLine((string, LowerString) pair)
+    private static void DrawLine((string, string) pair)
     {
         var (path, name) = pair;
         ImGui.TableNextColumn();
@@ -153,7 +152,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        ImGuiUtil.CopyOnClickSelectable(name.Text);
+        ImGuiUtil.CopyOnClickSelectable(name);
     }
 
     /// <summary> Draw a line for a unfiltered/unconverted manipulation and mod-index pair. </summary>
@@ -166,26 +165,26 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         ImGui.TableNextColumn();
         ImGuiUtil.PrintIcon(FontAwesomeIcon.LongArrowAltLeft);
         ImGui.TableNextColumn();
-        ImGuiUtil.CopyOnClickSelectable(mod.Name.Text);
+        ImGuiUtil.CopyOnClickSelectable(mod.Name);
     }
 
     /// <summary> Check filters for file replacements. </summary>
     private bool CheckFilters(KeyValuePair<Utf8GamePath, ModPath> kvp)
     {
         var (gamePath, fullPath) = kvp;
-        if (_effectiveGamePathFilter.Length > 0 && !gamePath.ToString().Contains(_effectiveGamePathFilter.Lower))
+        if (_effectiveGamePathFilter.Length > 0 && !gamePath.ToString().Contains(_effectiveGamePathFilter, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        return _effectiveFilePathFilter.Length == 0 || fullPath.Path.FullName.ToLowerInvariant().Contains(_effectiveFilePathFilter.Lower);
+        return _effectiveFilePathFilter.Length == 0 || fullPath.Path.FullName.Contains(_effectiveFilePathFilter, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary> Check filters for meta manipulations. </summary>
-    private bool CheckFilters((string, LowerString) kvp)
+    private bool CheckFilters((string, string) kvp)
     {
         var (name, path) = kvp;
-        if (_effectiveGamePathFilter.Length > 0 && !name.ToLowerInvariant().Contains(_effectiveGamePathFilter.Lower))
+        if (_effectiveGamePathFilter.Length > 0 && !name.Contains(_effectiveGamePathFilter, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        return _effectiveFilePathFilter.Length == 0 || path.Contains(_effectiveFilePathFilter.Lower);
+        return _effectiveFilePathFilter.Length == 0 || path.Contains(_effectiveFilePathFilter, StringComparison.OrdinalIgnoreCase);
     }
 }

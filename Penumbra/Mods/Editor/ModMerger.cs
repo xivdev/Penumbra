@@ -479,8 +479,8 @@ public class ModMerger : IDisposable, IService
 
     private void OnSelectionChange(in ModSelection.Arguments arguments)
     {
-        if (OptionGroupName == "Merges" && OptionName.Length == 0 || OptionName == arguments.OldSelection?.Name.Text)
-            OptionName = arguments.NewSelection?.Name.Text ?? string.Empty;
+        if (OptionGroupName == "Merges" && OptionName.Length == 0 || OptionName == arguments.OldSelection?.Name)
+            OptionName = arguments.NewSelection?.Name ?? string.Empty;
 
         if (MergeToMod == arguments.NewSelection)
             MergeToMod = null;

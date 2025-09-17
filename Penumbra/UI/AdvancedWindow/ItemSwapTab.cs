@@ -75,9 +75,9 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (mod == _mod && settings == _modSettings)
             return;
 
-        var oldDefaultName = $"{_mod?.Name.Text ?? "Unknown"} (Swapped)";
+        var oldDefaultName = $"{_mod?.Name ?? "Unknown"} (Swapped)";
         if (_newModName.Length == 0 || oldDefaultName == _newModName)
-            _newModName = $"{mod.Name.Text} (Swapped)";
+            _newModName = $"{mod.Name} (Swapped)";
 
         _mod         = mod;
         _modSettings = settings;
@@ -163,7 +163,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
                     : null;
             var ret = base.DrawSelectable(globalIdx, selected);
             if (inCollection.Count > 0)
-                ImUtf8.HoverTooltip(string.Join('\n', inCollection.Select(m => m.Name.Text)));
+                ImUtf8.HoverTooltip(string.Join('\n', inCollection.Select(m => m.Name)));
             return ret;
         }
 
@@ -305,7 +305,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
 
     private string OriginalAuthor()
     {
-        if (_mod!.Author.IsEmpty || _mod!.Author.Text is "TexTools User" or DefaultTexToolsData.Author)
+        if (_mod!.Author.Length is 0 || _mod!.Author is "TexTools User" or DefaultTexToolsData.Author)
             return ".";
 
         return $" by {_mod!.Author}.";
@@ -313,11 +313,11 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
 
     private string CreateAuthor()
     {
-        if (_mod!.Author.IsEmpty)
+        if (_mod!.Author.Length is 0)
             return _config.DefaultModAuthor;
-        if (_mod!.Author.Text == _config.DefaultModAuthor)
+        if (_mod!.Author == _config.DefaultModAuthor)
             return _config.DefaultModAuthor;
-        if (_mod!.Author.Text is "TexTools User" or DefaultTexToolsData.Author)
+        if (_mod!.Author is "TexTools User" or DefaultTexToolsData.Author)
             return _config.DefaultModAuthor;
         if (_config.DefaultModAuthor is DefaultTexToolsData.Author)
             return _mod!.Author;

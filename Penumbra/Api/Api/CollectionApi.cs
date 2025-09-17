@@ -40,7 +40,7 @@ public class CollectionApi(CollectionManager collections, ApiHelpers helpers) : 
             if (!c.Active.Current.ChangedItems.TryGetValue(s, out var d))
                 return [];
 
-            return d.Item1.Select(m => (m is Mod mod ? mod.Identifier : string.Empty, m.Name.Text)).ToArray();
+            return d.Item1.Select(m => (m is Mod mod ? mod.Identifier : string.Empty, m.Name)).ToArray();
         };
     }
 

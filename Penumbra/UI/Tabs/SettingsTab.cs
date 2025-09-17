@@ -5,10 +5,9 @@ using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using ImSharp;
 using Luna;
-using Luna.Widgets;
 using OtterGui;
-using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -105,22 +104,24 @@ public class SettingsTab : ITab, IUiService
         _tutorial.OpenTutorial(BasicTutorialSteps.Faq2);
     }
 
+    private readonly TwoPanelLayout _test = new();
+
     public void DrawContent()
     {
         using var child = ImRaii.Child("##SettingsTab", -Vector2.One, false);
         if (!child)
             return;
-
+        
         DrawEnabledBox();
         EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
             v => _config.Ephemeral.FixMainWindow = v);
-
+        
         ImGui.NewLine();
         DrawRootFolder();
         DrawDirectoryButtons();
         ImGui.NewLine();
         ImGui.NewLine();
-
+        
         DrawGeneralSettings();
         _migrationDrawer.Draw();
         DrawColorSettings();
@@ -582,16 +583,16 @@ public class SettingsTab : ITab, IUiService
                 _selector.SetFilterDirty();
             });
 
-        Widget.DoubleModifierSelector("Mod Deletion Modifier",
-            "A modifier you need to hold while clicking the Delete Mod button for it to take effect.", UiHelpers.InputTextWidth.X,
+        KeySelector.DoubleModifier("Mod Deletion Modifier"u8,
+            "A modifier you need to hold while clicking the Delete Mod button for it to take effect."u8, UiHelpers.InputTextWidth.X,
             _config.DeleteModModifier,
             v =>
             {
                 _config.DeleteModModifier = v;
                 _config.Save();
             });
-        Widget.DoubleModifierSelector("Incognito Modifier",
-            "A modifier you need to hold while clicking the Incognito or Temporary Settings Mode button for it to take effect.",
+        KeySelector.DoubleModifier("Incognito Modifier"u8,
+            "A modifier you need to hold while clicking the Incognito or Temporary Settings Mode button for it to take effect."u8,
             UiHelpers.InputTextWidth.X,
             _config.IncognitoModifier,
             v =>
@@ -646,6 +647,7 @@ public class SettingsTab : ITab, IUiService
         DrawDefaultModAuthor();
         DrawDefaultModImportFolder();
         DrawPcpFolder();
+        DrawPcpExtension();
         DrawDefaultModExportPath();
     }
 
@@ -768,6 +770,28 @@ public class SettingsTab : ITab, IUiService
 
         ImGuiUtil.LabeledHelpMarker("Default PCP Organizational Folder",
             "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root.");
+    }
+
+    private void DrawPcpExtension()
+    {
+        var tmp = _config.PcpSettings.PcpExtension;
+        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        if (ImUtf8.InputText("##pcpExtension"u8, ref tmp))
+            _config.PcpSettings.PcpExtension = tmp;
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            _config.Save();
+
+        Im.Line.SameInner();
+        if (ImEx.Button("Reset##pcpExtension"u8, Vector2.Zero, "Reset the extension to its default value of \".pcp\".",
+                _config.PcpSettings.PcpExtension is ".pcp"))
+        {
+            _config.PcpSettings.PcpExtension = ".pcp";
+            _config.Save();
+        }
+
+        ImGuiUtil.LabeledHelpMarker("PCP Extension",
+            "The extension used when exporting PCP files. Should generally be either \".pcp\" or \".pmp\".");
     }
 
 
@@ -1113,7 +1137,7 @@ public class SettingsTab : ITab, IUiService
         if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
 
-        ImGui.SetCursorPos(new Vector2(xPos,                                      5 * ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos,                            5 * ImGui.GetFrameHeightWithSpacing()));
         SupportButton.KoFiPatreon(Penumbra.Messager, new Vector2(width, 0));
     }
 

@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Services;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -118,7 +117,7 @@ public class ModPanelChangedItemsTab(
             {
                 foreach (var (s, i) in _lastSelected.ChangedItems)
                 {
-                    if (drawer.FilterChangedItem(s, i, LowerString.Empty))
+                    if (drawer.FilterChangedItem(s, i, string.Empty))
                         Data.Add(Container.Single(s, i));
                 }
 
@@ -132,7 +131,7 @@ public class ModPanelChangedItemsTab(
                 if (i is not IdentifiedItem item)
                     continue;
 
-                if (!drawer.FilterChangedItem(s, item, LowerString.Empty))
+                if (!drawer.FilterChangedItem(s, item, string.Empty))
                     continue;
 
                 if (tmp.TryGetValue((item.Item.PrimaryId, item.Item.Type), out var p))
@@ -168,7 +167,7 @@ public class ModPanelChangedItemsTab(
                 if (i is IdentifiedItem)
                     continue;
 
-                if (!drawer.FilterChangedItem(s, i, LowerString.Empty))
+                if (!drawer.FilterChangedItem(s, i, string.Empty))
                     continue;
 
                 while (sortedTmpIdx < sortedTmp.Length
@@ -291,7 +290,7 @@ public class ModPanelChangedItemsTab(
         if (ImUtf8.IconButton(FontAwesomeIcon.Star, "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8, _buttonSize,
                 false, _starColor))
             dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, false, true);
-        using var context = ImUtf8.PopupContextItem("StarContext"u8, ImGuiPopupFlags.MouseButtonRight);
+        using var context = ImUtf8.PopupContextItem("StarContext"u8);
         if (!context)
             return;
 
@@ -335,7 +334,7 @@ public class ModPanelChangedItemsTab(
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DrawBaseContainer(in ChangedItemsCache.Container obj, int idx)
+    private void DrawBaseContainer(in ChangedItemsCache.Container obj, int _)
     {
         ImGui.TableNextColumn();
         using var indent = ImRaii.PushIndent(1, obj.Child);

@@ -97,18 +97,18 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
         var fullName = folder.FullName();
         return Forced.All(i => MatchesName(i, folder.Name, fullName, false))
          && !Negated.Any(i => MatchesName(i, folder.Name, fullName, true))
-         && (General.Count == 0 || General.Any(i => MatchesName(i, folder.Name, fullName, false)));
+         && (General.Count is 0 || General.Any(i => MatchesName(i, folder.Name, fullName, false)));
     }
 
     protected override bool Matches(Entry entry, ModFileSystem.Leaf leaf)
         => entry.Type switch
         {
             ModSearchType.Default => leaf.FullName().AsSpan().Contains(entry.Needle, StringComparison.OrdinalIgnoreCase)
-             || leaf.Value.Name.Lower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
+             || leaf.Value.Name.AsSpan().Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
             ModSearchType.ChangedItem => leaf.Value.LowerChangedItemsString.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
             ModSearchType.Tag         => leaf.Value.AllTagsLower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
-            ModSearchType.Name        => leaf.Value.Name.Lower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
-            ModSearchType.Author      => leaf.Value.Author.Lower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
+            ModSearchType.Name        => leaf.Value.Name.AsSpan().Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
+            ModSearchType.Author      => leaf.Value.Author.AsSpan().Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
             ModSearchType.Category => leaf.Value.ChangedItems.Any(p
                 => ((p.Value?.Icon.ToFlag() ?? ChangedItemIconFlag.Unknown) & entry.IconFlagFilter) != 0),
             _ => true,
@@ -117,14 +117,14 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
     protected override bool MatchesNone(ModSearchType type, bool negated, ModFileSystem.Leaf haystack)
         => type switch
         {
-            ModSearchType.Author when negated      => !haystack.Value.Author.IsEmpty,
-            ModSearchType.Author                   => haystack.Value.Author.IsEmpty,
+            ModSearchType.Author when negated      => haystack.Value.Author.Length > 0,
+            ModSearchType.Author                   => haystack.Value.Author.Length is 0,
             ModSearchType.ChangedItem when negated => haystack.Value.LowerChangedItemsString.Length > 0,
-            ModSearchType.ChangedItem              => haystack.Value.LowerChangedItemsString.Length == 0,
+            ModSearchType.ChangedItem              => haystack.Value.LowerChangedItemsString.Length is 0,
             ModSearchType.Tag when negated         => haystack.Value.AllTagsLower.Length > 0,
-            ModSearchType.Tag                      => haystack.Value.AllTagsLower.Length == 0,
+            ModSearchType.Tag                      => haystack.Value.AllTagsLower.Length is 0,
             ModSearchType.Category when negated    => haystack.Value.ChangedItems.Count > 0,
-            ModSearchType.Category                 => haystack.Value.ChangedItems.Count == 0,
+            ModSearchType.Category                 => haystack.Value.ChangedItems.Count is 0,
             _                                      => true,
         };
 

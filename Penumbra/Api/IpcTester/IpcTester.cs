@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Penumbra.Api.Api;
 
 namespace Penumbra.Api.IpcTester;
@@ -54,13 +55,13 @@ public class IpcTester(
         }
     }
 
-    internal static void DrawIntro(string label, string info)
+    internal static void DrawIntro(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> info)
     {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(label);
+        Im.Text(ref label);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(info);
+        Im.Text(ref info);
         ImGui.TableNextColumn();
     }
 

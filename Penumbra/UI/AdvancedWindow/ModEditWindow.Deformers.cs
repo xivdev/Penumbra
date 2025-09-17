@@ -8,7 +8,6 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.UI.Classes;
-using Notification = OtterGui.Classes.Notification;
 
 namespace Penumbra.UI.AdvancedWindow;
 

@@ -59,7 +59,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         var mod = selector.Selected!;
         foreach (var (index, conflict) in collectionManager.Active.Current.Conflicts(mod).Where(c => !c.Mod2.Priority.IsHidden)
                      .OrderByDescending(GetPriority)
-                     .ThenBy(c => c.Mod2.Name.Lower).Index())
+                     .ThenBy(c => c.Mod2.Name, StringComparer.OrdinalIgnoreCase).Index())
         {
             using var id = ImRaii.PushId(index);
             DrawConflictRow(conflict, priorityWidth, buttonSize);
@@ -71,7 +71,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         ImGui.TableNextColumn();
         using var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderLine.Value());
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(selector.Selected!.Name.Text);
+        ImGui.TextUnformatted(selector.Selected!.Name);
         ImGui.TableNextColumn();
         var actualSettings = collectionManager.Active.Current.GetActualSettings(selector.Selected!.Index).Settings!;
         var priority       = actualSettings.Priority.Value;
@@ -102,7 +102,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
     private void DrawConflictSelectable(ModConflicts conflict)
     {
         ImGui.AlignTextToFramePadding();
-        if (ImGui.Selectable(conflict.Mod2.Name.Text) && conflict.Mod2 is Mod otherMod)
+        if (ImGui.Selectable(conflict.Mod2.Name) && conflict.Mod2 is Mod otherMod)
             selector.SelectByValue(otherMod);
         var hovered      = ImGui.IsItemHovered();
         var rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);

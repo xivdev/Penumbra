@@ -1,7 +1,6 @@
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
-using Luna.Widgets;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -10,6 +9,7 @@ using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
+using Window = Dalamud.Interface.Windowing.Window;
 
 namespace Penumbra.UI;
 
@@ -17,19 +17,17 @@ public sealed class ConfigWindow : Window, Luna.IUiService
 {
     private readonly IDalamudPluginInterface _pluginInterface;
     private readonly Configuration           _config;
-    private readonly PerformanceTracker      _tracker;
     private readonly ValidityChecker         _validityChecker;
     private          Penumbra?               _penumbra;
     private          ConfigTabBar            _configTabs = null!;
     private          string?                 _lastException;
 
-    public ConfigWindow(PerformanceTracker tracker, IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
+    public ConfigWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial)
         : base(GetLabel(checker))
     {
         _pluginInterface = pi;
         _config          = config;
-        _tracker         = tracker;
         _validityChecker = checker;
 
         RespectCloseHotkey = true;
@@ -68,7 +66,6 @@ public sealed class ConfigWindow : Window, Luna.IUiService
 
     public override void Draw()
     {
-        using var timer = _tracker.Measure(PerformanceType.UiMainWindow);
         UiHelpers.SetupCommonSizes();
         try
         {

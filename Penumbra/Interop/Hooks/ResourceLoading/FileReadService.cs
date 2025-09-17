@@ -3,16 +3,14 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
-using Penumbra.Util;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public unsafe class FileReadService : IDisposable, Luna.IRequiredService
 {
-    public FileReadService(PerformanceTracker performance, ResourceManagerService resourceManager, IGameInteropProvider interop)
+    public FileReadService(ResourceManagerService resourceManager, IGameInteropProvider interop)
     {
         _resourceManager = resourceManager;
-        _performance = performance;
         interop.InitializeFromAttributes(this);
         if (!HookOverrides.Instance.ResourceLoading.ReadSqPack)
             _readSqPackHook.Enable();
@@ -49,7 +47,6 @@ public unsafe class FileReadService : IDisposable, Luna.IRequiredService
         _readSqPackHook.Dispose();
     }
 
-    private readonly PerformanceTracker _performance;
     private readonly ResourceManagerService _resourceManager;
 
     private delegate byte ReadSqPackPrototype(nint resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync);
@@ -59,7 +56,6 @@ public unsafe class FileReadService : IDisposable, Luna.IRequiredService
 
     private byte ReadSqPackDetour(nint resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync)
     {
-        using var performance = _performance.Measure(PerformanceType.ReadSqPack);
         byte? ret = null;
         _lastFileThreadResourceManager.Value = resourceManager;
         ReadSqPack?.Invoke(fileDescriptor, ref priority, ref isSync, ref ret);

@@ -9,7 +9,7 @@ public class ModCombo(Func<IReadOnlyList<Mod>> generator) : FilterComboCache<Mod
         => Items[globalIndex].Name.Contains(filter);
 
     protected override string ToString(Mod obj)
-        => obj.Name.Text;
+        => obj.Name;
 }
 
 public class ModStorage : IReadOnlyList<Mod>
@@ -60,7 +60,7 @@ public class ModStorage : IReadOnlyList<Mod>
     /// Mods are removed when they are deleted or when they are toggled in any collection.
     /// Also gets cleared on mod rediscovery.
     /// </summary>
-    private readonly HashSet<Mod> _newMods = new();
+    private readonly HashSet<Mod> _newMods = [];
 
     public bool IsNew(Mod mod)
         => _newMods.Contains(mod);

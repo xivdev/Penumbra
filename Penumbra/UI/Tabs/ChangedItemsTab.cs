@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -25,8 +25,8 @@ public class ChangedItemsTab(
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
-    private LowerString _changedItemFilter    = LowerString.Empty;
-    private LowerString _changedItemModFilter = LowerString.Empty;
+    private string _changedItemFilter    = string.Empty;
+    private string _changedItemModFilter = string.Empty;
     private Vector2     _buttonSize;
 
     public void DrawContent()
@@ -66,17 +66,17 @@ public class ChangedItemsTab(
           - 450 * UiHelpers.Scale
           - ImGui.GetStyle().ItemSpacing.X;
         ImGui.SetNextItemWidth(450 * UiHelpers.Scale);
-        LowerString.InputWithHint("##changedItemsFilter", "Filter Item...", ref _changedItemFilter, 128);
+        Im.Input.Text("##changedItemsFilter"u8, ref _changedItemFilter, "Filter Item..."u8);
         ImGui.SameLine();
         ImGui.SetNextItemWidth(varWidth);
-        LowerString.InputWithHint("##changedItemsModFilter", "Filter Mods...", ref _changedItemModFilter, 128);
+        Im.Input.Text("##changedItemsModFilter"u8, ref _changedItemModFilter, "Filter Mods..."u8);
         return varWidth;
     }
 
     /// <summary> Apply the current filters. </summary>
     private bool FilterChangedItem(KeyValuePair<string, (Luna.SingleArray<IMod>, IIdentifiedObjectData)> item)
         => drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
-         && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
+         && (_changedItemModFilter.Length is 0 || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter, StringComparison.OrdinalIgnoreCase)));
 
     /// <summary> Draw a full column for a changed item. </summary>
     private void DrawChangedItemColumn(KeyValuePair<string, (Luna.SingleArray<IMod>, IIdentifiedObjectData)> item)
@@ -101,7 +101,7 @@ public class ChangedItemsTab(
             return;
 
         var first = mods[0];
-        if (ImUtf8.Selectable(first.Name.Text, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 })
+        if (ImUtf8.Selectable(first.Name, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 })
          && ImGui.GetIO().KeyCtrl
          && first is Mod mod)
             communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));

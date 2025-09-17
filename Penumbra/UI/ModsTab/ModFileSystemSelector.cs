@@ -221,12 +221,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Tinted(state.Tint))
             .Push(ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
         using var id = ImUtf8.PushId(leaf.Value.Index);
-        ImUtf8.TreeNode(leaf.Value.Name.Text, flags).Dispose();
+        ImUtf8.TreeNode(leaf.Value.Name, flags).Dispose();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
         {
             _modManager.SetKnown(leaf.Value);
             var (setting, collection) = _collectionManager.Active.Current.GetActualSettings(leaf.Value.Index);
-            if (_config.DeleteModModifier.ForcedModifier(new OtterGui.Classes.DoubleModifier(OtterGui.Classes.ModifierHotkey.Control, OtterGui.Classes.ModifierHotkey.Shift)).IsActive())
+            if (_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift)).IsActive())
             {
                 // Delete temporary settings if they exist, regardless of mode, or set to inheriting if none exist.
                 if (_collectionManager.Active.Current.GetTempSettings(leaf.Value.Index) is not null)
@@ -397,7 +397,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private void RenameMod(ModFileSystem.Leaf leaf)
     {
         ImGui.Separator();
-        var currentName = leaf.Value.Name.Text;
+        var currentName = leaf.Value.Name;
         if (ImGui.IsWindowAppearing())
             ImGui.SetKeyboardFocusHere(0);
         ImUtf8.Text("Rename Mod:"u8);
@@ -411,7 +411,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private void DeleteModButton(Vector2 size)
-        => DeleteSelectionButton(size, _config.DeleteModModifier, "mod", "mods", _modManager.DeleteMod);
+        => DeleteSelectionButton(size, Unsafe.BitCast<DoubleModifier, OtterGui.Classes.DoubleModifier>(_config.DeleteModModifier), "mod", "mods", _modManager.DeleteMod);
 
     private void AddHelpButton(Vector2 size)
     {
@@ -471,7 +471,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImUtf8.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled."u8);
             indent.Push();
             ImUtf8.BulletText(
-                $"Holding {_config.DeleteModModifier.ForcedModifier(new OtterGui.Classes.DoubleModifier(OtterGui.Classes.ModifierHotkey.Control, OtterGui.Classes.ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
+                $"Holding {_config.DeleteModModifier.ForcedModifier(new DoubleModifier(ModifierHotkey.Control, ModifierHotkey.Shift))} while middle-clicking lets it inherit, discarding settings.");
             indent.Pop(1);
             ImUtf8.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number."u8);
             indent.Push();

@@ -1,5 +1,4 @@
 using Dalamud.Utility;
-using OtterGui.Classes;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
@@ -39,8 +38,8 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         string? website, params string[] tags)
     {
         var mod = new Mod(directory);
-        mod.Name        = name.IsNullOrEmpty() ? mod.Name : new LowerString(name);
-        mod.Author      = author != null ? new LowerString(author) : mod.Author;
+        mod.Name        = name.IsNullOrEmpty() ? mod.Name : name;
+        mod.Author      = author ?? mod.Author;
         mod.Description = description ?? mod.Description;
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
@@ -50,13 +49,13 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
     public void ChangeModName(Mod mod, string newName)
     {
-        if (mod.Name.Text == newName)
+        if (mod.Name == newName)
             return;
 
         var oldName = mod.Name;
         mod.Name = newName;
         saveService.QueueSave(new ModMeta(mod));
-        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Name, mod, oldName.Text));
+        communicatorService.ModDataChanged.Invoke(new ModDataChanged.Arguments(ModDataChangeType.Name, mod, oldName));
     }
 
     public void ChangeModAuthor(Mod mod, string newAuthor)

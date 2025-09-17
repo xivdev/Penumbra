@@ -103,9 +103,8 @@ public class ResourceTreeViewer(
                 if (ImUtf8.ButtonEx("Export Character Pack"u8,
                         "Note that this recomputes the current data of the actor if it still exists, and does not use the cached data."u8))
                 {
-                    pcpService.CreatePcp((ObjectIndex)tree.GameObjectIndex, _note).ContinueWith(t =>
+                    pcpService.CreatePcp((ObjectIndex)tree.GameObjectIndex, null, _note).ContinueWith(t =>
                     {
-
                         var (success, text) = t.Result;
 
                         if (success)
@@ -116,6 +115,27 @@ public class ResourceTreeViewer(
                     _note = string.Empty;
                 }
 
+                ImUtf8.SameLineInner();
+                if (ImUtf8.ButtonEx("Export To..."u8,
+                        "Note that this recomputes the current data of the actor if it still exists, and does not use the cached data."u8))
+                    fileDialog.OpenSavePicker("Export PCP...", $"Penumbra Mod Packs{{.pcp,.pmp}},{config.PcpSettings.PcpExtension},Any File{{.*}}", PcpService.ModName(tree.Name, _note, DateTime.Now),
+                        config.PcpSettings.PcpExtension,
+                        (selected, path) =>
+                        {
+                            if (!selected)
+                                return;
+
+                            pcpService.CreatePcp((ObjectIndex)tree.GameObjectIndex, path, _note).ContinueWith(t =>
+                            {
+                                var (success, text) = t.Result;
+
+                                if (success)
+                                    Penumbra.Messager.NotificationMessage($"Created {text}.", NotificationType.Success, false);
+                                else
+                                    Penumbra.Messager.NotificationMessage(text, NotificationType.Error, false);
+                            });
+                            _note = string.Empty;
+                        }, config.ExportDirectory, false);
                 ImUtf8.SameLineInner();
                 ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
                 ImUtf8.InputText("##note"u8, ref _note, "Export note..."u8);
@@ -434,7 +454,7 @@ public class ResourceTreeViewer(
 
                 _writableCache.Add(resourceNode.FullPath, writable);
             }
-            
+
             if (ImUtf8.IconButton(FontAwesomeIcon.Save, "Export this file."u8, buttonSize,
                     resourceNode.FullPath.FullName.Length is 0 || writable is null))
             {
@@ -442,7 +462,8 @@ public class ResourceTreeViewer(
                 var ext = resourceNode.PossibleGamePaths.Length == 1
                     ? Path.GetExtension(resourceNode.GamePath.ToString())
                     : Path.GetExtension(fullPathStr);
-                fileDialog.OpenSavePicker($"Export {Path.GetFileName(fullPathStr)} to...", ext, Path.GetFileNameWithoutExtension(fullPathStr), ext,
+                fileDialog.OpenSavePicker($"Export {Path.GetFileName(fullPathStr)} to...", ext, Path.GetFileNameWithoutExtension(fullPathStr),
+                    ext,
                     (success, name) =>
                     {
                         if (!success)
@@ -458,7 +479,7 @@ public class ResourceTreeViewer(
                         }
                     }, null, false);
             }
-            
+
             drawActions(resourceNode, writable, new Vector2(frameHeight));
         }
     }
@@ -524,7 +545,7 @@ public class ResourceTreeViewer(
         Visible         = 1,
         DescendentsOnly = 2,
     }
-    
+
     private record RawFileWritable(string Path) : IWritable
     {
         public bool Valid

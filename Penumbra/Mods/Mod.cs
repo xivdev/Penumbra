@@ -1,5 +1,4 @@
 using Luna;
-using OtterGui.Classes;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -55,11 +54,11 @@ public sealed class Mod : IMod
     }
 
     public override string ToString()
-        => Name.Text;
+        => Name;
 
     // Meta Data
-    public LowerString           Name                  { get; internal set; } = "New Mod";
-    public LowerString           Author                { get; internal set; } = LowerString.Empty;
+    public string                Name                  { get; internal set; } = "New Mod";
+    public string                Author                { get; internal set; } = string.Empty;
     public string                Description           { get; internal set; } = string.Empty;
     public string                Version               { get; internal set; } = string.Empty;
     public string                Website               { get; internal set; } = string.Empty;

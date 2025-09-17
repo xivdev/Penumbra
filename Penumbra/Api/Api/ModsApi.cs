@@ -58,7 +58,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     }
 
     public Dictionary<string, string> GetModList()
-        => _modManager.ToDictionary(m => m.ModPath.Name, m => m.Name.Text);
+        => _modManager.ToDictionary(m => m.ModPath.Name, m => m.Name);
 
     public PenumbraApiEc InstallMod(string modFilePackagePath)
     {

@@ -1,4 +1,3 @@
-using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Meta.Manipulations;
@@ -14,7 +13,7 @@ namespace Penumbra.Mods;
 
 public class TemporaryMod : IMod
 {
-    public LowerString Name     { get; init; } = LowerString.Empty;
+    public string      Name     { get; init; } = string.Empty;
     public int         Index    { get; init; } = -2;
     public ModPriority Priority { get; init; } = ModPriority.MaxValue;
 

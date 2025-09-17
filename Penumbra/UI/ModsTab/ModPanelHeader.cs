@@ -80,8 +80,8 @@ public class ModPanelHeader : IDisposable
         // Author
         if (_mod.Author != _modAuthor)
         {
-            var author = _mod.Author.IsEmpty ? string.Empty : $"by  {_mod.Author}";
-            _modAuthor      = _mod.Author.Text;
+            var author = _mod.Author.Length is 0 ? string.Empty : $"by  {_mod.Author}";
+            _modAuthor      = _mod.Author;
             _modAuthorWidth = ImGui.CalcTextSize(author).X;
             _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
         }

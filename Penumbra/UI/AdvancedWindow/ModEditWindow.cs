@@ -26,7 +26,6 @@ using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -35,7 +34,6 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly PerformanceTracker  _performance;
     private readonly ModEditor           _editor;
     private readonly Configuration       _config;
     private readonly ItemSwapTab         _itemSwapTab;
@@ -129,8 +127,6 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         if (IsLoading)
             return;
 
-        using var performance = _performance.Measure(PerformanceType.UiAdvancedWindow);
-
         var sb = new StringBuilder(256);
 
         var redirections = 0;
@@ -195,8 +191,6 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
 
     public override void Draw()
     {
-        using var performance = _performance.Measure(PerformanceType.UiAdvancedWindow);
-
         if (!_config.Ephemeral.AdvancedEditingOpen)
         {
             _config.Ephemeral.AdvancedEditingOpen = true;
@@ -620,7 +614,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         return ret;
     }
 
-    public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
+    public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
@@ -629,7 +623,6 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         MtrlTabFactory mtrlTabFactory, ModSelection selection)
         : base(WindowBaseLabel)
     {
-        _performance       = performance;
         _itemSwapTab       = itemSwapTab;
         _gameData          = gameData;
         _config            = config;
