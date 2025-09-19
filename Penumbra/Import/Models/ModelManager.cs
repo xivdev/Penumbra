@@ -19,6 +19,7 @@ using SharpGLTF.Scenes;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
+
 namespace Penumbra.Import.Models;
 
 using Schema2 = SharpGLTF.Schema2;
@@ -32,6 +33,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
 
     private bool _disposed;
+    
 
     public void Dispose()
     {
@@ -116,13 +118,16 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
         
         //Lumina expects strings to be at least 15 chars, we assume it's not a vanilla material if its less than that as a temporary fix
         string? absolutePath = null;
-        if (rawPath.Length > 14)
-        {
+
             // Get standardised paths
-             absolutePath = rawPath.StartsWith('/')
-                ? LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId)
-                : rawPath;
-        }
+            if (Regex.IsMatch(rawPath, @"/mt_[cdmw]\d{4}[abefhtze]\d{4}_(?:\w{3}(?:_\w)|(?:\w))\.mtrl"))
+            {
+                absolutePath =  LuminaMaterial.ResolveRelativeMaterialPath(rawPath, variantId);
+            }
+            else
+            {
+                absolutePath = rawPath;
+            }
 
         var relativePath = rawPath.StartsWith('/')
             ? rawPath
