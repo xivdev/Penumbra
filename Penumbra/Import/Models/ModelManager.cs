@@ -19,7 +19,6 @@ using SharpGLTF.Scenes;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-
 namespace Penumbra.Import.Models;
 
 using Schema2 = SharpGLTF.Schema2;
@@ -34,7 +33,6 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
 
     private bool _disposed;
     
-
     public void Dispose()
     {
         _disposed = true;
@@ -334,3 +332,4 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
         }
     }
 }
+
