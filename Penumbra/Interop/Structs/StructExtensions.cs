@@ -64,6 +64,12 @@ internal static class StructExtensions
         return ToOwnedByteString(character.ResolvePhybPath(pathBuffer, partialSkeletonIndex));
     }
 
+    public static unsafe CiByteString ResolveKdbPathAsByteString(ref this CharacterBase character, uint partialSkeletonIndex)
+    {
+        var pathBuffer = stackalloc byte[CharacterBase.PathBufferSize];
+        return ToOwnedByteString(character.ResolveKdbPath(pathBuffer, CharacterBase.PathBufferSize, partialSkeletonIndex));
+    }
+
     private static unsafe CiByteString ToOwnedByteString(CStringPointer str)
         => str.HasValue ? new CiByteString(str.Value).Clone() : CiByteString.Empty;
 

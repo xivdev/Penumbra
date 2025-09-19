@@ -63,8 +63,7 @@ public sealed unsafe class LoadTimelineResources : FastHook<LoadTimelineResource
         {
             if (timeline != null)
             {
-                // TODO: Clientstructify
-                var idx = ((delegate* unmanaged<SchedulerTimeline*, int>**)timeline)[0][29](timeline);
+                var idx = timeline->GetOwningGameObjectIndex();
                 if (idx >= 0 && idx < objects.TotalCount)
                 {
                     var obj = objects[idx];

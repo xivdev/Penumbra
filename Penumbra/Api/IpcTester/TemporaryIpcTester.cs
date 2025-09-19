@@ -38,6 +38,7 @@ public class TemporaryIpcTester(
     private string        _tempGamePath           = "test/game/path.mtrl";
     private string        _tempFilePath           = "test/success.mtrl";
     private string        _tempManipulation       = string.Empty;
+    private string        _identity               = string.Empty;
     private PenumbraApiEc _lastTempError;
     private int           _tempActorIndex;
     private bool          _forceOverwrite;
@@ -48,6 +49,7 @@ public class TemporaryIpcTester(
         if (!_)
             return;
 
+        ImGui.InputTextWithHint("##identity", "Identity...", ref _identity, 128);
         ImGui.InputTextWithHint("##tempCollection", "Collection Name...", ref _tempCollectionName, 128);
         ImGuiUtil.GuidInput("##guid", "Collection GUID...", string.Empty, ref _tempGuid, ref _tempCollectionGuidName);
         ImGui.InputInt("##tempActorIndex", ref _tempActorIndex, 0, 0);
@@ -73,7 +75,7 @@ public class TemporaryIpcTester(
         IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Create Temporary Collection");
         if (ImGui.Button("Create##Collection"))
         {
-            LastCreatedCollectionId = new CreateTemporaryCollection(pi).Invoke(_tempCollectionName);
+            _lastTempError = new CreateTemporaryCollection(pi).Invoke(_identity, _tempCollectionName, out LastCreatedCollectionId);
             if (_tempGuid == null)
             {
                 _tempGuid               = LastCreatedCollectionId;

@@ -45,7 +45,9 @@ public class ResourceNode : ICloneable
 
     /// <summary> Whether to treat the file as protected (require holding the Mod Deletion Modifier to make a quick import). </summary>
     public bool Protected
-        => ForceProtected || Internal || Type is ResourceType.Shpk or ResourceType.Sklb or ResourceType.Pbd;
+        => ForceProtected
+         || Internal
+         || Type is ResourceType.Shpk or ResourceType.Sklb or ResourceType.Skp or ResourceType.Phyb or ResourceType.Kdb or ResourceType.Pbd;
 
     internal ResourceNode(ResourceType type, nint objectAddress, nint resourceHandle, ulong length, ResolveContext? resolveContext)
     {

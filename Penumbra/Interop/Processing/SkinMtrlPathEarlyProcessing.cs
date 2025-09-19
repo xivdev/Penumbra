@@ -38,10 +38,9 @@ public static unsafe class SkinMtrlPathEarlyProcessing
         if (character is null)
             return null;
 
-        if (character->TempSlotData is not null)
+        if (character->PerSlotStagingArea is not null)
         {
-            // TODO ClientStructs-ify
-            var handle = *(ModelResourceHandle**)((nint)character->TempSlotData + 0xE0 * slotIndex + 0x8);
+            var handle = character->PerSlotStagingArea[slotIndex].ModelResourceHandle;
             if (handle != null)
                 return handle;
         }

@@ -18,6 +18,15 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
+public record PcpSettings
+{
+    public bool   CreateCollection { get; set; } = true;
+    public bool   AssignCollection { get; set; } = true;
+    public bool   AllowIpc         { get; set; } = true;
+    public bool   DisableHandling  { get; set; } = false;
+    public string FolderName       { get; set; } = "PCP";
+}
+
 [Serializable]
 public class Configuration : IPluginConfiguration, ISavable, IService
 {
@@ -68,9 +77,10 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
     public bool            DefaultTemporaryMode                 { get; set; } = false;
     public bool            EnableCustomShapes                   { get; set; } = true;
-    public RenameField     ShowRename                           { get; set; } = RenameField.BothDataPrio;
-    public ChangedItemMode ChangedItemDisplay                   { get; set; } = ChangedItemMode.GroupedCollapsed;
-    public int             OptionGroupCollapsibleMin            { get; set; } = 5;
+    public PcpSettings     PcpSettings = new();
+    public RenameField     ShowRename                { get; set; } = RenameField.BothDataPrio;
+    public ChangedItemMode ChangedItemDisplay        { get; set; } = ChangedItemMode.GroupedCollapsed;
+    public int             OptionGroupCollapsibleMin { get; set; } = 5;
 
     public Vector2 MinimumSize = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
 

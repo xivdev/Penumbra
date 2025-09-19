@@ -36,7 +36,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
 
     /// <summary> Create the file containing the meta information about a mod from scratch. </summary>
     public void CreateMeta(DirectoryInfo directory, string? name, string? author, string? description, string? version,
-        string? website)
+        string? website, params string[] tags)
     {
         var mod = new Mod(directory);
         mod.Name        = name.IsNullOrEmpty() ? mod.Name : new LowerString(name);
@@ -44,6 +44,7 @@ public class ModDataEditor(SaveService saveService, CommunicatorService communic
         mod.Description = description ?? mod.Description;
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
+        mod.ModTags     = tags;
         saveService.ImmediateSaveSync(new ModMeta(mod));
     }
 

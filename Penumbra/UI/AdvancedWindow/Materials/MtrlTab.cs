@@ -216,7 +216,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
     }
 
     public bool Valid
-        => _shadersKnown && Mtrl.Valid;
+        => Mtrl.Valid; // FIXME This should be _shadersKnown && Mtrl.Valid but the algorithm for _shadersKnown is flawed as of 7.2.
 
     public byte[] Write()
     {

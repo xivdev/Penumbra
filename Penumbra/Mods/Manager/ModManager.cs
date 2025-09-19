@@ -1,5 +1,6 @@
 using OtterGui.Services;
 using Penumbra.Communication;
+using Penumbra.Interop;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Services;
@@ -303,6 +304,9 @@ public sealed class ModManager : ModStorage, IDisposable, IService
             if (!firstTime && _config.ModDirectory != BasePath.FullName)
                 TriggerModDirectoryChange(BasePath.FullName, Valid);
         }
+
+        if (CloudApi.IsCloudSynced(BasePath.FullName))
+            Penumbra.Log.Warning($"Mod base directory {BasePath.FullName} is cloud-synced. This may cause issues.");
     }
 
     private void TriggerModDirectoryChange(string newPath, bool valid)

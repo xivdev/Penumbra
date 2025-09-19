@@ -17,7 +17,7 @@ public class PenumbraApi(
     UiApi ui) : IDisposable, IApiService, IPenumbraApi
 {
     public const int BreakingVersion = 5;
-    public const int FeatureVersion  = 10;
+    public const int FeatureVersion  = 12;
 
     public void Dispose()
     {

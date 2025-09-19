@@ -81,6 +81,12 @@ public class CommunicatorService : IDisposable, IService
     /// <inheritdoc cref="Communication.ResolvedFileChanged"/>
     public readonly ResolvedFileChanged ResolvedFileChanged = new();
 
+    /// <inheritdoc cref="Communication.PcpCreation"/>
+    public readonly PcpCreation PcpCreation = new();
+
+    /// <inheritdoc cref="Communication.PcpParsing"/>
+    public readonly PcpParsing PcpParsing = new();
+
     public void Dispose()
     {
         CollectionChange.Dispose();
@@ -105,5 +111,7 @@ public class CommunicatorService : IDisposable, IService
         ChangedItemClick.Dispose();
         SelectTab.Dispose();
         ResolvedFileChanged.Dispose();
+        PcpCreation.Dispose();
+        PcpParsing.Dispose();
     }
 }

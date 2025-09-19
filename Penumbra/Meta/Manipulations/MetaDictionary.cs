@@ -1,7 +1,10 @@
+using System.Collections.Frozen;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Collections.Cache;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files.AtchStructs;
+using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Util;
 using ImcEntry = Penumbra.GameData.Structs.ImcEntry;
@@ -39,6 +42,165 @@ public class MetaDictionary
             Atr  = cache.Atr.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Entry);
             foreach (var geqp in cache.GlobalEqp.Keys)
                 Add(geqp);
+        }
+
+        public static unsafe Wrapper Filtered(MetaCache cache, Actor actor)
+        {
+            if (!actor.IsCharacter)
+                return new Wrapper(cache);
+
+            var model = actor.Model;
+            if (!model.IsHuman)
+                return new Wrapper(cache);
+
+            var headId = model.GetModelId(HumanSlot.Head);
+            var bodyId = model.GetModelId(HumanSlot.Body);
+            var equipIdSet = ((IEnumerable<PrimaryId>)
+            [
+                headId,
+                bodyId,
+                model.GetModelId(HumanSlot.Hands),
+                model.GetModelId(HumanSlot.Legs),
+                model.GetModelId(HumanSlot.Feet),
+            ]).ToFrozenSet();
+            var earsId    = model.GetModelId(HumanSlot.Ears);
+            var neckId    = model.GetModelId(HumanSlot.Neck);
+            var wristId   = model.GetModelId(HumanSlot.Wrists);
+            var rFingerId = model.GetModelId(HumanSlot.RFinger);
+            var lFingerId = model.GetModelId(HumanSlot.LFinger);
+
+            var wrapper = new Wrapper();
+            // Check for all relevant primary IDs due to slot overlap.
+            foreach (var (eqp, value) in cache.Eqp)
+            {
+                if (eqp.Slot.IsEquipment())
+                {
+                    if (equipIdSet.Contains(eqp.SetId))
+                        wrapper.Eqp.Add(eqp, new EqpEntryInternal(value.Entry, eqp.Slot));
+                }
+                else
+                {
+                    switch (eqp.Slot)
+                    {
+                        case EquipSlot.Ears when eqp.SetId == earsId:
+                        case EquipSlot.Neck when eqp.SetId == neckId:
+                        case EquipSlot.Wrists when eqp.SetId == wristId:
+                        case EquipSlot.RFinger when eqp.SetId == rFingerId:
+                        case EquipSlot.LFinger when eqp.SetId == lFingerId:
+                            wrapper.Eqp.Add(eqp, new EqpEntryInternal(value.Entry, eqp.Slot));
+                            break;
+                    }
+                }
+            }
+
+            // Check also for body IDs due to body occupying head.
+            foreach (var (gmp, value) in cache.Gmp)
+            {
+                if (gmp.SetId == headId || gmp.SetId == bodyId)
+                    wrapper.Gmp.Add(gmp, value.Entry);
+            }
+
+            // Check for all races due to inheritance and all slots due to overlap.
+            foreach (var (eqdp, value) in cache.Eqdp)
+            {
+                if (eqdp.Slot.IsEquipment())
+                {
+                    if (equipIdSet.Contains(eqdp.SetId))
+                        wrapper.Eqdp.Add(eqdp, new EqdpEntryInternal(value.Entry, eqdp.Slot));
+                }
+                else
+                {
+                    switch (eqdp.Slot)
+                    {
+                        case EquipSlot.Ears when eqdp.SetId == earsId:
+                        case EquipSlot.Neck when eqdp.SetId == neckId:
+                        case EquipSlot.Wrists when eqdp.SetId == wristId:
+                        case EquipSlot.RFinger when eqdp.SetId == rFingerId:
+                        case EquipSlot.LFinger when eqdp.SetId == lFingerId:
+                            wrapper.Eqdp.Add(eqdp, new EqdpEntryInternal(value.Entry, eqdp.Slot));
+                            break;
+                    }
+                }
+            }
+
+            var genderRace = (GenderRace)model.AsHuman->RaceSexId;
+            var hairId     = model.GetModelId(HumanSlot.Hair);
+            var faceId     = model.GetModelId(HumanSlot.Face);
+            // We do not need to care for racial inheritance for ESTs.
+            foreach (var (est, value) in cache.Est)
+            {
+                switch (est.Slot)
+                {
+                    case EstType.Hair when est.SetId == hairId && est.GenderRace == genderRace:
+                    case EstType.Face when est.SetId == faceId && est.GenderRace == genderRace:
+                    case EstType.Body when est.SetId == bodyId && est.GenderRace == genderRace:
+                    case EstType.Head when (est.SetId == headId || est.SetId == bodyId) && est.GenderRace == genderRace:
+                        wrapper.Est.Add(est, value.Entry);
+                        break;
+                }
+            }
+
+            foreach (var (geqp, _) in cache.GlobalEqp)
+            {
+                switch (geqp.Type)
+                {
+                    case GlobalEqpType.DoNotHideEarrings when geqp.Condition != earsId:
+                    case GlobalEqpType.DoNotHideNecklace when geqp.Condition != neckId:
+                    case GlobalEqpType.DoNotHideBracelets when geqp.Condition != wristId:
+                    case GlobalEqpType.DoNotHideRingR when geqp.Condition != rFingerId:
+                    case GlobalEqpType.DoNotHideRingL when geqp.Condition != lFingerId:
+                        continue;
+                    default: wrapper.Add(geqp); break;
+                }
+            }
+
+            var (_, _, main, off) = model.GetWeapons(actor);
+            foreach (var (imc, value) in cache.Imc)
+            {
+                switch (imc.ObjectType)
+                {
+                    case ObjectType.Equipment when equipIdSet.Contains(imc.PrimaryId): wrapper.Imc.Add(imc, value.Entry); break;
+
+                    case ObjectType.Weapon:
+                        if (imc.PrimaryId == main.Skeleton && imc.SecondaryId == main.Weapon)
+                            wrapper.Imc.Add(imc, value.Entry);
+                        else if (imc.PrimaryId == off.Skeleton && imc.SecondaryId == off.Weapon)
+                            wrapper.Imc.Add(imc, value.Entry);
+                        break;
+                    case ObjectType.Accessory:
+                        switch (imc.EquipSlot)
+                        {
+                            case EquipSlot.Ears when imc.PrimaryId == earsId:
+                            case EquipSlot.Neck when imc.PrimaryId == neckId:
+                            case EquipSlot.Wrists when imc.PrimaryId == wristId:
+                            case EquipSlot.RFinger when imc.PrimaryId == rFingerId:
+                            case EquipSlot.LFinger when imc.PrimaryId == lFingerId:
+                                wrapper.Imc.Add(imc, value.Entry);
+                                break;
+                        }
+
+                        break;
+                }
+            }
+
+            var subRace = (SubRace)model.AsHuman->Customize[4];
+            foreach (var (rsp, value) in cache.Rsp)
+            {
+                if (rsp.SubRace == subRace)
+                    wrapper.Rsp.Add(rsp, value.Entry);
+            }
+
+            // Keep all atch, atr and shp.
+            wrapper.Atch.EnsureCapacity(cache.Atch.Count);
+            wrapper.Shp.EnsureCapacity(cache.Shp.Count);
+            wrapper.Atr.EnsureCapacity(cache.Atr.Count);
+            foreach (var (atch, value) in cache.Atch)
+                wrapper.Atch.Add(atch, value.Entry);
+            foreach (var (shp, value) in cache.Shp)
+                wrapper.Shp.Add(shp, value.Entry);
+            foreach (var (atr, value) in cache.Atr)
+                wrapper.Atr.Add(atr, value.Entry);
+            return wrapper;
         }
     }
 
@@ -933,5 +1095,25 @@ public class MetaDictionary
 
         _data = new Wrapper(cache);
         Count = cache.Count;
+    }
+
+    public MetaDictionary(MetaCache? cache, Actor actor)
+    {
+        if (cache is null)
+            return;
+
+        _data = Wrapper.Filtered(cache, actor);
+        Count = _data.Count
+          + _data.Eqp.Count
+          + _data.Eqdp.Count
+          + _data.Est.Count
+          + _data.Gmp.Count
+          + _data.Imc.Count
+          + _data.Rsp.Count
+          + _data.Atch.Count
+          + _data.Atr.Count
+          + _data.Shp.Count;
+        if (Count is 0)
+            _data = null;
     }
 }

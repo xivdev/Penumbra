@@ -119,7 +119,7 @@ public partial class TexToolsImporter : IDisposable
     // Puts out warnings if extension does not correspond to data.
     private DirectoryInfo VerifyVersionAndImport(FileInfo modPackFile)
     {
-        if (modPackFile.Extension.ToLowerInvariant() is ".pmp" or ".zip" or ".7z" or ".rar")
+        if (modPackFile.Extension.ToLowerInvariant() is ".pmp" or ".pcp" or ".zip" or ".7z" or ".rar")
             return HandleRegularArchive(modPackFile);
 
         using var zfs              = modPackFile.OpenRead();

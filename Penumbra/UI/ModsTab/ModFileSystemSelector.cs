@@ -126,6 +126,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         ".ttmp",
         ".ttmp2",
         ".pmp",
+        ".pcp",
         ".zip",
         ".rar",
         ".7z",
@@ -380,7 +381,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                 : null;
 
         _fileDialog.OpenFilePicker("Import Mod Pack",
-            "Mod Packs{.ttmp,.ttmp2,.pmp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp},Archives{.zip,.7z,.rar}", (s, f) =>
+            "Mod Packs{.ttmp,.ttmp2,.pmp,.pcp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp,.pcp},Archives{.zip,.7z,.rar},Penumbra Character Packs{.pcp}", (s, f) =>
             {
                 if (!s)
                     return;
@@ -445,7 +446,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImUtf8.Text("Mod Management"u8);
             ImUtf8.BulletText("You can create empty mods or import mods with the buttons in this row."u8);
             using var indent = ImRaii.PushIndent();
-            ImUtf8.BulletText("Supported formats for import are: .ttmp, .ttmp2, .pmp."u8);
+            ImUtf8.BulletText("Supported formats for import are: .ttmp, .ttmp2, .pmp, .pcp."u8);
             ImUtf8.BulletText(
                 "You can also support .zip, .7z or .rar archives, but only if they already contain Penumbra-styled mods with appropriate metadata."u8);
             indent.Pop(1);
