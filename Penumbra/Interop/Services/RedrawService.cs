@@ -421,9 +421,9 @@ public sealed unsafe partial class RedrawService : IDisposable
             return;
 
 
-        foreach (ref var f in currentTerritory->Furniture)
+        foreach (ref var f in currentTerritory->FurnitureManager.FurnitureMemory)
         {
-            var gameObject = f.Index >= 0 ? currentTerritory->HousingObjectManager.Objects[f.Index].Value : null;
+            var gameObject = f.Index >= 0 ? currentTerritory->FurnitureManager.ObjectManager.ObjectArray.Objects[f.Index].Value : null;
             if (gameObject == null)
                 continue;
 
