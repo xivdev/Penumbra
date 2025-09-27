@@ -194,6 +194,10 @@ public class HttpApi : IDisposable, IApiService
             bool? State,
             ModPriority? Priority,
             Dictionary<string, List<string>>? Settings)
-        { }
+        {
+            public SetModSettingsData()
+                : this(null, string.Empty, string.Empty, null, null, null, null)
+            {}
+        }
     }
 }
