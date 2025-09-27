@@ -4,6 +4,7 @@ using EmbedIO.Routing;
 using EmbedIO.WebApi;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
+using Penumbra.Mods.Settings;
 
 namespace Penumbra.Api;
 
@@ -12,13 +13,15 @@ public class HttpApi : IDisposable, Luna.IApiService
     private partial class Controller : WebApiController
     {
         // @formatter:off
-        [Route( HttpVerbs.Get,  "/mods"       )] public partial object? GetMods();
-        [Route( HttpVerbs.Post, "/redraw"     )] public partial Task    Redraw();
-        [Route( HttpVerbs.Post, "/redrawAll"  )] public partial Task    RedrawAll();
-        [Route( HttpVerbs.Post, "/reloadmod"  )] public partial Task    ReloadMod();
-        [Route( HttpVerbs.Post, "/installmod" )] public partial Task    InstallMod();
-        [Route( HttpVerbs.Post, "/openwindow" )] public partial void    OpenWindow();
-        [Route( HttpVerbs.Post, "/focusmod"   )] public partial Task    FocusMod();
+        [Route( HttpVerbs.Get,  "/moddirectory"  )] public partial string GetModDirectory();
+        [Route( HttpVerbs.Get,  "/mods"          )] public partial object? GetMods();
+        [Route( HttpVerbs.Post, "/redraw"        )] public partial Task    Redraw();
+        [Route( HttpVerbs.Post, "/redrawAll"     )] public partial Task    RedrawAll();
+        [Route( HttpVerbs.Post, "/reloadmod"     )] public partial Task    ReloadMod();
+        [Route( HttpVerbs.Post, "/installmod"    )] public partial Task    InstallMod();
+        [Route( HttpVerbs.Post, "/openwindow"    )] public partial void    OpenWindow();
+        [Route( HttpVerbs.Post, "/focusmod"      )] public partial Task    FocusMod();
+        [Route( HttpVerbs.Post, "/setmodsettings")] public partial Task    SetModSettings();
         // @formatter:on
     }
 
@@ -64,6 +67,12 @@ public class HttpApi : IDisposable, Luna.IApiService
 
     private partial class Controller(IPenumbraApi api, IFramework framework)
     {
+        public partial string GetModDirectory()
+        {
+            Penumbra.Log.Debug($"[HTTP] {nameof(GetModDirectory)} triggered.");
+            return api.PluginState.GetModDirectory();
+        }
+
         public partial object? GetMods()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(GetMods)} triggered.");
@@ -115,12 +124,37 @@ public class HttpApi : IDisposable, Luna.IApiService
             Penumbra.Log.Debug($"[HTTP] {nameof(OpenWindow)} triggered.");
             api.Ui.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
         }
+
         public async partial Task FocusMod()
         {
             var data = await HttpContext.GetRequestDataAsync<ModFocusData>().ConfigureAwait(false);
             Penumbra.Log.Debug($"[HTTP] {nameof(FocusMod)} triggered.");
             if (data.Path.Length != 0)
                 api.Ui.OpenMainWindow(TabType.Mods, data.Path, data.Name);
+        }
+
+        public async partial Task SetModSettings()
+        {
+            var data = await HttpContext.GetRequestDataAsync<SetModSettingsData>().ConfigureAwait(false);
+            Penumbra.Log.Debug($"[HTTP] {nameof(SetModSettings)} triggered.");
+            await framework.RunOnFrameworkThread(() =>
+                {
+                    var collection = data.CollectionId ?? api.Collection.GetCollection(ApiCollectionType.Current)!.Value.Id;
+                    if (data.Inherit.HasValue)
+                    {
+                        api.ModSettings.TryInheritMod(collection, data.ModPath, data.ModName, data.Inherit.Value);
+                        if (data.Inherit.Value)
+                            return;
+                    }
+
+                    if (data.State.HasValue)
+                        api.ModSettings.TrySetMod(collection, data.ModPath, data.ModName, data.State.Value);
+                    if (data.Priority.HasValue)
+                        api.ModSettings.TrySetModPriority(collection, data.ModPath, data.ModName, data.Priority.Value.Value);
+                    foreach (var (group, settings) in data.Settings ?? [])
+                        api.ModSettings.TrySetModSettings(collection, data.ModPath, data.ModName, group, settings);
+                }
+            ).ConfigureAwait(false);
         }
 
         private record ModReloadData(string Path, string Name)
@@ -150,5 +184,15 @@ public class HttpApi : IDisposable, Luna.IApiService
                 : this(string.Empty, RedrawType.Redraw, -1)
             { }
         }
+
+        private record SetModSettingsData(
+            Guid? CollectionId,
+            string ModPath,
+            string ModName,
+            bool? Inherit,
+            bool? State,
+            ModPriority? Priority,
+            Dictionary<string, List<string>>? Settings)
+        { }
     }
 }
