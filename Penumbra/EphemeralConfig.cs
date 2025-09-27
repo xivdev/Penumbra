@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Enums;
-using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;

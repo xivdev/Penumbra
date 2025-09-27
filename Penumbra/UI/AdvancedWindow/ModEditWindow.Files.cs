@@ -184,7 +184,7 @@ public partial class ModEditWindow
             registry.CurrentUsage == registry.SubModUsage.Count ? ColorId.NewMod : ColorId.InheritedMod;
         using (ImRaii.PushColor(ImGuiCol.Text, color.Value()))
         {
-            if (UiHelpers.Selectable(registry.RelPath.Path, selected))
+            if (Im.Selectable(registry.RelPath.Path.Span, selected))
             {
                 if (selected)
                     _selectedFiles.Remove(registry);

@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -102,50 +103,50 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
 
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetTextLineHeightWithSpacing() / 2);
         var isEnabled = _ephemeral.EnableResourceWatcher;
-        if (ImGui.Checkbox("Enable", ref isEnabled))
+        if (Im.Checkbox("Enable"u8, ref isEnabled))
         {
             _ephemeral.EnableResourceWatcher = isEnabled;
             _ephemeral.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawMaxEntries();
-        ImGui.SameLine();
-        if (ImGui.Button("Clear"))
+        Im.Line.Same();
+        if (Im.Button("Clear"u8))
             Clear();
 
         ImGui.SameLine();
         var onlyMatching = _ephemeral.OnlyAddMatchingResources;
-        if (ImGui.Checkbox("Store Only Matching", ref onlyMatching))
+        if (Im.Checkbox("Store Only Matching"u8, ref onlyMatching))
         {
             _ephemeral.OnlyAddMatchingResources = onlyMatching;
             _ephemeral.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var writeToLog = _ephemeral.EnableResourceLogging;
-        if (ImGui.Checkbox("Write to Log", ref writeToLog))
+        if (Im.Checkbox("Write to Log"u8, ref writeToLog))
         {
             _ephemeral.EnableResourceLogging = writeToLog;
             _ephemeral.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawFilterInput();
 
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetTextLineHeightWithSpacing() / 2);
+        Im.Cursor.Y += Im.Style.TextHeightWithSpacing / 2;
 
-        _table.Draw(ImGui.GetTextLineHeightWithSpacing());
+        _table.Draw(Im.Style.TextHeightWithSpacing);
     }
 
     private void DrawFilterInput()
     {
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+        Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
         var       tmp          = _logFilter;
-        var       invalidRegex = _logRegex == null && _logFilter.Length > 0;
-        using var color        = ImRaii.PushColor(ImGuiCol.Border, Colors.RegexWarningBorder, invalidRegex);
-        using var style        = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, UiHelpers.Scale, invalidRegex);
-        if (ImGui.InputTextWithHint("##logFilter", "If path matches this Regex...", ref tmp, 256))
+        var       invalidRegex = _logRegex is null && _logFilter.Length > 0;
+        using var color =
+            new Im.ColorStyleDisposable().PushBorder(ImStyleBorder.Frame, Colors.RegexWarningBorder, Im.Style.GlobalScale, invalidRegex);
+        if (Im.Input.Text("##logFilter"u8, ref tmp, "If path matches this Regex..."u8))
             UpdateFilter(tmp, true);
     }
 
@@ -180,8 +181,8 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
 
     private void DrawMaxEntries()
     {
-        ImGui.SetNextItemWidth(80 * UiHelpers.Scale);
-        ImGui.InputInt("Max. Entries", ref _newMaxEntries, 0, 0);
+        Im.Item.SetNextWidth(80 * Im.Style.GlobalScale);
+        Im.Input.Scalar("Max. Entries"u8, ref _newMaxEntries);
         var change = ImGui.IsItemDeactivatedAfterEdit();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)
         {

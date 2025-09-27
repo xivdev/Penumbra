@@ -789,6 +789,7 @@ public class DebugTab : Window, ITab, IUiService
             Im.Text("Exists"u8);
             Im.Text("File Size"u8);
         }
+
         Im.Line.SameInner();
         using (Im.Group())
         {
@@ -1102,8 +1103,8 @@ public class DebugTab : Window, ITab, IUiService
             ImGui.TableNextColumn();
             Penumbra.Dynamis.DrawPointer((nint)imc);
             ImGui.TableNextColumn();
-            if (imc != null)
-                UiHelpers.Text(imc);
+            if (imc is not null)
+                Im.Text(imc->FileName().Span);
 
             var mdl = (RenderModel*)model->Models[i];
             ImGui.TableNextColumn();
@@ -1112,9 +1113,7 @@ public class DebugTab : Window, ITab, IUiService
                 continue;
 
             ImGui.TableNextColumn();
-            {
-                UiHelpers.Text(mdl->ResourceHandle);
-            }
+            Im.Text(mdl->ResourceHandle->FileName().Span);
         }
     }
 
@@ -1209,14 +1208,7 @@ public class DebugTab : Window, ITab, IUiService
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(r->RefCount.ToString());
             ImGui.TableNextColumn();
-            ref var name = ref r->FileName;
-            if (name.Capacity > 15)
-                UiHelpers.Text(name.BufferPtr, (int)name.Length);
-            else
-                fixed (byte* ptr = name.Buffer)
-                {
-                    UiHelpers.Text(ptr, (int)name.Length);
-                }
+            Im.Text(r->FileName.AsSpan());
         });
     }
 

@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -11,25 +12,16 @@ using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Classes;
 
-public class CollectionSelectHeader : Luna.IUiService
+public class CollectionSelectHeader(
+    CollectionManager collectionManager,
+    TutorialService tutorial,
+    ModSelection selection,
+    CollectionResolver resolver,
+    Configuration config,
+    CollectionCombo combo)
+    : Luna.IUiService
 {
-    private readonly CollectionCombo    _collectionCombo;
-    private readonly ActiveCollections  _activeCollections;
-    private readonly TutorialService    _tutorial;
-    private readonly ModSelection       _selection;
-    private readonly CollectionResolver _resolver;
-    private readonly Configuration      _config;
-
-    public CollectionSelectHeader(CollectionManager collectionManager, TutorialService tutorial, ModSelection selection,
-        CollectionResolver resolver, Configuration config)
-    {
-        _tutorial          = tutorial;
-        _selection         = selection;
-        _resolver          = resolver;
-        _config            = config;
-        _activeCollections = collectionManager.Active;
-        _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Identity.Name).ToList());
-    }
+    private readonly ActiveCollections _activeCollections = collectionManager.Active;
 
     /// <summary> Draw the header line that can quick switch between collections. </summary>
     public void Draw(bool spacing)
@@ -47,10 +39,10 @@ public class CollectionSelectHeader : Luna.IUiService
             DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(),    3);
             DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
 
-            _collectionCombo.Draw("##collectionSelector", comboWidth, ColorId.SelectedCollection.Value());
+            combo.Draw("##collectionSelector"u8, comboWidth, ColorId.SelectedCollection.Value());
         }
 
-        _tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
+        tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
 
         if (!_activeCollections.CurrentCollectionInUse)
             ImGuiUtil.DrawTextButton("The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg);
@@ -58,26 +50,26 @@ public class CollectionSelectHeader : Luna.IUiService
 
     private void DrawTemporaryCheckbox()
     {
-        var hold = _config.IncognitoModifier.IsActive();
+        var hold = config.IncognitoModifier.IsActive();
         using (ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImUtf8.GlobalScale))
         {
-            var tint = _config.DefaultTemporaryMode
+            var tint = config.DefaultTemporaryMode
                 ? ImGuiCol.Text.Tinted(ColorId.TemporaryModSettingsTint)
                 : ImGui.GetColorU32(ImGuiCol.TextDisabled);
             using var color = ImRaii.PushColor(ImGuiCol.ButtonHovered, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
                 .Push(ImGuiCol.ButtonActive, ImGui.GetColorU32(ImGuiCol.FrameBg), !hold)
-                .Push(ImGuiCol.Border,       tint,                                _config.DefaultTemporaryMode);
+                .Push(ImGuiCol.Border,       tint,                                config.DefaultTemporaryMode);
             if (ImUtf8.IconButton(FontAwesomeIcon.Stopwatch, ""u8, default, false, tint, ImGui.GetColorU32(ImGuiCol.FrameBg)) && hold)
             {
-                _config.DefaultTemporaryMode = !_config.DefaultTemporaryMode;
-                _config.Save();
+                config.DefaultTemporaryMode = !config.DefaultTemporaryMode;
+                config.Save();
             }
         }
 
         ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
             "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired."u8);
         if (!hold)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"\nHold {_config.IncognitoModifier} while clicking to toggle.");
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.");
     }
 
     private enum CollectionState
@@ -116,7 +108,7 @@ public class CollectionSelectHeader : Luna.IUiService
 
     private (ModCollection?, string, string, bool) GetPlayerCollectionInfo()
     {
-        var collection = _resolver.PlayerCollection();
+        var collection = resolver.PlayerCollection();
         return CheckCollection(collection) switch
         {
             CollectionState.Empty => (collection, "None", "The loaded player character is configured to use no mods.", true),
@@ -145,7 +137,7 @@ public class CollectionSelectHeader : Luna.IUiService
 
     private (ModCollection?, string, string, bool) GetInheritedCollectionInfo()
     {
-        var collection = _selection.Mod == null ? null : _selection.Collection;
+        var collection = selection.Mod == null ? null : selection.Collection;
         return CheckCollection(collection, true) switch
         {
             CollectionState.Unavailable => (null, "Not Inherited",

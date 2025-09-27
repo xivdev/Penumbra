@@ -2,8 +2,8 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
@@ -52,7 +52,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
     private string _resourceManagerFilter = string.Empty;
 
     /// <summary> Draw a single resource map. </summary>
-    private unsafe void DrawResourceMap(ResourceCategory category, uint ext, StdMap<uint, Pointer<ResourceHandle>>* map)
+    private unsafe void DrawResourceMap(ResourceCategory category, uint ext, StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>* map)
     {
         if (map == null)
             return;
@@ -86,7 +86,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
 
             var resource = (Interop.Structs.ResourceHandle*)r;
             ImGui.TableNextColumn();
-            UiHelpers.Text(resource);
+            Im.Text(resource->FileName().Span);
             if (ImGui.IsItemClicked())
             {
                 var data = resource->CsHandle.GetData();
@@ -106,7 +106,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
 
     /// <summary> Draw a full category for the resource manager. </summary>
     private unsafe void DrawCategoryContainer(ResourceCategory category,
-        StdMap<uint, Pointer<StdMap<uint, Pointer<ResourceHandle>>>>* map, int idx)
+        StdMap<uint, FFXIVClientStructs.Interop.Pointer<StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>>>* map, int idx)
     {
         if (map == null)
             return;

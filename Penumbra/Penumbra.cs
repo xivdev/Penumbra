@@ -1,5 +1,4 @@
 using Dalamud.Plugin;
-using Dalamud.Bindings.ImGui;
 using OtterGui;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
@@ -17,6 +16,7 @@ using OtterGui.Tasks;
 using Penumbra.UI;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Dalamud.Plugin.Services;
+using ImSharp;
 using Lumina.Excel.Sheets;
 using Luna;
 using Penumbra.Communication;
@@ -24,9 +24,9 @@ using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
-using Penumbra.Interop.Hooks.ResourceLoading;
 using DynamisIpc = OtterGui.Services.DynamisIpc;
 using MessageService = Penumbra.Services.MessageService;
+using MouseButton = Penumbra.Api.Enums.MouseButton;
 
 namespace Penumbra;
 
@@ -72,20 +72,17 @@ public class Penumbra : IDalamudPlugin
                 : "Unknown";
             Log.Information(
                 $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
-            _services.GetService<BackupService>(); // Initialize because not required anywhere else.
-            _config            = _services.GetService<Configuration>();
-            _characterUtility  = _services.GetService<CharacterUtility>();
-            _tempMods          = _services.GetService<TempModManager>();
-            _residentResources = _services.GetService<ResidentResourceManager>();
-            _services.GetService<ResourceManagerService>(); // Initialize because not required anywhere else.
+            _services.GetService<BackupService>(); // Initialize early to create backups.
+            _config              = _services.GetService<Configuration>();
+            _characterUtility    = _services.GetService<CharacterUtility>();
+            _tempMods            = _services.GetService<TempModManager>();
+            _residentResources   = _services.GetService<ResidentResourceManager>();
             _modManager          = _services.GetService<ModManager>();
             _collectionManager   = _services.GetService<CollectionManager>();
             _tempCollections     = _services.GetService<TempCollectionManager>();
             _redrawService       = _services.GetService<RedrawService>();
             _communicatorService = _services.GetService<CommunicatorService>();
             _gameData            = _services.GetService<IDataManager>();
-            _services.GetService<ResourceService>(); // Initialize because not required anywhere else.
-            _services.GetService<ModCacheManager>(); // Initialize because not required anywhere else.
             _collectionManager.Caches.CreateNecessaryCaches();
             _services.GetService<PathResolver>();
 
@@ -118,13 +115,13 @@ public class Penumbra : IDalamudPlugin
     {
         _services.GetService<IpcProviders>();
         var itemSheet = _services.GetService<IDataManager>().GetExcelSheet<Item>();
-        _communicatorService.ChangedItemHover.Subscribe((in ChangedItemHover.Arguments args) =>
+        _communicatorService.ChangedItemHover.Subscribe((in args) =>
         {
             if (args.Data is IdentifiedItem { Item.Id.IsItem: true })
-                ImGui.TextUnformatted("Left Click to create an item link in chat.");
+                Im.Text("Left Click to create an item link in chat."u8);
         }, ChangedItemHover.Priority.Link);
 
-        _communicatorService.ChangedItemClick.Subscribe((in ChangedItemClick.Arguments args) =>
+        _communicatorService.ChangedItemClick.Subscribe((in args) =>
         {
             if (args is { Button: MouseButton.Left, Data: IdentifiedItem item } && itemSheet.GetRow(item.Item.ItemId.Id) is { } i)
                 Messager.LinkItem(i);
@@ -255,10 +252,6 @@ public class Penumbra : IDalamudPlugin
         sb.Append(
             $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
 
-        void PrintCollection(ModCollection c, CollectionCache _)
-            => sb.Append(
-                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.Inheritance.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
-
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                `** {_collectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:           `** {_tempCollections.Count}\n");
@@ -280,6 +273,10 @@ public class Penumbra : IDalamudPlugin
             PrintCollection(collection, collection._cache!);
 
         return sb.ToString();
+
+        void PrintCollection(ModCollection c, CollectionCache _)
+            => sb.Append(
+                $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.Inheritance.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
     }
 
     private static string CollectLocaleEnvironmentVariables()

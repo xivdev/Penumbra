@@ -1,6 +1,7 @@
 using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.Communication;
 
@@ -42,6 +43,9 @@ public sealed class CollectionChange(Logger log)
 
         /// <seealso cref="Mods.ModSelection.OnCollectionChange"/>
         ModSelection = 10,
+
+        /// <seealso cref="CollectionCombo.OnCollectionChanged"/>
+        CollectionCombo = 15,
     }
 
     /// <summary> The arguments for a collection change event. </summary>

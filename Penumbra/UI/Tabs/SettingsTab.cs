@@ -104,30 +104,104 @@ public class SettingsTab : ITab, IUiService
         _tutorial.OpenTutorial(BasicTutorialSteps.Faq2);
     }
 
-    private readonly TwoPanelLayout _test = new();
+    public sealed class TestFlattened : IFlattenedTreeNode
+    {
+        public int ParentIndex      { get; set; }
+        public int StartsLineTo     { get; set; }
+        public int IndentationDepth { get; set; }
+
+        public void Draw()
+        {
+            Im.Tree.Node("",
+                TreeNodeFlags.DefaultOpen
+              | TreeNodeFlags.NoTreePushOnOpen); //Im.Selectable($"{ParentIndex} {StartsLineTo} {IndentationDepth}"));
+        }
+    }
+
+    private static readonly List<TestFlattened> List =
+    [
+        new()
+        {
+            IndentationDepth = 0,
+            ParentIndex      = -1,
+            StartsLineTo     = 2,
+        },
+        new()
+        {
+            IndentationDepth = 1,
+            ParentIndex      = 0,
+            StartsLineTo     = -1,
+        },
+        new()
+        {
+            IndentationDepth = 1,
+            ParentIndex      = 0,
+            StartsLineTo     = -1,
+        },
+        new()
+        {
+            IndentationDepth = 0,
+            ParentIndex      = -1,
+            StartsLineTo     = 8,
+        },
+        new()
+        {
+            IndentationDepth = 1,
+            ParentIndex      = 3,
+            StartsLineTo     = 6,
+        },
+        new()
+        {
+            IndentationDepth = 2,
+            ParentIndex      = 4,
+            StartsLineTo     = -1,
+        },
+        new()
+        {
+            IndentationDepth = 2,
+            ParentIndex      = 4,
+            StartsLineTo     = 7,
+        },
+        new()
+        {
+            IndentationDepth = 3,
+            ParentIndex      = 6,
+            StartsLineTo     = -1,
+        },
+        new()
+        {
+            IndentationDepth = 1,
+            ParentIndex      = 3,
+            StartsLineTo     = -1,
+        },
+    ];
 
     public void DrawContent()
     {
         using var child = ImRaii.Child("##SettingsTab", -Vector2.One, false);
         if (!child)
             return;
-        
-        DrawEnabledBox();
-        EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
-            v => _config.Ephemeral.FixMainWindow = v);
-        
-        ImGui.NewLine();
-        DrawRootFolder();
-        DrawDirectoryButtons();
-        ImGui.NewLine();
-        ImGui.NewLine();
-        
-        DrawGeneralSettings();
-        _migrationDrawer.Draw();
-        DrawColorSettings();
-        DrawPredefinedTagsSection();
-        DrawAdvancedSettings();
-        DrawSupportButtons();
+
+        using var c2 = ImRaii.Child("a", new Vector2(300, 5 * ImGui.GetTextLineHeightWithSpacing()), true,
+            ImGuiWindowFlags.AlwaysVerticalScrollbar);
+        TreeLine.Draw(List, 0xFFFFFFFF);
+
+        //DrawEnabledBox();
+        //EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
+        //    v => _config.Ephemeral.FixMainWindow = v);
+        //
+        //ImGui.NewLine();
+        //DrawRootFolder();
+        //DrawDirectoryButtons();
+        //ImGui.NewLine();
+        //ImGui.NewLine();
+        //
+        //DrawGeneralSettings();
+        //_migrationDrawer.Draw();
+        //DrawColorSettings();
+        //DrawPredefinedTagsSection();
+        //DrawAdvancedSettings();
+        //DrawSupportButtons();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

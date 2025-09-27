@@ -6,7 +6,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable, Luna.IService
+public class ModCacheManager : IDisposable, Luna.IRequiredService
 {
     private readonly Configuration        _config;
     private readonly CommunicatorService  _communicator;

@@ -1,46 +1,64 @@
-using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
-using OtterGui.Raii;
-using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 
 namespace Penumbra.UI.CollectionTab;
 
-public sealed class CollectionCombo(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
-    : FilterComboCache<ModCollection>(items, MouseWheelType.Control, Penumbra.Log)
+public sealed class CollectionCombo : SimpleFilterCombo<ModCollection>, IDisposable, IUiService
 {
-    private readonly ImRaii.Color _color = new();
+    private readonly Im.ColorDisposable _color = new();
+    private readonly Im.StyleDisposable _style = new();
+    private readonly CollectionManager  _manager;
+    private readonly CollectionChange   _event;
 
-    protected override void DrawFilter(int currentSelected, float width)
+    public CollectionCombo(CollectionManager manager, CollectionChange @event)
+        : base(SimpleFilterType.Text)
     {
-        _color.Dispose();
-        base.DrawFilter(currentSelected, width);
+        _manager = manager;
+        _event   = @event;
+        Current  = _manager.Active.Current;
+        _event.Subscribe(OnCollectionChanged, CollectionChange.Priority.CollectionCombo);
+        ClearFilterOnSelection     = true;
+        ClearFilterOnCacheDisposal = true;
     }
 
-    public void Draw(string label, float width, uint color)
+    private void OnCollectionChanged(in CollectionChange.Arguments arguments)
     {
-        var current = manager.Active.Current;
-        if (current != CurrentSelection)
-        {
-            CurrentSelectionIdx = Items.IndexOf(current);
-            UpdateSelection(current);
-        }
+        if (arguments.Type is not CollectionType.Current)
+            return;
 
-        _color.Push(ImGuiCol.FrameBg, color).Push(ImGuiCol.FrameBgHovered, color);
-        if (Draw(label, current.Identity.Name, string.Empty, width, ImGui.GetTextLineHeightWithSpacing()) && CurrentSelection != null)
-            manager.Active.SetCollection(CurrentSelection, CollectionType.Current);
-        _color.Dispose();
+        Current = _manager.Active.Current;
     }
 
-    protected override string ToString(ModCollection obj)
-        => obj.Identity.Name;
+    public override StringU8 DisplayString(in ModCollection value)
+        => new(value.Identity.Name);
 
-    protected override void DrawCombo(string label, string preview, string tooltip, int currentSelected, float previewWidth, float itemHeight,
-        ImGuiComboFlags flags)
+    public override string FilterString(in ModCollection value)
+        => value.Identity.Name;
+
+    public override IEnumerable<ModCollection> GetBaseItems()
+        => _manager.Storage.OrderBy(c => c.Identity.Name);
+
+    public void Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, float width, Rgba32 color)
     {
-        base.DrawCombo(label, preview, tooltip, currentSelected, previewWidth, itemHeight, flags);
-        ImUtf8.HoverTooltip("Control and mouse wheel to scroll."u8);
+        _color.Push(ImGuiColor.FrameBackground, color)
+            .Push(ImGuiColor.FrameBackgroundHovered, color);
+        if (Draw(label, Current!, "Control and mouse wheel to scroll."u8, width, out var collection))
+            _manager.Active.SetCollection(collection, CollectionType.Current);
+
+        _color.Dispose();
+        _style.Dispose();
+    }
+
+    public void Dispose()
+        => _event.Unsubscribe(OnCollectionChanged);
+
+    protected override void PreDrawFilter()
+    {
+        _color.Dispose();
+        _style.PushDefault(ImStyleDouble.ItemSpacing);
+        base.PreDrawFilter();
     }
 }

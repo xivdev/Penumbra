@@ -1,12 +1,10 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
+using ImSharp;
+using Luna;
 using Penumbra.UI.Classes;
-using OtterGui.Raii;
-using OtterGui.Text;
 
 namespace Penumbra.UI;
 
-public class IncognitoService(TutorialService tutorial, Configuration config) : Luna.IService
+public class IncognitoService(TutorialService tutorial, Configuration config) : IUiService
 {
     public bool IncognitoMode
         => config.Ephemeral.IncognitoMode;
@@ -15,18 +13,18 @@ public class IncognitoService(TutorialService tutorial, Configuration config) : 
     {
         var hold  = config.IncognitoModifier.IsActive();
         var color = ColorId.FolderExpanded.Value();
-        using (ImRaii.PushFrameBorder(ImUtf8.GlobalScale, color))
+        using (new Im.ColorStyleDisposable().PushBorder(ImStyleBorder.Frame, color))
         {
             var tt   = IncognitoMode ? "Toggle incognito mode off."u8 : "Toggle incognito mode on."u8;
-            var icon = IncognitoMode ? FontAwesomeIcon.EyeSlash : FontAwesomeIcon.Eye;
-            if (ImUtf8.IconButton(icon, tt, new Vector2(width, ImUtf8.FrameHeight), false, color) && hold)
+            var icon = IncognitoMode ? LunaStyle.IncognitoOn : LunaStyle.IncognitoOff;
+            if (ImEx.Icon.Button(icon, tt, size: new Vector2(width, Im.Style.FrameHeight), textColor: color) && hold)
             {
                 config.Ephemeral.IncognitoMode = !IncognitoMode;
                 config.Ephemeral.Save();
             }
 
             if (!hold)
-                ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.");
+                Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.");
         }
 
         tutorial.OpenTutorial(BasicTutorialSteps.Incognito);
