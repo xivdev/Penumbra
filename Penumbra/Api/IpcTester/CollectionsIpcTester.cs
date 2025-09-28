@@ -54,6 +54,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (_oldCollection is not null)
             Im.Text(!_oldCollection.HasValue ? "Created" : _oldCollection.ToString()!);
 
+        table.NextRow();
         table.DrawColumn(GetCollectionsByIdentifier.Label);
         table.DrawColumn("Collection Identifier"u8);
         var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionIdString);
@@ -93,6 +94,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         table.DrawColumn(GetCollections.Label);
         table.DrawColumn("Collections"u8);
         DrawCollectionPopup();
+        table.NextColumn();
         if (Im.Button("Get##Collections"u8))
         {
             _collections = new GetCollections(pi).Invoke();
@@ -108,6 +110,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
         table.DrawColumn(SetCollection.Label);
         table.DrawColumn("Set Special Collection"u8);
+        table.NextColumn();
         if (Im.Button("Set##SpecialCollection"u8))
             (_returnCode, _oldCollection) =
                 new SetCollection(pi).Invoke(_type, _collectionId.GetValueOrDefault(Guid.Empty), _allowCreation, _allowDeletion);
@@ -117,6 +120,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
         table.DrawColumn(SetCollectionForObject.Label);
         table.DrawColumn("Set Object Collection"u8);
+        table.NextColumn();
         if (Im.Button("Set##ObjectCollection"u8))
             (_returnCode, _oldCollection) = new SetCollectionForObject(pi).Invoke(_objectIdx, _collectionId.GetValueOrDefault(Guid.Empty),
                 _allowCreation, _allowDeletion);
@@ -127,6 +131,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         table.DrawColumn(GetChangedItemsForCollection.Label);
         table.DrawColumn("Changed Item List"u8);
         DrawChangedItemPopup();
+        table.NextColumn();
         if (Im.Button("Get##ChangedItems"u8))
         {
             var items = new GetChangedItemsForCollection(pi).Invoke(_collectionId.GetValueOrDefault(Guid.Empty));
@@ -187,6 +192,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
     private static void DrawCollection(Im.TableDisposable table, (Guid Id, string Name)? collection)
     {
+        table.NextColumn();
         if (collection == null)
         {
             Im.Text("<Unassigned>"u8);
