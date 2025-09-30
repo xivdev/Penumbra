@@ -37,6 +37,7 @@ public class SettingsTab : ITab, IUiService
     private readonly Penumbra                    _penumbra;
     private readonly FileDialogService           _fileDialog;
     private readonly ModManager                  _modManager;
+    private readonly FileWatcher                 _fileWatcher;
     private readonly ModExportManager            _modExportManager;
     private readonly ModFileSystemSelector       _selector;
     private readonly CharacterUtility            _characterUtility;
@@ -65,7 +66,7 @@ public class SettingsTab : ITab, IUiService
 
     public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
-        CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, HttpApi httpApi,
+        CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, FileWatcher fileWatcher, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
@@ -82,6 +83,7 @@ public class SettingsTab : ITab, IUiService
         _characterUtility            = characterUtility;
         _residentResources           = residentResources;
         _modExportManager            = modExportManager;
+        _fileWatcher                 = fileWatcher;
         _httpApi                     = httpApi;
         _dalamudSubstitutionProvider = dalamudSubstitutionProvider;
         _compactor                   = compactor;
@@ -647,6 +649,10 @@ public class SettingsTab : ITab, IUiService
         DrawDefaultModImportFolder();
         DrawPcpFolder();
         DrawDefaultModExportPath();
+        Checkbox("Enable Automatic Import of Mods from Directory",
+            "Enables a File Watcher that automatically listens for Mod files that enter, causing Penumbra to automatically import these mods.",
+            _config.EnableDirectoryWatch, v => _config.EnableDirectoryWatch = v);
+        DrawFileWatcherPath();
     }
 
 
@@ -724,6 +730,45 @@ public class SettingsTab : ITab, IUiService
         ImGuiUtil.LabeledHelpMarker("Default Mod Export Directory",
             "Set the directory mods get saved to when using the export function or loaded from when reimporting backups.\n"
           + "Keep this empty to use the root directory.");
+    }
+
+    private string _tempWatchDirectory = string.Empty;
+    /// <summary> Draw input for the Automatic Mod import path. </summary>
+    private void DrawFileWatcherPath()
+    {
+        var tmp = _config.WatchDirectory;
+        var spacing = new Vector2(UiHelpers.ScaleX3);
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
+        ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
+        if (ImGui.InputText("##fileWatchPath", ref tmp, 256))
+            _tempWatchDirectory = tmp;
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            _fileWatcher.UpdateDirectory(_tempWatchDirectory);
+
+        ImGui.SameLine();
+        if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##fileWatch", UiHelpers.IconButtonSize,
+                "Select a directory via dialog.", false, true))
+        {
+            var startDir = _config.WatchDirectory.Length > 0 && Directory.Exists(_config.WatchDirectory)
+                ? _config.WatchDirectory
+                : Directory.Exists(_config.ModDirectory)
+                    ? _config.ModDirectory
+                    : null;
+            _fileDialog.OpenFolderPicker("Choose Automatic Import Directory", (b, s) =>
+            {
+                if (b)
+                { 
+                    _fileWatcher.UpdateDirectory(s);
+                    _config.WatchDirectory = s;
+                    _config.Save();
+                }
+            }, startDir, false);
+        }
+
+        style.Pop();
+        ImGuiUtil.LabeledHelpMarker("Automatic Import Director",
+            "Choose the Directory the File Watcher listens to.");
     }
 
     /// <summary> Draw input for the default name to input as author into newly generated mods. </summary>
