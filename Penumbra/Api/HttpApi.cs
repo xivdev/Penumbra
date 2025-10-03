@@ -150,7 +150,7 @@ public class HttpApi : IDisposable, Luna.IApiService
                     if (data.State.HasValue)
                         api.ModSettings.TrySetMod(collection, data.ModPath, data.ModName, data.State.Value);
                     if (data.Priority.HasValue)
-                        api.ModSettings.TrySetModPriority(collection, data.ModPath, data.ModName, data.Priority.Value.Value);
+                        api.ModSettings.TrySetModPriority(collection, data.ModPath, data.ModName, data.Priority.Value);
                     foreach (var (group, settings) in data.Settings ?? [])
                         api.ModSettings.TrySetModSettings(collection, data.ModPath, data.ModName, group, settings);
                 }
@@ -191,7 +191,7 @@ public class HttpApi : IDisposable, Luna.IApiService
             string ModName,
             bool? Inherit,
             bool? State,
-            ModPriority? Priority,
+            int? Priority,
             Dictionary<string, List<string>>? Settings)
         {
             public SetModSettingsData()
