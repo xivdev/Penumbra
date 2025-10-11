@@ -137,7 +137,7 @@ public sealed unsafe class CollectionResolver(
             {
                 var item       = charaEntry.Value;
                 var identifier = actors.CreatePlayer(new ByteString(item->Name), item->HomeWorldId);
-                Penumbra.Log.Verbose(
+                Penumbra.Log.Excessive(
                     $"Identified {identifier.Incognito(null)} in cutscene for actor {idx + 200} at 0x{(ulong)gameObject:X} of race {(gameObject->IsCharacter() ? ((Character*)gameObject)->DrawData.CustomizeData.Race.ToString() : "Unknown")}.");
                 if (identifier.IsValid && CollectionByIdentifier(identifier) is { } coll)
                 {
