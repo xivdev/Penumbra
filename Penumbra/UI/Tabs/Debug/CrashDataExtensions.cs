@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.CrashHandler;
@@ -23,7 +24,7 @@ public static class CrashDataExtensions
             ImGui.TextUnformatted(nameof(data.TotalVFXFuncsInvoked));
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using (ImRaii.Group())
         {
             ImGui.TextUnformatted(data.Mode);

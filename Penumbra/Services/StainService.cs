@@ -2,6 +2,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
+using ImSharp;
 using OtterGui.Widgets;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
@@ -9,6 +10,7 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.AdvancedWindow.Materials;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.Services;
 
@@ -57,12 +59,12 @@ public class StainService : Luna.IService
             if (selection == 0 || !stmFile.TryGetValue(Items[globalIdx], selection, out var colors))
                 return ret;
 
-            ImGui.SameLine();
+            Im.Line.Same();
             var frame = new Vector2(ImGui.GetTextLineHeight());
             ImGui.ColorButton("D", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.DiffuseColor), 1), 0, frame);
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.ColorButton("S", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.SpecularColor), 1), 0, frame);
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.ColorButton("E", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.EmissiveColor), 1), 0, frame);
             return ret;
         }

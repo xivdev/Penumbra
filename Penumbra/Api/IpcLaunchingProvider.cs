@@ -1,11 +1,11 @@
 using Dalamud.Plugin;
-using OtterGui.Log;
+using Luna;
 using Penumbra.Api.Api;
 using Serilog.Events;
 
 namespace Penumbra.Api;
 
-public sealed class IpcLaunchingProvider : Luna.IApiService
+public sealed class IpcLaunchingProvider : IApiService
 {
     public IpcLaunchingProvider(IDalamudPluginInterface pi, Logger log)
     {

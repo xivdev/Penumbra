@@ -1,6 +1,7 @@
 ﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
+using ImSharp;
 using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -155,7 +156,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
                 ret                        = true;
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
         }
 
         ImGui.NewLine();
@@ -250,7 +251,7 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
                         _modManager.DataEditor.ChangeLocalTag(mod, localIdx, string.Empty);
                     }
             }
-            ImGui.SameLine();
+            Im.Line.Same();
 
             color.Pop();
         }

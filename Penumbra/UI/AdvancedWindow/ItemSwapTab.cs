@@ -1,5 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -24,6 +25,7 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -421,7 +423,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (ImGui.InputTextWithHint("##newModName", "New Mod Name...", ref _newModName, 64))
         { }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var tt = !newModAvailable
             ? "No swap is currently loaded."
             : _newModName.Length == 0
@@ -430,7 +432,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (ImGuiUtil.DrawDisabledButton("Create New Mod", new Vector2(width / 2, 0), tt, !newModAvailable || _newModName.Length == 0))
             CreateMod();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * UiHelpers.Scale);
         ImGui.Checkbox("Use File Swaps", ref _useFileSwaps);
         ImGuiUtil.HoverTooltip("Instead of writing every single non-default file to the newly created mod or option,\n"
@@ -440,12 +442,12 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (ImGui.InputTextWithHint("##groupName", "Group Name...", ref _newGroupName, 32))
             UpdateOption();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth((width - ImGui.GetStyle().ItemSpacing.X) / 2);
         if (ImGui.InputTextWithHint("##optionName", "New Option Name...", ref _newOptionName, 32))
             UpdateOption();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         tt = !_subModValid
             ? "An option with that name already exists in that group, or no name is specified."
             : !newModAvailable
@@ -454,7 +456,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (ImGuiUtil.DrawDisabledButton("Create New Option", new Vector2(width / 2, 0), tt, !newModAvailable || !_subModValid))
             CreateOption();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * UiHelpers.Scale);
         _dirty |= ImGui.Checkbox("Use Entire Collection", ref _useCurrentCollection);
         ImGuiUtil.HoverTooltip(
@@ -561,7 +563,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         if (_affectedItems is not { Count: > 1 })
             return;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
         if (ImGui.IsItemHovered())
@@ -603,7 +605,7 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
 
         if (type == SwapType.Ring)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             _dirty |= ImGui.Checkbox("Swap Right Ring", ref _useRightRing);
         }
 
@@ -615,14 +617,14 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
             ImGui.GetTextLineHeightWithSpacing());
         if (type == SwapType.Ring)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             _dirty |= ImGui.Checkbox("Swap Left Ring", ref _useLeftRing);
         }
 
         if (_affectedItems is not { Count: > 1 })
             return;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
         if (ImGui.IsItemHovered())
@@ -707,12 +709,12 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         _dirty |= Combos.Gender("##Gender", _currentGender, out _currentGender);
         if (drawRace == 1)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             _dirty |= Combos.Race("##Race", _currentRace, out _currentRace, InputWidth);
         }
         else if (drawRace == 2)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             if (_currentRace is not ModelRace.Miqote and not ModelRace.AuRa and not ModelRace.Hrothgar)
                 _currentRace = ModelRace.Miqote;
 

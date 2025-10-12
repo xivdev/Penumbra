@@ -2,6 +2,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Plugin;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Communication;
@@ -208,7 +209,7 @@ public class ModPanelHeader : IDisposable
             }
 
             DrawAuthor();
-            ImGui.SameLine();
+            Im.Line.Same();
             DrawWebsite();
         }
     }
@@ -218,7 +219,7 @@ public class ModPanelHeader : IDisposable
     {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         ImGuiUtil.TextColored(Colors.MetaInfoText, "by ");
-        ImGui.SameLine();
+        Im.Line.Same();
         style.Pop();
         ImGui.TextUnformatted(_modAuthor);
     }
@@ -253,7 +254,7 @@ public class ModPanelHeader : IDisposable
         {
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
             ImGuiUtil.TextColored(Colors.MetaInfoText, "from ");
-            ImGui.SameLine();
+            Im.Line.Same();
             style.Pop();
             ImGui.TextUnformatted(_modWebsite);
         }

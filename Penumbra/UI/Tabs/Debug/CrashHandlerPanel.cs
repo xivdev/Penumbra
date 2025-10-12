@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.DragDrop;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.CrashHandler;
@@ -60,13 +61,13 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
         if (ImGui.Button("Enable"))
             service.Enable();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Disable"))
             service.Disable();
 
         if (ImGui.Button("Shutdown Crash Handler"))
             service.CloseCrashHandler();
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Relaunch Crash Handler"))
             service.LaunchCrashHandler();
     }

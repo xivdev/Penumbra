@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
+using ImSharp;
 using Luna;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -95,7 +96,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
     {
         var width = ImGuiHelpers.ScaledVector2(150, 0);
         ImUtf8.TextFrameAligned("Multi Tagger:"u8);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         var predefinedTagsEnabled = tagManager.Enabled;
         var inputWidth = predefinedTagsEnabled

@@ -2,6 +2,7 @@ using System.Collections.Frozen;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
@@ -78,18 +79,18 @@ public static class FeatureChecker
                     editor.ChangeRequiredFeatures(mod, mod.RequiredFeatures | flag);
                 }
 
-                ImGui.SameLine();
+                Im.Line.Same();
             }
         }
 
         if (ImUtf8.ButtonEx("Compute"u8, "Compute the required features automatically from the used features."u8, size))
             editor.ChangeRequiredFeatures(mod, mod.ComputeRequiredFeatures());
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Clear"u8, "Clear all required features."u8, size))
             editor.ChangeRequiredFeatures(mod, FeatureFlags.None);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImUtf8.Text("Required Features"u8);
     }
 }

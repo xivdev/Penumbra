@@ -1,8 +1,8 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
-using OtterGui.Text.Widget;
 using OtterGuiInternal.Utility;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -31,7 +31,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             editor.ModManager.OptionEditor.ImcEditor.ChangeAllVariants(group, allVariants);
         ImUtf8.HoverTooltip("Make this group overwrite all corresponding variants for this identifier, not just the one specified."u8);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var onlyAttributes = group.OnlyAttributes;
         if (ImUtf8.Checkbox("Only Attributes"u8, ref onlyAttributes))
             editor.ModManager.OptionEditor.ImcEditor.ChangeOnlyAttributes(group, onlyAttributes);
@@ -44,7 +44,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             ImUtf8.TextFrameAligned("Decal ID"u8);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using (ImUtf8.Group())
         {
             changes |= ImcMetaDrawer.DrawMaterialId(defaultEntry, ref entry, true);
@@ -60,7 +60,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             ImUtf8.TextFrameAligned("Can Be Disabled"u8);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
 
         using (ImUtf8.Group())
         {
@@ -168,7 +168,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         }
     }
 
-    private sealed class NegativeCheckbox : MultiStateCheckbox<bool>
+    private sealed class NegativeCheckbox : OtterGui.Text.Widget.MultiStateCheckbox<bool>
     {
         public static readonly NegativeCheckbox Instance = new();
 

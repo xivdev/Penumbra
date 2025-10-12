@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.GameData.Files.MaterialStructs;
@@ -29,7 +30,7 @@ public partial class MtrlTab
         if (_materialPreviewers.Count != 0 || _colorTablePreviewers.Count != 0)
             return;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using var c = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
         ImUtf8.Text(
             "The current material has not been found on your character. Please check the Import from Screen tab for more information."u8);

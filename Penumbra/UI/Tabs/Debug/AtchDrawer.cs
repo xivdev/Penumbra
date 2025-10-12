@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;
@@ -15,7 +16,7 @@ public static class AtchDrawer
             ImUtf8.Text("States: "u8);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using (ImUtf8.Group())
         {
             ImUtf8.Text($"{file.Points.Count}");

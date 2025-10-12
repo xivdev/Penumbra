@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -70,7 +71,7 @@ public partial class MtrlTab
                     ImGuiUtil.ColorConvertFloat3ToU32(PseudoSqrtRgb((Vector3)table[(pairIndex << 1) | 1].EmissiveColor))
                 );
                 if (j < 7)
-                    ImGui.SameLine();
+                    Im.Line.Same();
 
                 var cursor = ImGui.GetCursorScreenPos();
                 ImGui.SetCursorScreenPos(rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 0.5f) - highlighterSize.Y * 0.5f });
@@ -244,7 +245,7 @@ public partial class MtrlTab
         ImUtf8.SameLineInner();
         ColorTableRowHighlightButton(rowIdx, disabled);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         CenteredTextInRest($"Row {(rowIdx >> 1) + 1}{"AB"[rowIdx & 1]}");
 
         return ret;
@@ -370,7 +371,7 @@ public partial class MtrlTab
         }
 
         ImGui.Dummy(new Vector2(64.0f, 0.0f));
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragScalar("Sphere Map Intensity"u8, default, (float)row.SphereMapMask * 100.0f, "%.0f%%"u8, HalfMinValue * 100.0f,
             HalfMaxValue * 100.0f,                    1.0f,

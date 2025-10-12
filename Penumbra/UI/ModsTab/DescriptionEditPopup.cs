@@ -1,5 +1,6 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
@@ -74,7 +75,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
 
         ImGui.SetCursorPosX((inputSize.X - width) / 2);
         DrawSaveButton(buttonSize);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawCancelButton(buttonSize);
     }
 

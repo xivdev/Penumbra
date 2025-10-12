@@ -1,7 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
-using OtterGui;
-using OtterGui.Raii;
+using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 
@@ -22,48 +20,35 @@ public class EditingIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Editing");
+        using var _ = Im.Tree.Node("Editing"u8);
         if (!_)
             return;
 
-        ImGui.InputTextWithHint("##inputPath",   "Input Texture Path...",    ref _inputPath,   256);
-        ImGui.InputTextWithHint("##outputPath",  "Output Texture Path...",   ref _outputPath,  256);
-        ImGui.InputTextWithHint("##inputPath2",  "Input Texture Path 2...",  ref _inputPath2,  256);
-        ImGui.InputTextWithHint("##outputPath2", "Output Texture Path 2...", ref _outputPath2, 256);
-        TypeCombo();
-        ImGui.Checkbox("Add MipMaps", ref _mipMaps);
+        Im.Input.Text("##inputPath"u8,   ref _inputPath,   "Input Texture Path..."u8);
+        Im.Input.Text("##outputPath"u8,  ref _outputPath,  "Output Texture Path..."u8);
+        Im.Input.Text("##inputPath2"u8,  ref _inputPath2,  "Input Texture Path 2..."u8);
+        Im.Input.Text("##outputPath2"u8, ref _outputPath2, "Output Texture Path 2..."u8);
+        EnumCombo<TextureType>.Instance.Draw("Convert To"u8, ref _typeSelector, StringU8.Empty, 200 * Im.Style.GlobalScale);
+        Im.Checkbox("Add MipMaps"u8, ref _mipMaps);
 
-        using var table = ImRaii.Table("...", 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("..."u8, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(ConvertTextureFile.Label, (string)"Convert Texture 1");
-        if (ImGuiUtil.DrawDisabledButton("Save 1", Vector2.Zero, string.Empty, _task1 is { IsCompleted: false }))
+        IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 1"u8);
+        if (ImEx.Button("Save 1"u8, Vector2.Zero, StringU8.Empty, _task1 is { IsCompleted: false }))
             _task1 = new ConvertTextureFile(pi).Invoke(_inputPath, _outputPath, _typeSelector, _mipMaps);
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_task1 == null ? "Not Initiated" : _task1.Status.ToString());
-        if (ImGui.IsItemHovered() && _task1?.Status == TaskStatus.Faulted)
-            ImGui.SetTooltip(_task1.Exception?.ToString());
+        Im.Line.Same();
+        Im.Text(_task1 is null ? "Not Initiated"u8 : $"{_task1.Status}");
+        if (Im.Item.Hovered() && _task1?.Status is TaskStatus.Faulted)
+            Im.Tooltip.Set($"{_task1.Exception}");
 
-        IpcTester.DrawIntro(ConvertTextureFile.Label, (string)"Convert Texture 2");
-        if (ImGuiUtil.DrawDisabledButton("Save 2", Vector2.Zero, string.Empty, _task2 is { IsCompleted: false }))
+        IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 2"u8);
+        if (ImEx.Button("Save 2"u8, Vector2.Zero, StringU8.Empty, _task2 is { IsCompleted: false }))
             _task2 = new ConvertTextureFile(pi).Invoke(_inputPath2, _outputPath2, _typeSelector, _mipMaps);
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_task2 == null ? "Not Initiated" : _task2.Status.ToString());
-        if (ImGui.IsItemHovered() && _task2?.Status == TaskStatus.Faulted)
-            ImGui.SetTooltip(_task2.Exception?.ToString());
-    }
-
-    private void TypeCombo()
-    {
-        using var combo = ImRaii.Combo("Convert To", _typeSelector.ToString());
-        if (!combo)
-            return;
-
-        foreach (var value in Enum.GetValues<TextureType>())
-        {
-            if (ImGui.Selectable(value.ToString(), _typeSelector == value))
-                _typeSelector = value;
-        }
+        Im.Line.Same();
+        Im.Text(_task2 is null ? "Not Initiated"u8 : $"{_task2.Status}");
+        if (Im.Item.Hovered() && _task2?.Status is TaskStatus.Faulted)
+            Im.Tooltip.Set($"{_task2.Exception}");
     }
 }

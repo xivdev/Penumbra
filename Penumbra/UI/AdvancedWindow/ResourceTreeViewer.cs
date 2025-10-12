@@ -4,6 +4,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin.Services;
+using ImSharp;
 using Lumina.Data;
 using Luna;
 using OtterGui;
@@ -99,7 +100,7 @@ public class ResourceTreeViewer(
                 using var id = ImRaii.PushId(index);
 
                 ImUtf8.TextFrameAligned($"Collection: {(incognito.IncognitoMode ? tree.AnonymizedCollectionName : tree.CollectionName)}");
-                ImGui.SameLine();
+                Im.Line.Same();
                 if (ImUtf8.ButtonEx("Export Character Pack"u8,
                         "Note that this recomputes the current data of the actor if it still exists, and does not use the cached data."u8))
                 {
@@ -340,7 +341,7 @@ public class ResourceTreeViewer(
                             new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
                     }
 
-                    ImGui.SameLine();
+                    Im.Line.Same();
                     ImGui.SetCursorPosX(textPos);
                     ImUtf8.Text(resourceNode.ModRelativePath);
                 }

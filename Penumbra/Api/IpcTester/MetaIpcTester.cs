@@ -1,7 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
-using OtterGui.Raii;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Api.Api;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.Meta.Manipulations;
@@ -17,35 +15,34 @@ public class MetaIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Meta");
+        using var _ = Im.Tree.Node("Meta"u8);
         if (!_)
             return;
 
-        ImGui.InputInt("##metaIdx", ref _gameObjectIndex, 0, 0);
-        if (ImUtf8.InputText("##metaText"u8, ref _metaBase64, "Base64 Metadata..."u8))
-            if (!MetaApi.ConvertManips(_metaBase64, out _metaDict!, out _parsedVersion))
-                _metaDict ??= new MetaDictionary();
+        Im.Input.Scalar("##metaIdx"u8, ref _gameObjectIndex);
+        if (Im.Input.Text("##metaText"u8, ref _metaBase64, "Base64 Metadata..."u8))
+            _metaDict = MetaApi.ConvertManips(_metaBase64, out var m, out _parsedVersion) ? m : new MetaDictionary();
 
 
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetPlayerMetaManipulations.Label, "Player Meta Manipulations");
-        if (ImGui.Button("Copy to Clipboard##Player"))
+        IpcTester.DrawIntro(GetPlayerMetaManipulations.Label, "Player Meta Manipulations"u8);
+        if (Im.Button("Copy to Clipboard##Player"u8))
         {
             var base64 = new GetPlayerMetaManipulations(pi).Invoke();
-            ImGui.SetClipboardText(base64);
+            Im.Clipboard.Set(base64);
         }
 
-        IpcTester.DrawIntro(GetMetaManipulations.Label, "Game Object Manipulations");
-        if (ImGui.Button("Copy to Clipboard##GameObject"))
+        IpcTester.DrawIntro(GetMetaManipulations.Label, "Game Object Manipulations"u8);
+        if (Im.Button("Copy to Clipboard##GameObject"u8))
         {
             var base64 = new GetMetaManipulations(pi).Invoke(_gameObjectIndex);
-            ImGui.SetClipboardText(base64);
+            Im.Clipboard.Set(base64);
         }
 
-        IpcTester.DrawIntro(string.Empty, "Parsed Data");
-        ImUtf8.Text($"Version: {_parsedVersion}, Count: {_metaDict.Count}");
+        IpcTester.DrawIntro(string.Empty, "Parsed Data"u8);
+        Im.Text($"Version: {_parsedVersion}, Count: {_metaDict.Count}");
     }
 }

@@ -1,4 +1,3 @@
-using OtterGui.Log;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -159,7 +158,7 @@ public class TemporaryApi(
     }
 
     private (PenumbraApiEc ErrorCode, (bool, bool, int, Dictionary<string, List<string>>)? Settings, string Source) QueryTemporaryModSettings(
-        in LazyString args, ModCollection collection, string modDirectory, string modName, int key)
+        Lazy<string> args, ModCollection collection, string modDirectory, string modName, int key)
     {
         if (!modManager.TryGetMod(modDirectory, modName, out var mod))
             return (ApiHelpers.Return(PenumbraApiEc.ModMissing, args), null, string.Empty);
@@ -180,8 +179,7 @@ public class TemporaryApi(
 
 
     public PenumbraApiEc SetTemporaryModSettings(Guid collectionId, string modDirectory, string modName, bool inherit, bool enabled,
-        int priority,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
+        int priority, IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
     {
         var args = ApiHelpers.Args("CollectionId", collectionId, "ModDirectory", modDirectory, "ModName", modName, "Inherit", inherit,
             "Enabled", enabled,
@@ -205,7 +203,7 @@ public class TemporaryApi(
         return SetTemporaryModSettings(args, collection, modDirectory, modName, inherit, enabled, priority, options, source, key);
     }
 
-    private PenumbraApiEc SetTemporaryModSettings(in LazyString args, ModCollection collection, string modDirectory, string modName,
+    private PenumbraApiEc SetTemporaryModSettings(Lazy<string> args, ModCollection collection, string modDirectory, string modName,
         bool inherit, bool enabled, int priority, IReadOnlyDictionary<string, IReadOnlyList<string>> options, string source, int key)
     {
         if (collection.Identity.Index <= 0)
@@ -218,7 +216,7 @@ public class TemporaryApi(
             if (collection.GetTempSettings(mod.Index) is { Lock: > 0 } oldSettings && oldSettings.Lock != key)
                 return ApiHelpers.Return(PenumbraApiEc.TemporarySettingDisallowed, args);
 
-        var newSettings = new TemporaryModSettings()
+        var newSettings = new TemporaryModSettings
         {
             ForceInherit = inherit,
             Enabled      = enabled,
@@ -263,7 +261,7 @@ public class TemporaryApi(
         return RemoveTemporaryModSettings(args, collection, modDirectory, modName, key);
     }
 
-    private PenumbraApiEc RemoveTemporaryModSettings(in LazyString args, ModCollection collection, string modDirectory, string modName, int key)
+    private PenumbraApiEc RemoveTemporaryModSettings(Lazy<string> args, ModCollection collection, string modDirectory, string modName, int key)
     {
         if (collection.Identity.Index <= 0)
             return ApiHelpers.Return(PenumbraApiEc.NothingChanged, args);
@@ -298,7 +296,7 @@ public class TemporaryApi(
         return RemoveAllTemporaryModSettings(args, collection, key);
     }
 
-    private PenumbraApiEc RemoveAllTemporaryModSettings(in LazyString args, ModCollection collection, int key)
+    private PenumbraApiEc RemoveAllTemporaryModSettings(Lazy<string> args, ModCollection collection, int key)
     {
         if (collection.Identity.Index <= 0)
             return ApiHelpers.Return(PenumbraApiEc.NothingChanged, args);

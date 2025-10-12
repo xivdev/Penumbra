@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
@@ -115,7 +116,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
             changes = true;
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (Checkmark("Model##eqdp"u8, "\0"u8, entry.Model, defaultEntry.Model, out var newModel))
         {
             entry   = entry with { Model = newModel };

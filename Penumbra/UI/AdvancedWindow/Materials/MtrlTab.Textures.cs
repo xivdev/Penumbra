@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -229,7 +230,7 @@ public partial class MtrlTab
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.LabeledHelpMarker("U Address Mode"u8,
                 "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range.");
 
@@ -242,7 +243,7 @@ public partial class MtrlTab
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.LabeledHelpMarker("V Address Mode"u8,
                 "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range.");
 
@@ -255,7 +256,7 @@ public partial class MtrlTab
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.LabeledHelpMarker("Level of Detail Bias"u8,
                 "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
 
@@ -268,7 +269,7 @@ public partial class MtrlTab
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.LabeledHelpMarker("Minimum Level of Detail"u8,
                 "Most detailed mipmap level to use.\n\n0 is the full-sized texture, 1 is the half-sized texture, 2 is the quarter-sized texture, and so on.\n15 will forcibly reduce the texture to its smallest mipmap.");
         }

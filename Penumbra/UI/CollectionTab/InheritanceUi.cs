@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -27,13 +28,13 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         ImGui.Dummy(Vector2.One);
 
         DrawCurrentCollectionInheritance();
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawInheritanceTrashButton();
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawRightText();
 
         DrawNewInheritanceSelection();
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("More Information about Inheritance", new Vector2(ImGui.GetContentRegionAvail().X, 0)))
             ImGui.OpenPopup("InheritanceHelp");
 
@@ -216,7 +217,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     private void DrawNewInheritanceSelection()
     {
         DrawNewInheritanceCombo();
-        ImGui.SameLine();
+        Im.Line.Same();
         var inheritance = InheritanceManager.CheckValidInheritance(_active.Current, _newInheritance);
         var tt = inheritance switch
         {

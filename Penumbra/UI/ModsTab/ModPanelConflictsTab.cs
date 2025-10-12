@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -141,7 +142,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         var expanded = DrawExpandedFiles(conflict);
         ImGui.TableNextColumn();
         var conflictPriority = DrawPriorityInput(conflict, priorityWidth);
-        ImGui.SameLine();
+        Im.Line.Same();
         var selectedPriority = collectionManager.Active.Current.GetActualSettings(selector.Selected!.Index).Settings!.Priority.Value;
         DrawPriorityButtons(conflict.Mod2 as Mod, conflictPriority, selectedPriority, buttonSize);
         ImGui.TableNextColumn();
@@ -196,7 +197,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
                 selectedPriority > conflictPriority, true))
             collectionManager.Editor.SetModPriority(collectionManager.Active.Current, selector.Selected!,
                 new ModPriority(conflictPriority + 1));
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.SortNumericDownAlt.ToIconString(), buttonSize,
                 $"Set the priority of this mod to the currently selected mods priority minus one. ({conflictPriority} -> {selectedPriority - 1})",
                 selectedPriority > conflictPriority || conflict == null, true))

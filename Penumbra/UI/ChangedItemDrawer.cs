@@ -4,15 +4,16 @@ using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
-using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
+using MouseButton = Penumbra.Api.Enums.MouseButton;
 
 namespace Penumbra.UI;
 
@@ -111,7 +112,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         {
             using var tt = ImRaii.Tooltip();
             ImGui.Image(icon.Handle, new Vector2(_smallestIconWidth));
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGuiUtil.DrawTextButton(iconFlagType.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
         }
     }
@@ -144,7 +145,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         if (additionalData.Length == 0)
             return;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (height - ImGui.GetTextLineHeight()) / 2);
         ImUtf8.TextRightAligned(additionalData, ImGui.GetStyle().ItemInnerSpacing.X);
@@ -156,7 +157,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         if (text.Length == 0)
             return;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (height - ImGui.GetTextLineHeight()) / 2);
         ImUtf8.TextRightAligned(text, ImGui.GetStyle().ItemInnerSpacing.X);
@@ -188,7 +189,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         foreach (var iconType in ChangedItemFlagExtensions.Order)
         {
             ret |= DrawIcon(iconType, ref typeFilter);
-            ImGui.SameLine();
+            Im.Line.Same();
         }
 
         ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
@@ -232,7 +233,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
             {
                 using var tt = ImRaii.Tooltip();
                 ImGui.Image(icon.Handle, new Vector2(_smallestIconWidth));
-                ImGui.SameLine();
+                Im.Line.Same();
                 ImGuiUtil.DrawTextButton(type.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
             }
 

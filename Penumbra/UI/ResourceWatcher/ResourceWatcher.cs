@@ -115,7 +115,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
         if (Im.Button("Clear"u8))
             Clear();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var onlyMatching = _ephemeral.OnlyAddMatchingResources;
         if (Im.Checkbox("Store Only Matching"u8, ref onlyMatching))
         {
@@ -181,7 +181,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
 
     private void DrawMaxEntries()
     {
-        Im.Item.SetNextWidth(80 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidthScaled(80);
         Im.Input.Scalar("Max. Entries"u8, ref _newMaxEntries);
         var change = ImGui.IsItemDeactivatedAfterEdit();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)

@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Services;
 
@@ -29,7 +30,7 @@ public class ModMigratorDebug(ModMigrator migrator) : Luna.IUiService
 
         if (_indexTask is not null)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.TextFrameAligned($"{_indexTask.Status}");
         }
 
@@ -47,7 +48,7 @@ public class ModMigratorDebug(ModMigrator migrator) : Luna.IUiService
 
         if (_mdlTask is not null)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.TextFrameAligned($"{_mdlTask.Status}");
         }
     }

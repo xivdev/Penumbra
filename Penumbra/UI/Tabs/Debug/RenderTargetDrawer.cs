@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
+using ImSharp;
 using OtterGui;
 using OtterGui.Text;
 using Penumbra.Interop.Hooks;
@@ -27,7 +28,7 @@ public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, D
             ImUtf8.Text("HDR Detour Called");
             ImUtf8.Text("Penumbra Reload Count");
         }
-        ImGui.SameLine();
+        Im.Line.Same();
         using (ImUtf8.Group())
         {
             ImUtf8.Text($"{(dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool w) ? w.ToString() : "Unknown")}");

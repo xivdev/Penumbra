@@ -7,6 +7,7 @@ using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -55,16 +56,16 @@ public sealed class CollectionPanel(
     /// <summary> Draw the panel containing beginners information and simple assignments. </summary>
     public void DrawSimple()
     {
-        ImGuiUtil.TextWrapped("A collection is a set of mod configurations. You can have as many collections as you desire.\n"
-          + "The collection you are currently editing in the mod tab can be selected here and is highlighted.\n");
-        ImGuiUtil.TextWrapped(
-            "There are functions you can assign these collections to, so different mod configurations apply for different things.\n"
-          + "You can assign an existing collection to such a function by clicking the function or dragging the collection over.");
+        Im.TextWrapped("A collection is a set of mod configurations. You can have as many collections as you desire.\n"u8
+          + "The collection you are currently editing in the mod tab can be selected here and is highlighted.\n"u8);
+        Im.TextWrapped(
+            "There are functions you can assign these collections to, so different mod configurations apply for different things.\n"u8
+          + "You can assign an existing collection to such a function by clicking the function or dragging the collection over."u8);
         ImGui.Separator();
 
-        var buttonWidth = new Vector2(200 * ImGuiHelpers.GlobalScale, 2 * ImGui.GetTextLineHeightWithSpacing());
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, Vector2.Zero)
-            .Push(ImGuiStyleVar.FrameBorderSize, 1 * ImGuiHelpers.GlobalScale);
+        var buttonWidth = new Vector2(200 * Im.Style.GlobalScale, 2 * Im.Style.FrameHeightWithSpacing);
+        using var style = Im.Style.Push(ImStyleDouble.ButtonTextAlign, Vector2.Zero)
+            .Push(ImStyleSingle.FrameBorderThickness, Im.Style.GlobalScale);
         DrawSimpleCollectionButton(CollectionType.Default,                  buttonWidth);
         DrawSimpleCollectionButton(CollectionType.Interface,                buttonWidth);
         DrawSimpleCollectionButton(CollectionType.Yourself,                 buttonWidth);
@@ -79,7 +80,7 @@ public sealed class CollectionPanel(
 
         var specialWidth = buttonWidth with { X = 275 * ImGuiHelpers.GlobalScale };
         DrawCurrentCharacter(specialWidth);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawCurrentTarget(specialWidth);
         DrawIndividualCollections(buttonWidth);
 
@@ -112,7 +113,7 @@ public sealed class CollectionPanel(
             }
 
             DrawButton(name, type, buttonWidth, border, ActorIdentifier.Invalid, 's', collection);
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGui.GetContentRegionAvail().X < buttonWidth.X + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X)
                 ImGui.NewLine();
         }
@@ -127,19 +128,19 @@ public sealed class CollectionPanel(
 
         ImGui.Dummy(Vector2.One);
         DrawCurrentCharacter(width);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawCurrentTarget(width);
         ImGui.Separator();
         ImGui.Dummy(Vector2.One);
         style.Pop();
         _individualAssignmentUi.DrawWorldCombo(width.X / 2);
-        ImGui.SameLine();
+        Im.Line.Same();
         _individualAssignmentUi.DrawNewPlayerCollection(width.X);
 
         _individualAssignmentUi.DrawObjectKindCombo(width.X / 2);
-        ImGui.SameLine();
+        Im.Line.Same();
         _individualAssignmentUi.DrawNewNpcCollection(width.X);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiComponents.HelpMarker(
             "Battle- and Event NPCs may apply to more than one ID if they share the same name. This is language dependent. If you change your clients language, verify that your collections are still correctly assigned.");
         ImGui.Dummy(Vector2.One);
@@ -147,22 +148,22 @@ public sealed class CollectionPanel(
         style.Push(ImGuiStyleVar.FrameBorderSize, 1 * ImGuiHelpers.GlobalScale);
 
         DrawNewPlayer(width);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.TextWrapped("Also check General Settings for UI characters and inheritance through ownership.");
         ImGui.Separator();
 
         DrawNewRetainer(width);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.TextWrapped("Bell Retainers apply to Mannequins, but not to outdoor retainers, since those only carry their owners name.");
         ImGui.Separator();
 
         DrawNewNpc(width);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.TextWrapped("Some NPCs are available as Battle - and Event NPCs and need to be setup for both if desired.");
         ImGui.Separator();
 
         DrawNewOwned(width);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.TextWrapped("Owned NPCs take precedence before unowned NPCs of the same type.");
         ImGui.Separator();
 
@@ -219,7 +220,7 @@ public sealed class CollectionPanel(
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted("Identifier");
         ImGui.EndGroup();
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.BeginGroup();
         var width = ImGui.GetContentRegionAvail().X;
         using (ImRaii.Disabled(_collections.DefaultNamed == collection))
@@ -373,7 +374,7 @@ public sealed class CollectionPanel(
     private void DrawSimpleCollectionButton(CollectionType type, Vector2 width)
     {
         DrawButton(type.ToName(), type, width, 0, ActorIdentifier.Invalid, 's');
-        ImGui.SameLine();
+        Im.Line.Same();
         using (var group = ImRaii.Group())
         {
             ImGuiUtil.TextWrapped(type.ToDescription());
@@ -470,7 +471,7 @@ public sealed class CollectionPanel(
             var (name, ids, coll) = _active.Individuals.Assignments[i];
             DrawButton(Name(ids[0], name), CollectionType.Individual, width, 0, ids[0], 'i', coll);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGui.GetContentRegionAvail().X < width.X + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X
              && i < _active.Individuals.Count - 1)
                 ImGui.NewLine();
@@ -550,7 +551,7 @@ public sealed class CollectionPanel(
             var name  = type == CollectionType.Individual ? Name(id, null) : Buttons[type].Name;
             var color = Buttons.TryGetValue(type, out var p) ? p.Border : 0;
             DrawButton(name, type, buttonWidth, color, id, 's', collection);
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGui.GetContentRegionAvail().X < buttonWidth.X + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X
              && idx != _inUseCache.Count - 1)
                 ImGui.NewLine();
@@ -582,7 +583,7 @@ public sealed class CollectionPanel(
         {
             var name = Name(parent);
             var size = ImGui.CalcTextSize(name).X;
-            ImGui.SameLine();
+            Im.Line.Same();
             if (constOffset + size >= ImGui.GetContentRegionAvail().X)
                 ImGui.NewLine();
             ImGuiUtil.DrawTextButton(name, Vector2.Zero, 0);

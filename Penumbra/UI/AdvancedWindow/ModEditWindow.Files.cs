@@ -197,7 +197,7 @@ public partial class ModEditWindow
 
             var rightText = DrawFileTooltip(registry, color);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGuiUtil.RightAlign(rightText);
         }
 
@@ -281,14 +281,14 @@ public partial class ModEditWindow
               && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !path.Equals(gamePath) && !_editor.FileEditor.CanAddGamePath(path)))
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetCursorPosX(pos);
             using var font = ImRaii.PushFont(UiBuilder.IconFont);
             ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
         }
         else if (tmp.Length > 0 && Path.GetExtension(tmp) != registry.File.Extension)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetCursorPosX(pos);
             using (ImRaii.PushFont(UiBuilder.IconFont))
             {
@@ -324,14 +324,14 @@ public partial class ModEditWindow
               && (!Utf8GamePath.FromString(_gamePathEdit, out var path)
                   || !path.IsEmpty && !_editor.FileEditor.CanAddGamePath(path)))
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetCursorPosX(pos);
             using var font = ImRaii.PushFont(UiBuilder.IconFont);
             ImGuiUtil.TextColored(0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString());
         }
         else if (tmp.Length > 0 && Path.GetExtension(tmp) != registry.File.Extension)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetCursorPosX(pos);
             using (ImRaii.PushFont(UiBuilder.IconFont))
             {
@@ -350,7 +350,7 @@ public partial class ModEditWindow
         ImGui.SetNextItemWidth(30 * UiHelpers.Scale);
         ImGui.DragInt("##skippedFolders", ref _folderSkip, 0.01f, 0, 10);
         ImGuiUtil.HoverTooltip("Skip the first N folders when automatically constructing the game path from the file path.");
-        ImGui.SameLine();
+        Im.Line.Same();
         spacing.Pop();
         if (ImGui.Button("Add Paths"))
             _editor.FileEditor.AddPathsToSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains), _folderSkip);
@@ -359,14 +359,14 @@ public partial class ModEditWindow
             "Add the file path converted to a game path to all selected files for the current option, optionally skipping the first N folders.");
 
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Remove Paths"))
             _editor.FileEditor.RemovePathsFromSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));
 
         ImGuiUtil.HoverTooltip("Remove all game paths associated with the selected files in the current option.");
 
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var active = _config.DeleteModModifier.IsActive();
         var tt =
             "Delete all selected files entirely from your filesystem, but not their file associations in the mod.\n!!!This can not be reverted!!!";
@@ -378,7 +378,7 @@ public partial class ModEditWindow
         if (ImGuiUtil.DrawDisabledButton("Delete Selected Files", Vector2.Zero, tt, _selectedFiles.Count == 0 || !active))
             _editor.FileEditor.DeleteFiles(_editor.Mod!, _editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var changes = _editor.FileEditor.Changes;
         tt = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, !changes))
@@ -389,7 +389,7 @@ public partial class ModEditWindow
         }
 
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var label  = changes ? "Revert Changes" : "Reload Files";
         var length = new Vector2(ImGui.CalcTextSize("Revert Changes").X, 0);
         if (ImGui.Button(label, length))
@@ -397,7 +397,7 @@ public partial class ModEditWindow
 
         ImGuiUtil.HoverTooltip("Revert all revertible changes since the last file or option reload or data refresh.");
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.Checkbox("Overview Mode", ref _overviewMode);
     }
 
@@ -405,25 +405,25 @@ public partial class ModEditWindow
     {
         ImGui.SetNextItemWidth(250 * UiHelpers.Scale);
         Im.Input.Text("##filter"u8, ref _fileFilter, "Filter paths..."u8);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.Checkbox("Show Game Paths", ref _showGamePaths);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Unselect All"))
             _selectedFiles.Clear();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Select Visible"))
             _selectedFiles.UnionWith(_editor.Files.Available.Where(CheckFilter));
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Select Unused"))
             _selectedFiles.UnionWith(_editor.Files.Available.Where(f => f.SubModUsage.Count == 0));
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Select Used Here"))
             _selectedFiles.UnionWith(_editor.Files.Available.Where(f => f.CurrentUsage > 0));
 
-        ImGui.SameLine();
+        Im.Line.Same();
 
         ImGuiUtil.RightAlign($"{_selectedFiles.Count} / {_editor.Files.Available.Count} Files Selected");
     }
@@ -438,10 +438,10 @@ public partial class ModEditWindow
 
         ImGui.SetNextItemWidth(width * 3);
         Im.Input.Text("##fileFilter"u8, ref _fileOverviewFilter1, "Filter file..."u8);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(width * 3);
         Im.Input.Text("##pathFilter"u8, ref _fileOverviewFilter2, "Filter path..."u8);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(width * 2);
         Im.Input.Text("##optionFilter"u8, ref _fileOverviewFilter3, "Filter option..."u8);
     }

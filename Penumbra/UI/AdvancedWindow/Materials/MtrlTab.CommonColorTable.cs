@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
+using ImSharp;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Files;
 using OtterGui.Text;
@@ -30,21 +31,21 @@ public partial class MtrlTab
             return false;
 
         ColorTableCopyAllClipboardButton();
-        ImGui.SameLine();
+        Im.Line.Same();
         var ret = ColorTablePasteAllClipboardButton(disabled);
         if (!disabled)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.IconDummy();
-            ImGui.SameLine();
+            Im.Line.Same();
             ret |= ColorTableDyeableCheckbox();
         }
 
         if (Mtrl.DyeTable != null)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImUtf8.IconDummy();
-            ImGui.SameLine();
+            Im.Line.Same();
             ret |= DrawPreviewDye(disabled);
         }
 
@@ -107,11 +108,11 @@ public partial class MtrlTab
             return ret;
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var label = dyeId1 == 0 ? "Preview Dye 1###previewDye1" : $"{name1} (Preview 1)###previewDye1";
         if (_stainService.StainCombo1.Draw(label, dyeColor1, string.Empty, true, gloss1))
             UpdateColorTablePreview();
-        ImGui.SameLine();
+        Im.Line.Same();
         label = dyeId2 == 0 ? "Preview Dye 2###previewDye2" : $"{name2} (Preview 2)###previewDye2";
         if (_stainService.StainCombo2.Draw(label, dyeColor2, string.Empty, true, gloss2))
             UpdateColorTablePreview();

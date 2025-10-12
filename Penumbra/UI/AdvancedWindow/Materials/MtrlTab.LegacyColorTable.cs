@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Text;
 using Penumbra.GameData.Files.MaterialStructs;
@@ -133,7 +134,7 @@ public partial class MtrlTab
                 b => dyeTable[rowIdx].SpecularColor = b);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(pctSize);
         ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.SpecularMask * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f,
             1.0f,
@@ -240,7 +241,7 @@ public partial class MtrlTab
                 b => dyeTable[rowIdx].SpecularColor = b);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(pctSize);
         ret |= CtDragScalar("##SpecularMask"u8, "Specular Strength"u8, (float)row.Scalar7 * 100.0f, "%.0f%%"u8, 0f, HalfMaxValue * 100.0f, 1.0f,
             v => table[rowIdx].Scalar7 = (Half)(v * 0.01f));
@@ -325,7 +326,7 @@ public partial class MtrlTab
 
         ret = ret && Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, [stain], rowIdx);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawLegacyDyePreview(values, floatSize);
 
         return ret;
@@ -348,7 +349,7 @@ public partial class MtrlTab
                 _stainService.StainCombo2.CurrentSelection.Key,
             ], rowIdx);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawLegacyDyePreview(values, floatSize);
 
         return ret;

@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Plugin;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections.Manager;
@@ -66,7 +67,7 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
 
         _tutorial.OpenTutorial(BasicTutorialSteps.EditingCollections);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using (var group = ImRaii.Group())
         {
             DrawHeaderLine();
@@ -91,28 +92,28 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
             Mode = PanelMode.SimpleAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.SimpleAssignments);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.IndividualAssignment);
         if (ImGui.Button("Individual Assignments", buttonSize))
             Mode = PanelMode.IndividualAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.IndividualAssignments);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.GroupAssignment);
         if (ImGui.Button("Group Assignments", buttonSize))
             Mode = PanelMode.GroupAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.GroupAssignments);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.Details);
         if (ImGui.Button("Collection Details", buttonSize))
             Mode = PanelMode.Details;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionDetails);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         _incognito.DrawToggle(withSpacing);
     }

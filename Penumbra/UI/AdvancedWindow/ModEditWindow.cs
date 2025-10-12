@@ -4,6 +4,7 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -268,13 +269,13 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         public static void Draw(ModEditor editor, Vector2 buttonSize)
         {
             DrawRaceCodeCombo(buttonSize);
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(buttonSize.X);
             ImGui.InputTextWithHint("##suffixFrom", "From...", ref _materialSuffixFrom, 32);
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(buttonSize.X);
             ImGui.InputTextWithHint("##suffixTo", "To...", ref _materialSuffixTo, 32);
-            ImGui.SameLine();
+            Im.Line.Same();
             var disabled = !MdlMaterialEditor.ValidString(_materialSuffixTo);
             var tt = _materialSuffixTo.Length == 0
                 ? "Please enter a target suffix."
@@ -297,12 +298,12 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
                     anyChanges ? "Irreversibly rewrites all currently applied changes to model files." : "No changes made yet.", !anyChanges))
                 editor.MdlMaterialEditor.SaveAllModels(editor.Compactor);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGuiUtil.DrawDisabledButton("Revert All Changes", buttonSize,
                     anyChanges ? "Revert all currently made and unsaved changes." : "No changes made yet.", !anyChanges))
                 editor.MdlMaterialEditor.RestoreAllModels();
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGuiComponents.HelpMarker(
                 "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
               + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
@@ -393,7 +394,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
 
         if (_editor.Duplicates.SavedSpace > 0)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.TextUnformatted($"Frees up {Functions.HumanReadableSize(_editor.Duplicates.SavedSpace)} from your hard drive.");
         }
 
@@ -455,14 +456,14 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
             ret = true;
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Refresh Data"u8, "Refresh data for the current option.\nThis resets unsaved changes."u8, width))
         {
             _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx).Wait();
             ret = true;
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (_optionSelect.Draw(width.X))
         {
             var (groupIdx, dataIdx) = _optionSelect.CurrentSelection.Index;
@@ -490,7 +491,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Apply(_editor.Option!);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
         if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Revert(_editor.Option!);
@@ -498,7 +499,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         var otherSwaps = _editor.Mod!.TotalSwapCount - _editor.Option!.FileSwaps.Count;
         if (otherSwaps > 0)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGuiUtil.DrawTextButton($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
                 ColorId.RedundantAssignment.Value());
         }

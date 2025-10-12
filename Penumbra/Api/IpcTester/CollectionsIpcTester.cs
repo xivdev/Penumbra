@@ -1,9 +1,7 @@
 using Dalamud.Plugin;
 using ImSharp;
-using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
-using Penumbra.Collections.Manager;
 using Penumbra.GameData.Data;
 
 namespace Penumbra.Api.IpcTester;
@@ -11,7 +9,6 @@ namespace Penumbra.Api.IpcTester;
 public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 {
     private int               _objectIdx;
-    private string            _collectionIdString = string.Empty;
     private Guid?             _collectionId;
     private bool              _allowCreation = true;
     private bool              _allowDeletion = true;
@@ -28,7 +25,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!_)
             return;
 
-        ImGuiUtil.GenericEnumCombo("Collection Type", 200, _type, out _type, t => ((CollectionType)t).ToName());
+        EnumCombo<ApiCollectionType>.Instance.Draw("Collection Type"u8, ref _type, default, 200 * Im.Style.GlobalScale);
         Im.Input.Scalar("Object Index##Collections"u8, ref _objectIdx);
         if (_collectionId.HasValue)
         {
@@ -57,7 +54,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         table.NextRow();
         table.DrawColumn(GetCollectionsByIdentifier.Label);
         table.DrawColumn("Collection Identifier"u8);
-        var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionIdString);
+        var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionId.GetValueOrDefault().ToString());
         if (collectionList.Count == 0)
         {
             DrawCollection(table, null);

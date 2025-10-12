@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -30,24 +31,24 @@ public partial class ModEditWindow
         if (ImUtf8.ButtonEx("Apply Changes"u8, tt, Vector2.Zero, setsEqual))
             _editor.MetaEditor.Apply(_editor.Option!);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         tt = setsEqual ? "No changes staged."u8 : "Revert all currently staged changes."u8;
         if (ImUtf8.ButtonEx("Revert Changes"u8, tt, Vector2.Zero, setsEqual))
             _editor.MetaEditor.Load(_editor.Mod!, _editor.Option!);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         AddFromClipboardButton();
-        ImGui.SameLine();
+        Im.Line.Same();
         SetFromClipboardButton();
-        ImGui.SameLine();
+        Im.Line.Same();
         CopyToClipboardButton("Copy all current manipulations to clipboard.", _iconSize, _editor.MetaEditor);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.Button("Write as TexTools Files"u8))
             _metaFileManager.WriteAllTexToolsMeta(Mod!);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Remove All Default-Values"u8, "Delete any entries from all lists that set the value to its default value."u8))
             _editor.MetaEditor.DeleteDefaultValues();
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawAtchDragDrop();
 
         using var child = ImRaii.Child("##meta", -Vector2.One, true);

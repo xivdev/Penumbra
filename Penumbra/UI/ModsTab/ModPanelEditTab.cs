@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -105,7 +106,7 @@ public class ModPanelEditTab(
         if (ImGuiUtil.DrawDisabledButton("Open Mod Directory", buttonSize, tt, !folderExists))
             Process.Start(new ProcessStartInfo(_mod.ModPath.FullName) { UseShellExecute = true });
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton("Reload Mod", buttonSize, "Reload the current mod from its files.\n"
               + "If the mod directory or meta file do not exist anymore or if the new mod name is empty, the mod is deleted instead.",
                 false))
@@ -131,7 +132,7 @@ public class ModPanelEditTab(
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             ImUtf8.OpenPopup("context"u8);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         tt = backup.Exists
             ? $"Delete existing mod export \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
@@ -141,12 +142,12 @@ public class ModPanelEditTab(
         tt = backup.Exists
             ? $"Restore mod from exported file \"{backup.Name}\" (hold {config.DeleteModModifier} while clicking)."
             : $"Exported mod \"{backup.Name}\" does not exist.";
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Restore From Export"u8, tt, buttonSize, !backup.Exists || !config.DeleteModModifier.IsActive()))
             backup.Restore(modManager);
         if (backup.Exists)
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             using (ImRaii.PushFont(UiBuilder.IconFont))
             {
                 ImUtf8.Text(FontAwesomeIcon.CheckCircle.ToIconString());
@@ -187,7 +188,7 @@ public class ModPanelEditTab(
             descriptionPopup.Open(_mod);
 
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var fileExists = File.Exists(filenames.ModMetaPath(_mod));
         var tt = fileExists
             ? "Open the metadata json file in the text editor of your choice."
@@ -279,14 +280,14 @@ public class ModPanelEditTab(
                     $"{_currentModDirectory} contains invalid symbols for FFXIV."),
                 _ => (true, "Unknown error."),
             };
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGuiUtil.DrawDisabledButton("Rename Mod Directory", buttonSize, tt, disabled) && _currentModDirectory != null)
             {
                 modManager.MoveModDirectory(mod, _currentModDirectory);
                 Reset();
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGuiComponents.HelpMarker(
                 "The mod directory name is used to correspond stored settings and sort orders, otherwise it has no influence on anything that is displayed.\n"
               + "This can currently not be used on pre-existing folders and does not support merges or overwriting.");

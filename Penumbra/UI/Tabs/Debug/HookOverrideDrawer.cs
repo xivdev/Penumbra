@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Interop.Hooks;
 
@@ -20,7 +21,7 @@ public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : Luna.
         if (ImUtf8.Button("Save"u8))
             _overrides.Write(pluginInterface);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         var path   = Path.Combine(pluginInterface.GetPluginConfigDirectory(), HookOverrides.FileName);
         var exists = File.Exists(path);
         if (ImUtf8.ButtonEx("Delete"u8, disabled: !exists, tooltip: exists ? ""u8 : "File does not exist."u8))
@@ -34,18 +35,18 @@ public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : Luna.
             }
 
         bool? allVisible = null;
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.Button("Disable All Visible Hooks"u8))
             allVisible = true;
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.Button("Enable All VisibleHooks"u8))
             allVisible = false;
 
         bool? all = null;
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.Button("Disable All Hooks"))
             all = true;
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.Button("Enable All Hooks"))
             all = false;
 

@@ -1,9 +1,10 @@
 using Dalamud.Bindings.ImGui;
 using OtterGui.Raii;
 using OtterGui;
-using SixLabors.ImageSharp.PixelFormats;
 using Dalamud.Interface.Utility;
+using ImSharp;
 using Penumbra.UI;
+using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
 
@@ -237,7 +238,7 @@ public partial class CombinedTexture
         ImGui.SetNextItemWidth(75.0f * UiHelpers.Scale);
         ImGui.DragInt("##XOffset", ref _offsetX, 0.5f);
         ret |= ImGui.IsItemDeactivatedAfterEdit();
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(75.0f * UiHelpers.Scale);
         ImGui.DragInt("Offsets##YOffset", ref _offsetY, 0.5f);
         ret |= ImGui.IsItemDeactivatedAfterEdit();
@@ -273,7 +274,7 @@ public partial class CombinedTexture
             ImGui.TextUnformatted("Copy");
             foreach (var channel in Enum.GetValues<Channels>())
             {
-                ImGui.SameLine();
+                Im.Line.Same();
                 var copy = (_copyChannels & channel) != 0;
                 if (ImGui.Checkbox(channel.ToString(), ref copy))
                 {
@@ -352,28 +353,28 @@ public partial class CombinedTexture
     private static bool DrawMatrixTools(ref Matrix4x4 multiplier, ref Vector4 constant)
     {
         var changes = PresetCombo(ref multiplier, ref constant);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.TextUnformatted("Invert");
-        ImGui.SameLine();
+        Im.Line.Same();
 
         Channels channels = 0;
         if (ImGui.Button("Colors"))
             channels |= Channels.Red | Channels.Green | Channels.Blue;
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("R"))
             channels |= Channels.Red;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("G"))
             channels |= Channels.Green;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("B"))
             channels |= Channels.Blue;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("A"))
             channels |= Channels.Alpha;
 

@@ -1,8 +1,6 @@
 using Dalamud.Plugin;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Raii;
+using ImSharp;
 using Penumbra.Api.IpcSubscribers;
-using Penumbra.String.Classes;
 
 namespace Penumbra.Api.IpcTester;
 
@@ -15,97 +13,86 @@ public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
     public void Draw()
     {
-        using var tree = ImRaii.TreeNode("Resolving");
+        using var tree = Im.Tree.Node("Resolving"u8);
         if (!tree)
             return;
 
-        ImGui.InputTextWithHint("##resolvePath", "Resolve this game path...", ref _currentResolvePath, Utf8GamePath.MaxGamePathLength);
-        ImGui.InputTextWithHint("##resolveInversePath", "Reverse-resolve this path...", ref _currentReversePath,
-            Utf8GamePath.MaxGamePathLength);
-        ImGui.InputInt("##resolveIdx", ref _currentReverseIdx, 0, 0);
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        Im.Input.Text("##resolvePath"u8,        ref _currentResolvePath, "Resolve this game path..."u8);
+        Im.Input.Text("##resolveInversePath"u8, ref _currentReversePath, "Reverse-resolve this path..."u8);
+        Im.Input.Scalar("##resolveIdx"u8, ref _currentReverseIdx);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(ResolveDefaultPath.Label, "Default Collection Resolve");
-        if (_currentResolvePath.Length != 0)
-            ImGui.TextUnformatted(new ResolveDefaultPath(pi).Invoke(_currentResolvePath));
+        IpcTester.DrawIntro(ResolveDefaultPath.Label, "Default Collection Resolve"u8);
+        if (_currentResolvePath.Length is not 0)
+            Im.Text(new ResolveDefaultPath(pi).Invoke(_currentResolvePath));
 
-        IpcTester.DrawIntro(ResolveInterfacePath.Label, "Interface Collection Resolve");
-        if (_currentResolvePath.Length != 0)
-            ImGui.TextUnformatted(new ResolveInterfacePath(pi).Invoke(_currentResolvePath));
+        IpcTester.DrawIntro(ResolveInterfacePath.Label, "Interface Collection Resolve"u8);
+        if (_currentResolvePath.Length is not 0)
+            Im.Text(new ResolveInterfacePath(pi).Invoke(_currentResolvePath));
 
-        IpcTester.DrawIntro(ResolvePlayerPath.Label, "Player Collection Resolve");
-        if (_currentResolvePath.Length != 0)
-            ImGui.TextUnformatted(new ResolvePlayerPath(pi).Invoke(_currentResolvePath));
+        IpcTester.DrawIntro(ResolvePlayerPath.Label, "Player Collection Resolve"u8);
+        if (_currentResolvePath.Length is not 0)
+            Im.Text(new ResolvePlayerPath(pi).Invoke(_currentResolvePath));
 
-        IpcTester.DrawIntro(ResolveGameObjectPath.Label, "Game Object Collection Resolve");
-        if (_currentResolvePath.Length != 0)
-            ImGui.TextUnformatted(new ResolveGameObjectPath(pi).Invoke(_currentResolvePath, _currentReverseIdx));
+        IpcTester.DrawIntro(ResolveGameObjectPath.Label, "Game Object Collection Resolve"u8);
+        if (_currentResolvePath.Length is not 0)
+            Im.Text(new ResolveGameObjectPath(pi).Invoke(_currentResolvePath, _currentReverseIdx));
 
-        IpcTester.DrawIntro(ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)");
-        if (_currentReversePath.Length > 0)
+        IpcTester.DrawIntro(ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)"u8);
+        if (_currentReversePath.Length is not 0)
         {
             var list = new ReverseResolvePlayerPath(pi).Invoke(_currentReversePath);
             if (list.Length > 0)
             {
-                ImGui.TextUnformatted(list[0]);
-                if (list.Length > 1 && ImGui.IsItemHovered())
-                    ImGui.SetTooltip(string.Join("\n", list.Skip(1)));
+                Im.Text(list[0]);
+                if (list.Length > 1 && Im.Item.Hovered())
+                    Im.Tooltip.Set(StringU8.Join((byte)'\n', list.Skip(1)));
             }
         }
 
-        IpcTester.DrawIntro(ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)");
-        if (_currentReversePath.Length > 0)
+        IpcTester.DrawIntro(ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)"u8);
+        if (_currentReversePath.Length is not 0)
         {
             var list = new ReverseResolveGameObjectPath(pi).Invoke(_currentReversePath, _currentReverseIdx);
             if (list.Length > 0)
             {
-                ImGui.TextUnformatted(list[0]);
-                if (list.Length > 1 && ImGui.IsItemHovered())
-                    ImGui.SetTooltip(string.Join("\n", list.Skip(1)));
+                Im.Text(list[0]);
+                if (list.Length > 1 && Im.Item.Hovered())
+                    Im.Tooltip.Set(StringU8.Join((byte)'\n', list.Skip(1)));
             }
         }
 
-        var forwardArray = _currentResolvePath.Length > 0
-            ? [_currentResolvePath]
-            : Array.Empty<string>();
-        var reverseArray = _currentReversePath.Length > 0
-            ? [_currentReversePath]
-            : Array.Empty<string>();
+        string[] forwardArray = _currentResolvePath.Length > 0 ? [_currentResolvePath] : [];
+        string[] reverseArray = _currentReversePath.Length > 0 ? [_currentReversePath] : [];
 
-        IpcTester.DrawIntro(ResolvePlayerPaths.Label, "Resolved Paths (Player)");
+        IpcTester.DrawIntro(ResolvePlayerPaths.Label, "Resolved Paths (Player)"u8);
         if (forwardArray.Length > 0 || reverseArray.Length > 0)
         {
             var ret = new ResolvePlayerPaths(pi).Invoke(forwardArray, reverseArray);
-            ImGui.TextUnformatted(ConvertText(ret));
+            Im.Text(ConvertText(ret));
         }
 
-        IpcTester.DrawIntro(ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)");
-        if (ImGui.Button("Start"))
+        IpcTester.DrawIntro(ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)"u8);
+        if (Im.Button("Start"u8))
             _task = new ResolvePlayerPathsAsync(pi).Invoke(forwardArray, reverseArray);
-        var hovered = ImGui.IsItemHovered();
-        ImGui.SameLine();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(_task.Status.ToString());
-        if ((hovered || ImGui.IsItemHovered()) && _task.IsCompletedSuccessfully)
-            ImGui.SetTooltip(ConvertText(_task.Result));
+        var hovered = Im.Item.Hovered();
+        Im.Line.Same();
+        ImEx.TextFrameAligned($"{_task.Status}");
+        if ((hovered || Im.Item.Hovered()) && _task.IsCompletedSuccessfully)
+            Im.Tooltip.Set(ConvertText(_task.Result));
         return;
 
-        static string ConvertText((string[], string[][]) data)
+        static StringU8 ConvertText((string[], string[][]) data)
         {
-            var text = string.Empty;
+            var text = StringU8.Empty;
             if (data.Item1.Length > 0)
-            {
-                if (data.Item2.Length > 0)
-                    text = $"Forward: {data.Item1[0]} | Reverse: {string.Join("; ", data.Item2[0])}.";
-                else
-                    text = $"Forward: {data.Item1[0]}.";
-            }
+                text = data.Item2.Length > 0
+                    ? new StringU8($"Forward: {data.Item1[0]} | Reverse: {StringU8.Join("; "u8, data.Item2[0])}.")
+                    : new StringU8($"Forward: {data.Item1[0]}.");
             else if (data.Item2.Length > 0)
-            {
-                text = $"Reverse: {string.Join("; ", data.Item2[0])}.";
-            }
+                text = new StringU8($"Reverse: {StringU8.Join("; "u8, data.Item2[0])}.");
 
             return text;
         }

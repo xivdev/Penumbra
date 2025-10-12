@@ -215,7 +215,7 @@ public class SettingsTab : ITab, IUiService
             _config.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.LabeledHelpMarker(label, tooltip);
     }
 
@@ -230,7 +230,7 @@ public class SettingsTab : ITab, IUiService
             _config.Ephemeral.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.LabeledHelpMarker(label, tooltip);
     }
 
@@ -349,10 +349,10 @@ public class SettingsTab : ITab, IUiService
 
             selected = ImGui.IsItemActive();
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3, 0));
-            ImGui.SameLine();
+            Im.Line.Same();
             DrawDirectoryPickerButton();
             style.Pop();
-            ImGui.SameLine();
+            Im.Line.Same();
 
             const string tt = "This is where Penumbra will store your extracted mod files.\n"
               + "TTMP files are not copied, just extracted.\n"
@@ -362,13 +362,13 @@ public class SettingsTab : ITab, IUiService
               + "Definitely do not place it in your Dalamud directory or any sub-directory thereof.";
             ImGuiComponents.HelpMarker(tt);
             _tutorial.OpenTutorial(BasicTutorialSteps.GeneralTooltips);
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.TextUnformatted("Root Directory");
             ImGuiUtil.HoverTooltip(tt);
         }
 
         _tutorial.OpenTutorial(BasicTutorialSteps.ModDirectory);
-        ImGui.SameLine();
+        Im.Line.Same();
         var pos = ImGui.GetCursorPosX();
         ImGui.NewLine();
 
@@ -382,7 +382,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawDirectoryButtons()
     {
         UiHelpers.DrawOpenDirectoryButton(0, _modManager.BasePath, _modManager.Valid);
-        ImGui.SameLine();
+        Im.Line.Same();
         var tt = _modManager.Valid
             ? "Force Penumbra to completely re-scan your root directory as if it was restarted."
             : "The currently selected folder is not valid. Please select a different folder.";
@@ -636,11 +636,11 @@ public class SettingsTab : ITab, IUiService
                 }
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         const string tt =
             "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector.";
         ImGuiComponents.HelpMarker(tt);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.TextUnformatted("Rename Fields in Mod Context Menu");
         ImGuiUtil.HoverTooltip(tt);
     }
@@ -693,13 +693,13 @@ public class SettingsTab : ITab, IUiService
             !_config.PcpSettings.DisableHandling, v => _config.PcpSettings.DisableHandling = !v);
 
         var active = _config.DeleteModModifier.IsActive();
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Delete all PCP Mods"u8, "Deletes all mods tagged with 'PCP' from the mod list."u8, disabled: !active))
             _pcpService.CleanPcpMods();
         if (!active)
             ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Delete all PCP Collections"u8, "Deletes all collections whose name starts with 'PCP/' from the collection list."u8,
                 disabled: !active))
             _pcpService.CleanPcpCollections();
@@ -740,7 +740,7 @@ public class SettingsTab : ITab, IUiService
         if (ImGui.IsItemDeactivatedAfterEdit())
             _config.Save();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##import", UiHelpers.IconButtonSize,
                 "Select a directory via dialog.", false, true))
         {
@@ -780,7 +780,7 @@ public class SettingsTab : ITab, IUiService
         if (ImGui.IsItemDeactivatedAfterEdit())
             _modExportManager.UpdateExportDirectory(_tempExportDirectory);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##export", UiHelpers.IconButtonSize,
                 "Select a directory via dialog.", false, true))
         {
@@ -961,14 +961,14 @@ public class SettingsTab : ITab, IUiService
                 _config.UseFileSystemCompression = v;
                 _compactor.Enabled               = v;
             });
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton("Compress Existing Files", Vector2.Zero,
                 "Try to compress all files in your root directory. This will take a while.",
                 _compactor.MassCompactRunning || !_modManager.Valid))
             _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K,
                 true);
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton("Decompress Existing Files", Vector2.Zero,
                 "Try to decompress all files in your root directory. This will take a while.",
                 _compactor.MassCompactRunning || !_modManager.Valid))
@@ -981,7 +981,7 @@ public class SettingsTab : ITab, IUiService
                 new Vector2(ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X,
                     ImGui.GetFrameHeight()),
                 _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Ban.ToIconString(), UiHelpers.IconButtonSize, "Cancel the mass action.",
                     !_compactor.MassCompactRunning, true))
                 _compactor.CancelMassCompact();
@@ -1011,13 +1011,13 @@ public class SettingsTab : ITab, IUiService
             _minimumX = x;
         var edited = ImGui.IsItemDeactivatedAfterEdit();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(buttonWidth);
         if (ImGui.DragInt("##yMinSize", ref y, 0.1f, 300, 1500))
             _minimumY = y;
         edited |= ImGui.IsItemDeactivatedAfterEdit();
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton("Reset##resetMinSize", new Vector2(buttonWidth / 2 - ImGui.GetStyle().ItemSpacing.X * 2, 0),
                 $"Reset minimum dimensions to ({Configuration.Constants.MinimumSizeX}, {Configuration.Constants.MinimumSizeY}).",
                 x == Configuration.Constants.MinimumSizeX && y == Configuration.Constants.MinimumSizeY))
@@ -1065,7 +1065,7 @@ public class SettingsTab : ITab, IUiService
             }
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImUtf8.LabeledHelpMarker("Diffuse Dynamic Range"u8,
             "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\n"u8
           + "Changing this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled."u8);
@@ -1086,7 +1086,7 @@ public class SettingsTab : ITab, IUiService
             _config.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.LabeledHelpMarker("Enable HTTP API",
             "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws.");
     }
@@ -1101,7 +1101,7 @@ public class SettingsTab : ITab, IUiService
             _config.Save();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.LabeledHelpMarker("Enable Debug Mode",
             "[DEBUG] Enable the Debug Tab and Resource Manager Tab as well as some additional data collection. Also open the config window on plugin load.");
     }
@@ -1129,7 +1129,7 @@ public class SettingsTab : ITab, IUiService
         {
             ImUtf8.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetFrameHeight()),
                 $"{_cleanupService.Progress * 100}%");
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImUtf8.Button("Cancel##FileCleanup"u8))
                 _cleanupService.Cancel();
         }

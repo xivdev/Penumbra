@@ -67,7 +67,7 @@ public class ChangedItemsTab(
           - ImGui.GetStyle().ItemSpacing.X;
         ImGui.SetNextItemWidth(450 * UiHelpers.Scale);
         Im.Input.Text("##changedItemsFilter"u8, ref _changedItemFilter, "Filter Item..."u8);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGui.SetNextItemWidth(varWidth);
         Im.Input.Text("##changedItemsModFilter"u8, ref _changedItemModFilter, "Filter Mods..."u8);
         return varWidth;

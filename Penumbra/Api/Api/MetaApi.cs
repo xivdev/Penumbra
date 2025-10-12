@@ -1,7 +1,7 @@
 using Dalamud.Plugin.Services;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Files.AtchStructs;
@@ -13,7 +13,7 @@ using Penumbra.Meta.Manipulations;
 namespace Penumbra.Api.Api;
 
 public class MetaApi(IFramework framework, CollectionResolver collectionResolver, ApiHelpers helpers)
-    : IPenumbraApiMeta, Luna.IApiService
+    : IPenumbraApiMeta, IApiService
 {
     public string GetPlayerMetaManipulations()
     {
@@ -69,7 +69,7 @@ public class MetaApi(IFramework framework, CollectionResolver collectionResolver
             MetaDictionary.SerializeTo(array, cache.Atr.Select(kvp => new KeyValuePair<AtrIdentifier, AtrEntry>(kvp.Key, kvp.Value.Entry)));
         }
 
-        return Functions.ToCompressedBase64(array, 0);
+        return CompressionFunctions.ToCompressedBase64(array, 0);
     }
 
     private static unsafe string CompressMetaManipulationsV1(ModCollection? collection)

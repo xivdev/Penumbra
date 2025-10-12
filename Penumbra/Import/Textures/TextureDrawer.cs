@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using ImSharp;
 using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
@@ -9,6 +10,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.Import.Textures;
 
@@ -53,7 +55,7 @@ public static class TextureDrawer
             current.Load(textures, tmpPath);
 
         ImGuiUtil.HoverTooltip(tooltip);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Folder.ToIconString(), new Vector2(ImGui.GetFrameHeight()), string.Empty, false,
                 true))
         {
@@ -69,7 +71,7 @@ public static class TextureDrawer
             fileDialog.OpenFilePicker("Open Image...", "Textures{.png,.dds,.tex,.tga}", UpdatePath, 1, startPath, false);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Recycle.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
                 "Reload the currently selected path.", false,
                 true))

@@ -475,7 +475,7 @@ public class DebugTab : Window, ITab, IUiService
                     ImUtf8.Text("Free'd Allocated Bytes"u8);
                 }
 
-                ImGui.SameLine();
+                Im.Line.Same();
                 using (ImUtf8.Group())
                 {
                     ImUtf8.Text($"{PenumbraStringMemory.CurrentStrings}");
@@ -948,7 +948,7 @@ public class DebugTab : Window, ITab, IUiService
                     ImGui.TableNextColumn();
                     var frame = new Vector2(ImGui.GetTextLineHeight());
                     ImGui.ColorButton("###color", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
-                    ImGui.SameLine();
+                    Im.Line.Same();
                     ImGui.TextUnformatted($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");
                 }
 

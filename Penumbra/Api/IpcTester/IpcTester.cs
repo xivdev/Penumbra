@@ -1,12 +1,10 @@
 using Dalamud.Plugin.Services;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Penumbra.Api.Api;
 
 namespace Penumbra.Api.IpcTester;
 
 public class IpcTester(
-    IpcProviders ipcProviders,
     IPenumbraApi api,
     PluginStateIpcTester pluginStateIpcTester,
     UiIpcTester uiIpcTester,
@@ -22,9 +20,8 @@ public class IpcTester(
     ResourceTreeIpcTester resourceTreeIpcTester,
     IFramework framework) : Luna.IUiService
 {
-    private readonly IpcProviders _ipcProviders = ipcProviders;
-    private          DateTime     _lastUpdate;
-    private          bool         _subscribed = false;
+    private DateTime _lastUpdate;
+    private bool     _subscribed;
 
     public void Draw()
     {
@@ -33,7 +30,7 @@ public class IpcTester(
             _lastUpdate = framework.LastUpdateUTC.AddSeconds(1);
             Subscribe();
 
-            ImGui.TextUnformatted($"API Version: {api.ApiVersion.Breaking}.{api.ApiVersion.Feature:D4}");
+            Im.Text($"API Version: {api.ApiVersion.Breaking}.{api.ApiVersion.Feature:D4}");
             collectionsIpcTester.Draw();
             editingIpcTester.Draw();
             gameStateIpcTester.Draw();
@@ -57,12 +54,9 @@ public class IpcTester(
 
     internal static void DrawIntro(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> info)
     {
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        Im.Text(ref label);
-        ImGui.TableNextColumn();
-        Im.Text(ref info);
-        ImGui.TableNextColumn();
+        Im.Table.NextRow();
+        Im.Table.DrawColumn(ref label);
+        Im.Table.DrawColumn(ref info);
     }
 
     private void Subscribe()

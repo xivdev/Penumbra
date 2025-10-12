@@ -1,21 +1,19 @@
 using Dalamud.Plugin;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Raii;
+using ImSharp;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.GameData.Interop;
-using Penumbra.UI;
 
 namespace Penumbra.Api.IpcTester;
 
 public class RedrawingIpcTester : Luna.IUiService, IDisposable
 {
-    private readonly IDalamudPluginInterface     _pi;
+    private readonly IDalamudPluginInterface    _pi;
     private readonly ObjectManager              _objects;
     public readonly  EventSubscriber<nint, int> Redrawn;
 
-    private int    _redrawIndex;
-    private string _lastRedrawnString = "None";
+    private int      _redrawIndex;
+    private StringU8 _lastRedrawnString = new("None"u8);
 
     public RedrawingIpcTester(IDalamudPluginInterface pi, ObjectManager objects)
     {
@@ -32,29 +30,29 @@ public class RedrawingIpcTester : Luna.IUiService, IDisposable
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Redrawing");
+        using var _ = Im.Tree.Node("Redrawing"u8);
         if (!_)
             return;
 
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(RedrawObject.Label, "Redraw by Index");
+        IpcTester.DrawIntro(RedrawObject.Label, "Redraw by Index"u8);
         var tmp = _redrawIndex;
-        ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
-        if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _objects.TotalCount))
+        Im.Item.SetNextWidthScaled(100);
+        if (Im.Drag("##redrawIndex"u8, ref tmp, 0, _objects.TotalCount, 0.1f))
             _redrawIndex = Math.Clamp(tmp, 0, _objects.TotalCount);
-        ImGui.SameLine();
-        if (ImGui.Button("Redraw##Index"))
+        Im.Line.Same();
+        if (Im.Button("Redraw##Index"u8))
             new RedrawObject(_pi).Invoke(_redrawIndex);
 
-        IpcTester.DrawIntro(RedrawAll.Label, "Redraw All");
-        if (ImGui.Button("Redraw##All"))
+        IpcTester.DrawIntro(RedrawAll.Label, "Redraw All"u8);
+        if (Im.Button("Redraw##All"u8))
             new RedrawAll(_pi).Invoke();
 
-        IpcTester.DrawIntro(GameObjectRedrawn.Label, "Last Redrawn Object:");
-        ImGui.TextUnformatted(_lastRedrawnString);
+        IpcTester.DrawIntro(GameObjectRedrawn.Label, "Last Redrawn Object:"u8);
+        Im.Text(_lastRedrawnString);
     }
 
     private void SetLastRedrawn(nint address, int index)
@@ -63,8 +61,8 @@ public class RedrawingIpcTester : Luna.IUiService, IDisposable
          || index > _objects.TotalCount
          || address == nint.Zero
          || _objects[index].Address != address)
-            _lastRedrawnString = "Invalid";
+            _lastRedrawnString = new StringU8("Invalid"u8);
 
-        _lastRedrawnString = $"{_objects[index].Utf8Name} (0x{address:X}, {index})";
+        _lastRedrawnString = new StringU8($"{_objects[index].Utf8Name} (0x{address:X}, {index})");
     }
 }

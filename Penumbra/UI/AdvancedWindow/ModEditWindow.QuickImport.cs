@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Lumina.Data;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
@@ -60,7 +61,7 @@ public partial class ModEditWindow
 
     private void DrawQuickImportActions(ResourceNode resourceNode, IWritable? writable, Vector2 buttonSize)
     {
-        ImGui.SameLine();
+        Im.Line.Same();
         if (!_quickImportActions!.TryGetValue((resourceNode.GamePath, writable), out var quickImport))
         {
             quickImport = QuickImportAction.Prepare(this, resourceNode.GamePath, writable);

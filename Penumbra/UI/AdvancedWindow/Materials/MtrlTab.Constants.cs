@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -198,7 +199,7 @@ public partial class MtrlTab
                         SetMaterialParameter(constant.Id, slice.Start, buffer[slice]);
                     }
 
-                    ImGui.SameLine();
+                    Im.Line.Same();
                     using var font = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
                     if (description.Length > 0)
                         ImGuiUtil.LabeledHelpMarker(label, description);

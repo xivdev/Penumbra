@@ -1,5 +1,6 @@
 using Dalamud.Interface.Components;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -10,6 +11,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
@@ -117,7 +119,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
         var       selectedOption = setting.AsIndex;
         using var disabled       = ImRaii.Disabled(_locked);
         _combo.Draw(group, groupIdx, selectedOption);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (group.Description.Length > 0)
             ImUtf8.LabeledHelpMarker(group.Name, group.Description);
         else
@@ -152,7 +154,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
                 if (option.Description.Length <= 0)
                     continue;
 
-                ImGui.SameLine();
+                Im.Line.Same();
                 ImGuiComponents.HelpMarker(option.Description);
             }
         }
@@ -191,7 +193,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
 
                 if (option.Description.Length > 0)
                 {
-                    ImGui.SameLine();
+                    Im.Line.Same();
                     ImGuiComponents.HelpMarker(option.Description);
                 }
             }

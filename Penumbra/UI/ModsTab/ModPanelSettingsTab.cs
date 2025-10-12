@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -55,7 +56,7 @@ public class ModPanelSettingsTab(
         communicator.PreSettingsPanelDraw.Invoke(new PreSettingsPanelDraw.Arguments(selection.Mod!));
         DrawEnabledInput();
         tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawPriorityInput();
         tutorial.OpenTutorial(BasicTutorialSteps.Priority);
         DrawRemoveSettings();
@@ -219,7 +220,7 @@ public class ModPanelSettingsTab(
                 }
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
         }
 
         if (_temporary)

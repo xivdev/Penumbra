@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using ImSharp;
 using Lumina.Data.Parsing;
 using Luna;
 using OtterGui;
@@ -105,7 +106,7 @@ public partial class ModEditWindow
         var childSize = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
 
         DrawImport(tab, childSize, disabled);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawExport(tab, childSize, disabled);
 
         DrawIoExceptions(tab);
@@ -139,7 +140,7 @@ public partial class ModEditWindow
                         tab.Import(paths[0]);
                 }, 1, Mod!.ModPath.FullName, false);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             DrawDocumentationLink(MdlImportDocumentation);
         }
 
@@ -162,7 +163,7 @@ public partial class ModEditWindow
         DrawGamePathCombo(tab);
 
         ImGui.Checkbox("##exportGeneratedMissingBones", ref tab.ExportConfig.GenerateMissingBones);
-        ImGui.SameLine();
+        Im.Line.Same();
         ImGuiUtil.LabeledHelpMarker("Generate missing bones",
             "WARNING: Enabling this option can result in unusable exported meshes.\n"
           + "It is primarily intended to allow exporting models weighted to bones that do not exist.\n"
@@ -186,7 +187,7 @@ public partial class ModEditWindow
                 false
             );
 
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawDocumentationLink(MdlExportDocumentation);
     }
 

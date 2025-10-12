@@ -1,5 +1,6 @@
 using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -27,7 +28,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
         ImGui.Dummy(Vector2.One);
         var size = 550 * ImGuiHelpers.GlobalScale;
         DrawMergeInto(size);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawMergeIntoDesc();
 
         ImGui.Dummy(Vector2.One);
@@ -35,7 +36,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
         ImGui.Dummy(Vector2.One);
 
         DrawSplitOff(size);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawSplitOffDesc();
 
 
@@ -69,7 +70,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
             ImUtf8.Text(" into"u8);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawCombo(size - ImGui.GetItemRectSize().X - ImGui.GetStyle().ItemSpacing.X);
 
         using (ImRaii.Group())
@@ -87,7 +88,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
             ImGuiUtil.HoverTooltip(
                 "The name of the new or existing option group to find or create the option in. Leave both group and option name blank for the default option.\n"
               + "A red border indicates an existing option group, a blue border indicates a new one.");
-            ImGui.SameLine();
+            Im.Line.Same();
 
 
             color = color == Colors.DiscordColor
@@ -146,10 +147,10 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
         var buttonSize = new Vector2((size - 2 * ImGui.GetStyle().ItemSpacing.X) / 3, 0);
         if (ImGui.Button("Select All", buttonSize))
             modMerger.SelectedOptions.UnionWith(modMerger.MergeFromMod!.AllDataContainers);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Unselect All", buttonSize))
             modMerger.SelectedOptions.Clear();
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGui.Button("Invert Selection", buttonSize))
             modMerger.SelectedOptions.SymmetricExceptWith(modMerger.MergeFromMod!.AllDataContainers);
         DrawOptionTable(size);

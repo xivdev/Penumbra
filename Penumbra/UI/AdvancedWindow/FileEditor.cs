@@ -2,6 +2,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Classes;
@@ -15,6 +16,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -46,11 +48,11 @@ public class FileEditor<T>(
         ImGui.NewLine();
         DrawFileSelectCombo();
         SaveButton();
-        ImGui.SameLine();
+        Im.Line.Same();
         ResetButton();
-        ImGui.SameLine();
+        Im.Line.Same();
         RedrawOnSaveBox();
-        ImGui.SameLine();
+        Im.Line.Same();
         DefaultInput();
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
@@ -127,7 +129,7 @@ public class FileEditor<T>(
             }
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), new Vector2(ImGui.GetFrameHeight()), "Export this file.",
                 _defaultFile == null, true))
             fileDialog.OpenSavePicker($"Export {_defaultPath} to...", fileType, Path.GetFileNameWithoutExtension(_defaultPath), fileType,
@@ -148,7 +150,7 @@ public class FileEditor<T>(
 
         _quickImport ??=
             ModEditWindow.QuickImportAction.Prepare(owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
                 $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
         {
@@ -318,7 +320,7 @@ public class FileEditor<T>(
 
             if (file.SubModUsage.Count > 0)
             {
-                ImGui.SameLine();
+                Im.Line.Same();
                 using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
                 ImGuiUtil.RightAlign(file.SubModUsage[0].Item2.Path.ToString());
             }

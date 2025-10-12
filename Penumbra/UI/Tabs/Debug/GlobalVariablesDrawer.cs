@@ -2,8 +2,8 @@ using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
-using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
@@ -38,7 +38,7 @@ public unsafe class GlobalVariablesDrawer(
             Penumbra.Dynamis.DrawPointer(Device.Instance());
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using (ImUtf8.Group())
         {
             ImUtf8.Text("CharacterUtility"u8);
@@ -168,7 +168,7 @@ public unsafe class GlobalVariablesDrawer(
             return;
 
         // TODO Remove cast when it'll have the right type in CS.
-        var map   = (StdMap<int, Pointer<SchedulerResource>>*)&scheduler.Scheduler->Resources;
+        var map   = (StdMap<int, FFXIVClientStructs.Interop.Pointer<SchedulerResource>>*)&scheduler.Scheduler->Resources;
         var total = 0;
         _shownResourcesMap = 0;
         foreach (var (key, resourcePtr) in *map)

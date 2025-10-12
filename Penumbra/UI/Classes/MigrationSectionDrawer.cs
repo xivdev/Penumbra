@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Services;
 
@@ -134,7 +135,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
         if (!enabled)
             return;
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImUtf8.Spinner("Spinner"u8, ImGui.GetTextLineHeight() / 2, 2, ImGui.GetColorU32(ImGuiCol.Text));
     }
 

@@ -1,16 +1,12 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
-using Dalamud.Bindings.ImGui;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
 namespace Penumbra.Api.IpcTester;
 
-public class PluginStateIpcTester : Luna.IUiService, IDisposable
+public class PluginStateIpcTester : IUiService, IDisposable
 {
     private readonly IDalamudPluginInterface       _pi;
     public readonly  EventSubscriber<string, bool> ModDirectoryChanged;
@@ -54,82 +50,82 @@ public class PluginStateIpcTester : Luna.IUiService, IDisposable
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Plugin State");
-        if (!_)
+        using var tree = Im.Tree.Node("Plugin State"u8);
+        if (!tree)
             return;
 
-        if (ImUtf8.InputText("Required Features"u8, ref _requiredFeatureString))
+        if (Im.Input.Text("Required Features"u8, ref _requiredFeatureString))
             _requiredFeatures = _requiredFeatureString.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        DrawList(IpcSubscribers.Initialized.Label, "Last Initialized", _initializedList);
-        DrawList(IpcSubscribers.Disposed.Label,    "Last Disposed",    _disposedList);
+        DrawList(IpcSubscribers.Initialized.Label, "Last Initialized"u8, _initializedList);
+        DrawList(IpcSubscribers.Disposed.Label,    "Last Disposed"u8,    _disposedList);
 
-        IpcTester.DrawIntro(ApiVersion.Label, "Current Version");
+        IpcTester.DrawIntro(ApiVersion.Label, "Current Version"u8);
         var (breaking, features) = new ApiVersion(_pi).Invoke();
-        ImGui.TextUnformatted($"{breaking}.{features:D4}");
+        Im.Text($"{breaking}.{features:D4}");
 
-        IpcTester.DrawIntro(GetEnabledState.Label, "Current State");
-        ImGui.TextUnformatted($"{new GetEnabledState(_pi).Invoke()}");
+        IpcTester.DrawIntro(GetEnabledState.Label, "Current State"u8);
+        Im.Text($"{new GetEnabledState(_pi).Invoke()}");
 
-        IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change");
-        ImGui.TextUnformatted(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never");
+        IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change"u8);
+        Im.Text(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never"u8);
 
-        IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features");
-        ImUtf8.Text(string.Join(", ", new SupportedFeatures(_pi).Invoke()));
+        IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features"u8);
+        Im.Text(StringU8.Join(", "u8, new SupportedFeatures(_pi).Invoke()));
 
-        IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features");
-        ImUtf8.Text(string.Join(", ", new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
+        IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features"u8);
+        Im.Text(StringU8.Join(", "u8, new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
 
         DrawConfigPopup();
-        IpcTester.DrawIntro(GetConfiguration.Label, "Configuration");
-        if (ImGui.Button("Get"))
+        IpcTester.DrawIntro(GetConfiguration.Label, "Configuration"u8);
+        if (Im.Button("Get"u8))
         {
             _currentConfiguration = new GetConfiguration(_pi).Invoke();
-            ImGui.OpenPopup("Config Popup");
+            Im.Popup.Open("Config Popup"u8);
         }
 
-        IpcTester.DrawIntro(GetModDirectory.Label, "Current Mod Directory");
-        ImGui.TextUnformatted(new GetModDirectory(_pi).Invoke());
+        IpcTester.DrawIntro(GetModDirectory.Label, "Current Mod Directory"u8);
+        Im.Text(new GetModDirectory(_pi).Invoke());
 
-        IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.Label, "Last Mod Directory Change");
-        ImGui.TextUnformatted(_lastModDirectoryTime > DateTimeOffset.MinValue
+        IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.Label, "Last Mod Directory Change"u8);
+        Im.Text(_lastModDirectoryTime > DateTimeOffset.MinValue
             ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"
-            : "None");
+            : "None"u8);
 
-        void DrawList(string label, string text, List<DateTimeOffset> list)
+        void DrawList(string label, ReadOnlySpan<byte> text, List<DateTimeOffset> list)
         {
             IpcTester.DrawIntro(label, text);
-            if (list.Count == 0)
+            if (list.Count is 0)
             {
-                ImGui.TextUnformatted("Never");
+                Im.Text("Never"u8);
             }
             else
             {
-                ImGui.TextUnformatted(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
-                if (list.Count > 1 && ImGui.IsItemHovered())
-                    ImGui.SetTooltip(string.Join("\n",
-                        list.SkipLast(1).Select(t => t.LocalDateTime.ToString(CultureInfo.CurrentCulture))));
+                Im.Text(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
+                if (list.Count > 1 && Im.Item.Hovered())
+                    Im.Tooltip.Set(
+                        StringU8.Join((byte)'\n', list.SkipLast(1).Select(t => t.LocalDateTime.ToString(CultureInfo.CurrentCulture))));
             }
         }
     }
 
     private void DrawConfigPopup()
     {
-        ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
-        using var popup = ImRaii.Popup("Config Popup");
+        Im.Window.SetNextSize(ImEx.ScaledVector(500, 500));
+        using var popup = Im.Popup.Begin("Config Popup"u8);
         if (!popup)
             return;
 
-        using (ImRaii.PushFont(UiBuilder.MonoFont))
+        using (Im.Font.PushMono())
         {
-            ImGuiUtil.TextWrapped(_currentConfiguration);
+            Im.TextWrapped(_currentConfiguration);
         }
 
-        if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
-            ImGui.CloseCurrentPopup();
+        if (Im.Button("Close"u8, -Vector2.UnitX) || !Im.Window.Focused())
+            Im.Popup.CloseCurrent();
     }
 
     private void UpdateModDirectoryChanged(string path, bool valid)

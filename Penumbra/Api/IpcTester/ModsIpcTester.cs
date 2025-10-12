@@ -1,8 +1,5 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
-using OtterGui.Raii;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
@@ -73,111 +70,111 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Mods");
+        using var _ = Im.Tree.Node("Mods"u8);
         if (!_)
             return;
 
-        ImGui.InputTextWithHint("##install", "Install File Path...",  ref _newInstallPath, 100);
-        ImGui.InputTextWithHint("##modDir",  "Mod Directory Name...", ref _modDirectory,   100);
-        ImGui.InputTextWithHint("##modName", "Mod Name...",           ref _modName,        100);
-        ImGui.InputTextWithHint("##path",    "New Path...",           ref _pathInput,      100);
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        Im.Input.Text("##install"u8, ref _newInstallPath, "Install File Path..."u8);
+        Im.Input.Text("##modDir"u8, ref _modDirectory, "Mod Directory Name..."u8);
+        Im.Input.Text("##modName"u8, ref _modName, "Mod Name..."u8);
+        Im.Input.Text("##path"u8, ref _pathInput, "New Path..."u8);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetModList.Label, "Mods");
+        IpcTester.DrawIntro(GetModList.Label, "Mods"u8);
         DrawModsPopup();
-        if (ImGui.Button("Get##Mods"))
+        if (Im.Button("Get##Mods"u8))
         {
             _mods = new GetModList(_pi).Invoke();
-            ImGui.OpenPopup("Mods");
+            Im.Popup.Open("Mods"u8);
         }
 
-        IpcTester.DrawIntro(ReloadMod.Label, "Reload Mod");
-        if (ImGui.Button("Reload"))
+        IpcTester.DrawIntro(ReloadMod.Label, "Reload Mod"u8);
+        if (Im.Button("Reload"u8))
             _lastReloadEc = new ReloadMod(_pi).Invoke(_modDirectory, _modName);
 
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_lastReloadEc.ToString());
+        Im.Line.Same();
+        Im.Text($"{_lastReloadEc}");
 
-        IpcTester.DrawIntro(InstallMod.Label, "Install Mod");
-        if (ImGui.Button("Install"))
+        IpcTester.DrawIntro(InstallMod.Label, "Install Mod"u8);
+        if (Im.Button("Install"u8))
             _lastInstallEc = new InstallMod(_pi).Invoke(_newInstallPath);
 
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_lastInstallEc.ToString());
+        Im.Line.Same();
+        Im.Text($"{_lastInstallEc}");
 
-        IpcTester.DrawIntro(AddMod.Label, "Add Mod");
-        if (ImGui.Button("Add"))
+        IpcTester.DrawIntro(AddMod.Label, "Add Mod"u8);
+        if (Im.Button("Add"u8))
             _lastAddEc = new AddMod(_pi).Invoke(_modDirectory);
 
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_lastAddEc.ToString());
+        Im.Line.Same();
+        Im.Text($"{_lastAddEc}");
 
-        IpcTester.DrawIntro(DeleteMod.Label, "Delete Mod");
-        if (ImGui.Button("Delete"))
+        IpcTester.DrawIntro(DeleteMod.Label, "Delete Mod"u8);
+        if (Im.Button("Delete"u8))
             _lastDeleteEc = new DeleteMod(_pi).Invoke(_modDirectory, _modName);
 
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_lastDeleteEc.ToString());
+        Im.Line.Same();
+        Im.Text(_lastDeleteEc.ToString());
 
-        IpcTester.DrawIntro(GetChangedItems.Label, "Get Changed Items");
+        IpcTester.DrawIntro(GetChangedItems.Label, "Get Changed Items"u8);
         DrawChangedItemsPopup();
-        if (ImUtf8.Button("Get##ChangedItems"u8))
+        if (Im.Button("Get##ChangedItems"u8))
         {
             _changedItems = new GetChangedItems(_pi).Invoke(_modDirectory, _modName);
-            ImUtf8.OpenPopup("ChangedItems"u8);
+            Im.Popup.Open("ChangedItems"u8);
         }
 
-        IpcTester.DrawIntro(GetModPath.Label, "Current Path");
+        IpcTester.DrawIntro(GetModPath.Label, "Current Path"u8);
         var (ec, path, def, nameDef) = new GetModPath(_pi).Invoke(_modDirectory, _modName);
-        ImGui.TextUnformatted($"{path} ({(def ? "Custom" : "Default")} Path, {(nameDef ? "Custom" : "Default")} Name) [{ec}]");
+        Im.Text($"{path} ({(def ? "Custom" : "Default")} Path, {(nameDef ? "Custom" : "Default")} Name) [{ec}]");
 
-        IpcTester.DrawIntro(SetModPath.Label, "Set Path");
-        if (ImGui.Button("Set"))
+        IpcTester.DrawIntro(SetModPath.Label, "Set Path"u8);
+        if (Im.Button("Set"u8))
             _lastSetPathEc = new SetModPath(_pi).Invoke(_modDirectory, _pathInput, _modName);
 
-        ImGui.SameLine();
-        ImGui.TextUnformatted(_lastSetPathEc.ToString());
+        Im.Line.Same();
+        Im.Text($"{_lastSetPathEc}");
 
-        IpcTester.DrawIntro(ModDeleted.Label, "Last Mod Deleted");
+        IpcTester.DrawIntro(ModDeleted.Label, "Last Mod Deleted"u8);
         if (_lastDeletedModTime > DateTimeOffset.UnixEpoch)
-            ImGui.TextUnformatted($"{_lastDeletedMod} at {_lastDeletedModTime}");
+            Im.Text($"{_lastDeletedMod} at {_lastDeletedModTime}");
 
-        IpcTester.DrawIntro(ModAdded.Label, "Last Mod Added");
+        IpcTester.DrawIntro(ModAdded.Label, "Last Mod Added"u8);
         if (_lastAddedModTime > DateTimeOffset.UnixEpoch)
-            ImGui.TextUnformatted($"{_lastAddedMod} at {_lastAddedModTime}");
+            Im.Text($"{_lastAddedMod} at {_lastAddedModTime}");
 
         IpcTester.DrawIntro(ModMoved.Label, "Last Mod Moved");
         if (_lastMovedModTime > DateTimeOffset.UnixEpoch)
-            ImGui.TextUnformatted($"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}");
+            Im.Text($"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}");
     }
 
     private void DrawModsPopup()
     {
-        ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
-        using var p = ImRaii.Popup("Mods");
+        Im.Window.SetNextSize(ImEx.ScaledVector(500, 500));
+        using var p = Im.Popup.Begin("Mods"u8);
         if (!p)
             return;
 
         foreach (var (modDir, modName) in _mods)
-            ImGui.TextUnformatted($"{modDir}: {modName}");
+            Im.Text($"{modDir}: {modName}");
 
-        if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
-            ImGui.CloseCurrentPopup();
+        if (Im.Button("Close"u8, -Vector2.UnitX) || !Im.Window.Focused())
+            Im.Popup.CloseCurrent();
     }
 
     private void DrawChangedItemsPopup()
     {
-        ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
-        using var p = ImUtf8.Popup("ChangedItems"u8);
+        Im.Window.SetNextSize(ImEx.ScaledVector(500, 500));
+        using var p = Im.Popup.Begin("ChangedItems"u8);
         if (!p)
             return;
 
         foreach (var (name, data) in _changedItems)
-            ImUtf8.Text($"{name}: {data}");
+            Im.Text($"{name}: {data}");
 
-        if (ImUtf8.Button("Close"u8, -Vector2.UnitX) || !ImGui.IsWindowFocused())
-            ImGui.CloseCurrentPopup();
+        if (Im.Button("Close"u8, -Vector2.UnitX) || !Im.Window.Focused())
+            Im.Popup.CloseCurrent();
     }
 }

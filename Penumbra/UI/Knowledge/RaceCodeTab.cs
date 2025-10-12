@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
 
@@ -31,7 +32,7 @@ public sealed class RaceCodeTab() : IKnowledgeTab
             }
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
 
         using (var table = ImUtf8.Table("children"u8, 4, ImGuiTableFlags.BordersOuter, size))
         {

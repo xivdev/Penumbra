@@ -1,6 +1,6 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
 

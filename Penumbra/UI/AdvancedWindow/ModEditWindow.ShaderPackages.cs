@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui.Raii;
 using OtterGui;
@@ -265,7 +266,7 @@ public partial class ModEditWindow
             DrawShaderExportButton(tab, objectName, shader, idx);
             if (!disabled && tab.Shpk.Disassembled)
             {
-                ImGui.SameLine();
+                Im.Line.Same();
                 DrawShaderImportButton(tab, objectName, shaders, idx);
             }
 
@@ -503,7 +504,7 @@ public partial class ModEditWindow
                 }
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImUtf8.Text("Start"u8);
     }
 
@@ -529,7 +530,7 @@ public partial class ModEditWindow
             }
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         ImUtf8.Text("End"u8);
     }
 
@@ -604,7 +605,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static void DrawKeyArray(ShpkTab tab, string arrayName, bool withId, IReadOnlyCollection<Key> keys)
+    private static void DrawKeyArray(ShpkTab tab, string arrayName, bool withId, IReadOnlyCollection<ShpkFile.Key> keys)
     {
         if (keys.Count == 0)
             return;

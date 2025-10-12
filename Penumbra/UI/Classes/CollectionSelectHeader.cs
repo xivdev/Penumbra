@@ -29,7 +29,7 @@ public class CollectionSelectHeader(
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
             .Push(ImGuiStyleVar.ItemSpacing, new Vector2(0, spacing ? ImGui.GetStyle().ItemSpacing.Y : 0));
         DrawTemporaryCheckbox();
-        ImGui.SameLine();
+        Im.Line.Same();
         var comboWidth = ImGui.GetContentRegionAvail().X / 4f;
         var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
         using (var _ = ImRaii.Group())
@@ -155,6 +155,6 @@ public class CollectionSelectHeader(
         using var _ = ImRaii.PushId(id);
         if (ImGuiUtil.DrawDisabledButton(name, buttonWidth, tooltip, disabled))
             _activeCollections.SetCollection(collection!, CollectionType.Current);
-        ImGui.SameLine();
+        Im.Line.Same();
     }
 }

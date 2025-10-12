@@ -2,6 +2,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Text;
 using Penumbra.GameData.Data;
@@ -20,9 +21,9 @@ public partial class ModEditWindow
     {
         _pbdData.Update(tab.File);
         DrawGenderRaceSelector(tab);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawBoneSelector();
-        ImGui.SameLine();
+        Im.Line.Same();
         return DrawBoneData(tab, disabled);
     }
 
@@ -59,7 +60,7 @@ public partial class ModEditWindow
                 _pbdData.SelectedDeformer = deformer.RacialDeformer;
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             color.Push(ImGuiCol.Text, metaColor);
             ImUtf8.TextRightAligned(raceCode);
         }
@@ -205,7 +206,7 @@ public partial class ModEditWindow
                     _pbdData.SelectedDeformer!.DeformMatrices[_pbdData.SelectedBone!] = matrix.ChangeValue(i, j, tmp);
                 }
 
-                ImGui.SameLine();
+                Im.Line.Same();
             }
 
             ImGui.NewLine();
@@ -220,7 +221,7 @@ public partial class ModEditWindow
         if (ImUtf8.Button("Copy Values"u8, size))
             _pbdData.CopiedMatrix = matrix;
 
-        ImGui.SameLine();
+        Im.Line.Same();
 
         var ret = false;
         if (ImUtf8.ButtonEx("Paste Values"u8, ""u8, size, disabled || !_pbdData.CopiedMatrix.HasValue))
@@ -230,7 +231,7 @@ public partial class ModEditWindow
         }
 
         var modifier = _config.DeleteModModifier.IsActive();
-        ImGui.SameLine();
+        Im.Line.Same();
         if (modifier)
         {
             if (ImUtf8.ButtonEx("Delete"u8, "Delete this bone entry."u8, size, disabled))
@@ -263,11 +264,11 @@ public partial class ModEditWindow
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##ScaleX"u8, ref scale.X, "% 12.8f"u8);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##ScaleY"u8, ref scale.Y, "% 12.8f"u8);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##ScaleZ"u8, ref scale.Z, "% 12.8f"u8);
 
@@ -275,11 +276,11 @@ public partial class ModEditWindow
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##TranslationX"u8, ref translation.X, "% 12.8f"u8);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##TranslationY"u8, ref translation.Y, "% 12.8f"u8);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##TranslationZ"u8, ref translation.Z, "% 12.8f"u8);
 
@@ -287,19 +288,19 @@ public partial class ModEditWindow
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##RotationR"u8, ref rotation.W, "% 12.8f"u8);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##RotationI"u8, ref rotation.X, "% 12.8f"u8);
 
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##RotationJ"u8, ref rotation.Y, "% 12.8f"u8);
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetNextItemWidth(width);
             ret |= ImUtf8.InputScalar("##RotationK"u8, ref rotation.Z, "% 12.8f"u8);
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         using (ImUtf8.Group())
         {
             ImUtf8.TextFrameAligned("Scale"u8);

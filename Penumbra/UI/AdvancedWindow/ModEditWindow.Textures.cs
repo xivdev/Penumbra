@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -125,9 +126,9 @@ public partial class ModEditWindow
         if (_center.IsLoaded)
         {
             RedrawOnSaveBox();
-            ImGui.SameLine();
+            Im.Line.Same();
             SaveAsCombo();
-            ImGui.SameLine();
+            Im.Line.Same();
             MipMapInput();
 
             var canSaveInPlace = Path.IsPathRooted(_left.Path) && _left.Type is TextureType.Tex or TextureType.Dds or TextureType.Png;
@@ -146,16 +147,16 @@ public partial class ModEditWindow
                 AddReloadTask(_left.Path, false);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGui.Button("Save as TEX", buttonSize2))
                 OpenSaveAsDialog(".tex");
 
             if (ImGui.Button("Export as TGA", buttonSize3))
                 OpenSaveAsDialog(".tga");
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGui.Button("Export as PNG", buttonSize3))
                 OpenSaveAsDialog(".png");
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGui.Button("Export as DDS", buttonSize3))
                 OpenSaveAsDialog(".dds");
             ImGui.NewLine();
@@ -171,7 +172,7 @@ public partial class ModEditWindow
                 AddReloadTask(_left.Path, false);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGuiUtil.DrawDisabledButton("Convert to BC3", buttonSize3,
                     "This converts the texture to BC3 format in place. This is not revertible.",
                     !canConvertInPlace || _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
@@ -181,7 +182,7 @@ public partial class ModEditWindow
                 AddReloadTask(_left.Path, false);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImGuiUtil.DrawDisabledButton("Convert to RGBA", buttonSize3,
                     "This converts the texture to RGBA format in place. This is not revertible.",
                     !canConvertInPlace
@@ -312,15 +313,15 @@ public partial class ModEditWindow
             var childWidth = GetChildWidth();
             var imageSize  = new Vector2(childWidth.X - ImGui.GetStyle().FramePadding.X * 2);
             DrawInputChild("Input Texture", _left, childWidth, imageSize);
-            ImGui.SameLine();
+            Im.Line.Same();
             DrawOutputChild(childWidth, imageSize);
             if (!_overlayCollapsed)
             {
-                ImGui.SameLine();
+                Im.Line.Same();
                 DrawInputChild("Overlay Texture", _right, childWidth, imageSize);
             }
 
-            ImGui.SameLine();
+            Im.Line.Same();
             DrawOverlayCollapseButton();
         }
         catch (Exception e)

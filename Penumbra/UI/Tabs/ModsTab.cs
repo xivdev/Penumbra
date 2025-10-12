@@ -6,6 +6,7 @@ using Penumbra.UI.Classes;
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using ImSharp;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
@@ -53,7 +54,7 @@ public class ModsTab(
         try
         {
             selector.Draw();
-            ImGui.SameLine();
+            Im.Line.Same();
             ImGui.SetCursorPosX(MathF.Round(ImGui.GetCursorPosX()));
             using var group = ImRaii.Group();
             collectionHeader.Draw(false);
@@ -100,7 +101,7 @@ public class ModsTab(
             using (ImRaii.PushFont(UiBuilder.IconFont))
             {
                 ImGuiUtil.DrawTextButton(FontAwesomeIcon.InfoCircle.ToIconString(), frameHeight, frameColor);
-                ImGui.SameLine();
+                Im.Line.Same();
             }
 
             ImGuiUtil.DrawTextButton("Redraw:        ", frameHeight, frameColor);
@@ -113,27 +114,27 @@ public class ModsTab(
 
         using var id       = ImRaii.PushId("Redraw");
         using var disabled = ImRaii.Disabled(clientState.LocalPlayer == null);
-        ImGui.SameLine();
+        Im.Line.Same();
         var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 5 };
         var tt = !objects[0].Valid
             ? "\nCan only be used when you are logged in and your character is available."
             : string.Empty;
         DrawButton(buttonWidth, "All", string.Empty, tt);
-        ImGui.SameLine();
+        Im.Line.Same();
         DrawButton(buttonWidth, "Self", "self", tt);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         tt = targets.Target == null && targets.GPoseTarget == null
             ? "\nCan only be used when you have a target."
             : string.Empty;
         DrawButton(buttonWidth, "Target", "target", tt);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         tt = targets.FocusTarget == null
             ? "\nCan only be used when you have a focus target."
             : string.Empty;
         DrawButton(buttonWidth, "Focus", "focus", tt);
-        ImGui.SameLine();
+        Im.Line.Same();
 
         tt = !IsIndoors()
             ? "\nCan currently only be used for indoor furniture."

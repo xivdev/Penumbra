@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
 using OtterGui;
@@ -422,14 +423,14 @@ public partial class MtrlTab
             }, 1, _edit.Mod!.ModPath.FullName, false);
 
         var moddedPath = FindAssociatedShpk(out var defaultPath, out var gamePath);
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImUtf8.ButtonEx("Associate Default .shpk File"u8, moddedPath.ToPath(), Vector2.Zero,
                 moddedPath.Equals(_loadedShpkPath)))
             LoadShpk(moddedPath);
 
         if (!gamePath.Path.Equals(moddedPath.InternalName))
         {
-            ImGui.SameLine();
+            Im.Line.Same();
             if (ImUtf8.ButtonEx("Associate Unmodded .shpk File", defaultPath, Vector2.Zero,
                     gamePath.Path.Equals(_loadedShpkPath.InternalName)))
                 LoadShpk(new FullPath(gamePath));
@@ -474,7 +475,7 @@ public partial class MtrlTab
                         }
                 }
 
-                ImGui.SameLine();
+                Im.Line.Same();
                 if (description.Length > 0)
                     ImGuiUtil.LabeledHelpMarker(label, description);
                 else
