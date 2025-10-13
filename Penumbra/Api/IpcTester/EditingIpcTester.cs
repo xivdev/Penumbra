@@ -35,20 +35,26 @@ public class EditingIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
-        IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 1"u8);
-        if (ImEx.Button("Save 1"u8, Vector2.Zero, StringU8.Empty, _task1 is { IsCompleted: false }))
-            _task1 = new ConvertTextureFile(pi).Invoke(_inputPath, _outputPath, _typeSelector, _mipMaps);
-        Im.Line.Same();
-        Im.Text(_task1 is null ? "Not Initiated"u8 : $"{_task1.Status}");
-        if (Im.Item.Hovered() && _task1?.Status is TaskStatus.Faulted)
-            Im.Tooltip.Set($"{_task1.Exception}");
+        using (IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 1"u8))
+        {
+            table.NextColumn();
+            if (ImEx.Button("Save 1"u8, Vector2.Zero, StringU8.Empty, _task1 is { IsCompleted: false }))
+                _task1 = new ConvertTextureFile(pi).Invoke(_inputPath, _outputPath, _typeSelector, _mipMaps);
+            Im.Line.Same();
+            Im.Text(_task1 is null ? "Not Initiated"u8 : $"{_task1.Status}");
+            if (Im.Item.Hovered() && _task1?.Status is TaskStatus.Faulted)
+                Im.Tooltip.Set($"{_task1.Exception}");
+        }
 
-        IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 2"u8);
-        if (ImEx.Button("Save 2"u8, Vector2.Zero, StringU8.Empty, _task2 is { IsCompleted: false }))
-            _task2 = new ConvertTextureFile(pi).Invoke(_inputPath2, _outputPath2, _typeSelector, _mipMaps);
-        Im.Line.Same();
-        Im.Text(_task2 is null ? "Not Initiated"u8 : $"{_task2.Status}");
-        if (Im.Item.Hovered() && _task2?.Status is TaskStatus.Faulted)
-            Im.Tooltip.Set($"{_task2.Exception}");
+        using (IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 2"u8))
+        {
+            table.NextColumn();
+            if (ImEx.Button("Save 2"u8, Vector2.Zero, StringU8.Empty, _task2 is { IsCompleted: false }))
+                _task2 = new ConvertTextureFile(pi).Invoke(_inputPath2, _outputPath2, _typeSelector, _mipMaps);
+            Im.Line.Same();
+            Im.Text(_task2 is null ? "Not Initiated"u8 : $"{_task2.Status}");
+            if (Im.Item.Hovered() && _task2?.Status is TaskStatus.Faulted)
+                Im.Tooltip.Set($"{_task2.Exception}");
+        }
     }
 }

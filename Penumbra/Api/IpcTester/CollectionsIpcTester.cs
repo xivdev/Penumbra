@@ -1,12 +1,13 @@
 using Dalamud.Plugin;
 using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.GameData.Data;
 
 namespace Penumbra.Api.IpcTester;
 
-public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
+public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
 {
     private int               _objectIdx;
     private Guid?             _collectionId;
@@ -46,98 +47,109 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
+
         table.DrawColumn("Last Return Code"u8);
         table.DrawColumn($"{_returnCode}");
         if (_oldCollection is not null)
             Im.Text(!_oldCollection.HasValue ? "Created" : _oldCollection.ToString()!);
 
         table.NextRow();
-        table.DrawColumn(GetCollectionsByIdentifier.Label);
-        table.DrawColumn("Collection Identifier"u8);
-        var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionId.GetValueOrDefault().ToString());
-        if (collectionList.Count == 0)
+        using (IpcTester.DrawIntro(GetCollectionsByIdentifier.Label, "Collection Identifier"u8))
         {
-            DrawCollection(table, null);
-        }
-        else
-        {
-            DrawCollection(table, collectionList[0]);
-            foreach (var pair in collectionList.Skip(1))
+            var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionId.GetValueOrDefault().ToString());
+            if (collectionList.Count == 0)
             {
-                table.NextRow();
-                table.NextColumn();
-                table.NextColumn();
-                table.NextColumn();
-                DrawCollection(table, pair);
+                DrawCollection(table, null);
+            }
+            else
+            {
+                DrawCollection(table, collectionList[0]);
+                foreach (var pair in collectionList.Skip(1))
+                {
+                    table.NextRow();
+                    table.NextColumn();
+                    table.NextColumn();
+                    table.NextColumn();
+                    DrawCollection(table, pair);
+                }
             }
         }
 
-        table.DrawColumn(GetCollection.Label);
-        table.DrawColumn("Current Collection"u8);
-        DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Current));
-
-        table.DrawColumn(GetCollection.Label);
-        table.DrawColumn("Default Collection"u8);
-        DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Default));
-
-        table.DrawColumn(GetCollection.Label);
-        table.DrawColumn("Interface Collection"u8);
-        DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Interface));
-
-        table.DrawColumn(GetCollection.Label);
-        table.DrawColumn("Special Collection"u8);
-        DrawCollection(table, new GetCollection(pi).Invoke(_type));
-
-        table.DrawColumn(GetCollections.Label);
-        table.DrawColumn("Collections"u8);
-        DrawCollectionPopup();
-        table.NextColumn();
-        if (Im.Button("Get##Collections"u8))
+        using (IpcTester.DrawIntro(GetCollection.Label, "Current Collection"u8))
         {
-            _collections = new GetCollections(pi).Invoke();
-            Im.Popup.Open("Collections"u8);
+            DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Current));
         }
 
-        table.DrawColumn(GetCollectionForObject.Label);
-        table.DrawColumn("Get Object Collection"u8);
-        var (valid, individual, effectiveCollection) = new GetCollectionForObject(pi).Invoke(_objectIdx);
-        DrawCollection(table, effectiveCollection);
-        Im.Line.Same();
-        Im.Text($"({(valid ? "Valid" : "Invalid")} Object{(individual ? ", Individual Assignment)" : ")")}");
-
-        table.DrawColumn(SetCollection.Label);
-        table.DrawColumn("Set Special Collection"u8);
-        table.NextColumn();
-        if (Im.Button("Set##SpecialCollection"u8))
-            (_returnCode, _oldCollection) =
-                new SetCollection(pi).Invoke(_type, _collectionId.GetValueOrDefault(Guid.Empty), _allowCreation, _allowDeletion);
-        table.NextColumn();
-        if (Im.Button("Remove##SpecialCollection"u8))
-            (_returnCode, _oldCollection) = new SetCollection(pi).Invoke(_type, null, _allowCreation, _allowDeletion);
-
-        table.DrawColumn(SetCollectionForObject.Label);
-        table.DrawColumn("Set Object Collection"u8);
-        table.NextColumn();
-        if (Im.Button("Set##ObjectCollection"u8))
-            (_returnCode, _oldCollection) = new SetCollectionForObject(pi).Invoke(_objectIdx, _collectionId.GetValueOrDefault(Guid.Empty),
-                _allowCreation, _allowDeletion);
-        table.NextColumn();
-        if (Im.Button("Remove##ObjectCollection"u8))
-            (_returnCode, _oldCollection) = new SetCollectionForObject(pi).Invoke(_objectIdx, null, _allowCreation, _allowDeletion);
-
-        table.DrawColumn(GetChangedItemsForCollection.Label);
-        table.DrawColumn("Changed Item List"u8);
-        DrawChangedItemPopup();
-        table.NextColumn();
-        if (Im.Button("Get##ChangedItems"u8))
+        using (IpcTester.DrawIntro(GetCollection.Label, "Default Collection"u8))
         {
-            var items = new GetChangedItemsForCollection(pi).Invoke(_collectionId.GetValueOrDefault(Guid.Empty));
-            _changedItems = items.Select(kvp =>
+            DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Default));
+        }
+
+        using (IpcTester.DrawIntro(GetCollection.Label, "Interface Collection"u8))
+        {
+            DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Interface));
+        }
+
+        using (IpcTester.DrawIntro(GetCollection.Label, "Special Collection"u8))
+        {
+            DrawCollection(table, new GetCollection(pi).Invoke(_type));
+        }
+
+        using (IpcTester.DrawIntro(GetCollections.Label, "Collections"u8))
+        {
+            DrawCollectionPopup();
+            table.NextColumn();
+            if (Im.SmallButton("Get##Collections"u8))
             {
-                var (type, id) = kvp.Value.ToApiObject();
-                return (kvp.Key, type, id);
-            }).ToArray();
-            Im.Popup.Open("Changed Item List"u8);
+                _collections = new GetCollections(pi).Invoke();
+                Im.Popup.Open("Collections"u8);
+            }
+        }
+
+        using (IpcTester.DrawIntro(GetCollectionForObject.Label, "Get Object Collection"u8))
+        {
+            var (valid, individual, effectiveCollection) = new GetCollectionForObject(pi).Invoke(_objectIdx);
+            DrawCollection(table, effectiveCollection);
+            Im.Line.Same();
+            Im.Text($"({(valid ? "Valid" : "Invalid")} Object{(individual ? ", Individual Assignment)" : ")")}");
+        }
+
+        using (IpcTester.DrawIntro(SetCollection.Label, "Set Special Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set##SpecialCollection"u8))
+                (_returnCode, _oldCollection) =
+                    new SetCollection(pi).Invoke(_type, _collectionId.GetValueOrDefault(Guid.Empty), _allowCreation, _allowDeletion);
+            table.NextColumn();
+            if (Im.SmallButton("Remove##SpecialCollection"u8))
+                (_returnCode, _oldCollection) = new SetCollection(pi).Invoke(_type, null, _allowCreation, _allowDeletion);
+        }
+
+        using (IpcTester.DrawIntro(SetCollectionForObject.Label, "Set Object Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set##ObjectCollection"u8))
+                (_returnCode, _oldCollection) = new SetCollectionForObject(pi).Invoke(_objectIdx, _collectionId.GetValueOrDefault(Guid.Empty),
+                    _allowCreation, _allowDeletion);
+            table.NextColumn();
+            if (Im.SmallButton("Remove##ObjectCollection"u8))
+                (_returnCode, _oldCollection) = new SetCollectionForObject(pi).Invoke(_objectIdx, null, _allowCreation, _allowDeletion);
+        }
+
+        using (IpcTester.DrawIntro(GetChangedItemsForCollection.Label, "Changed Item List"u8))
+        {
+            DrawChangedItemPopup();
+            table.NextColumn();
+            if (Im.SmallButton("Get##ChangedItems"u8))
+            {
+                var items = new GetChangedItemsForCollection(pi).Invoke(_collectionId.GetValueOrDefault(Guid.Empty));
+                _changedItems = items.Select(kvp =>
+                {
+                    var (type, id) = kvp.Value.ToApiObject();
+                    return (kvp.Key, type, id);
+                }).ToArray();
+                Im.Popup.Open("Changed Item List"u8);
+            }
         }
     }
 
@@ -199,9 +211,6 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
 
         Im.Text(collection.Value.Name);
         table.NextColumn();
-        using (Im.Font.PushMono())
-        {
-            ImEx.CopyOnClickSelectable($"{collection.Value.Id}");
-        }
+        LunaStyle.DrawGuid(collection.Value.Id);
     }
 }

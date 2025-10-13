@@ -24,64 +24,82 @@ public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
-        IpcTester.DrawIntro(ResolveDefaultPath.Label, "Default Collection Resolve"u8);
-        if (_currentResolvePath.Length is not 0)
-            Im.Text(new ResolveDefaultPath(pi).Invoke(_currentResolvePath));
-
-        IpcTester.DrawIntro(ResolveInterfacePath.Label, "Interface Collection Resolve"u8);
-        if (_currentResolvePath.Length is not 0)
-            Im.Text(new ResolveInterfacePath(pi).Invoke(_currentResolvePath));
-
-        IpcTester.DrawIntro(ResolvePlayerPath.Label, "Player Collection Resolve"u8);
-        if (_currentResolvePath.Length is not 0)
-            Im.Text(new ResolvePlayerPath(pi).Invoke(_currentResolvePath));
-
-        IpcTester.DrawIntro(ResolveGameObjectPath.Label, "Game Object Collection Resolve"u8);
-        if (_currentResolvePath.Length is not 0)
-            Im.Text(new ResolveGameObjectPath(pi).Invoke(_currentResolvePath, _currentReverseIdx));
-
-        IpcTester.DrawIntro(ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)"u8);
-        if (_currentReversePath.Length is not 0)
+        using (IpcTester.DrawIntro(ResolveDefaultPath.Label, "Default Collection Resolve"u8))
         {
-            var list = new ReverseResolvePlayerPath(pi).Invoke(_currentReversePath);
-            if (list.Length > 0)
+            if (_currentResolvePath.Length is not 0)
+                table.DrawColumn(new ResolveDefaultPath(pi).Invoke(_currentResolvePath));
+        }
+
+        using (IpcTester.DrawIntro(ResolveInterfacePath.Label, "Interface Collection Resolve"u8))
+        {
+            if (_currentResolvePath.Length is not 0)
+                table.DrawColumn(new ResolveInterfacePath(pi).Invoke(_currentResolvePath));
+        }
+
+        using (IpcTester.DrawIntro(ResolvePlayerPath.Label, "Player Collection Resolve"u8))
+        {
+            if (_currentResolvePath.Length is not 0)
+                table.DrawColumn(new ResolvePlayerPath(pi).Invoke(_currentResolvePath));
+        }
+
+        using (IpcTester.DrawIntro(ResolveGameObjectPath.Label, "Game Object Collection Resolve"u8))
+        {
+            if (_currentResolvePath.Length is not 0)
+                table.DrawColumn(new ResolveGameObjectPath(pi).Invoke(_currentResolvePath, _currentReverseIdx));
+        }
+
+        using (IpcTester.DrawIntro(ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)"u8))
+        {
+            if (_currentReversePath.Length is not 0)
             {
-                Im.Text(list[0]);
-                if (list.Length > 1 && Im.Item.Hovered())
-                    Im.Tooltip.Set(StringU8.Join((byte)'\n', list.Skip(1)));
+                var list = new ReverseResolvePlayerPath(pi).Invoke(_currentReversePath);
+                if (list.Length > 0)
+                {
+                    table.DrawColumn(list[0]);
+                    if (list.Length > 1 && Im.Item.Hovered())
+                        Im.Tooltip.Set(StringU8.Join((byte)'\n', list.Skip(1)));
+                }
             }
         }
 
-        IpcTester.DrawIntro(ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)"u8);
-        if (_currentReversePath.Length is not 0)
+        using (IpcTester.DrawIntro(ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)"u8))
         {
-            var list = new ReverseResolveGameObjectPath(pi).Invoke(_currentReversePath, _currentReverseIdx);
-            if (list.Length > 0)
+            if (_currentReversePath.Length is not 0)
             {
-                Im.Text(list[0]);
-                if (list.Length > 1 && Im.Item.Hovered())
-                    Im.Tooltip.Set(StringU8.Join((byte)'\n', list.Skip(1)));
+                var list = new ReverseResolveGameObjectPath(pi).Invoke(_currentReversePath, _currentReverseIdx);
+                if (list.Length > 0)
+                {
+                    table.DrawColumn(list[0]);
+                    if (list.Length > 1 && Im.Item.Hovered())
+                        Im.Tooltip.Set(StringU8.Join((byte)'\n', list.Skip(1)));
+                }
             }
         }
 
         string[] forwardArray = _currentResolvePath.Length > 0 ? [_currentResolvePath] : [];
         string[] reverseArray = _currentReversePath.Length > 0 ? [_currentReversePath] : [];
 
-        IpcTester.DrawIntro(ResolvePlayerPaths.Label, "Resolved Paths (Player)"u8);
-        if (forwardArray.Length > 0 || reverseArray.Length > 0)
+        using (IpcTester.DrawIntro(ResolvePlayerPaths.Label, "Resolved Paths (Player)"u8))
         {
-            var ret = new ResolvePlayerPaths(pi).Invoke(forwardArray, reverseArray);
-            Im.Text(ConvertText(ret));
+            if (forwardArray.Length > 0 || reverseArray.Length > 0)
+            {
+                var ret = new ResolvePlayerPaths(pi).Invoke(forwardArray, reverseArray);
+                table.DrawColumn(ConvertText(ret));
+            }
         }
 
-        IpcTester.DrawIntro(ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)"u8);
-        if (Im.Button("Start"u8))
-            _task = new ResolvePlayerPathsAsync(pi).Invoke(forwardArray, reverseArray);
-        var hovered = Im.Item.Hovered();
-        Im.Line.Same();
-        ImEx.TextFrameAligned($"{_task.Status}");
-        if ((hovered || Im.Item.Hovered()) && _task.IsCompletedSuccessfully)
-            Im.Tooltip.Set(ConvertText(_task.Result));
+        using (IpcTester.DrawIntro(ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Start"u8))
+                _task = new ResolvePlayerPathsAsync(pi).Invoke(forwardArray, reverseArray);
+            var hovered = Im.Item.Hovered();
+            Im.Line.Same();
+            ImEx.TextFrameAligned($"{_task.Status}");
+            if ((hovered || Im.Item.Hovered()) && _task.IsCompletedSuccessfully && _task.Result.Item1.Length > 0)
+                Im.Tooltip.Set(ConvertText(_task.Result));
+        }
+
         return;
 
         static StringU8 ConvertText((string[], string[][]) data)

@@ -75,79 +75,106 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             return;
 
         Im.Input.Text("##install"u8, ref _newInstallPath, "Install File Path..."u8);
-        Im.Input.Text("##modDir"u8, ref _modDirectory, "Mod Directory Name..."u8);
-        Im.Input.Text("##modName"u8, ref _modName, "Mod Name..."u8);
-        Im.Input.Text("##path"u8, ref _pathInput, "New Path..."u8);
+        Im.Input.Text("##modDir"u8,  ref _modDirectory,   "Mod Directory Name..."u8);
+        Im.Input.Text("##modName"u8, ref _modName,        "Mod Name..."u8);
+        Im.Input.Text("##path"u8,    ref _pathInput,      "New Path..."u8);
         using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetModList.Label, "Mods"u8);
-        DrawModsPopup();
-        if (Im.Button("Get##Mods"u8))
+        using (IpcTester.DrawIntro(GetModList.Label, "Mods"u8))
         {
-            _mods = new GetModList(_pi).Invoke();
-            Im.Popup.Open("Mods"u8);
+            DrawModsPopup();
+            table.NextColumn();
+            if (Im.SmallButton("Get##Mods"u8))
+            {
+                _mods = new GetModList(_pi).Invoke();
+                Im.Popup.Open("Mods"u8);
+            }
         }
 
-        IpcTester.DrawIntro(ReloadMod.Label, "Reload Mod"u8);
-        if (Im.Button("Reload"u8))
-            _lastReloadEc = new ReloadMod(_pi).Invoke(_modDirectory, _modName);
-
-        Im.Line.Same();
-        Im.Text($"{_lastReloadEc}");
-
-        IpcTester.DrawIntro(InstallMod.Label, "Install Mod"u8);
-        if (Im.Button("Install"u8))
-            _lastInstallEc = new InstallMod(_pi).Invoke(_newInstallPath);
-
-        Im.Line.Same();
-        Im.Text($"{_lastInstallEc}");
-
-        IpcTester.DrawIntro(AddMod.Label, "Add Mod"u8);
-        if (Im.Button("Add"u8))
-            _lastAddEc = new AddMod(_pi).Invoke(_modDirectory);
-
-        Im.Line.Same();
-        Im.Text($"{_lastAddEc}");
-
-        IpcTester.DrawIntro(DeleteMod.Label, "Delete Mod"u8);
-        if (Im.Button("Delete"u8))
-            _lastDeleteEc = new DeleteMod(_pi).Invoke(_modDirectory, _modName);
-
-        Im.Line.Same();
-        Im.Text(_lastDeleteEc.ToString());
-
-        IpcTester.DrawIntro(GetChangedItems.Label, "Get Changed Items"u8);
-        DrawChangedItemsPopup();
-        if (Im.Button("Get##ChangedItems"u8))
+        using (IpcTester.DrawIntro(ReloadMod.Label, "Reload Mod"u8))
         {
-            _changedItems = new GetChangedItems(_pi).Invoke(_modDirectory, _modName);
-            Im.Popup.Open("ChangedItems"u8);
+            table.NextColumn();
+            if (Im.SmallButton("Reload"u8))
+                _lastReloadEc = new ReloadMod(_pi).Invoke(_modDirectory, _modName);
+
+            Im.Line.Same();
+            Im.Text($"{_lastReloadEc}");
         }
 
-        IpcTester.DrawIntro(GetModPath.Label, "Current Path"u8);
-        var (ec, path, def, nameDef) = new GetModPath(_pi).Invoke(_modDirectory, _modName);
-        Im.Text($"{path} ({(def ? "Custom" : "Default")} Path, {(nameDef ? "Custom" : "Default")} Name) [{ec}]");
 
-        IpcTester.DrawIntro(SetModPath.Label, "Set Path"u8);
-        if (Im.Button("Set"u8))
-            _lastSetPathEc = new SetModPath(_pi).Invoke(_modDirectory, _pathInput, _modName);
+        using (IpcTester.DrawIntro(InstallMod.Label, "Install Mod"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Install"u8))
+                _lastInstallEc = new InstallMod(_pi).Invoke(_newInstallPath);
+            Im.Line.Same();
+            Im.Text($"{_lastInstallEc}");
+        }
 
-        Im.Line.Same();
-        Im.Text($"{_lastSetPathEc}");
+        using (IpcTester.DrawIntro(AddMod.Label, "Add Mod"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Add"u8))
+                _lastAddEc = new AddMod(_pi).Invoke(_modDirectory);
+            Im.Line.Same();
+            Im.Text($"{_lastAddEc}");
+        }
 
-        IpcTester.DrawIntro(ModDeleted.Label, "Last Mod Deleted"u8);
-        if (_lastDeletedModTime > DateTimeOffset.UnixEpoch)
-            Im.Text($"{_lastDeletedMod} at {_lastDeletedModTime}");
+        using (IpcTester.DrawIntro(DeleteMod.Label, "Delete Mod"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Delete"u8))
+                _lastDeleteEc = new DeleteMod(_pi).Invoke(_modDirectory, _modName);
+            Im.Line.Same();
+            Im.Text(_lastDeleteEc.ToString());
+        }
 
-        IpcTester.DrawIntro(ModAdded.Label, "Last Mod Added"u8);
-        if (_lastAddedModTime > DateTimeOffset.UnixEpoch)
-            Im.Text($"{_lastAddedMod} at {_lastAddedModTime}");
+        using (IpcTester.DrawIntro(GetChangedItems.Label, "Get Changed Items"u8))
+        {
+            DrawChangedItemsPopup();
+            table.NextColumn();
+            if (Im.SmallButton("Get##ChangedItems"u8))
+            {
+                _changedItems = new GetChangedItems(_pi).Invoke(_modDirectory, _modName);
+                Im.Popup.Open("ChangedItems"u8);
+            }
+        }
 
-        IpcTester.DrawIntro(ModMoved.Label, "Last Mod Moved");
-        if (_lastMovedModTime > DateTimeOffset.UnixEpoch)
-            Im.Text($"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}");
+        using (IpcTester.DrawIntro(GetModPath.Label, "Current Path"u8))
+        {
+            var (ec, path, def, nameDef) = new GetModPath(_pi).Invoke(_modDirectory, _modName);
+            table.DrawColumn($"{path} ({(def ? "Custom" : "Default")} Path, {(nameDef ? "Custom" : "Default")} Name) [{ec}]");
+        }
+
+        using (IpcTester.DrawIntro(SetModPath.Label, "Set Path"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set"u8))
+                _lastSetPathEc = new SetModPath(_pi).Invoke(_modDirectory, _pathInput, _modName);
+
+            Im.Line.Same();
+            Im.Text($"{_lastSetPathEc}");
+        }
+
+        using (IpcTester.DrawIntro(ModDeleted.Label, "Last Mod Deleted"u8))
+        {
+            if (_lastDeletedModTime > DateTimeOffset.UnixEpoch)
+                table.DrawColumn($"{_lastDeletedMod} at {_lastDeletedModTime}");
+        }
+
+        using (IpcTester.DrawIntro(ModAdded.Label, "Last Mod Added"u8))
+        {
+            if (_lastAddedModTime > DateTimeOffset.UnixEpoch)
+                table.DrawColumn($"{_lastAddedMod} at {_lastAddedModTime}");
+        }
+
+        using (IpcTester.DrawIntro(ModMoved.Label, "Last Mod Moved"))
+        {
+            if (_lastMovedModTime > DateTimeOffset.UnixEpoch)
+                table.DrawColumn($"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}");
+        }
     }
 
     private void DrawModsPopup()

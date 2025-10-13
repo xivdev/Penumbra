@@ -28,21 +28,29 @@ public class MetaIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetPlayerMetaManipulations.Label, "Player Meta Manipulations"u8);
-        if (Im.Button("Copy to Clipboard##Player"u8))
+        using (IpcTester.DrawIntro(GetPlayerMetaManipulations.Label, "Player Meta Manipulations"u8))
         {
-            var base64 = new GetPlayerMetaManipulations(pi).Invoke();
-            Im.Clipboard.Set(base64);
+            table.NextColumn();
+            if (Im.SmallButton("Copy to Clipboard##Player"u8))
+            {
+                var base64 = new GetPlayerMetaManipulations(pi).Invoke();
+                Im.Clipboard.Set(base64);
+            }
         }
 
-        IpcTester.DrawIntro(GetMetaManipulations.Label, "Game Object Manipulations"u8);
-        if (Im.Button("Copy to Clipboard##GameObject"u8))
+        using (IpcTester.DrawIntro(GetMetaManipulations.Label, "Game Object Manipulations"u8))
         {
-            var base64 = new GetMetaManipulations(pi).Invoke(_gameObjectIndex);
-            Im.Clipboard.Set(base64);
+            table.NextColumn();
+            if (Im.SmallButton("Copy to Clipboard##GameObject"u8))
+            {
+                var base64 = new GetMetaManipulations(pi).Invoke(_gameObjectIndex);
+                Im.Clipboard.Set(base64);
+            }
         }
 
-        IpcTester.DrawIntro(string.Empty, "Parsed Data"u8);
-        Im.Text($"Version: {_parsedVersion}, Count: {_metaDict.Count}");
+        using (IpcTester.DrawIntro(StringU8.Empty, "Parsed Data"u8))
+        {
+            table.DrawColumn($"Version: {_parsedVersion}, Count: {_metaDict.Count}");
+        }
     }
 }

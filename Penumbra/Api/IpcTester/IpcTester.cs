@@ -52,11 +52,13 @@ public class IpcTester(
         }
     }
 
-    internal static void DrawIntro(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> info)
+    internal static Im.IdDisposable DrawIntro(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> info)
     {
+        var id = Im.Id.Push(ref info);
         Im.Table.NextRow();
         Im.Table.DrawColumn(ref label);
         Im.Table.DrawColumn(ref info);
+        return id;
     }
 
     private void Subscribe()

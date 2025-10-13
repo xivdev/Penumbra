@@ -1,14 +1,16 @@
 using Dalamud.Plugin;
 using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.Api.IpcTester;
 
-public class GameStateIpcTester : Luna.IUiService, IDisposable
+public class GameStateIpcTester : IUiService, IDisposable
 {
-    private readonly IDalamudPluginInterface                        _pi;
+    private readonly IDalamudPluginInterface                       _pi;
     public readonly  EventSubscriber<nint, Guid, nint, nint, nint> CharacterBaseCreating;
     public readonly  EventSubscriber<nint, Guid, nint>             CharacterBaseCreated;
     public readonly  EventSubscriber<nint, string, string>         GameObjectResourcePathResolved;
@@ -29,8 +31,8 @@ public class GameStateIpcTester : Luna.IUiService, IDisposable
     public GameStateIpcTester(IDalamudPluginInterface pi)
     {
         _pi                            = pi;
-        CharacterBaseCreating          = IpcSubscribers.CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
-        CharacterBaseCreated           = IpcSubscribers.CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
+        CharacterBaseCreating          = CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
+        CharacterBaseCreated           = CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
         GameObjectResourcePathResolved = IpcSubscribers.GameObjectResourcePathResolved.Subscriber(pi, UpdateGameObjectResourcePath);
         CharacterBaseCreating.Disable();
         CharacterBaseCreated.Disable();
@@ -68,36 +70,49 @@ public class GameStateIpcTester : Luna.IUiService, IDisposable
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetDrawObjectInfo.Label, "Draw Object Info"u8);
-        if (_currentDrawObject == nint.Zero)
+        using (IpcTester.DrawIntro(GetDrawObjectInfo.Label, "Draw Object Info"u8))
         {
-            Im.Text("Invalid"u8);
+            table.NextColumn();
+            if (_currentDrawObject == nint.Zero)
+            {
+                Im.Text("Invalid"u8);
+            }
+            else
+            {
+                var (ptr, (collectionId, collectionName)) = new GetDrawObjectInfo(_pi).Invoke(_currentDrawObject);
+                Im.Text(ptr == nint.Zero ? $"No Actor Associated, {collectionName}" : $"{ptr:X}, {collectionName}");
+                Im.Line.Same();
+                LunaStyle.DrawGuid(collectionId);
+            }
         }
-        else
+
+        using (IpcTester.DrawIntro(GetCutsceneParentIndex.Label, "Cutscene Parent"u8))
         {
-            var (ptr, (collectionId, collectionName)) = new GetDrawObjectInfo(_pi).Invoke(_currentDrawObject);
-            Im.Text(ptr == nint.Zero ? $"No Actor Associated, {collectionName}" : $"{ptr:X}, {collectionName}");
-            Im.Line.Same();
-            ImEx.MonoText($"{collectionId}");
+            table.DrawColumn($"{new GetCutsceneParentIndex(_pi).Invoke(_currentCutsceneActor)}");
         }
 
-        IpcTester.DrawIntro(GetCutsceneParentIndex.Label, "Cutscene Parent"u8);
-        Im.Text($"{new GetCutsceneParentIndex(_pi).Invoke(_currentCutsceneActor)}");
+        using (IpcTester.DrawIntro(SetCutsceneParentIndex.Label, "Cutscene Parent"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set Parent"u8))
+                _cutsceneError = new SetCutsceneParentIndex(_pi)
+                    .Invoke(_currentCutsceneActor, _currentCutsceneParent);
+        }
 
-        IpcTester.DrawIntro(SetCutsceneParentIndex.Label, "Cutscene Parent"u8);
-        if (Im.Button("Set Parent"u8))
-            _cutsceneError = new SetCutsceneParentIndex(_pi)
-                .Invoke(_currentCutsceneActor, _currentCutsceneParent);
+        using (IpcTester.DrawIntro(CreatingCharacterBase.Label, "Last Drawobject created"u8))
+        {
+            if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
+                table.DrawColumn(_lastCreatedDrawObject != nint.Zero
+                    ? $"0x{_lastCreatedDrawObject:X} for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}"
+                    : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}");
+        }
 
-        IpcTester.DrawIntro(CreatingCharacterBase.Label, "Last Drawobject created"u8);
-        if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
-            Im.Text(_lastCreatedDrawObject != nint.Zero
-                ? $"0x{_lastCreatedDrawObject:X} for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}"
-                : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}");
-
-        IpcTester.DrawIntro(IpcSubscribers.GameObjectResourcePathResolved.Label, "Last GamePath resolved"u8);
-        if (_lastResolvedGamePathTime < DateTimeOffset.Now)
-            Im.Text($"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}");
+        using (IpcTester.DrawIntro(IpcSubscribers.GameObjectResourcePathResolved.Label, "Last GamePath resolved"u8))
+        {
+            if (_lastResolvedGamePathTime < DateTimeOffset.Now)
+                table.DrawColumn(
+                    $"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}");
+        }
     }
 
     private void UpdateLastCreated(nint gameObject, Guid _, nint _2, nint _3, nint _4)
@@ -122,9 +137,6 @@ public class GameStateIpcTester : Luna.IUiService, IDisposable
         _lastResolvedGamePathTime = DateTimeOffset.Now;
     }
 
-    private static unsafe StringU8 GetObjectName(nint gameObject)
-    {
-        var obj  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)gameObject;
-        return new StringU8(obj is not null && obj->Name[0] != 0 ? obj->Name : "Unknown"u8);
-    }
+    private static StringU8 GetObjectName(nint gameObject)
+        => new(((Actor)gameObject).StoredName());
 }

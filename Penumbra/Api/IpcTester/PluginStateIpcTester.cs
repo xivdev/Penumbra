@@ -1,3 +1,4 @@
+using Dalamud.Interface.Utility.Table;
 using Dalamud.Plugin;
 using ImSharp;
 using Luna;
@@ -63,48 +64,65 @@ public class PluginStateIpcTester : IUiService, IDisposable
         DrawList(IpcSubscribers.Initialized.Label, "Last Initialized"u8, _initializedList);
         DrawList(IpcSubscribers.Disposed.Label,    "Last Disposed"u8,    _disposedList);
 
-        IpcTester.DrawIntro(ApiVersion.Label, "Current Version"u8);
-        var (breaking, features) = new ApiVersion(_pi).Invoke();
-        Im.Text($"{breaking}.{features:D4}");
-
-        IpcTester.DrawIntro(GetEnabledState.Label, "Current State"u8);
-        Im.Text($"{new GetEnabledState(_pi).Invoke()}");
-
-        IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change"u8);
-        Im.Text(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never"u8);
-
-        IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features"u8);
-        Im.Text(StringU8.Join(", "u8, new SupportedFeatures(_pi).Invoke()));
-
-        IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features"u8);
-        Im.Text(StringU8.Join(", "u8, new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
-
-        DrawConfigPopup();
-        IpcTester.DrawIntro(GetConfiguration.Label, "Configuration"u8);
-        if (Im.Button("Get"u8))
+        using (IpcTester.DrawIntro(ApiVersion.Label, "Current Version"u8))
         {
-            _currentConfiguration = new GetConfiguration(_pi).Invoke();
-            Im.Popup.Open("Config Popup"u8);
+            var (breaking, features) = new ApiVersion(_pi).Invoke();
+            table.DrawColumn($"{breaking}.{features:D4}");
         }
 
-        IpcTester.DrawIntro(GetModDirectory.Label, "Current Mod Directory"u8);
-        Im.Text(new GetModDirectory(_pi).Invoke());
-
-        IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.Label, "Last Mod Directory Change"u8);
-        Im.Text(_lastModDirectoryTime > DateTimeOffset.MinValue
-            ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"
-            : "None"u8);
-
-        void DrawList(string label, ReadOnlySpan<byte> text, List<DateTimeOffset> list)
+        using (IpcTester.DrawIntro(GetEnabledState.Label, "Current State"u8))
         {
-            IpcTester.DrawIntro(label, text);
+            table.DrawColumn($"{new GetEnabledState(_pi).Invoke()}");
+        }
+
+        using (IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change"u8))
+        {
+            table.DrawColumn(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never"u8);
+        }
+
+        using (IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features"u8))
+        {
+            table.DrawColumn(StringU8.Join(", "u8, new SupportedFeatures(_pi).Invoke()));
+        }
+
+        using (IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features"u8))
+            table.DrawColumn(StringU8.Join(", "u8, new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
+
+        using (IpcTester.DrawIntro(GetConfiguration.Label, "Configuration"u8))
+        {
+            DrawConfigPopup();
+            table.NextColumn();
+            if (Im.SmallButton("Get"u8))
+            {
+                _currentConfiguration = new GetConfiguration(_pi).Invoke();
+                Im.Popup.Open("Config Popup"u8);
+            }
+        }
+
+        using (IpcTester.DrawIntro(GetModDirectory.Label, "Current Mod Directory"u8))
+        {
+            table.DrawColumn(new GetModDirectory(_pi).Invoke());
+        }
+
+        using (IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.Label, "Last Mod Directory Change"u8))
+        {
+            table.DrawColumn(_lastModDirectoryTime > DateTimeOffset.MinValue
+                ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"
+                : "None"u8);
+        }
+
+        return;
+
+        static void DrawList(string label, ReadOnlySpan<byte> text, List<DateTimeOffset> list)
+        {
+            using var _ = IpcTester.DrawIntro(label, text);
             if (list.Count is 0)
             {
-                Im.Text("Never"u8);
+                Im.Table.DrawColumn("Never"u8);
             }
             else
             {
-                Im.Text(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
+                Im.Table.DrawColumn(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
                 if (list.Count > 1 && Im.Item.Hovered())
                     Im.Tooltip.Set(
                         StringU8.Join((byte)'\n', list.SkipLast(1).Select(t => t.LocalDateTime.ToString(CultureInfo.CurrentCulture))));

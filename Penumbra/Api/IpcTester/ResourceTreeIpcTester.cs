@@ -34,121 +34,136 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             return;
 
         Im.Input.Text("GameObject indices"u8, ref _gameObjectIndices);
-        EnumCombo<ResourceType>.Instance.Draw("Resource type"u8, ref _type, default, Im.Item.Size.X);
+        EnumCombo<ResourceType>.Instance.Draw("Resource type"u8, ref _type, default, Im.Item.CalculateWidth());
         Im.Checkbox("Also get names and icons"u8, ref _withUiData);
 
         using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetGameObjectResourcePaths.Label, "Get GameObject resource paths"u8);
-        if (Im.Button("Get##GameObjectResourcePaths"u8))
+        using (IpcTester.DrawIntro(GetGameObjectResourcePaths.Label, "Get GameObject resource paths"u8))
         {
-            var gameObjects = GetSelectedGameObjects();
-            var subscriber  = new GetGameObjectResourcePaths(pi);
-            _stopwatch.Restart();
-            var resourcePaths = subscriber.Invoke(gameObjects);
+            DrawPopup("GetGameObjectResourcePaths"u8, ref _lastGameObjectResourcePaths, DrawResourcePaths,
+                _lastCallDuration);
+            table.NextColumn();
+            if (Im.SmallButton("Get##GameObjectResourcePaths"u8))
+            {
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber  = new GetGameObjectResourcePaths(pi);
+                _stopwatch.Restart();
+                var resourcePaths = subscriber.Invoke(gameObjects);
 
-            _lastCallDuration = _stopwatch.Elapsed;
-            _lastGameObjectResourcePaths = gameObjects
-                .Select(i => GameObjectToString(i))
-                .Zip(resourcePaths)
-                .ToArray();
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastGameObjectResourcePaths = gameObjects
+                    .Select(i => GameObjectToString(i))
+                    .Zip(resourcePaths)
+                    .ToArray();
 
-            Im.Popup.Open("GetGameObjectResourcePaths"u8);
+                Im.Popup.Open("GetGameObjectResourcePaths"u8);
+            }
         }
 
-        IpcTester.DrawIntro(GetPlayerResourcePaths.Label, "Get local player resource paths"u8);
-        if (Im.Button("Get##PlayerResourcePaths"u8))
+        using (IpcTester.DrawIntro(GetPlayerResourcePaths.Label, "Get local player resource paths"u8))
         {
-            var subscriber = new GetPlayerResourcePaths(pi);
-            _stopwatch.Restart();
-            var resourcePaths = subscriber.Invoke();
+            DrawPopup("GetPlayerResourcePaths"u8, ref _lastPlayerResourcePaths!, DrawResourcePaths, _lastCallDuration);
+            table.NextColumn();
+            if (Im.SmallButton("Get##PlayerResourcePaths"u8))
+            {
+                var subscriber = new GetPlayerResourcePaths(pi);
+                _stopwatch.Restart();
+                var resourcePaths = subscriber.Invoke();
 
-            _lastCallDuration = _stopwatch.Elapsed;
-            _lastPlayerResourcePaths = resourcePaths
-                .Select(pair => (GameObjectToString(pair.Key), pair.Value))
-                .ToArray()!;
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastPlayerResourcePaths = resourcePaths
+                    .Select(pair => (GameObjectToString(pair.Key), pair.Value))
+                    .ToArray()!;
 
-            Im.Popup.Open("GetPlayerResourcePaths"u8);
+                Im.Popup.Open("GetPlayerResourcePaths"u8);
+            }
         }
 
-        IpcTester.DrawIntro(GetGameObjectResourcesOfType.Label, "Get GameObject resources of type"u8);
-        if (Im.Button("Get##GameObjectResourcesOfType"u8))
+        using (IpcTester.DrawIntro(GetGameObjectResourcesOfType.Label, "Get GameObject resources of type"u8))
         {
-            var gameObjects = GetSelectedGameObjects();
-            var subscriber  = new GetGameObjectResourcesOfType(pi);
-            _stopwatch.Restart();
-            var resourcesOfType = subscriber.Invoke(_type, _withUiData, gameObjects);
+            DrawPopup("GetGameObjectResourcesOfType"u8, ref _lastGameObjectResourcesOfType, DrawResourcesOfType,
+                _lastCallDuration);
+            table.NextColumn();
+            if (Im.SmallButton("Get##GameObjectResourcesOfType"u8))
+            {
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber  = new GetGameObjectResourcesOfType(pi);
+                _stopwatch.Restart();
+                var resourcesOfType = subscriber.Invoke(_type, _withUiData, gameObjects);
 
-            _lastCallDuration = _stopwatch.Elapsed;
-            _lastGameObjectResourcesOfType = gameObjects
-                .Select(i => GameObjectToString(i))
-                .Zip(resourcesOfType)
-                .ToArray();
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastGameObjectResourcesOfType = gameObjects
+                    .Select(i => GameObjectToString(i))
+                    .Zip(resourcesOfType)
+                    .ToArray();
 
-            Im.Popup.Open("GetGameObjectResourcesOfType"u8);
+                Im.Popup.Open("GetGameObjectResourcesOfType"u8);
+            }
         }
 
-        IpcTester.DrawIntro(GetPlayerResourcesOfType.Label, "Get local player resources of type"u8);
-        if (Im.Button("Get##PlayerResourcesOfType"u8))
+        using (IpcTester.DrawIntro(GetPlayerResourcesOfType.Label, "Get local player resources of type"u8))
         {
-            var subscriber = new GetPlayerResourcesOfType(pi);
-            _stopwatch.Restart();
-            var resourcesOfType = subscriber.Invoke(_type, _withUiData);
+            DrawPopup("GetPlayerResourcesOfType"u8, ref _lastPlayerResourcesOfType, DrawResourcesOfType,
+                _lastCallDuration);
+            table.NextColumn();
+            if (Im.SmallButton("Get##PlayerResourcesOfType"u8))
+            {
+                var subscriber = new GetPlayerResourcesOfType(pi);
+                _stopwatch.Restart();
+                var resourcesOfType = subscriber.Invoke(_type, _withUiData);
 
-            _lastCallDuration = _stopwatch.Elapsed;
-            _lastPlayerResourcesOfType = resourcesOfType
-                .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)pair.Value))
-                .ToArray();
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastPlayerResourcesOfType = resourcesOfType
+                    .Select(pair => (GameObjectToString(pair.Key), (IReadOnlyDictionary<nint, (string, string, ChangedItemIcon)>?)pair.Value))
+                    .ToArray();
 
-            Im.Popup.Open("GetPlayerResourcesOfType"u8);
+                Im.Popup.Open("GetPlayerResourcesOfType"u8);
+            }
         }
 
-        IpcTester.DrawIntro(GetGameObjectResourceTrees.Label, "Get GameObject resource trees"u8);
-        if (Im.Button("Get##GameObjectResourceTrees"u8))
+        using (IpcTester.DrawIntro(GetGameObjectResourceTrees.Label, "Get GameObject resource trees"u8))
         {
-            var gameObjects = GetSelectedGameObjects();
-            var subscriber  = new GetGameObjectResourceTrees(pi);
-            _stopwatch.Restart();
-            var trees = subscriber.Invoke(_withUiData, gameObjects);
+            DrawPopup("GetGameObjectResourceTrees"u8, ref _lastGameObjectResourceTrees, DrawResourceTrees,
+                _lastCallDuration);
+            table.NextColumn();
+            if (Im.SmallButton("Get##GameObjectResourceTrees"u8))
+            {
+                var gameObjects = GetSelectedGameObjects();
+                var subscriber  = new GetGameObjectResourceTrees(pi);
+                _stopwatch.Restart();
+                var trees = subscriber.Invoke(_withUiData, gameObjects);
 
-            _lastCallDuration = _stopwatch.Elapsed;
-            _lastGameObjectResourceTrees = gameObjects
-                .Select(i => GameObjectToString(i))
-                .Zip(trees)
-                .ToArray();
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastGameObjectResourceTrees = gameObjects
+                    .Select(i => GameObjectToString(i))
+                    .Zip(trees)
+                    .ToArray();
 
-            Im.Popup.Open("GetGameObjectResourceTrees"u8);
+                Im.Popup.Open("GetGameObjectResourceTrees"u8);
+            }
         }
 
-        IpcTester.DrawIntro(GetPlayerResourceTrees.Label, "Get local player resource trees"u8);
-        if (Im.Button("Get##PlayerResourceTrees"u8))
+        using (IpcTester.DrawIntro(GetPlayerResourceTrees.Label, "Get local player resource trees"u8))
         {
-            var subscriber = new GetPlayerResourceTrees(pi);
-            _stopwatch.Restart();
-            var trees = subscriber.Invoke(_withUiData);
+            DrawPopup("GetPlayerResourceTrees"u8, ref _lastPlayerResourceTrees, DrawResourceTrees!, _lastCallDuration);
+            table.NextColumn();
+            if (Im.SmallButton("Get##PlayerResourceTrees"u8))
+            {
+                var subscriber = new GetPlayerResourceTrees(pi);
+                _stopwatch.Restart();
+                var trees = subscriber.Invoke(_withUiData);
 
-            _lastCallDuration = _stopwatch.Elapsed;
-            _lastPlayerResourceTrees = trees
-                .Select(pair => (GameObjectToString(pair.Key), pair.Value))
-                .ToArray();
+                _lastCallDuration = _stopwatch.Elapsed;
+                _lastPlayerResourceTrees = trees
+                    .Select(pair => (GameObjectToString(pair.Key), pair.Value))
+                    .ToArray();
 
-            Im.Popup.Open("GetPlayerResourceTrees"u8);
+                Im.Popup.Open("GetPlayerResourceTrees"u8);
+            }
         }
-
-        DrawPopup("GetGameObjectResourcePaths"u8, ref _lastGameObjectResourcePaths, DrawResourcePaths,
-            _lastCallDuration);
-        DrawPopup("GetPlayerResourcePaths"u8, ref _lastPlayerResourcePaths!, DrawResourcePaths, _lastCallDuration);
-
-        DrawPopup("GetGameObjectResourcesOfType"u8, ref _lastGameObjectResourcesOfType, DrawResourcesOfType,
-            _lastCallDuration);
-        DrawPopup("GetPlayerResourcesOfType"u8, ref _lastPlayerResourcesOfType, DrawResourcesOfType,
-            _lastCallDuration);
-
-        DrawPopup("GetGameObjectResourceTrees"u8, ref _lastGameObjectResourceTrees, DrawResourceTrees,
-            _lastCallDuration);
-        DrawPopup("GetPlayerResourceTrees"u8, ref _lastPlayerResourceTrees, DrawResourceTrees!, _lastCallDuration);
     }
 
     private static void DrawPopup<T>(ReadOnlySpan<byte> popupId, ref T? result, Action<T> drawResult, TimeSpan duration) where T : class

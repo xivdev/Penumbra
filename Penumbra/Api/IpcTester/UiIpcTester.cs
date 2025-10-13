@@ -60,48 +60,63 @@ public class UiIpcTester : Luna.IUiService, IDisposable
         if (!_)
             return;
 
-        EnumCombo<TabType>.Instance.Draw("Tab to Open at"u8, ref _selectTab, default, 0);
         Im.Input.Text("##openMod"u8, ref _modName, "Mod to Open at..."u8);
+        EnumCombo<TabType>.Instance.Draw("Tab to Open at"u8, ref _selectTab, default, Im.Item.CalculateWidth());
         using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(PostSettingsDraw.Label, "Last Drawn Mod"u8);
-        Im.Text(_lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None"u8);
-
-        IpcTester.DrawIntro(IpcSubscribers.ChangedItemTooltip.Label, "Add Tooltip"u8);
-        if (Im.Checkbox("##tooltip"u8, ref _subscribedToTooltip))
+        using (IpcTester.DrawIntro(PostSettingsDraw.Label, "Last Drawn Mod"u8))
         {
-            if (_subscribedToTooltip)
-                ChangedItemTooltip.Enable();
-            else
-                ChangedItemTooltip.Disable();
+            table.DrawColumn(_lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None"u8);
         }
 
-        Im.Line.Same();
-        Im.Text(_lastHovered);
-
-        IpcTester.DrawIntro(IpcSubscribers.ChangedItemClicked.Label, "Subscribe Click"u8);
-        if (Im.Checkbox("##click"u8, ref _subscribedToClick))
+        using (IpcTester.DrawIntro(IpcSubscribers.ChangedItemTooltip.Label, "Add Tooltip"u8))
         {
-            if (_subscribedToClick)
-                ChangedItemClicked.Enable();
-            else
-                ChangedItemClicked.Disable();
+            table.NextColumn();
+            if (Im.Checkbox("##tooltip"u8, ref _subscribedToTooltip))
+            {
+                if (_subscribedToTooltip)
+                    ChangedItemTooltip.Enable();
+                else
+                    ChangedItemTooltip.Disable();
+            }
+
+            Im.Line.Same();
+            ImEx.TextFrameAligned(_lastHovered);
         }
 
-        Im.Line.Same();
-        Im.Text(_lastClicked);
-        IpcTester.DrawIntro(OpenMainWindow.Label, "Open Mod Window"u8);
-        if (Im.Button("Open##window"u8))
-            _ec = new OpenMainWindow(_pi).Invoke(_selectTab, _modName, _modName);
+        using (IpcTester.DrawIntro(IpcSubscribers.ChangedItemClicked.Label, "Subscribe Click"u8))
+        {
+            table.NextColumn();
+            if (Im.Checkbox("##click"u8, ref _subscribedToClick))
+            {
+                if (_subscribedToClick)
+                    ChangedItemClicked.Enable();
+                else
+                    ChangedItemClicked.Disable();
+            }
 
-        Im.Line.Same();
-        Im.Text($"{_ec}");
+            Im.Line.Same();
+            ImEx.TextFrameAligned(_lastClicked);
+        }
 
-        IpcTester.DrawIntro(CloseMainWindow.Label, "Close Mod Window"u8);
-        if (Im.Button("Close##window"u8))
-            new CloseMainWindow(_pi).Invoke();
+        using (IpcTester.DrawIntro(OpenMainWindow.Label, "Open Mod Window"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Open##window"u8))
+                _ec = new OpenMainWindow(_pi).Invoke(_selectTab, _modName, _modName);
+
+            Im.Line.Same();
+            Im.Text($"{_ec}");
+        }
+
+        using (IpcTester.DrawIntro(CloseMainWindow.Label, "Close Mod Window"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Close##window"u8))
+                new CloseMainWindow(_pi).Invoke();
+        }
     }
 
     private void UpdateLastDrawnMod(string name)

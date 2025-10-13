@@ -38,21 +38,29 @@ public class RedrawingIpcTester : Luna.IUiService, IDisposable
         if (!table)
             return;
 
-        IpcTester.DrawIntro(RedrawObject.Label, "Redraw by Index"u8);
-        var tmp = _redrawIndex;
-        Im.Item.SetNextWidthScaled(100);
-        if (Im.Drag("##redrawIndex"u8, ref tmp, 0, _objects.TotalCount, 0.1f))
-            _redrawIndex = Math.Clamp(tmp, 0, _objects.TotalCount);
-        Im.Line.Same();
-        if (Im.Button("Redraw##Index"u8))
-            new RedrawObject(_pi).Invoke(_redrawIndex);
+        using (IpcTester.DrawIntro(RedrawObject.Label, "Redraw by Index"u8))
+        {
+            var tmp = _redrawIndex;
+            table.NextColumn();
+            Im.Item.SetNextWidthScaled(100);
+            if (Im.Drag("##redrawIndex"u8, ref tmp, 0, _objects.TotalCount, 0.1f))
+                _redrawIndex = Math.Clamp(tmp, 0, _objects.TotalCount);
+            Im.Line.Same();
+            if (Im.Button("Redraw##Index"u8))
+                new RedrawObject(_pi).Invoke(_redrawIndex);
+        }
 
-        IpcTester.DrawIntro(RedrawAll.Label, "Redraw All"u8);
-        if (Im.Button("Redraw##All"u8))
-            new RedrawAll(_pi).Invoke();
+        using (IpcTester.DrawIntro(RedrawAll.Label, "Redraw All"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Redraw##All"u8))
+                new RedrawAll(_pi).Invoke();
+        }
 
-        IpcTester.DrawIntro(GameObjectRedrawn.Label, "Last Redrawn Object:"u8);
-        Im.Text(_lastRedrawnString);
+        using (IpcTester.DrawIntro(GameObjectRedrawn.Label, "Last Redrawn Object:"u8))
+        {
+            table.DrawColumn(_lastRedrawnString);
+        }
     }
 
     private void SetLastRedrawn(nint address, int index)

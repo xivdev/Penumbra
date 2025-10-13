@@ -45,7 +45,7 @@ public class TemporaryIpcTester(
 
         Im.Input.Text("##identity"u8,       ref _identity,           "Identity..."u8);
         Im.Input.Text("##tempCollection"u8, ref _tempCollectionName, "Collection Name..."u8);
-        ImEx.GuidInput("##guid"u8, ref _tempGuid, "Collection GUID..."u8);
+        ImEx.GuidInput("Collection ID##guid"u8, ref _tempGuid);
         Im.Input.Scalar("##tempActorIndex"u8, ref _tempActorIndex);
         Im.Input.Text("##tempMod"u8,   ref _tempModName,      "Temporary Mod Name..."u8);
         Im.Input.Text("##mod"u8,       ref _modDirectory,     "Existing Mod Name..."u8);
@@ -58,134 +58,186 @@ public class TemporaryIpcTester(
         if (!table)
             return;
 
-        IpcTester.DrawIntro("Last Error", $"{_lastTempError}");
-        table.DrawColumn("Last Created Collection"u8);
-        table.NextColumn();
-        LunaStyle.DrawGuid(LastCreatedCollectionId);
-
-        IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Create Temporary Collection"u8);
-        if (Im.Button("Create##Collection"u8))
+        using (IpcTester.DrawIntro("Last Error", $"{_lastTempError}"))
         {
-            _lastTempError = new CreateTemporaryCollection(pi).Invoke(_identity, _tempCollectionName, out LastCreatedCollectionId);
-            if (_tempGuid is null)
-                _tempGuid = LastCreatedCollectionId;
+            table.DrawColumn("Last Created Collection"u8);
+            table.NextColumn();
+            LunaStyle.DrawGuid(LastCreatedCollectionId);
+        }
+
+        using (IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Create Temporary Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Create##Collection"u8))
+            {
+                _lastTempError = new CreateTemporaryCollection(pi).Invoke(_identity, _tempCollectionName, out LastCreatedCollectionId);
+                if (_tempGuid is null)
+                    _tempGuid = LastCreatedCollectionId;
+            }
         }
 
         var guid = _tempGuid.GetValueOrDefault(Guid.Empty);
 
-        IpcTester.DrawIntro(DeleteTemporaryCollection.Label, "Delete Temporary Collection"u8);
-        if (Im.Button("Delete##Collection"u8))
-            _lastTempError = new DeleteTemporaryCollection(pi).Invoke(guid);
-        Im.Line.Same();
-        if (Im.Button("Delete Last##Collection"u8))
-            _lastTempError = new DeleteTemporaryCollection(pi).Invoke(LastCreatedCollectionId);
-
-        IpcTester.DrawIntro(AssignTemporaryCollection.Label, "Assign Temporary Collection"u8);
-        if (Im.Button("Assign##NamedCollection"u8))
-            _lastTempError = new AssignTemporaryCollection(pi).Invoke(guid, _tempActorIndex, _forceOverwrite);
-
-        IpcTester.DrawIntro(AddTemporaryMod.Label, "Add Temporary Mod to specific Collection"u8);
-        if (Im.Button("Add##Mod"u8))
-            _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid,
-                new Dictionary<string, string> { { _tempGamePath, _tempFilePath } },
-                _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
-
-        IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Copy Existing Collection"u8);
-        if (ImEx.Button("Copy##Collection"u8, Vector2.Zero, "Copies the effective list from the collection named in Temporary Mod Name..."u8,
-                !collections.Storage.ByName(_tempModName, out var copyCollection))
-         && copyCollection is { HasCache: true })
+        using (IpcTester.DrawIntro(DeleteTemporaryCollection.Label, "Delete Temporary Collection"u8))
         {
-            var files  = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
-            var manips = MetaApi.CompressMetaManipulations(copyCollection);
-            _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid, files, manips, 999);
+            table.NextColumn();
+            if (Im.SmallButton("Delete##Collection"u8))
+                _lastTempError = new DeleteTemporaryCollection(pi).Invoke(guid);
+            Im.Line.Same();
+            if (Im.SmallButton("Delete Last##Collection"u8))
+                _lastTempError = new DeleteTemporaryCollection(pi).Invoke(LastCreatedCollectionId);
         }
 
-        IpcTester.DrawIntro(AddTemporaryModAll.Label, "Add Temporary Mod to all Collections"u8);
-        if (Im.Button("Add##All"u8))
-            _lastTempError = new AddTemporaryModAll(pi).Invoke(_tempModName,
-                new Dictionary<string, string> { { _tempGamePath, _tempFilePath } },
-                _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
-
-        IpcTester.DrawIntro(RemoveTemporaryMod.Label, "Remove Temporary Mod from specific Collection"u8);
-        if (Im.Button("Remove##Mod"u8))
-            _lastTempError = new RemoveTemporaryMod(pi).Invoke(_tempModName, guid, int.MaxValue);
-
-        IpcTester.DrawIntro(RemoveTemporaryModAll.Label, "Remove Temporary Mod from all Collections"u8);
-        if (Im.Button("Remove##ModAll"u8))
-            _lastTempError = new RemoveTemporaryModAll(pi).Invoke(_tempModName, int.MaxValue);
-
-        IpcTester.DrawIntro(SetTemporaryModSettings.Label, "Set Temporary Mod Settings (to default) in specific Collection"u8);
-        if (Im.Button("Set##SetTemporary"u8))
-            _lastTempError = new SetTemporaryModSettings(pi).Invoke(guid, _modDirectory, false, true, 1337,
-                new Dictionary<string, IReadOnlyList<string>>(),
-                "IPC Tester", 1337);
-
-        IpcTester.DrawIntro(SetTemporaryModSettingsPlayer.Label, "Set Temporary Mod Settings (to default) in game object collection"u8);
-        if (Im.Button("Set##SetTemporaryPlayer"u8))
-            _lastTempError = new SetTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, false, true, 1337,
-                new Dictionary<string, IReadOnlyList<string>>(),
-                "IPC Tester", 1337);
-
-        IpcTester.DrawIntro(RemoveTemporaryModSettings.Label, "Remove Temporary Mod Settings from specific Collection"u8);
-        if (Im.Button("Remove##RemoveTemporary"u8))
-            _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, 1337);
-        Im.Line.Same();
-        if (Im.Button("Remove (Wrong Key)##RemoveTemporary"u8))
-            _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, 1338);
-
-        IpcTester.DrawIntro(RemoveTemporaryModSettingsPlayer.Label, "Remove Temporary Mod Settings from game object Collection"u8);
-        if (Im.Button("Remove##RemoveTemporaryPlayer"u8))
-            _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, 1337);
-        Im.Line.Same();
-        if (Im.Button("Remove (Wrong Key)##RemoveTemporaryPlayer"u8))
-            _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, 1338);
-
-        IpcTester.DrawIntro(RemoveAllTemporaryModSettings.Label, "Remove All Temporary Mod Settings from specific Collection"u8);
-        if (Im.Button("Remove##RemoveAllTemporary"u8))
-            _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1337);
-        Im.Line.Same();
-        if (Im.Button("Remove (Wrong Key)##RemoveAllTemporary"u8))
-            _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1338);
-
-        IpcTester.DrawIntro(RemoveAllTemporaryModSettingsPlayer.Label, "Remove All Temporary Mod Settings from game object Collection"u8);
-        if (Im.Button("Remove##RemoveAllTemporaryPlayer"u8))
-            _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1337);
-        Im.Line.Same();
-        if (Im.Button("Remove (Wrong Key)##RemoveAllTemporaryPlayer"u8))
-            _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1338);
-
-        IpcTester.DrawIntro(QueryTemporaryModSettings.Label, "Query Temporary Mod Settings from specific Collection"u8);
-        Im.Button("Query##QueryTemporaryModSettings"u8);
-        if (Im.Item.Hovered())
+        using (IpcTester.DrawIntro(AssignTemporaryCollection.Label, "Assign Temporary Collection"u8))
         {
-            _lastTempError = new QueryTemporaryModSettings(pi).Invoke(guid, _modDirectory, out var settings, out var source, 1337);
-            DrawTooltip(settings, source);
+            table.NextColumn();
+            if (Im.SmallButton("Assign##NamedCollection"u8))
+                _lastTempError = new AssignTemporaryCollection(pi).Invoke(guid, _tempActorIndex, _forceOverwrite);
         }
 
-        Im.Line.Same();
-        Im.Button("Query (Wrong Key)##RemoveAllTemporary"u8);
-        if (Im.Item.Hovered())
+        using (IpcTester.DrawIntro(AddTemporaryMod.Label, "Add Temporary Mod to specific Collection"u8))
         {
-            _lastTempError = new QueryTemporaryModSettings(pi).Invoke(guid, _modDirectory, out var settings, out var source, 1338);
-            DrawTooltip(settings, source);
+            table.NextColumn();
+            if (Im.SmallButton("Add##Mod"u8))
+                _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid,
+                    new Dictionary<string, string> { { _tempGamePath, _tempFilePath } },
+                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
         }
 
-        IpcTester.DrawIntro(QueryTemporaryModSettingsPlayer.Label, "Query Temporary Mod Settings from game object Collection"u8);
-        Im.Button("Query##QueryTemporaryModSettingsPlayer"u8);
-        if (Im.Item.Hovered())
+        using (IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Copy Existing Collection"u8))
         {
-            _lastTempError =
-                new QueryTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, out var settings, out var source, 1337);
-            DrawTooltip(settings, source);
+            table.NextColumn();
+            if (ImEx.Button("Copy##Collection"u8, Vector2.Zero,
+                    "Copies the effective list from the collection named in Temporary Mod Name..."u8,
+                    !collections.Storage.ByName(_tempModName, out var copyCollection))
+             && copyCollection is { HasCache: true })
+            {
+                var files  = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
+                var manips = MetaApi.CompressMetaManipulations(copyCollection);
+                _lastTempError = new AddTemporaryMod(pi).Invoke(_tempModName, guid, files, manips, 999);
+            }
         }
 
-        Im.Line.Same();
-        Im.Button("Query (Wrong Key)##RemoveAllTemporaryPlayer"u8);
-        if (Im.Item.Hovered())
+        using (IpcTester.DrawIntro(AddTemporaryModAll.Label, "Add Temporary Mod to all Collections"u8))
         {
-            _lastTempError =
-                new QueryTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, out var settings, out var source, 1338);
-            DrawTooltip(settings, source);
+            table.NextColumn();
+            if (Im.SmallButton("Add##All"u8))
+                _lastTempError = new AddTemporaryModAll(pi).Invoke(_tempModName,
+                    new Dictionary<string, string> { { _tempGamePath, _tempFilePath } },
+                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
+        }
+
+        using (IpcTester.DrawIntro(RemoveTemporaryMod.Label, "Remove Temporary Mod from specific Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Remove##Mod"u8))
+                _lastTempError = new RemoveTemporaryMod(pi).Invoke(_tempModName, guid, int.MaxValue);
+        }
+
+        using (IpcTester.DrawIntro(RemoveTemporaryModAll.Label, "Remove Temporary Mod from all Collections"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Remove##ModAll"u8))
+                _lastTempError = new RemoveTemporaryModAll(pi).Invoke(_tempModName, int.MaxValue);
+        }
+
+        using (IpcTester.DrawIntro(SetTemporaryModSettings.Label, "Set Temporary Mod Settings (to default) in specific Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set##SetTemporary"u8))
+                _lastTempError = new SetTemporaryModSettings(pi).Invoke(guid, _modDirectory, false, true, 1337,
+                    new Dictionary<string, IReadOnlyList<string>>(),
+                    "IPC Tester", 1337);
+        }
+
+        using (IpcTester.DrawIntro(SetTemporaryModSettingsPlayer.Label, "Set Temporary Mod Settings (to default) in game object collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set##SetTemporaryPlayer"u8))
+                _lastTempError = new SetTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, false, true, 1337,
+                    new Dictionary<string, IReadOnlyList<string>>(),
+                    "IPC Tester", 1337);
+        }
+
+        using (IpcTester.DrawIntro(RemoveTemporaryModSettings.Label, "Remove Temporary Mod Settings from specific Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Remove##RemoveTemporary"u8))
+                _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, 1337);
+            Im.Line.Same();
+            if (Im.SmallButton("Remove (Wrong Key)##RemoveTemporary"u8))
+                _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, 1338);
+        }
+
+        using (IpcTester.DrawIntro(RemoveTemporaryModSettingsPlayer.Label, "Remove Temporary Mod Settings from game object Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Remove##RemoveTemporaryPlayer"u8))
+                _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, 1337);
+            Im.Line.Same();
+            if (Im.SmallButton("Remove (Wrong Key)##RemoveTemporaryPlayer"u8))
+                _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, 1338);
+        }
+
+        using (IpcTester.DrawIntro(RemoveAllTemporaryModSettings.Label, "Remove All Temporary Mod Settings from specific Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Remove##RemoveAllTemporary"u8))
+                _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1337);
+            Im.Line.Same();
+            if (Im.SmallButton("Remove (Wrong Key)##RemoveAllTemporary"u8))
+                _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1338);
+        }
+
+        using (IpcTester.DrawIntro(RemoveAllTemporaryModSettingsPlayer.Label,
+                   "Remove All Temporary Mod Settings from game object Collection"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Remove##RemoveAllTemporaryPlayer"u8))
+                _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1337);
+            Im.Line.Same();
+            if (Im.SmallButton("Remove (Wrong Key)##RemoveAllTemporaryPlayer"u8))
+                _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1338);
+        }
+
+        using (IpcTester.DrawIntro(QueryTemporaryModSettings.Label, "Query Temporary Mod Settings from specific Collection"u8))
+        {
+            table.NextColumn();
+            Im.SmallButton("Query##QueryTemporaryModSettings"u8);
+            if (Im.Item.Hovered())
+            {
+                _lastTempError = new QueryTemporaryModSettings(pi).Invoke(guid, _modDirectory, out var settings, out var source, 1337);
+                DrawTooltip(settings, source);
+            }
+
+            Im.Line.Same();
+            Im.SmallButton("Query (Wrong Key)##RemoveAllTemporary"u8);
+            if (Im.Item.Hovered())
+            {
+                _lastTempError = new QueryTemporaryModSettings(pi).Invoke(guid, _modDirectory, out var settings, out var source, 1338);
+                DrawTooltip(settings, source);
+            }
+        }
+
+        using (IpcTester.DrawIntro(QueryTemporaryModSettingsPlayer.Label, "Query Temporary Mod Settings from game object Collection"u8))
+        {
+            table.NextColumn();
+            Im.SmallButton("Query##QueryTemporaryModSettingsPlayer"u8);
+            if (Im.Item.Hovered())
+            {
+                _lastTempError =
+                    new QueryTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, out var settings, out var source, 1337);
+                DrawTooltip(settings, source);
+            }
+
+            Im.Line.Same();
+            Im.SmallButton("Query (Wrong Key)##RemoveAllTemporaryPlayer"u8);
+            if (Im.Item.Hovered())
+            {
+                _lastTempError =
+                    new QueryTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, out var settings, out var source, 1338);
+                DrawTooltip(settings, source);
+            }
         }
 
         return;
