@@ -686,6 +686,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
                 ChangeMod(arguments.Mod);
                 break;
             case ModPathChangeType.Deleted:
+                IsOpen = false;
                 Dispose();
                 break;
         }
