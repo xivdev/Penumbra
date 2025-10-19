@@ -27,7 +27,7 @@ public class ModPanelTabBar : Luna.IUiService
     public readonly  ModPanelConflictsTab    Conflicts;
     public readonly  ModPanelChangedItemsTab ChangedItems;
     public readonly  ModPanelEditTab         Edit;
-    private readonly ModEditWindow           _modEditWindow;
+    private readonly ModEditWindowFactory    _modEditWindowFactory;
     private readonly ModManager              _modManager;
     private readonly TutorialService         _tutorial;
 
@@ -35,19 +35,19 @@ public class ModPanelTabBar : Luna.IUiService
     private         ModPanelTabType _preferredTab = ModPanelTabType.Settings;
     private         Mod?            _lastMod;
 
-    public ModPanelTabBar(ModEditWindow modEditWindow, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
+    public ModPanelTabBar(ModEditWindowFactory modEditWindowFactory, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
         ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
         TutorialService tutorial, ModPanelCollectionsTab collections)
     {
-        _modEditWindow = modEditWindow;
-        Settings       = settings;
-        Description    = description;
-        Conflicts      = conflicts;
-        ChangedItems   = changedItems;
-        Edit           = edit;
-        _modManager    = modManager;
-        _tutorial      = tutorial;
-        Collections    = collections;
+        _modEditWindowFactory = modEditWindowFactory;
+        Settings              = settings;
+        Description           = description;
+        Conflicts             = conflicts;
+        ChangedItems          = changedItems;
+        Edit                  = edit;
+        _modManager           = modManager;
+        _tutorial             = tutorial;
+        Collections           = collections;
 
         Tabs =
         [
@@ -112,9 +112,7 @@ public class ModPanelTabBar : Luna.IUiService
     {
         if (ImGui.TabItemButton("Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip))
         {
-            _modEditWindow.ChangeMod(mod);
-            _modEditWindow.ChangeOption(mod.Default);
-            _modEditWindow.IsOpen = true;
+            _modEditWindowFactory.OpenForMod(mod);
         }
 
         ImGuiUtil.HoverTooltip(

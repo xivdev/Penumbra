@@ -15,7 +15,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EqdpIdentifier, EqdpEntryInternal>(editor, metaFiles), Luna.IService
+    : MetaDrawer<EqdpIdentifier, EqdpEntryInternal>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Racial Model Edits (EQDP)###EQDP"u8;

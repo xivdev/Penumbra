@@ -15,7 +15,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<ShpIdentifier, ShpEntry>(editor, metaFiles), Luna.IService
+    : MetaDrawer<ShpIdentifier, ShpEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Shape Keys (SHP)###SHP"u8;

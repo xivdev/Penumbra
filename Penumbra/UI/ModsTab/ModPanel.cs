@@ -11,16 +11,14 @@ public class ModPanel : IDisposable, Luna.IUiService
 {
     private readonly MultiModPanel  _multiModPanel;
     private readonly ModSelection   _selection;
-    private readonly ModEditWindow  _editWindow;
     private readonly ModPanelHeader _header;
     private readonly ModPanelTabBar _tabs;
     private          bool           _resetCursor;
 
-    public ModPanel(IDalamudPluginInterface pi, ModSelection selection, ModEditWindow editWindow, ModPanelTabBar tabs,
+    public ModPanel(IDalamudPluginInterface pi, ModSelection selection, ModPanelTabBar tabs,
         MultiModPanel multiModPanel, CommunicatorService communicator)
     {
         _selection     = selection;
-        _editWindow    = editWindow;
         _tabs          = tabs;
         _multiModPanel = multiModPanel;
         _header        = new ModPanelHeader(pi, communicator);
@@ -64,13 +62,10 @@ public class ModPanel : IDisposable, Luna.IUiService
         _resetCursor = true;
         if (arguments.NewSelection is null || _selection.Mod is null)
         {
-            _editWindow.IsOpen = false;
-            _valid             = false;
+            _valid = false;
         }
         else
         {
-            if (_editWindow.IsOpen)
-                _editWindow.ChangeMod(arguments.NewSelection);
             _valid = true;
             _mod   = arguments.NewSelection;
             _header.ChangeMod(_mod);

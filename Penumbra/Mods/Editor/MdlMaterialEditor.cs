@@ -4,7 +4,7 @@ using Penumbra.GameData.Files;
 
 namespace Penumbra.Mods.Editor;
 
-public partial class MdlMaterialEditor(ModFileCollection files) : Luna.IService
+public partial class MdlMaterialEditor(ModFileCollection files)
 {
     [GeneratedRegex(@"/mt_c(?'RaceCode'\d{4})b0001_(?'Suffix'.*?)\.mtrl", RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking)]
     private static partial Regex MaterialRegex();

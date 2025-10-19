@@ -15,7 +15,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<AtrIdentifier, AtrEntry>(editor, metaFiles), Luna.IService
+    : MetaDrawer<AtrIdentifier, AtrEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Attributes(ATR)###ATR"u8;

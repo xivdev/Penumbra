@@ -13,7 +13,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EstIdentifier, EstEntry>(editor, metaFiles), Luna.IService
+    : MetaDrawer<EstIdentifier, EstEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Extra Skeleton Parameters (EST)###EST"u8;

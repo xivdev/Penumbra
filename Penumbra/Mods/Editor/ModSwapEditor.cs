@@ -3,7 +3,7 @@ using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-public class ModSwapEditor(ModManager modManager) : Luna.IService
+public class ModSwapEditor(ModManager modManager)
 {
     private readonly Dictionary<Utf8GamePath, FullPath> _swaps = [];
 

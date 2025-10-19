@@ -39,7 +39,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
     private bool _updateOnNextFrame;
 
-    public unsafe MtrlTab(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
+    public MtrlTab(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
         StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog,
         MaterialTemplatePickers materialTemplatePickers,
         Configuration config, ModEditWindow edit, MtrlFile file, string filePath, bool writable)

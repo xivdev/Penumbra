@@ -29,19 +29,22 @@ public partial class TexToolsImporter : IDisposable
     public readonly List<(FileInfo File, DirectoryInfo? Mod, Exception? Error)> ExtractedMods;
 
     private readonly Configuration    _config;
-    private readonly ModEditor        _editor;
+    private readonly DuplicateManager _duplicates;
+    private readonly ModNormalizer    _modNormalizer;
     private readonly ModManager       _modManager;
     private readonly FileCompactor    _compactor;
     private readonly MigrationManager _migrationManager;
 
     public TexToolsImporter(int count, IEnumerable<FileInfo> modPackFiles, Action<FileInfo, DirectoryInfo?, Exception?> handler,
-        Configuration config, ModEditor editor, ModManager modManager, FileCompactor compactor, MigrationManager migrationManager)
+        Configuration config, DuplicateManager duplicates, ModNormalizer modNormalizer, ModManager modManager, FileCompactor compactor,
+        MigrationManager migrationManager)
     {
         _baseDirectory    = modManager.BasePath;
         _tmpFile          = Path.Combine(_baseDirectory.FullName, TempFileName);
         _modPackFiles     = modPackFiles;
         _config           = config;
-        _editor           = editor;
+        _duplicates       = duplicates;
+        _modNormalizer    = modNormalizer;
         _modManager       = modManager;
         _compactor        = compactor;
         _migrationManager = migrationManager;
@@ -97,7 +100,7 @@ public partial class TexToolsImporter : IDisposable
                 if (_config.AutoDeduplicateOnImport)
                 {
                     State = ImporterState.DeduplicatingFiles;
-                    _editor.Duplicates.DeduplicateMod(directory);
+                    _duplicates.DeduplicateMod(directory);
                 }
             }
             catch (Exception e)

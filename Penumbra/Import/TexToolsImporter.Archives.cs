@@ -131,7 +131,7 @@ public partial class TexToolsImporter
 
         _currentModDirectory.Refresh();
         _modManager.Creator.SplitMultiGroups(_currentModDirectory);
-        _editor.ModNormalizer.NormalizeUi(_currentModDirectory);
+        _modNormalizer.NormalizeUi(_currentModDirectory);
 
         return _currentModDirectory;
     }

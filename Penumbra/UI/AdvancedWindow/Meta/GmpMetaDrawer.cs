@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<GmpIdentifier, GmpEntry>(editor, metaFiles), Luna.IService
+    : MetaDrawer<GmpIdentifier, GmpEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Visor/Gimmick Edits (GMP)###GMP"u8;

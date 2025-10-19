@@ -14,7 +14,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<EqpIdentifier, EqpEntryInternal>(editor, metaFiles), Luna.IService
+    : MetaDrawer<EqpIdentifier, EqpEntryInternal>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Equipment Parameter Edits (EQP)###EQP"u8;
