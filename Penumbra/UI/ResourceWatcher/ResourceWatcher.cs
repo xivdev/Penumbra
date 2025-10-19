@@ -2,7 +2,6 @@ using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImSharp;
-using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -144,8 +143,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
         Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
         var       tmp          = _logFilter;
         var       invalidRegex = _logRegex is null && _logFilter.Length > 0;
-        using var color =
-            new Im.ColorStyleDisposable().PushBorder(ImStyleBorder.Frame, Colors.RegexWarningBorder, Im.Style.GlobalScale, invalidRegex);
+        using var color        = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, invalidRegex);
         if (Im.Input.Text("##logFilter"u8, ref tmp, "If path matches this Regex..."u8))
             UpdateFilter(tmp, true);
     }

@@ -74,7 +74,7 @@ public sealed class CollectionPanel(
         DrawSimpleCollectionButton(CollectionType.MaleNonPlayerCharacter,   buttonWidth);
         DrawSimpleCollectionButton(CollectionType.FemaleNonPlayerCharacter, buttonWidth);
 
-        ImGuiUtil.DrawColoredText(("Individual ", ColorId.NewMod.Value()),
+        ImGuiUtil.DrawColoredText(("Individual ", ColorId.NewMod.Value().Color),
             ("Assignments take precedence before anything else and only apply to one specific character or monster.", 0));
         ImGui.Dummy(Vector2.UnitX);
 
@@ -382,27 +382,27 @@ public sealed class CollectionPanel(
             {
                 case CollectionType.Default: ImGui.TextUnformatted("Overruled by any other Assignment."); break;
                 case CollectionType.Yourself:
-                    ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
+                    ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Individual ", ColorId.NewMod.Value().Color), ("Assignments.", 0));
                     break;
                 case CollectionType.MalePlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Male Racial Player", Colors.DiscordColor), (", ", 0),
-                        ("Your Character", ColorId.HandledConflictMod.Value()), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
+                        ("Your Character", ColorId.HandledConflictMod.Value().Color), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value().Color), ("Assignments.", 0));
                     break;
                 case CollectionType.FemalePlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Female Racial Player", Colors.ReniColorActive), (", ", 0),
-                        ("Your Character", ColorId.HandledConflictMod.Value()), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
+                        ("Your Character", ColorId.HandledConflictMod.Value().Color), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value().Color), ("Assignments.", 0));
                     break;
                 case CollectionType.MaleNonPlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Male Racial NPC", Colors.DiscordColor), (", ", 0),
-                        ("Children", ColorId.FolderLine.Value()), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
+                        ("Children", ColorId.FolderLine.Value().Color), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value().Color), ("Assignments.", 0));
                     break;
                 case CollectionType.FemaleNonPlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Female Racial NPC", Colors.ReniColorActive), (", ", 0),
-                        ("Children", ColorId.FolderLine.Value()), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
+                        ("Children", ColorId.FolderLine.Value().Color), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value().Color), ("Assignments.", 0));
                     break;
             }
         }

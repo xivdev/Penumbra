@@ -56,25 +56,24 @@ public static class FeatureChecker
         var       size         = new Vector2((width - (numButtons - 1) * innerSpacing.X) / numButtons, 0);
         var       buttonColor  = ImGui.GetColorU32(ImGuiCol.FrameBg);
         var       textColor    = ImGui.GetColorU32(ImGuiCol.TextDisabled);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, innerSpacing)
-            .Push(ImGuiStyleVar.FrameBorderSize, 0);
-        using (var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value())
-                   .Push(ImGuiCol.Button, buttonColor)
-                   .Push(ImGuiCol.Text,   textColor))
+        using (var style = ImStyleBorder.Frame.Push(ColorId.FolderLine.Value(), 0)
+                      .Push(ImStyleDouble.ItemSpacing, innerSpacing)
+                      .Push(ImGuiColor.Button, buttonColor)
+                      .Push(ImGuiColor.Text, textColor))
         {
             foreach (var flag in SupportedFlags.Values)
             {
                 if (mod.RequiredFeatures.HasFlag(flag))
                 {
-                    style.Push(ImGuiStyleVar.FrameBorderSize, ImUtf8.GlobalScale);
-                    color.Pop(2);
-                    if (ImUtf8.Button($"{flag}", size))
+                    style.Push(ImStyleSingle.FrameBorderThickness, ImUtf8.GlobalScale);
+                    style.PopColor(2);
+                    if (Im.Button($"{flag}", size))
                         editor.ChangeRequiredFeatures(mod, mod.RequiredFeatures & ~flag);
-                    color.Push(ImGuiCol.Button, buttonColor)
-                        .Push(ImGuiCol.Text, textColor);
-                    style.Pop();
+                    style.Push(ImGuiColor.Button, buttonColor)
+                        .Push(ImGuiColor.Text, textColor);
+                    style.PopStyle();
                 }
-                else if (ImUtf8.Button($"{flag}", size))
+                else if (Im.Button($"{flag}", size))
                 {
                     editor.ChangeRequiredFeatures(mod, mod.RequiredFeatures | flag);
                 }

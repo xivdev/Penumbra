@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Import.Structs;
@@ -89,12 +90,12 @@ public partial class TexToolsImporter
             ImGui.TableNextColumn();
             if (ex == null)
             {
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Value());
                 ImGui.TextUnformatted(dir?.FullName[(_baseDirectory.FullName.Length + 1)..] ?? "Unknown Directory");
             }
             else
             {
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ConflictingMod.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.ConflictingMod.Value());
                 ImGui.TextUnformatted(ex.Message);
                 ImGuiUtil.HoverTooltip(ex.ToString());
             }

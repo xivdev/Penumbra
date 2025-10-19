@@ -13,7 +13,7 @@ public class IncognitoService(TutorialService tutorial, Configuration config) : 
     {
         var hold  = config.IncognitoModifier.IsActive();
         var color = ColorId.FolderExpanded.Value();
-        using (new Im.ColorStyleDisposable().PushBorder(ImStyleBorder.Frame, color))
+        using (ImStyleBorder.Frame.Push(color))
         {
             var tt   = IncognitoMode ? "Toggle incognito mode off."u8 : "Toggle incognito mode on."u8;
             var icon = IncognitoMode ? LunaStyle.IncognitoOn : LunaStyle.IncognitoOff;

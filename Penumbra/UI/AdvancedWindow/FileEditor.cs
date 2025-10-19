@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using ImSharp;
@@ -297,7 +298,7 @@ public class FileEditor<T>(
         {
             var  file = Items[globalIdx];
             bool ret;
-            using (var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
+            using (var c = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
             {
                 ret = ImGui.Selectable(file.RelPath.ToString(), selected);
             }
@@ -313,7 +314,7 @@ public class FileEditor<T>(
                     ImGui.TableNextColumn();
                     ImUtf8.Text(gamePath.Path.Span);
                     ImGui.TableNextColumn();
-                    using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
+                    using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
                     ImGui.TextUnformatted(option.GetFullName());
                 }
             }
@@ -321,7 +322,7 @@ public class FileEditor<T>(
             if (file.SubModUsage.Count > 0)
             {
                 Im.Line.Same();
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
                 ImGuiUtil.RightAlign(file.SubModUsage[0].Item2.Path.ToString());
             }
 

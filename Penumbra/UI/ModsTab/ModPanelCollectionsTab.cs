@@ -124,7 +124,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                 : settings.Enabled
                     ? (parent == collection ? enabled : inherited, ModState.Enabled)
                     : (parent == collection ? disabled : disInherited, ModState.Disabled);
-            _cache.Add((collection, parent, color, text));
+            _cache.Add((collection, parent, color.Color, text));
 
             if (color == enabled)
                 ++directCount;

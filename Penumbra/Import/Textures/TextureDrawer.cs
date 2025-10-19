@@ -125,9 +125,9 @@ public static class TextureDrawer
         {
             var (path, game, isOnPlayer) = Items[globalIdx];
             bool ret;
-            using (var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value(), game))
+            using (var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Value(), game))
             {
-                color.Push(ImGuiCol.Text, ColorId.HandledConflictMod.Value(), isOnPlayer);
+                color.Push(ImGuiColor.Text, ColorId.HandledConflictMod.Value(), isOnPlayer);
                 var equals = string.Equals(CurrentSelection.Path, path, StringComparison.OrdinalIgnoreCase);
                 var p      = game ? $"--> {path}" : path[_skipPrefix..];
                 ret = ImGui.Selectable(p, selected) && !equals;

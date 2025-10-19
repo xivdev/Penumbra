@@ -75,7 +75,7 @@ public class ModPanelSettingsTab(
         if (!_temporary)
             return;
 
-        using var color = ImRaii.PushColor(ImGuiCol.Button, ImGuiCol.Button.Tinted(ColorId.TemporaryModSettingsTint));
+        using var color = ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Value().ToVector()));
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
         if (ImUtf8.ButtonEx($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
                 width,

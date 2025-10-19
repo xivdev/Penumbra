@@ -58,12 +58,12 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
             ImGui.SameLine(0, 0);
             if (size - textSize < minComboSize)
             {
-                ImUtf8.Text("selected mod"u8, ColorId.FolderLine.Value());
+                Im.Text("selected mod"u8, ColorId.FolderLine.Value());
                 ImUtf8.HoverTooltip(modMerger.MergeFromMod!.Name);
             }
             else
             {
-                ImUtf8.Text(modMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
+                Im.Text(modMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
             }
 
             ImGui.SameLine(0, 0);

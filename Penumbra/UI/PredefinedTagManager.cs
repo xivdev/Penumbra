@@ -1,13 +1,8 @@
-﻿using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
-using Dalamud.Interface.ImGuiNotification;
+﻿using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -116,17 +111,15 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
 
     public void DrawToggleButton()
     {
-        using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), _isListOpen);
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Tags.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
-                "Add Predefined Tags...", false, true))
+        using var color = ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], _isListOpen);
+        if (ImEx.Icon.Button(LunaStyle.TagsMarker, "Add Predefined Tags..."u8))
             _isListOpen = !_isListOpen;
     }
 
     private void DrawToggleButtonTopRight()
     {
-        ImGui.SameLine(ImGui.GetContentRegionMax().X
-          - ImGui.GetFrameHeight()
-          - (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ItemInnerSpacing.X : 0));
+        var scrollBar = Im.Scroll.MaximumY > 0 ? Im.Style.ItemInnerSpacing.X : 0;
+        Im.Line.Same(Im.ContentRegion.Maximum.X - Im.Style.FrameHeight - scrollBar);
         DrawToggleButton();
     }
 
@@ -139,8 +132,8 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
         if (!_isListOpen)
             return false;
 
-        ImUtf8.Text("Predefined Tags"u8);
-        ImGui.Separator();
+        Im.Text("Predefined Tags"u8);
+        Im.Separator();
 
         var ret = false;
         _enabledColor        = ColorId.PredefinedTagAdd.Value();
@@ -159,8 +152,8 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
             Im.Line.Same();
         }
 
-        ImGui.NewLine();
-        ImGui.Separator();
+        Im.Line.New();
+        Im.Separator();
         return ret;
     }
 
@@ -181,12 +174,12 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
         if (!_isListOpen)
             return;
 
-        ImUtf8.Text("Predefined Tags"u8);
+        Im.Text("Predefined Tags"u8);
         PrepareLists(selection);
 
         _enabledColor  = ColorId.PredefinedTagAdd.Value();
         _disabledColor = ColorId.PredefinedTagRemove.Value();
-        using var color = new ImRaii.Color();
+        using var color = new Im.ColorDisposable();
         foreach (var (idx, tag) in _predefinedTags.Keys.Index())
         {
             var alreadyContained = 0;
@@ -217,22 +210,22 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
                 }
             }
 
-            using var id          = ImRaii.PushId(idx);
-            var       buttonWidth = CalcTextButtonWidth(tag);
+            using var id          = Im.Id.Push(idx);
+            var       buttonWidth = new Vector2(Im.Font.CalculateButtonSize(tag).X, 0);
             // Prevent adding a new tag past the right edge of the popup
-            if (buttonWidth + ImGui.GetStyle().ItemSpacing.X >= ImGui.GetContentRegionAvail().X)
-                ImGui.NewLine();
+            if (buttonWidth.X + Im.Style.ItemSpacing.X >= Im.ContentRegion.Available.X)
+                Im.Line.New();
 
             var (usedColor, disabled, tt) = (missing, alreadyContained) switch
             {
                 (> 0, _) => (_enabledColor, false,
-                    $"Add this tag to {missing} mods.{(inModData > 0 ? $" {inModData} mods contain it in their mod tags and are untouched." : string.Empty)}"),
+                    new StringU8($"Add this tag to {missing} mods.{(inModData > 0 ? $" {inModData} mods contain it in their mod tags and are untouched." : string.Empty)}")),
                 (_, > 0) => (_disabledColor, false,
-                    $"Remove this tag from {alreadyContained} mods.{(inModData > 0 ? $" {inModData} mods contain it in their mod tags and are untouched." : string.Empty)}"),
-                _ => (_disabledColor, true, "This tag is already present in the mod tags of all selected mods."),
+                    new StringU8($"Remove this tag from {alreadyContained} mods.{(inModData > 0 ? $" {inModData} mods contain it in their mod tags and are untouched." : string.Empty)}")),
+                _ => (_disabledColor, true, new StringU8("This tag is already present in the mod tags of all selected mods.")),
             };
-            color.Push(ImGuiCol.Button, usedColor);
-            if (ImUtf8.ButtonEx(tag, tt, new Vector2(buttonWidth, 0), disabled))
+            color.Push(ImGuiColor.Button, usedColor);
+            if (ImEx.Button(tag, buttonWidth, tt, disabled))
             {
                 if (missing > 0)
                     foreach (var (mod, (localIdx, _)) in _selectedMods.Zip(_countedMods))
@@ -256,33 +249,29 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
             color.Pop();
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
     }
 
     private bool DrawColoredButton(string buttonLabel, int index, int tagIdx, bool inOther)
     {
-        using var id          = ImRaii.PushId(index);
-        var       buttonWidth = CalcTextButtonWidth(buttonLabel);
+        using var id          = Im.Id.Push(index);
+        var       buttonWidth = Im.Font.CalculateButtonSize(buttonLabel).X;
         // Prevent adding a new tag past the right edge of the popup
-        if (buttonWidth + ImGui.GetStyle().ItemSpacing.X >= ImGui.GetContentRegionAvail().X)
-            ImGui.NewLine();
+        if (buttonWidth + Im.Style.ItemSpacing.X >= Im.ContentRegion.Available.X)
+            Im.Line.New();
 
         bool ret;
-        using (ImRaii.Disabled(inOther))
+        using (Im.Disabled(inOther))
         {
-            using var color = ImRaii.PushColor(ImGuiCol.Button, tagIdx >= 0 || inOther ? _disabledColor : _enabledColor);
-            ret = ImGui.Button(buttonLabel);
+            using var color = ImGuiColor.Button.Push(tagIdx >= 0 || inOther ? _disabledColor : _enabledColor);
+            ret = Im.Button(buttonLabel);
         }
 
-        if (inOther && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGui.SetTooltip("This tag is already present in the other set of tags.");
-
+        if (inOther)
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "This tag is already present in the other set of tags."u8);
 
         return ret;
     }
-
-    private static float CalcTextButtonWidth(string text)
-        => ImGui.CalcTextSize(text).X + 2 * ImGui.GetStyle().FramePadding.X;
 
     public IEnumerator<string> GetEnumerator()
         => _predefinedTags.Keys.GetEnumerator();

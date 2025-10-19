@@ -159,9 +159,9 @@ public class ItemSwapTab : IDisposable, ITab, IUiService
         {
             var (_, inMod, inCollection) = Items[globalIdx];
             using var color = inMod
-                ? ImRaii.PushColor(ImGuiCol.Text, ColorId.ResTreeLocalPlayer.Value())
+                ? ImGuiColor.Text.Push(ColorId.ResTreeLocalPlayer.Value())
                 : inCollection.Count > 0
-                    ? ImRaii.PushColor(ImGuiCol.Text, ColorId.ResTreeNonNetworked.Value())
+                    ? ImGuiColor.Text.Push(ColorId.ResTreeNonNetworked.Value())
                     : null;
             var ret = base.DrawSelectable(globalIdx, selected);
             if (inCollection.Count > 0)

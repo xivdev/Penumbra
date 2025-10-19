@@ -1,33 +1,33 @@
-using Dalamud.Interface.Windowing;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Raii;
+using ImSharp;
+using Luna;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI;
 
 /// <summary> Draw the progress information for import. </summary>
-public sealed class ImportPopup : Window, Luna.IUiService
+public sealed class ImportPopup : Window, IUiService
 {
     public const string WindowLabel = "Penumbra Import Status";
 
-    private readonly ModImportManager _modImportManager;
+    private readonly        ModImportManager _modImportManager;
+    private static readonly Vector2          OneHalf = Vector2.One / 2;
 
     public bool WasDrawn      { get; private set; }
     public bool PopupWasDrawn { get; private set; }
 
     public ImportPopup(ModImportManager modImportManager)
         : base(WindowLabel,
-            ImGuiWindowFlags.NoCollapse
-          | ImGuiWindowFlags.NoDecoration
-          | ImGuiWindowFlags.NoBackground
-          | ImGuiWindowFlags.NoMove
-          | ImGuiWindowFlags.NoInputs
-          | ImGuiWindowFlags.NoNavFocus
-          | ImGuiWindowFlags.NoFocusOnAppearing
-          | ImGuiWindowFlags.NoBringToFrontOnFocus
-          | ImGuiWindowFlags.NoDocking
-          | ImGuiWindowFlags.NoTitleBar, true)
+            WindowFlags.NoCollapse
+          | WindowFlags.NoDecoration
+          | WindowFlags.NoBackground
+          | WindowFlags.NoMove
+          | WindowFlags.NoInputs
+          | WindowFlags.NoNavFocus
+          | WindowFlags.NoFocusOnAppearing
+          | WindowFlags.NoBringToFrontOnFocus
+          | WindowFlags.NoDocking
+          | WindowFlags.NoTitleBar, true)
     {
         _modImportManager   = modImportManager;
         DisableWindowSounds = true;
@@ -55,29 +55,28 @@ public sealed class ImportPopup : Window, Luna.IUiService
         if (!_modImportManager.IsImporting(out var import))
             return;
 
-        const string importPopup = "##PenumbraImportPopup";
-        if (!ImGui.IsPopupOpen(importPopup))
-            ImGui.OpenPopup(importPopup);
+        if (!Im.Popup.IsOpen("##PenumbraImportPopup"u8))
+            Im.Popup.Open("##PenumbraImportPopup"u8);
 
-        var display = ImGui.GetIO().DisplaySize;
-        var height  = Math.Max(display.Y / 4, 15 * ImGui.GetFrameHeightWithSpacing());
+        var display = Im.Io.DisplaySize;
+        var height  = Math.Max(display.Y / 4, 15 * Im.Style.FrameHeightWithSpacing);
         var width   = display.X / 8;
         var size    = new Vector2(width * 2, height);
-        ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2);
-        ImGui.SetNextWindowSize(size);
-        using var popup = ImRaii.Popup(importPopup, ImGuiWindowFlags.Modal);
+        Im.Window.SetNextPosition(Im.Viewport.Main.Center, Condition.Always, OneHalf);
+        Im.Window.SetNextSize(size);
+        using var popup = Im.Popup.Begin("##PenumbraImportPopup"u8, WindowFlags.Modal);
         PopupWasDrawn = true;
         var terminate = false;
-        using (var child = ImRaii.Child("##import", new Vector2(-1, size.Y - ImGui.GetFrameHeight() * 2)))
+        using (var child = Im.Child.Begin("##import"u8, new Vector2(-1, size.Y - Im.Style.FrameHeight * 2)))
         {
-            if (child.Success && import.DrawProgressInfo(new Vector2(-1, ImGui.GetFrameHeight())))
-                if (!ImGui.IsMouseHoveringRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize())
-                 && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            if (child.Success && import.DrawProgressInfo(new Vector2(-1, Im.Style.FrameHeight)))
+                if (!Im.Mouse.IsHoveringRectangle(Rectangle.FromSize(Im.Window.Position, Im.Window.Size))
+                 && Im.Mouse.IsClicked(MouseButton.Left))
                     terminate = true;
         }
 
         terminate |= import.State == ImporterState.Done
-            ? ImGui.Button("Close", -Vector2.UnitX)
+            ? Im.Button("Close"u8, -Vector2.UnitX)
             : import.DrawCancelButton(-Vector2.UnitX);
         if (terminate)
             _modImportManager.ClearImport();

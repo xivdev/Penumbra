@@ -3,6 +3,7 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Filesystem;
@@ -186,13 +187,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         => _config.SortMode;
 
     protected override uint ExpandedFolderColor
-        => ColorId.FolderExpanded.Value();
+        => ColorId.FolderExpanded.Value().Color;
 
     protected override uint CollapsedFolderColor
-        => ColorId.FolderCollapsed.Value();
+        => ColorId.FolderCollapsed.Value().Color;
 
     protected override uint FolderLineColor
-        => ColorId.FolderLine.Value();
+        => ColorId.FolderLine.Value().Color;
 
     protected override bool FoldersDefaultOpen
         => _config.OpenFoldersByDefault;
@@ -218,8 +219,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     protected override void DrawLeafName(FileSystem<Mod>.Leaf leaf, in ModState state, bool selected)
     {
         var flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
-        using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Tinted(state.Tint))
-            .Push(ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
+        using var c = ImGuiColor.Text.Push(state.Color.Value().Tinted(state.Tint.Value()))
+            .Push(ImGuiColor.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
         using var id = ImUtf8.PushId(leaf.Value.Index);
         ImUtf8.TreeNode(leaf.Value.Name, flags).Dispose();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
@@ -265,7 +266,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                 offset -= ImGui.GetStyle().ItemInnerSpacing.X;
 
             if (offset > ImGui.GetStyle().ItemSpacing.X)
-                ImGui.GetWindowDrawList().AddText(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value(), priorityString);
+                ImGui.GetWindowDrawList().AddText(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, priorityString);
         }
     }
 
@@ -456,17 +457,17 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImUtf8.BulletText("Select a mod to obtain more information or change settings."u8);
             ImUtf8.BulletText("Names are colored according to your config and their current state in the collection:"u8);
             indent.Push();
-            ImUtf8.BulletTextColored(ColorId.EnabledMod.Value(),           "enabled in the current collection."u8);
-            ImUtf8.BulletTextColored(ColorId.DisabledMod.Value(),          "disabled in the current collection."u8);
-            ImUtf8.BulletTextColored(ColorId.InheritedMod.Value(),         "enabled due to inheritance from another collection."u8);
-            ImUtf8.BulletTextColored(ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection."u8);
-            ImUtf8.BulletTextColored(ColorId.UndefinedMod.Value(),         "unconfigured in all inherited collections."u8);
-            ImUtf8.BulletTextColored(ColorId.HandledConflictMod.Value(),
+            ImUtf8.BulletTextColored(ColorId.EnabledMod.Value().Color,           "enabled in the current collection."u8);
+            ImUtf8.BulletTextColored(ColorId.DisabledMod.Value().Color,          "disabled in the current collection."u8);
+            ImUtf8.BulletTextColored(ColorId.InheritedMod.Value().Color,         "enabled due to inheritance from another collection."u8);
+            ImUtf8.BulletTextColored(ColorId.InheritedDisabledMod.Value().Color, "disabled due to inheritance from another collection."u8);
+            ImUtf8.BulletTextColored(ColorId.UndefinedMod.Value().Color,         "unconfigured in all inherited collections."u8);
+            ImUtf8.BulletTextColored(ColorId.HandledConflictMod.Value().Color,
                 "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)."u8);
-            ImUtf8.BulletTextColored(ColorId.ConflictingMod.Value(),
+            ImUtf8.BulletTextColored(ColorId.ConflictingMod.Value().Color,
                 "enabled and conflicting with another enabled Mod on the same priority."u8);
-            ImUtf8.BulletTextColored(ColorId.FolderExpanded.Value(),  "expanded mod folder."u8);
-            ImUtf8.BulletTextColored(ColorId.FolderCollapsed.Value(), "collapsed mod folder"u8);
+            ImUtf8.BulletTextColored(ColorId.FolderExpanded.Value().Color,  "expanded mod folder."u8);
+            ImUtf8.BulletTextColored(ColorId.FolderCollapsed.Value().Color, "collapsed mod folder"u8);
             indent.Pop(1);
             ImUtf8.BulletText("Middle-click a mod to disable it if it is enabled or enable it if it is disabled."u8);
             indent.Push();

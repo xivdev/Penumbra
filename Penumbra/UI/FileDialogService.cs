@@ -3,7 +3,6 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
 using Dalamud.Bindings.ImGui;
 using Luna;
-using OtterGui;
 using Penumbra.Communication;
 using Penumbra.Services;
 
@@ -16,11 +15,16 @@ public class FileDialogService : IDisposable, IUiService
     private readonly ConcurrentDictionary<string, string> _startPaths = new();
     private          bool                                 _isOpen;
 
+    private readonly Func<object?, object?>? _dialogGetter;
+
     public FileDialogService(CommunicatorService communicator, Configuration config)
     {
         _communicator = communicator;
         _manager      = SetupFileManager(config.ModDirectory);
         _communicator.ModDirectoryChanged.Subscribe(OnModDirectoryChange, ModDirectoryChanged.Priority.FileDialogService);
+
+        var fieldType = _manager.GetType().GetField("dialog", BindingFlags.Instance | BindingFlags.NonPublic);
+        _dialogGetter = fieldType is null ? null : fieldType.GetValue;
     }
 
     public void OpenFilePicker(string title, string filters, Action<bool, List<string>> callback, int selectionCountMax, string? startPath,
@@ -108,11 +112,8 @@ public class FileDialogService : IDisposable, IUiService
         return path;
     }
 
-    // TODO: maybe change this from reflection when its public.
     private string GetCurrentLocation()
-        => (_manager.GetType().GetField("dialog", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(_manager) as FileDialog)
-            ?.GetCurrentPath()
-         ?? ".";
+        => (_dialogGetter?.Invoke(_manager) as FileDialog)?.GetCurrentPath() ?? ".";
 
     /// <summary> Set up the file selector with the right flags and custom side bar items. </summary>
     private static FileDialogManager SetupFileManager(string modDirectory)
@@ -122,10 +123,10 @@ public class FileDialogService : IDisposable, IUiService
             AddedWindowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDocking,
         };
 
-        if (Functions.GetDownloadsFolder(out var downloadsFolder))
+        if (WindowsFunctions.GetDownloadsFolder(out var downloadsFolder))
             fileManager.CustomSideBarItems.Add(("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1));
 
-        if (Functions.GetQuickAccessFolders(out var folders))
+        if (WindowsFunctions.GetQuickAccessFolders(out var folders))
             foreach (var (idx, (name, path)) in folders.Index())
                 fileManager.CustomSideBarItems.Add(($"{name}##{idx}", path, FontAwesomeIcon.Folder, -1));
 

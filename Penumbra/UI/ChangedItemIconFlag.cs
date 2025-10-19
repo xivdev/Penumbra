@@ -52,26 +52,26 @@ public static class ChangedItemFlagExtensions
     public static readonly int                 NumCategories = Order.Count;
     public const           ChangedItemIconFlag DefaultFlags  = AllFlags & ~ChangedItemIconFlag.Offhand;
 
-    public static string ToDescription(this ChangedItemIconFlag iconFlag)
+    public static ReadOnlySpan<byte> ToDescription(this ChangedItemIconFlag iconFlag)
         => iconFlag switch
         {
-            ChangedItemIconFlag.Head          => EquipSlot.Head.ToName(),
-            ChangedItemIconFlag.Body          => EquipSlot.Body.ToName(),
-            ChangedItemIconFlag.Hands         => EquipSlot.Hands.ToName(),
-            ChangedItemIconFlag.Legs          => EquipSlot.Legs.ToName(),
-            ChangedItemIconFlag.Feet          => EquipSlot.Feet.ToName(),
-            ChangedItemIconFlag.Ears          => EquipSlot.Ears.ToName(),
-            ChangedItemIconFlag.Neck          => EquipSlot.Neck.ToName(),
-            ChangedItemIconFlag.Wrists        => EquipSlot.Wrists.ToName(),
-            ChangedItemIconFlag.Finger        => "Ring",
-            ChangedItemIconFlag.Monster       => "Monster",
-            ChangedItemIconFlag.Demihuman     => "Demi-Human",
-            ChangedItemIconFlag.Customization => "Customization",
-            ChangedItemIconFlag.Action        => "Action",
-            ChangedItemIconFlag.Emote         => "Emote",
-            ChangedItemIconFlag.Mainhand      => "Weapon (Mainhand)",
-            ChangedItemIconFlag.Offhand       => "Weapon (Offhand)",
-            _                                 => "Other",
+            ChangedItemIconFlag.Head          => EquipSlot.Head.ToNameU8(),
+            ChangedItemIconFlag.Body          => EquipSlot.Body.ToNameU8(),
+            ChangedItemIconFlag.Hands         => EquipSlot.Hands.ToNameU8(),
+            ChangedItemIconFlag.Legs          => EquipSlot.Legs.ToNameU8(),
+            ChangedItemIconFlag.Feet          => EquipSlot.Feet.ToNameU8(),
+            ChangedItemIconFlag.Ears          => EquipSlot.Ears.ToNameU8(),
+            ChangedItemIconFlag.Neck          => EquipSlot.Neck.ToNameU8(),
+            ChangedItemIconFlag.Wrists        => EquipSlot.Wrists.ToNameU8(),
+            ChangedItemIconFlag.Finger        => "Ring"u8,
+            ChangedItemIconFlag.Monster       => "Monster"u8,
+            ChangedItemIconFlag.Demihuman     => "Demi-Human"u8,
+            ChangedItemIconFlag.Customization => "Customization"u8,
+            ChangedItemIconFlag.Action        => "Action"u8,
+            ChangedItemIconFlag.Emote         => "Emote"u8,
+            ChangedItemIconFlag.Mainhand      => "Weapon (Mainhand)"u8,
+            ChangedItemIconFlag.Offhand       => "Weapon (Offhand)"u8,
+            _                                 => "Other"u8,
         };
 
     public static ChangedItemIcon ToApiIcon(this ChangedItemIconFlag iconFlag)

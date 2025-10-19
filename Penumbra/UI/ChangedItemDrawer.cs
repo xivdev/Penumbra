@@ -3,12 +3,9 @@ using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Lumina.Data.Files;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Services;
@@ -17,9 +14,9 @@ using MouseButton = Penumbra.Api.Enums.MouseButton;
 
 namespace Penumbra.UI;
 
-public class ChangedItemDrawer : IDisposable, Luna.IUiService
+public class ChangedItemDrawer : IDisposable, IUiService
 {
-    private static readonly string[] LowerNames = ChangedItemFlagExtensions.Order.Select(f => f.ToDescription().ToLowerInvariant()).ToArray();
+    private static readonly string[] LowerNames = ChangedItemFlagExtensions.Order.Select(f => f.ToDescription().ToString().ToLowerInvariant()).ToArray();
 
     public static bool TryParseIndex(ReadOnlySpan<char> input, out ChangedItemIconFlag slot)
     {
@@ -69,7 +66,7 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
     private          float                                                _smallestIconWidth;
 
     public static Vector2 TypeFilterIconSize
-        => new(2 * ImGui.GetTextLineHeight());
+        => new(2 * Im.Style.TextHeight);
 
     public ChangedItemDrawer(IUiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator,
         Configuration config)
@@ -97,44 +94,44 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
         => DrawCategoryIcon(data.GetIcon().ToFlag(), height);
 
     public void DrawCategoryIcon(ChangedItemIconFlag iconFlagType)
-        => DrawCategoryIcon(iconFlagType, ImGui.GetFrameHeight());
+        => DrawCategoryIcon(iconFlagType, Im.Style.FrameHeight);
 
     public void DrawCategoryIcon(ChangedItemIconFlag iconFlagType, float height)
     {
         if (!_icons.TryGetValue(iconFlagType, out var icon))
         {
-            ImGui.Dummy(new Vector2(height));
+            Im.Dummy(0, height);
             return;
         }
 
-        ImGui.Image(icon.Handle, new Vector2(height));
-        if (ImGui.IsItemHovered())
+        Im.Image.Draw(icon.Id(), new Vector2(height));
+        if (Im.Item.Hovered())
         {
-            using var tt = ImRaii.Tooltip();
-            ImGui.Image(icon.Handle, new Vector2(_smallestIconWidth));
+            using var tt = Im.Tooltip.Begin();
+            Im.Image.Draw(icon.Id(), new Vector2(_smallestIconWidth));
             Im.Line.Same();
-            ImGuiUtil.DrawTextButton(iconFlagType.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
+            ImEx.TextFramed(iconFlagType.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
         }
     }
 
     public void ChangedItemHandling(IIdentifiedObjectData data, bool leftClicked)
     {
         var ret = leftClicked ? MouseButton.Left : MouseButton.None;
-        ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
-        ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
+        ret = Im.Item.Clicked(ImSharp.MouseButton.Right) ? MouseButton.Right : ret;
+        ret = Im.Item.Clicked(ImSharp.MouseButton.Middle) ? MouseButton.Middle : ret;
         if (ret != MouseButton.None)
             _communicator.ChangedItemClick.Invoke(new ChangedItemClick.Arguments(ret, data));
-        if (!ImGui.IsItemHovered())
+        if (!Im.Item.Hovered())
             return;
 
-        using var tt = ImUtf8.Tooltip();
+        using var tt = Im.Tooltip.Begin();
         if (data.Count == 1)
-            ImUtf8.Text("This item is changed through a single effective change.\n");
+            Im.Text("This item is changed through a single effective change.\n"u8);
         else
-            ImUtf8.Text($"This item is changed through {data.Count} distinct effective changes.\n");
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3 * ImUtf8.GlobalScale);
-        ImGui.Separator();
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 3 * ImUtf8.GlobalScale);
+            Im.Text($"This item is changed through {data.Count} distinct effective changes.\n");
+        Im.Cursor.Y += 3 * Im.Style.GlobalScale;
+        Im.Separator();
+        Im.Cursor.Y += 3 * Im.Style.GlobalScale;
         _communicator.ChangedItemHover.Invoke(new ChangedItemHover.Arguments(data));
     }
 
@@ -146,9 +143,9 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
             return;
 
         Im.Line.Same();
-        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (height - ImGui.GetTextLineHeight()) / 2);
-        ImUtf8.TextRightAligned(additionalData, ImGui.GetStyle().ItemInnerSpacing.X);
+        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+        Im.Cursor.Y += height - Im.Style.TextHeight / 2;
+        ImEx.TextRightAligned(additionalData, Im.Style.ItemInnerSpacing.X);
     }
 
     /// <summary> Draw the model information, right-justified. </summary>
@@ -158,9 +155,9 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
             return;
 
         Im.Line.Same();
-        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (height - ImGui.GetTextLineHeight()) / 2);
-        ImUtf8.TextRightAligned(text, ImGui.GetStyle().ItemInnerSpacing.X);
+        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+        Im.Cursor.Y += height - Im.Style.TextHeight / 2;
+        ImEx.TextRightAligned(text, Im.Style.ItemInnerSpacing.X);
     }
 
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
@@ -181,9 +178,9 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
     public bool DrawTypeFilter(ref ChangedItemIconFlag typeFilter)
     {
         var       ret   = false;
-        using var _     = ImRaii.PushId("ChangedItemIconFilter");
+        using var _     = Im.Id.Push("ChangedItemIconFilter"u8);
         var       size  = TypeFilterIconSize;
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
 
 
         foreach (var iconType in ChangedItemFlagExtensions.Order)
@@ -192,15 +189,15 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
             Im.Line.Same();
         }
 
-        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
-        ImGui.Image(_icons[ChangedItemFlagExtensions.AllFlags].Handle, size, Vector2.Zero, Vector2.One,
+        Im.Cursor.X = Im.ContentRegion.Maximum.X - size.X;
+        Im.Image.Draw(_icons[ChangedItemFlagExtensions.AllFlags].Id(), size, Vector2.Zero, Vector2.One,
             typeFilter switch
             {
                 0                                  => new Vector4(0.6f,  0.3f,  0.3f,  1f),
                 ChangedItemFlagExtensions.AllFlags => new Vector4(0.75f, 0.75f, 0.75f, 1f),
                 _                                  => new Vector4(0.5f,  0.5f,  1f,    1f),
             });
-        if (ImGui.IsItemClicked())
+        if (Im.Item.Clicked())
         {
             typeFilter = typeFilter == ChangedItemFlagExtensions.AllFlags ? 0 : ChangedItemFlagExtensions.AllFlags;
             ret        = true;
@@ -213,28 +210,28 @@ public class ChangedItemDrawer : IDisposable, Luna.IUiService
             var localRet = false;
             var icon     = _icons[type];
             var flag     = typeFilter.HasFlag(type);
-            ImGui.Image(icon.Handle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+            Im.Image.Draw(icon.Id(), size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
+            if (Im.Item.Clicked())
             {
                 typeFilter = flag ? typeFilter & ~type : typeFilter | type;
                 localRet   = true;
             }
 
-            using var popup = ImRaii.ContextPopupItem(type.ToString());
+            using var popup = Im.Popup.BeginContextItem($"{type}");
             if (popup)
-                if (ImGui.MenuItem("Enable Only This"))
+                if (Im.Menu.Item("Enable Only This"u8))
                 {
                     typeFilter = type;
                     localRet   = true;
-                    ImGui.CloseCurrentPopup();
+                    Im.Popup.CloseCurrent();
                 }
 
-            if (ImGui.IsItemHovered())
+            if (Im.Item.Hovered())
             {
-                using var tt = ImRaii.Tooltip();
-                ImGui.Image(icon.Handle, new Vector2(_smallestIconWidth));
+                using var tt = Im.Tooltip.Begin();
+                Im.Image.Draw(icon.Id(), new Vector2(_smallestIconWidth));
                 Im.Line.Same();
-                ImGuiUtil.DrawTextButton(type.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
+                ImEx.TextFramed(type.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
             }
 
             return localRet;
