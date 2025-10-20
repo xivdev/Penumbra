@@ -31,7 +31,7 @@ using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
+public partial class ModEditWindow : IndexedWindow, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
@@ -84,7 +84,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         if (mod == Mod)
             return;
 
-        WindowName = $"{mod.Name} (LOADING){WindowBaseLabel}";
+        WindowName = $"{mod.Name} (LOADING){WindowBaseLabel}{Index}";
         AppendTask(() =>
         {
             _editor.LoadMod(mod, -1, 0).Wait();
@@ -173,11 +173,13 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
 
         _allowReduplicate = redirections != _editor.Files.Available.Count || _editor.Files.Missing.Count > 0 || unused > 0;
         sb.Append(WindowBaseLabel);
+        sb.Append(Index);
         WindowName = sb.ToString();
     }
 
     public override void OnClose()
     {
+        base.OnClose();
         _config.Ephemeral.AdvancedEditingOpen = false;
         _config.Ephemeral.Save();
         AppendTask(() =>
@@ -620,9 +622,9 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
-        MetaDrawers metaDrawers, MigrationManager migrationManager,
-        MtrlTabFactory mtrlTabFactory, ModSelection selection)
-        : base(WindowBaseLabel)
+        MetaDrawers metaDrawers,
+        MtrlTabFactory mtrlTabFactory, WindowSystem windowSystem, int index)
+        : base($"{WindowBaseLabel}{index}", windowSystem, index)
     {
         _itemSwapTab       = itemSwapTab;
         _gameData          = gameData;
@@ -658,9 +660,6 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         _resourceTreeFactory = resourceTreeFactory;
         _quickImportViewer   = resourceTreeViewerFactory.Create(1, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
-        IsOpen = _config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true };
-        if (IsOpen && selection.Mod != null)
-            ChangeMod(selection.Mod);
     }
 
     public void Dispose()
@@ -677,10 +676,19 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
 
     private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (arguments.Type is not (ModPathChangeType.Reloaded or ModPathChangeType.Moved) || arguments.Mod != Mod)
+        if (arguments.Mod != Mod)
             return;
 
-        Mod = null;
-        ChangeMod(arguments.Mod);
+        switch (arguments.Type)
+        {
+            case ModPathChangeType.Reloaded or ModPathChangeType.Moved:
+                Mod = null;
+                ChangeMod(arguments.Mod);
+                break;
+            case ModPathChangeType.Deleted:
+                IsOpen = false;
+                Dispose();
+                break;
+        }
     }
 }

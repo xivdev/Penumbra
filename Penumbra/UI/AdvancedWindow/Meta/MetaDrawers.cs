@@ -12,7 +12,7 @@ public class MetaDrawers(
     RspMetaDrawer rsp,
     AtchMetaDrawer atch,
     ShpMetaDrawer shp,
-    AtrMetaDrawer atr) : Luna.IService
+    AtrMetaDrawer atr)
 {
     public readonly EqdpMetaDrawer      Eqdp      = eqdp;
     public readonly EqpMetaDrawer       Eqp       = eqp;

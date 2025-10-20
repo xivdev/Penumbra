@@ -6,7 +6,13 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor, MigrationManager migrationManager) : IDisposable, Luna.IService
+public class ModImportManager(
+    ModManager modManager,
+    Configuration config,
+    DuplicateManager duplicates,
+    ModNormalizer modNormalizer,
+    MigrationManager migrationManager,
+    FileCompactor compactor) : IDisposable, Luna.IService
 {
     private readonly ConcurrentQueue<string[]> _modsToUnpack = new();
 
@@ -42,7 +48,8 @@ public class ModImportManager(ModManager modManager, Configuration config, ModEd
         if (files.Length == 0)
             return;
 
-        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, modEditor, modManager, modEditor.Compactor, migrationManager);
+        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, duplicates, modNormalizer, modManager, compactor,
+            migrationManager);
     }
 
     public bool Importing

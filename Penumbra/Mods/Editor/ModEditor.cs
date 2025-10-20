@@ -13,7 +13,7 @@ public class ModEditor(
     ModSwapEditor swapEditor,
     MdlMaterialEditor mdlMaterialEditor,
     FileCompactor compactor)
-    : IDisposable, Luna.IService
+    : IDisposable
 {
     public readonly ModNormalizer     ModNormalizer     = modNormalizer;
     public readonly ModMetaEditor     MetaEditor        = metaEditor;

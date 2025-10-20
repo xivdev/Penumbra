@@ -29,7 +29,7 @@ using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ItemSwapTab : IDisposable, ITab, IUiService
+public class ItemSwapTab : IDisposable, ITab
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;

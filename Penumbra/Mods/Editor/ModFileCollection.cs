@@ -4,7 +4,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModFileCollection : IDisposable, Luna.IService
+public class ModFileCollection : IDisposable
 {
     private readonly List<FileRegistry> _available = [];
     private readonly List<FileRegistry> _mtrl      = [];

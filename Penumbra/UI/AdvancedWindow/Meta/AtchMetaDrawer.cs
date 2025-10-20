@@ -18,7 +18,7 @@ using Notification = Luna.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
-public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, Luna.IService
+public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 {
     public override ReadOnlySpan<byte> Label
         => "Attachment Points (ATCH)###ATCH"u8;

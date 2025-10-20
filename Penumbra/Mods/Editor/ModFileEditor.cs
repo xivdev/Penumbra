@@ -6,7 +6,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModFileEditor(ModFileCollection files, ModManager modManager, CommunicatorService communicator) : Luna.IService
+public class ModFileEditor(ModFileCollection files, ModManager modManager, CommunicatorService communicator)
 {
     public bool Changes { get; private set; }
 

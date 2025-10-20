@@ -10,7 +10,7 @@ using Penumbra.Mods.Editor;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<GlobalEqpManipulation, byte>(editor, metaFiles), Luna.IService
+    : MetaDrawer<GlobalEqpManipulation, byte>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Global Equipment Parameter Edits (Global EQP)###GEQP"u8;

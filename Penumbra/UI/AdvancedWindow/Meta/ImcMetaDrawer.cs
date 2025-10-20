@@ -13,7 +13,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<ImcIdentifier, ImcEntry>(editor, metaFiles), Luna.IService
+    : MetaDrawer<ImcIdentifier, ImcEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Variant Edits (IMC)###IMC"u8;

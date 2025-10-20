@@ -13,7 +13,7 @@ namespace Penumbra.Mods.Editor;
 
 public class ModMetaEditor(
     ModGroupEditor groupEditor,
-    MetaFileManager metaFileManager) : MetaDictionary, IService
+    MetaFileManager metaFileManager) : MetaDictionary
 {
     public sealed class OtherOptionData : HashSet<string>
     {

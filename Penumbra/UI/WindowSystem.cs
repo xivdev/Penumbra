@@ -10,16 +10,16 @@ namespace Penumbra.UI;
 
 public class PenumbraWindowSystem : IDisposable, Luna.IUiService
 {
-    private readonly IUiBuilder         _uiBuilder;
-    private readonly WindowSystem       _windowSystem;
-    private readonly FileDialogService  _fileDialog;
-    private readonly TextureArraySlicer _textureArraySlicer;
-    public readonly  ConfigWindow       Window;
-    public readonly  PenumbraChangelog  Changelog;
-    public readonly  KnowledgeWindow    KnowledgeWindow;
+    private readonly  IUiBuilder         _uiBuilder;
+    internal readonly WindowSystem       _windowSystem;
+    private readonly  FileDialogService  _fileDialog;
+    private readonly  TextureArraySlicer _textureArraySlicer;
+    public readonly   ConfigWindow       Window;
+    public readonly   PenumbraChangelog  Changelog;
+    public readonly   KnowledgeWindow    KnowledgeWindow;
 
     public PenumbraWindowSystem(IDalamudPluginInterface pi, Configuration config, PenumbraChangelog changelog, ConfigWindow window,
-        LaunchButton _, ModEditWindow editWindow, FileDialogService fileDialog, ImportPopup importPopup, DebugTab debugTab,
+        LaunchButton _, ModEditWindowFactory editWindowFactory, FileDialogService fileDialog, ImportPopup importPopup, DebugTab debugTab,
         KnowledgeWindow knowledgeWindow, TextureArraySlicer textureArraySlicer)
     {
         _uiBuilder          = pi.UiBuilder;
@@ -31,10 +31,10 @@ public class PenumbraWindowSystem : IDisposable, Luna.IUiService
         _windowSystem       = new WindowSystem("Penumbra");
         _windowSystem.AddWindow(changelog.Changelog);
         _windowSystem.AddWindow(window);
-        _windowSystem.AddWindow(editWindow);
         _windowSystem.AddWindow(importPopup);
         _windowSystem.AddWindow(debugTab);
         _windowSystem.AddWindow(KnowledgeWindow);
+        editWindowFactory.SetWindowSystem(_windowSystem);
         _uiBuilder.OpenMainUi            += Window.Toggle;
         _uiBuilder.OpenConfigUi          += Window.OpenSettings;
         _uiBuilder.Draw                  += _windowSystem.Draw;

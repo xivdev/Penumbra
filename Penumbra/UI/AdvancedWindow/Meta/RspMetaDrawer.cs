@@ -13,7 +13,7 @@ using Penumbra.UI.Classes;
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
 public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
-    : MetaDrawer<RspIdentifier, RspEntry>(editor, metaFiles), Luna.IService
+    : MetaDrawer<RspIdentifier, RspEntry>(editor, metaFiles)
 {
     public override ReadOnlySpan<byte> Label
         => "Racial Scaling Edits (RSP)###RSP"u8;
