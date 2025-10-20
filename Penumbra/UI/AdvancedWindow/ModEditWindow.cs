@@ -1,10 +1,10 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.DragDrop;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -623,8 +623,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
         MetaDrawers metaDrawers,
-        MtrlTabFactory mtrlTabFactory, WindowSystem windowSystem, int index)
-        : base($"{WindowBaseLabel}{index}", windowSystem, index)
+        MtrlTabFactory mtrlTabFactory, int index)
+        : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
         _gameData          = gameData;

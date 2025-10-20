@@ -1,32 +1,35 @@
 using Dalamud.Plugin;
-using OtterGui;
-using Penumbra.Api;
-using Penumbra.Api.Enums;
-using Penumbra.Collections;
-using Penumbra.Collections.Cache;
-using Penumbra.Interop.PathResolving;
-using Penumbra.Services;
-using Penumbra.Interop.Services;
-using Penumbra.Mods.Manager;
-using Penumbra.Collections.Manager;
-using Penumbra.UI.Tabs;
-using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
-using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
-using OtterGui.Tasks;
-using Penumbra.UI;
-using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Lumina.Excel.Sheets;
 using Luna;
+using OtterGui;
+using OtterGui.Tasks;
+using Penumbra.Api;
+using Penumbra.Api.Enums;
+using Penumbra.Collections;
+using Penumbra.Collections.Cache;
+using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
+using Penumbra.Interop.PathResolving;
+using Penumbra.Interop.Services;
+using Penumbra.Mods;
+using Penumbra.Mods.Manager;
+using Penumbra.Services;
+using Penumbra.UI;
+using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.Tabs;
+using static System.Collections.Specialized.BitVector32;
+using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
+using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using DynamisIpc = OtterGui.Services.DynamisIpc;
 using MessageService = Penumbra.Services.MessageService;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
+using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
 
@@ -136,7 +139,11 @@ public class Penumbra : IDalamudPlugin
                 system.Window.Setup(this, _services.GetService<ConfigTabBar>());
                 _services.GetService<CommandHandler>();
                 if (!_disposed)
+                {
                     _windowSystem = system;
+                    if (_config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true } && _services.GetService<ModSelection>().Mod is {} mod)
+                        _services.GetService<ModEditWindowFactory>().OpenForMod(mod);
+                }
                 else
                     system.Dispose();
             }
