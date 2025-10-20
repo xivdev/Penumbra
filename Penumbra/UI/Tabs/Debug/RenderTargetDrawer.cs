@@ -84,7 +84,7 @@ public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, D
               + record.Offset);
             if (texture != null)
             {
-                using var color = Dalamud.Interface.Utility.Raii.ImRaii.PushColor(ImGuiCol.Text, ImGuiUtil.HalfBlendText(0xFF),
+                using var color = ImGuiColor.Text.Push(ImGuiUtil.HalfBlendText(0xFF),
                     texture->TextureFormat != record.OriginalTextureFormat);
                 ImUtf8.Text($"{texture->TextureFormat}");
             }

@@ -82,7 +82,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
             var color = group != null || modMerger.OptionGroupName.Length == 0 && modMerger.OptionName.Length == 0
                 ? Colors.PressEnterWarningBg
                 : Colors.DiscordColor;
-            using var c = ImRaii.PushColor(ImGuiCol.Border, color);
+            using var c = ImGuiColor.Border.Push(color);
             ImGui.SetNextItemWidth(buttonWidth);
             ImGui.InputTextWithHint("##optionGroupInput", "Target Option Group", ref modMerger.OptionGroupName, 64);
             ImGuiUtil.HoverTooltip(
@@ -96,7 +96,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
                 : group == null || group.Options.Any(o => o.Name == modMerger.OptionName)
                     ? Colors.PressEnterWarningBg
                     : Colors.DiscordColor;
-            c.Push(ImGuiCol.Border, color);
+            c.Push(ImGuiColor.Border, color);
             ImGui.SetNextItemWidth(buttonWidth);
             ImGui.InputTextWithHint("##optionInput", "Target Option Name", ref modMerger.OptionName, 64);
             ImGuiUtil.HoverTooltip(
@@ -249,7 +249,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
 
         ImGui.Separator();
         ImGui.Dummy(Vector2.One);
-        using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.TutorialBorder);
+        using var color = ImGuiColor.Text.Push(Colors.TutorialBorder);
         foreach (var warning in modMerger.Warnings.SkipLast(1))
         {
             ImGuiUtil.TextWrapped(warning);
@@ -266,7 +266,7 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
 
         ImGui.Separator();
         ImGui.Dummy(Vector2.One);
-        using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
+        using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
         ImGuiUtil.TextWrapped(modMerger.Error.ToString());
     }
 }

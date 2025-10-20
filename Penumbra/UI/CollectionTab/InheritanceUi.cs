@@ -24,7 +24,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     {
         using var id = ImRaii.PushId("##Inheritance");
         ImGuiUtil.DrawColoredText(($"The {TutorialService.SelectedCollection} ", 0),
-            (Name(_active.Current), ColorId.SelectedCollection.Value() | 0xFF000000), (" inherits from:", 0));
+            (Name(_active.Current), ColorId.SelectedCollection.Value().FullAlpha().Color), (" inherits from:", 0));
         ImGui.Dummy(Vector2.One);
 
         DrawCurrentCollectionInheritance();
@@ -111,7 +111,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         foreach (var inheritance in collection.Inheritance.FlatHierarchy.Skip(1))
         {
             // Draw the child, already seen collections are colored as conflicts.
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(),
+            using var color = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(),
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
@@ -138,7 +138,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     /// <summary> Draw a single primary inherited collection. </summary>
     private void DrawInheritance(ModCollection collection)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(),
+        using var color = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(),
             _seenInheritedCollections.Contains(collection));
         _seenInheritedCollections.Add(collection);
         using var tree = ImRaii.TreeNode($"{Name(collection)}###{collection.Identity.Name}", ImGuiTreeNodeFlags.NoTreePushOnOpen);
@@ -172,10 +172,10 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     private void DrawInheritanceTrashButton()
     {
         var size        = UiHelpers.IconButtonSize with { Y = ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight };
-        var buttonColor = ImGui.GetColorU32(ImGuiCol.Button);
+        var buttonColor = Im.Style[ImGuiColor.Button];
         // Prevent hovering from highlighting the button.
-        using var color = ImRaii.PushColor(ImGuiCol.ButtonActive, buttonColor)
-            .Push(ImGuiCol.ButtonHovered, buttonColor);
+        using var color = ImGuiColor.ButtonActive.Push(buttonColor)
+            .Push(ImGuiColor.ButtonHovered, buttonColor);
         ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), size,
             "Drag primary inheritance here to remove it from the list.", false, true);
 

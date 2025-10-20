@@ -368,7 +368,7 @@ public partial class ModEditWindow
 
         var ret = ImUtf8.CollapsingHeader(label);
         ImGui.GetWindowDrawList()
-            .AddText(UiBuilder.DefaultFont, UiBuilder.DefaultFont.FontSize, pos, ImGui.GetColorU32(ImGuiCol.Text), "Layout");
+            .AddText(UiBuilder.DefaultFont, UiBuilder.DefaultFont.FontSize, pos, ImGuiColor.Text.Get().Color, "Layout");
         return ret;
     }
 
@@ -403,7 +403,7 @@ public partial class ModEditWindow
         ImGui.TableSetupColumn("w",          ImGuiTableColumnFlags.WidthFixed, 250 * UiHelpers.Scale);
         ImGui.TableHeadersRow();
 
-        var textColorStart = ImGui.GetColorU32(ImGuiCol.Text);
+        var textColorStart = ImGuiColor.Text.Get().Color;
 
         var ret = false;
         for (var i = 0; i < tab.Matrix.GetLength(0); ++i)
@@ -424,7 +424,7 @@ public partial class ModEditWindow
                 var       deletable = !disabled && idx >= 0;
                 using (ImRaii.PushFont(UiBuilder.MonoFont, tooltip.Length > 0))
                 {
-                    using (ImRaii.PushColor(ImGuiCol.Text, color))
+                    using (ImGuiColor.Text.Push(color))
                     {
                         ImGui.TableNextColumn();
                         ImUtf8.Selectable(name);

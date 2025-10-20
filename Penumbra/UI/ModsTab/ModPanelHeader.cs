@@ -149,8 +149,7 @@ public class ModPanelHeader : IDisposable
             ImGui.SetCursorPosX(offset);
         }
 
-        using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
+        using var style = ImStyleBorder.Frame.Push(Colors.MetaInfoText, 2 * Im.Style.GlobalScale);
         using var f     = _nameFont.Push();
         ImGuiUtil.DrawTextButton(_modName, Vector2.Zero, 0);
         _nameWidth = ImGui.GetItemRectSize().X;

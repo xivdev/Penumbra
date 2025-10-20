@@ -182,7 +182,7 @@ public partial class ModEditWindow
         var selected = _selectedFiles.Contains(registry);
         var color = registry.SubModUsage.Count == 0             ? ColorId.ConflictingMod :
             registry.CurrentUsage == registry.SubModUsage.Count ? ColorId.NewMod : ColorId.InheritedMod;
-        using (ImRaii.PushColor(ImGuiCol.Text, color.Value()))
+        using (ImGuiColor.Text.Push(color.Value()))
         {
             if (Im.Selectable(registry.RelPath.Path.Span, selected))
             {

@@ -21,8 +21,8 @@ public sealed class PredefinedTagManager : ISavable, IReadOnlyList<string>, ISer
     private readonly SaveService _saveService;
 
     private bool _isListOpen;
-    private uint _enabledColor;
-    private uint _disabledColor;
+    private Rgba32 _enabledColor;
+    private Rgba32 _disabledColor;
 
     private readonly SortedList<string, TagData> _predefinedTags = [];
 

@@ -22,7 +22,7 @@ public static class StaticServiceManager
 {
     public static ServiceManager CreateProvider(Penumbra penumbra, IDalamudPluginInterface pi, Logger log)
     {
-        var services = new ServiceManager(log)
+        var services = new ServiceManager(log, Logger.GlobalPluginName)
             .AddDalamudServices(pi)
             .AddExistingService(log)
             .AddExistingService(penumbra);

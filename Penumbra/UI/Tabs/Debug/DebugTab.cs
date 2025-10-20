@@ -31,7 +31,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.UI.Classes;
-using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
@@ -68,7 +67,7 @@ public class Diagnostics(ServiceManager provider) : IUiService
     }
 }
 
-public class DebugTab : Window, ITab, IUiService
+public class DebugTab : Window, ITab
 {
     private readonly Configuration                      _config;
     private readonly CollectionManager                  _collectionManager;
@@ -180,7 +179,7 @@ public class DebugTab : Window, ITab, IUiService
 
     public void DrawContent()
     {
-        using var child = Child("##DebugTab", -Vector2.One);
+        using var child = Im.Child.Begin("##DebugTab"u8, -Vector2.One);
         if (!child)
             return;
 
@@ -218,9 +217,9 @@ public class DebugTab : Window, ITab, IUiService
         {
             if (collection.HasCache)
             {
-                using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
+                using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Value());
                 using var node =
-                    TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
+                    Im.Tree.Node($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})###{collection.Identity.Name}");
                 if (!node)
                     continue;
 
@@ -272,24 +271,24 @@ public class DebugTab : Window, ITab, IUiService
                 if (modNode)
                     foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
                     {
-                        using var id    = mod is TemporaryMod t ? PushId(t.Priority.Value) : PushId(((Mod)mod).ModPath.Name);
-                        using var node2 = TreeNode(mod.Name);
+                        using var id    = mod is TemporaryMod t ? Im.Id.Push(t.Priority.Value) : Im.Id.Push(((Mod)mod).ModPath.Name);
+                        using var node2 = Im.Tree.Node(mod.Name);
                         if (!node2)
                             continue;
 
                         foreach (var path in paths)
 
-                            TreeNode(path.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                            Im.Tree.Node(path.Path.Span, TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
 
                         foreach (var manip in manips)
-                            TreeNode(manip.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                            Im.Tree.Node($"{manip}", TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
                     }
             }
             else
             {
-                using var color = PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})",
-                    ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                using var color = ImGuiColor.Text.Push(ColorId.UndefinedMod.Value());
+                Im.Tree.Node($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})",
+                    TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
             }
         }
     }
@@ -308,7 +307,7 @@ public class DebugTab : Window, ITab, IUiService
             _config.Ephemeral.Save();
         }
 
-        using (var table = Table("##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit))
+        using (var table = Im.Table.Begin("##DebugGeneralTable"u8, 2, TableFlags.SizingFixedFit))
         {
             if (table)
             {
@@ -329,11 +328,11 @@ public class DebugTab : Window, ITab, IUiService
 
 
         var issues = _modManager.Index().Count(p => p.Index != p.Item.Index);
-        using (var tree = TreeNode($"Mods ({issues} Issues)###Mods"))
+        using (var tree = Im.Tree.Node($"Mods ({issues} Issues)###Mods"))
         {
             if (tree)
             {
-                using var table = Table("##DebugModsTable", 3, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("##DebugModsTable"u8, 3, TableFlags.SizingFixedFit);
                 if (table)
                 {
                     var lastIndex = -1;
@@ -350,11 +349,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var tree = TreeNode("Mod Import"))
+        using (var tree = Im.Tree.Node("Mod Import"u8))
         {
             if (tree)
             {
-                using var table = Table("##DebugModImport", 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("##DebugModImport"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                 {
                     var importing = _modImporter.IsImporting(out var importer);
@@ -384,11 +383,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var tree = TreeNode("Framework"))
+        using (var tree = Im.Tree.Node("Framework"u8))
         {
             if (tree)
             {
-                using var table = Table("##DebugFramework", 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("##DebugFramework"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                 {
                     foreach (var important in _framework.Important)
@@ -406,11 +405,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var tree = TreeNode($"Texture Manager {_textureManager.Tasks.Count}###Texture Manager"))
+        using (var tree = Im.Tree.Node($"Texture Manager {_textureManager.Tasks.Count}###Texture Manager"))
         {
             if (tree)
             {
-                using var table = Table("##Tasks", 2, ImGuiTableFlags.RowBg);
+                using var table = Im.Table.Begin("##Tasks"u8, 2, TableFlags.RowBackground);
                 if (table)
                     foreach (var task in _textureManager.Tasks)
                     {
@@ -420,11 +419,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var tree = TreeNode("Redraw Service"))
+        using (var tree = Im.Tree.Node("Redraw Service"u8))
         {
             if (tree)
             {
-                using var table = Table("##redraws", 3, ImGuiTableFlags.RowBg);
+                using var table = Im.Table.Begin("##redraws"u8, 3, TableFlags.RowBackground);
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("In GPose");
@@ -494,7 +493,7 @@ public class DebugTab : Window, ITab, IUiService
         if (!ImGui.CollapsingHeader("Performance"))
             return;
 
-        using (var start = TreeNode("Startup Performance", ImGuiTreeNodeFlags.DefaultOpen))
+        using (var start = Im.Tree.Node("Startup Performance"u8, TreeNodeFlags.DefaultOpen))
         {
             if (start)
                 ImGui.NewLine();
@@ -512,7 +511,7 @@ public class DebugTab : Window, ITab, IUiService
             {
                 _objects.DrawDebug();
 
-                using var table = Table("##actors", 8, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+                using var table = Im.Table.Begin("##actors"u8, 8, TableFlags.RowBackground | TableFlags.SizingFixedFit,
                     -Vector2.UnitX);
                 if (!table)
                     return;
@@ -581,11 +580,11 @@ public class DebugTab : Window, ITab, IUiService
 
         ImGui.TextUnformatted(
             $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Identity.Name})");
-        using (var drawTree = TreeNode("Draw Object to Object"))
+        using (var drawTree = Im.Tree.Node("Draw Object to Object"u8))
         {
             if (drawTree)
             {
-                using var table = Table("###DrawObjectResolverTable", 8, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("###DrawObjectResolverTable"u8, 8, TableFlags.SizingFixedFit);
                 if (table)
                     foreach (var (drawObject, (gameObjectPtr, idx, child)) in _drawObjectState
                                  .OrderBy(kvp => kvp.Value.Item2.Index)
@@ -595,7 +594,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImGui.TableNextColumn();
                         ImUtf8.CopyOnClickSelectable($"{drawObject}");
                         ImUtf8.DrawTableColumn($"{gameObjectPtr.Index}");
-                        using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF, gameObjectPtr.Index != idx))
+                        using (ImGuiColor.Text.Push(new Vector4(1, 0, 0, 1), gameObjectPtr.Index != idx))
                         {
                             ImUtf8.DrawTableColumn($"{idx}");
                         }
@@ -603,7 +602,7 @@ public class DebugTab : Window, ITab, IUiService
                         ImUtf8.DrawTableColumn(child ? "Child"u8 : "Main"u8);
                         ImGui.TableNextColumn();
                         ImUtf8.CopyOnClickSelectable($"{gameObjectPtr}");
-                        using (ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF, _objects[idx] != gameObjectPtr))
+                        using (ImGuiColor.Text.Push(new Vector4(1, 0, 0, 1), _objects[idx] != gameObjectPtr))
                         {
                             ImUtf8.DrawTableColumn($"{_objects[idx]}");
                         }
@@ -615,11 +614,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var pathTree = TreeNode("Path Collections"))
+        using (var pathTree = Im.Tree.Node("Path Collections"u8))
         {
             if (pathTree)
             {
-                using var table = Table("###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("###PathCollectionResolverTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                     foreach (var data in _pathState.CurrentData)
                     {
@@ -631,11 +630,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var resourceTree = TreeNode("Subfile Collections"))
+        using (var resourceTree = Im.Tree.Node("Subfile Collections"u8))
         {
             if (resourceTree)
             {
-                using var table = Table("###ResourceCollectionResolverTable", 4, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("###ResourceCollectionResolverTable"u8, 4, TableFlags.SizingFixedFit);
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("Current Mtrl Data");
@@ -664,11 +663,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var identifiedTree = TreeNode("Identified Collections"))
+        using (var identifiedTree = Im.Tree.Node("Identified Collections"u8))
         {
             if (identifiedTree)
             {
-                using var table = Table("##PathCollectionsIdentifiedTable", 4, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("##PathCollectionsIdentifiedTable"u8, 4, TableFlags.SizingFixedFit);
                 if (table)
                     foreach (var (address, identifier, collection) in _identifiedCollectionCache
                                  .OrderBy(kvp => ((GameObject*)kvp.Address)->ObjectIndex))
@@ -681,11 +680,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var cutsceneTree = TreeNode("Cutscene Actors"))
+        using (var cutsceneTree = Im.Tree.Node("Cutscene Actors"u8))
         {
             if (cutsceneTree)
             {
-                using var table = Table("###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("###PCutsceneResolverTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                     foreach (var (idx, actor) in _cutsceneService.Actors)
                     {
@@ -695,11 +694,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var groupTree = TreeNode("Group"))
+        using (var groupTree = Im.Tree.Node("Group"u8))
         {
             if (groupTree)
             {
-                using var table = Table("###PGroupTable", 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("###PGroupTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("Group Members");
@@ -714,7 +713,7 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var bannerTree = TreeNode("Party Banner"))
+        using (var bannerTree = Im.Tree.Node("Party Banner"u8))
         {
             if (bannerTree)
             {
@@ -727,7 +726,7 @@ public class DebugTab : Window, ITab, IUiService
                 Penumbra.Dynamis.DrawPointer((nint)agent);
                 if (agent->Data != null)
                 {
-                    using var table = Table("###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit);
+                    using var table = Im.Table.Begin("###PBannerTable"u8, 2, TableFlags.SizingFixedFit);
                     if (table)
                         for (var i = 0; i < 8; ++i)
                         {
@@ -744,11 +743,11 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using (var tmbCache = TreeNode("TMB Cache"))
+        using (var tmbCache = Im.Tree.Node("TMB Cache"u8))
         {
             if (tmbCache)
             {
-                using var table = Table("###TmbTable", 2, ImGuiTableFlags.SizingFixedFit);
+                using var table = Im.Table.Begin("###TmbTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                     foreach (var (id, name) in _schedulerService.ListedTmbs.OrderBy(kvp => kvp.Key))
                     {
@@ -777,7 +776,7 @@ public class DebugTab : Window, ITab, IUiService
 
     private void DrawFileTest()
     {
-        using var node = TreeNode("Game File Test");
+        using var node = Im.Tree.Node("Game File Test"u8);
         if (!node)
             return;
 
@@ -803,7 +802,7 @@ public class DebugTab : Window, ITab, IUiService
 
     private void DrawChangedItemTest()
     {
-        using var node = TreeNode("Changed Item Test");
+        using var node = Im.Tree.Node("Changed Item Test"u8);
         if (!node)
             return;
 
@@ -855,13 +854,13 @@ public class DebugTab : Window, ITab, IUiService
 
     private void DrawEmotes()
     {
-        using var mainTree = TreeNode("Emotes");
+        using var mainTree = Im.Tree.Node("Emotes"u8);
         if (!mainTree)
             return;
 
         ImGui.InputText("File Name",  ref _emoteSearchFile, 256);
         ImGui.InputText("Emote Name", ref _emoteSearchName, 256);
-        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit,
+        using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
             new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
         if (!table)
             return;
@@ -886,13 +885,13 @@ public class DebugTab : Window, ITab, IUiService
 
     private void DrawActionTmbs()
     {
-        using var mainTree = TreeNode("Action TMBs");
+        using var mainTree = Im.Tree.Node("Action TMBs"u8);
         if (!mainTree)
             return;
 
         if (ImGui.InputText("Key", ref _tmbKeyFilter, 256))
             _tmbKeyFilterU8 = CiByteString.FromString(_tmbKeyFilter, out var r, MetaDataComputation.All) ? r : CiByteString.Empty;
-        using var table = Table("##table", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit,
+        using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
             new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
         if (!table)
             return;
@@ -910,17 +909,17 @@ public class DebugTab : Window, ITab, IUiService
 
     private void DrawStainTemplates()
     {
-        using var mainTree = TreeNode("Staining Templates");
+        using var mainTree = Im.Tree.Node("Staining Templates"u8);
         if (!mainTree)
             return;
 
-        using (var legacyTree = TreeNode("stainingtemplate.stm"))
+        using (var legacyTree = Im.Tree.Node("stainingtemplate.stm"u8))
         {
             if (legacyTree)
                 DrawStainTemplatesFile(_stains.LegacyStmFile);
         }
 
-        using (var gudTree = TreeNode("stainingtemplate_gud.stm"))
+        using (var gudTree = Im.Tree.Node("stainingtemplate_gud.stm"u8))
         {
             if (gudTree)
                 DrawStainTemplatesFile(_stains.GudStmFile);
@@ -931,12 +930,12 @@ public class DebugTab : Window, ITab, IUiService
     {
         foreach (var (key, data) in stmFile.Entries)
         {
-            using var tree = TreeNode($"Template {key}");
+            using var tree = Im.Tree.Node($"Template {key}");
             if (!tree)
                 continue;
 
-            using var table = Table("##table", data.Colors.Length + data.Scalars.Length,
-                ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+            using var table = Im.Table.Begin("##table"u8, data.Colors.Length + data.Scalars.Length,
+                TableFlags.SizingFixedFit | TableFlags.RowBackground);
             if (!table)
                 continue;
 
@@ -974,7 +973,7 @@ public class DebugTab : Window, ITab, IUiService
         if (!enableShaderReplacementFixer)
             return;
 
-        using var table = Table("##ShaderReplacementFixer", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        using var table = Im.Table.Begin("##ShaderReplacementFixer"u8, 3, TableFlags.RowBackground | TableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
@@ -1066,7 +1065,7 @@ public class DebugTab : Window, ITab, IUiService
 
         DrawCopyableAddress("CharacterBase"u8, model);
 
-        using (var t1 = Table("##table", 2, ImGuiTableFlags.SizingFixedFit))
+        using (var t1 = Im.Table.Begin("##table"u8, 2, TableFlags.SizingFixedFit))
         {
             if (t1)
             {
@@ -1079,7 +1078,7 @@ public class DebugTab : Window, ITab, IUiService
             }
         }
 
-        using var table = Table($"##{name}DrawTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin($"##{name}DrawTable", 5, TableFlags.RowBackground | TableFlags.SizingFixedFit);
         if (!table)
             return;
 
@@ -1120,7 +1119,7 @@ public class DebugTab : Window, ITab, IUiService
     private string   _crcInput = string.Empty;
     private FullPath _crcPath  = FullPath.Empty;
 
-    private unsafe void DrawCrcCache()
+    private void DrawCrcCache()
     {
         var header = ImUtf8.CollapsingHeader("CRC Cache"u8);
         if (!header)
@@ -1188,7 +1187,7 @@ public class DebugTab : Window, ITab, IUiService
         if (!header)
             return;
 
-        using var table = Table("##ProblemsTable", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##ProblemsTable"u8, 6, TableFlags.RowBackground | TableFlags.SizingFixedFit);
         if (!table)
             return;
 
@@ -1240,10 +1239,7 @@ public class DebugTab : Window, ITab, IUiService
             ImUtf8.Text($"Is Cloud Synced? {_cloudTesterReturn}");
 
         if (_cloudTesterError is not null)
-        {
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-            ImUtf8.Text($"{_cloudTesterError}");
-        }
+            Im.Text($"{_cloudTesterError}", ImGuiColors.DalamudRed);
     }
 
 

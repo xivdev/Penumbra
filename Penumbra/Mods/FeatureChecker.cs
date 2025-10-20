@@ -54,8 +54,8 @@ public static class FeatureChecker
         const int numButtons   = 5;
         var       innerSpacing = ImGui.GetStyle().ItemInnerSpacing;
         var       size         = new Vector2((width - (numButtons - 1) * innerSpacing.X) / numButtons, 0);
-        var       buttonColor  = ImGui.GetColorU32(ImGuiCol.FrameBg);
-        var       textColor    = ImGui.GetColorU32(ImGuiCol.TextDisabled);
+        var       buttonColor  = Im.Style[ImGuiColor.FrameBackground];
+        var       textColor    = Im.Style[ImGuiColor.TextDisabled];
         using (var style = ImStyleBorder.Frame.Push(ColorId.FolderLine.Value(), 0)
                       .Push(ImStyleDouble.ItemSpacing, innerSpacing)
                       .Push(ImGuiColor.Button, buttonColor)

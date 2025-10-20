@@ -53,7 +53,7 @@ public partial class ModEditWindow
                 continue;
 
             using var id    = ImUtf8.PushId(index);
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), deformer.RacialDeformer.IsEmpty);
+            using var color = ImGuiColor.Text.Push(Im.Style[ImGuiColor.TextDisabled], deformer.RacialDeformer.IsEmpty);
             if (ImUtf8.Selectable(name, deformer.GenderRace == _pbdData.SelectedRaceCode))
             {
                 _pbdData.SelectedRaceCode = deformer.GenderRace;
@@ -61,7 +61,7 @@ public partial class ModEditWindow
             }
 
             Im.Line.Same();
-            color.Push(ImGuiCol.Text, metaColor);
+            color.Push(ImGuiColor.Text, metaColor);
             ImUtf8.TextRightAligned(raceCode);
         }
     }
@@ -142,7 +142,7 @@ public partial class ModEditWindow
         var ret = false;
         ImUtf8.TextFrameAligned("Copy the values of the bone "u8);
         ImGui.SameLine(0, 0);
-        using (ImRaii.PushColor(ImGuiCol.Text, ColorId.NewMod.Value()))
+        using (ImGuiColor.Text.Push(ColorId.NewMod.Value()))
         {
             ImUtf8.TextFrameAligned(_pbdData.SelectedBone);
         }

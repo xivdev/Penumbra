@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.Utility.Raii;
+using ImSharp;
 using Lumina.Data.Files;
 using OtterGui.Text;
 using Penumbra.UI.Classes;
@@ -47,7 +48,7 @@ public class TexHeaderDrawer(IDragDropManager dragDrop) : Luna.IUiService
 
         if (_exception != null)
         {
-            using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
+            using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
             ImUtf8.TextWrapped($"Failure to load file:\n{_exception}");
         }
         else if (_tex != null)

@@ -92,7 +92,7 @@ public class ModPanelSettingsTab(
         if (!_inherited)
             return;
 
-        using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
+        using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
         if (ImUtf8.ButtonEx($"These settings are inherited from {selection.Collection.Identity.Name}.", width, _locked))
         {

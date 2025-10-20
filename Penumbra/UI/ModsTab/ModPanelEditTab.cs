@@ -208,8 +208,8 @@ public class ModPanelEditTab(
 
     private void DrawImportDate()
     {
-        ImUtf8.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
-            ImGui.GetColorU32(ImGuiCol.FrameBg, 0.5f), new Vector2(UiHelpers.InputTextMinusButton3, 0));
+        ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
+            new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
         ImGui.SameLine(0, 3 * ImUtf8.GlobalScale);
 
         var canRefresh = config.DeleteModModifier.IsActive();

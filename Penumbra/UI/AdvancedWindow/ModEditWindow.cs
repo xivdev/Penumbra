@@ -205,7 +205,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
             var offsetX   = ImGui.GetContentRegionAvail().X / 2 - radius;
             var offsetY   = ImGui.GetContentRegionAvail().Y / 2 - radius;
             ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(offsetX, offsetY));
-            ImUtf8.Spinner("##spinner"u8, radius, thickness, ImGui.GetColorU32(ImGuiCol.Text));
+            ImEx.Spinner("##spinner"u8, radius, thickness, ImGuiColor.Text.Get());
             return;
         }
 
@@ -501,7 +501,7 @@ public partial class ModEditWindow : Window, IDisposable, Luna.IUiService
         {
             Im.Line.Same();
             ImGuiUtil.DrawTextButton($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
-                ColorId.RedundantAssignment.Value());
+                ColorId.RedundantAssignment.Value().Color);
         }
 
         using var child = ImRaii.Child("##swaps", -Vector2.One, true);

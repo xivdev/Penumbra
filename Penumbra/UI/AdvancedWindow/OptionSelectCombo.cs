@@ -1,9 +1,10 @@
 using Dalamud.Bindings.ImGui;
-using OtterGui.Raii;
+using ImSharp;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -11,12 +12,12 @@ public sealed class OptionSelectCombo(ModEditor editor, ModEditWindow window)
     : FilterComboCache<(string FullName, (int Group, int Data) Index)>(
         () => window.Mod!.AllDataContainers.Select(c => (c.GetFullName(), c.GetDataIndices())).ToList(), MouseWheelType.Control, Penumbra.Log)
 {
-    private ImRaii.ColorStyle _border;
+    private readonly Im.ColorStyleDisposable _border = new();
 
     protected override void DrawCombo(string label, string preview, string tooltip, int currentSelected, float previewWidth, float itemHeight,
         ImGuiComboFlags flags)
     {
-        _border = ImRaii.PushFrameBorder(ImUtf8.GlobalScale, ColorId.FolderLine.Value());
+        _border.PushBorder(ImStyleBorder.Frame, ColorId.FolderLine.Value());
         base.DrawCombo(label, preview, tooltip, currentSelected, previewWidth, itemHeight, flags);
         _border.Dispose();
     }

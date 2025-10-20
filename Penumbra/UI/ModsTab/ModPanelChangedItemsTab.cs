@@ -1,6 +1,8 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
+using ImSharp;
+using Luna;
 using OtterGui;
 using OtterGui.Services;
 using OtterGui.Text;
@@ -213,7 +215,7 @@ public class ModPanelChangedItemsTab(
     private ImGuiStoragePtr _stateStorage;
 
     private Vector2 _buttonSize;
-    private uint    _starColor;
+    private Rgba32  _starColor;
 
     public void DrawContent()
     {
@@ -230,7 +232,9 @@ public class ModPanelChangedItemsTab(
             .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
             .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
             .Push(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.01f, 0.5f));
-        using var color = ImRaii.PushColor(ImGuiCol.Button, 0);
+        using var color = ImGuiColor.Button.Push(Rgba32.Transparent)
+            .Push(ImGuiColor.ButtonActive,  Rgba32.Transparent)
+            .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
         using var table = ImUtf8.Table("##changedItems"u8, cache.AnyExpandable ? 2 : 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY,
             new Vector2(ImGui.GetContentRegionAvail().X, -1));
@@ -287,8 +291,13 @@ public class ModPanelChangedItemsTab(
 
     private void DrawPreferredButton(IdentifiedItem item, int idx)
     {
-        if (ImUtf8.IconButton(FontAwesomeIcon.Star, "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8, _buttonSize,
-                false, _starColor))
+        var textColor = Im.Mouse.IsHoveringRectangle(Rectangle.FromSize(Im.Cursor.ScreenPosition, _buttonSize))
+            ? LunaStyle.FavoriteColor
+            : _starColor;
+
+        if (ImEx.Icon.Button(LunaStyle.FavoriteIcon,
+                "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8,
+                textColor: textColor, size: _buttonSize))
             dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, false, true);
         using var context = ImUtf8.PopupContextItem("StarContext"u8);
         if (!context)

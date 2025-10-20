@@ -136,7 +136,7 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
             return;
 
         Im.Line.Same();
-        ImUtf8.Spinner("Spinner"u8, ImGui.GetTextLineHeight() / 2, 2, ImGui.GetColorU32(ImGuiCol.Text));
+        ImEx.Spinner("Spinner"u8, ImGui.GetTextLineHeight() / 2, 2, ImGuiColor.Text.Get());
     }
 
     private void DrawCancelButton(MigrationManager.TaskType task, ReadOnlySpan<byte> tooltip)

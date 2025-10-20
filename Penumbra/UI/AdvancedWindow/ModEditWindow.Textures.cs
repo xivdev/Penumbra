@@ -49,7 +49,7 @@ public partial class ModEditWindow
                 return;
 
             using var id = ImRaii.PushId(label);
-            ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
+            ImEx.TextFramed(label, new Vector2(-1, 0), ImGuiColor.FrameBackground.Get());
             ImGui.NewLine();
 
             using (ImRaii.Disabled(!_center.SaveTask.IsCompleted))
@@ -206,7 +206,7 @@ public partial class ModEditWindow
             case TaskStatus.Faulted:
             {
                 ImGui.TextUnformatted("Could not save file:");
-                using var color = ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF);
+                using var color = ImGuiColor.Text.Push(new Vector4(1, 0, 0, 1));
                 ImGuiUtil.TextWrapped(_center.SaveTask.Exception?.ToString() ?? "Unknown Error");
                 break;
             }

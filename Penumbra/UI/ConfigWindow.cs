@@ -140,7 +140,7 @@ public sealed class ConfigWindow : Window, Luna.IUiService
 
     private void DrawProblemWindow(string text)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
+        using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
         ImGui.NewLine();
         ImGui.NewLine();
         ImUtf8.TextWrapped(text);

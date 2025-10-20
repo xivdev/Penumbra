@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
@@ -90,10 +91,10 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
     private static void DrawValues(in ShapeAttributeString shapeAttribute, ShapeAttributeHashSet set)
     {
         ImGui.TableNextColumn();
-
+        var disabledColor = Im.Style[ImGuiColor.TextDisabled];
         if (set.All is { } value)
         {
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !value);
+            using var color = ImGuiColor.Text.Push(disabledColor, !value);
             ImUtf8.Text("All, "u8);
             ImGui.SameLine(0, 0);
         }
@@ -103,7 +104,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             if (set[slot] is not { } value2)
                 continue;
 
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !value2);
+            using var color = ImGuiColor.Text.Push(disabledColor, !value2);
             ImUtf8.Text($"All {slot.ToName()}, ");
             ImGui.SameLine(0, 0);
         }
@@ -112,7 +113,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         {
             if (set[gr] is { } value3)
             {
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !value3);
+                using var color = ImGuiColor.Text.Push(disabledColor, !value3);
                 ImUtf8.Text($"All {gr.ToName()}, ");
                 ImGui.SameLine(0, 0);
             }
@@ -123,7 +124,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     if (set[slot, gr] is not { } value4)
                         continue;
 
-                    using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !value4);
+                    using var color = ImGuiColor.Text.Push(disabledColor, !value4);
                     ImUtf8.Text($"All {gr.ToName()} {slot.ToName()}, ");
                     ImGui.SameLine(0, 0);
                 }
@@ -138,7 +139,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
                 if (set[slot, GenderRace.Unknown] != enabled)
                 {
-                    using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !enabled);
+                    using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
                     ImUtf8.Text($"{slot.ToName()} {id.Id:D4}, ");
                     ImGui.SameLine(0, 0);
                 }
@@ -153,7 +154,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     var gr      = ShapeAttributeHashSet.GenderRaceValues[currentIndex];
                     if (set[slot, gr] != enabled)
                     {
-                        using var color = ImRaii.PushColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled), !enabled);
+                        using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
                         ImUtf8.Text($"{gr.ToName()} {slot.ToName()} #{id.Id:D4}, ");
                         ImGui.SameLine(0, 0);
                     }
@@ -186,7 +187,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
         ImGui.TableHeadersRow();
 
-        var disabledColor = ImGui.GetColorU32(ImGuiCol.TextDisabled);
+        var disabledColor = Im.Style[ImGuiColor.TextDisabled];
         for (var i = 0; i < human.AsHuman->SlotCount; ++i)
         {
             ImUtf8.DrawTableColumn($"{(uint)i:D2}");
@@ -205,7 +206,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 foreach (var (idx, (shape, flag)) in model->ModelResourceHandle->Shapes.Index())
                 {
                     var       disabled = (mask & (1u << flag)) is 0;
-                    using var color    = ImRaii.PushColor(ImGuiCol.Text, disabledColor, disabled);
+                    using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
                     ImUtf8.Text(shape.AsSpan());
                     ImGui.SameLine(0, 0);
                     ImUtf8.Text(",  "u8);
@@ -243,7 +244,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
         ImGui.TableHeadersRow();
 
-        var disabledColor = ImGui.GetColorU32(ImGuiCol.TextDisabled);
+        var disabledColor = Im.Style[ImGuiColor.TextDisabled];
         for (var i = 0; i < human.AsHuman->SlotCount; ++i)
         {
             ImUtf8.DrawTableColumn($"{(uint)i:D2}");
@@ -262,7 +263,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 foreach (var (idx, (attribute, flag)) in model->ModelResourceHandle->Attributes.Index())
                 {
                     var       disabled = (mask & (1u << flag)) is 0;
-                    using var color    = ImRaii.PushColor(ImGuiCol.Text, disabledColor, disabled);
+                    using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
                     ImUtf8.Text(attribute.AsSpan());
                     ImGui.SameLine(0, 0);
                     ImUtf8.Text(",  "u8);

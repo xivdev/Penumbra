@@ -836,7 +836,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         ImGui.SetCursorPos(comboPos);
         // Draw combo button
-        using var color      = ImRaii.PushColor(ImGuiCol.Button, Colors.FilterActive, !everything);
+        using var color      = ImGuiColor.Button.Push(Colors.FilterActive, !everything);
         var       rightClick = DrawFilterCombo(ref everything);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModFilters);
         if (rightClick)

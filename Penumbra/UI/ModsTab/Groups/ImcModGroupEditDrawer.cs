@@ -23,7 +23,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         var changes      = false;
 
         var width = editor.AvailableWidth.X - 3 * ImUtf8.ItemInnerSpacing.X - ImUtf8.ItemSpacing.X - ImUtf8.CalcTextSize("All Variants"u8).X - ImUtf8.CalcTextSize("Only Attributes"u8).X - 2 * ImUtf8.FrameHeight;
-        ImUtf8.TextFramed(identifier.ToString(), 0, new Vector2(width, 0), borderColor: ImGui.GetColorU32(ImGuiCol.Border));
+        ImEx.TextFramed(identifier.ToString(), new Vector2(width, 0), Rgba32.Transparent);
 
         ImUtf8.SameLineInner();
         var allVariants = group.AllVariants;
@@ -175,7 +175,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         protected override void RenderSymbol(bool value, Vector2 position, float size)
         {
             if (value)
-                SymbolHelpers.RenderCross(ImGui.GetWindowDrawList(), position, ImGui.GetColorU32(ImGuiCol.CheckMark), size);
+                SymbolHelpers.RenderCross(ImGui.GetWindowDrawList(), position, ImGuiColor.CheckMark.Get().Color, size);
         }
 
         protected override bool NextValue(bool value)

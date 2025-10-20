@@ -143,7 +143,7 @@ public partial class ModEditWindow
         var text = $"{otherOptionData.TotalCount} Edits in other Options";
         var size = ImGui.CalcTextSize(text).X;
         ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
-        ImGuiUtil.TextColored(ColorId.RedundantAssignment.Value() | 0xFF000000, text);
+        Im.Text(text, ColorId.RedundantAssignment.Value().FullAlpha());
         if (ImGui.IsItemHovered())
         {
             using var tt = ImUtf8.Tooltip();

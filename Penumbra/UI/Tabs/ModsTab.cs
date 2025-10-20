@@ -95,7 +95,7 @@ public class ModsTab(
         }
 
         var frameHeight = new Vector2(0, ImGui.GetFrameHeight());
-        var frameColor  = ImGui.GetColorU32(ImGuiCol.FrameBg);
+        var frameColor  = ImGuiColor.FrameBackground.Get().Color;
         using (var _ = ImRaii.Group())
         {
             using (ImRaii.PushFont(UiBuilder.IconFont))

@@ -44,7 +44,7 @@ public partial class MtrlTab
             for (var j = 0; j < 8; ++j)
             {
                 var pairIndex = i + j;
-                using (ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive), pairIndex == _colorTableSelectedPair))
+                using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], pairIndex == _colorTableSelectedPair))
                 {
                     if (ImUtf8.Button($"#{pairIndex + 1}".PadLeft(3 + spacePadding),
                             new Vector2(buttonWidth, ImGui.GetFrameHeightWithSpacing() + frameHeight)))
@@ -101,6 +101,7 @@ public partial class MtrlTab
             {
                 retA |= DrawRowHeader(rowAIdx, disabled);
             }
+
             columns.Next();
             using (ImUtf8.PushId("RowHeaderB"u8))
             {
@@ -232,8 +233,8 @@ public partial class MtrlTab
     /// <remarks> Padding styles do not seem to apply to this component. It is recommended to prepend two spaces. </remarks>
     private static void DrawHeader(ReadOnlySpan<byte> label)
     {
-        var       headerColor = ImGui.GetColorU32(ImGuiCol.Header);
-        using var _           = ImRaii.PushColor(ImGuiCol.HeaderHovered, headerColor).Push(ImGuiCol.HeaderActive, headerColor);
+        var       headerColor = Im.Style[ImGuiColor.Header];
+        using var _           = ImGuiColor.HeaderHovered.Push(headerColor).Push(ImGuiColor.HeaderActive, headerColor);
         ImUtf8.CollapsingHeader(label, ImGuiTreeNodeFlags.Leaf);
     }
 

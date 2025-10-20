@@ -275,9 +275,9 @@ public partial class ModEditWindow
         if (tab.GamePaths!.Count == 1)
         {
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
-            using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.FrameBg))
-                .Push(ImGuiCol.ButtonHovered, ImGui.GetColorU32(ImGuiCol.FrameBgHovered))
-                .Push(ImGuiCol.ButtonActive,  ImGui.GetColorU32(ImGuiCol.FrameBgActive));
+            using var color = ImGuiColor.Button.Push(Im.Style[ImGuiColor.FrameBackground])
+                .Push(ImGuiColor.ButtonHovered, Im.Style[ImGuiColor.FrameBackgroundHovered])
+                .Push(ImGuiColor.ButtonActive,  Im.Style[ImGuiColor.FrameBackgroundActive]);
             using var group = ImRaii.Group();
             ImGui.Button(preview, new Vector2(buttonWidth, 0));
             ImGui.SameLine(0, ImGui.GetStyle().ItemInnerSpacing.X);
@@ -310,7 +310,7 @@ public partial class ModEditWindow
         var width        = ImGui.CalcTextSize(text).X + framePadding.X * 2;
 
         // Draw the link button. We set the background colour to transparent to mimic the look of a link.
-        using var color = ImRaii.PushColor(ImGuiCol.Button, 0x00000000);
+        using var color = ImGuiColor.Button.Push(Vector4.Zero);
         SupportButton.Link(Penumbra.Messager, text, address, width, ""u8);
 
         // Draw an underline for the text.

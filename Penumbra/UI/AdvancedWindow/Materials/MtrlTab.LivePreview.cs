@@ -24,16 +24,15 @@ public partial class MtrlTab
         if (disabled)
             return;
 
-        if (ImUtf8.Button("Reload live preview"u8))
+        if (Im.Button("Reload live preview"u8))
             BindToMaterialInstances();
 
         if (_materialPreviewers.Count != 0 || _colorTablePreviewers.Count != 0)
             return;
 
         Im.Line.Same();
-        using var c = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
-        ImUtf8.Text(
-            "The current material has not been found on your character. Please check the Import from Screen tab for more information."u8);
+        Im.Text("The current material has not been found on your character. Please check the Import from Screen tab for more information."u8,
+            Colors.RegexWarningBorder);
     }
 
     private unsafe void BindToMaterialInstances()
@@ -292,7 +291,7 @@ public partial class MtrlTab
     {
         var level     = (MathF.Sin(time * 2.0f * MathF.PI) + 2.0f) / 3.0f / 255.0f;
         var baseColor = colorId.Value();
-        var color     = level * new Vector3(baseColor & 0xFF, (baseColor >> 8) & 0xFF, (baseColor >> 16) & 0xFF);
+        var color     = level * new Vector3(baseColor.R, baseColor.G, baseColor.B);
         var halfColor = (HalfColor)(color * color);
 
         row.DiffuseColor  = halfColor;

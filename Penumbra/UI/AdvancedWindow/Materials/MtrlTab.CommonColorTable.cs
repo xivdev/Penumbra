@@ -308,7 +308,7 @@ public partial class MtrlTab
         var style          = ImGui.GetStyle();
         var frameRounding  = style.FrameRounding;
         var frameThickness = style.FrameBorderSize;
-        var borderColor    = ImGui.GetColorU32(ImGuiCol.Border);
+        var borderColor    = ImGuiColor.Border.Get();
         var drawList       = ImGui.GetWindowDrawList();
         if (topColor == bottomColor)
         {
@@ -328,7 +328,7 @@ public partial class MtrlTab
                 bottomColor, frameRounding, ImDrawFlags.RoundCornersBottomLeft | ImDrawFlags.RoundCornersBottomRight);
         }
 
-        drawList.AddRect(rcMin, rcMax, borderColor, frameRounding, ImDrawFlags.RoundCornersDefault, frameThickness);
+        drawList.AddRect(rcMin, rcMax, borderColor.Color, frameRounding, ImDrawFlags.RoundCornersDefault, frameThickness);
     }
 
     private static bool CtColorPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, HalfColor current, Action<HalfColor> setter,

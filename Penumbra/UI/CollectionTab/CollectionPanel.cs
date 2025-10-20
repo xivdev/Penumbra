@@ -283,7 +283,7 @@ public sealed class CollectionPanel(
         if (!context)
             return;
 
-        using (var color = ImRaii.PushColor(ImGuiCol.Text, Colors.DiscordColor))
+        using (var color = ImGuiColor.Text.Push(Colors.DiscordColor))
         {
             if (ImGui.MenuItem("Use no mods."))
                 _active.SetCollection(ModCollection.Empty, type, _active.Individuals.GetGroup(identifier));
@@ -291,7 +291,7 @@ public sealed class CollectionPanel(
 
         if (collection != null && type.CanBeRemoved())
         {
-            using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
+            using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
             if (ImGui.MenuItem("Remove this assignment."))
                 _active.SetCollection(null, type, _active.Individuals.GetGroup(identifier));
         }
@@ -303,15 +303,15 @@ public sealed class CollectionPanel(
         }
     }
 
-    private bool DrawButton(string text, CollectionType type, Vector2 width, uint borderColor, ActorIdentifier id, char suffix,
+    private bool DrawButton(string text, CollectionType type, Vector2 width, Rgba32 borderColor, ActorIdentifier id, char suffix,
         ModCollection? collection = null)
     {
         using var group      = ImRaii.Group();
         var       invalid    = type == CollectionType.Individual && !id.IsValid;
         var       redundancy = _active.RedundancyCheck(type, id);
         collection ??= _active.ByType(type, id);
-        using var color = ImRaii.PushColor(ImGuiCol.Button,
-                collection == null
+        using var color = ImGuiColor.Button.Push(
+                collection is null
                     ? ColorId.NoAssignment.Value()
                     : redundancy.Length > 0
                         ? ColorId.RedundantAssignment.Value()
@@ -319,8 +319,8 @@ public sealed class CollectionPanel(
                             ? ColorId.SelectedCollection.Value()
                             : collection == ModCollection.Empty
                                 ? ColorId.NoModsAssignment.Value()
-                                : ImGui.GetColorU32(ImGuiCol.Button), !invalid)
-            .Push(ImGuiCol.Border, borderColor == 0 ? ImGui.GetColorU32(ImGuiCol.TextDisabled) : borderColor);
+                                : ImGuiColor.Button.Get(), !invalid)
+            .Push(ImGuiColor.Border, borderColor == 0 ? ImGuiColor.TextDisabled.Get().Color : borderColor);
         using var disabled = ImRaii.Disabled(invalid);
         var       button   = ImGui.Button(text, width) || ImGui.IsItemClicked(ImGuiMouseButton.Right);
         var       hovered  = redundancy.Length > 0 && ImGui.IsItemHovered();
@@ -332,7 +332,7 @@ public sealed class CollectionPanel(
             var name    = Name(collection);
             var size    = ImGui.CalcTextSize(name);
             var textPos = ImGui.GetItemRectMax() - size - ImGui.GetStyle().FramePadding;
-            ImGui.GetWindowDrawList().AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text), name);
+            ImGui.GetWindowDrawList().AddText(textPos, ImGuiColor.Text.Get().Color, name);
             DrawContext(button, collection, type, id, text, suffix);
         }
 
@@ -484,7 +484,7 @@ public sealed class CollectionPanel(
     private void DrawCollectionName(ModCollection collection)
     {
         ImGui.Dummy(Vector2.One);
-        using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
+        using var color = ImGuiColor.Border.Push(Colors.MetaInfoText);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
         using var f     = _nameFont.Push();
         var       name  = Name(collection);
@@ -574,7 +574,7 @@ public sealed class CollectionPanel(
 
         using var f     = _nameFont.Push();
         using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
-        using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
+        using var color = ImGuiColor.Border.Push(Colors.MetaInfoText);
         ImGuiUtil.DrawTextButton(Name(collection.Inheritance.DirectlyInheritedBy[0]), Vector2.Zero, 0);
         var constOffset = (ImGui.GetStyle().FramePadding.X + ImGuiHelpers.GlobalScale) * 2
           + ImGui.GetStyle().ItemSpacing.X

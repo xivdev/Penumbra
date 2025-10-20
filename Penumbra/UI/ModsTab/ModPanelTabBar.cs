@@ -1,15 +1,18 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using ImSharp;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.AdvancedWindow;
+using ImGuiColor = ImSharp.ImGuiColor;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelTabBar : Luna.IUiService
+public class ModPanelTabBar : IUiService
 {
     private enum ModPanelTabType
     {
@@ -129,25 +132,22 @@ public class ModPanelTabBar : Luna.IUiService
 
     private void DrawFavoriteButton(Mod mod, float height)
     {
-        using (var font = ImRaii.PushFont(UiBuilder.IconFont))
-        {
-            var size   = ImGui.CalcTextSize(FontAwesomeIcon.Star.ToIconString()) + ImGui.GetStyle().FramePadding * 2;
-            var newPos = new Vector2(ImGui.GetWindowWidth() - size.X - ImGui.GetStyle().ItemSpacing.X, height);
-            if (ImGui.GetScrollMaxX() > 0)
-                newPos.X += ImGui.GetScrollX();
+        var size   = ImEx.Icon.CalculateSize(LunaStyle.FavoriteIcon) + ImGui.GetStyle().FramePadding * 2;
+        var newPos = new Vector2(ImGui.GetWindowWidth() - size.X - ImGui.GetStyle().ItemSpacing.X, height);
+        if (ImGui.GetScrollMaxX() > 0)
+            newPos.X += ImGui.GetScrollX();
 
-            var rectUpper = ImGui.GetWindowPos() + newPos;
-            var color = ImGui.IsMouseHoveringRect(rectUpper, rectUpper + size) ? ImGui.GetColorU32(ImGuiCol.Text) :
-                mod.Favorite                                                   ? 0xFF00FFFF : ImGui.GetColorU32(ImGuiCol.TextDisabled);
-            using var c = ImRaii.PushColor(ImGuiCol.Text, color)
-                .Push(ImGuiCol.Button,        0)
-                .Push(ImGuiCol.ButtonHovered, 0)
-                .Push(ImGuiCol.ButtonActive,  0);
+        var rectUpper = ImGui.GetWindowPos() + newPos;
+        var color = ImGui.IsMouseHoveringRect(rectUpper, rectUpper + size) ? Im.Style[ImGuiColor.Text] :
+            mod.Favorite                                                   ? LunaStyle.FavoriteColor : Im.Style[ImGuiColor.TextDisabled];
+        using var c = ImGuiColor.Text.Push(color)
+            .Push(ImGuiColor.Button,        Vector4.Zero)
+            .Push(ImGuiColor.ButtonHovered, Vector4.Zero)
+            .Push(ImGuiColor.ButtonActive,  Vector4.Zero);
 
-            ImGui.SetCursorPos(newPos);
-            if (ImGui.Button(FontAwesomeIcon.Star.ToIconString()))
-                _modManager.DataEditor.ChangeModFavorite(mod, !mod.Favorite);
-        }
+        ImGui.SetCursorPos(newPos);
+        if (ImEx.Icon.Button(LunaStyle.FavoriteIcon))
+            _modManager.DataEditor.ChangeModFavorite(mod, !mod.Favorite);
 
         var hovered = ImGui.IsItemHovered();
         _tutorial.OpenTutorial(BasicTutorialSteps.Favorites);

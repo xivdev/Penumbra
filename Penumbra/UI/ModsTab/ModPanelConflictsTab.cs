@@ -70,7 +70,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
     private void DrawCurrentRow(float priorityWidth)
     {
         ImGui.TableNextColumn();
-        using var c = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderLine.Value());
+        using var c = ImGuiColor.Text.Push(ColorId.FolderLine.Value());
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(selector.Selected!.Name);
         ImGui.TableNextColumn();
@@ -165,8 +165,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
 
     private int DrawPriorityInput(ModConflicts conflict, float priorityWidth)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.Text,
-            conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value());
+        using var color    = ImGuiColor.Text.Push(conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value());
         using var disabled = ImRaii.Disabled(conflict.Mod2.Index < 0);
         var       priority = _currentPriority ?? GetPriority(conflict).Value;
 

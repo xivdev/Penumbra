@@ -242,7 +242,7 @@ public class SettingsTab : ITab, IUiService
     /// </summary>
     private bool DrawPressEnterWarning(string newName, string old, float width, bool saved, bool selected)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
+        using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
         var       w     = new Vector2(width, 0);
         var (text, valid) = CheckRootDirectoryPath(newName, old, selected);
 
@@ -339,10 +339,9 @@ public class SettingsTab : ITab, IUiService
         using (ImRaii.Group())
         {
             ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
-            using (ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale, !_modManager.Valid))
+            using (var color = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !_modManager.Valid))
             {
-                using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.RegexWarningBorder)
-                    .Push(ImGuiCol.TextDisabled, Colors.RegexWarningBorder, !_modManager.Valid);
+                color.Push(ImGuiColor.TextDisabled, Colors.RegexWarningBorder, !_modManager.Valid);
                 save = ImGui.InputTextWithHint("##rootDirectory", "Enter Root Directory here (MANDATORY)...", ref _newModDirectory,
                     RootDirectoryMaxLength, ImGuiInputTextFlags.EnterReturnsTrue);
             }

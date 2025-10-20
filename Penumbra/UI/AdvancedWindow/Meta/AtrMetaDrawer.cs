@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -153,8 +154,8 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         if (all)
         {
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0.05f, 0.5f));
-            ImUtf8.TextFramed("All IDs"u8, ImGui.GetColorU32(ImGuiCol.FrameBg, all || allSlots ? ImGui.GetStyle().DisabledAlpha : 1f),
-                new Vector2(unscaledWidth, 0), ImGui.GetColorU32(ImGuiCol.TextDisabled));
+            ImUtf8.TextFramed("All IDs"u8, ImGuiColor.FrameBackground.Get(all || allSlots ? ImGui.GetStyle().DisabledAlpha : 1f).Color,
+                new Vector2(unscaledWidth, 0), ImGuiColor.TextDisabled.Get().Color);
         }
         else
         {
@@ -210,7 +211,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         ImUtf8.HoverTooltip("Model Slot"u8);
         return ret;
     }
-     
+
     private static bool DrawGenderRaceConditionInput(ref AtrIdentifier identifier, float unscaledWidth = 250)
     {
         var ret = false;
@@ -254,7 +255,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var ret  = false;
         var ptr  = Unsafe.AsPointer(ref buffer);
         var span = new Span<byte>(ptr, ShapeAttributeString.MaxLength + 1);
-        using (new ImRaii.ColorStyle().Push(ImGuiCol.Border, Colors.RegexWarningBorder, !valid).Push(ImGuiStyleVar.FrameBorderSize, 1f, !valid))
+        using (ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !valid))
         {
             ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
             if (ImUtf8.InputText("##atrAttribute"u8, span, out int newLength, "Attribute..."u8))

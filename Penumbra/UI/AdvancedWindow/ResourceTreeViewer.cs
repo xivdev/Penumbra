@@ -70,7 +70,7 @@ public class ResourceTreeViewer(
         else if (_task.Exception != null)
         {
             ImGui.NewLine();
-            using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
+            using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
             ImGui.TextUnformatted($"Error during calculation of character list:\n\n{_task.Exception}");
         }
         else if (_task.IsCompletedSuccessfully)
@@ -82,7 +82,7 @@ public class ResourceTreeViewer(
                 if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                using (var c = ImRaii.PushColor(ImGuiCol.Text, CategoryColor(category).Value()))
+                using (ImGuiColor.Text.Push(CategoryColor(category).Value()))
                 {
                     var isOpen = ImGui.CollapsingHeader($"{(incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
                         index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0);
@@ -164,7 +164,7 @@ public class ResourceTreeViewer(
         if (!gameData.HasModifiedGameDataFiles)
             return;
 
-        using var style = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudOrange);
+        using var style = ImGuiColor.Text.Push(ImGuiColors.DalamudOrange);
 
         ImUtf8.TextWrapped(
             "Dalamud is reporting your FFXIV installation has modified game files. Any mods installed through TexTools will produce this message."u8);
@@ -189,12 +189,12 @@ public class ResourceTreeViewer(
         var checkPadding = 10 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X;
         ImGui.SameLine(0, checkPadding);
 
-        using (var id = ImRaii.PushId("TreeCategoryFilter"))
+        using (ImRaii.PushId("TreeCategoryFilter"))
         {
             var categoryFilter = (uint)_categoryFilter;
             foreach (var category in Enum.GetValues<TreeCategory>())
             {
-                using var c = ImRaii.PushColor(ImGuiCol.CheckMark, CategoryColor(category).Value());
+                using var c = ImGuiColor.CheckMark.Push(CategoryColor(category).Value());
                 ImGui.CheckboxFlags($"##{category}", ref categoryFilter, (uint)category);
                 ImGuiUtil.HoverTooltip(CategoryFilterDescription(category));
                 ImGui.SameLine(0.0f, checkSpacing);
@@ -257,7 +257,7 @@ public class ResourceTreeViewer(
             if (visibility == NodeVisibility.Hidden)
                 continue;
 
-            using var mutedColor = ImRaii.PushColor(ImGuiCol.Text, ImGuiUtil.HalfTransparentText(), resourceNode.Internal);
+            using var mutedColor = ImGuiColor.Text.Push(ImGuiUtil.HalfTransparentText(), resourceNode.Internal);
 
             var filterIcon = resourceNode.IconFlag != 0 ? resourceNode.IconFlag : parentFilterIconFlag;
 
@@ -335,7 +335,7 @@ public class ResourceTreeViewer(
                     var       modName = $"[{(hasMod ? mod!.Name : resourceNode.ModName)}]";
                     var       textPos = ImGui.GetCursorPosX() + ImUtf8.CalcTextSize(modName).X + ImGui.GetStyle().ItemInnerSpacing.X;
                     using var group   = ImUtf8.Group();
-                    using (var color = ImRaii.PushColor(ImGuiCol.Text, (hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
+                    using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
                     {
                         ImUtf8.Selectable(modName, false, ImGuiSelectableFlags.AllowItemOverlap,
                             new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));

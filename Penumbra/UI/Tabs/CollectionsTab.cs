@@ -86,29 +86,30 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
         using var style       = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0).Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         var       buttonSize  = new Vector2((ImGui.GetContentRegionAvail().X - withSpacing) / 4f, ImGui.GetFrameHeight());
 
-        using var _     = ImRaii.Group();
-        using var color = ImRaii.PushColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.SimpleAssignment);
+        using var _                = ImRaii.Group();
+        var       tabSelectedColor = Im.Style[ImGuiColor.TabSelected];
+        using var color            = ImGuiColor.Button.Push(tabSelectedColor, Mode is PanelMode.SimpleAssignment);
         if (ImGui.Button("Simple Assignments", buttonSize))
             Mode = PanelMode.SimpleAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.SimpleAssignments);
         Im.Line.Same();
 
-        color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.IndividualAssignment);
+        color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.IndividualAssignment);
         if (ImGui.Button("Individual Assignments", buttonSize))
             Mode = PanelMode.IndividualAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.IndividualAssignments);
         Im.Line.Same();
 
-        color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.GroupAssignment);
+        color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.GroupAssignment);
         if (ImGui.Button("Group Assignments", buttonSize))
             Mode = PanelMode.GroupAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.GroupAssignments);
         Im.Line.Same();
 
-        color.Push(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.TabActive), Mode is PanelMode.Details);
+        color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.Details);
         if (ImGui.Button("Collection Details", buttonSize))
             Mode = PanelMode.Details;
         color.Pop();

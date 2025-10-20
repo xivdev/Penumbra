@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -336,17 +337,13 @@ internal sealed class ResourceWatcherTable : Table<Record>
                     $"Successfully loaded ({(byte)item.LoadState})."),
                 LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value(),
                     $"Dependencies failed to load ({(byte)item.LoadState})."),
-                <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(), $"Not yet loaded ({(byte)item.LoadState})."),
+                <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(),
+                    $"Not yet loaded ({(byte)item.LoadState})."),
                 < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), $"Loading asynchronously ({(byte)item.LoadState})."),
                 > LoadState.Success => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
                     $"Failed to load ({(byte)item.LoadState})."),
             };
-            using (var font = ImRaii.PushFont(UiBuilder.IconFont))
-            {
-                using var c = ImRaii.PushColor(ImGuiCol.Text, color);
-                ImGui.TextUnformatted(icon.ToIconString());
-            }
-
+            ImEx.Icon.Draw(icon.Icon(), color);
             ImGuiUtil.HoverTooltip(tt);
         }
 
