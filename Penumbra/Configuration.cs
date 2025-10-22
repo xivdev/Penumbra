@@ -78,6 +78,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
     public bool            DefaultTemporaryMode                 { get; set; } = false;
     public bool            EnableDirectoryWatch                 { get; set; } = false;
+    public bool            EnableAutomaticModImport             { get; set; } = false;
     public bool            EnableCustomShapes                   { get; set; } = true;
     public PcpSettings     PcpSettings = new();
     public RenameField     ShowRename                { get; set; } = RenameField.BothDataPrio;

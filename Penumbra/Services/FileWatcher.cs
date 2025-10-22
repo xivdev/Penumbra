@@ -1,5 +1,6 @@
 ﻿using System.Threading.Channels;
 using OtterGui.Services;
+using Penumbra.Services;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
@@ -11,16 +12,16 @@ public class FileWatcher : IDisposable, IService
     private readonly Task                                   _consumer;
     private readonly ConcurrentDictionary<string, byte>     _pending = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModImportManager                       _modImportManager;
+    private readonly MessageService                         _messageService;
     private readonly Configuration                          _config;
-    private readonly bool                                   _enabled;
 
-    public FileWatcher(ModImportManager modImportManager, Configuration config)
+    public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config)
     {
-        _config = config;
         _modImportManager = modImportManager;
-        _enabled = config.EnableDirectoryWatch;
+        _messageService = messageService;
+        _config = config;
 
-        if (!_enabled) return;
+        if (!_config.EnableDirectoryWatch) return;
 
         _queue = Channel.CreateBounded<string>(new BoundedChannelOptions(256)
         {
@@ -55,13 +56,13 @@ public class FileWatcher : IDisposable, IService
     private void OnPath(object? sender, FileSystemEventArgs e)
     {
         // Cheap de-dupe: only queue once per filename until processed
-        if (!_enabled || !_pending.TryAdd(e.FullPath, 0)) return;
+        if (!_config.EnableDirectoryWatch || !_pending.TryAdd(e.FullPath, 0)) return;
         _ = _queue.Writer.TryWrite(e.FullPath);
     }
 
     private async Task ConsumerLoopAsync(CancellationToken token)
     {
-        if (!_enabled) return;
+        if (!_config.EnableDirectoryWatch) return;
         var reader = _queue.Reader;
         while (await reader.WaitToReadAsync(token).ConfigureAwait(false))
         {
@@ -101,8 +102,27 @@ public class FileWatcher : IDisposable, IService
                 var len = fi.Length;
                 if (len > 0 && len == lastLen)
                 {
-                    _modImportManager.AddUnpack(path);
-                    return;
+                    if (_config.EnableAutomaticModImport)
+                    {
+                        _modImportManager.AddUnpack(path);
+                        return;
+                    }
+                    else
+                    {
+                        var invoked = false;
+                        Action<bool> installRequest = args =>
+                        {
+                            if (invoked) return;
+                            invoked = true;
+                            _modImportManager.AddUnpack(path);
+                        };
+
+                        _messageService.PrintModFoundInfo(
+                            Path.GetFileNameWithoutExtension(path),
+                            installRequest);
+
+                        return;
+                    } 
                 }
 
                 lastLen = len;
@@ -116,7 +136,7 @@ public class FileWatcher : IDisposable, IService
 
     public void UpdateDirectory(string newPath)
     {
-        if (!_enabled || _fsw is null || !Directory.Exists(newPath) || string.IsNullOrWhiteSpace(newPath)) return;
+        if (!_config.EnableDirectoryWatch || _fsw is null || !Directory.Exists(newPath) || string.IsNullOrWhiteSpace(newPath)) return;
 
         _fsw.EnableRaisingEvents = false;
         _fsw.Path = newPath;
@@ -125,7 +145,7 @@ public class FileWatcher : IDisposable, IService
 
     public void Dispose()
     {
-        if (!_enabled) return;
+        if (!_config.EnableDirectoryWatch) return;
         _fsw.EnableRaisingEvents = false;
         _cts.Cancel();
         _fsw.Dispose();

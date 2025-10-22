@@ -53,6 +53,7 @@ public class SettingsTab : ITab, IUiService
     private readonly MigrationSectionDrawer      _migrationDrawer;
     private readonly CollectionAutoSelector      _autoSelector;
     private readonly CleanupService              _cleanupService;
+    private readonly MessageService              _messageService;
     private readonly AttributeHook               _attributeHook;
     private readonly PcpService                  _pcpService;
 
@@ -69,7 +70,7 @@ public class SettingsTab : ITab, IUiService
         CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, FileWatcher fileWatcher, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
-        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
+        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService, MessageService messageService,
         AttributeHook attributeHook, PcpService pcpService)
     {
         _pluginInterface             = pluginInterface;
@@ -96,6 +97,7 @@ public class SettingsTab : ITab, IUiService
         _migrationDrawer      = migrationDrawer;
         _autoSelector         = autoSelector;
         _cleanupService       = cleanupService;
+        _messageService       = messageService;
         _attributeHook        = attributeHook;
         _pcpService           = pcpService;
     }
@@ -649,9 +651,12 @@ public class SettingsTab : ITab, IUiService
         DrawDefaultModImportFolder();
         DrawPcpFolder();
         DrawDefaultModExportPath();
-        Checkbox("Enable Automatic Import of Mods from Directory",
-            "Enables a File Watcher that automatically listens for Mod files that enter, causing Penumbra to automatically import these mods.",
+        Checkbox("Enable Directory Watcher",
+            "Enables a File Watcher that automatically listens for Mod files that enter, causing Penumbra to open a Popup to import these mods.",
             _config.EnableDirectoryWatch, v => _config.EnableDirectoryWatch = v);
+        Checkbox("Enable Fully Automatic Import",
+            "Uses the File Watcher in order to not just open a Popup, but fully automatically import new mods.",
+            _config.EnableAutomaticModImport, v => _config.EnableAutomaticModImport = v);
         DrawFileWatcherPath();
     }
 
