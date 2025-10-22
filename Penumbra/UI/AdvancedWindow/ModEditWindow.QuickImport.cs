@@ -1,7 +1,5 @@
 using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using Lumina.Data;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
@@ -20,7 +18,7 @@ public partial class ModEditWindow
     private readonly ResourceTreeViewer                                        _quickImportViewer;
     private readonly Dictionary<(Utf8GamePath, IWritable?), QuickImportAction> _quickImportActions   = new();
 
-    private HashSet<string> GetPlayerResourcesOfType(ResourceType type)
+    public HashSet<string> GetPlayerResourcesOfType(ResourceType type)
     {
         var resources = ResourceTreeApiHelper
             .GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)

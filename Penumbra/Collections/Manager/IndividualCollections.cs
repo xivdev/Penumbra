@@ -1,5 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Enums;
-using OtterGui.Filesystem;
+using Luna;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers.Bases;
 using Penumbra.GameData.Enums;
@@ -224,7 +224,7 @@ public sealed partial class IndividualCollections
     {
         return identifier.Type switch
         {
-            IdentifierType.Player => $"{identifier.PlayerName} ({_actors.Data.ToWorldName(identifier.HomeWorld)})",
+            IdentifierType.Player   => $"{identifier.PlayerName} ({_actors.Data.ToWorldName(identifier.HomeWorld)})",
             IdentifierType.Retainer => $"{identifier.PlayerName} (Retainer)",
             IdentifierType.Owned =>
                 $"{identifier.PlayerName} ({_actors.Data.ToWorldName(identifier.HomeWorld)})'s {_actors.Data.ToName(identifier.Kind, identifier.DataId)}",

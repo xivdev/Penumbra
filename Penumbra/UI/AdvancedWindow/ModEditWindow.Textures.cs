@@ -15,10 +15,10 @@ public partial class ModEditWindow
 {
     private readonly TextureManager _textures;
 
-    private readonly Texture                       _left  = new();
-    private readonly Texture                       _right = new();
-    private readonly CombinedTexture               _center;
-    private readonly TextureDrawer.PathSelectCombo _textureSelectCombo;
+    private readonly Texture            _left  = new();
+    private readonly Texture            _right = new();
+    private readonly CombinedTexture    _center;
+    private readonly TextureSelectCombo _textureSelectCombo;
 
     private bool _overlayCollapsed = true;
     private bool _addMipMaps       = true;
@@ -49,13 +49,13 @@ public partial class ModEditWindow
                 return;
 
             using var id = ImRaii.PushId(label);
-            ImEx.TextFramed(label, new Vector2(-1, 0), ImGuiColor.FrameBackground.Get());
+            ImEx.TextFramed(label, Im.ContentRegion.Available with { Y = 0 }, ImGuiColor.FrameBackground.Get());
             ImGui.NewLine();
 
             using (ImRaii.Disabled(!_center.SaveTask.IsCompleted))
             {
-                TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
-                    "Can import game paths as well as your own files.", Mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
+                TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input"u8, "Import Image..."u8,
+                    "Can import game paths as well as your own files."u8, Mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
                 if (_textureSelectCombo.Draw("##combo",
                         "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
                         Mod.ModPath.FullName.Length + 1, out var newPath)
@@ -200,7 +200,6 @@ public partial class ModEditWindow
             case TaskStatus.WaitingToRun:
             case TaskStatus.Running:
                 ImGuiUtil.DrawTextButton("Computing...", -Vector2.UnitX, Colors.PressEnterWarningBg);
-
                 break;
             case TaskStatus.Canceled:
             case TaskStatus.Faulted:
@@ -210,9 +209,7 @@ public partial class ModEditWindow
                 ImGuiUtil.TextWrapped(_center.SaveTask.Exception?.ToString() ?? "Unknown Error");
                 break;
             }
-            default:
-                ImGui.Dummy(new Vector2(1, ImGui.GetFrameHeight()));
-                break;
+            default: ImGui.Dummy(new Vector2(1, ImGui.GetFrameHeight())); break;
         }
 
         ImGui.NewLine();

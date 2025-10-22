@@ -1,10 +1,9 @@
 using Dalamud.Utility;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
-using Penumbra.Services;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -16,7 +15,7 @@ namespace Penumbra.Import;
 
 public partial class TexToolsImporter
 {
-    private static readonly ExtractionOptions _extractionOptions = new()
+    private static readonly ExtractionOptions ExtractionOptions = new()
     {
         ExtractFullPath = true,
         Overwrite       = true,
@@ -79,7 +78,7 @@ public partial class TexToolsImporter
                 using var t   = new StreamReader(s);
                 using var j   = new JsonTextReader(t);
                 var       obj = JObject.Load(j);
-                name = obj[nameof(Mod.Name)]?.Value<string>()?.RemoveInvalidPathSymbols() ?? string.Empty;
+                name = obj[nameof(Mod.Name)]?.Value<string>()?.RemoveInvalidFileNameSymbols() ?? string.Empty;
                 if (name.Length == 0)
                     throw new Exception("Invalid mod archive: mod meta has no name.");
 
@@ -142,16 +141,16 @@ public partial class TexToolsImporter
         switch (Path.GetExtension(reader.Entry.Key))
         {
             case ".mdl":
-                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName, ExtractionOptions);
                 break;
             case ".mtrl":
-                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, _extractionOptions);
+                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, ExtractionOptions);
                 break;
             case ".tex":
-                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName, _extractionOptions);
+                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName, ExtractionOptions);
                 break;
             default:
-                reader.WriteEntryToDirectory(_currentModDirectory!.FullName, _extractionOptions);
+                reader.WriteEntryToDirectory(_currentModDirectory!.FullName, ExtractionOptions);
                 break;
         }
     }

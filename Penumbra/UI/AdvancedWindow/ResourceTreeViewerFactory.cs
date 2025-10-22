@@ -15,7 +15,7 @@ public class ResourceTreeViewerFactory(
     PcpService pcpService,
     IDataManager gameData,
     FileDialogService fileDialog,
-    FileCompactor compactor) : Luna.IService
+    FileCompactor compactor) : IService
 {
     public ResourceTreeViewer Create(int actionCapacity, Action onRefresh, Action<ResourceNode, IWritable?, Vector2> drawActions)
         => new(config, treeFactory, changedItemDrawer, incognito, actionCapacity, onRefresh, drawActions, communicator, pcpService, gameData,

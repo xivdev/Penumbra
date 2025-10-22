@@ -1,9 +1,5 @@
-using Dalamud.Bindings.ImGui;
-using OtterGui.Raii;
-using OtterGui;
-using Dalamud.Interface.Utility;
 using ImSharp;
-using Penumbra.UI;
+using OtterGui.Text;
 using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;
@@ -29,20 +25,19 @@ public partial class CombinedTexture
     private const float BWeight  = 0.0722f;
 
     // @formatter:off
-    private static readonly IReadOnlyList<(string Label, Matrix4x4 Multiplier, Vector4 Constant)> PredefinedColorTransforms =
-        new[]
-        {
-            ("No Transform (Identity)",       Matrix4x4.Identity,                                                                                                                                            Vector4.Zero  ),
-            ("Grayscale (Average)",           new Matrix4x4(OneThird, OneThird, OneThird, 0.0f,     OneThird, OneThird, OneThird, 0.0f,     OneThird, OneThird, OneThird, 0.0f,     0.0f, 0.0f, 0.0f, 1.0f), Vector4.Zero  ),
-            ("Grayscale (Weighted)",          new Matrix4x4(RWeight,  RWeight,  RWeight,  0.0f,     GWeight,  GWeight,  GWeight,  0.0f,     BWeight,  BWeight,  BWeight,  0.0f,     0.0f, 0.0f, 0.0f, 1.0f), Vector4.Zero  ),
-            ("Grayscale (Average) to Alpha",  new Matrix4x4(OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, 0.0f, 0.0f, 0.0f, 0.0f), Vector4.Zero  ),
-            ("Grayscale (Weighted) to Alpha", new Matrix4x4(RWeight,  RWeight,  RWeight,  RWeight,  GWeight,  GWeight,  GWeight,  GWeight,  BWeight,  BWeight,  BWeight,  BWeight,  0.0f, 0.0f, 0.0f, 0.0f), Vector4.Zero  ),
-            ("Make Opaque (Drop Alpha)",      new Matrix4x4(1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
-            ("Extract Red",                   new Matrix4x4(1.0f,     1.0f,     1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
-            ("Extract Green",                 new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     1.0f,     1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
-            ("Extract Blue",                  new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     1.0f,     1.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
-            ("Extract Alpha",                 new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f, 1.0f, 1.0f, 0.0f), Vector4.UnitW ),
-        };
+    private static readonly IReadOnlyList<(StringU8 Label, Matrix4x4 Multiplier, Vector4 Constant)> PredefinedColorTransforms =
+        [
+            (new StringU8("No Transform (Identity)"u8),       Matrix4x4.Identity,                                                                                                                                            Vector4.Zero  ),
+            (new StringU8("Grayscale (Average)"u8),           new Matrix4x4(OneThird, OneThird, OneThird, 0.0f,     OneThird, OneThird, OneThird, 0.0f,     OneThird, OneThird, OneThird, 0.0f,     0.0f, 0.0f, 0.0f, 1.0f), Vector4.Zero  ),
+            (new StringU8("Grayscale (Weighted)"u8),          new Matrix4x4(RWeight,  RWeight,  RWeight,  0.0f,     GWeight,  GWeight,  GWeight,  0.0f,     BWeight,  BWeight,  BWeight,  0.0f,     0.0f, 0.0f, 0.0f, 1.0f), Vector4.Zero  ),
+            (new StringU8("Grayscale (Average) to Alpha"u8),  new Matrix4x4(OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, OneThird, 0.0f, 0.0f, 0.0f, 0.0f), Vector4.Zero  ),
+            (new StringU8("Grayscale (Weighted) to Alpha"u8), new Matrix4x4(RWeight,  RWeight,  RWeight,  RWeight,  GWeight,  GWeight,  GWeight,  GWeight,  BWeight,  BWeight,  BWeight,  BWeight,  0.0f, 0.0f, 0.0f, 0.0f), Vector4.Zero  ),
+            (new StringU8("Make Opaque (Drop Alpha)"u8),      new Matrix4x4(1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
+            (new StringU8("Extract Red"u8),                   new Matrix4x4(1.0f,     1.0f,     1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
+            (new StringU8("Extract Green"u8),                 new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     1.0f,     1.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
+            (new StringU8("Extract Blue"u8),                  new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f,     1.0f,     1.0f,     0.0f,     0.0f, 0.0f, 0.0f, 0.0f), Vector4.UnitW ),
+            (new StringU8("Extract Alpha"u8),                 new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f, 1.0f, 1.0f, 0.0f), Vector4.UnitW ),
+        ];
     // @formatter:on
 
     private Vector4 DataLeft(int offset)
@@ -211,15 +206,15 @@ public partial class CombinedTexture
         return transformed;
     }
 
-    private static bool DragFloat(string label, float width, ref float value)
+    private static bool DragFloat(Utf8StringHandler<LabelStringHandlerBuffer> label, float width, ref float value)
     {
         var tmp = value;
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(width);
-        if (ImGui.DragFloat(label, ref tmp, 0.001f, -1f, 1f))
+        Im.Table.NextColumn();
+        Im.Item.SetNextWidth(width);
+        if (Im.Drag(label, ref tmp, speed: 0.001f, min: -1f, max: 1f))
             value = tmp;
 
-        return ImGui.IsItemDeactivatedAfterEdit();
+        return Im.Item.DeactivatedAfterEdit;
     }
 
     public void DrawMatrixInputLeft(float width)
@@ -230,53 +225,69 @@ public partial class CombinedTexture
             Update();
     }
 
+    private sealed class CombineOperationCombo() : SimpleFilterCombo<CombineOp>(SimpleFilterType.None)
+    {
+        private static readonly CombineOp[] UserValues = Enum.GetValues<CombineOp>().Where(c => (int)c >= 0).ToArray();
+
+        public override StringU8 DisplayString(in CombineOp value)
+            => new(value.ToLabelU8());
+
+        public override string FilterString(in CombineOp value)
+            => value.ToLabel();
+
+        public override IEnumerable<CombineOp> GetBaseItems()
+            => UserValues;
+
+        public override StringU8 Tooltip(in CombineOp value)
+            => new(value.Tooltip());
+    }
+
+    private sealed class ResizeOperationCombo() : SimpleFilterCombo<ResizeOp>(SimpleFilterType.None)
+    {
+        private static readonly ResizeOp[] UserValues = Enum.GetValues<ResizeOp>().Where(c => (int)c >= 0).ToArray();
+
+        public override StringU8 DisplayString(in ResizeOp value)
+            => new(value.ToLabelU8());
+
+        public override string FilterString(in ResizeOp value)
+            => value.ToLabel();
+
+        public override IEnumerable<ResizeOp> GetBaseItems()
+            => UserValues;
+    }
+
+    private readonly CombineOperationCombo _combineCombo = new();
+    private readonly ResizeOperationCombo  _resizeCombo  = new();
+
     public void DrawMatrixInputRight(float width)
     {
         var ret = DrawMatrixInput(ref _multiplierRight, ref _constantRight, width);
         ret |= DrawMatrixTools(ref _multiplierRight, ref _constantRight);
 
-        ImGui.SetNextItemWidth(75.0f * UiHelpers.Scale);
-        ImGui.DragInt("##XOffset", ref _offsetX, 0.5f);
-        ret |= ImGui.IsItemDeactivatedAfterEdit();
+        Im.Item.SetNextWidthScaled(75);
+        Im.Drag("##XOffset"u8, ref _offsetX, speed: 0.5f);
+        ret |= Im.Item.DeactivatedAfterEdit;
         Im.Line.Same();
-        ImGui.SetNextItemWidth(75.0f * UiHelpers.Scale);
-        ImGui.DragInt("Offsets##YOffset", ref _offsetY, 0.5f);
-        ret |= ImGui.IsItemDeactivatedAfterEdit();
+        Im.Item.SetNextWidthScaled(75);
+        Im.Drag("Offsets##YOffset"u8, ref _offsetY, speed: 0.5f);
+        ret |= Im.Item.DeactivatedAfterEdit;
 
-        ImGui.SetNextItemWidth(200.0f * UiHelpers.Scale);
-        using (var c = ImRaii.Combo("Combine Operation", CombineOpLabels[(int)_combineOp]))
-        {
-            if (c)
-                foreach (var op in Enum.GetValues<CombineOp>())
-                {
-                    if ((int)op < 0) // Negative codes are for internal use only.
-                        continue;
-
-                    if (ImGui.Selectable(CombineOpLabels[(int)op], op == _combineOp))
-                    {
-                        _combineOp = op;
-                        ret        = true;
-                    }
-
-                    ImGuiUtil.SelectableHelpMarker(CombineOpTooltips[(int)op]);
-                }
-        }
-
+        Im.Item.SetNextWidthScaled(200);
+        ret |= _combineCombo.Draw("Combine Operation"u8, ref _combineOp, StringU8.Empty, 200 * Im.Style.GlobalScale);
         var resizeOp = GetActualResizeOp(_resizeOp, _combineOp);
-        using (var dis = ImRaii.Disabled((int)resizeOp < 0))
+        using (Im.Disabled((int)resizeOp < 0))
         {
-            ret |= ImGuiUtil.GenericEnumCombo("Resizing Mode", 200.0f * UiHelpers.Scale, _resizeOp, out _resizeOp,
-                Enum.GetValues<ResizeOp>().Where(op => (int)op >= 0), op => ResizeOpLabels[(int)op]);
+            ret |= _resizeCombo.Draw("Resizing Mode"u8, ref _resizeOp, StringU8.Empty, 200 * Im.Style.GlobalScale);
         }
 
-        using (var dis = ImRaii.Disabled(_combineOp != CombineOp.CopyChannels))
+        using (Im.Disabled(_combineOp != CombineOp.CopyChannels))
         {
-            ImGui.TextUnformatted("Copy");
+            Im.Text("Copy"u8);
             foreach (var channel in Enum.GetValues<Channels>())
             {
                 Im.Line.Same();
                 var copy = (_copyChannels & channel) != 0;
-                if (ImGui.Checkbox(channel.ToString(), ref copy))
+                if (Im.Checkbox(channel.ToString(), ref copy))
                 {
                     _copyChannels = copy ? _copyChannels | channel : _copyChannels & ~channel;
                     ret           = true;
@@ -290,62 +301,52 @@ public partial class CombinedTexture
 
     private static bool DrawMatrixInput(ref Matrix4x4 multiplier, ref Vector4 constant, float width)
     {
-        using var table = ImRaii.Table(string.Empty, 5, ImGuiTableFlags.BordersInner | ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 5, TableFlags.BordersInner | TableFlags.SizingFixedFit);
         if (!table)
             return false;
 
         var changes = false;
 
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center("R");
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center("G");
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center("B");
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center("A");
+        table.NextColumn();
+        table.NextColumn();
+        ImEx.TextCentered("R"u8);
+        table.NextColumn();
+        ImEx.TextCentered("G"u8);
+        table.NextColumn();
+        ImEx.TextCentered("B"u8);
+        table.NextColumn();
+        ImEx.TextCentered("A"u8);
 
         var inputWidth = width / 6;
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text("R    ");
-        changes |= DragFloat("##RR", inputWidth, ref multiplier.M11);
-        changes |= DragFloat("##RG", inputWidth, ref multiplier.M12);
-        changes |= DragFloat("##RB", inputWidth, ref multiplier.M13);
-        changes |= DragFloat("##RA", inputWidth, ref multiplier.M14);
+        table.DrawFrameColumn("R    "u8);
+        changes |= DragFloat("##RR"u8, inputWidth, ref multiplier.M11);
+        changes |= DragFloat("##RG"u8, inputWidth, ref multiplier.M12);
+        changes |= DragFloat("##RB"u8, inputWidth, ref multiplier.M13);
+        changes |= DragFloat("##RA"u8, inputWidth, ref multiplier.M14);
 
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text("G    ");
-        changes |= DragFloat("##GR", inputWidth, ref multiplier.M21);
-        changes |= DragFloat("##GG", inputWidth, ref multiplier.M22);
-        changes |= DragFloat("##GB", inputWidth, ref multiplier.M23);
-        changes |= DragFloat("##GA", inputWidth, ref multiplier.M24);
+        table.DrawFrameColumn("G    "u8);
+        changes |= DragFloat("##GR"u8, inputWidth, ref multiplier.M21);
+        changes |= DragFloat("##GG"u8, inputWidth, ref multiplier.M22);
+        changes |= DragFloat("##GB"u8, inputWidth, ref multiplier.M23);
+        changes |= DragFloat("##GA"u8, inputWidth, ref multiplier.M24);
 
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text("B    ");
-        changes |= DragFloat("##BR", inputWidth, ref multiplier.M31);
-        changes |= DragFloat("##BG", inputWidth, ref multiplier.M32);
-        changes |= DragFloat("##BB", inputWidth, ref multiplier.M33);
-        changes |= DragFloat("##BA", inputWidth, ref multiplier.M34);
+        table.DrawFrameColumn("B    "u8);
+        changes |= DragFloat("##BR"u8, inputWidth, ref multiplier.M31);
+        changes |= DragFloat("##BG"u8, inputWidth, ref multiplier.M32);
+        changes |= DragFloat("##BB"u8, inputWidth, ref multiplier.M33);
+        changes |= DragFloat("##BA"u8, inputWidth, ref multiplier.M34);
 
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text("A    ");
-        changes |= DragFloat("##AR", inputWidth, ref multiplier.M41);
-        changes |= DragFloat("##AG", inputWidth, ref multiplier.M42);
-        changes |= DragFloat("##AB", inputWidth, ref multiplier.M43);
-        changes |= DragFloat("##AA", inputWidth, ref multiplier.M44);
+        table.DrawFrameColumn("A    "u8);
+        changes |= DragFloat("##AR"u8, inputWidth, ref multiplier.M41);
+        changes |= DragFloat("##AG"u8, inputWidth, ref multiplier.M42);
+        changes |= DragFloat("##AB"u8, inputWidth, ref multiplier.M43);
+        changes |= DragFloat("##AA"u8, inputWidth, ref multiplier.M44);
 
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text("1    ");
-        changes |= DragFloat("##1R", inputWidth, ref constant.X);
-        changes |= DragFloat("##1G", inputWidth, ref constant.Y);
-        changes |= DragFloat("##1B", inputWidth, ref constant.Z);
-        changes |= DragFloat("##1A", inputWidth, ref constant.W);
+        table.DrawFrameColumn("1    "u8);
+        changes |= DragFloat("##1R"u8, inputWidth, ref constant.X);
+        changes |= DragFloat("##1G"u8, inputWidth, ref constant.Y);
+        changes |= DragFloat("##1B"u8, inputWidth, ref constant.Z);
+        changes |= DragFloat("##1A"u8, inputWidth, ref constant.W);
 
         return changes;
     }
@@ -354,28 +355,28 @@ public partial class CombinedTexture
     {
         var changes = PresetCombo(ref multiplier, ref constant);
         Im.Line.Same();
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+        Im.ScaledDummy(20);
         Im.Line.Same();
-        ImGui.TextUnformatted("Invert");
+        Im.Text("Invert"u8);
         Im.Line.Same();
 
         Channels channels = 0;
-        if (ImGui.Button("Colors"))
+        if (Im.Button("Colors"u8))
             channels |= Channels.Red | Channels.Green | Channels.Blue;
         Im.Line.Same();
-        if (ImGui.Button("R"))
+        if (Im.Button("R"u8))
             channels |= Channels.Red;
 
         Im.Line.Same();
-        if (ImGui.Button("G"))
+        if (Im.Button("G"u8))
             channels |= Channels.Green;
 
         Im.Line.Same();
-        if (ImGui.Button("B"))
+        if (Im.Button("B"u8))
             channels |= Channels.Blue;
 
         Im.Line.Same();
-        if (ImGui.Button("A"))
+        if (Im.Button("A"u8))
             channels |= Channels.Alpha;
 
         changes |= InvertChannels(channels, ref multiplier, ref constant);
@@ -384,14 +385,14 @@ public partial class CombinedTexture
 
     private static bool PresetCombo(ref Matrix4x4 multiplier, ref Vector4 constant)
     {
-        using var combo = ImRaii.Combo("Presets", string.Empty, ImGuiComboFlags.NoPreview);
+        using var combo = Im.Combo.Begin("Presets"u8, StringU8.Empty, ComboFlags.NoPreview);
         if (!combo)
             return false;
 
         var ret = false;
         foreach (var (label, preMultiplier, preConstant) in PredefinedColorTransforms)
         {
-            if (!ImGui.Selectable(label, multiplier == preMultiplier && constant == preConstant))
+            if (!Im.Selectable(label, multiplier == preMultiplier && constant == preConstant))
                 continue;
 
             multiplier = preMultiplier;

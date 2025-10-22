@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
+using Luna;
 using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
@@ -22,9 +23,15 @@ namespace Penumbra.Import.Models;
 using Schema2 = SharpGLTF.Schema2;
 using LuminaMaterial = Lumina.Models.Materials.Material;
 
-public sealed class ModelManager(IFramework framework, MetaFileManager metaFileManager, ActiveCollections collections, GamePathParser parser)
-    : SingleTaskQueue, IDisposable, Luna.IService
+public sealed class ModelManager(
+    Logger log,
+    IFramework framework,
+    MetaFileManager metaFileManager,
+    ActiveCollections collections,
+    GamePathParser parser)
+    : SingleTaskQueue, IDisposable, IService
 {
+    public readonly  Logger     Log        = log;
     private readonly IFramework _framework = framework;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks = new();
@@ -48,7 +55,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
 
     public Task<(MdlFile?, IoNotifier)> ImportGltf(string inputPath)
         => EnqueueWithResult(
-            new ImportGltfAction(inputPath),
+            new ImportGltfAction(this, inputPath),
             action => (action.Out, action.Notifier)
         );
 
@@ -88,10 +95,9 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
     {
         // Try to find an EST entry from the manipulations provided.
         var modEst = estManipulations
-            .FirstOrNull(
-                est => est.Key.GenderRace == info.GenderRace
-                 && est.Key.Slot == type
-                 && est.Key.SetId == info.PrimaryId
+            .FirstOrNull(est => est.Key.GenderRace == info.GenderRace
+             && est.Key.Slot == type
+             && est.Key.SetId == info.PrimaryId
             );
 
         // Try to use an entry from provided manipulations, falling back to the current collection.
@@ -190,7 +196,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
         string outputPath)
         : IAction
     {
-        public readonly IoNotifier Notifier = new();
+        public readonly IoNotifier Notifier = new(manager.Log);
 
         public void Execute(CancellationToken cancel)
         {
@@ -292,7 +298,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
 
         public bool Equals(IAction? other)
         {
-            if (other is not ExportToGltfAction rhs)
+            if (other is not ExportToGltfAction)
                 return false;
 
             // TODO: compare configuration and such
@@ -300,10 +306,10 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
         }
     }
 
-    private partial class ImportGltfAction(string inputPath) : IAction
+    private class ImportGltfAction(ModelManager manager, string inputPath) : IAction
     {
         public          MdlFile?   Out;
-        public readonly IoNotifier Notifier = new();
+        public readonly IoNotifier Notifier = new(manager.Log);
 
         public void Execute(CancellationToken cancel)
         {
@@ -314,7 +320,7 @@ public sealed class ModelManager(IFramework framework, MetaFileManager metaFileM
 
         public bool Equals(IAction? other)
         {
-            if (other is not ImportGltfAction rhs)
+            if (other is not ImportGltfAction)
                 return false;
 
             return true;

@@ -1,15 +1,15 @@
-using OtterGui.Log;
+using Luna;
 
 namespace Penumbra.Import.Models;
 
-public record class IoNotifier
+public record IoNotifier(Logger Log)
 {
     private readonly List<string> _messages = [];
     private          string       _context  = "";
 
     /// <summary> Create a new notifier with the specified context appended to any other context already present. </summary>
     public IoNotifier WithContext(string context)
-        => this with { _context = $"{_context}{context}: "};
+        => this with { _context = $"{_context}{context}: " };
 
     /// <summary> Send a warning with any current context to notification channels. </summary>
     public void Warning(string content)
@@ -34,7 +34,7 @@ public record class IoNotifier
     private void SendMessage(string message, Logger.LogLevel type)
     {
         var fullText = $"{_context}{message}";
-        Penumbra.Log.Message(type, fullText);
+        Log.Message(type, fullText);
         _messages.Add(fullText);
     }
 }

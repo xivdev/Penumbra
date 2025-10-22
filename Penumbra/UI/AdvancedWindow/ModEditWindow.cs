@@ -656,7 +656,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new PbdTab(bytes, path));
         _center              = new CombinedTexture(_left, _right);
-        _textureSelectCombo  = new TextureDrawer.PathSelectCombo(textures, editor, () => GetPlayerResourcesOfType(ResourceType.Tex));
+        _textureSelectCombo  = new TextureSelectCombo(resourceTreeFactory, editor, gameData);
         _resourceTreeFactory = resourceTreeFactory;
         _quickImportViewer   = resourceTreeViewerFactory.Create(1, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
