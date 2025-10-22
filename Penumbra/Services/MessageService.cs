@@ -20,7 +20,6 @@ namespace Penumbra.Services;
 
 public class InstallNotification(string message, Action<bool> installRequest) : IMessage
 {
-    private readonly Action<bool> _installRequest = installRequest;
     private bool _invoked = false;
 
     public string Message { get; } = message;
@@ -33,7 +32,7 @@ public class InstallNotification(string message, Action<bool> installRequest) : 
     {
         if (ImUtf8.ButtonEx("Install"u8, "Install this mod."u8, disabled: _invoked))
         {
-            _installRequest(true);
+            installRequest(true);
             _invoked = true;
         }
     }

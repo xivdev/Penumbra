@@ -53,7 +53,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
-    public string WatchDirectory { get; set; } = string.Empty;
+    public string WatchDirectory  { get; set; } = string.Empty;
 
     public bool? UseCrashHandler                { get; set; } = null;
     public bool  OpenWindowAtStart              { get; set; } = false;

@@ -43,7 +43,6 @@ public class Penumbra : IDalamudPlugin
     private readonly TempModManager          _tempMods;
     private readonly TempCollectionManager   _tempCollections;
     private readonly ModManager              _modManager;
-    private readonly FileWatcher             _fileWatcher;
     private readonly CollectionManager       _collectionManager;
     private readonly Configuration           _config;
     private readonly CharacterUtility        _characterUtility;
@@ -81,7 +80,6 @@ public class Penumbra : IDalamudPlugin
             _residentResources = _services.GetService<ResidentResourceManager>();
             _services.GetService<ResourceManagerService>(); // Initialize because not required anywhere else.
             _modManager          = _services.GetService<ModManager>();
-            _fileWatcher         = _services.GetService<FileWatcher>();
             _collectionManager   = _services.GetService<CollectionManager>();
             _tempCollections     = _services.GetService<TempCollectionManager>();
             _redrawService       = _services.GetService<RedrawService>();
