@@ -116,7 +116,8 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     public void RestoreCollections()
     {
         Items.Clear();
-        foreach (var c in _storage.OrderBy(c => c.Identity.Name))
+        Items.Add(_storage.DefaultNamed);
+        foreach (var c in _storage.OrderBy(c => c.Identity.Name).Where(c => c != _storage.DefaultNamed))
             Items.Add(c);
         SetFilterDirty();
         SetCurrent(_active.Current);

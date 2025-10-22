@@ -11,6 +11,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
 using OtterGui.Raii;
+using OtterGui.Text;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
@@ -222,26 +223,31 @@ public sealed class CollectionPanel(
         ImGui.EndGroup();
         ImGui.SameLine();
         ImGui.BeginGroup();
-        using var style      = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
-        var       name       = _newName ?? collection.Identity.Name;
-        var       identifier = collection.Identity.Identifier;
-        var       width      = ImGui.GetContentRegionAvail().X;
-        var       fileName   = saveService.FileNames.CollectionFile(collection);
-        ImGui.SetNextItemWidth(width);
-        if (ImGui.InputText("##name", ref name, 128))
-            _newName = name;
-        if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Identity.Name)
+        var width = ImGui.GetContentRegionAvail().X;
+        using (ImRaii.Disabled(_collections.DefaultNamed == collection))
         {
-            collection.Identity.Name = _newName;
-            saveService.QueueSave(new ModCollectionSave(mods, collection));
-            selector.RestoreCollections();
-            _newName = null;
+            using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
+            var       name  = _newName ?? collection.Identity.Name;
+            ImGui.SetNextItemWidth(width);
+            if (ImGui.InputText("##name", ref name, 128))
+                _newName = name;
+            if (ImGui.IsItemDeactivatedAfterEdit() && _newName != null && _newName != collection.Identity.Name)
+            {
+                collection.Identity.Name = _newName;
+                saveService.QueueSave(new ModCollectionSave(mods, collection));
+                selector.RestoreCollections();
+                _newName = null;
+            }
+            else if (ImGui.IsItemDeactivated())
+            {
+                _newName = null;
+            }
         }
-        else if (ImGui.IsItemDeactivated())
-        {
-            _newName = null;
-        }
+        if (_collections.DefaultNamed == collection)
+            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "The Default collection can not be renamed."u8);
 
+        var identifier = collection.Identity.Identifier;
+        var fileName   = saveService.FileNames.CollectionFile(collection);
         using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
             if (ImGui.Button(collection.Identity.Identifier, new Vector2(width, 0)))
@@ -375,9 +381,7 @@ public sealed class CollectionPanel(
             ImGuiUtil.TextWrapped(type.ToDescription());
             switch (type)
             {
-                case CollectionType.Default:
-                    ImGui.TextUnformatted("Overruled by any other Assignment.");
-                    break;
+                case CollectionType.Default: ImGui.TextUnformatted("Overruled by any other Assignment."); break;
                 case CollectionType.Yourself:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
                     break;
