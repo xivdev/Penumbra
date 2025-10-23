@@ -66,7 +66,8 @@ public class SettingsTab : ITab, IUiService
 
     public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
         Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
-        CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager, FileWatcher fileWatcher, HttpApi httpApi,
+        CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager,
+        FileWatcher fileWatcher, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
@@ -651,7 +652,7 @@ public class SettingsTab : ITab, IUiService
         DrawDefaultModExportPath();
         Checkbox("Enable Directory Watcher",
             "Enables a File Watcher that automatically listens for Mod files that enter a specified directory, causing Penumbra to open a popup to import these mods.",
-            _config.EnableDirectoryWatch, v => _config.EnableDirectoryWatch = v);
+            _config.EnableDirectoryWatch, _fileWatcher.Toggle);
         Checkbox("Enable Fully Automatic Import",
             "Uses the File Watcher in order to skip the query popup and automatically import any new mods.",
             _config.EnableAutomaticModImport, v => _config.EnableAutomaticModImport = v);
@@ -735,19 +736,24 @@ public class SettingsTab : ITab, IUiService
           + "Keep this empty to use the root directory.");
     }
 
-    private string _tempWatchDirectory = string.Empty;
+    private string? _tempWatchDirectory;
+
     /// <summary> Draw input for the Automatic Mod import path. </summary>
     private void DrawFileWatcherPath()
     {
-        var tmp = _config.WatchDirectory;
-        var spacing = new Vector2(UiHelpers.ScaleX3);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
+        var       tmp     = _tempWatchDirectory ?? _config.WatchDirectory;
+        var       spacing = new Vector2(UiHelpers.ScaleX3);
+        using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
         if (ImGui.InputText("##fileWatchPath", ref tmp, 256))
             _tempWatchDirectory = tmp;
 
-        if (ImGui.IsItemDeactivatedAfterEdit())
-            _fileWatcher.UpdateDirectory(_tempWatchDirectory);
+        if (ImGui.IsItemDeactivated() && _tempWatchDirectory is not null)
+        {
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                _fileWatcher.UpdateDirectory(_tempWatchDirectory);
+            _tempWatchDirectory = null;
+        }
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##fileWatch", UiHelpers.IconButtonSize,
@@ -761,11 +767,7 @@ public class SettingsTab : ITab, IUiService
             _fileDialog.OpenFolderPicker("Choose Automatic Import Directory", (b, s) =>
             {
                 if (b)
-                { 
                     _fileWatcher.UpdateDirectory(s);
-                    _config.WatchDirectory = s;
-                    _config.Save();
-                }
             }, startDir, false);
         }
 

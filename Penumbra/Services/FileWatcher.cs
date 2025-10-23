@@ -1,19 +1,20 @@
-﻿using System.Threading.Channels;
-using OtterGui.Services;
+﻿using OtterGui.Services;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
 public class FileWatcher : IDisposable, IService
 {
-    private readonly FileSystemWatcher                  _fsw;
-    private readonly Channel<string>                    _queue;
-    private readonly CancellationTokenSource            _cts = new();
-    private readonly Task                               _consumer;
+    // TODO: use ConcurrentSet when it supports comparers in Luna.
     private readonly ConcurrentDictionary<string, byte> _pending = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModImportManager                   _modImportManager;
     private readonly MessageService                     _messageService;
     private readonly Configuration                      _config;
+
+    private bool                     _pausedConsumer;
+    private FileSystemWatcher?       _fsw;
+    private CancellationTokenSource? _cts = new();
+    private Task?                    _consumer;
 
     public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config)
     {
@@ -21,17 +22,48 @@ public class FileWatcher : IDisposable, IService
         _messageService   = messageService;
         _config           = config;
 
-        if (!_config.EnableDirectoryWatch)
+        if (_config.EnableDirectoryWatch)
+        {
+            SetupFileWatcher(_config.WatchDirectory);
+            SetupConsumerTask();
+        }
+    }
+
+    public void Toggle(bool value)
+    {
+        if (_config.EnableDirectoryWatch == value)
             return;
 
-        _queue = Channel.CreateBounded<string>(new BoundedChannelOptions(256)
+        _config.EnableDirectoryWatch = value;
+        _config.Save();
+        if (value)
         {
-            SingleReader = true,
-            SingleWriter = false,
-            FullMode     = BoundedChannelFullMode.DropOldest,
-        });
+            SetupFileWatcher(_config.WatchDirectory);
+            SetupConsumerTask();
+        }
+        else
+        {
+            EndFileWatcher();
+            EndConsumerTask();
+        }
+    }
 
-        _fsw = new FileSystemWatcher(_config.WatchDirectory)
+    internal void PauseConsumer(bool pause)
+        => _pausedConsumer = pause;
+
+    private void EndFileWatcher()
+    {
+        if (_fsw is null)
+            return;
+
+        _fsw.Dispose();
+        _fsw = null;
+    }
+
+    private void SetupFileWatcher(string directory)
+    {
+        EndFileWatcher();
+        _fsw = new FileSystemWatcher
         {
             IncludeSubdirectories = false,
             NotifyFilter          = NotifyFilters.FileName | NotifyFilters.CreationTime,
@@ -46,49 +78,81 @@ public class FileWatcher : IDisposable, IService
 
         _fsw.Created += OnPath;
         _fsw.Renamed += OnPath;
+        UpdateDirectory(directory);
+    }
 
+
+    private void EndConsumerTask()
+    {
+        if (_cts is not null)
+        {
+            _cts.Cancel();
+            _cts = null;
+        }
+        _consumer = null;
+    }
+
+    private void SetupConsumerTask()
+    {
+        EndConsumerTask();
+        _cts = new CancellationTokenSource();
         _consumer = Task.Factory.StartNew(
             () => ConsumerLoopAsync(_cts.Token),
             _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+    }
 
-        _fsw.EnableRaisingEvents = true;
+    public void UpdateDirectory(string newPath)
+    {
+        if (_config.WatchDirectory != newPath)
+        {
+            _config.WatchDirectory = newPath;
+            _config.Save();
+        }
+
+        if (_fsw is null)
+            return;
+
+        _fsw.EnableRaisingEvents = false;
+        if (!Directory.Exists(newPath) || newPath.Length is 0)
+        {
+            _fsw.Path = string.Empty;
+        }
+        else
+        {
+            _fsw.Path                = newPath;
+            _fsw.EnableRaisingEvents = true;
+        }
     }
 
     private void OnPath(object? sender, FileSystemEventArgs e)
-    {
-        // Cheap de-dupe: only queue once per filename until processed
-        if (!_config.EnableDirectoryWatch || !_pending.TryAdd(e.FullPath, 0))
-            return;
-
-        _ = _queue.Writer.TryWrite(e.FullPath);
-    }
+        => _pending.TryAdd(e.FullPath, 0);
 
     private async Task ConsumerLoopAsync(CancellationToken token)
     {
-        if (!_config.EnableDirectoryWatch)
-            return;
-
-        var reader = _queue.Reader;
-        while (await reader.WaitToReadAsync(token).ConfigureAwait(false))
+        while (true)
         {
-            while (reader.TryRead(out var path))
+            var (path, _) = _pending.FirstOrDefault();
+            if (path is null || _pausedConsumer)
             {
-                try
-                {
-                    await ProcessOneAsync(path, token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    Penumbra.Log.Debug($"[FileWatcher] Canceled via Token.");
-                }
-                catch (Exception ex)
-                {
-                    Penumbra.Log.Debug($"[FileWatcher] Error during Processing: {ex}");
-                }
-                finally
-                {
-                    _pending.TryRemove(path, out _);
-                }
+                await Task.Delay(500, token).ConfigureAwait(false);
+                continue;
+            }
+
+            try
+            {
+                await ProcessOneAsync(path, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                Penumbra.Log.Debug("[FileWatcher] Canceled via Token.");
+            }
+            catch (Exception ex)
+            {
+                Penumbra.Log.Warning($"[FileWatcher] Error during Processing: {ex}");
+            }
+            finally
+            {
+                _pending.TryRemove(path, out _);
             }
         }
     }
@@ -115,28 +179,10 @@ public class FileWatcher : IDisposable, IService
                 if (len > 0 && len == lastLen)
                 {
                     if (_config.EnableAutomaticModImport)
-                    {
                         _modImportManager.AddUnpack(path);
-                        return;
-                    }
                     else
-                    {
-                        var invoked = false;
-                        Action<bool> installRequest = args =>
-                        {
-                            if (invoked)
-                                return;
-
-                            invoked = true;
-                            _modImportManager.AddUnpack(path);
-                        };
-
-                        _messageService.PrintModFoundInfo(
-                            Path.GetFileNameWithoutExtension(path),
-                            installRequest);
-
-                        return;
-                    }
+                        _messageService.AddMessage(new InstallNotification(_modImportManager, path), false);
+                    return;
                 }
 
                 lastLen = len;
@@ -154,34 +200,10 @@ public class FileWatcher : IDisposable, IService
         }
     }
 
-    public void UpdateDirectory(string newPath)
-    {
-        if (!_config.EnableDirectoryWatch || _fsw is null || !Directory.Exists(newPath) || string.IsNullOrWhiteSpace(newPath))
-            return;
-
-        _fsw.EnableRaisingEvents = false;
-        _fsw.Path                = newPath;
-        _fsw.EnableRaisingEvents = true;
-    }
 
     public void Dispose()
     {
-        if (!_config.EnableDirectoryWatch)
-            return;
-
-        _fsw.EnableRaisingEvents = false;
-        _cts.Cancel();
-        _fsw.Dispose();
-        _queue.Writer.TryComplete();
-        try
-        {
-            _consumer.Wait(TimeSpan.FromSeconds(5));
-        }
-        catch
-        {
-            /* swallow */
-        }
-
-        _cts.Dispose();
+        EndConsumerTask();
+        EndFileWatcher();
     }
 }
