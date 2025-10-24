@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Resources;

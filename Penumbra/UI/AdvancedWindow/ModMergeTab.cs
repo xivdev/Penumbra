@@ -11,10 +11,9 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
+public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Luna.IUiService
 {
-    private readonly ModCombo _modCombo   = new(() => modMerger.ModsWithoutCurrent.ToList());
-    private          string   _newModName = string.Empty;
+    private string _newModName = string.Empty;
 
     public void Draw()
     {
@@ -122,9 +121,9 @@ public class ModMergeTab(ModMerger modMerger) : Luna.IUiService
 
     private void DrawCombo(float width)
     {
-        _modCombo.Draw("##ModSelection", _modCombo.CurrentSelection?.Name ?? "Select the target Mod...", string.Empty, width,
-            ImGui.GetTextLineHeight());
-        modMerger.MergeToMod = _modCombo.CurrentSelection;
+        if (combo.Draw("##ModSelection"u8, modMerger.MergeToMod?.Name ?? "Select the target Mod...", StringU8.Empty, width,
+                out var cacheMod))
+            modMerger.MergeToMod = cacheMod.Item;
     }
 
     private void DrawSplitOff(float size)

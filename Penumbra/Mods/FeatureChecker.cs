@@ -1,9 +1,5 @@
 using System.Collections.Frozen;
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Interface.Utility.Raii;
 using ImSharp;
-using OtterGui.Text;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
 using Notification = Luna.Notification;
@@ -37,9 +33,8 @@ public static class FeatureChecker
 
         if (missingFeatures.Count > 0)
         {
-            Penumbra.Messager.AddMessage(new Notification(
-                $"Please update Penumbra to use the mod {modName}{(modDirectory != modName ? $" at {modDirectory}" : string.Empty)}!\n\nLoading failed because it requires the unsupported feature{(missingFeatures.Count > 1 ? $"s\n\n\t[{string.Join("], [", missingFeatures)}]." : $" [{missingFeatures.First()}].")}",
-                NotificationType.Warning));
+            Penumbra.Messager.AddMessage(new Notification($"Please update Penumbra to use the mod {modName}{(modDirectory != modName ? $" at {modDirectory}" : string.Empty)}!\n\n"
+              + $"Loading failed because it requires the unsupported feature{(missingFeatures.Count > 1 ? $"s\n\n\t[{string.Join("], [", missingFeatures)}]." : $" [{missingFeatures.First()}].")}"));
             return FeatureFlags.Invalid;
         }
 
@@ -52,20 +47,20 @@ public static class FeatureChecker
     public static void DrawFeatureFlagInput(ModDataEditor editor, Mod mod, float width)
     {
         const int numButtons   = 5;
-        var       innerSpacing = ImGui.GetStyle().ItemInnerSpacing;
+        var       innerSpacing = Im.Style.ItemInnerSpacing;
         var       size         = new Vector2((width - (numButtons - 1) * innerSpacing.X) / numButtons, 0);
         var       buttonColor  = Im.Style[ImGuiColor.FrameBackground];
         var       textColor    = Im.Style[ImGuiColor.TextDisabled];
         using (var style = ImStyleBorder.Frame.Push(ColorId.FolderLine.Value(), 0)
-                      .Push(ImStyleDouble.ItemSpacing, innerSpacing)
-                      .Push(ImGuiColor.Button, buttonColor)
-                      .Push(ImGuiColor.Text, textColor))
+                   .Push(ImStyleDouble.ItemSpacing, innerSpacing)
+                   .Push(ImGuiColor.Button,         buttonColor)
+                   .Push(ImGuiColor.Text,           textColor))
         {
             foreach (var flag in SupportedFlags.Values)
             {
                 if (mod.RequiredFeatures.HasFlag(flag))
                 {
-                    style.Push(ImStyleSingle.FrameBorderThickness, ImUtf8.GlobalScale);
+                    style.Push(ImStyleSingle.FrameBorderThickness, Im.Style.GlobalScale);
                     style.PopColor(2);
                     if (Im.Button($"{flag}", size))
                         editor.ChangeRequiredFeatures(mod, mod.RequiredFeatures & ~flag);
@@ -82,14 +77,14 @@ public static class FeatureChecker
             }
         }
 
-        if (ImUtf8.ButtonEx("Compute"u8, "Compute the required features automatically from the used features."u8, size))
+        if (ImEx.Button("Compute"u8, size, "Compute the required features automatically from the used features."u8))
             editor.ChangeRequiredFeatures(mod, mod.ComputeRequiredFeatures());
 
         Im.Line.Same();
-        if (ImUtf8.ButtonEx("Clear"u8, "Clear all required features."u8, size))
+        if (ImEx.Button("Clear"u8, size, "Clear all required features."u8))
             editor.ChangeRequiredFeatures(mod, FeatureFlags.None);
 
         Im.Line.Same();
-        ImUtf8.Text("Required Features"u8);
+        Im.Text("Required Features"u8);
     }
 }

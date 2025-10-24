@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
@@ -22,7 +22,7 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("GetRspHeight", Sigs.GetRspHeight, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspHeightHook);
         if (!HookOverrides.Instance.Meta.RspHeightHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private unsafe float Detour(nint cmpResource, SubRace clan, byte gender, byte bodyType, byte height)
@@ -79,5 +79,5 @@ public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
     }
 
     public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+        => _metaState.Config.ModsEnabled -= Set;
 }

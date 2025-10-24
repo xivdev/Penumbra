@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
@@ -22,7 +22,7 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("GetRspTail", Sigs.GetRspTail, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspTailHook);
         if (!HookOverrides.Instance.Meta.RspTailHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private unsafe float Detour(nint cmpResource, Race race, byte gender, byte isSecondSubRace, byte bodyType, byte tailLength)
@@ -73,5 +73,5 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
     }
 
     public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+        => _metaState.Config.ModsEnabled -= Set;
 }

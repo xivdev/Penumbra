@@ -1,5 +1,4 @@
 using ImSharp;
-using OtterGui.Text;
 using Rgba32 = SixLabors.ImageSharp.PixelFormats.Rgba32;
 
 namespace Penumbra.Import.Textures;

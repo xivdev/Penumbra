@@ -1,5 +1,4 @@
 using Luna;
-using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -137,7 +136,7 @@ public sealed class ImcModGroupEditor(CommunicatorService communicator, SaveServ
 
     protected override bool MoveOption(ImcModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!Extensions.Move(group.OptionData, ref optionIdxFrom, ref optionIdxTo))
+        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);

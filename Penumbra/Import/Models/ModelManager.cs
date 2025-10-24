@@ -1,7 +1,6 @@
 using Dalamud.Plugin.Services;
 using Lumina.Data.Parsing;
 using Luna;
-using OtterGui.Tasks;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;

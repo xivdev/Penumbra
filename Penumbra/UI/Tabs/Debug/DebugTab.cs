@@ -106,6 +106,7 @@ public class DebugTab : Window, ITab
     private readonly RenderTargetDrawer                 _renderTargetDrawer;
     private readonly ModMigratorDebug                   _modMigratorDebug;
     private readonly ShapeInspector                     _shapeInspector;
+    private readonly FileWatcher.FileWatcherDrawer      _fileWatcherDrawer;
 
     public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects,
         IClientState clientState, IDataManager dataManager,
@@ -117,7 +118,7 @@ public class DebugTab : Window, ITab
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
-        ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector)
+        ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -160,6 +161,7 @@ public class DebugTab : Window, ITab
         _renderTargetDrawer        = renderTargetDrawer;
         _modMigratorDebug          = modMigratorDebug;
         _shapeInspector            = shapeInspector;
+        _fileWatcherDrawer    = fileWatcherDrawer;
         _objects                   = objects;
         _clientState               = clientState;
         _dataManager               = dataManager;
@@ -486,6 +488,8 @@ public class DebugTab : Window, ITab
                 }
             }
         }
+
+        _fileWatcherDrawer.Draw();
     }
 
     private void DrawPerformanceTab()

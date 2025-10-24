@@ -1,8 +1,7 @@
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Base;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;

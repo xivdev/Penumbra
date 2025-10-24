@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
@@ -20,7 +20,7 @@ public unsafe class AtchCallerHook2 : FastHook<AtchCallerHook2.Delegate>, IDispo
         Task = hooks.CreateHook<Delegate>("AtchCaller2", Sigs.AtchCaller2, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.AtchCaller2);
         if (!HookOverrides.Instance.Meta.AtchCaller2)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private void Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel, uint unk2)
@@ -34,5 +34,5 @@ public unsafe class AtchCallerHook2 : FastHook<AtchCallerHook2.Delegate>, IDispo
     }
 
     public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+        => _metaState.Config.ModsEnabled -= Set;
 }

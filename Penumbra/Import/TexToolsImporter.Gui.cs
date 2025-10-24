@@ -1,7 +1,4 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui;
-using OtterGui.Raii;
 using Penumbra.Import.Structs;
 using Penumbra.UI.Classes;
 
@@ -23,9 +20,9 @@ public partial class TexToolsImporter
 
     public bool DrawProgressInfo(Vector2 size)
     {
-        if (_modPackCount == 0)
+        if (_modPackCount is 0)
         {
-            ImGuiUtil.Center("Nothing to extract.");
+            ImEx.TextCentered("Nothing to extract."u8);
             return true;
         }
 
@@ -35,40 +32,40 @@ public partial class TexToolsImporter
             return true;
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
         var percentage = (float)_currentModPackIdx / _modPackCount;
-        ImGui.ProgressBar(percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}");
-        ImGui.NewLine();
-        ImGui.TextUnformatted(State == ImporterState.DeduplicatingFiles
+        Im.ProgressBar(percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}");
+        Im.Line.New();
+        Im.Text(State is ImporterState.DeduplicatingFiles
             ? $"Deduplicating {_currentModName}..."
             : $"Extracting {_currentModName}...");
 
         if (_currentNumOptions > 1)
         {
-            ImGui.NewLine();
-            ImGui.NewLine();
+            Im.Line.New();
+            Im.Line.New();
             if (_currentOptionIdx >= _currentNumOptions)
-                ImGui.ProgressBar(1f, size, $"Extracted {_currentNumOptions} Options");
+                Im.ProgressBar(1f, size, $"Extracted {_currentNumOptions} Options");
             else
-                ImGui.ProgressBar(_currentOptionIdx / (float)_currentNumOptions, size,
+                Im.ProgressBar(_currentOptionIdx / (float)_currentNumOptions, size,
                     $"Extracting Option {_currentOptionIdx + 1} / {_currentNumOptions}...");
 
-            ImGui.NewLine();
-            if (State != ImporterState.DeduplicatingFiles)
-                ImGui.TextUnformatted(
+            Im.Line.New();
+            if (State is not ImporterState.DeduplicatingFiles)
+                Im.Text(
                     $"Extracting Option {(_currentGroupName.Length == 0 ? string.Empty : $"{_currentGroupName} - ")}{_currentOptionName}...");
         }
 
-        ImGui.NewLine();
-        ImGui.NewLine();
+        Im.Line.New();
+        Im.Line.New();
         if (_currentFileIdx >= _currentNumFiles)
-            ImGui.ProgressBar(1f, size, $"Extracted {_currentNumFiles} Files");
+            Im.ProgressBar(1f, size, $"Extracted {_currentNumFiles} Files");
         else
-            ImGui.ProgressBar(_currentFileIdx / (float)_currentNumFiles, size, $"Extracting File {_currentFileIdx + 1} / {_currentNumFiles}...");
+            Im.ProgressBar(_currentFileIdx / (float)_currentNumFiles, size, $"Extracting File {_currentFileIdx + 1} / {_currentNumFiles}...");
 
-        ImGui.NewLine();
-        if (State != ImporterState.DeduplicatingFiles)
-            ImGui.TextUnformatted($"Extracting File {_currentFileName}...");
+        Im.Line.New();
+        if (State is not ImporterState.DeduplicatingFiles)
+            Im.Text($"Extracting File {_currentFileName}...");
         return false;
     }
 
@@ -77,31 +74,33 @@ public partial class TexToolsImporter
     {
         var success = ExtractedMods.Count(t => t.Error == null);
 
-        ImGui.TextUnformatted($"Successfully extracted {success} / {ExtractedMods.Count} files.");
-        ImGui.NewLine();
-        using var table = ImRaii.Table("##files", 2);
+        Im.Text($"Successfully extracted {success} / {ExtractedMods.Count} files.");
+        Im.Line.New();
+        using var table = Im.Table.Begin("##files"u8, 2);
         if (!table)
             return;
 
         foreach (var (file, dir, ex) in ExtractedMods)
         {
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(file.Name);
-            ImGui.TableNextColumn();
-            if (ex == null)
+            table.DrawColumn(file.Name);
+            table.NextColumn();
+            if (ex is null)
             {
                 using var color = ImGuiColor.Text.Push(ColorId.FolderExpanded.Value());
-                ImGui.TextUnformatted(dir?.FullName[(_baseDirectory.FullName.Length + 1)..] ?? "Unknown Directory");
+                if (dir is null)
+                    Im.Text("Unknown Directory"u8);
+                else
+                    Im.Text(dir.FullName.AsSpan(_baseDirectory.FullName.Length + 1));
             }
             else
             {
                 using var color = ImGuiColor.Text.Push(ColorId.ConflictingMod.Value());
-                ImGui.TextUnformatted(ex.Message);
-                ImGuiUtil.HoverTooltip(ex.ToString());
+                Im.Text(ex.Message);
+                Im.Tooltip.OnHover($"{ex}");
             }
         }
     }
 
     public bool DrawCancelButton(Vector2 size)
-        => ImGuiUtil.DrawDisabledButton("Cancel", size, string.Empty, _token.IsCancellationRequested);
+        => ImEx.Button("Cancel"u8, size, StringU8.Empty, _token.IsCancellationRequested);
 }

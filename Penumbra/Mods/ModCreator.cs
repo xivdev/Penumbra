@@ -2,7 +2,6 @@ using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.Import;
@@ -29,7 +28,8 @@ public partial class ModCreator(
     public readonly Configuration Config            = config;
 
     /// <summary> Creates directory and files necessary for a new mod without adding it to the manager. </summary>
-    public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null, params string[] tags)
+    public DirectoryInfo? CreateEmptyMod(DirectoryInfo basePath, string newName, string description = "", string? author = null,
+        params string[] tags)
     {
         try
         {
@@ -81,7 +81,7 @@ public partial class ModCreator(
         if (incorporateMetaChanges)
             IncorporateAllMetaChanges(mod, true, deleteDefaultMetaChanges);
         else if (deleteDefaultMetaChanges)
-            ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, saveService, false);
+            ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, saveService);
 
         return true;
     }
@@ -98,7 +98,7 @@ public partial class ModCreator(
             {
                 changes = changes
                  || saveService.FileNames.OptionGroupFile(mod.ModPath.FullName, mod.Groups.Count, group.Name, true)
-                 != Path.Combine(file.DirectoryName!, ReplaceBadXivSymbols(file.Name, true));
+                 != Path.Combine(file.DirectoryName!, file.Name.ReplaceBadXivSymbols(true));
                 mod.Groups.Add(group);
             }
             else
@@ -167,7 +167,7 @@ public partial class ModCreator(
 
         DeleteDeleteList(deleteList, delete);
         if (removeDefaultValues && !Config.KeepDefaultMetaChanges)
-            changes |= ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, null, false);
+            changes |= ModMetaEditor.DeleteDefaultValues(mod, metaFileManager, null);
 
         if (!changes)
             return;
@@ -306,31 +306,8 @@ public partial class ModCreator(
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
     public static DirectoryInfo NewOptionDirectory(DirectoryInfo baseDir, string optionName, bool onlyAscii)
     {
-        var option = ReplaceBadXivSymbols(optionName, onlyAscii);
+        var option = optionName.ReplaceBadXivSymbols(onlyAscii);
         return new DirectoryInfo(Path.Combine(baseDir.FullName, option.Length > 0 ? option : "_"));
-    }
-
-    /// <summary> Normalize for nicer names, and remove invalid symbols or invalid paths. </summary>
-    public static string ReplaceBadXivSymbols(string s, bool onlyAscii, string replacement = "_")
-    {
-        switch (s)
-        {
-            case ".":  return replacement;
-            case "..": return replacement + replacement;
-        }
-
-        StringBuilder sb = new(s.Length);
-        foreach (var c in s.Normalize(NormalizationForm.FormKC))
-        {
-            if (c.IsInvalidInPath())
-                sb.Append(replacement);
-            else if (onlyAscii && c.IsInvalidAscii())
-                sb.Append(replacement);
-            else
-                sb.Append(c);
-        }
-
-        return sb.ToString().Trim();
     }
 
     public void SplitMultiGroups(DirectoryInfo baseDir)

@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
@@ -18,7 +18,7 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("GetEqpFlags", Sigs.GetEqpEntry, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EqpHook);
         if (!HookOverrides.Instance.Meta.EqpHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private void Detour(CharacterUtility* utility, EqpEntry* flags, CharacterArmor* armor)
@@ -37,5 +37,5 @@ public unsafe class EqpHook : FastHook<EqpHook.Delegate>, IDisposable
     }
 
     public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+        => _metaState.Config.ModsEnabled -= Set;
 }

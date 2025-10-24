@@ -64,15 +64,15 @@ public sealed class FilenameService(IDalamudPluginInterface pi) : BaseFilePathPr
     public string ModMetaPath(string modDirectory)
         => Path.Combine(modDirectory, "meta.json");
 
-    /// <summary> Obtain the path of the file describing a given option group by its index and the mod. If the index is < 0, return the path for the default mod file. </summary>
+    /// <summary> Obtain the path of the file describing a given option group by its index and the mod. If the index is less than 0, return the path for the default mod file. </summary>
     public string OptionGroupFile(Mod mod, int index, bool onlyAscii)
         => OptionGroupFile(mod.ModPath.FullName, index, index >= 0 ? mod.Groups[index].Name : string.Empty, onlyAscii);
 
-    /// <summary> Obtain the path of the file describing a given option group by its index, name and basepath. If the index is < 0, return the path for the default mod file. </summary>
+    /// <summary> Obtain the path of the file describing a given option group by its index, name and basepath. If the index is less than 0, return the path for the default mod file. </summary>
     public string OptionGroupFile(string basePath, int index, string name, bool onlyAscii)
     {
         var fileName = index >= 0
-            ? $"group_{index + 1:D3}_{ModCreator.ReplaceBadXivSymbols(name.ToLowerInvariant(), onlyAscii)}.json"
+            ? $"group_{index + 1:D3}_{name.ToLowerInvariant().ReplaceBadXivSymbols(onlyAscii)}.json"
             : "default_mod.json";
         return Path.Combine(basePath, fileName);
     }

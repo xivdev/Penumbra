@@ -1,5 +1,4 @@
 using Luna;
-using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
@@ -9,7 +8,7 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager.OptionEditor;
 
 public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveService saveService, Configuration config)
-    : ModOptionEditor<MultiModGroup, MultiSubMod>(communicator, saveService, config), Luna.IService
+    : ModOptionEditor<MultiModGroup, MultiSubMod>(communicator, saveService, config), IService
 {
     public void ChangeToSingle(MultiModGroup group)
     {
@@ -75,7 +74,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 
     protected override bool MoveOption(MultiModGroup group, int optionIdxFrom, int optionIdxTo)
     {
-        if (!Extensions.Move(group.OptionData, ref optionIdxFrom, ref optionIdxTo))
+        if (!group.OptionData.Move(ref optionIdxFrom, ref optionIdxTo))
             return false;
 
         group.DefaultSettings = group.DefaultSettings.MoveBit(optionIdxFrom, optionIdxTo);

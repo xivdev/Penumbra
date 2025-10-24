@@ -1,4 +1,3 @@
-using OtterGui.Tasks;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Mods.Editor;
@@ -77,7 +76,7 @@ public class ModBackup
             return;
 
         CreatingBackup = true;
-        await AsyncTask.Run(Create);
+        await Task.Run(Create);
         CreatingBackup = false;
     }
 

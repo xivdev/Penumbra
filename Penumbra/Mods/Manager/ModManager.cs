@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Communication;
 using Penumbra.Interop;
 using Penumbra.Mods.Editor;
@@ -228,7 +229,7 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
         if (oldName == newName)
             return NewDirectoryState.Identical;
 
-        var fixedNewName = ModCreator.ReplaceBadXivSymbols(newName, _config.ReplaceNonAsciiOnImport);
+        var fixedNewName = newName.ReplaceBadXivSymbols(_config.ReplaceNonAsciiOnImport);
         if (fixedNewName != newName)
             return NewDirectoryState.ContainsInvalidSymbols;
 

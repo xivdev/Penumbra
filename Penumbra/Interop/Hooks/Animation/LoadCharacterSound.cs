@@ -1,6 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
+using Luna;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Services;

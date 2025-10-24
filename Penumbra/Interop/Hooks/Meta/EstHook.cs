@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -23,7 +23,7 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("FindEstEntry", Sigs.FindEstEntry, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EstHook);
         if (!HookOverrides.Instance.Meta.EstHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private EstEntry Detour(ResourceHandle* estResource, uint genderRace, uint id)
@@ -59,5 +59,5 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
     }
 
     public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+        => _metaState.Config.ModsEnabled -= Set;
 }

@@ -1,6 +1,6 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Objects;
@@ -9,7 +9,7 @@ namespace Penumbra.Interop.Hooks.Objects;
 /// EnableDraw is what creates DrawObjects for gameObjects,
 /// so we always keep track of the current GameObject to be able to link it to the DrawObject.
 /// </summary>
-public sealed unsafe class EnableDraw : Luna.IHookService
+public sealed unsafe class EnableDraw : IHookService
 {
     private readonly Task<Hook<Delegate>> _task;
     private readonly GameState _state;

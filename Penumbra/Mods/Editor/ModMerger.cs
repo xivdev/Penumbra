@@ -59,9 +59,6 @@ public class ModMerger : IDisposable, IService
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
     }
 
-    public IEnumerable<Mod> ModsWithoutCurrent
-        => _mods.Where(m => m != MergeFromMod);
-
     public bool CanMerge
         => MergeToMod != null && MergeToMod != MergeFromMod;
 

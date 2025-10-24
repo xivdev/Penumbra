@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -19,7 +19,7 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>, ID
         Task = hooks.CreateHook<Delegate>("GetEqdpAccessoryEntry", Sigs.GetEqdpAccessoryEntry, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EqdpAccessoryHook);
         if (!HookOverrides.Instance.Meta.EqdpAccessoryHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
@@ -33,5 +33,5 @@ public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>, ID
     }
 
     public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+        => _metaState.Config.ModsEnabled -= Set;
 }

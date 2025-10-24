@@ -1,9 +1,10 @@
-﻿using Luna;
+﻿using ImSharp;
+using Luna;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
-public class FileWatcher : IDisposable, IService
+public sealed class FileWatcher : IDisposable, IService
 {
     private readonly ConcurrentSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModImportManager      _modImportManager;
@@ -46,9 +47,6 @@ public class FileWatcher : IDisposable, IService
             EndConsumerTask();
         }
     }
-
-    internal void PauseConsumer(bool pause)
-        => _pausedConsumer = pause;
 
     private void EndFileWatcher()
     {
@@ -205,5 +203,48 @@ public class FileWatcher : IDisposable, IService
     {
         EndConsumerTask();
         EndFileWatcher();
+    }
+
+    public sealed class FileWatcherDrawer(Configuration config, FileWatcher fileWatcher) : IUiService
+    {
+        public void Draw()
+        {
+            using var tree = Im.Tree.Node("File Watcher"u8);
+            if (!tree)
+                return;
+
+            using var table = Im.Table.Begin("table"u8, 2);
+            if (!table)
+                return;
+
+            table.DrawColumn("Enabled"u8);
+            table.DrawColumn($"{config.EnableDirectoryWatch}");
+
+            table.DrawColumn("Automatic Import"u8);
+            table.DrawColumn($"{config.EnableAutomaticModImport}");
+
+            table.DrawColumn("Watched Directory"u8);
+            table.DrawColumn(config.WatchDirectory);
+
+            table.DrawColumn("File Watcher Path"u8);
+            table.DrawColumn(fileWatcher._fsw?.Path ?? "<NULL>");
+
+            table.DrawColumn("Raising Events"u8);
+            table.DrawColumn($"{fileWatcher._fsw?.EnableRaisingEvents ?? false}");
+
+            table.DrawColumn("File Filters"u8);
+            table.DrawColumn(StringU8.Join(", ", fileWatcher._fsw?.Filters ?? []));
+
+            table.DrawColumn("Consumer Task State"u8);
+            table.DrawColumn($"{fileWatcher._consumer?.Status.ToString() ?? "<NULL>"}");
+
+            table.DrawColumn("Debug Pause Consumer"u8);
+            table.NextColumn();
+            if (Im.SmallButton(fileWatcher._pausedConsumer ? "Unpause"u8 : "Pause"u8))
+                fileWatcher._pausedConsumer = !fileWatcher._pausedConsumer;
+
+            table.DrawColumn("Pending Files"u8);
+            table.DrawColumn(StringU8.Join('\n', fileWatcher._pending));
+        }
     }
 }

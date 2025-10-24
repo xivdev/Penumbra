@@ -1,6 +1,4 @@
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using OtterGui.Widgets;
@@ -14,6 +12,55 @@ using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.Services;
 
+// TODO
+//public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile) : SimpleFilterCombo<StmKeyType>(SimpleFilterType.Text)
+//    where TDyePack : unmanaged, IDyePack
+//{
+//    public override StringU8 DisplayString(in StmKeyType value)
+//        => new($"{value,4}");
+//
+//    public override string FilterString(in StmKeyType value)
+//        => $"{value,4}";
+//
+//    public override IEnumerable<StmKeyType> GetBaseItems()
+//        => throw new NotImplementedException();
+//
+//    protected override bool DrawFilter(float width, FilterComboBaseCache<SimpleCacheItem<StmKeyType>> cache)
+//    {
+//        using var font = Im.Font.PushDefault();
+//        return base.DrawFilter(width, cache);
+//    }
+//
+//    public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<HintStringHandlerBuffer> preview, Utf8StringHandler<TextStringHandlerBuffer> tooltip, ref int currentSelection, float previewWidth, float itemHeight,
+//        ComboFlags flags = ComboFlags.None)
+//    {
+//        using var font = Im.Font.PushMono();
+//        using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(1, 0.5f))
+//            .PushX(ImStyleDouble.ItemSpacing, Im.Style.ItemInnerSpacing.X);
+//        var spaceSize = Im.Font.Mono.GetCharacterAdvance(' ');
+//        var spaces    = (int)(previewWidth / spaceSize) - 1;
+//        return base.Draw(label, preview.PadLeft(spaces), tooltip, ref currentSelection, previewWidth, itemHeight, flags);
+//    }
+//
+//    protected override bool DrawSelectable(int globalIdx, bool selected)
+//    {
+//        var ret       = base.DrawSelectable(globalIdx, selected);
+//        var selection = stainCombos[CurrentDyeChannel].CurrentSelection.Key;
+//        if (selection == 0 || !stmFile.TryGetValue(Items[globalIdx], selection, out var colors))
+//            return ret;
+//
+//        Im.Line.Same();
+//
+//        var frame = new Vector2(Im.Style.TextHeight);
+//        Im.Color.Button("D"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.DiffuseColor), 1), 0, frame);
+//        Im.Line.Same();
+//        Im.Color.Button("S"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.SpecularColor), 1), 0, frame);
+//        Im.Line.Same();
+//        Im.Color.Button("E"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.EmissiveColor), 1), 0, frame);
+//        return ret;
+//    }
+//}
+
 public class StainService : Luna.IService
 {
     public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile)
@@ -25,11 +72,11 @@ public class StainService : Luna.IService
 
         protected override float GetFilterWidth()
         {
-            var baseSize = ImGui.CalcTextSize("0000").X + ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemInnerSpacing.X;
+            var baseSize = Im.Font.CalculateSize("0000"u8).X + Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X;
             if (stainCombos[CurrentDyeChannel].CurrentSelection.Key == 0)
                 return baseSize;
 
-            return baseSize + ImGui.GetTextLineHeight() * 3 + ImGui.GetStyle().ItemInnerSpacing.X * 3;
+            return baseSize + Im.Style.TextHeight * 3 + Im.Style.ItemInnerSpacing.X * 3;
         }
 
         protected override string ToString(StmKeyType obj)
@@ -37,17 +84,17 @@ public class StainService : Luna.IService
 
         protected override void DrawFilter(int currentSelected, float width)
         {
-            using var font = ImRaii.PushFont(UiBuilder.DefaultFont);
+            using var font = Im.Font.PushDefault();
             base.DrawFilter(currentSelected, width);
         }
 
         public override bool Draw(string label, string preview, string tooltip, ref int currentSelection, float previewWidth, float itemHeight,
             ImGuiComboFlags flags = ImGuiComboFlags.None)
         {
-            using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(1, 0.5f))
-                .Push(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = ImGui.GetStyle().ItemInnerSpacing.X });
-            var spaceSize = ImGui.CalcTextSize(" ").X;
+            using var font = Im.Font.PushMono();
+            using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(1, 0.5f))
+                .PushX(ImStyleDouble.ItemSpacing, Im.Style.ItemInnerSpacing.X);
+            var spaceSize = Im.Font.Mono.GetCharacterAdvance(' ');
             var spaces    = (int)(previewWidth / spaceSize) - 1;
             return base.Draw(label, preview.PadLeft(spaces), tooltip, ref currentSelection, previewWidth, itemHeight, flags);
         }
@@ -60,12 +107,13 @@ public class StainService : Luna.IService
                 return ret;
 
             Im.Line.Same();
-            var frame = new Vector2(ImGui.GetTextLineHeight());
-            ImGui.ColorButton("D", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.DiffuseColor), 1), 0, frame);
+            
+            var frame = new Vector2(Im.Style.TextHeight);
+            Im.Color.Button("D"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.DiffuseColor), 1), 0, frame);
             Im.Line.Same();
-            ImGui.ColorButton("S", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.SpecularColor), 1), 0, frame);
+            Im.Color.Button("S"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.SpecularColor), 1), 0, frame);
             Im.Line.Same();
-            ImGui.ColorButton("E", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.EmissiveColor), 1), 0, frame);
+            Im.Color.Button("E"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.EmissiveColor), 1), 0, frame);
             return ret;
         }
     }

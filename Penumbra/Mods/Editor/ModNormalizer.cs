@@ -1,6 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
-using OtterGui.Tasks;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
@@ -9,7 +8,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.Editor;
 
-public class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService) : Luna.IService
+public class ModNormalizer(ModManager modManager, Configuration config, SaveService saveService) : IService
 {
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = [];
 
@@ -36,7 +35,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
         Step                  = 0;
         TotalSteps            = mod.TotalFileCount + 5;
 
-        Worker = TrackedTask.Run(NormalizeSync);
+        Worker = Task.Run(NormalizeSync);
     }
 
     public void NormalizeUi(DirectoryInfo modDirectory)
