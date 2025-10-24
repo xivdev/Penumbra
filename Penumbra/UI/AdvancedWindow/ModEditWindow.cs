@@ -180,8 +180,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     public override void OnClose()
     {
         base.OnClose();
-        _config.Ephemeral.AdvancedEditingOpen = false;
-        _config.Ephemeral.Save();
+        if (Mod is not null && _config.Ephemeral.AdvancedEditingOpenForModPaths.Remove(Mod.Identifier))
+            _config.Ephemeral.Save();
         AppendTask(() =>
         {
             _left.Dispose();
@@ -194,11 +194,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
     public override void Draw()
     {
-        if (!_config.Ephemeral.AdvancedEditingOpen)
-        {
-            _config.Ephemeral.AdvancedEditingOpen = true;
+        if (Mod is not null && _config.Ephemeral.AdvancedEditingOpenForModPaths.Add(Mod.Identifier))
             _config.Ephemeral.Save();
-        }
 
         if (IsLoading)
         {

@@ -141,8 +141,14 @@ public class Penumbra : IDalamudPlugin
                 if (!_disposed)
                 {
                     _windowSystem = system;
-                    if (_config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpen: true } && _services.GetService<ModSelection>().Mod is {} mod)
-                        _services.GetService<ModEditWindowFactory>().OpenForMod(mod);
+                    if (_config is { OpenWindowAtStart: true, Ephemeral.AdvancedEditingOpenForModPaths.Count: > 0 })
+                    {
+                        var mods              = _services.GetService<ModManager>();
+                        var editWindowFactory = _services.GetService<ModEditWindowFactory>();
+                        foreach (var identifier in _config.Ephemeral.AdvancedEditingOpenForModPaths)
+                            if (mods.TryGetMod(identifier, out var mod))
+                                editWindowFactory.OpenForMod(mod);
+                    }
                 }
                 else
                     system.Dispose();

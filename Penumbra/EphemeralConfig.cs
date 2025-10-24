@@ -41,7 +41,7 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     public ChangedItemIconFlag      ChangedItemFilter                 { get; set; } = ChangedItemFlagExtensions.DefaultFlags;
     public bool                     FixMainWindow                     { get; set; } = false;
     public string                   LastModPath                       { get; set; } = string.Empty;
-    public bool                     AdvancedEditingOpen               { get; set; } = false;
+    public HashSet<string>          AdvancedEditingOpenForModPaths    { get; set; } = [];
     public bool                     ForceRedrawOnFileChange           { get; set; } = false;
     public bool                     IncognitoMode                     { get; set; } = false;
 
