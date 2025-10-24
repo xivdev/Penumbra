@@ -37,17 +37,8 @@ public class ModStorage : IReadOnlyList<Mod>
     /// </summary>
     public bool TryGetMod(string identifier, [NotNullWhen(true)] out Mod? mod)
     {
-        foreach (var m in Mods)
-        {
-            if (string.Equals(m.Identifier, identifier, StringComparison.OrdinalIgnoreCase))
-            {
-                mod = m;
-                return true;
-            }
-        }
-
-        mod = null;
-        return false;
+        mod = this.FirstOrDefault(m => string.Equals(m.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+        return mod is not null;
     }
 
     /// <summary>
@@ -56,6 +47,9 @@ public class ModStorage : IReadOnlyList<Mod>
     /// </summary>
     public bool TryGetMod(string identifier, string modName, [NotNullWhen(true)] out Mod? mod)
     {
+        if (modName.Length is 0)
+            return TryGetMod(identifier, out mod);
+
         mod = null;
         foreach (var m in Mods)
         {
