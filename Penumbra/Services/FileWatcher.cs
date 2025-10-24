@@ -1,15 +1,14 @@
-﻿using OtterGui.Services;
+﻿using Luna;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
 public class FileWatcher : IDisposable, IService
 {
-    // TODO: use ConcurrentSet when it supports comparers in Luna.
-    private readonly ConcurrentDictionary<string, byte> _pending = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ModImportManager                   _modImportManager;
-    private readonly MessageService                     _messageService;
-    private readonly Configuration                      _config;
+    private readonly ConcurrentSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ModImportManager      _modImportManager;
+    private readonly MessageService        _messageService;
+    private readonly Configuration         _config;
 
     private bool                     _pausedConsumer;
     private FileSystemWatcher?       _fsw;
@@ -89,6 +88,7 @@ public class FileWatcher : IDisposable, IService
             _cts.Cancel();
             _cts = null;
         }
+
         _consumer = null;
     }
 
@@ -125,13 +125,13 @@ public class FileWatcher : IDisposable, IService
     }
 
     private void OnPath(object? sender, FileSystemEventArgs e)
-        => _pending.TryAdd(e.FullPath, 0);
+        => _pending.TryAdd(e.FullPath);
 
     private async Task ConsumerLoopAsync(CancellationToken token)
     {
         while (true)
         {
-            var (path, _) = _pending.FirstOrDefault();
+            var path = _pending.FirstOrDefault<string>();
             if (path is null || _pausedConsumer)
             {
                 await Task.Delay(500, token).ConfigureAwait(false);
@@ -152,7 +152,7 @@ public class FileWatcher : IDisposable, IService
             }
             finally
             {
-                _pending.TryRemove(path, out _);
+                _pending.TryRemove(path);
             }
         }
     }
