@@ -33,6 +33,24 @@ public class ModStorage : IReadOnlyList<Mod>
         => GetEnumerator();
 
     /// <summary>
+    /// Try to obtain a mod by its directory name (unique identifier).
+    /// </summary>
+    public bool TryGetMod(string identifier, [NotNullWhen(true)] out Mod? mod)
+    {
+        foreach (var m in Mods)
+        {
+            if (string.Equals(m.Identifier, identifier, StringComparison.OrdinalIgnoreCase))
+            {
+                mod = m;
+                return true;
+            }
+        }
+
+        mod = null;
+        return false;
+    }
+
+    /// <summary>
     /// Try to obtain a mod by its directory name (unique identifier, preferred),
     /// or the first mod of the given name if no directory fits.
     /// </summary>

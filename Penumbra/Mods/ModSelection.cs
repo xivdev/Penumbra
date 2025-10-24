@@ -27,8 +27,8 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         _communicator = communicator;
         _collections  = collections;
         _config       = config;
-        if (_config.LastModPath.Length > 0)
-            SelectMod(mods.FirstOrDefault(m => string.Equals(m.Identifier, config.LastModPath, StringComparison.OrdinalIgnoreCase)));
+        if (_config.LastModPath.Length > 0 && mods.TryGetMod(config.LastModPath, out var mod))
+            SelectMod(mod);
 
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModSelection);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
