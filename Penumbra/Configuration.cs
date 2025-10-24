@@ -51,6 +51,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
+    public string WatchDirectory  { get; set; } = string.Empty;
 
     public bool? UseCrashHandler                { get; set; } = null;
     public bool  OpenWindowAtStart              { get; set; } = false;
@@ -74,6 +75,8 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool            HideRedrawBar                        { get; set; } = false;
     public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
     public bool            DefaultTemporaryMode                 { get; set; } = false;
+    public bool            EnableDirectoryWatch                 { get; set; } = false;
+    public bool            EnableAutomaticModImport             { get; set; } = false;
     public bool            EnableCustomShapes                   { get; set; } = true;
     public PcpSettings     PcpSettings = new();
     public RenameField     ShowRename                { get; set; } = RenameField.BothDataPrio;

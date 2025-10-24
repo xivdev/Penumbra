@@ -73,6 +73,7 @@ public sealed class CutsceneService : Luna.IRequiredService, IDisposable
             return false;
 
         _copiedCharacters[copyIdx - CutsceneStartIdx] = (short)parentIdx;
+        _objects.InvokeRequiredUpdates();
         return true;
     }
 
