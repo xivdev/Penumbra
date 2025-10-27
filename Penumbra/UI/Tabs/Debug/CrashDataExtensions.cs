@@ -59,7 +59,7 @@ public static class CrashDataExtensions
             ImGuiUtil.DrawTableColumn(character.CollectionId.ToString());
             ImGuiUtil.DrawTableColumn(character.CharacterAddress);
             ImGuiUtil.DrawTableColumn(character.Timestamp.ToString());
-        }, ImGui.GetTextLineHeightWithSpacing());
+        }, Im.Style.TextHeightWithSpacing);
     }
 
     public static void DrawFiles(this CrashData data)
@@ -83,7 +83,7 @@ public static class CrashDataExtensions
             ImGuiUtil.DrawTableColumn(file.CollectionId.ToString());
             ImGuiUtil.DrawTableColumn(file.CharacterAddress);
             ImGuiUtil.DrawTableColumn(file.Timestamp.ToString());
-        }, ImGui.GetTextLineHeightWithSpacing());
+        }, Im.Style.TextHeightWithSpacing);
     }
 
     public static void DrawVfxInvocations(this CrashData data)
@@ -106,6 +106,6 @@ public static class CrashDataExtensions
             ImGuiUtil.DrawTableColumn(vfx.CollectionId.ToString());
             ImGuiUtil.DrawTableColumn(vfx.CharacterAddress);
             ImGuiUtil.DrawTableColumn(vfx.Timestamp.ToString());
-        }, ImGui.GetTextLineHeightWithSpacing());
+        }, Im.Style.TextHeightWithSpacing);
     }
 }

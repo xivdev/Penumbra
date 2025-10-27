@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -25,11 +26,11 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         SetupEffectiveSizes();
         collectionHeader.Draw(true);
         DrawFilters();
-        using var child = ImRaii.Child("##EffectiveChangesTab", ImGui.GetContentRegionAvail(), false);
+        using var child = ImRaii.Child("##EffectiveChangesTab", Im.ContentRegion.Available, false);
         if (!child)
             return;
 
-        var       height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
+        var       height = Im.Style.TextHeightWithSpacing + 2 * ImGui.GetStyle().CellPadding.Y;
         var       skips  = ImGuiClip.GetNecessarySkips(height);
         using var table  = ImRaii.Table("##EffectiveChangesTable", 3, ImGuiTableFlags.RowBg);
         if (!table)
@@ -60,11 +61,11 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         {
             using var font = ImRaii.PushFont(UiBuilder.IconFont);
             _effectiveUnscaledArrowLength =
-                ImGui.CalcTextSize(FontAwesomeIcon.LongArrowAltLeft.ToIconString()).X / UiHelpers.Scale;
+                ImGui.CalcTextSize(FontAwesomeIcon.LongArrowAltLeft.ToIconString()).X / Im.Style.GlobalScale;
         }
 
-        _effectiveArrowLength     = _effectiveUnscaledArrowLength * UiHelpers.Scale;
-        _effectiveLeftTextLength  = 450 * UiHelpers.Scale;
+        _effectiveArrowLength     = _effectiveUnscaledArrowLength * Im.Style.GlobalScale;
+        _effectiveLeftTextLength  = 450 * Im.Style.GlobalScale;
         _effectiveRightTextLength = ImGui.GetWindowSize().X - _effectiveArrowLength - _effectiveLeftTextLength;
     }
 

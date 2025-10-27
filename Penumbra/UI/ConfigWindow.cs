@@ -1,20 +1,14 @@
 using Dalamud.Plugin;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
-using Penumbra.Util;
-using Window = Dalamud.Interface.Windowing.Window;
 
 namespace Penumbra.UI;
 
-public sealed class ConfigWindow : Window, Luna.IUiService
+public sealed class ConfigWindow : Window
 {
     private readonly IDalamudPluginInterface _pluginInterface;
     private readonly Configuration           _config;
@@ -55,10 +49,10 @@ public sealed class ConfigWindow : Window, Luna.IUiService
     public override void PreDraw()
     {
         if (_config.Ephemeral.FixMainWindow)
-            Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
+            Flags |= WindowFlags.NoResize | WindowFlags.NoMove;
         else
-            Flags &= ~(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
-        SizeConstraints = new WindowSizeConstraints()
+            Flags &= ~(WindowFlags.NoResize | WindowFlags.NoMove);
+        SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = _config.MinimumSize,
             MaximumSize = new Vector2(4096, 2160),
@@ -138,33 +132,33 @@ public sealed class ConfigWindow : Window, Luna.IUiService
             ? "Penumbra###PenumbraConfigWindow"
             : $"Penumbra v{checker.Version}###PenumbraConfigWindow";
 
-    private void DrawProblemWindow(string text)
+    private void DrawProblemWindow(Utf8StringHandler<TextStringHandlerBuffer> text)
     {
         using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
-        ImGui.NewLine();
-        ImGui.NewLine();
-        ImUtf8.TextWrapped(text);
+        Im.Line.New();
+        Im.Line.New();
+        Im.TextWrapped(ref text);
         color.Pop();
 
-        ImGui.NewLine();
-        ImGui.NewLine();
+        Im.Line.New();
+        Im.Line.New();
         SupportButton.Discord(Penumbra.Messager, 0);
         Im.Line.Same();
         UiHelpers.DrawSupportButton(_penumbra!);
-        ImGui.NewLine();
-        ImGui.NewLine();
+        Im.Line.New();
+        Im.Line.New();
     }
 
     private void DrawImcExceptions()
     {
-        ImGui.TextUnformatted("Exceptions");
-        ImGui.Separator();
-        using var box = ImRaii.ListBox("##Exceptions", new Vector2(-1, -1));
+        Im.Text("Exceptions"u8);
+        Im.Separator();
+        using var box = Im.ListBox.Begin("##Exceptions"u8, new Vector2(-1, -1));
         foreach (var exception in _validityChecker.ImcExceptions)
         {
-            ImGuiUtil.TextWrapped(exception.ToString());
-            ImGui.Separator();
-            ImGui.NewLine();
+            Im.TextWrapped($"{exception}");
+            Im.Separator();
+            Im.Line.New();
         }
     }
 }

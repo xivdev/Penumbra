@@ -70,7 +70,7 @@ public class ModPanelEditTab(
 
         UiHelpers.DefaultLineSpace();
         var sharedTagsEnabled     = predefinedTagManager.Enabled;
-        var sharedTagButtonOffset = sharedTagsEnabled ? ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X : 0;
+        var sharedTagButtonOffset = sharedTagsEnabled ? Im.Style.FrameHeight + ImGui.GetStyle().FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
@@ -98,7 +98,7 @@ public class ModPanelEditTab(
     /// <summary> The general edit row for non-detailed mod edits. </summary>
     private void EditButtons()
     {
-        var buttonSize   = new Vector2(150 * UiHelpers.Scale, 0);
+        var buttonSize   = new Vector2(150 * Im.Style.GlobalScale, 0);
         var folderExists = Directory.Exists(_mod.ModPath.FullName);
         var tt = folderExists
             ? $"Open \"{_mod.ModPath.FullName}\" in the file explorer of your choice."
@@ -129,7 +129,7 @@ public class ModPanelEditTab(
         if (ImUtf8.ButtonEx("Export Mod"u8, tt, buttonSize, ModBackup.CreatingBackup))
             backup.CreateAsync();
 
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (Im.Item.RightClicked())
             ImUtf8.OpenPopup("context"u8);
 
         Im.Line.Same();
@@ -181,7 +181,7 @@ public class ModPanelEditTab(
                 UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModWebsite(_mod, newWebsite);
 
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(Im.Style.GlobalScale * 3));
 
         var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
         if (ImGui.Button("Edit Description", reducedSize))

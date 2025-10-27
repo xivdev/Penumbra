@@ -46,7 +46,7 @@ public class FileEditor<T>(
             return;
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
         DrawFileSelectCombo();
         SaveButton();
         Im.Line.Same();
@@ -55,7 +55,7 @@ public class FileEditor<T>(
         RedrawOnSaveBox();
         Im.Line.Same();
         DefaultInput();
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         DrawFilePanel();
     }
@@ -98,8 +98,8 @@ public class FileEditor<T>(
 
     private void DefaultInput()
     {
-        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = UiHelpers.ScaleX3 });
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 2 * (UiHelpers.ScaleX3 + ImGui.GetFrameHeight()));
+        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = Im.Style.GlobalScale * 3 });
+        ImGui.SetNextItemWidth(Im.ContentRegion.Available.X - 2 * (Im.Style.GlobalScale * 3 + Im.Style.FrameHeight));
         ImGui.InputTextWithHint("##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength);
         _inInput = ImGui.IsItemActive();
         if (ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0)
@@ -131,7 +131,7 @@ public class FileEditor<T>(
         }
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), new Vector2(ImGui.GetFrameHeight()), "Export this file.",
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), new Vector2(Im.Style.FrameHeight), "Export this file.",
                 _defaultFile == null, true))
             fileDialog.OpenSavePicker($"Export {_defaultPath} to...", fileType, Path.GetFileNameWithoutExtension(_defaultPath), fileType,
                 (success, name) =>
@@ -152,7 +152,7 @@ public class FileEditor<T>(
         _quickImport ??=
             ModEditWindow.QuickImportAction.Prepare(owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(Im.Style.FrameHeight),
                 $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
         {
             try
@@ -180,7 +180,7 @@ public class FileEditor<T>(
     private void DrawFileSelectCombo()
     {
         if (_combo.Draw("##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {fileType} File...", string.Empty,
-                ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight())
+                Im.ContentRegion.Available.X, Im.Style.TextHeight)
          && _combo.CurrentSelection != null)
             UpdateCurrentFile(_combo.CurrentSelection);
     }
@@ -263,8 +263,8 @@ public class FileEditor<T>(
         {
             if (_currentPath != null)
             {
-                ImGui.NewLine();
-                ImGui.NewLine();
+                Im.Line.New();
+                Im.Line.New();
                 ImGui.TextUnformatted($"Preview of {_defaultPath}:");
                 ImGui.Separator();
             }

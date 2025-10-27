@@ -227,7 +227,7 @@ public class ModPanelChangedItemsTab(
         _stateStorage = ImGui.GetStateStorage();
         cache.Update(selector.Selected, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
         ImGui.Separator();
-        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeight());
+        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + Im.Style.FrameHeight);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, Vector2.Zero)
             .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
             .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
@@ -237,7 +237,7 @@ public class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
         using var table = ImUtf8.Table("##changedItems"u8, cache.AnyExpandable ? 2 : 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY,
-            new Vector2(ImGui.GetContentRegionAvail().X, -1));
+            new Vector2(Im.ContentRegion.Available.X, -1));
         if (!table)
             return;
 

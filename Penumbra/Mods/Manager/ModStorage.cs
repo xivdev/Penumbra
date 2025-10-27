@@ -20,20 +20,27 @@ public class ModStorage : IReadOnlyList<Mod>
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    /// <summary>
-    /// Try to obtain a mod by its directory name (unique identifier).
-    /// </summary>
-    public bool TryGetMod(string identifier, [NotNullWhen(true)] out Mod? mod)
+    /// <summary> Try to obtain a mod by its directory name (unique identifier). </summary>
+    public bool TryGetMod(ReadOnlySpan<char> identifier, [NotNullWhen(true)] out Mod? mod)
     {
-        mod = this.FirstOrDefault(m => string.Equals(m.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
-        return mod is not null;
+        foreach (var m in Mods)
+        {
+            if (!identifier.Equals(m.Identifier, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            mod = m;
+            return true;
+        }
+
+        mod = null;
+        return false;
     }
 
     /// <summary>
     /// Try to obtain a mod by its directory name (unique identifier, preferred),
     /// or the first mod of the given name if no directory fits.
     /// </summary>
-    public bool TryGetMod(string identifier, string modName, [NotNullWhen(true)] out Mod? mod)
+    public bool TryGetMod(ReadOnlySpan<char> identifier, ReadOnlySpan<char> modName, [NotNullWhen(true)] out Mod? mod)
     {
         if (modName.Length is 0)
             return TryGetMod(identifier, out mod);
@@ -41,13 +48,13 @@ public class ModStorage : IReadOnlyList<Mod>
         mod = null;
         foreach (var m in Mods)
         {
-            if (string.Equals(m.Identifier, identifier, StringComparison.OrdinalIgnoreCase))
+            if (identifier.Equals(m.Identifier, StringComparison.OrdinalIgnoreCase))
             {
                 mod = m;
                 return true;
             }
 
-            if (m.Name == modName)
+            if (m.Name.SequenceEqual(modName))
                 mod ??= m;
         }
 

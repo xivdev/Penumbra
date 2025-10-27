@@ -1,7 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
-using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.Services;
@@ -120,7 +120,7 @@ public class FileDialogService : IDisposable, IUiService
     {
         var fileManager = new FileDialogManager
         {
-            AddedWindowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDocking,
+            AddedWindowFlags = (WindowFlags.NoCollapse | WindowFlags.NoDocking).ToDalamudWindowFlags(),
         };
 
         if (WindowsFunctions.GetDownloadsFolder(out var downloadsFolder))

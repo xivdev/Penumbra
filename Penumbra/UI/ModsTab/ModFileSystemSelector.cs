@@ -223,7 +223,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             .Push(ImGuiColor.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
         using var id = ImUtf8.PushId(leaf.Value.Index);
         ImUtf8.TreeNode(leaf.Value.Name, flags).Dispose();
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Middle))
+        if (Im.Item.MiddleClicked())
         {
             _modManager.SetKnown(leaf.Value);
             var (setting, collection) = _collectionManager.Active.Current.GetActualSettings(leaf.Value.Index);
@@ -439,9 +439,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void DrawHelpPopup()
     {
-        ImGuiUtil.HelpPopup("ExtendedHelp", new Vector2(1000 * UiHelpers.Scale, 38.5f * ImGui.GetTextLineHeightWithSpacing()), () =>
+        ImGuiUtil.HelpPopup("ExtendedHelp", new Vector2(1000 * Im.Style.GlobalScale, 38.5f * Im.Style.TextHeightWithSpacing), () =>
         {
-            ImGui.Dummy(Vector2.UnitY * ImGui.GetTextLineHeight());
+            ImGui.Dummy(Vector2.UnitY * Im.Style.TextHeight);
             ImUtf8.Text("Mod Management"u8);
             ImUtf8.BulletText("You can create empty mods or import mods with the buttons in this row."u8);
             using var indent = ImRaii.PushIndent();
@@ -452,7 +452,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImUtf8.BulletText("You can also create empty mod folders and delete mods."u8);
             ImUtf8.BulletText(
                 "For further editing of mods, select them and use the Edit Mod tab in the panel or the Advanced Editing popup."u8);
-            ImGui.Dummy(Vector2.UnitY * ImGui.GetTextLineHeight());
+            ImGui.Dummy(Vector2.UnitY * Im.Style.TextHeight);
             ImUtf8.Text("Mod Selector"u8);
             ImUtf8.BulletText("Select a mod to obtain more information or change settings."u8);
             ImUtf8.BulletText("Names are colored according to your config and their current state in the collection:"u8);
@@ -792,12 +792,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         using var combo = ImUtf8.Combo("##filterCombo"u8, ""u8,
             ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft | ImGuiComboFlags.HeightLargest);
-        var ret = ImGui.IsItemClicked(ImGuiMouseButton.Right);
+        var ret = Im.Item.RightClicked();
         if (!combo)
             return ret;
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
-            ImGui.GetStyle().ItemSpacing with { Y = 3 * UiHelpers.Scale });
+            ImGui.GetStyle().ItemSpacing with { Y = 3 * Im.Style.GlobalScale });
 
         if (ImUtf8.Checkbox("Everything"u8, ref everything))
         {
@@ -805,7 +805,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             SetFilterDirty();
         }
 
-        ImGui.Dummy(new Vector2(0, 5 * UiHelpers.Scale));
+        ImGui.Dummy(new Vector2(0, 5 * Im.Style.GlobalScale));
         foreach (var (onFlag, offFlag, name) in ModFilterExtensions.TriStatePairs)
         {
             if (TriStateCheckbox.Instance.Draw(name, ref _stateFilter, onFlag, offFlag))
@@ -829,7 +829,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     protected override (float, bool) CustomFilters(float width)
     {
         var pos            = ImGui.GetCursorPos();
-        var remainingWidth = width - ImGui.GetFrameHeight();
+        var remainingWidth = width - Im.Style.FrameHeight;
         var comboPos       = new Vector2(pos.X + remainingWidth, pos.Y);
 
         var everything = _stateFilter == ModFilterExtensions.UnfilteredStateMods;

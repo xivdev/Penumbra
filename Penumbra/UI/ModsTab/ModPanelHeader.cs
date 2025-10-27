@@ -36,10 +36,10 @@ public class ModPanelHeader : IDisposable
     public void Draw()
     {
         UpdateModData();
-        var height     = ImGui.GetContentRegionAvail().Y;
+        var height     = Im.ContentRegion.Available.Y;
         var maxHeight = 3 * height / 4;
         using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
-            ? ImRaii.Child("HeaderChild", new Vector2(ImGui.GetContentRegionAvail().X, maxHeight), false)
+            ? ImRaii.Child("HeaderChild", new Vector2(Im.ContentRegion.Available.X, maxHeight), false)
             : null;
         using (ImRaii.Group())
         {
@@ -75,7 +75,7 @@ public class ModPanelHeader : IDisposable
         {
             using var f = _nameFont.Push();
             _modName      = name;
-            _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * UiHelpers.Scale);
+            _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * Im.Style.GlobalScale);
         }
 
         // Author
@@ -178,7 +178,7 @@ public class ModPanelHeader : IDisposable
         {
             if (_modWebsiteButton.Length == 0)
             {
-                ImGui.NewLine();
+                Im.Line.New();
                 return;
             }
 

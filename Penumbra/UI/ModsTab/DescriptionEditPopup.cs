@@ -55,7 +55,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
             ImUtf8.OpenPopup(PopupId);
         }
 
-        var       inputSize = ImGuiHelpers.ScaledVector2(800);
+        var       inputSize = ImEx.ScaledVector(800);
         using var popup     = ImUtf8.Popup(PopupId);
         if (!popup)
             return;

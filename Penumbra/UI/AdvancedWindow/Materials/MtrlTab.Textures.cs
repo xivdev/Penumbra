@@ -77,7 +77,7 @@ public partial class MtrlTab
 
         Textures.Sort((x, y) => string.CompareOrdinal(x.Label, y.Label));
 
-        TextureLabelWidth = 50f * UiHelpers.Scale;
+        TextureLabelWidth = 50f * Im.Style.GlobalScale;
 
         float helpWidth;
         using (var _ = ImRaii.PushFont(UiBuilder.IconFont))
@@ -101,7 +101,7 @@ public partial class MtrlTab
             }
         }
 
-        TextureLabelWidth = TextureLabelWidth / UiHelpers.Scale + 4;
+        TextureLabelWidth = TextureLabelWidth / Im.Style.GlobalScale + 4;
     }
 
     private static ReadOnlySpan<byte> TextureAddressModeTooltip(TextureAddressMode addressMode)
@@ -122,17 +122,17 @@ public partial class MtrlTab
         if (Textures.Count == 0)
             return false;
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
         if (!ImGui.CollapsingHeader("Textures and Samplers", ImGuiTreeNodeFlags.DefaultOpen))
             return false;
 
-        var       frameHeight = ImGui.GetFrameHeight();
+        var       frameHeight = Im.Style.FrameHeight;
         var       ret         = false;
         using var table       = ImRaii.Table("##Textures", 3);
 
         ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, frameHeight);
         ImGui.TableSetupColumn("Path",       ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Name",       ImGuiTableColumnFlags.WidthFixed, TextureLabelWidth * UiHelpers.Scale);
+        ImGui.TableSetupColumn("Name",       ImGuiTableColumnFlags.WidthFixed, TextureLabelWidth * Im.Style.GlobalScale);
         foreach (var (label, textureI, samplerI, description, monoFont) in Textures)
         {
             using var _        = ImRaii.PushId(samplerI);
@@ -151,7 +151,7 @@ public partial class MtrlTab
             }
 
             ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+            ImGui.SetNextItemWidth(Im.ContentRegion.Available.X);
             if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
                     disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
              && tmp.Length > 0
@@ -221,7 +221,7 @@ public partial class MtrlTab
         {
             ref var samplerFlags = ref Wrap(ref sampler.Flags);
 
-            ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
             var addressMode = samplerFlags.UAddressMode;
             if (ComboTextureAddressMode("##UAddressMode"u8, ref addressMode))
             {
@@ -234,7 +234,7 @@ public partial class MtrlTab
             ImUtf8.LabeledHelpMarker("U Address Mode"u8,
                 "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range.");
 
-            ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
             addressMode = samplerFlags.VAddressMode;
             if (ComboTextureAddressMode("##VAddressMode"u8, ref addressMode))
             {
@@ -248,7 +248,7 @@ public partial class MtrlTab
                 "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range.");
 
             var lodBias = samplerFlags.LodBias;
-            ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
             if (ImUtf8.DragScalar("##LoDBias"u8, ref lodBias, -8.0f, 7.984375f, 0.1f))
             {
                 samplerFlags.LodBias = lodBias;
@@ -261,7 +261,7 @@ public partial class MtrlTab
                 "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
 
             var minLod = samplerFlags.MinLod;
-            ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
             if (ImUtf8.DragScalar("##MinLoD"u8, ref minLod, 0, 15, 0.1f))
             {
                 samplerFlags.MinLod = minLod;
@@ -282,12 +282,12 @@ public partial class MtrlTab
         if (!t)
             return ret;
 
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
         if (ImUtf8.InputScalar("Texture Flags"u8, ref texture.Flags, "%04X"u8,
                 flags: disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
             ret = true;
 
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
         if (ImUtf8.InputScalar("Sampler Flags"u8, ref sampler.Flags, "%08X"u8,
                 flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
         {

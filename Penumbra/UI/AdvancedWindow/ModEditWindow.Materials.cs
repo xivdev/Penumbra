@@ -1,6 +1,6 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.UI.AdvancedWindow.Materials;
@@ -28,10 +28,10 @@ public partial class ModEditWindow
         if (!tab)
             return;
 
-        ImGui.NewLine();
-        MaterialSuffix.Draw(_editor, ImGuiHelpers.ScaledVector2(175, 0));
+        Im.Line.New();
+        MaterialSuffix.Draw(_editor, ImEx.ScaledVector(175, 0));
 
-        ImGui.NewLine();
+        Im.Line.New();
         using var child = ImUtf8.Child("##mdlFiles"u8, -Vector2.One, true);
         if (!child)
             return;
@@ -54,7 +54,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImUtf8.Text(info.Path.InternalName.Span[(Mod!.ModPath.FullName.Length + 1)..]);
             ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth(400 * UiHelpers.Scale);
+            ImGui.SetNextItemWidth(400 * Im.Style.GlobalScale);
             var tmp = info.CurrentMaterials[0];
             if (ImUtf8.InputText("##0"u8, ref tmp))
                 info.SetMaterial(tmp, 0);
@@ -66,7 +66,7 @@ public partial class ModEditWindow
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
-                ImGui.SetNextItemWidth(400 * UiHelpers.Scale);
+                ImGui.SetNextItemWidth(400 * Im.Style.GlobalScale);
                 tmp = info.CurrentMaterials[i];
                 if (ImUtf8.InputText(""u8, ref tmp))
                     info.SetMaterial(tmp, i);

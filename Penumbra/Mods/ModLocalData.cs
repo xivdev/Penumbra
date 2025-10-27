@@ -26,11 +26,10 @@ public readonly struct ModLocalData(Mod mod) : ISavable
             { nameof(Mod.PreferredChangedItems), JToken.FromObject(mod.PreferredChangedItems) },
         };
 
-        if (mod.FullPath.Length > 0)
-        {
-            var baseName = mod.FullPath.GetBaseName(mod.Name, out var folder);
-            jObject[nameof(Mod.FullPath)] = folder.Length > 0 ? $"{folder}/{baseName}" : baseName.ToString();
-        }
+        if (mod.Path.Folder.Length > 0)
+            jObject["FileSystemFolder"] = mod.Path.Folder;
+        if (mod.Path.SortName is not null)
+            jObject["SortOrderName"] = mod.Path.SortName;
 
         using var jWriter = new JsonTextWriter(writer);
         jWriter.Formatting = Formatting.Indented;
@@ -41,10 +40,12 @@ public readonly struct ModLocalData(Mod mod) : ISavable
     {
         var dataFile = editor.SaveService.FileNames.LocalDataFile(mod);
 
-        var importDate = 0L;
-        var localTags  = Enumerable.Empty<string>();
-        var favorite   = false;
-        var note       = string.Empty;
+        var     importDate       = 0L;
+        var     localTags        = Enumerable.Empty<string>();
+        var     favorite         = false;
+        var     note             = string.Empty;
+        var     fileSystemFolder = string.Empty;
+        string? sortOrderName    = null;
 
         HashSet<CustomItemId> preferredChangedItems = [];
 
@@ -62,7 +63,9 @@ public readonly struct ModLocalData(Mod mod) : ISavable
                 preferredChangedItems =
                     (json[nameof(Mod.PreferredChangedItems)] as JArray)?.Values<ulong>().Select(i => (CustomItemId)i).ToHashSet()
                  ?? mod.DefaultPreferredItems;
-                save = false;
+                fileSystemFolder = json["FileSystemFolder"]?.Value<string>() ?? string.Empty;
+                sortOrderName    = json["SortOrderName"]?.Value<string>()?.FixName();
+                save             = false;
             }
             catch (Exception e)
             {
@@ -99,6 +102,18 @@ public readonly struct ModLocalData(Mod mod) : ISavable
         {
             mod.PreferredChangedItems =  preferredChangedItems;
             changes                   |= ModDataChangeType.PreferredChangedItems;
+        }
+
+        if (!mod.Path.Folder.Equals(fileSystemFolder, StringComparison.OrdinalIgnoreCase))
+        {
+            mod.Path.Folder =  fileSystemFolder;
+            changes         |= ModDataChangeType.FileSystemFolder;
+        }
+
+        if (mod.Path.SortName != sortOrderName)
+        {
+            mod.Path.SortName =  sortOrderName;
+            changes           |= ModDataChangeType.FileSystemSortOrder;
         }
 
         if (save)

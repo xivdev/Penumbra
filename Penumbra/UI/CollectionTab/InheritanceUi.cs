@@ -35,7 +35,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
 
         DrawNewInheritanceSelection();
         Im.Line.Same();
-        if (ImGui.Button("More Information about Inheritance", new Vector2(ImGui.GetContentRegionAvail().X, 0)))
+        if (ImGui.Button("More Information about Inheritance", new Vector2(Im.ContentRegion.Available.X, 0)))
             ImGui.OpenPopup("InheritanceHelp");
 
         DrawHelpPopup();
@@ -61,9 +61,9 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     }
 
     private static void DrawHelpPopup()
-        => ImGuiUtil.HelpPopup("InheritanceHelp", new Vector2(1000 * UiHelpers.Scale, 20 * ImGui.GetTextLineHeightWithSpacing()), () =>
+        => ImGuiUtil.HelpPopup("InheritanceHelp", new Vector2(1000 * Im.Style.GlobalScale, 20 * Im.Style.TextHeightWithSpacing), () =>
         {
-            ImGui.NewLine();
+            Im.Line.New();
             ImGui.TextUnformatted("Every mod in a collection can have three basic states: 'Enabled', 'Disabled' and 'Unconfigured'.");
             ImGui.BulletText("If the mod is 'Enabled' or 'Disabled', it does not matter if the collection inherits from other collections.");
             ImGui.BulletText(
@@ -73,7 +73,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
             ImGui.BulletText("If no such collection is found, the mod will be treated as disabled.");
             ImGui.BulletText(
                 "Highlighted collections in the left box are never reached because they are already checked in a sub-inheritance before.");
-            ImGui.NewLine();
+            Im.Line.New();
             ImGui.TextUnformatted("Example");
             ImGui.BulletText("Collection A has the Bibo+ body and a Hempen Camise mod enabled.");
             ImGui.BulletText(
@@ -102,9 +102,9 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         var lineStart = ImGui.GetCursorScreenPos();
         var offsetX   = -ImGui.GetStyle().IndentSpacing + ImGui.GetTreeNodeToLabelSpacing() / 2;
         var drawList  = ImGui.GetWindowDrawList();
-        var lineSize  = Math.Max(0, ImGui.GetStyle().IndentSpacing - 9 * UiHelpers.Scale);
+        var lineSize  = Math.Max(0, ImGui.GetStyle().IndentSpacing - 9 * Im.Style.GlobalScale);
         lineStart.X += offsetX;
-        lineStart.Y -= 2 * UiHelpers.Scale;
+        lineStart.Y -= 2 * Im.Style.GlobalScale;
         var lineEnd = lineStart;
 
         // Skip the collection itself.
@@ -127,12 +127,12 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
             // Draw the notch and increase the line length.
             var midPoint = (minRect.Y + maxRect.Y) / 2f - 1f;
             drawList.AddLine(lineStart with { Y = midPoint }, new Vector2(lineStart.X + lineSize, midPoint), Colors.MetaInfoText,
-                UiHelpers.Scale);
+                Im.Style.GlobalScale);
             lineEnd.Y = midPoint;
         }
 
         // Finally, draw the folder line.
-        drawList.AddLine(lineStart, lineEnd, Colors.MetaInfoText, UiHelpers.Scale);
+        drawList.AddLine(lineStart, lineEnd, Colors.MetaInfoText, Im.Style.GlobalScale);
     }
 
     /// <summary> Draw a single primary inherited collection. </summary>
@@ -158,7 +158,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     private void DrawCurrentCollectionInheritance()
     {
         using var list = ImRaii.ListBox("##inheritanceList",
-            new Vector2(UiHelpers.InputTextMinusButton, ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight));
+            new Vector2(UiHelpers.InputTextMinusButton, Im.Style.TextHeightWithSpacing * InheritedCollectionHeight));
         if (!list)
             return;
 
@@ -171,7 +171,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     /// <summary> Draw a drag and drop button to delete. </summary>
     private void DrawInheritanceTrashButton()
     {
-        var size        = UiHelpers.IconButtonSize with { Y = ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight };
+        var size        = UiHelpers.IconButtonSize with { Y = Im.Style.TextHeightWithSpacing * InheritedCollectionHeight };
         var buttonColor = Im.Style[ImGuiColor.Button];
         // Prevent hovering from highlighting the button.
         using var color = ImGuiColor.ButtonActive.Push(buttonColor)
@@ -300,7 +300,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
     /// </summary>
     private void DrawInheritanceTreeClicks(ModCollection collection, bool withDelete)
     {
-        if (ImGui.GetIO().KeyCtrl && ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (ImGui.GetIO().KeyCtrl && Im.Item.RightClicked())
         {
             if (withDelete && ImGui.GetIO().KeyShift)
                 _inheritanceAction = (_active.Current.Inheritance.DirectlyInheritsFrom.IndexOf(collection), -1);

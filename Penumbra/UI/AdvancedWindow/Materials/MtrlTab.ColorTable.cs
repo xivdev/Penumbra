@@ -28,8 +28,8 @@ public partial class MtrlTab
         var itemSpacing      = style.ItemSpacing.X;
         var itemInnerSpacing = style.ItemInnerSpacing.X;
         var framePadding     = style.FramePadding;
-        var buttonWidth      = (ImGui.GetContentRegionAvail().X - itemSpacing * 7.0f) * 0.125f;
-        var frameHeight      = ImGui.GetFrameHeight();
+        var buttonWidth      = (Im.ContentRegion.Available.X - itemSpacing * 7.0f) * 0.125f;
+        var frameHeight      = Im.Style.FrameHeight;
         var highlighterSize  = ImUtf8.CalcIconSize(FontAwesomeIcon.Crosshairs) + framePadding * 2.0f;
 
         using var font      = ImRaii.PushFont(UiBuilder.MonoFont);
@@ -47,7 +47,7 @@ public partial class MtrlTab
                 using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], pairIndex == _colorTableSelectedPair))
                 {
                     if (ImUtf8.Button($"#{pairIndex + 1}".PadLeft(3 + spacePadding),
-                            new Vector2(buttonWidth, ImGui.GetFrameHeightWithSpacing() + frameHeight)))
+                            new Vector2(buttonWidth, Im.Style.FrameHeightWithSpacing + frameHeight)))
                         _colorTableSelectedPair = pairIndex;
                 }
 
@@ -254,10 +254,10 @@ public partial class MtrlTab
 
     private static bool DrawColors(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var dyeOffset = ImGui.GetContentRegionAvail().X
+        var dyeOffset = Im.ContentRegion.Available.X
           + ImGui.GetStyle().ItemSpacing.X
           - ImGui.GetStyle().ItemInnerSpacing.X
-          - ImGui.GetFrameHeight() * 2.0f;
+          - Im.Style.FrameHeight * 2.0f;
 
         var     ret = false;
         ref var row = ref table[rowIdx];
@@ -301,11 +301,11 @@ public partial class MtrlTab
 
     private static bool DrawBlending(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var scalarSize = ColorTableScalarSize * UiHelpers.Scale;
-        var dyeOffset = ImGui.GetContentRegionAvail().X
+        var scalarSize = ColorTableScalarSize * Im.Style.GlobalScale;
+        var dyeOffset = Im.ContentRegion.Available.X
           + ImGui.GetStyle().ItemSpacing.X
           - ImGui.GetStyle().ItemInnerSpacing.X
-          - ImGui.GetFrameHeight()
+          - Im.Style.FrameHeight
           - scalarSize;
 
         var isRowB = (rowIdx & 1) != 0;
@@ -334,9 +334,9 @@ public partial class MtrlTab
 
     private bool DrawTemplate(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
+        var scalarSize  = ColorTableScalarSize * Im.Style.GlobalScale;
         var itemSpacing = ImGui.GetStyle().ItemSpacing.X;
-        var dyeOffset   = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight() - scalarSize - 64.0f;
+        var dyeOffset   = Im.ContentRegion.Available.X - ImGui.GetStyle().ItemInnerSpacing.X - Im.Style.FrameHeight - scalarSize - 64.0f;
         var subColWidth = CalculateSubColumnWidth(2);
 
         var     ret = false;
@@ -347,7 +347,7 @@ public partial class MtrlTab
         ret |= CtDragScalar("Shader ID"u8, default, row.ShaderId, "%d"u8, (ushort)0, (ushort)255, 0.25f,
             v => table[rowIdx].ShaderId = v);
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         ImGui.SetNextItemWidth(scalarSize + itemSpacing + 64.0f);
         ret |= CtSphereMapIndexPicker("###SphereMapIndex"u8, default, row.SphereMapIndex, false,
@@ -360,7 +360,7 @@ public partial class MtrlTab
             var textRectMax = ImGui.GetItemRectMax();
             ImGui.SameLine(dyeOffset);
             var cursor = ImGui.GetCursorScreenPos();
-            ImGui.SetCursorScreenPos(cursor with { Y = float.Lerp(textRectMin.Y, textRectMax.Y, 0.5f) - ImGui.GetFrameHeight() * 0.5f });
+            ImGui.SetCursorScreenPos(cursor with { Y = float.Lerp(textRectMin.Y, textRectMax.Y, 0.5f) - Im.Style.FrameHeight * 0.5f });
             ret |= CtApplyStainCheckbox("##dyeSphereMapIndex"u8, "Apply Sphere Map on Dye"u8, dye.SphereMapIndex,
                 b => dyeTable[rowIdx].SphereMapIndex = b);
             ImUtf8.SameLineInner();
@@ -387,10 +387,10 @@ public partial class MtrlTab
             CtDragScalar("##dyeSphereMapMask"u8, "Dye Preview for Sphere Map Intensity"u8, (float?)dyePack?.SphereMapMask * 100.0f, "%.0f%%"u8);
         }
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         var leftLineHeight  = 64.0f + ImGui.GetStyle().FramePadding.Y * 2.0f;
-        var rightLineHeight = 3.0f * ImGui.GetFrameHeight() + 2.0f * ImGui.GetStyle().ItemSpacing.Y;
+        var rightLineHeight = 3.0f * Im.Style.FrameHeight + 2.0f * ImGui.GetStyle().ItemSpacing.Y;
         var lineHeight      = Math.Max(leftLineHeight, rightLineHeight);
         var cursorPos       = ImGui.GetCursorScreenPos();
         ImGui.SetCursorScreenPos(cursorPos + new Vector2(0.0f, (lineHeight - leftLineHeight) * 0.5f));
@@ -403,7 +403,7 @@ public partial class MtrlTab
         ImGui.SameLine(subColWidth);
         ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() with { Y = cursorPos.Y + (lineHeight - rightLineHeight) * 0.5f });
         using (ImUtf8.Child("###TileProperties"u8,
-                   new Vector2(ImGui.GetContentRegionAvail().X, float.Lerp(rightLineHeight, lineHeight, 0.5f))))
+                   new Vector2(Im.ContentRegion.Available.X, float.Lerp(rightLineHeight, lineHeight, 0.5f))))
         {
             ImGui.Dummy(new Vector2(scalarSize, 0.0f));
             ImUtf8.SameLineInner();
@@ -415,7 +415,7 @@ public partial class MtrlTab
                 m => table[rowIdx].TileTransform = m);
             ImUtf8.SameLineInner();
             ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos()
-              - new Vector2(0.0f, (ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.Y) * 0.5f));
+              - new Vector2(0.0f, (Im.Style.FrameHeight + ImGui.GetStyle().ItemSpacing.Y) * 0.5f));
             ImUtf8.Text("Tile Transform"u8);
         }
 
@@ -424,12 +424,12 @@ public partial class MtrlTab
 
     private static bool DrawPbr(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
+        var scalarSize  = ColorTableScalarSize * Im.Style.GlobalScale;
         var subColWidth = CalculateSubColumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
         var dyeOffset = subColWidth
           - ImGui.GetStyle().ItemSpacing.X * 2.0f
           - ImGui.GetStyle().ItemInnerSpacing.X
-          - ImGui.GetFrameHeight()
+          - Im.Style.FrameHeight
           - scalarSize;
 
         var     ret = false;
@@ -470,12 +470,12 @@ public partial class MtrlTab
 
     private static bool DrawSheen(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
+        var scalarSize  = ColorTableScalarSize * Im.Style.GlobalScale;
         var subColWidth = CalculateSubColumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
         var dyeOffset = subColWidth
           - ImGui.GetStyle().ItemSpacing.X * 2.0f
           - ImGui.GetStyle().ItemInnerSpacing.X
-          - ImGui.GetFrameHeight()
+          - Im.Style.FrameHeight
           - scalarSize;
 
         var     ret = false;
@@ -530,12 +530,12 @@ public partial class MtrlTab
 
     private static bool DrawFurther(ColorTable table, ColorDyeTable? dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var scalarSize  = ColorTableScalarSize * UiHelpers.Scale;
+        var scalarSize  = ColorTableScalarSize * Im.Style.GlobalScale;
         var subColWidth = CalculateSubColumnWidth(2) + ImGui.GetStyle().ItemSpacing.X;
         var dyeOffset = subColWidth
           - ImGui.GetStyle().ItemSpacing.X * 2.0f
           - ImGui.GetStyle().ItemInnerSpacing.X
-          - ImGui.GetFrameHeight()
+          - Im.Style.FrameHeight
           - scalarSize;
 
         var     ret = false;
@@ -555,7 +555,7 @@ public partial class MtrlTab
             CtDragHalf("##dyePreviewScalar11"u8, "Dye Preview for Field #11"u8, dyePack?.Scalar3, "%.2f"u8);
         }
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         ImGui.SetNextItemWidth(scalarSize);
         ret |= CtDragHalf("Field #3"u8, default, row.Scalar3, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f,
@@ -593,7 +593,7 @@ public partial class MtrlTab
 
     private bool DrawDye(ColorDyeTable dyeTable, DyePack? dyePack, int rowIdx)
     {
-        var scalarSize       = ColorTableScalarSize * UiHelpers.Scale;
+        var scalarSize       = ColorTableScalarSize * Im.Style.GlobalScale;
         var applyButtonWidth = ImUtf8.CalcTextSize("Apply Preview Dye"u8).X + ImGui.GetStyle().FramePadding.X * 2.0f;
         var subColWidth      = CalculateSubColumnWidth(2, applyButtonWidth);
 
@@ -607,7 +607,7 @@ public partial class MtrlTab
         ImGui.SetNextItemWidth(scalarSize);
         _stainService.GudTemplateCombo.CurrentDyeChannel = dye.Channel;
         if (_stainService.GudTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty,
-                scalarSize + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
+                scalarSize + ImGui.GetStyle().ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ImGuiComboFlags.NoArrowButton))
         {
             dye.Template = _stainService.GudTemplateCombo.CurrentSelection.UShort;
             ret          = true;
@@ -615,7 +615,7 @@ public partial class MtrlTab
 
         ImUtf8.SameLineInner();
         ImUtf8.Text("Dye Template"u8);
-        ImGui.SameLine(ImGui.GetContentRegionAvail().X - applyButtonWidth + ImGui.GetStyle().ItemSpacing.X);
+        ImGui.SameLine(Im.ContentRegion.Available.X - applyButtonWidth + ImGui.GetStyle().ItemSpacing.X);
         using var dis = ImRaii.Disabled(!dyePack.HasValue);
         if (ImUtf8.Button("Apply Preview Dye"u8))
             ret |= Mtrl.ApplyDyeToRow(_stainService.GudStmFile, [
@@ -632,13 +632,13 @@ public partial class MtrlTab
     private static void AlignedTextInRest(string text, float alignment)
     {
         var width = ImGui.CalcTextSize(text).X;
-        ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new Vector2((ImGui.GetContentRegionAvail().X - width) * alignment, 0.0f));
+        ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new Vector2((Im.ContentRegion.Available.X - width) * alignment, 0.0f));
         ImGui.TextUnformatted(text);
     }
 
     private static float CalculateSubColumnWidth(int numSubColumns, float reservedSpace = 0.0f)
     {
         var itemSpacing = ImGui.GetStyle().ItemSpacing.X;
-        return (ImGui.GetContentRegionAvail().X - reservedSpace - itemSpacing * (numSubColumns - 1)) / numSubColumns + itemSpacing;
+        return (Im.ContentRegion.Available.X - reservedSpace - itemSpacing * (numSubColumns - 1)) / numSubColumns + itemSpacing;
     }
 }

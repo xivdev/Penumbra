@@ -64,12 +64,12 @@ public class ResourceTreeViewer(
 
         if (!_task.IsCompleted)
         {
-            ImGui.NewLine();
+            Im.Line.New();
             ImGui.TextUnformatted("Calculating character list...");
         }
         else if (_task.Exception != null)
         {
-            ImGui.NewLine();
+            Im.Line.New();
             using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
             ImGui.TextUnformatted($"Error during calculation of character list:\n\n{_task.Exception}");
         }
@@ -138,7 +138,7 @@ public class ResourceTreeViewer(
                             _note = string.Empty;
                         }, config.ExportDirectory, false);
                 ImUtf8.SameLineInner();
-                ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+                ImGui.SetNextItemWidth(Im.ContentRegion.Available.X);
                 ImUtf8.InputText("##note"u8, ref _note, "Export note..."u8);
 
 
@@ -151,7 +151,7 @@ public class ResourceTreeViewer(
                 ImGui.TableSetupColumn("Game Path",   ImGuiTableColumnFlags.WidthStretch, 0.3f);
                 ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
                 ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed,
-                    actionCapacity * 3 * ImGuiHelpers.GlobalScale + (actionCapacity + 1) * ImGui.GetFrameHeight());
+                    actionCapacity * 3 * Im.Style.GlobalScale + (actionCapacity + 1) * Im.Style.FrameHeight);
                 ImGui.TableHeadersRow();
 
                 DrawNodes(tree.Nodes, 0, unchecked(tree.DrawObjectAddress * 31), 0);
@@ -179,14 +179,14 @@ public class ResourceTreeViewer(
 
     private void DrawControls()
     {
-        var yOffset = (ChangedItemDrawer.TypeFilterIconSize.Y - ImGui.GetFrameHeight()) / 2f;
+        var yOffset = (ChangedItemDrawer.TypeFilterIconSize.Y - Im.Style.FrameHeight) / 2f;
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + yOffset);
 
         if (ImGui.Button("Refresh Character List"))
             _task = RefreshCharacterList();
 
         var checkSpacing = ImGui.GetStyle().ItemInnerSpacing.X;
-        var checkPadding = 10 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X;
+        var checkPadding = 10 * Im.Style.GlobalScale + ImGui.GetStyle().ItemSpacing.X;
         ImGui.SameLine(0, checkPadding);
 
         using (ImRaii.PushId("TreeCategoryFilter"))
@@ -207,19 +207,19 @@ public class ResourceTreeViewer(
 
         var filterChanged = false;
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - yOffset);
-        using (ImRaii.Child("##typeFilter", new Vector2(ImGui.GetContentRegionAvail().X, ChangedItemDrawer.TypeFilterIconSize.Y)))
+        using (ImRaii.Child("##typeFilter", new Vector2(Im.ContentRegion.Available.X, ChangedItemDrawer.TypeFilterIconSize.Y)))
         {
             filterChanged |= changedItemDrawer.DrawTypeFilter(ref _typeFilter);
         }
 
-        var fieldWidth = (ImGui.GetContentRegionAvail().X - checkSpacing * 2.0f - ImGui.GetFrameHeightWithSpacing()) / 2.0f;
+        var fieldWidth = (Im.ContentRegion.Available.X - checkSpacing * 2.0f - Im.Style.FrameHeightWithSpacing) / 2.0f;
         ImGui.SetNextItemWidth(fieldWidth);
         filterChanged |= ImGui.InputTextWithHint("##TreeNameFilter", "Filter by Character/Entity Name...", ref _nameFilter, 128);
         ImGui.SameLine(0, checkSpacing);
         ImGui.SetNextItemWidth(fieldWidth);
         filterChanged |= ImGui.InputTextWithHint("##NodeFilter", "Filter by Item/Part Name or Path...", ref _nodeFilter, 128);
         ImGui.SameLine(0, checkSpacing);
-        incognito.DrawToggle(ImGui.GetFrameHeightWithSpacing());
+        incognito.DrawToggle(Im.Style.FrameHeightWithSpacing);
 
         if (filterChanged)
             _filterCache.Clear();
@@ -247,7 +247,7 @@ public class ResourceTreeViewer(
         ChangedItemIconFlag parentFilterIconFlag)
     {
         var debugMode   = config.DebugMode;
-        var frameHeight = ImGui.GetFrameHeight();
+        var frameHeight = Im.Style.FrameHeight;
 
         foreach (var (index, resourceNode) in resourceNodes.Index())
         {
@@ -273,7 +273,7 @@ public class ResourceTreeViewer(
                 {
                     using var font   = ImRaii.PushFont(UiBuilder.IconFont);
                     var       icon   = (unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString();
-                    var       offset = (ImGui.GetFrameHeight() - ImGui.CalcTextSize(icon).X) / 2;
+                    var       offset = (Im.Style.FrameHeight - ImGui.CalcTextSize(icon).X) / 2;
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
                     ImGui.TextUnformatted(icon);
                     ImGui.SameLine(0f, offset + ImGui.GetStyle().ItemInnerSpacing.X);
@@ -286,7 +286,7 @@ public class ResourceTreeViewer(
                         unfolded = true;
                     }
 
-                    ImGui.Dummy(new Vector2(ImGui.GetFrameHeight()));
+                    ImGui.Dummy(new Vector2(Im.Style.FrameHeight));
                     ImGui.SameLine(0f, ImGui.GetStyle().ItemInnerSpacing.X);
                 }
 
@@ -317,7 +317,7 @@ public class ResourceTreeViewer(
                 0 => "(none)",
                 1 => resourceNode.GamePath.ToString(),
                 _ => "(multiple)",
-            }, false, hasGamePaths ? 0 : ImGuiSelectableFlags.Disabled, new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
+            }, false, hasGamePaths ? 0 : ImGuiSelectableFlags.Disabled, new Vector2(Im.ContentRegion.Available.X, frameHeight));
             if (hasGamePaths)
             {
                 var allPaths = string.Join('\n', resourceNode.PossibleGamePaths);
@@ -338,7 +338,7 @@ public class ResourceTreeViewer(
                     using (ImGuiColor.Text.Push((hasMod ? ColorId.NewMod : ColorId.DisabledMod).Value()))
                     {
                         ImUtf8.Selectable(modName, false, ImGuiSelectableFlags.AllowItemOverlap,
-                            new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
+                            new Vector2(Im.ContentRegion.Available.X, frameHeight));
                     }
 
                     Im.Line.Same();
@@ -355,17 +355,17 @@ public class ResourceTreeViewer(
                     if (secondLastDirectorySeparator >= 0)
                         path = $"…{path.AsSpan(secondLastDirectorySeparator)}";
                     ImGui.Selectable(path.AsSpan(), false, ImGuiSelectableFlags.AllowItemOverlap,
-                        new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
+                        new Vector2(Im.ContentRegion.Available.X, frameHeight));
                 }
                 else
                 {
                     ImGui.Selectable(resourceNode.FullPath.ToPath(), false, ImGuiSelectableFlags.AllowItemOverlap,
-                        new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
+                        new Vector2(Im.ContentRegion.Available.X, frameHeight));
                 }
 
                 if (ImGui.IsItemClicked())
                     ImGui.SetClipboardText(resourceNode.FullPath.ToPath());
-                if (hasMod && ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)
+                if (hasMod && Im.Item.RightClicked() && ImGui.GetIO().KeyCtrl)
                     communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
 
                 ImGuiUtil.HoverTooltip(
@@ -374,7 +374,7 @@ public class ResourceTreeViewer(
             else
             {
                 ImUtf8.Selectable(GetPathStatusLabel(resourceNode.FullPathStatus), false, ImGuiSelectableFlags.Disabled,
-                    new Vector2(ImGui.GetContentRegionAvail().X, frameHeight));
+                    new Vector2(Im.ContentRegion.Available.X, frameHeight));
                 ImGuiUtil.HoverTooltip(
                     $"{GetPathStatusDescription(resourceNode.FullPathStatus)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
@@ -383,7 +383,7 @@ public class ResourceTreeViewer(
 
             ImGui.TableNextColumn();
             using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
-                ImGui.GetStyle().ItemSpacing with { X = 3 * ImGuiHelpers.GlobalScale });
+                ImGui.GetStyle().ItemSpacing with { X = 3 * Im.Style.GlobalScale });
             DrawActions(resourceNode, new Vector2(frameHeight));
 
             if (unfolded)

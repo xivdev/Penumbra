@@ -1,5 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
@@ -27,7 +28,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
     public void DrawContent()
     {
         var (direct, inherited) = CountUsage(selector.Selected!);
-        ImGui.NewLine();
+        Im.Line.New();
         if (direct == 1)
             ImUtf8.Text("This Mod is directly configured in 1 collection."u8);
         else if (direct == 0)
@@ -37,15 +38,15 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         if (inherited > 0)
             ImUtf8.Text($"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
 
-        ImGui.NewLine();
+        Im.Line.New();
         ImGui.Separator();
-        ImGui.NewLine();
+        Im.Line.New();
         using var table = ImUtf8.Table("##modCollections"u8, 3, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
         if (!table)
             return;
 
-        var size           = ImUtf8.CalcTextSize(ToText(ModState.Unconfigured)).X + 20 * ImGuiHelpers.GlobalScale;
-        var collectionSize = 200 * ImGuiHelpers.GlobalScale;
+        var size           = ImUtf8.CalcTextSize(ToText(ModState.Unconfigured)).X + 20 * Im.Style.GlobalScale;
+        var collectionSize = 200 * Im.Style.GlobalScale;
         ImGui.TableSetupColumn("Collection",     ImGuiTableColumnFlags.WidthFixed, collectionSize);
         ImGui.TableSetupColumn("State",          ImGuiTableColumnFlags.WidthFixed, size);
         ImGui.TableSetupColumn("Inherited From", ImGuiTableColumnFlags.WidthFixed, collectionSize);

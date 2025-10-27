@@ -37,7 +37,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
             resourceManager.IterateGraphs(DrawCategoryContainer);
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
         unsafe
         {
             ImGui.TextUnformatted(
@@ -131,8 +131,8 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
     /// <summary> Set the widths for a resource table. </summary>
     private void SetTableWidths()
     {
-        _hashColumnWidth = 100 * UiHelpers.Scale;
-        _pathColumnWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - 300 * UiHelpers.Scale;
-        _refsColumnWidth = 30 * UiHelpers.Scale;
+        _hashColumnWidth = 100 * Im.Style.GlobalScale;
+        _pathColumnWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - 300 * Im.Style.GlobalScale;
+        _refsColumnWidth = 30 * Im.Style.GlobalScale;
     }
 }

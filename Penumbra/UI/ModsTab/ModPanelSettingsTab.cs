@@ -40,7 +40,7 @@ public class ModPanelSettingsTab(
 
     public void DrawContent()
     {
-        using var table = ImUtf8.Table("##settings"u8, 1, ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail());
+        using var table = ImUtf8.Table("##settings"u8, 1, ImGuiTableFlags.ScrollY, Im.ContentRegion.Available);
         if (!table)
             return;
 
@@ -76,7 +76,7 @@ public class ModPanelSettingsTab(
             return;
 
         using var color = ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Value().ToVector()));
-        var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
+        var       width = new Vector2(Im.ContentRegion.Available.X, 0);
         if (ImUtf8.ButtonEx($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
                 width,
                 _locked))
@@ -93,7 +93,7 @@ public class ModPanelSettingsTab(
             return;
 
         using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
-        var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
+        var       width = new Vector2(Im.ContentRegion.Available.X, 0);
         if (ImUtf8.ButtonEx($"These settings are inherited from {selection.Collection.Identity.Name}.", width, _locked))
         {
             if (_temporary)
@@ -142,7 +142,7 @@ public class ModPanelSettingsTab(
         using var group    = ImUtf8.Group();
         var       settings = selection.Settings;
         var       priority = _currentPriority ?? settings.Priority.Value;
-        ImGui.SetNextItemWidth(50 * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(50 * Im.Style.GlobalScale);
         using var disabled = ImRaii.Disabled(_locked);
         if (ImUtf8.InputScalar("##Priority"u8, ref priority))
             _currentPriority = priority;

@@ -25,7 +25,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
             return;
 
         ImGui.Dummy(Vector2.One);
-        var size = 550 * ImGuiHelpers.GlobalScale;
+        var size = 550 * Im.Style.GlobalScale;
         DrawMergeInto(size);
         Im.Line.Same();
         DrawMergeIntoDesc();
@@ -46,7 +46,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
     private void DrawMergeInto(float size)
     {
         using var bigGroup     = ImRaii.Group();
-        var       minComboSize = 300 * ImGuiHelpers.GlobalScale;
+        var       minComboSize = 300 * Im.Style.GlobalScale;
         var       textSize     = ImUtf8.CalcTextSize($"Merge {modMerger.MergeFromMod!.Name} into ").X;
 
         ImGui.AlignTextToFramePadding();
@@ -167,9 +167,9 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
     {
         var options = modMerger.MergeFromMod!.AllDataContainers.ToList();
         var height = modMerger.Warnings.Count == 0 && modMerger.Error == null
-            ? ImGui.GetContentRegionAvail().Y - 3 * ImGui.GetFrameHeightWithSpacing()
-            : 8 * ImGui.GetFrameHeightWithSpacing();
-        height = Math.Min(height, (options.Count + 1) * ImGui.GetFrameHeightWithSpacing());
+            ? Im.ContentRegion.Available.Y - 3 * Im.Style.FrameHeightWithSpacing
+            : 8 * Im.Style.FrameHeightWithSpacing;
+        height = Math.Min(height, (options.Count + 1) * Im.Style.FrameHeightWithSpacing);
         var tableSize = new Vector2(size, height);
         using var table = ImRaii.Table("##options", 6,
             ImGuiTableFlags.RowBg
@@ -181,12 +181,12 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
         if (!table)
             return;
 
-        ImGui.TableSetupColumn("##Selected",   ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight());
+        ImGui.TableSetupColumn("##Selected",   ImGuiTableColumnFlags.WidthFixed, Im.Style.FrameHeight);
         ImGui.TableSetupColumn("Option",       ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Option Group", ImGuiTableColumnFlags.WidthFixed, 120 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("#Files",       ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("#Swaps",       ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale);
-        ImGui.TableSetupColumn("#Manips",      ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale);
+        ImGui.TableSetupColumn("Option Group", ImGuiTableColumnFlags.WidthFixed, 120 * Im.Style.GlobalScale);
+        ImGui.TableSetupColumn("#Files",       ImGuiTableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
+        ImGui.TableSetupColumn("#Swaps",       ImGuiTableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
+        ImGui.TableSetupColumn("#Manips",      ImGuiTableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
         ImGui.TableHeadersRow();
         foreach (var (idx, option) in options.Index())
         {
@@ -224,11 +224,11 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
             }
 
             ImGui.TableNextColumn();
-            ImGuiUtil.RightAlign(option.Files.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
+            ImGuiUtil.RightAlign(option.Files.Count.ToString(), 3 * Im.Style.GlobalScale);
             ImGui.TableNextColumn();
-            ImGuiUtil.RightAlign(option.FileSwaps.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
+            ImGuiUtil.RightAlign(option.FileSwaps.Count.ToString(), 3 * Im.Style.GlobalScale);
             ImGui.TableNextColumn();
-            ImGuiUtil.RightAlign(option.Manipulations.Count.ToString(), 3 * ImGuiHelpers.GlobalScale);
+            ImGuiUtil.RightAlign(option.Manipulations.Count.ToString(), 3 * Im.Style.GlobalScale);
             continue;
 
             void Handle(IModDataContainer option2, bool selected2)

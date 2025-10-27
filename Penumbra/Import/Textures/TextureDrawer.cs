@@ -42,7 +42,7 @@ public static class TextureDrawer
         string startPath, FileDialogService fileDialog, string defaultModImportPath)
     {
         tmpPath ??= current.Path;
-        using var spacing = ImStyleDouble.ItemSpacing.PushX(UiHelpers.ScaleX3);
+        using var spacing = ImStyleDouble.ItemSpacing.PushX(Im.Style.GlobalScale * 3);
         Im.Item.SetNextWidth(-2 * Im.Style.FrameHeight - 7 * Im.Style.GlobalScale);
         if (ImEx.InputOnDeactivation.Text(label, tmpPath, out tmpPath, hint))
             current.Load(textures, tmpPath);

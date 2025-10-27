@@ -60,7 +60,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
             CurrentSelectionIdx = currentOption;
             CurrentSelection    = _group.Options[CurrentSelectionIdx];
             if (Draw(string.Empty, CurrentSelection.Name, string.Empty, ref CurrentSelectionIdx, UiHelpers.InputTextWidth.X * 3 / 4,
-                    ImGui.GetTextLineHeightWithSpacing()))
+                    Im.Style.TextHeightWithSpacing))
                 parent.SetModSetting(_group, _groupIdx, Setting.Single(CurrentSelectionIdx));
         }
     }
@@ -173,7 +173,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
 
         Widget.EndFramedGroup();
         var label = $"##multi{groupIdx}";
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (Im.Item.RightClicked())
             ImUtf8.OpenPopup($"##multi{groupIdx}");
 
         DrawMultiPopup(group, groupIdx, label);
@@ -254,7 +254,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
             {
                 var optionWidth = options.Max(o => ImUtf8.CalcTextSize(o.Name).X)
                   + ImGui.GetStyle().ItemInnerSpacing.X
-                  + ImGui.GetFrameHeight()
+                  + Im.Style.FrameHeight
                   + ImGui.GetStyle().FramePadding.X;
                 var width = Math.Max(optionWidth, minWidth);
                 if (ImUtf8.Button(buttonTextShow, new Vector2(width, 0)))

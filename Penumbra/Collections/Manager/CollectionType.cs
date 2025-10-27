@@ -1,3 +1,4 @@
+using ImSharp;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.Collections.Manager;
@@ -110,9 +111,9 @@ public static class CollectionTypeExtensions
     public static bool CanBeRemoved(this CollectionType collectionType)
         => collectionType.IsSpecial() || collectionType is CollectionType.Individual;
 
-    public static readonly (CollectionType, string, string)[] Special = Enum.GetValues<CollectionType>()
+    public static readonly (CollectionType, StringU8, StringU8)[] Special = Enum.GetValues<CollectionType>()
         .Where(IsSpecial)
-        .Select(s => (s, s.ToName(), s.ToDescription()))
+        .Select(s => (s, new StringU8(s.ToName()), new StringU8(s.ToDescription())))
         .ToArray();
 
     public static CollectionType FromParts(Gender gender, bool npc)
@@ -427,16 +428,16 @@ public static class CollectionTypeExtensions
             _                                       => string.Empty,
         };
 
-    public static string ToDescription(this CollectionType collectionType)
+    public static ReadOnlySpan<byte> ToDescription(this CollectionType collectionType)
         => collectionType switch
         {
-            CollectionType.Default                  => "World, Music, Furniture, baseline for characters and monsters not specialized.",
-            CollectionType.Interface                => "User Interface, Icons, Maps, Styles.",
-            CollectionType.Yourself                 => "Your characters, regardless of name, race or gender. Applies in the login screen.",
-            CollectionType.MalePlayerCharacter      => "Baseline for male player characters.",
-            CollectionType.FemalePlayerCharacter    => "Baseline for female player characters.",
-            CollectionType.MaleNonPlayerCharacter   => "Baseline for humanoid male non-player characters.",
-            CollectionType.FemaleNonPlayerCharacter => "Baseline for humanoid female non-player characters.",
-            _                                       => string.Empty,
+            CollectionType.Default                  => "World, Music, Furniture, baseline for characters and monsters not specialized."u8,
+            CollectionType.Interface                => "User Interface, Icons, Maps, Styles."u8,
+            CollectionType.Yourself                 => "Your characters, regardless of name, race or gender. Applies in the login screen."u8,
+            CollectionType.MalePlayerCharacter      => "Baseline for male player characters."u8,
+            CollectionType.FemalePlayerCharacter    => "Baseline for female player characters."u8,
+            CollectionType.MaleNonPlayerCharacter   => "Baseline for humanoid male non-player characters."u8,
+            CollectionType.FemaleNonPlayerCharacter => "Baseline for humanoid female non-player characters."u8,
+            _                                       => StringU8.Empty,
         };
 }

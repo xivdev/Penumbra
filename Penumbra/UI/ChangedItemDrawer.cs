@@ -117,8 +117,8 @@ public class ChangedItemDrawer : IDisposable, IUiService
     public void ChangedItemHandling(IIdentifiedObjectData data, bool leftClicked)
     {
         var ret = leftClicked ? MouseButton.Left : MouseButton.None;
-        ret = Im.Item.Clicked(ImSharp.MouseButton.Right) ? MouseButton.Right : ret;
-        ret = Im.Item.Clicked(ImSharp.MouseButton.Middle) ? MouseButton.Middle : ret;
+        ret = Im.Item.RightClicked() ? MouseButton.Right : ret;
+        ret = Im.Item.MiddleClicked() ? MouseButton.Middle : ret;
         if (ret != MouseButton.None)
             _communicator.ChangedItemClick.Invoke(new ChangedItemClick.Arguments(ret, data));
         if (!Im.Item.Hovered())
@@ -199,7 +199,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             });
         if (Im.Item.Clicked())
         {
-            typeFilter = typeFilter == ChangedItemFlagExtensions.AllFlags ? 0 : ChangedItemFlagExtensions.AllFlags;
+            typeFilter = typeFilter is ChangedItemFlagExtensions.AllFlags ? 0 : ChangedItemFlagExtensions.AllFlags;
             ret        = true;
         }
 

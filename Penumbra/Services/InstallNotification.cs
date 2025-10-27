@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.ImGuiNotification.EventArgs;
@@ -42,7 +41,7 @@ public class InstallNotification(ModImportManager modImportManager, string fileP
             args.Notification.DismissNow();
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (Im.Button("Ignore"u8, buttonSize))
             args.Notification.DismissNow();
     }

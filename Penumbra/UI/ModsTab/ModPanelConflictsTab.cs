@@ -39,13 +39,13 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
 
     public void DrawContent()
     {
-        using var table = ImRaii.Table("conflicts", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail());
+        using var table = ImRaii.Table("conflicts", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY, Im.ContentRegion.Available);
         if (!table)
             return;
 
-        var       buttonSize       = new Vector2(ImGui.GetFrameHeight());
+        var       buttonSize       = new Vector2(Im.Style.FrameHeight);
         var       spacing          = ImGui.GetStyle().ItemInnerSpacing with { Y = ImGui.GetStyle().ItemSpacing.Y };
-        var       priorityRowWidth = ImGui.CalcTextSize("Priority").X + 20 * ImGuiHelpers.GlobalScale + 2 * buttonSize.X;
+        var       priorityRowWidth = ImGui.CalcTextSize("Priority").X + 20 * Im.Style.GlobalScale + 2 * buttonSize.X;
         var       priorityWidth    = priorityRowWidth - 2 * (buttonSize.X + spacing.X);
         using var style            = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
         ImGui.TableSetupColumn("Conflicting Mod", ImGuiTableColumnFlags.WidthStretch);
@@ -106,7 +106,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSy
         if (ImGui.Selectable(conflict.Mod2.Name) && conflict.Mod2 is Mod otherMod)
             selector.SelectByValue(otherMod);
         var hovered      = ImGui.IsItemHovered();
-        var rightClicked = ImGui.IsItemClicked(ImGuiMouseButton.Right);
+        var rightClicked = Im.Item.RightClicked();
         if (conflict.Mod2 is Mod otherMod2)
         {
             if (hovered)

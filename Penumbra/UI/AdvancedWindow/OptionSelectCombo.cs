@@ -36,7 +36,7 @@ public sealed class OptionSelectCombo(ModEditor editor, ModEditWindow window)
             > 8 => ImGuiComboFlags.HeightLargest,
             _   => ImGuiComboFlags.None,
         };
-        return Draw("##optionSelector", editor.Option!.GetFullName(), string.Empty, width, ImGui.GetTextLineHeight(), flags);
+        return Draw("##optionSelector", editor.Option!.GetFullName(), string.Empty, width, Im.Style.TextHeight, flags);
     }
 
     protected override bool DrawSelectable(int globalIdx, bool selected)

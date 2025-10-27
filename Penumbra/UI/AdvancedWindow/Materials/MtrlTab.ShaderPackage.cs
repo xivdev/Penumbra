@@ -337,7 +337,7 @@ public partial class MtrlTab
 
         if (!_shpkLoading && (_associatedShpk == null || _associatedShpkDevkit == null))
         {
-            ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+            ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
             if (_associatedShpk == null)
                 ImUtf8.Text("Unable to find a suitable shader (.shpk) file for cross-references. Some functionality will be missing."u8,
@@ -360,7 +360,7 @@ public partial class MtrlTab
         }
 
         var ret = false;
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
+        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 250.0f);
         using var c = ImRaii.Combo("Shader Package", Mtrl.ShaderPackage.Name);
         if (c)
             foreach (var value in GetShpkNames())
@@ -382,7 +382,7 @@ public partial class MtrlTab
     private bool DrawShaderFlagsInput(bool disabled)
     {
         var shpkFlags = (int)Mtrl.ShaderPackage.Flags;
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
+        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 250.0f);
         if (!ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
                 flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
             return false;
@@ -409,7 +409,7 @@ public partial class MtrlTab
             ? "Base dev-kit file: None"
             : $"Base dev-kit file: {_loadedBaseDevkitPathName}";
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         ImUtf8.CopyOnClickSelectable(text,           _loadedShpkPathName,       tooltip);
         ImUtf8.CopyOnClickSelectable(devkitText,     _loadedShpkDevkitPathName, tooltip);
@@ -436,7 +436,7 @@ public partial class MtrlTab
                 LoadShpk(new FullPath(gamePath));
         }
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
     }
 
     private bool DrawMaterialShaderKeys(bool disabled)
@@ -456,7 +456,7 @@ public partial class MtrlTab
                 values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
             if (!disabled && shpkKey.HasValue)
             {
-                ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
+                ImGui.SetNextItemWidth(Im.Style.GlobalScale * 250.0f);
                 using (var c = ImUtf8.Combo(""u8, currentLabel))
                 {
                     if (c)
@@ -508,7 +508,7 @@ public partial class MtrlTab
 
         if (_shaderComment.Length > 0)
         {
-            ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+            ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
             ImUtf8.Text(_shaderComment);
         }
     }

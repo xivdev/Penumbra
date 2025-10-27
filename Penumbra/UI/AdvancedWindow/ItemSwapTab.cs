@@ -93,9 +93,9 @@ public class ItemSwapTab : IDisposable, ITab
 
     public void DrawContent()
     {
-        ImGui.NewLine();
-        DrawHeaderLine(300 * UiHelpers.Scale);
-        ImGui.NewLine();
+        Im.Line.New();
+        DrawHeaderLine(300 * Im.Style.GlobalScale);
+        Im.Line.New();
 
         DrawSwapBar();
 
@@ -433,7 +433,7 @@ public class ItemSwapTab : IDisposable, ITab
             CreateMod();
 
         Im.Line.Same();
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * UiHelpers.Scale);
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * Im.Style.GlobalScale);
         ImGui.Checkbox("Use File Swaps", ref _useFileSwaps);
         ImGuiUtil.HoverTooltip("Instead of writing every single non-default file to the newly created mod or option,\n"
           + "even those available from game files, use File Swaps to default game files where possible.");
@@ -457,7 +457,7 @@ public class ItemSwapTab : IDisposable, ITab
             CreateOption();
 
         Im.Line.Same();
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * UiHelpers.Scale);
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * Im.Style.GlobalScale);
         _dirty |= ImGui.Checkbox("Use Entire Collection", ref _useCurrentCollection);
         ImGuiUtil.HoverTooltip(
             "Use all applied mods from the Selected Collection with their current settings and respecting the enabled state of mods and inheritance,\n"
@@ -515,7 +515,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.TextUnformatted($"Take {article1}");
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(100 * Im.Style.GlobalScale);
         using (var combo = ImRaii.Combo("##fromType", ToName(_slotFrom)))
         {
             if (combo)
@@ -533,8 +533,8 @@ public class ItemSwapTab : IDisposable, ITab
 
         ImGui.TableNextColumn();
         _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Item.Name, string.Empty,
-            InputWidth * 2 * UiHelpers.Scale,
-            ImGui.GetTextLineHeightWithSpacing());
+            InputWidth * 2 * Im.Style.GlobalScale,
+            Im.Style.TextHeightWithSpacing);
 
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
         ImGui.TableNextColumn();
@@ -542,7 +542,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.TextUnformatted($"and put {article2} on {article1}");
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(100 * Im.Style.GlobalScale);
         using (var combo = ImRaii.Combo("##toType", ToName(_slotTo)))
         {
             if (combo)
@@ -558,8 +558,8 @@ public class ItemSwapTab : IDisposable, ITab
 
         ImGui.TableNextColumn();
 
-        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
-            ImGui.GetTextLineHeightWithSpacing());
+        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * Im.Style.GlobalScale,
+            Im.Style.TextHeightWithSpacing);
         if (_affectedItems is not { Count: > 1 })
             return;
 
@@ -600,8 +600,8 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text1);
         ImGui.TableNextColumn();
-        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
-            ImGui.GetTextLineHeightWithSpacing());
+        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * Im.Style.GlobalScale,
+            Im.Style.TextHeightWithSpacing);
 
         if (type == SwapType.Ring)
         {
@@ -613,8 +613,8 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text2);
         ImGui.TableNextColumn();
-        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
-            ImGui.GetTextLineHeightWithSpacing());
+        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * Im.Style.GlobalScale,
+            Im.Style.TextHeightWithSpacing);
         if (type == SwapType.Ring)
         {
             Im.Line.Same();
@@ -678,7 +678,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.TextUnformatted(text);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(InputWidth * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(InputWidth * Im.Style.GlobalScale);
         if (ImGui.InputInt("##targetId", ref _targetId))
             _targetId = Math.Clamp(_targetId, 0, byte.MaxValue);
 
@@ -692,7 +692,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.TextUnformatted(text);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(InputWidth * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(InputWidth * Im.Style.GlobalScale);
         if (ImGui.InputInt("##sourceId", ref _sourceId))
             _sourceId = Math.Clamp(_sourceId, 0, byte.MaxValue);
 

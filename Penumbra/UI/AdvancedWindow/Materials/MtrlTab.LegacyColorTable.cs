@@ -97,9 +97,9 @@ public partial class MtrlTab
         using var id        = ImRaii.PushId(rowIdx);
         ref var   row       = ref table[rowIdx];
         var       dye       = dyeTable != null ? dyeTable[rowIdx] : default;
-        var       floatSize = LegacyColorTableFloatSize * UiHelpers.Scale;
-        var       pctSize   = LegacyColorTablePercentageSize * UiHelpers.Scale;
-        var       intSize   = LegacyColorTableIntegerSize * UiHelpers.Scale;
+        var       floatSize = LegacyColorTableFloatSize * Im.Style.GlobalScale;
+        var       pctSize   = LegacyColorTablePercentageSize * Im.Style.GlobalScale;
+        var       intSize   = LegacyColorTableIntegerSize * Im.Style.GlobalScale;
         ImGui.TableNextColumn();
         ColorTableCopyClipboardButton(rowIdx);
         ImUtf8.SameLineInner();
@@ -183,7 +183,7 @@ public partial class MtrlTab
         {
             ImGui.TableNextColumn();
             if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
-                  + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
+                  + ImGui.GetStyle().ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ImGuiComboFlags.NoArrowButton))
             {
                 dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection.UShort;
                 ret                       = true;
@@ -203,10 +203,10 @@ public partial class MtrlTab
         using var id        = ImRaii.PushId(rowIdx);
         ref var   row       = ref table[rowIdx];
         var       dye       = dyeTable?[rowIdx] ?? default;
-        var       floatSize = LegacyColorTableFloatSize * UiHelpers.Scale;
-        var       pctSize   = LegacyColorTablePercentageSize * UiHelpers.Scale;
-        var       intSize   = LegacyColorTableIntegerSize * UiHelpers.Scale;
-        var       byteSize  = LegacyColorTableByteSize * UiHelpers.Scale;
+        var       floatSize = LegacyColorTableFloatSize * Im.Style.GlobalScale;
+        var       pctSize   = LegacyColorTablePercentageSize * Im.Style.GlobalScale;
+        var       intSize   = LegacyColorTableIntegerSize * Im.Style.GlobalScale;
+        var       byteSize  = LegacyColorTableByteSize * Im.Style.GlobalScale;
         ImGui.TableNextColumn();
         ColorTableCopyClipboardButton(rowIdx);
         ImUtf8.SameLineInner();
@@ -298,7 +298,7 @@ public partial class MtrlTab
             ImUtf8.SameLineInner();
             _stainService.LegacyTemplateCombo.CurrentDyeChannel = dye.Channel;
             if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
-                  + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton))
+                  + ImGui.GetStyle().ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ImGuiComboFlags.NoArrowButton))
             {
                 dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection.UShort;
                 ret                       = true;
@@ -321,7 +321,7 @@ public partial class MtrlTab
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing / 2);
 
-        var ret = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
+        var ret = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2(Im.Style.FrameHeight),
             "Apply the selected dye to this row.", disabled, true);
 
         ret = ret && Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, [stain], rowIdx);
@@ -340,7 +340,7 @@ public partial class MtrlTab
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing / 2);
 
-        var ret = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
+        var ret = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2(Im.Style.FrameHeight),
             "Apply the selected dye to this row.", disabled, true);
 
         ret = ret

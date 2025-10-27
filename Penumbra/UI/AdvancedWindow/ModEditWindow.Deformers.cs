@@ -39,7 +39,7 @@ public partial class ModEditWindow
         }
 
         using var child = ImUtf8.Child("GenderRace"u8,
-            new Vector2(width, ImGui.GetContentRegionMax().Y - ImGui.GetFrameHeight() - ImGui.GetStyle().WindowPadding.Y), true);
+            new Vector2(width, ImGui.GetContentRegionMax().Y - Im.Style.FrameHeight - ImGui.GetStyle().WindowPadding.Y), true);
         if (!child)
             return;
 
@@ -78,7 +78,7 @@ public partial class ModEditWindow
         }
 
         using var child = ImUtf8.Child("Bone"u8,
-            new Vector2(width, ImGui.GetContentRegionMax().Y - ImGui.GetFrameHeight() - ImGui.GetStyle().WindowPadding.Y), true);
+            new Vector2(width, ImGui.GetContentRegionMax().Y - Im.Style.FrameHeight - ImGui.GetStyle().WindowPadding.Y), true);
         if (!child)
             return;
 
@@ -91,7 +91,7 @@ public partial class ModEditWindow
         }
         else
         {
-            var height = ImGui.GetTextLineHeightWithSpacing();
+            var height = Im.Style.TextHeightWithSpacing;
             var skips  = ImGuiClip.GetNecessarySkips(height);
             var remainder = ImGuiClip.FilteredClippedDraw(_pbdData.SelectedDeformer.DeformMatrices.Keys, skips,
                 b => b.Contains(_pbdData.BoneFilter), bone
@@ -107,7 +107,7 @@ public partial class ModEditWindow
     private bool DrawBoneData(PbdTab tab, bool disabled)
     {
         using var child = ImUtf8.Child("Data"u8,
-            ImGui.GetContentRegionAvail() with { Y = ImGui.GetContentRegionMax().Y - ImGui.GetStyle().WindowPadding.Y }, true);
+            Im.ContentRegion.Available with { Y = ImGui.GetContentRegionMax().Y - ImGui.GetStyle().WindowPadding.Y }, true);
         if (!child)
             return false;
 
@@ -118,7 +118,7 @@ public partial class ModEditWindow
             return false;
 
         var width       = UiBuilder.MonoFont.GetCharAdvance('0') * 12 + ImGui.GetStyle().FramePadding.X * 2;
-        var dummyHeight = ImGui.GetTextLineHeight() / 2;
+        var dummyHeight = Im.Style.TextHeight / 2;
         var ret         = DrawAddNewBone(tab, disabled, matrix, width);
 
         ImUtf8.Dummy(0, dummyHeight);
@@ -209,7 +209,7 @@ public partial class ModEditWindow
                 Im.Line.Same();
             }
 
-            ImGui.NewLine();
+            Im.Line.New();
         }
 
         return ret;

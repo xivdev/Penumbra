@@ -50,7 +50,7 @@ public partial class ModEditWindow
 
             using var id = ImRaii.PushId(label);
             ImEx.TextFramed(label, Im.ContentRegion.Available with { Y = 0 }, ImGuiColor.FrameBackground.Get());
-            ImGui.NewLine();
+            Im.Line.New();
 
             using (ImRaii.Disabled(!_center.SaveTask.IsCompleted))
             {
@@ -68,7 +68,7 @@ public partial class ModEditWindow
                     _center.DrawMatrixInputRight(size.X);
             }
 
-            ImGui.NewLine();
+            Im.Line.New();
             using var child2 = ImRaii.Child("image");
             if (child2)
                 TextureDrawer.Draw(tex, imageSize);
@@ -81,7 +81,7 @@ public partial class ModEditWindow
     private void SaveAsCombo()
     {
         var (text, desc) = SaveAsStrings[_currentSaveAs];
-        ImGui.SetNextItemWidth(-ImGui.GetFrameHeight() - ImGui.GetStyle().ItemSpacing.X);
+        ImGui.SetNextItemWidth(-Im.Style.FrameHeight - ImGui.GetStyle().ItemSpacing.X);
         using var combo = ImRaii.Combo("##format", text);
         ImGuiUtil.HoverTooltip(desc);
         if (!combo)
@@ -137,8 +137,8 @@ public partial class ModEditWindow
                 ? "This saves the texture in place. This is not revertible."
                 : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.";
 
-            var buttonSize2 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2,     0);
-            var buttonSize3 = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
+            var buttonSize2 = new Vector2((Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X) / 2,     0);
+            var buttonSize3 = new Vector2((Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
             if (ImGuiUtil.DrawDisabledButton("Save in place", buttonSize2,
                     tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
@@ -159,7 +159,7 @@ public partial class ModEditWindow
             Im.Line.Same();
             if (ImGui.Button("Export as DDS", buttonSize3))
                 OpenSaveAsDialog(".dds");
-            ImGui.NewLine();
+            Im.Line.New();
 
             var canConvertInPlace = canSaveInPlace && _left.Type is TextureType.Tex && _center.IsLeftCopy;
 
@@ -209,10 +209,10 @@ public partial class ModEditWindow
                 ImGuiUtil.TextWrapped(_center.SaveTask.Exception?.ToString() ?? "Unknown Error");
                 break;
             }
-            default: ImGui.Dummy(new Vector2(1, ImGui.GetFrameHeight())); break;
+            default: ImGui.Dummy(new Vector2(1, Im.Style.FrameHeight)); break;
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
 
         using var child2 = ImRaii.Child("image");
         if (child2)
@@ -280,7 +280,7 @@ public partial class ModEditWindow
 
     private Vector2 GetChildWidth()
     {
-        var windowWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - ImGui.GetTextLineHeight();
+        var windowWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - Im.Style.TextHeight;
         if (_overlayCollapsed)
         {
             var width = windowWidth - ImGui.GetStyle().FramePadding.X * 3;
@@ -332,7 +332,7 @@ public partial class ModEditWindow
         var (label, tooltip) = _overlayCollapsed
             ? (">", "Show a third panel in which you can import an additional texture as an overlay for the primary texture.")
             : ("<", "Hide the overlay texture panel and clear the currently loaded overlay texture, if any.");
-        if (ImGui.Button(label, new Vector2(ImGui.GetTextLineHeight(), ImGui.GetContentRegionAvail().Y)))
+        if (ImGui.Button(label, new Vector2(Im.Style.TextHeight, Im.ContentRegion.Available.Y)))
             _overlayCollapsed = !_overlayCollapsed;
 
         ImGuiUtil.HoverTooltip(tooltip);

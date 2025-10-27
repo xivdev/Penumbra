@@ -59,7 +59,7 @@ public partial class ModEditWindow
 
     private void DrawFilesOverviewMode()
     {
-        var height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
+        var height = Im.Style.TextHeightWithSpacing + 2 * ImGui.GetStyle().CellPadding.Y;
         var skips  = ImGuiClip.GetNecessarySkips(height);
 
         using var list = ImRaii.Table("##table", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV, -Vector2.One);
@@ -67,7 +67,7 @@ public partial class ModEditWindow
         if (!list)
             return;
 
-        var width = ImGui.GetContentRegionAvail().X / 8;
+        var width = Im.ContentRegion.Available.X / 8;
 
         ImGui.TableSetupColumn("##file",   ImGuiTableColumnFlags.WidthFixed, width * 3);
         ImGui.TableSetupColumn("##path",   ImGuiTableColumnFlags.WidthFixed, width * 3 + ImGui.GetStyle().FrameBorderSize);
@@ -192,7 +192,7 @@ public partial class ModEditWindow
                     _selectedFiles.Add(registry);
             }
 
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+            if (Im.Item.RightClicked())
                 ImUtf8.OpenPopup("context"u8);
 
             var rightText = DrawFileTooltip(registry, color);
@@ -257,7 +257,7 @@ public partial class ModEditWindow
         using var id = ImRaii.PushId(j);
         ImGui.TableNextColumn();
         var tmp = _fileIdx == i && _pathIdx == j ? _gamePathEdit : gamePath.ToString();
-        var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
+        var pos = ImGui.GetCursorPosX() - Im.Style.FrameHeight;
         ImGui.SetNextItemWidth(-1);
         if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength))
         {
@@ -302,7 +302,7 @@ public partial class ModEditWindow
     private void PrintNewGamePath(int i, FileRegistry registry, IModDataContainer _)
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
-        var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
+        var pos = ImGui.GetCursorPosX() - Im.Style.FrameHeight;
         ImGui.SetNextItemWidth(-1);
         if (ImGui.InputTextWithHint("##new", "Add New Path...", ref tmp, Utf8GamePath.MaxGamePathLength))
         {
@@ -344,10 +344,10 @@ public partial class ModEditWindow
 
     private void DrawButtonHeader()
     {
-        ImGui.NewLine();
+        Im.Line.New();
 
-        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(3 * UiHelpers.Scale, 0));
-        ImGui.SetNextItemWidth(30 * UiHelpers.Scale);
+        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(3 * Im.Style.GlobalScale, 0));
+        ImGui.SetNextItemWidth(30 * Im.Style.GlobalScale);
         ImGui.DragInt("##skippedFolders", ref _folderSkip, 0.01f, 0, 10);
         ImGuiUtil.HoverTooltip("Skip the first N folders when automatically constructing the game path from the file path.");
         Im.Line.Same();
@@ -403,7 +403,7 @@ public partial class ModEditWindow
 
     private void DrawFileManagementNormal()
     {
-        ImGui.SetNextItemWidth(250 * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(250 * Im.Style.GlobalScale);
         Im.Input.Text("##filter"u8, ref _fileFilter, "Filter paths..."u8);
         Im.Line.Same();
         ImGui.Checkbox("Show Game Paths", ref _showGamePaths);
@@ -434,7 +434,7 @@ public partial class ModEditWindow
             .Push(ImGuiStyleVar.ItemSpacing,     Vector2.Zero)
             .Push(ImGuiStyleVar.FrameBorderSize, ImGui.GetStyle().ChildBorderSize);
 
-        var width = ImGui.GetContentRegionAvail().X / 8;
+        var width = Im.ContentRegion.Available.X / 8;
 
         ImGui.SetNextItemWidth(width * 3);
         Im.Input.Text("##fileFilter"u8, ref _fileOverviewFilter1, "Filter file..."u8);

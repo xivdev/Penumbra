@@ -60,7 +60,7 @@ public class ModsTab(
             collectionHeader.Draw(false);
 
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(ImGui.GetContentRegionAvail().X, config.HideRedrawBar ? 0 : -ImGui.GetFrameHeight()),
+            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(Im.ContentRegion.Available.X, config.HideRedrawBar ? 0 : -Im.Style.FrameHeight),
                        true, ImGuiWindowFlags.HorizontalScrollbar))
             {
                 style.Pop();
@@ -94,7 +94,7 @@ public class ModsTab(
             return;
         }
 
-        var frameHeight = new Vector2(0, ImGui.GetFrameHeight());
+        var frameHeight = new Vector2(0, Im.Style.FrameHeight);
         var frameColor  = ImGuiColor.FrameBackground.Get().Color;
         using (var _ = ImRaii.Group())
         {
@@ -115,7 +115,7 @@ public class ModsTab(
         using var id       = ImRaii.PushId("Redraw");
         using var disabled = ImRaii.Disabled(clientState.LocalPlayer == null);
         Im.Line.Same();
-        var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 5 };
+        var buttonWidth = frameHeight with { X = Im.ContentRegion.Available.X / 5 };
         var tt = !objects[0].Valid
             ? "\nCan only be used when you are logged in and your character is available."
             : string.Empty;
@@ -139,7 +139,7 @@ public class ModsTab(
         tt = !IsIndoors()
             ? "\nCan currently only be used for indoor furniture."
             : string.Empty;
-        DrawButton(frameHeight with { X = ImGui.GetContentRegionAvail().X - 1 }, "Furniture", "furniture", tt);
+        DrawButton(frameHeight with { X = Im.ContentRegion.Available.X - 1 }, "Furniture", "furniture", tt);
         return;
 
         void DrawButton(Vector2 size, string label, string lower, string additionalTooltip)

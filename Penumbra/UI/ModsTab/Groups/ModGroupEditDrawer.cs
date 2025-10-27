@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
@@ -23,7 +24,7 @@ public sealed class ModGroupEditDrawer(
     Configuration config,
     FilenameService filenames,
     DescriptionEditPopup descriptionPopup,
-    ImcChecker imcChecker) : Luna.IUiService
+    ImcChecker imcChecker) : IUiService
 {
     private static ReadOnlySpan<byte> AcrossGroupsLabel
         => "##DragOptionAcross"u8;
@@ -99,7 +100,7 @@ public sealed class ModGroupEditDrawer(
     {
         var text = _currentGroupEdited == group ? _currentGroupName ?? group.Name : group.Name;
         ImGui.SetNextItemWidth(_groupNameWidth);
-        using var border = ImRaii.PushFrameBorder(UiHelpers.ScaleX2, Colors.RegexWarningBorder, !_isGroupNameValid);
+        using var border = ImRaii.PushFrameBorder(Im.Style.GlobalScale * 2, Colors.RegexWarningBorder, !_isGroupNameValid);
         if (ImUtf8.InputText("##GroupName"u8, ref text))
         {
             _currentGroupEdited = group;
@@ -140,7 +141,7 @@ public sealed class ModGroupEditDrawer(
             ? (_currentGroupPriority ?? group.Priority).Value
             : group.Priority.Value;
         ImGui.SetNextItemWidth(PriorityWidth);
-        if (ImGui.InputInt("##GroupPriority", ref priority, 0, 0))
+        if (ImGui.InputInt("##GroupPriority", ref priority))
         {
             _currentGroupEdited   = group;
             _currentGroupPriority = new ModPriority(priority);

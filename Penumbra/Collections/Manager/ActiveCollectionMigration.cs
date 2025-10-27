@@ -14,7 +14,7 @@ public static class ActiveCollectionMigration
         if (!ActiveCollections.Load(fileNames, out var jObject))
             return;
 
-        foreach (var (type, _, _) in CollectionTypeExtensions.Special.Where(t => t.Item2.StartsWith("Male ")))
+        foreach (var (type, _, _) in CollectionTypeExtensions.Special.Where(t => t.Item2.StartsWith("Male "u8)))
         {
             var oldName = type.ToString()[4..];
             var value   = jObject[oldName];

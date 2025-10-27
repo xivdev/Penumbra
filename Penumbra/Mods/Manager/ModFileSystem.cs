@@ -7,102 +7,73 @@ using FileSystemChangeType = OtterGui.Filesystem.FileSystemChangeType;
 
 namespace Penumbra.Mods.Manager;
 
-//public sealed class ModFileSystem2 : BaseFileSystem
-//{
-//    private readonly Configuration _config;
-//    private readonly SaveService   _saveService;
-//    public ModFileSystem2(FileSystemChanged @event, DataNodePathChange dataChangeEvent, Configuration config, SaveService saveService, IComparer<ReadOnlySpan<char>>? comparer = null)
-//        : base(@event, dataChangeEvent, comparer)
-//    {
-//        _config           = config;
-//        _saveService = saveService;
-//    }
-//
-//    public void Dispose()
-//    {
-//        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
-//        _communicator.ModDiscoveryFinished.Unsubscribe(Reload);
-//        _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
-//    }
-//
-//    // Save the filesystem on every filesystem change except full reloading.
-//    private void OnChange(FileSystemChangeType type, IPath _1, IPath? _2, IPath? _3)
-//    {
-//        if (type != FileSystemChangeType.Reload)
-//            _saveService.DelaySave(this);
-//    }
-//
-//    // Update sort order when defaulted mod names change.
-//    private void OnModDataChange(in ModDataChanged.Arguments arguments)
-//    {
-//        if (!arguments.Type.HasFlag(ModDataChangeType.Name) || arguments.OldName == null || !TryGetValue(arguments.Mod, out var leaf))
-//            return;
-//
-//        var old = Extensions.FixName(arguments.OldName);
-//        if (old == leaf.Name || Extensions.IsDuplicateName(leaf.Name, out var baseName, out _) && baseName == old)
-//            RenameWithDuplicates(leaf, arguments.Mod.Name);
-//    }
-//
-//    // Update the filesystem if a mod has been added or removed.
-//    // Save it, if the mod directory has been moved, since this will change the save format.
-//    private void OnModPathChange(in ModPathChanged.Arguments arguments)
-//    {
-//        switch (arguments.Type)
-//        {
-//            case ModPathChangeType.Added:
-//                var parent = Root;
-//                if (_config.DefaultImportFolder.Length != 0)
-//                    try
-//                    {
-//                        parent = FindOrCreateAllFolders(_config.DefaultImportFolder);
-//                    }
-//                    catch (Exception e)
-//                    {
-//                        Penumbra.Messager.NotificationMessage(e,
-//                            $"Could not move newly imported mod {arguments.Mod.Name} to default import folder {_config.DefaultImportFolder}.",
-//                            NotificationType.Warning);
-//                    }
-//
-//                CreateDuplicateLeaf(parent, arguments.Mod.Name, arguments.Mod);
-//                break;
-//            case ModPathChangeType.Deleted:
-//                if (arguments.Mod.Node is not null)
-//                    Delete(arguments.Mod.Node);
-//                break;
-//            case ModPathChangeType.Moved:
-//                _saveService.DelaySave(this);
-//                break;
-//            case ModPathChangeType.Reloaded:
-//                // Nothing
-//                break;
-//        }
-//    }
-//
-//    public struct ImportDate : ISortMode
-//    {
-//        public ReadOnlySpan<byte> Name
-//            => "Import Date (Older First)"u8;
-//
-//        public ReadOnlySpan<byte> Description
-//            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their import date."u8;
-//
-//        public IEnumerable<IFileSystemNode> GetChildren(IFileSystemFolder f)
-//            => f.GetSubFolders().Cast<IFileSystemNode>().Concat(f.GetLeaves().OfType<IFileSystemData<Mod>>().OrderBy(l => l.Value.ImportDate));
-//    }
-//
-//    public struct InverseImportDate : ISortMode
-//    {
-//        public ReadOnlySpan<byte> Name
-//            => "Import Date (Newer First)"u8;
-//
-//        public ReadOnlySpan<byte> Description
-//            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their inverse import date."u8;
-//
-//        public IEnumerable<IFileSystemNode> GetChildren(IFileSystemFolder f)
-//            => f.GetSubFolders().Cast<IFileSystemNode>().Concat(f.GetLeaves().OfType<IFileSystemData<Mod>>().OrderByDescending(l => l.Value.ImportDate));
-//    }
-//
-//}
+public sealed class ModFileSystem2 : BaseFileSystem, IDisposable, IRequiredService
+{
+    private readonly Configuration       _config;
+    private readonly CommunicatorService _communicator;
+    private readonly ModFileSystemSaver  _saver;
+
+    public ModFileSystem2(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage)
+        : base("ModFileSystem", log)
+    {
+        _config       = config;
+        _communicator = communicator;
+        _saver        = new ModFileSystemSaver(log, this, saveService, modStorage);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModFileSystem);
+        _communicator.ModDiscoveryFinished.Subscribe(_saver.Load, ModDiscoveryFinished.Priority.ModFileSystem);
+        _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystem);
+        _saver.Load();
+    }
+
+    public void Dispose()
+    {
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
+        _communicator.ModDiscoveryFinished.Unsubscribe(_saver.Load);
+        _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
+    }
+
+    // Update sort order when defaulted mod names change.
+    private void OnModDataChange(in ModDataChanged.Arguments arguments)
+    {
+        if (arguments.Type.HasFlag(ModDataChangeType.FileSystemFolder))
+            RenameAndMoveWithDuplicates(arguments.Mod.Node!, arguments.Mod.Path.GetIntendedPath(arguments.Mod.Name));
+        else if (arguments.Type.HasFlag(ModDataChangeType.Name) && arguments.Mod.Path.SortName is null
+              || arguments.Type.HasFlag(ModDataChangeType.FileSystemSortOrder))
+            RenameWithDuplicates(arguments.Mod.Node!, arguments.Mod.Path.GetIntendedName(arguments.Mod.Name));
+    }
+
+    // Update the filesystem if a mod has been added or removed.
+    // Save it, if the mod directory has been moved, since this will change the save format.
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
+    {
+        switch (arguments.Type)
+        {
+            case ModPathChangeType.Added:
+                var parent = Root;
+                if (_config.DefaultImportFolder.Length is not 0)
+                    try
+                    {
+                        parent = FindOrCreateAllFolders(_config.DefaultImportFolder);
+                    }
+                    catch (Exception e)
+                    {
+                        Penumbra.Messager.NotificationMessage(e,
+                            $"Could not move newly imported mod {arguments.Mod.Name} to default import folder {_config.DefaultImportFolder}.",
+                            NotificationType.Warning);
+                    }
+
+                CreateDuplicateDataNode(parent, arguments.Mod.Name, arguments.Mod);
+                break;
+            case ModPathChangeType.Deleted:
+                if (arguments.Mod.Node is not null)
+                    Delete(arguments.Mod.Node);
+                break;
+            case ModPathChangeType.Reloaded:
+                // Nothing
+                break;
+        }
+    }
+}
 
 public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, IService
 {
@@ -160,7 +131,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
     // Used on construction and on mod rediscoveries.
     private void Reload()
     {
-        var jObj = BackupService.GetJObjectForFile(_saveService.FileNames, _saveService.FileNames.FilesystemFile);
+        var jObj = BackupService.GetJObjectForFile(_saveService.FileNames, _saveService.FileNames.OldFilesystemFile);
         if (Load(jObj, _modManager, ModToIdentifier, ModToName))
             _saveService.ImmediateSave(this);
 
@@ -212,9 +183,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
                     Delete(leaf);
 
                 break;
-            case ModPathChangeType.Moved:
-                _saveService.DelaySave(this);
-                break;
+            case ModPathChangeType.Moved: _saveService.DelaySave(this); break;
             case ModPathChangeType.Reloaded:
                 // Nothing
                 break;
@@ -232,7 +201,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
     public static bool ModHasDefaultPath(Mod mod, string fullPath)
     {
         var regex = new Regex($@"^{Regex.Escape(ModToName(mod))}( \(\d+\))?$");
-        return regex.IsMatch(fullPath); 
+        return regex.IsMatch(fullPath);
     }
 
     private static (string, bool) SaveMod(Mod mod, string fullPath)
@@ -242,7 +211,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable, ISer
             : (ModToIdentifier(mod), true);
 
     public string ToFilePath(FilenameService fileNames)
-        => fileNames.FilesystemFile;
+        => fileNames.OldFilesystemFile;
 
     public void Save(StreamWriter writer)
         => SaveToFile(writer, SaveMod, true);

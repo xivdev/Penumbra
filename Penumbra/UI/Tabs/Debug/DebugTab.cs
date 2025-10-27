@@ -243,17 +243,17 @@ public class DebugTab : Window, ITab
                                 if (i < collection.Inheritance.DirectlyInheritsFrom.Count)
                                     ImUtf8.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, Im.Style.TextHeight));
                                 ImGui.TableNextColumn();
                                 if (i < collection.Inheritance.DirectlyInheritedBy.Count)
                                     ImUtf8.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, Im.Style.TextHeight));
                                 ImGui.TableNextColumn();
                                 if (i < collection.Inheritance.FlatHierarchy.Count)
                                     ImUtf8.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetTextLineHeight()));
+                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, Im.Style.TextHeight));
                             }
                         }
                     }
@@ -500,7 +500,7 @@ public class DebugTab : Window, ITab
         using (var start = Im.Tree.Node("Startup Performance"u8, TreeNodeFlags.DefaultOpen))
         {
             if (start)
-                ImGui.NewLine();
+                Im.Line.New();
         }
     }
 
@@ -820,7 +820,7 @@ public class DebugTab : Window, ITab
             return;
 
         using var list = ImUtf8.ListBox("##ChangedItemList"u8,
-            new Vector2(ImGui.GetContentRegionAvail().X, 8 * ImGui.GetTextLineHeightWithSpacing()));
+            new Vector2(Im.ContentRegion.Available.X, 8 * Im.Style.TextHeightWithSpacing));
         if (!list)
             return;
 
@@ -865,11 +865,11 @@ public class DebugTab : Window, ITab
         ImGui.InputText("File Name",  ref _emoteSearchFile, 256);
         ImGui.InputText("Emote Name", ref _emoteSearchName, 256);
         using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
-            new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
+            new Vector2(-1, 12 * Im.Style.TextHeightWithSpacing));
         if (!table)
             return;
 
-        var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
+        var skips = ImGuiClip.GetNecessarySkips(Im.Style.TextHeightWithSpacing);
         var dummy = ImGuiClip.FilteredClippedDraw(_emotes, skips,
             p => p.Key.Contains(_emoteSearchFile, StringComparison.OrdinalIgnoreCase)
              && (_emoteSearchName.Length == 0
@@ -881,7 +881,7 @@ public class DebugTab : Window, ITab
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(string.Join(", ", p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
             });
-        ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
+        ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
     }
 
     private string       _tmbKeyFilter   = string.Empty;
@@ -896,11 +896,11 @@ public class DebugTab : Window, ITab
         if (ImGui.InputText("Key", ref _tmbKeyFilter, 256))
             _tmbKeyFilterU8 = CiByteString.FromString(_tmbKeyFilter, out var r, MetaDataComputation.All) ? r : CiByteString.Empty;
         using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
-            new Vector2(-1, 12 * ImGui.GetTextLineHeightWithSpacing()));
+            new Vector2(-1, 12 * Im.Style.TextHeightWithSpacing));
         if (!table)
             return;
 
-        var skips = ImGuiClip.GetNecessarySkips(ImGui.GetTextLineHeightWithSpacing());
+        var skips = ImGuiClip.GetNecessarySkips(Im.Style.TextHeightWithSpacing);
         var dummy = ImGuiClip.FilteredClippedDraw(_schedulerService.ActionTmbs.OrderBy(r => r.Value), skips,
             kvp => kvp.Key.Contains(_tmbKeyFilterU8),
             p =>
@@ -908,7 +908,7 @@ public class DebugTab : Window, ITab
                 ImUtf8.DrawTableColumn($"{p.Value}");
                 ImUtf8.DrawTableColumn(p.Key.Span);
             });
-        ImGuiClip.DrawEndDummy(dummy, ImGui.GetTextLineHeightWithSpacing());
+        ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
     }
 
     private void DrawStainTemplates()
@@ -949,7 +949,7 @@ public class DebugTab : Window, ITab
                 {
                     var color = list[i];
                     ImGui.TableNextColumn();
-                    var frame = new Vector2(ImGui.GetTextLineHeight());
+                    var frame = new Vector2(Im.Style.TextHeight);
                     ImGui.ColorButton("###color", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
                     Im.Line.Same();
                     ImGui.TextUnformatted($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");

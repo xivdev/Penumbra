@@ -201,8 +201,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         {
             var radius    = 100 * ImUtf8.GlobalScale;
             var thickness = (int)(20 * ImUtf8.GlobalScale);
-            var offsetX   = ImGui.GetContentRegionAvail().X / 2 - radius;
-            var offsetY   = ImGui.GetContentRegionAvail().Y / 2 - radius;
+            var offsetX   = Im.ContentRegion.Available.X / 2 - radius;
+            var offsetY   = Im.ContentRegion.Available.Y / 2 - radius;
             ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(offsetX, offsetY));
             ImEx.Spinner("##spinner"u8, radius, thickness, ImGuiColor.Text.Get());
             return;
@@ -212,7 +212,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (!tabBar)
             return;
 
-        _iconSize = new Vector2(ImGui.GetFrameHeight());
+        _iconSize = new Vector2(Im.Style.FrameHeight);
         DrawFileTab();
         DrawMetaTab();
         DrawSwapTab();
@@ -319,7 +319,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (!tab)
             return;
 
-        ImGui.NewLine();
+        Im.Line.New();
         if (ImGui.Button("Remove Missing Files from Mod"))
             _editor.FileEditor.RemoveMissingPaths(Mod!, _editor.Option!);
 
@@ -369,7 +369,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (_editor.ModNormalizer.Running)
         {
             ImGui.ProgressBar((float)_editor.ModNormalizer.Step / _editor.ModNormalizer.TotalSteps,
-                new Vector2(300 * UiHelpers.Scale, ImGui.GetFrameHeight()),
+                new Vector2(300 * Im.Style.GlobalScale, Im.Style.FrameHeight),
                 $"{_editor.ModNormalizer.Step} / {_editor.ModNormalizer.TotalSteps}");
         }
         else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
@@ -383,7 +383,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         if (_editor.Duplicates.Duplicates.Count == 0)
         {
-            ImGui.NewLine();
+            Im.Line.New();
             ImGui.TextUnformatted("No duplicates found.");
             return;
         }
@@ -446,7 +446,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private bool DrawOptionSelectHeader()
     {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
-        var       width = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
+        var       width = new Vector2(Im.ContentRegion.Available.X / 3, 0);
         var       ret   = false;
         if (ImUtf8.ButtonEx("Default Option"u8, "Switch to the default option for the mod.\nThis resets unsaved changes."u8, width,
                 _editor.Option is DefaultSubMod))
@@ -486,7 +486,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         var setsEqual = !_editor.SwapEditor.Changes;
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
-        ImGui.NewLine();
+        Im.Line.New();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Apply(_editor.Option!);
 
@@ -512,8 +512,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             return;
 
         var idx      = 0;
-        var iconSize = ImGui.GetFrameHeight() * Vector2.One;
-        var pathSize = ImGui.GetContentRegionAvail().X / 2 - iconSize.X;
+        var iconSize = Im.Style.FrameHeight * Vector2.One;
+        var pathSize = Im.ContentRegion.Available.X / 2 - iconSize.X;
         ImGui.TableSetupColumn("button", ImGuiTableColumnFlags.WidthFixed, iconSize.X);
         ImGui.TableSetupColumn("source", ImGuiTableColumnFlags.WidthFixed, pathSize);
         ImGui.TableSetupColumn("value",  ImGuiTableColumnFlags.WidthFixed, pathSize);

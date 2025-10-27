@@ -169,7 +169,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
-        public const int   CurrentVersion      = 9;
+        public const int   CurrentVersion      = 10;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;

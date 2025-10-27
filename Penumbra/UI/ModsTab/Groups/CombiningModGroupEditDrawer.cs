@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -59,8 +60,8 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
                 new Vector2(400 * ImUtf8.GlobalScale, 0)))
             ImUtf8.OpenPopup("DataContainerNames"u8);
 
-        var sizeX = group.OptionData.Count * (ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetFrameHeight()) + 300 * ImUtf8.GlobalScale;
-        ImGui.SetNextWindowSize(new Vector2(sizeX, ImGui.GetFrameHeightWithSpacing() * Math.Min(16, group.Data.Count) + 200 * ImUtf8.GlobalScale));
+        var sizeX = group.OptionData.Count * (ImGui.GetStyle().ItemInnerSpacing.X + Im.Style.FrameHeight) + 300 * ImUtf8.GlobalScale;
+        ImGui.SetNextWindowSize(new Vector2(sizeX, Im.Style.FrameHeightWithSpacing * Math.Min(16, group.Data.Count) + 200 * ImUtf8.GlobalScale));
         using var popup = ImUtf8.Popup("DataContainerNames"u8);
         if (!popup)
             return;
@@ -71,10 +72,10 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
             ImUtf8.SameLineInner();
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
         ImGui.Separator();
-        using var child = ImUtf8.Child("##Child"u8, ImGui.GetContentRegionAvail());
-        ImGuiClip.ClippedDraw(group.Data, DrawRow, ImGui.GetFrameHeightWithSpacing());
+        using var child = ImUtf8.Child("##Child"u8, Im.ContentRegion.Available);
+        ImGuiClip.ClippedDraw(group.Data, DrawRow, Im.Style.FrameHeightWithSpacing);
     }
 
     private void DrawRow(CombinedDataContainer container, int index)

@@ -7,25 +7,27 @@ using Penumbra.Services;
 namespace Penumbra.Mods.Manager;
 
 [Flags]
-public enum ModDataChangeType : ushort
+public enum ModDataChangeType : uint
 {
-    None                  = 0x0000,
-    Name                  = 0x0001,
-    Author                = 0x0002,
-    Description           = 0x0004,
-    Version               = 0x0008,
-    Website               = 0x0010,
-    Deletion              = 0x0020,
-    Migration             = 0x0040,
-    ModTags               = 0x0080,
-    ImportDate            = 0x0100,
-    Favorite              = 0x0200,
-    LocalTags             = 0x0400,
-    Note                  = 0x0800,
-    Image                 = 0x1000,
-    DefaultChangedItems   = 0x2000,
-    PreferredChangedItems = 0x4000,
-    RequiredFeatures      = 0x8000,
+    None                  = 0x000000,
+    Name                  = 0x000001,
+    Author                = 0x000002,
+    Description           = 0x000004,
+    Version               = 0x000008,
+    Website               = 0x000010,
+    Deletion              = 0x000020,
+    Migration             = 0x000040,
+    ModTags               = 0x000080,
+    ImportDate            = 0x000100,
+    Favorite              = 0x000200,
+    LocalTags             = 0x000400,
+    Note                  = 0x000800,
+    Image                 = 0x001000,
+    DefaultChangedItems   = 0x002000,
+    PreferredChangedItems = 0x004000,
+    RequiredFeatures      = 0x008000,
+    FileSystemFolder      = 0x010000,
+    FileSystemSortOrder = 0x020000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData) : Luna.IService

@@ -1,6 +1,7 @@
 using Dalamud.Interface.Components;
 using Dalamud.Plugin.Services;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -95,17 +96,17 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         DrawMaterialLivePreviewRebind(disabled);
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
         var ret = DrawBackFaceAndTransparency(disabled);
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
         ret |= DrawShaderSection(disabled);
 
         ret |= DrawTextureSection(disabled);
         ret |= DrawColorTableSection(disabled);
         ret |= DrawConstantsSection(disabled);
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
         DrawOtherMaterialDetails(disabled);
 
         return !disabled && ret;
@@ -138,7 +139,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
             ImGuiComponents.HelpMarker("Enabling transparency for shader package characterstockings.shpk will crash the game.");
         }
 
-        ImGui.SameLine(200 * UiHelpers.Scale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+        ImGui.SameLine(200 * Im.Style.GlobalScale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
         tmp = shaderFlags.HideBackfaces;
         if (ImUtf8.Checkbox("Hide Backfaces"u8, ref tmp))
         {
@@ -149,7 +150,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         if (_shpkLoading)
         {
-            ImGui.SameLine(400 * UiHelpers.Scale + 2 * ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+            ImGui.SameLine(400 * Im.Style.GlobalScale + 2 * ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
 
             ImUtf8.Text("Loading shader (.shpk) file. Some functionality will only be available after this is done."u8,
                 ImGuiUtil.HalfBlendText(0x808000u)); // Half cyan

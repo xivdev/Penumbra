@@ -1,7 +1,7 @@
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
-using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Luna;
 using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
@@ -211,12 +211,12 @@ public class CommandHandler : IDisposable, IApiService
         if (value)
         {
             Print("Penumbra UI locked in place.");
-            _configWindow.Flags |= ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize;
+            _configWindow.Flags |= WindowFlags.NoMove | WindowFlags.NoResize;
         }
         else
         {
             Print("Penumbra UI unlocked.");
-            _configWindow.Flags &= ~(ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize);
+            _configWindow.Flags &= ~(WindowFlags.NoMove | WindowFlags.NoResize);
         }
 
         _config.Ephemeral.FixMainWindow = value;

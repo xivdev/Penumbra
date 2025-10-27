@@ -103,7 +103,7 @@ public partial class ModEditWindow
         if (!ImGui.CollapsingHeader("Import / Export"))
             return;
 
-        var childSize = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
+        var childSize = new Vector2((Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
 
         DrawImport(tab, childSize, disabled);
         Im.Line.Same();
@@ -196,11 +196,11 @@ public partial class ModEditWindow
         if (tab.IoExceptions.Count == 0)
             return;
 
-        var size = new Vector2(ImGui.GetContentRegionAvail().X, 0);
+        var size = new Vector2(Im.ContentRegion.Available.X, 0);
         using var frame = ImRaii.FramedGroup("Exceptions", size, headerPreIcon: FontAwesomeIcon.TimesCircle,
             borderColor: Colors.RegexWarningBorder);
 
-        var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
+        var spaceAvail = Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X - 100;
         foreach (var (index, exception) in tab.IoExceptions.Index())
         {
             using var id       = ImRaii.PushId(index);
@@ -223,10 +223,10 @@ public partial class ModEditWindow
         if (tab.IoWarnings.Count == 0)
             return;
 
-        var       size  = new Vector2(ImGui.GetContentRegionAvail().X, 0);
+        var       size  = new Vector2(Im.ContentRegion.Available.X, 0);
         using var frame = ImRaii.FramedGroup("Warnings", size, headerPreIcon: FontAwesomeIcon.ExclamationCircle, borderColor: 0xFF40FFFF);
 
-        var spaceAvail = ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - 100;
+        var spaceAvail = Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X - 100;
         foreach (var (index, warning) in tab.IoWarnings.Index())
         {
             using var id       = ImRaii.PushId(index);
@@ -271,7 +271,7 @@ public partial class ModEditWindow
         const string label       = "Game Path";
         var          preview     = tab.GamePaths![tab.GamePathIndex].ToString();
         var          labelWidth  = ImGui.CalcTextSize(label).X + ImGui.GetStyle().ItemInnerSpacing.X;
-        var          buttonWidth = ImGui.GetContentRegionAvail().X - labelWidth - ImGui.GetStyle().ItemSpacing.X;
+        var          buttonWidth = Im.ContentRegion.Available.X - labelWidth - ImGui.GetStyle().ItemSpacing.X;
         if (tab.GamePaths!.Count == 1)
         {
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
@@ -297,7 +297,7 @@ public partial class ModEditWindow
                 }
         }
 
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (Im.Item.RightClicked())
             ImGui.SetClipboardText(preview);
         ImGuiUtil.HoverTooltip("Right-Click to copy to clipboard.", ImGuiHoveredFlags.AllowWhenDisabled);
     }
@@ -331,7 +331,7 @@ public partial class ModEditWindow
         {
             var text = $"{invalidMaterialCount} invalid material{(invalidMaterialCount > 1 ? "s" : "")}";
             var size = ImGui.CalcTextSize(text).X;
-            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+            ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
             ImGuiUtil.TextColored(0xFF0000FF, text);
             ImGui.SetCursorPos(newPos);
         }
@@ -346,7 +346,7 @@ public partial class ModEditWindow
         var ret       = false;
         var materials = tab.Mdl.Materials;
 
-        ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed,   80 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed,   80 * Im.Style.GlobalScale);
         ImGui.TableSetupColumn("path",  ImGuiTableColumnFlags.WidthStretch, 1);
         if (!disabled)
         {
@@ -468,7 +468,7 @@ public partial class ModEditWindow
         if (!table)
             return false;
 
-        ImGui.TableSetupColumn("name",  ImGuiTableColumnFlags.WidthFixed,   100 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("name",  ImGuiTableColumnFlags.WidthFixed,   100 * Im.Style.GlobalScale);
         ImGui.TableSetupColumn("field", ImGuiTableColumnFlags.WidthStretch, 1);
 
         var file = tab.Mdl;

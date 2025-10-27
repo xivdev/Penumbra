@@ -100,7 +100,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
     {
         UpdateRecords();
 
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + ImGui.GetTextLineHeightWithSpacing() / 2);
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + Im.Style.TextHeightWithSpacing / 2);
         var isEnabled = _ephemeral.EnableResourceWatcher;
         if (Im.Checkbox("Enable"u8, ref isEnabled))
         {
@@ -182,7 +182,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
         Im.Item.SetNextWidthScaled(80);
         Im.Input.Scalar("Max. Entries"u8, ref _newMaxEntries);
         var change = ImGui.IsItemDeactivatedAfterEdit();
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)
+        if (Im.Item.RightClicked() && ImGui.GetIO().KeyCtrl)
         {
             change         = true;
             _newMaxEntries = DefaultMaxEntries;

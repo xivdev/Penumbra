@@ -82,9 +82,9 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
 
     private void DrawHeaderLine()
     {
-        var       withSpacing = ImGui.GetFrameHeightWithSpacing();
+        var       withSpacing = Im.Style.FrameHeightWithSpacing;
         using var style       = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0).Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        var       buttonSize  = new Vector2((ImGui.GetContentRegionAvail().X - withSpacing) / 4f, ImGui.GetFrameHeight());
+        var       buttonSize  = new Vector2((Im.ContentRegion.Available.X - withSpacing) / 4f, Im.Style.FrameHeight);
 
         using var _                = ImRaii.Group();
         var       tabSelectedColor = Im.Style[ImGuiColor.TabSelected];
@@ -122,7 +122,7 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
     private void DrawPanel()
     {
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        using var child = ImRaii.Child("##CollectionSettings", new Vector2(ImGui.GetContentRegionAvail().X, 0), true);
+        using var child = ImRaii.Child("##CollectionSettings", new Vector2(Im.ContentRegion.Available.X, 0), true);
         if (!child)
             return;
 

@@ -1,6 +1,4 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Text;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Classes;
@@ -12,18 +10,18 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     public void Draw()
     {
-        using var header = ImUtf8.CollapsingHeaderId("Migration"u8);
+        using var header = Im.Tree.HeaderId("Migration"u8);
         if (!header)
             return;
 
         _buttonSize = UiHelpers.InputTextWidth;
         DrawSettings();
-        ImGui.Separator();
+        Im.Separator();
         DrawMdlMigration();
         DrawMdlRestore();
         DrawMdlCleanup();
         // TODO enable when this works
-        ImGui.Separator();
+        Im.Separator();
         //DrawMtrlMigration();
         DrawMtrlRestore();
         DrawMtrlCleanup();
@@ -32,26 +30,26 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     private void DrawSettings()
     {
         var value = config.MigrateImportedModelsToV6;
-        if (ImUtf8.Checkbox("Automatically Migrate V5 Models to V6 on Import"u8, ref value))
+        if (Im.Checkbox("Automatically Migrate V5 Models to V6 on Import"u8, ref value))
         {
             config.MigrateImportedModelsToV6 = value;
             config.Save();
         }
 
-        ImUtf8.HoverTooltip("This increments the version marker and restructures the bone table to the new version."u8);
+        Im.Tooltip.OnHover("This increments the version marker and restructures the bone table to the new version."u8);
 
         // TODO enable when this works
         //value = config.MigrateImportedMaterialsToLegacy;
-        //if (ImUtf8.Checkbox("Automatically Migrate Materials to Dawntrail on Import"u8, ref value))
+        //if (Im.Checkbox("Automatically Migrate Materials to Dawntrail on Import"u8, ref value))
         //{
         //    config.MigrateImportedMaterialsToLegacy = value;
         //    config.Save();
         //}
         //
-        //ImUtf8.HoverTooltip(
+        //Im.Tooltip.OnHover(
         //    "This currently only increases the color-table size and switches the shader from 'character.shpk' to 'characterlegacy.shpk', if the former is used."u8);
 
-        ImUtf8.Checkbox("Create Backups During Manual Migration", ref _createBackups);
+        Im.Checkbox("Create Backups During Manual Migration"u8, ref _createBackups);
     }
 
     private static ReadOnlySpan<byte> MigrationTooltip
@@ -59,10 +57,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawMdlMigration()
     {
-        if (ImUtf8.ButtonEx("Migrate Model Files From V5 to V6"u8, "\0"u8, _buttonSize, migrationManager.IsRunning))
+        if (ImEx.Button("Migrate Model Files From V5 to V6"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
             migrationManager.MigrateMdlDirectory(config.ModDirectory, _createBackups);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MdlMigration, "Cancel the migration. This does not revert already finished migrations."u8);
         DrawSpinner(migrationManager is { CurrentTask: MigrationManager.TaskType.MdlMigration, IsRunning: true });
         DrawData(migrationManager.MdlMigration, "No model files found."u8, "migrated"u8);
@@ -70,10 +68,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawMtrlMigration()
     {
-        if (ImUtf8.ButtonEx("Migrate Material Files to Dawntrail"u8, "\0"u8, _buttonSize, migrationManager.IsRunning))
+        if (ImEx.Button("Migrate Material Files to Dawntrail"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
             migrationManager.MigrateMtrlDirectory(config.ModDirectory, _createBackups);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MtrlMigration, MigrationTooltip);
         DrawSpinner(migrationManager is { CurrentTask: MigrationManager.TaskType.MtrlMigration, IsRunning: true });
         DrawData(migrationManager.MtrlMigration, "No material files found."u8, "migrated"u8);
@@ -85,10 +83,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawMdlCleanup()
     {
-        if (ImUtf8.ButtonEx("Delete Existing Model Backup Files"u8, "\0"u8, _buttonSize, migrationManager.IsRunning))
+        if (ImEx.Button("Delete Existing Model Backup Files"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
             migrationManager.CleanMdlBackups(config.ModDirectory);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MdlCleanup, CleanupTooltip);
         DrawSpinner(migrationManager is { CurrentTask: MigrationManager.TaskType.MdlCleanup, IsRunning: true });
         DrawData(migrationManager.MdlCleanup, "No model backup files found."u8, "deleted"u8);
@@ -96,10 +94,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawMtrlCleanup()
     {
-        if (ImUtf8.ButtonEx("Delete Existing Material Backup Files"u8, "\0"u8, _buttonSize, migrationManager.IsRunning))
+        if (ImEx.Button("Delete Existing Material Backup Files"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
             migrationManager.CleanMtrlBackups(config.ModDirectory);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MtrlCleanup, CleanupTooltip);
         DrawSpinner(migrationManager is { CurrentTask: MigrationManager.TaskType.MtrlCleanup, IsRunning: true });
         DrawData(migrationManager.MtrlCleanup, "No material backup files found."u8, "deleted"u8);
@@ -110,10 +108,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawMdlRestore()
     {
-        if (ImUtf8.ButtonEx("Restore Model Backups"u8, "\0"u8, _buttonSize, migrationManager.IsRunning))
+        if (ImEx.Button("Restore Model Backups"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
             migrationManager.RestoreMdlBackups(config.ModDirectory);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MdlRestoration, RestorationTooltip);
         DrawSpinner(migrationManager is { CurrentTask: MigrationManager.TaskType.MdlRestoration, IsRunning: true });
         DrawData(migrationManager.MdlRestoration, "No model backup files found."u8, "restored"u8);
@@ -121,10 +119,10 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
 
     private void DrawMtrlRestore()
     {
-        if (ImUtf8.ButtonEx("Restore Material Backups"u8, "\0"u8, _buttonSize, migrationManager.IsRunning))
+        if (ImEx.Button("Restore Material Backups"u8, _buttonSize, StringU8.Empty, migrationManager.IsRunning))
             migrationManager.RestoreMtrlBackups(config.ModDirectory);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawCancelButton(MigrationManager.TaskType.MtrlRestoration, RestorationTooltip);
         DrawSpinner(migrationManager is { CurrentTask: MigrationManager.TaskType.MtrlRestoration, IsRunning: true });
         DrawData(migrationManager.MtrlRestoration, "No material backup files found."u8, "restored"u8);
@@ -136,13 +134,13 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
             return;
 
         Im.Line.Same();
-        ImEx.Spinner("Spinner"u8, ImGui.GetTextLineHeight() / 2, 2, ImGuiColor.Text.Get());
+        ImEx.Spinner("Spinner"u8, Im.Style.TextHeight / 2, 2, ImGuiColor.Text.Get());
     }
 
     private void DrawCancelButton(MigrationManager.TaskType task, ReadOnlySpan<byte> tooltip)
     {
-        using var _ = ImUtf8.PushId((int)task);
-        if (ImUtf8.ButtonEx("Cancel"u8, tooltip, disabled: !migrationManager.IsRunning || task != migrationManager.CurrentTask))
+        using var _ = Im.Id.Push((int)task);
+        if (ImEx.Button("Cancel"u8, Vector2.Zero, tooltip, !migrationManager.IsRunning || task != migrationManager.CurrentTask))
             migrationManager.Cancel();
     }
 
@@ -150,14 +148,14 @@ public class MigrationSectionDrawer(MigrationManager migrationManager, Configura
     {
         if (!data.HasData)
         {
-            ImUtf8.IconDummy();
+            Im.FrameDummy();
             return;
         }
 
         var total = data.Total;
-        if (total == 0)
-            ImUtf8.TextFrameAligned(empty);
+        if (total is 0)
+            ImEx.TextFrameAligned(empty);
         else
-            ImUtf8.TextFrameAligned($"{data.Changed} files {action}, {data.Failed} files failed, {total} files found.");
+            ImEx.TextFrameAligned($"{data.Changed} files {action}, {data.Failed} files failed, {total} files found.");
     }
 }

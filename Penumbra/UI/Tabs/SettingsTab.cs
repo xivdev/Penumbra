@@ -185,7 +185,7 @@ public class SettingsTab : ITab, IUiService
         if (!child)
             return;
 
-        using var c2 = ImRaii.Child("a", new Vector2(300, 5 * ImGui.GetTextLineHeightWithSpacing()), true,
+        using var c2 = ImRaii.Child("a", new Vector2(300, 5 * Im.Style.TextHeightWithSpacing), true,
             ImGuiWindowFlags.AlwaysVerticalScrollbar);
         TreeLine.Draw(List, 0xFFFFFFFF);
 
@@ -193,11 +193,11 @@ public class SettingsTab : ITab, IUiService
         //EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
         //    v => _config.Ephemeral.FixMainWindow = v);
         //
-        //ImGui.NewLine();
+        //Im.Line.New();
         //DrawRootFolder();
         //DrawDirectoryButtons();
-        //ImGui.NewLine();
-        //ImGui.NewLine();
+        //Im.Line.New();
+        //Im.Line.New();
         //
         //DrawGeneralSettings();
         //_migrationDrawer.Draw();
@@ -350,7 +350,7 @@ public class SettingsTab : ITab, IUiService
             }
 
             selected = ImGui.IsItemActive();
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3, 0));
+            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(Im.Style.GlobalScale * 3, 0));
             Im.Line.Same();
             DrawDirectoryPickerButton();
             style.Pop();
@@ -372,7 +372,7 @@ public class SettingsTab : ITab, IUiService
         _tutorial.OpenTutorial(BasicTutorialSteps.ModDirectory);
         Im.Line.Same();
         var pos = ImGui.GetCursorPosX();
-        ImGui.NewLine();
+        Im.Line.New();
 
         if (_config.ModDirectory != _newModDirectory
          && _newModDirectory.Length != 0
@@ -433,7 +433,7 @@ public class SettingsTab : ITab, IUiService
         UiHelpers.DefaultLineSpace();
 
         DrawModEditorSettings();
-        ImGui.NewLine();
+        Im.Line.New();
     }
 
     private int _singleGroupRadioMax = int.MaxValue;
@@ -739,7 +739,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawDefaultModImportPath()
     {
         var       tmp     = _config.DefaultModImportPath;
-        var       spacing = new Vector2(UiHelpers.ScaleX3);
+        var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
 
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
@@ -780,7 +780,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawDefaultModExportPath()
     {
         var       tmp     = _config.ExportDirectory;
-        var       spacing = new Vector2(UiHelpers.ScaleX3);
+        var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
         if (ImGui.InputText("##defaultModExport", ref tmp, 256))
@@ -817,7 +817,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawFileWatcherPath()
     {
         var       tmp     = _tempWatchDirectory ?? _config.WatchDirectory;
-        var       spacing = new Vector2(UiHelpers.ScaleX3);
+        var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
         if (ImGui.InputText("##fileWatchPath", ref tmp, 256))
@@ -942,7 +942,7 @@ public class SettingsTab : ITab, IUiService
                 _config.Save();
         }
 
-        ImGui.NewLine();
+        Im.Line.New();
     }
 
     #region Advanced Settings
@@ -980,7 +980,7 @@ public class SettingsTab : ITab, IUiService
         DrawReloadFontsButton();
         ImGui.Separator();
         DrawCleanupButtons();
-        ImGui.NewLine();
+        Im.Line.New();
     }
 
     private void DrawCrashHandler()
@@ -1027,8 +1027,8 @@ public class SettingsTab : ITab, IUiService
         if (_compactor.MassCompactRunning)
         {
             ImGui.ProgressBar((float)_compactor.CurrentIndex / _compactor.TotalFiles,
-                new Vector2(ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X,
-                    ImGui.GetFrameHeight()),
+                new Vector2(Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X,
+                    Im.Style.FrameHeight),
                 _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
             Im.Line.Same();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Ban.ToIconString(), UiHelpers.IconButtonSize, "Cancel the mass action.",
@@ -1082,7 +1082,7 @@ public class SettingsTab : ITab, IUiService
         if (warning.Length > 0)
             ImGuiUtil.DrawTextButton(warning, UiHelpers.InputTextWidth, Colors.PressEnterWarningBg);
         else
-            ImGui.NewLine();
+            Im.Line.New();
 
         if (!edited)
             return;
@@ -1095,7 +1095,7 @@ public class SettingsTab : ITab, IUiService
 
     private void DrawHdrRenderTargets()
     {
-        ImGui.SetNextItemWidth(ImUtf8.CalcTextSize("M"u8).X * 5.0f + ImGui.GetFrameHeight());
+        ImGui.SetNextItemWidth(ImUtf8.CalcTextSize("M"u8).X * 5.0f + Im.Style.FrameHeight);
         using (var combo = ImUtf8.Combo("##hdrRenderTarget"u8, _config.HdrRenderTargets ? "HDR"u8 : "SDR"u8))
         {
             if (combo)
@@ -1176,7 +1176,7 @@ public class SettingsTab : ITab, IUiService
         var enabled = _config.DeleteModModifier.IsActive();
         if (_cleanupService.Progress is not 0.0 and not 1.0)
         {
-            ImUtf8.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * ImUtf8.GlobalScale, ImGui.GetFrameHeight()),
+            ImUtf8.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * ImUtf8.GlobalScale, Im.Style.FrameHeight),
                 $"{_cleanupService.Progress * 100}%");
             Im.Line.Same();
             if (ImUtf8.Button("Cancel##FileCleanup"u8))
@@ -1184,7 +1184,7 @@ public class SettingsTab : ITab, IUiService
         }
         else
         {
-            ImGui.NewLine();
+            Im.Line.New();
         }
 
         if (ImUtf8.ButtonEx("Clear Unused Local Mod Data Files"u8,
@@ -1240,27 +1240,27 @@ public class SettingsTab : ITab, IUiService
         if (ImGui.GetScrollMaxY() > 0)
             xPos -= ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().FramePadding.X;
 
-        ImGui.SetCursorPos(new Vector2(xPos, ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos, Im.Style.FrameHeightWithSpacing));
         UiHelpers.DrawSupportButton(_penumbra);
 
         ImGui.SetCursorPos(new Vector2(xPos, 0));
         SupportButton.Discord(Penumbra.Messager, width);
 
-        ImGui.SetCursorPos(new Vector2(xPos, 2 * ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos, 2 * Im.Style.FrameHeightWithSpacing));
         SupportButton.ReniGuide(Penumbra.Messager, width);
 
-        ImGui.SetCursorPos(new Vector2(xPos, 3 * ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos, 3 * Im.Style.FrameHeightWithSpacing));
         if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))
         {
             _config.Ephemeral.TutorialStep = 0;
             _config.Ephemeral.Save();
         }
 
-        ImGui.SetCursorPos(new Vector2(xPos, 4 * ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos, 4 * Im.Style.FrameHeightWithSpacing));
         if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
 
-        ImGui.SetCursorPos(new Vector2(xPos,                            5 * ImGui.GetFrameHeightWithSpacing()));
+        ImGui.SetCursorPos(new Vector2(xPos,                            5 * Im.Style.FrameHeightWithSpacing));
         SupportButton.KoFiPatreon(Penumbra.Messager, new Vector2(width, 0));
     }
 

@@ -69,7 +69,7 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
 
 
     // Local Data
-    public string                FullPath              { get; set; }          = string.Empty;
+    public DataPath              Path                  { get; }               = new();
     public long                  ImportDate            { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
     public IReadOnlyList<string> LocalTags             { get; internal set; } = [];
     public string                Note                  { get; internal set; } = string.Empty;
@@ -137,9 +137,12 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
     public string LowerChangedItemsString { get; internal set; } = string.Empty;
     public string AllTagsLower            { get; internal set; } = string.Empty;
 
-    public int                   TotalFileCount         { get; internal set; }
-    public int                   TotalSwapCount         { get; internal set; }
-    public int                   TotalManipulations     { get; internal set; }
-    public ushort                LastChangedItemsUpdate { get; internal set; }
-    public bool                  HasOptions             { get; internal set; }
+    public int    TotalFileCount         { get; internal set; }
+    public int    TotalSwapCount         { get; internal set; }
+    public int    TotalManipulations     { get; internal set; }
+    public ushort LastChangedItemsUpdate { get; internal set; }
+    public bool   HasOptions             { get; internal set; }
+
+    string IFileSystemValue.DisplayName
+        => Name;
 }

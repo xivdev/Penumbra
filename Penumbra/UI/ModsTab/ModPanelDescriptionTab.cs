@@ -1,5 +1,5 @@
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Widgets;
@@ -26,11 +26,11 @@ public class ModPanelDescriptionTab(
         if (!child)
             return;
 
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
+        ImGui.Dummy(ImEx.ScaledVector(2));
 
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
+        ImGui.Dummy(ImEx.ScaledVector(2));
         var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
-            ? (true, ImGui.GetFrameHeight() + ImGui.GetStyle().WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0))
+            ? (true, Im.Style.FrameHeight + ImGui.GetStyle().WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0))
             : (false, 0);
         var tagIdx = _localTags.Draw("Local Tags: ",
             "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
@@ -49,7 +49,7 @@ public class ModPanelDescriptionTab(
                 selector.Selected!.ModTags, out _, false,
                 ImGui.CalcTextSize("Local ").X - ImGui.CalcTextSize("Mod ").X);
 
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
+        ImGui.Dummy(ImEx.ScaledVector(2));
         ImGui.Separator();
 
         ImGuiUtil.TextWrapped(selector.Selected!.Description);

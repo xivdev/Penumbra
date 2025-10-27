@@ -27,7 +27,7 @@ public partial class ModEditWindow
 
         var setsEqual = !_editor.MetaEditor.Changes;
         var tt        = setsEqual ? "No changes staged."u8 : "Apply the currently staged changes to the option."u8;
-        ImGui.NewLine();
+        Im.Line.New();
         if (ImUtf8.ButtonEx("Apply Changes"u8, tt, Vector2.Zero, setsEqual))
             _editor.MetaEditor.Apply(_editor.Option!);
 
@@ -131,7 +131,7 @@ public partial class ModEditWindow
             return;
 
         drawer.Draw();
-        ImGui.NewLine();
+        Im.Line.New();
     }
 
     private void DrawOtherOptionData(MetaManipulationType type, float oldPos, Vector2 newPos)
@@ -142,7 +142,7 @@ public partial class ModEditWindow
 
         var text = $"{otherOptionData.TotalCount} Edits in other Options";
         var size = ImGui.CalcTextSize(text).X;
-        ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+        ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
         Im.Text(text, ColorId.RedundantAssignment.Value().FullAlpha());
         if (ImGui.IsItemHovered())
         {

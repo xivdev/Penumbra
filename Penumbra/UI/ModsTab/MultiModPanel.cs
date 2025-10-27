@@ -17,7 +17,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
         if (selector.SelectedPaths.Count == 0)
             return;
 
-        ImGui.NewLine();
+        Im.Line.New();
         var treeNodePos = ImGui.GetCursorPos();
         var numLeaves   = DrawModList();
         DrawCounts(treeNodePos, numLeaves);
@@ -50,8 +50,8 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
         if (!tree)
             return selector.SelectedPaths.Count(l => l is ModFileSystem.Leaf);
 
-        var sizeType             = new Vector2(ImGui.GetFrameHeight());
-        var availableSizePercent = (ImGui.GetContentRegionAvail().X - sizeType.X - 4 * ImGui.GetStyle().CellPadding.X) / 100;
+        var sizeType             = new Vector2(Im.Style.FrameHeight);
+        var availableSizePercent = (Im.ContentRegion.Available.X - sizeType.X - 4 * ImGui.GetStyle().CellPadding.X) / 100;
         var sizeMods             = availableSizePercent * 35;
         var sizeFolders          = availableSizePercent * 65;
 
@@ -94,14 +94,14 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
 
     private void DrawMultiTagger()
     {
-        var width = ImGuiHelpers.ScaledVector2(150, 0);
+        var width = ImEx.ScaledVector(150, 0);
         ImUtf8.TextFrameAligned("Multi Tagger:"u8);
         Im.Line.Same();
 
         var predefinedTagsEnabled = tagManager.Enabled;
         var inputWidth = predefinedTagsEnabled
-            ? ImGui.GetContentRegionAvail().X - 2 * width.X - 3 * ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetFrameHeight()
-            : ImGui.GetContentRegionAvail().X - 2 * (width.X + ImGui.GetStyle().ItemInnerSpacing.X);
+            ? Im.ContentRegion.Available.X - 2 * width.X - 3 * ImGui.GetStyle().ItemInnerSpacing.X - Im.Style.FrameHeight
+            : Im.ContentRegion.Available.X - 2 * (width.X + ImGui.GetStyle().ItemInnerSpacing.X);
         ImGui.SetNextItemWidth(inputWidth);
         ImUtf8.InputText("##tag"u8, ref _tag, "Local Tag Name..."u8);
 

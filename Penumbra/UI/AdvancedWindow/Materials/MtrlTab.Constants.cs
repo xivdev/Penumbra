@@ -153,7 +153,7 @@ public partial class MtrlTab
         if (Constants.Count == 0)
             return false;
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
         if (!ImGui.CollapsingHeader("Material Constants"))
             return false;
 
@@ -173,7 +173,7 @@ public partial class MtrlTab
                 if (buffer.Length > 0)
                 {
                     using var id = ImRaii.PushId($"##{constant.Id:X8}:{slice.Start}");
-                    ImGui.SetNextItemWidth(MaterialConstantSize * UiHelpers.Scale);
+                    ImGui.SetNextItemWidth(MaterialConstantSize * Im.Style.GlobalScale);
                     if (editor.Draw(buffer[slice], disabled))
                     {
                         ret = true;
@@ -187,7 +187,7 @@ public partial class MtrlTab
                         ? defaultValue.Length > 0 && !defaultValue.SequenceEqual(buffer[slice])
                         : buffer[slice].ContainsAnyExcept((byte)0);
                     ImUtf8.SameLineInner();
-                    if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Backspace.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+                    if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Backspace.ToIconString(), Im.Style.FrameHeight * Vector2.One,
                             "Reset this constant to its default value.\n\nHold Ctrl to unlock.", !ImGui.GetIO().KeyCtrl || !canReset, true))
                     {
                         ret = true;

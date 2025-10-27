@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -14,6 +15,7 @@ using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
 using Penumbra.UI.Classes;
+using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 using Notification = Luna.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
@@ -268,7 +270,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     private static bool DrawPointInput(ref AtchIdentifier identifier, AtchPointCombo combo)
     {
         if (!combo.Draw("##AtchPoint", identifier.Type.ToName(), "Attachment Point Type", 160 * ImUtf8.GlobalScale,
-                ImGui.GetTextLineHeightWithSpacing()))
+                Im.Style.TextHeightWithSpacing))
             return false;
 
         identifier = identifier with { Type = combo.CurrentSelection };

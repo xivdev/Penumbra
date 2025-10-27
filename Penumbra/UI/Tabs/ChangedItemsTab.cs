@@ -38,7 +38,7 @@ public class ChangedItemsTab(
         if (!child)
             return;
 
-        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeight());
+        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + Im.Style.FrameHeight);
         using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, Vector2.Zero)
             .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
             .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
@@ -50,9 +50,9 @@ public class ChangedItemsTab(
             return;
 
         const ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.NoResize | ImGuiTableColumnFlags.WidthFixed;
-        ImUtf8.TableSetupColumn("items"u8, flags, 450 * UiHelpers.Scale);
-        ImUtf8.TableSetupColumn("mods"u8,  flags, varWidth - 140 * UiHelpers.Scale);
-        ImUtf8.TableSetupColumn("id"u8,    flags, 140 * UiHelpers.Scale);
+        ImUtf8.TableSetupColumn("items"u8, flags, 450 * Im.Style.GlobalScale);
+        ImUtf8.TableSetupColumn("mods"u8,  flags, varWidth - 140 * Im.Style.GlobalScale);
+        ImUtf8.TableSetupColumn("id"u8,    flags, 140 * Im.Style.GlobalScale);
 
         var items = collectionManager.Active.Current.ChangedItems;
         var rest  = ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);
@@ -62,10 +62,10 @@ public class ChangedItemsTab(
     /// <summary> Draw a pair of filters and return the variable width of the flexible column. </summary>
     private float DrawFilters()
     {
-        var varWidth = ImGui.GetContentRegionAvail().X
-          - 450 * UiHelpers.Scale
+        var varWidth = Im.ContentRegion.Available.X
+          - 450 * Im.Style.GlobalScale
           - ImGui.GetStyle().ItemSpacing.X;
-        ImGui.SetNextItemWidth(450 * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(450 * Im.Style.GlobalScale);
         Im.Input.Text("##changedItemsFilter"u8, ref _changedItemFilter, "Filter Item..."u8);
         Im.Line.Same();
         ImGui.SetNextItemWidth(varWidth);

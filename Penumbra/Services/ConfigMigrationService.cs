@@ -73,7 +73,20 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version6To7();
         Version7To8();
         Version8To9();
+        Version9To10();
         AddColors(config, true);
+    }
+
+    private void Version9To10()
+    {
+        if (_config.Version != 9)
+            return;
+
+        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldFilesystemFile);
+        _config.Version           = 10;
+        _config.Ephemeral.Version = 10;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     // Migrate to ephemeral config.
@@ -254,7 +267,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     private void ResettleSortOrder()
     {
         ModSortOrder = _data[nameof(ModSortOrder)]?.ToObject<Dictionary<string, string>>() ?? ModSortOrder;
-        var       file   = saveService.FileNames.FilesystemFile;
+        var       file   = saveService.FileNames.OldFilesystemFile;
         using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
         using var writer = new StreamWriter(stream);
         using var j      = new JsonTextWriter(writer);

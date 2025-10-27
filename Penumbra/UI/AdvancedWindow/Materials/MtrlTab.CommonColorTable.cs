@@ -26,7 +26,7 @@ public partial class MtrlTab
         if (!_shpkLoading && !TextureIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
             return false;
 
-        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
         if (!ImUtf8.CollapsingHeader("Color Table"u8, ImGuiTreeNodeFlags.DefaultOpen))
             return false;
 
@@ -66,7 +66,7 @@ public partial class MtrlTab
         if (Mtrl.Table == null)
             return;
 
-        if (!ImUtf8.Button("Export All Rows to Clipboard"u8, ImGuiHelpers.ScaledVector2(200, 0)))
+        if (!ImUtf8.Button("Export All Rows to Clipboard"u8, ImEx.ScaledVector(200, 0)))
             return;
 
         try
@@ -124,7 +124,7 @@ public partial class MtrlTab
         if (Mtrl.Table == null)
             return false;
 
-        if (!ImUtf8.ButtonEx("Import All Rows from Clipboard"u8, ImGuiHelpers.ScaledVector2(200, 0), disabled))
+        if (!ImUtf8.ButtonEx("Import All Rows from Clipboard"u8, ImEx.ScaledVector(200, 0), disabled))
             return false;
 
         try
@@ -156,7 +156,7 @@ public partial class MtrlTab
             return;
 
         if (!ImUtf8.IconButton(FontAwesomeIcon.Clipboard, "Export this row to your clipboard."u8,
-                ImGui.GetFrameHeight() * Vector2.One))
+                Im.Style.FrameHeight * Vector2.One))
             return;
 
         try
@@ -205,7 +205,7 @@ public partial class MtrlTab
 
         if (ImUtf8.IconButton(FontAwesomeIcon.Paste,
                 "Import an exported row from your clipboard onto this row.\n\nRight-Click for more options."u8,
-                ImGui.GetFrameHeight() * Vector2.One, disabled))
+                Im.Style.FrameHeight * Vector2.One, disabled))
             try
             {
                 var text   = ImGui.GetClipboardText();
@@ -232,7 +232,7 @@ public partial class MtrlTab
 
     private unsafe bool ColorTablePasteFromClipboardContext(int rowIdx, bool disabled)
     {
-        if (!disabled && ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (!disabled && Im.Item.RightClicked())
             ImUtf8.OpenPopup("context"u8);
 
         using var context = ImUtf8.Popup("context"u8);
@@ -283,7 +283,7 @@ public partial class MtrlTab
     {
         ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
             "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
-            ImGui.GetFrameHeight() * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
+            Im.Style.FrameHeight * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
 
         if (ImGui.IsItemHovered())
             HighlightColorTablePair(pairIdx);
@@ -295,7 +295,7 @@ public partial class MtrlTab
     {
         ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
             "Highlight this row on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
-            ImGui.GetFrameHeight() * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
+            Im.Style.FrameHeight * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
 
         if (ImGui.IsItemHovered())
             HighlightColorTableRow(rowIdx);
