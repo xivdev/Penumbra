@@ -90,19 +90,19 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Model Set ID"u8);
+        Im.Tooltip.OnHover("Model Set ID"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Tooltip.OnHover("Model Race"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Gender.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Gender"u8);
+        Im.Tooltip.OnHover("Gender"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Slot.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Tooltip.OnHover("Equip Slot"u8);
     }
 
     private static bool DrawEntry(EqdpEntryInternal defaultEntry, ref EqdpEntryInternal entry, bool disabled)
@@ -130,7 +130,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
     {
         var ret = IdInput("##eqdpPrimaryId"u8, unscaledWidth, identifier.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1,
             identifier.SetId.Id <= 1);
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
             identifier = identifier with { SetId = setId };
@@ -140,7 +140,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
     public static bool DrawRace(ref EqdpIdentifier identifier, float unscaledWidth = 100)
     {
         var ret = Combos.Race("##eqdpRace", identifier.Race, out var race, unscaledWidth);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
         return ret;
@@ -149,7 +149,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
     public static bool DrawGender(ref EqdpIdentifier identifier, float unscaledWidth = 120)
     {
         var ret = Combos.Gender("##eqdpGender", identifier.Gender, out var gender, unscaledWidth);
-        ImUtf8.HoverTooltip("Gender"u8);
+        Im.Tooltip.OnHover("Gender"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(gender, identifier.Race) };
         return ret;
@@ -158,7 +158,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
     public static bool DrawEquipSlot(ref EqdpIdentifier identifier, float unscaledWidth = 100)
     {
         var ret = Combos.EqdpEquipSlot("##eqdpSlot", identifier.Slot, out var slot, unscaledWidth);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Tooltip.OnHover("Equip Slot"u8);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;

@@ -97,7 +97,7 @@ public partial class ModEditWindow
 
         if (!hasAtch)
         {
-            ImGui.CloseCurrentPopup();
+            Im.Popup.CloseCurrent();
             return;
         }
 
@@ -125,8 +125,8 @@ public partial class ModEditWindow
 
     private static void DrawTable(IMetaDrawer drawer)
     {
-        const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
-        using var             table = ImUtf8.Table(drawer.Label, drawer.NumColumns, flags);
+        const TableFlags flags = TableFlags.RowBackground | TableFlags.SizingFixedFit | TableFlags.BordersInnerVertical;
+        using var             table = Im.Table.Begin(drawer.Label, drawer.NumColumns, flags);
         if (!table)
             return;
 
@@ -144,7 +144,7 @@ public partial class ModEditWindow
         var size = ImGui.CalcTextSize(text).X;
         ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
         Im.Text(text, ColorId.RedundantAssignment.Value().FullAlpha());
-        if (ImGui.IsItemHovered())
+        if (Im.Item.Hovered())
         {
             using var tt = ImUtf8.Tooltip();
             foreach (var name in otherOptionData)
@@ -177,7 +177,7 @@ public partial class ModEditWindow
             }
         }
 
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Try to add meta manipulations currently stored in the clipboard to the current manipulations.\nOverwrites already existing manipulations."u8);
     }
 
@@ -193,7 +193,7 @@ public partial class ModEditWindow
             }
         }
 
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Try to set the current meta manipulations to the set currently stored in the clipboard.\nRemoves all other manipulations."u8);
     }
 }

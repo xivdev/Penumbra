@@ -69,7 +69,7 @@ public partial class ModEditWindow
     private void DrawBoneSelector()
     {
         using var group = ImUtf8.Group();
-        var       width = 200 * ImUtf8.GlobalScale;
+        var       width = 200 * Im.Style.GlobalScale;
         using (ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
                    .Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero))
         {

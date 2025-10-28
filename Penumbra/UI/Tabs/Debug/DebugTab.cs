@@ -51,7 +51,7 @@ public class Diagnostics(ServiceManager provider) : IUiService
         if (!ImGui.CollapsingHeader("Diagnostics"))
             return;
 
-        using var table = ImRaii.Table("##data", 4, ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##data"u8, 4, TableFlags.RowBackground);
         if (!table)
             return;
 
@@ -230,8 +230,8 @@ public class DebugTab : Window, ITab
                 {
                     if (inheritanceNode)
                     {
-                        using var table = ImUtf8.Table("table"u8, 3,
-                            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
+                        using var table = Im.Table.Begin("table"u8, 3,
+                            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInnerVertical);
                         if (table)
                         {
                             var max = Math.Max(
@@ -243,17 +243,17 @@ public class DebugTab : Window, ITab
                                 if (i < collection.Inheritance.DirectlyInheritsFrom.Count)
                                     ImUtf8.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, Im.Style.TextHeight));
+                                    ImGui.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                                 ImGui.TableNextColumn();
                                 if (i < collection.Inheritance.DirectlyInheritedBy.Count)
                                     ImUtf8.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, Im.Style.TextHeight));
+                                    ImGui.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                                 ImGui.TableNextColumn();
                                 if (i < collection.Inheritance.FlatHierarchy.Count)
                                     ImUtf8.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * ImUtf8.GlobalScale, Im.Style.TextHeight));
+                                    ImGui.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                             }
                         }
                     }
@@ -984,9 +984,9 @@ public class DebugTab : Window, ITab
 
         var slowPathCallDeltas = _shaderReplacementFixer.GetAndResetSlowPathCallDeltas();
 
-        ImGui.TableSetupColumn("Shader Package Name",        ImGuiTableColumnFlags.WidthStretch, 0.6f);
-        ImGui.TableSetupColumn("Materials with Modded ShPk", ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImGui.TableSetupColumn("\u0394 Slow-Path Calls",     ImGuiTableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("Shader Package Name"u8,        TableColumnFlags.WidthStretch, 0.6f);
+        table.SetupColumn("Materials with Modded ShPk"u8, TableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("\u0394 Slow-Path Calls"u8,     TableColumnFlags.WidthStretch, 0.2f);
         ImGui.TableHeadersRow();
 
         ImGui.TableNextColumn();
@@ -1137,12 +1137,12 @@ public class DebugTab : Window, ITab
         ImUtf8.Text($"CI CRC32: {_crcPath.InternalName.Crc32:X8}");
         ImUtf8.Text($"   CRC64: {_crcPath.Crc64:X16}");
 
-        using var table = ImUtf8.Table("table"u8, 2);
+        using var table = Im.Table.Begin("table"u8, 2);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("Hash"u8, ImGuiTableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
-        ImUtf8.TableSetupColumn("Type"u8, ImGuiTableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        table.SetupColumn("Hash"u8, TableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
         ImGui.TableHeadersRow();
 
         foreach (var (hash, type) in _rsfService.CustomCache)
@@ -1166,13 +1166,13 @@ public class DebugTab : Window, ITab
         if (ongoingLoadCount == 0)
             return;
 
-        using var table = ImUtf8.Table("ongoingLoadTable"u8, 3);
+        using var table = Im.Table.Begin("ongoingLoadTable"u8, 3);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("Resource Handle"u8, ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Actual Path"u8,     ImGuiTableColumnFlags.WidthStretch, 0.4f);
-        ImUtf8.TableSetupColumn("Original Path"u8,   ImGuiTableColumnFlags.WidthStretch, 0.4f);
+        table.SetupColumn("Resource Handle"u8, TableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("Actual Path"u8,     TableColumnFlags.WidthStretch, 0.4f);
+        table.SetupColumn("Original Path"u8,   TableColumnFlags.WidthStretch, 0.4f);
         ImGui.TableHeadersRow();
 
         foreach (var (handle, original) in ongoingLoads)

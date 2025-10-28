@@ -57,11 +57,11 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
     {
         if (ImUtf8.ButtonEx("Edit Container Names"u8,
                 "Add optional names to separate data containers of the combining group.\nThose are just for easier identification while editing the mod, and are not generally displayed to the user."u8,
-                new Vector2(400 * ImUtf8.GlobalScale, 0)))
+                new Vector2(400 * Im.Style.GlobalScale, 0)))
             ImUtf8.OpenPopup("DataContainerNames"u8);
 
-        var sizeX = group.OptionData.Count * (ImGui.GetStyle().ItemInnerSpacing.X + Im.Style.FrameHeight) + 300 * ImUtf8.GlobalScale;
-        ImGui.SetNextWindowSize(new Vector2(sizeX, Im.Style.FrameHeightWithSpacing * Math.Min(16, group.Data.Count) + 200 * ImUtf8.GlobalScale));
+        var sizeX = group.OptionData.Count * (ImGui.GetStyle().ItemInnerSpacing.X + Im.Style.FrameHeight) + 300 * Im.Style.GlobalScale;
+        ImGui.SetNextWindowSize(new Vector2(sizeX, Im.Style.FrameHeightWithSpacing * Math.Min(16, group.Data.Count) + 200 * Im.Style.GlobalScale));
         using var popup = ImUtf8.Popup("DataContainerNames"u8);
         if (!popup)
             return;

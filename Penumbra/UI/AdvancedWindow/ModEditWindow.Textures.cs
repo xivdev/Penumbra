@@ -280,7 +280,7 @@ public partial class ModEditWindow
 
     private Vector2 GetChildWidth()
     {
-        var windowWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - Im.Style.TextHeight;
+        var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - Im.Style.TextHeight;
         if (_overlayCollapsed)
         {
             var width = windowWidth - ImGui.GetStyle().FramePadding.X * 3;

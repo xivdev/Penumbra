@@ -45,14 +45,14 @@ public class ChangedItemsTab(
             .Push(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.01f, 0.5f));
 
         var       skips = ImGuiClip.GetNecessarySkips(_buttonSize.Y);
-        using var list  = ImUtf8.Table("##changedItems"u8, 3, ImGuiTableFlags.RowBg, -Vector2.One);
-        if (!list)
+        using var table  = Im.Table.Begin("##changedItems"u8, 3, TableFlags.RowBackground, -Vector2.One);
+        if (!table)
             return;
 
-        const ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.NoResize | ImGuiTableColumnFlags.WidthFixed;
-        ImUtf8.TableSetupColumn("items"u8, flags, 450 * Im.Style.GlobalScale);
-        ImUtf8.TableSetupColumn("mods"u8,  flags, varWidth - 140 * Im.Style.GlobalScale);
-        ImUtf8.TableSetupColumn("id"u8,    flags, 140 * Im.Style.GlobalScale);
+        const TableColumnFlags flags = TableColumnFlags.NoResize | TableColumnFlags.WidthFixed;
+        table.SetupColumn("items"u8, flags, 450 * Im.Style.GlobalScale);
+        table.SetupColumn("mods"u8,  flags, varWidth - 140 * Im.Style.GlobalScale);
+        table.SetupColumn("id"u8,    flags, 140 * Im.Style.GlobalScale);
 
         var items = collectionManager.Active.Current.ChangedItems;
         var rest  = ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);
@@ -106,7 +106,7 @@ public class ChangedItemsTab(
          && first is Mod mod)
             communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
 
-        if (!ImGui.IsItemHovered())
+        if (!Im.Item.Hovered())
             return;
 
         using var _ = ImRaii.Tooltip();

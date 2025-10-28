@@ -99,13 +99,13 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         ImGui.TableNextColumn();
 
         ImUtf8.TextFramed(SlotName(identifier.Slot), FrameColor);
-        ImUtf8.HoverTooltip("Model Slot"u8);
+        Im.Tooltip.OnHover("Model Slot"u8);
 
         ImGui.TableNextColumn();
         if (identifier.GenderRaceCondition is not GenderRace.Unknown)
         {
             ImUtf8.TextFramed($"{identifier.GenderRaceCondition.ToName()} ({identifier.GenderRaceCondition.ToRaceCode()})", FrameColor);
-            ImUtf8.HoverTooltip("Gender & Race Code for this shape key to be set.");
+            Im.Tooltip.OnHover("Gender & Race Code for this shape key to be set.");
         }
         else
         {
@@ -117,7 +117,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             ImUtf8.TextFramed($"{identifier.Id.Value.Id}", FrameColor);
         else
             ImUtf8.TextFramed("All IDs"u8, FrameColor);
-        ImUtf8.HoverTooltip("Primary ID"u8);
+        Im.Tooltip.OnHover("Primary ID"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Shape.AsSpan, FrameColor);
@@ -126,7 +126,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         if (identifier.ConnectorCondition is not ShapeConnectorCondition.None)
         {
             ImUtf8.TextFramed($"{identifier.ConnectorCondition}", FrameColor);
-            ImUtf8.HoverTooltip("Connector condition for this shape to be activated.");
+            Im.Tooltip.OnHover("Connector condition for this shape to be activated.");
         }
     }
 
@@ -138,7 +138,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var changes = ImUtf8.Checkbox("##shpEntry"u8, ref value);
         if (changes)
             entry = new ShpEntry(value);
-        ImUtf8.HoverTooltip("Whether to enable or disable this shape key for the selected items.");
+        Im.Tooltip.OnHover("Whether to enable or disable this shape key for the selected items.");
         return changes;
     }
 
@@ -156,7 +156,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip(allSlots ? "When using all slots, you also need to use all IDs."u8 : "Enable this shape key for all model IDs."u8);
+        Im.Tooltip.OnHover(allSlots ? "When using all slots, you also need to use all IDs."u8 : "Enable this shape key for all model IDs."u8);
 
         ImGui.SameLine(0, ImGui.GetStyle().ItemInnerSpacing.X);
         if (all)
@@ -175,7 +175,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip("Primary ID - You can usually find this as the 'e####' part of an item path or similar for customizations."u8);
+        Im.Tooltip.OnHover("Primary ID - You can usually find this as the 'e####' part of an item path or similar for customizations."u8);
 
         return ret;
     }
@@ -183,7 +183,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public bool DrawHumanSlot(ref ShpIdentifier identifier, float unscaledWidth = 170)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
         using (var combo = ImUtf8.Combo("##shpSlot"u8, SlotName(identifier.Slot)))
         {
             if (combo)
@@ -223,7 +223,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
                 }
         }
 
-        ImUtf8.HoverTooltip("Model Slot"u8);
+        Im.Tooltip.OnHover("Model Slot"u8);
         return ret;
     }
 
@@ -235,7 +235,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var span = new Span<byte>(ptr, ShapeAttributeString.MaxLength + 1);
         using (ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !valid))
         {
-            ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+            ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
             if (ImUtf8.InputText("##shpShape"u8, span, out int newLength, "Shape Key..."u8))
             {
                 buffer.ForceLength((byte)newLength);
@@ -246,14 +246,14 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip("Supported shape keys need to have the format `shpx_*` and a maximum length of 30 characters."u8);
+        Im.Tooltip.OnHover("Supported shape keys need to have the format `shpx_*` and a maximum length of 30 characters."u8);
         return ret;
     }
 
     private static bool DrawConnectorConditionInput(ref ShpIdentifier identifier, float unscaledWidth = 80)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
         var (showWrists, showWaist, showAnkles, disable) = identifier.Slot switch
         {
             HumanSlot.Unknown => (true, true, true, false),
@@ -282,7 +282,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Only activate this shape key if any custom connector shape keys (shpx_[wr|wa|an]_*) are also enabled through matching attributes."u8);
         return ret;
     }
@@ -290,7 +290,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     private static bool DrawGenderRaceConditionInput(ref ShpIdentifier identifier, float unscaledWidth = 250)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
 
         using (var combo = ImUtf8.Combo("##shpGenderRace"u8, identifier.GenderRaceCondition is GenderRace.Unknown
                    ? "Any Gender & Race"
@@ -317,7 +317,7 @@ public sealed class ShpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Only activate this shape key for this gender & race code."u8);
 
         return ret;

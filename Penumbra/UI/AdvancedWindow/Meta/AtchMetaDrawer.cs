@@ -183,18 +183,18 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Tooltip.OnHover("Model Race"u8);
 
         ImGui.TableNextColumn();
         DrawGender(ref identifier, true);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Type.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Attachment Point Type"u8);
+        Im.Tooltip.OnHover("Attachment Point Type"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.EntryIndex.ToString(), FrameColor);
-        ImUtf8.HoverTooltip("State Entry Index"u8);
+        Im.Tooltip.OnHover("State Entry Index"u8);
     }
 
     private static bool DrawEntry(in AtchEntry defaultEntry, ref AtchEntry entry, bool disabled)
@@ -205,42 +205,42 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
             return false;
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(200 * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(200 * Im.Style.GlobalScale);
         if (ImUtf8.InputText("##BoneName"u8, entry.FullSpan, out TerminatedByteString newBone))
         {
             entry.SetBoneName(newBone);
             changes = true;
         }
 
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Bone Name"u8);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Bone Name"u8);
 
-        ImGui.SetNextItemWidth(200 * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(200 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchScale"u8, ref entry.Scale);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Scale"u8);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Scale"u8);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchOffsetX"u8, ref entry.OffsetX);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Offset X-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Offset X-Coordinate"u8);
+        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchRotationX"u8, ref entry.RotationX);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Rotation X-Axis"u8);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation X-Axis"u8);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchOffsetY"u8, ref entry.OffsetY);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Offset Y-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Offset Y-Coordinate"u8);
+        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchRotationY"u8, ref entry.RotationY);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Rotation Y-Axis"u8);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation Y-Axis"u8);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchOffsetZ"u8, ref entry.OffsetZ);
-        ImUtf8.HoverTooltip("Offset Z-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
+        Im.Tooltip.OnHover("Offset Z-Coordinate"u8);
+        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchRotationZ"u8, ref entry.RotationZ);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Rotation Z-Axis"u8);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation Z-Axis"u8);
 
         return changes;
     }
@@ -248,7 +248,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     private static bool DrawRace(ref AtchIdentifier identifier, float unscaledWidth = 100)
     {
         var ret = Combos.Race("##atchRace", identifier.Race, out var race, unscaledWidth);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
 
@@ -269,7 +269,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 
     private static bool DrawPointInput(ref AtchIdentifier identifier, AtchPointCombo combo)
     {
-        if (!combo.Draw("##AtchPoint", identifier.Type.ToName(), "Attachment Point Type", 160 * ImUtf8.GlobalScale,
+        if (!combo.Draw("##AtchPoint", identifier.Type.ToName(), "Attachment Point Type", 160 * Im.Style.GlobalScale,
                 Im.Style.TextHeightWithSpacing))
             return false;
 
@@ -280,10 +280,10 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     private static bool DrawEntryIndexInput(ref AtchIdentifier identifier, AtchPoint currentAtchPoint)
     {
         var index = identifier.EntryIndex;
-        ImGui.SetNextItemWidth(40 * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(40 * Im.Style.GlobalScale);
         var ret = ImUtf8.DragScalar("##AtchEntry"u8, ref index, 0, (ushort)(currentAtchPoint.Entries.Length - 1), 0.05f,
             ImGuiSliderFlags.AlwaysClamp);
-        ImUtf8.HoverTooltip("State Entry Index"u8);
+        Im.Tooltip.OnHover("State Entry Index"u8);
         if (!ret)
             return false;
 

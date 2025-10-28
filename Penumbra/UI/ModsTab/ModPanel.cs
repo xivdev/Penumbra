@@ -1,5 +1,3 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin;
 using ImSharp;
 using Penumbra.Mods;
@@ -37,13 +35,13 @@ public class ModPanel : IDisposable, Luna.IUiService
         if (_resetCursor)
         {
             _resetCursor = false;
-            ImGui.SetScrollX(0);
+            Im.Scroll.X  = 0;
         }
 
         _header.Draw();
-        ImGui.SetCursorPosX(ImGui.GetScrollX() + ImGui.GetCursorPosX());
-        using var child = ImRaii.Child("Tabs",
-            Im.ContentRegion.Available with { X = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X });
+        Im.Cursor.X += Im.Scroll.X;
+        using var child = Im.Child.Begin("Tabs"u8,
+            Im.ContentRegion.Available with { X = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X });
         if (child)
             _tabs.Draw(_mod);
     }

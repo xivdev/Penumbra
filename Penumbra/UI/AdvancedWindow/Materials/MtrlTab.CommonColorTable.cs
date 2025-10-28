@@ -285,7 +285,7 @@ public partial class MtrlTab
             "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
             Im.Style.FrameHeight * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
 
-        if (ImGui.IsItemHovered())
+        if (Im.Item.Hovered())
             HighlightColorTablePair(pairIdx);
         else if (_highlightedColorTablePair == pairIdx)
             CancelColorTableHighlight();
@@ -297,7 +297,7 @@ public partial class MtrlTab
             "Highlight this row on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
             Im.Style.FrameHeight * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
 
-        if (ImGui.IsItemHovered())
+        if (Im.Item.Hovered())
             HighlightColorTableRow(rowIdx);
         else if (_highlightedColorTableRow == rowIdx)
             CancelColorTableHighlight();
@@ -357,7 +357,7 @@ public partial class MtrlTab
             ImGui.GetWindowDrawList().AddText(letter, center, textColor);
         }
 
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
 
         return ret;
     }
@@ -387,7 +387,7 @@ public partial class MtrlTab
                 ImGui.GetWindowDrawList().AddText(letter, center, 0x80000000u);
             }
 
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         }
     }
 
@@ -395,7 +395,7 @@ public partial class MtrlTab
     {
         var tmp    = current;
         var result = ApplyStainCheckbox.Draw(label, ref tmp);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == current)
             return false;
 
@@ -408,7 +408,7 @@ public partial class MtrlTab
     {
         var tmp    = (float)value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
 
@@ -425,7 +425,7 @@ public partial class MtrlTab
     {
         var tmp    = (float)value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
 
@@ -450,7 +450,7 @@ public partial class MtrlTab
     {
         var tmp    = value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
 
@@ -463,7 +463,7 @@ public partial class MtrlTab
     {
         var tmp    = value;
         var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, description);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
 

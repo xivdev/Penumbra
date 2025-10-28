@@ -117,7 +117,7 @@ public sealed unsafe class MaterialTemplatePickers : Luna.IUiService
             DrawTextureSlices(cbTextureRegionStart, cbMaxSize, itemSpacing.X, textureRHs, (byte)value);
         }
 
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) && (description.Length > 0 || compact && value != ushort.MaxValue))
+        if (Im.Item.Hovered(HoveredFlags.AllowWhenDisabled) && (description.Length > 0 || compact && value != ushort.MaxValue))
         {
             using var disabled = ImRaii.Enabled();
             using var tt       = ImUtf8.Tooltip();

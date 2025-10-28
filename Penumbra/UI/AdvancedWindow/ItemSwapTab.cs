@@ -165,7 +165,7 @@ public class ItemSwapTab : IDisposable, ITab
                     : null;
             var ret = base.DrawSelectable(globalIdx, selected);
             if (inCollection.Count > 0)
-                ImUtf8.HoverTooltip(string.Join('\n', inCollection.Select(m => m.Name)));
+                Im.Tooltip.OnHover(string.Join('\n', inCollection.Select(m => m.Name)));
             return ret;
         }
 
@@ -506,8 +506,8 @@ public class ItemSwapTab : IDisposable, ITab
         if (!tab)
             return;
 
-        using var table = ImRaii.Table("##settings", 3, ImGuiTableFlags.SizingFixedFit);
-        ImGui.TableSetupColumn("##text", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("and put them on these").X);
+        using var table = Im.Table.Begin("##settings"u8, 3, TableFlags.SizingFixedFit);
+        table.SetupColumn("##text"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("and put them on these"u8).X);
 
         var (article1, article2, selector) = GetAccessorySelector(_slotFrom, true);
         ImGui.TableNextColumn();
@@ -566,7 +566,7 @@ public class ItemSwapTab : IDisposable, ITab
         Im.Line.Same();
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
-        if (ImGui.IsItemHovered())
+        if (Im.Item.Hovered())
             ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, selector.CurrentSelection.Item.Name))
                 .Select(i => i.Name)));
     }
@@ -595,7 +595,7 @@ public class ItemSwapTab : IDisposable, ITab
             return;
 
         var (sourceSelector, targetSelector, text1, text2) = _selectors[type];
-        using var table = ImRaii.Table("##settings", 2, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##settings"u8, 2, TableFlags.SizingFixedFit);
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text1);
@@ -627,7 +627,7 @@ public class ItemSwapTab : IDisposable, ITab
         Im.Line.Same();
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
-        if (ImGui.IsItemHovered())
+        if (Im.Item.Hovered())
             ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, targetSelector.CurrentSelection.Item.Name))
                 .Select(i => i.Name)));
     }
@@ -638,7 +638,7 @@ public class ItemSwapTab : IDisposable, ITab
         if (!tab)
             return;
 
-        using var table = ImRaii.Table("##settings", 2, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##settings"u8, 2, TableFlags.SizingFixedFit);
         DrawTargetIdInput("Take this Hairstyle");
         DrawSourceIdInput();
         DrawGenderInput();
@@ -650,7 +650,7 @@ public class ItemSwapTab : IDisposable, ITab
         if (!tab)
             return;
 
-        using var table = ImRaii.Table("##settings", 2, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##settings"u8, 2, TableFlags.SizingFixedFit);
         DrawTargetIdInput("Take this Tail Type");
         DrawSourceIdInput();
         DrawGenderInput("for all", 2);
@@ -663,7 +663,7 @@ public class ItemSwapTab : IDisposable, ITab
         if (!tab)
             return;
 
-        using var table = ImRaii.Table("##settings", 2, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##settings"u8, 2, TableFlags.SizingFixedFit);
         DrawTargetIdInput("Take this Ear Type");
         DrawSourceIdInput();
         DrawGenderInput("for all Viera", 0);

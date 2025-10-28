@@ -147,7 +147,7 @@ public class ModPanelTabBar : IUiService
         if (ImEx.Icon.Button(LunaStyle.FavoriteIcon))
             _modManager.DataEditor.ChangeModFavorite(mod, !mod.Favorite);
 
-        var hovered = ImGui.IsItemHovered();
+        var hovered = Im.Item.Hovered();
         _tutorial.OpenTutorial(BasicTutorialSteps.Favorites);
 
         if (hovered)

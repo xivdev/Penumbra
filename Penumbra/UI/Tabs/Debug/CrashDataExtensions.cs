@@ -46,8 +46,8 @@ public static class CrashDataExtensions
         if (!tree)
             return;
 
-        using var table = ImRaii.Table("##characterTable", 6,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner);
+        using var table = Im.Table.Begin("##characterTable"u8, 6,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInner);
         if (!table)
             return;
 
@@ -68,8 +68,8 @@ public static class CrashDataExtensions
         if (!tree)
             return;
 
-        using var table = ImRaii.Table("##filesTable", 8,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner);
+        using var table = Im.Table.Begin("##filesTable"u8, 8,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInner);
         if (!table)
             return;
 
@@ -92,8 +92,8 @@ public static class CrashDataExtensions
         if (!tree)
             return;
 
-        using var table = ImRaii.Table("##vfxTable", 7,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInner);
+        using var table = Im.Table.Begin("##vfxTable"u8, 7,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInner);
         if (!table)
             return;
 

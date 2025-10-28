@@ -62,16 +62,16 @@ public partial class ModEditWindow
         var height = Im.Style.TextHeightWithSpacing + 2 * ImGui.GetStyle().CellPadding.Y;
         var skips  = ImGuiClip.GetNecessarySkips(height);
 
-        using var list = ImRaii.Table("##table", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV, -Vector2.One);
+        using var table = Im.Table.Begin("##table"u8, 3, TableFlags.RowBackground | TableFlags.BordersInnerVertical, -Vector2.One);
 
-        if (!list)
+        if (!table)
             return;
 
         var width = Im.ContentRegion.Available.X / 8;
 
-        ImGui.TableSetupColumn("##file",   ImGuiTableColumnFlags.WidthFixed, width * 3);
-        ImGui.TableSetupColumn("##path",   ImGuiTableColumnFlags.WidthFixed, width * 3 + ImGui.GetStyle().FrameBorderSize);
-        ImGui.TableSetupColumn("##option", ImGuiTableColumnFlags.WidthFixed, width * 2);
+        table.SetupColumn("##file"u8,   TableColumnFlags.WidthFixed, width * 3);
+        table.SetupColumn("##path"u8,   TableColumnFlags.WidthFixed, width * 3 + ImGui.GetStyle().FrameBorderSize);
+        table.SetupColumn("##option"u8, TableColumnFlags.WidthFixed, width * 2);
 
         var idx = 0;
 
@@ -115,7 +115,7 @@ public partial class ModEditWindow
 
     private void DrawFilesNormalMode()
     {
-        using var list = ImRaii.Table("##table", 1);
+        using var list = Im.Table.Begin("##table"u8, 1);
 
         if (!list)
             return;
@@ -154,7 +154,7 @@ public partial class ModEditWindow
             _                      => (null, 0),
         };
 
-        if (text != null && ImGui.IsItemHovered())
+        if (text != null && Im.Item.Hovered())
         {
             using var tt = ImUtf8.Tooltip();
             using var c  = ImRaii.DefaultColors();
@@ -295,7 +295,7 @@ public partial class ModEditWindow
                 ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
             }
 
-            ImUtf8.HoverTooltip("The game path and the file do not have the same extension."u8);
+            Im.Tooltip.OnHover("The game path and the file do not have the same extension."u8);
         }
     }
 
@@ -338,7 +338,7 @@ public partial class ModEditWindow
                 ImGuiUtil.TextColored(0xFF00B0B0, FontAwesomeIcon.ExclamationCircle.ToIconString());
             }
 
-            ImUtf8.HoverTooltip("The game path and the file do not have the same extension."u8);
+            Im.Tooltip.OnHover("The game path and the file do not have the same extension."u8);
         }
     }
 

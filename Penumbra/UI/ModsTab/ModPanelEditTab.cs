@@ -153,7 +153,7 @@ public class ModPanelEditTab(
                 ImUtf8.Text(FontAwesomeIcon.CheckCircle.ToIconString());
             }
 
-            ImUtf8.HoverTooltip($"Export exists in \"{backup.Name}\".");
+            Im.Tooltip.OnHover($"Export exists in \"{backup.Name}\".");
         }
 
         using var context = ImUtf8.Popup("context"u8);
@@ -210,7 +210,7 @@ public class ModPanelEditTab(
     {
         ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
             new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
-        ImGui.SameLine(0, 3 * ImUtf8.GlobalScale);
+        ImGui.SameLine(0, 3 * Im.Style.GlobalScale);
 
         var canRefresh = config.DeleteModModifier.IsActive();
         var tt = canRefresh

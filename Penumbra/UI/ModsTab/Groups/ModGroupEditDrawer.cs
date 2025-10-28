@@ -120,7 +120,7 @@ public sealed class ModGroupEditDrawer(
         var tt = _isGroupNameValid
             ? "Change the Group name."u8
             : "Current name can not be used for this group."u8;
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tt);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tt);
     }
 
     private void DrawGroupDelete(IModGroup group)
@@ -129,9 +129,9 @@ public sealed class ModGroupEditDrawer(
             ActionQueue.Enqueue(() => ModManager.OptionEditor.DeleteModGroup(group));
 
         if (_deleteEnabled)
-            ImUtf8.HoverTooltip("Delete this option group."u8);
+            Im.Tooltip.OnHover("Delete this option group."u8);
         else
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
                 $"Delete this option group.\nHold {config.DeleteModModifier} while clicking to delete.");
     }
 
@@ -172,9 +172,9 @@ public sealed class ModGroupEditDrawer(
             ActionQueue.Enqueue(() => ModManager.OptionEditor.MoveModGroup(group, idx - 1));
 
         if (isFirst)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Can not move this group further upwards."u8);
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Can not move this group further upwards."u8);
         else
-            ImUtf8.HoverTooltip($"Move this group up to group {idx}.");
+            Im.Tooltip.OnHover($"Move this group up to group {idx}.");
 
 
         ImUtf8.SameLineInner();
@@ -183,9 +183,9 @@ public sealed class ModGroupEditDrawer(
             ActionQueue.Enqueue(() => ModManager.OptionEditor.MoveModGroup(group, idx + 1));
 
         if (isLast)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Can not move this group further downwards."u8);
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Can not move this group further downwards."u8);
         else
-            ImUtf8.HoverTooltip($"Move this group down to group {idx + 2}.");
+            Im.Tooltip.OnHover($"Move this group down to group {idx + 2}.");
     }
 
     private void DrawGroupOpenFile(IModGroup group, int idx)
@@ -203,9 +203,9 @@ public sealed class ModGroupEditDrawer(
             }
 
         if (fileExists)
-            ImUtf8.HoverTooltip($"Open the {group.Name} json file in the text editor of your choice.");
+            Im.Tooltip.OnHover($"Open the {group.Name} json file in the text editor of your choice.");
         else
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"The {group.Name} json file does not exist.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"The {group.Name} json file does not exist.");
     }
 
 
@@ -224,7 +224,7 @@ public sealed class ModGroupEditDrawer(
         var isDefaultOption = group.DefaultSettings.AsIndex == optionIdx;
         if (ImUtf8.RadioButton("##default"u8, isDefaultOption))
             ModManager.OptionEditor.ChangeModGroupDefaultOption(group, Setting.Single(optionIdx));
-        ImUtf8.HoverTooltip($"Set {option.Name} as the default choice for this group.");
+        Im.Tooltip.OnHover($"Set {option.Name} as the default choice for this group.");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -233,7 +233,7 @@ public sealed class ModGroupEditDrawer(
         var isDefaultOption = group.DefaultSettings.HasFlag(optionIdx);
         if (ImUtf8.Checkbox("##default"u8, ref isDefaultOption))
             ModManager.OptionEditor.ChangeModGroupDefaultOption(group, group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
-        ImUtf8.HoverTooltip($"{(isDefaultOption ? "Disable"u8 : "Enable"u8)} {option.Name} per default in this group.");
+        Im.Tooltip.OnHover($"{(isDefaultOption ? "Disable"u8 : "Enable"u8)} {option.Name} per default in this group.");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -250,7 +250,7 @@ public sealed class ModGroupEditDrawer(
         ImGui.SetNextItemWidth(PriorityWidth);
         if (ImUtf8.InputScalarOnDeactivated("##Priority"u8, ref priority))
             ModManager.OptionEditor.MultiEditor.ChangeOptionPriority(option, new ModPriority(priority));
-        ImUtf8.HoverTooltip("Option priority inside the mod."u8);
+        Im.Tooltip.OnHover("Option priority inside the mod."u8);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -269,9 +269,9 @@ public sealed class ModGroupEditDrawer(
             ActionQueue.Enqueue(() => ModManager.OptionEditor.DeleteOption(option));
 
         if (_deleteEnabled)
-            ImUtf8.HoverTooltip("Delete this option."u8);
+            Im.Tooltip.OnHover("Delete this option."u8);
         else
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
                 $"Delete this option.\nHold {config.DeleteModModifier} while clicking to delete.");
     }
 
@@ -357,9 +357,9 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PrepareStyle()
     {
-        var totalWidth = 400f * ImUtf8.GlobalScale;
+        var totalWidth = 400f * Im.Style.GlobalScale;
         _buttonSize         = new Vector2(ImUtf8.FrameHeight);
-        PriorityWidth       = 50 * ImUtf8.GlobalScale;
+        PriorityWidth       = 50 * Im.Style.GlobalScale;
         AvailableWidth      = new Vector2(totalWidth + 3 * _spacing + 2 * _buttonSize.X + PriorityWidth, 0);
         _groupNameWidth     = totalWidth - 3 * (_buttonSize.X + _spacing);
         _spacing            = ImGui.GetStyle().ItemInnerSpacing.X;

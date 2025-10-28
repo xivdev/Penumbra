@@ -1,4 +1,5 @@
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
@@ -88,6 +89,7 @@ public class AddGroupDrawer : Luna.IUiService
         _groupName      = string.Empty;
         _groupNameValid = false;
     }
+
     private void DrawImcInput(float width)
     {
         var change = ImcMetaDrawer.DrawObjectType(ref _imcIdentifier, width);
@@ -101,7 +103,7 @@ public class AddGroupDrawer : Luna.IUiService
         }
         else if (_imcIdentifier.ObjectType is ObjectType.DemiHuman)
         {
-            var quarterWidth = (width - ImUtf8.ItemInnerSpacing.X / ImUtf8.GlobalScale) / 2;
+            var quarterWidth = (width - ImUtf8.ItemInnerSpacing.X / Im.Style.GlobalScale) / 2;
             change |= ImcMetaDrawer.DrawSecondaryId(ref _imcIdentifier, width);
             ImUtf8.SameLineInner();
             change |= ImcMetaDrawer.DrawSlot(ref _imcIdentifier, quarterWidth);
@@ -121,7 +123,7 @@ public class AddGroupDrawer : Luna.IUiService
 
     private void DrawImcData(Mod mod, Vector2 width)
     {
-        var halfWidth = width.X / ImUtf8.GlobalScale;
+        var halfWidth = width.X / Im.Style.GlobalScale;
         DrawImcInput(halfWidth);
         DrawImcButton(mod, width);
     }

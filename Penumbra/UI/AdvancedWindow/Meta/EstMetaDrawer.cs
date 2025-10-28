@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
@@ -33,7 +34,8 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy all current EST manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Est)));
+        CopyToClipboardButton("Copy all current EST manipulations to clipboard."u8,
+            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Est)));
 
         ImGui.TableNextColumn();
         var canAdd = !Editor.Contains(Identifier);
@@ -88,26 +90,26 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Model Set ID"u8);
+        Im.Tooltip.OnHover("Model Set ID"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Tooltip.OnHover("Model Race"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Gender.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Gender"u8);
+        Im.Tooltip.OnHover("Gender"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Slot.ToString(), FrameColor);
-        ImUtf8.HoverTooltip("Extra Skeleton Type"u8);
+        Im.Tooltip.OnHover("Extra Skeleton Type"u8);
     }
 
     private static bool DrawEntry(EstEntry defaultEntry, ref EstEntry entry, bool disabled)
     {
         using var dis = ImRaii.Disabled(disabled);
         ImGui.TableNextColumn();
-        var ret = DragInput("##estValue"u8, [],    100f * ImUtf8.GlobalScale, entry.Value, defaultEntry.Value, out var newValue, (ushort)0,
+        var ret = DragInput("##estValue"u8, [],    100f * Im.Style.GlobalScale, entry.Value, defaultEntry.Value, out var newValue, (ushort)0,
             ushort.MaxValue,                0.05f, !disabled);
         if (ret)
             entry = new EstEntry(newValue);
@@ -118,7 +120,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         var ret = IdInput("##estPrimaryId"u8, unscaledWidth, identifier.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1,
             identifier.SetId.Id <= 1);
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
             identifier = identifier with { SetId = setId };
@@ -128,7 +130,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawRace(ref EstIdentifier identifier, float unscaledWidth = 100)
     {
         var ret = Combos.Race("##estRace", identifier.Race, out var race, unscaledWidth);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
         return ret;
@@ -137,7 +139,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawGender(ref EstIdentifier identifier, float unscaledWidth = 120)
     {
         var ret = Combos.Gender("##estGender", identifier.Gender, out var gender, unscaledWidth);
-        ImUtf8.HoverTooltip("Gender"u8);
+        Im.Tooltip.OnHover("Gender"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(gender, identifier.Race) };
         return ret;
@@ -146,7 +148,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawSlot(ref EstIdentifier identifier, float unscaledWidth = 200)
     {
         var ret = Combos.EstSlot("##estSlot", identifier.Slot, out var slot, unscaledWidth);
-        ImUtf8.HoverTooltip("Extra Skeleton Type"u8);
+        Im.Tooltip.OnHover("Extra Skeleton Type"u8);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;

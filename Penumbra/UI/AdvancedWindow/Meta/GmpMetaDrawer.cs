@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Text;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Files;
@@ -32,7 +33,8 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy all current Gmp manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Gmp)));
+        CopyToClipboardButton("Copy all current Gmp manipulations to clipboard."u8,
+            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Gmp)));
 
         ImGui.TableNextColumn();
         var canAdd = !Editor.Contains(Identifier);
@@ -74,7 +76,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Model Set ID"u8);
+        Im.Tooltip.OnHover("Model Set ID"u8);
     }
 
     private static bool DrawEntry(GmpEntry defaultEntry, ref GmpEntry entry, bool disabled)
@@ -95,7 +97,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             changes = true;
         }
 
-        var rotationWidth = 75 * ImUtf8.GlobalScale;
+        var rotationWidth = 75 * Im.Style.GlobalScale;
         ImGui.TableNextColumn();
         if (DragInput("##gmpRotationA"u8, "Rotation A in Degrees"u8, rotationWidth, entry.RotationA, defaultEntry.RotationA, out var rotationA,
                 (ushort)0,                (ushort)360,               0.05f,         !disabled))
@@ -120,7 +122,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             changes = true;
         }
 
-        var unkWidth = 50 * ImUtf8.GlobalScale;
+        var unkWidth = 50 * Im.Style.GlobalScale;
         ImGui.TableNextColumn();
         if (DragInput("##gmpUnkA"u8, "Animation Type A?"u8, unkWidth, entry.UnknownA, defaultEntry.UnknownA, out var unknownA,
                 (byte)0,             (byte)15,              0.01f,    !disabled))
@@ -144,7 +146,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         var ret = IdInput("##gmpPrimaryId"u8, unscaledWidth, identifier.SetId.Id, out var setId, 1, ExpandedEqpGmpBase.Count - 1,
             identifier.SetId.Id <= 1);
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
             identifier = new GmpIdentifier(setId);

@@ -79,7 +79,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         bool border)
     {
         int tmp = currentId;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
         using var style = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, border);
         if (ImUtf8.InputScalar(label, ref tmp))
             tmp = Math.Clamp(tmp, minId, maxId);
@@ -103,9 +103,9 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
             newValue = newValue <= minValue ? minValue : newValue >= maxValue ? maxValue : newValue;
 
         if (addDefault)
-            ImUtf8.HoverTooltip($"{tooltip}\nDefault Value: {defaultValue}");
+            Im.Tooltip.OnHover($"{tooltip}\nDefault Value: {defaultValue}");
         else
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
 
         return newValue != currentValue;
     }
@@ -121,7 +121,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
         ImUtf8.Checkbox(label, ref newValue);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
         return newValue != currentValue;
     }
 
@@ -136,7 +136,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
         ImUtf8.Checkbox(label, ref newValue);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
         return newValue != currentValue;
     }
 

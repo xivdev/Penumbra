@@ -303,12 +303,12 @@ public class FileEditor<T>(
                 ret = ImGui.Selectable(file.RelPath.ToString(), selected);
             }
 
-            if (ImGui.IsItemHovered())
+            if (Im.Item.Hovered())
             {
                 using var tt = ImRaii.Tooltip();
                 ImGui.TextUnformatted("All Game Paths");
                 ImGui.Separator();
-                using var t = ImRaii.Table("##Tooltip", 2, ImGuiTableFlags.SizingFixedFit);
+                using var t = Im.Table.Begin("##Tooltip"u8, 2, TableFlags.SizingFixedFit);
                 foreach (var (option, gamePath) in file.SubModUsage)
                 {
                     ImGui.TableNextColumn();

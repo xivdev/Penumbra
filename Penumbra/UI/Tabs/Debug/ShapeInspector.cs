@@ -46,12 +46,12 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (!treeNode1.Success || !data.ModCollection.HasCache)
             return;
 
-        using var table = ImUtf8.Table("##aCache"u8, 2, ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##aCache"u8, 2, TableFlags.RowBackground);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("Attribute"u8, ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("State"u8,     ImGuiTableColumnFlags.WidthStretch);
+        table.SetupColumn("Attribute"u8, TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
+        table.SetupColumn("State"u8,     TableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
         foreach (var (attribute, set) in data.ModCollection.MetaCache!.Atr.Data.OrderBy(a => a.Key))
@@ -68,13 +68,13 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (!treeNode1.Success || !data.ModCollection.HasCache)
             return;
 
-        using var table = ImUtf8.Table("##sCache"u8, 3, ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##sCache"u8, 3, TableFlags.RowBackground);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("Condition"u8, ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Shape"u8,     ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("State"u8,     ImGuiTableColumnFlags.WidthStretch);
+        table.SetupColumn("Condition"u8, TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
+        table.SetupColumn("Shape"u8,     TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
+        table.SetupColumn("State"u8,     TableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
         foreach (var condition in Enum.GetValues<ShapeConnectorCondition>())
@@ -173,17 +173,17 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (!treeNode2)
             return;
 
-        using var table = ImUtf8.Table("##shapes"u8, 7, ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##shapes"u8, 7, TableFlags.RowBackground);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("#"u8,       ImGuiTableColumnFlags.WidthFixed, 25 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Slot"u8,    ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Address"u8, ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
-        ImUtf8.TableSetupColumn("Mask"u8,    ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
-        ImUtf8.TableSetupColumn("ID"u8,      ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
-        ImUtf8.TableSetupColumn("Count"u8,   ImGuiTableColumnFlags.WidthFixed, 30 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Shapes"u8,  ImGuiTableColumnFlags.WidthStretch);
+        table.SetupColumn("#"u8,       TableColumnFlags.WidthFixed, 25 * Im.Style.GlobalScale);
+        table.SetupColumn("Slot"u8,    TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
+        table.SetupColumn("Address"u8, TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
+        table.SetupColumn("Mask"u8,    TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
+        table.SetupColumn("ID"u8,      TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
+        table.SetupColumn("Count"u8,   TableColumnFlags.WidthFixed, 30 * Im.Style.GlobalScale);
+        table.SetupColumn("Shapes"u8,  TableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
 
@@ -230,17 +230,17 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         if (!treeNode2)
             return;
 
-        using var table = ImUtf8.Table("##attributes"u8, 7, ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##attributes"u8, 7, TableFlags.RowBackground);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("#"u8,          ImGuiTableColumnFlags.WidthFixed, 25 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Slot"u8,       ImGuiTableColumnFlags.WidthFixed, 150 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Address"u8,    ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
-        ImUtf8.TableSetupColumn("Mask"u8,       ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
-        ImUtf8.TableSetupColumn("ID"u8,         ImGuiTableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
-        ImUtf8.TableSetupColumn("Count"u8,      ImGuiTableColumnFlags.WidthFixed, 30 * ImUtf8.GlobalScale);
-        ImUtf8.TableSetupColumn("Attributes"u8, ImGuiTableColumnFlags.WidthStretch);
+        table.SetupColumn("#"u8,          TableColumnFlags.WidthFixed, 25 * Im.Style.GlobalScale);
+        table.SetupColumn("Slot"u8,       TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
+        table.SetupColumn("Address"u8,    TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
+        table.SetupColumn("Mask"u8,       TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
+        table.SetupColumn("ID"u8,         TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
+        table.SetupColumn("Count"u8,      TableColumnFlags.WidthFixed, 30 * Im.Style.GlobalScale);
+        table.SetupColumn("Attributes"u8, TableColumnFlags.WidthStretch);
 
         ImGui.TableHeadersRow();
 

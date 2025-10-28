@@ -32,13 +32,13 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
 
         var       height = Im.Style.TextHeightWithSpacing + 2 * ImGui.GetStyle().CellPadding.Y;
         var       skips  = ImGuiClip.GetNecessarySkips(height);
-        using var table  = ImRaii.Table("##EffectiveChangesTable", 3, ImGuiTableFlags.RowBg);
+        using var table  = Im.Table.Begin("##EffectiveChangesTable"u8, 3, TableFlags.RowBackground);
         if (!table)
             return;
 
-        ImGui.TableSetupColumn("##gamePath", ImGuiTableColumnFlags.WidthFixed, _effectiveLeftTextLength);
-        ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, _effectiveArrowLength);
-        ImGui.TableSetupColumn("##file",     ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength);
+        table.SetupColumn("##gamePath"u8, TableColumnFlags.WidthFixed, _effectiveLeftTextLength);
+        table.SetupColumn(StringU8.Empty, TableColumnFlags.WidthFixed, _effectiveArrowLength);
+        table.SetupColumn("##file"u8,     TableColumnFlags.WidthFixed, _effectiveRightTextLength);
 
         DrawEffectiveRows(collectionManager.Active.Current, skips, height,
             _effectiveFilePathFilter.Length > 0 || _effectiveGamePathFilter.Length > 0);

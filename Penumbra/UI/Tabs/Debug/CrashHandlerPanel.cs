@@ -39,7 +39,7 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
 
     private void DrawMainData()
     {
-        using var table = ImRaii.Table("##CrashHandlerTable", 2, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##CrashHandlerTable"u8, 2, TableFlags.SizingFixedFit);
         if (!table)
             return;
 

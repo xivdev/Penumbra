@@ -58,7 +58,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
             if (size - textSize < minComboSize)
             {
                 Im.Text("selected mod"u8, ColorId.FolderLine.Value());
-                ImUtf8.HoverTooltip(modMerger.MergeFromMod!.Name);
+                Im.Tooltip.OnHover(modMerger.MergeFromMod!.Name);
             }
             else
             {
@@ -104,8 +104,8 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
         }
 
         if (modMerger.MergeFromMod.HasOptions)
-            ImGuiUtil.HoverTooltip("You can only specify a target option if the source mod has no true options itself.",
-                ImGuiHoveredFlags.AllowWhenDisabled);
+            Im.Tooltip.OnHover("You can only specify a target option if the source mod has no true options itself."u8,
+                HoveredFlags.AllowWhenDisabled);
 
         if (ImGuiUtil.DrawDisabledButton("Merge", new Vector2(size, 0),
                 modMerger.CanMerge ? string.Empty : "Please select a target mod different from the current mod.", !modMerger.CanMerge))
@@ -171,22 +171,22 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : Lu
             : 8 * Im.Style.FrameHeightWithSpacing;
         height = Math.Min(height, (options.Count + 1) * Im.Style.FrameHeightWithSpacing);
         var tableSize = new Vector2(size, height);
-        using var table = ImRaii.Table("##options", 6,
-            ImGuiTableFlags.RowBg
-          | ImGuiTableFlags.SizingFixedFit
-          | ImGuiTableFlags.ScrollY
-          | ImGuiTableFlags.BordersOuterV
-          | ImGuiTableFlags.BordersOuterH,
+        using var table = Im.Table.Begin("##options"u8, 6,
+            TableFlags.RowBackground
+          | TableFlags.SizingFixedFit
+          | TableFlags.ScrollY
+          | TableFlags.BordersOuterVertical
+          | TableFlags.BordersOuterHorizontal,
             tableSize);
         if (!table)
             return;
 
-        ImGui.TableSetupColumn("##Selected",   ImGuiTableColumnFlags.WidthFixed, Im.Style.FrameHeight);
-        ImGui.TableSetupColumn("Option",       ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Option Group", ImGuiTableColumnFlags.WidthFixed, 120 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("#Files",       ImGuiTableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("#Swaps",       ImGuiTableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("#Manips",      ImGuiTableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
+        table.SetupColumn("##Selected"u8,   TableColumnFlags.WidthFixed, Im.Style.FrameHeight);
+        table.SetupColumn("Option"u8,       TableColumnFlags.WidthStretch);
+        table.SetupColumn("Option Group"u8, TableColumnFlags.WidthFixed, 120 * Im.Style.GlobalScale);
+        table.SetupColumn("#Files"u8,       TableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
+        table.SetupColumn("#Swaps"u8,       TableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
+        table.SetupColumn("#Manips"u8,      TableColumnFlags.WidthFixed, 50 * Im.Style.GlobalScale);
         ImGui.TableHeadersRow();
         foreach (var (idx, option) in options.Index())
         {

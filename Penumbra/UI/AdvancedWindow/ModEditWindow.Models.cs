@@ -299,7 +299,7 @@ public partial class ModEditWindow
 
         if (Im.Item.RightClicked())
             ImGui.SetClipboardText(preview);
-        ImGuiUtil.HoverTooltip("Right-Click to copy to clipboard.", ImGuiHoveredFlags.AllowWhenDisabled);
+        Im.Tooltip.OnHover("Right-Click to copy to clipboard."u8, HoveredFlags.AllowWhenDisabled);
     }
 
     private void DrawDocumentationLink(string address)
@@ -339,19 +339,19 @@ public partial class ModEditWindow
         if (!header)
             return false;
 
-        using var table = ImRaii.Table(string.Empty, disabled ? 2 : 4, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, disabled ? 2 : 4, TableFlags.SizingFixedFit);
         if (!table)
             return false;
 
         var ret       = false;
         var materials = tab.Mdl.Materials;
 
-        ImGui.TableSetupColumn("index", ImGuiTableColumnFlags.WidthFixed,   80 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("path",  ImGuiTableColumnFlags.WidthStretch, 1);
+        table.SetupColumn("index"u8, TableColumnFlags.WidthFixed,   80 * Im.Style.GlobalScale);
+        table.SetupColumn("path"u8,  TableColumnFlags.WidthStretch, 1);
         if (!disabled)
         {
-            ImGui.TableSetupColumn("actions", ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
-            ImGui.TableSetupColumn("help",    ImGuiTableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+            table.SetupColumn("actions"u8, TableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
+            table.SetupColumn("help"u8,    TableColumnFlags.WidthFixed, UiHelpers.IconButtonSize.X);
         }
 
         var inputFlags = disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None;
@@ -464,12 +464,12 @@ public partial class ModEditWindow
             return false;
 
         using var id    = ImRaii.PushId(meshIndex);
-        using var table = ImRaii.Table(string.Empty, 2, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 2, TableFlags.SizingFixedFit);
         if (!table)
             return false;
 
-        ImGui.TableSetupColumn("name",  ImGuiTableColumnFlags.WidthFixed,   100 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("field", ImGuiTableColumnFlags.WidthStretch, 1);
+        table.SetupColumn("name"u8,  TableColumnFlags.WidthFixed,   100 * Im.Style.GlobalScale);
+        table.SetupColumn("field"u8, TableColumnFlags.WidthStretch, 1);
 
         var file = tab.Mdl;
         var mesh = file.Meshes[meshIndex];
@@ -503,18 +503,18 @@ public partial class ModEditWindow
         if (!node)
             return;
 
-        var flags = ImGuiTableFlags.SizingFixedFit
-          | ImGuiTableFlags.RowBg
-          | ImGuiTableFlags.Borders
-          | ImGuiTableFlags.NoHostExtendX;
-        using var table = ImRaii.Table(string.Empty, 4, flags);
+        var flags = TableFlags.SizingFixedFit
+          | TableFlags.RowBackground
+          | TableFlags.Borders
+          | TableFlags.NoHostExtendX;
+        using var table = Im.Table.Begin(StringU8.Empty, 4, flags);
         if (!table)
             return;
 
-        ImGui.TableSetupColumn("Usage");
-        ImGui.TableSetupColumn("Type");
-        ImGui.TableSetupColumn("Stream");
-        ImGui.TableSetupColumn("Offset");
+        table.SetupColumn("Usage"u8);
+        table.SetupColumn("Type"u8);
+        table.SetupColumn("Stream"u8);
+        table.SetupColumn("Offset"u8);
 
         ImGui.TableHeadersRow();
 
@@ -595,7 +595,7 @@ public partial class ModEditWindow
             return false;
 
         var ret = false;
-        using (var table = ImRaii.Table("##data", 2, ImGuiTableFlags.SizingFixedFit))
+        using (var table = Im.Table.Begin("##data"u8, 2, TableFlags.SizingFixedFit))
         {
             if (table)
             {

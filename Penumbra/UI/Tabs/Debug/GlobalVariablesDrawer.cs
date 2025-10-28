@@ -21,7 +21,7 @@ public unsafe class GlobalVariablesDrawer(
     public void Draw()
     {
         var header = ImUtf8.CollapsingHeader("Global Variables"u8);
-        ImUtf8.HoverTooltip("Draw information about global variables. Can provide useful starting points for a memory viewer."u8);
+        Im.Tooltip.OnHover("Draw information about global variables. Can provide useful starting points for a memory viewer."u8);
         if (!header)
             return;
 
@@ -68,8 +68,7 @@ public unsafe class GlobalVariablesDrawer(
         if (!tree)
             return;
 
-        using var table = ImUtf8.Table("##CharacterUtility"u8, 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
-            -Vector2.UnitX);
+        using var table = Im.Table.Begin("##CharacterUtility"u8, 7, TableFlags.RowBackground | TableFlags.SizingFixedFit, -Vector2.UnitX);
         if (!table)
             return;
 
@@ -115,7 +114,7 @@ public unsafe class GlobalVariablesDrawer(
         if (residentResources.Address == null || residentResources.Address->NumResources == 0)
             return;
 
-        using var table = ImUtf8.Table("##ResidentResources"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        using var table = Im.Table.Begin("##ResidentResources"u8, 5, TableFlags.RowBackground | TableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
@@ -162,7 +161,7 @@ public unsafe class GlobalVariablesDrawer(
                 ? t
                 : CiByteString.Empty;
         ImUtf8.Text($"{_shownResourcesMap} / {scheduler.Scheduler->Resources.LongCount}");
-        using var table = ImUtf8.Table("##SchedulerMapResources"u8, 10, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        using var table = Im.Table.Begin("##SchedulerMapResources"u8, 10, TableFlags.RowBackground | TableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
@@ -213,7 +212,7 @@ public unsafe class GlobalVariablesDrawer(
                 ? t
                 : CiByteString.Empty;
         ImUtf8.Text($"{_shownResourcesList} / {scheduler.Scheduler->Resources.LongCount}");
-        using var table = ImUtf8.Table("##SchedulerListResources"u8, 10, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        using var table = Im.Table.Begin("##SchedulerListResources"u8, 10, TableFlags.RowBackground | TableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;

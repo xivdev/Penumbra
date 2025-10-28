@@ -36,7 +36,7 @@ public partial class ModEditWindow
         if (!child)
             return;
 
-        using var table = ImUtf8.Table("##files"u8, 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.One);
+        using var table = Im.Table.Begin("##files"u8, 4, TableFlags.RowBackground | TableFlags.SizingFixedFit, -Vector2.One);
         if (!table)
             return;
 

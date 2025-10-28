@@ -40,7 +40,7 @@ public class ModPanelSettingsTab(
 
     public void DrawContent()
     {
-        using var table = ImUtf8.Table("##settings"u8, 1, ImGuiTableFlags.ScrollY, Im.ContentRegion.Available);
+        using var table = Im.Table.Begin("##settings"u8, 1, TableFlags.ScrollY, Im.ContentRegion.Available);
         if (!table)
             return;
 
@@ -82,7 +82,7 @@ public class ModPanelSettingsTab(
                 _locked))
             collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!, null);
 
-        ImUtf8.HoverTooltip("Changing settings in temporary settings will not save them across sessions.\n"u8
+        Im.Tooltip.OnHover("Changing settings in temporary settings will not save them across sessions.\n"u8
           + "You can click this button to remove the temporary settings and return to your normal settings."u8);
     }
 
@@ -107,7 +107,7 @@ public class ModPanelSettingsTab(
             }
         }
 
-        ImUtf8.HoverTooltip("You can click this button to copy the current settings to the current selection.\n"u8
+        Im.Tooltip.OnHover("You can click this button to copy the current settings to the current selection.\n"u8
           + "You can also just change any setting, which will copy the settings with the single setting changed to the current selection."u8);
     }
 
@@ -147,7 +147,7 @@ public class ModPanelSettingsTab(
         if (ImUtf8.InputScalar("##Priority"u8, ref priority))
             _currentPriority = priority;
         if (new ModPriority(priority).IsHidden)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
                 $"This priority is special-cased to hide this mod in conflict tabs ({ModPriority.HiddenMin}, {ModPriority.HiddenMax}).");
 
 

@@ -236,7 +236,7 @@ public class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonActive,  Rgba32.Transparent)
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
-        using var table = ImUtf8.Table("##changedItems"u8, cache.AnyExpandable ? 2 : 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY,
+        using var table = Im.Table.Begin("##changedItems"u8, cache.AnyExpandable ? 2 : 1, TableFlags.RowBackground | TableFlags.ScrollY,
             new Vector2(Im.ContentRegion.Available.X, -1));
         if (!table)
             return;
@@ -244,8 +244,8 @@ public class ModPanelChangedItemsTab(
         _starColor = ColorId.ChangedItemPreferenceStar.Value();
         if (cache.AnyExpandable)
         {
-            ImUtf8.TableSetupColumn("##exp"u8,  ImGuiTableColumnFlags.WidthFixed, _buttonSize.Y);
-            ImUtf8.TableSetupColumn("##text"u8, ImGuiTableColumnFlags.WidthStretch);
+            table.SetupColumn("##exp"u8,  TableColumnFlags.WidthFixed, _buttonSize.Y);
+            table.SetupColumn("##text"u8, TableColumnFlags.WidthStretch);
             ImGuiClip.ClippedDraw(cache.Data, DrawContainerExpandable, _buttonSize.Y);
         }
         else

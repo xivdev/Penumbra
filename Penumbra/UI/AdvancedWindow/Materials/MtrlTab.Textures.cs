@@ -128,11 +128,11 @@ public partial class MtrlTab
 
         var       frameHeight = Im.Style.FrameHeight;
         var       ret         = false;
-        using var table       = ImRaii.Table("##Textures", 3);
+        using var table       = Im.Table.Begin("##Textures"u8, 3);
 
-        ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, frameHeight);
-        ImGui.TableSetupColumn("Path",       ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Name",       ImGuiTableColumnFlags.WidthFixed, TextureLabelWidth * Im.Style.GlobalScale);
+        table.SetupColumn(StringU8.Empty, TableColumnFlags.WidthFixed, frameHeight);
+        table.SetupColumn("Path"u8,       TableColumnFlags.WidthStretch);
+        table.SetupColumn("Name"u8,       TableColumnFlags.WidthFixed, TextureLabelWidth * Im.Style.GlobalScale);
         foreach (var (label, textureI, samplerI, description, monoFont) in Textures)
         {
             using var _        = ImRaii.PushId(samplerI);

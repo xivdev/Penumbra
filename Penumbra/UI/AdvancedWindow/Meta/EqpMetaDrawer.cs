@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -81,11 +82,11 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Model Set ID"u8);
+        Im.Tooltip.OnHover("Model Set ID"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Slot.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Tooltip.OnHover("Equip Slot"u8);
     }
 
     private static bool DrawEntry(EquipSlot slot, EqpEntryInternal defaultEntry, ref EqpEntryInternal entry, bool disabled)
@@ -122,7 +123,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         var ret = IdInput("##eqpPrimaryId"u8, unscaledWidth, identifier.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1,
             identifier.SetId.Id <= 1);
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
             identifier = identifier with { SetId = setId };
@@ -132,7 +133,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawEquipSlot(ref EqpIdentifier identifier, float unscaledWidth = 100)
     {
         var ret = Combos.EqpEquipSlot("##eqpSlot", identifier.Slot, out var slot, unscaledWidth);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Tooltip.OnHover("Equip Slot"u8);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;

@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Raii;
 using OtterGui.Text;
@@ -89,33 +90,33 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.ObjectType.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Object Type"u8);
+        Im.Tooltip.OnHover("Object Type"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed($"{identifier.PrimaryId.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Primary ID");
+        Im.Tooltip.OnHover("Primary ID");
 
         ImGui.TableNextColumn();
         if (identifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
         {
             ImUtf8.TextFramed(identifier.EquipSlot.ToName(), FrameColor);
-            ImUtf8.HoverTooltip("Equip Slot"u8);
+            Im.Tooltip.OnHover("Equip Slot"u8);
         }
         else
         {
             ImUtf8.TextFramed($"{identifier.SecondaryId.Id}", FrameColor);
-            ImUtf8.HoverTooltip("Secondary ID"u8);
+            Im.Tooltip.OnHover("Secondary ID"u8);
         }
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed($"{identifier.Variant.Id}", FrameColor);
-        ImUtf8.HoverTooltip("Variant"u8);
+        Im.Tooltip.OnHover("Variant"u8);
 
         ImGui.TableNextColumn();
         if (identifier.ObjectType is ObjectType.DemiHuman)
         {
             ImUtf8.TextFramed(identifier.EquipSlot.ToName(), FrameColor);
-            ImUtf8.HoverTooltip("Equip Slot"u8);
+            Im.Tooltip.OnHover("Equip Slot"u8);
         }
     }
 
@@ -155,7 +156,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
         var ret = Combos.ImcType("##imcType", identifier.ObjectType, out var type, width);
-        ImUtf8.HoverTooltip("Object Type"u8);
+        Im.Tooltip.OnHover("Object Type"u8);
 
         if (ret)
         {
@@ -182,7 +183,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         var ret = IdInput("##imcPrimaryId"u8, unscaledWidth, identifier.PrimaryId.Id, out var newId, 0, ushort.MaxValue,
             identifier.PrimaryId.Id <= 1);
-        ImUtf8.HoverTooltip("Primary ID - You can usually find this as the 'x####' part of an item path.\n"u8
+        Im.Tooltip.OnHover("Primary ID - You can usually find this as the 'x####' part of an item path.\n"u8
           + "This should generally not be left <= 1 unless you explicitly want that."u8);
         if (ret)
             identifier = identifier with { PrimaryId = newId };
@@ -192,7 +193,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawSecondaryId(ref ImcIdentifier identifier, float unscaledWidth = 100)
     {
         var ret = IdInput("##imcSecondaryId"u8, unscaledWidth, identifier.SecondaryId.Id, out var newId, 0, ushort.MaxValue, false);
-        ImUtf8.HoverTooltip("Secondary ID"u8);
+        Im.Tooltip.OnHover("Secondary ID"u8);
         if (ret)
             identifier = identifier with { SecondaryId = newId };
         return ret;
@@ -201,7 +202,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawVariant(ref ImcIdentifier identifier, float unscaledWidth = 45)
     {
         var ret = IdInput("##imcVariant"u8, unscaledWidth, identifier.Variant.Id, out var newId, 0, byte.MaxValue, false);
-        ImUtf8.HoverTooltip("Variant ID"u8);
+        Im.Tooltip.OnHover("Variant ID"u8);
         if (ret)
             identifier = identifier with { Variant = (byte)newId };
         return ret;
@@ -221,7 +222,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             default:                   return false;
         }
 
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Tooltip.OnHover("Equip Slot"u8);
         if (ret)
             identifier = identifier with { EquipSlot = slot };
         return ret;
@@ -229,8 +230,8 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawMaterialId(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault, float unscaledWidth = 45)
     {
-        if (!DragInput("##materialId"u8, "Material ID"u8, unscaledWidth * ImUtf8.GlobalScale, entry.MaterialId, defaultEntry.MaterialId,
-                out var newValue,        (byte)1,         byte.MaxValue,                      0.01f,            addDefault))
+        if (!DragInput("##materialId"u8, "Material ID"u8, unscaledWidth * Im.Style.GlobalScale, entry.MaterialId, defaultEntry.MaterialId,
+                out var newValue,        (byte)1,         byte.MaxValue,                        0.01f,            addDefault))
             return false;
 
         entry = entry with { MaterialId = newValue };
@@ -239,7 +240,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawMaterialAnimationId(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault, float unscaledWidth = 45)
     {
-        if (!DragInput("##mAnimId"u8,             "Material Animation ID"u8, unscaledWidth * ImUtf8.GlobalScale, entry.MaterialAnimationId,
+        if (!DragInput("##mAnimId"u8,             "Material Animation ID"u8, unscaledWidth * Im.Style.GlobalScale, entry.MaterialAnimationId,
                 defaultEntry.MaterialAnimationId, out var newValue,          (byte)0, byte.MaxValue, 0.01f, addDefault))
             return false;
 
@@ -249,8 +250,8 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawDecalId(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault, float unscaledWidth = 45)
     {
-        if (!DragInput("##decalId"u8, "Decal ID"u8,  unscaledWidth * ImUtf8.GlobalScale, entry.DecalId, defaultEntry.DecalId, out var newValue,
-                (byte)0,              byte.MaxValue, 0.01f,                              addDefault))
+        if (!DragInput("##decalId"u8, "Decal ID"u8, unscaledWidth * Im.Style.GlobalScale, entry.DecalId, defaultEntry.DecalId, out var newValue,
+                (byte)0,              byte.MaxValue, 0.01f, addDefault))
             return false;
 
         entry = entry with { DecalId = newValue };
@@ -259,8 +260,9 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawVfxId(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault, float unscaledWidth = 45)
     {
-        if (!DragInput("##vfxId"u8, "VFX ID"u8, unscaledWidth * ImUtf8.GlobalScale, entry.VfxId, defaultEntry.VfxId, out var newValue, (byte)0,
-                byte.MaxValue,      0.01f,      addDefault))
+        if (!DragInput("##vfxId"u8, "VFX ID"u8, unscaledWidth * Im.Style.GlobalScale, entry.VfxId, defaultEntry.VfxId, out var newValue,
+                (byte)0,
+                byte.MaxValue, 0.01f, addDefault))
             return false;
 
         entry = entry with { VfxId = newValue };
@@ -269,8 +271,8 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawSoundId(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault, float unscaledWidth = 45)
     {
-        if (!DragInput("##soundId"u8, "Sound ID"u8,  unscaledWidth * ImUtf8.GlobalScale, entry.SoundId, defaultEntry.SoundId, out var newValue,
-                (byte)0,              byte.MaxValue, 0.01f,                              addDefault))
+        if (!DragInput("##soundId"u8, "Sound ID"u8, unscaledWidth * Im.Style.GlobalScale, entry.SoundId, defaultEntry.SoundId, out var newValue,
+                (byte)0,              byte.MaxValue, 0.01f, addDefault))
             return false;
 
         entry = entry with { SoundId = newValue };

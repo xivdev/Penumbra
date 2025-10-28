@@ -107,7 +107,7 @@ public class ModsTab(
             ImGuiUtil.DrawTextButton("Redraw:        ", frameHeight, frameColor);
         }
 
-        var hovered = ImGui.IsItemHovered();
+        var hovered = Im.Item.Hovered();
         tutorial.OpenTutorial(BasicTutorialSteps.Redrawing);
         if (hovered)
             ImGui.SetTooltip($"The supported modifiers for '/penumbra redraw' are:\n{TutorialService.SupportedRedrawModifiers}");
@@ -155,9 +155,9 @@ public class ModsTab(
                 }
             }
 
-            ImGuiUtil.HoverTooltip(lower.Length > 0
+            Im.Tooltip.OnHover(lower.Length > 0
                 ? $"Execute '/penumbra redraw {lower}'.{additionalTooltip}"
-                : $"Execute '/penumbra redraw'.{additionalTooltip}", ImGuiHoveredFlags.AllowWhenDisabled);
+                : $"Execute '/penumbra redraw'.{additionalTooltip}", HoveredFlags.AllowWhenDisabled);
         }
     }
 

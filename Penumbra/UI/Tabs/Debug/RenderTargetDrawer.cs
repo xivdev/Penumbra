@@ -63,15 +63,15 @@ public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, D
             return;
         }
 
-        using var table = ImUtf8.Table("##RenderTargetTable"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##RenderTargetTable"u8, 5, TableFlags.RowBackground | TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("Offset"u8,                  ImGuiTableColumnFlags.WidthStretch, 0.15f);
-        ImUtf8.TableSetupColumn("Creation Order"u8,          ImGuiTableColumnFlags.WidthStretch, 0.15f);
-        ImUtf8.TableSetupColumn("Original Texture Format"u8, ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Current Texture Format"u8,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Comment"u8,                 ImGuiTableColumnFlags.WidthStretch, 0.3f);
+        table.SetupColumn("Offset"u8,                  TableColumnFlags.WidthStretch, 0.15f);
+        table.SetupColumn("Creation Order"u8,          TableColumnFlags.WidthStretch, 0.15f);
+        table.SetupColumn("Original Texture Format"u8, TableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("Current Texture Format"u8,  TableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("Comment"u8,                 TableColumnFlags.WidthStretch, 0.3f);
         ImGui.TableHeadersRow();
 
         foreach (var record in report)

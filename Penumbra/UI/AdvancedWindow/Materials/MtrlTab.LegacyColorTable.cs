@@ -7,6 +7,7 @@ using OtterGui.Text;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Services;
+using TableFlags = ImSharp.TableFlags;
 
 namespace Penumbra.UI.AdvancedWindow.Materials;
 
@@ -19,12 +20,12 @@ public partial class MtrlTab
 
     private bool DrawLegacyColorTable(LegacyColorTable table, LegacyColorDyeTable? dyeTable, bool disabled)
     {
-        using var imTable = ImUtf8.Table("##ColorTable"u8, dyeTable != null ? 10 : 8,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
+        using var imTable = Im.Table.Begin("##ColorTable"u8, dyeTable is not null ? 10 : 8,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInnerVertical);
         if (!imTable)
             return false;
 
-        DrawLegacyColorTableHeader(dyeTable != null);
+        DrawLegacyColorTableHeader(dyeTable is not null);
 
         var ret = false;
         for (var i = 0; i < LegacyColorTable.NumRows; ++i)
@@ -43,12 +44,12 @@ public partial class MtrlTab
 
     private bool DrawLegacyColorTable(ColorTable table, ColorDyeTable? dyeTable, bool disabled)
     {
-        using var imTable = ImUtf8.Table("##ColorTable"u8, dyeTable != null ? 10 : 8,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV);
+        using var imTable = Im.Table.Begin("##ColorTable"u8, dyeTable is not null ? 10 : 8,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground | TableFlags.BordersInnerVertical);
         if (!imTable)
             return false;
 
-        DrawLegacyColorTableHeader(dyeTable != null);
+        DrawLegacyColorTableHeader(dyeTable is not null);
 
         var ret = false;
         for (var i = 0; i < ColorTable.NumRows; ++i)
@@ -189,7 +190,7 @@ public partial class MtrlTab
                 ret                       = true;
             }
 
-            ImGuiUtil.HoverTooltip("Dye Template", ImGuiHoveredFlags.AllowWhenDisabled);
+            Im.Tooltip.OnHover("Dye Template"u8, HoveredFlags.AllowWhenDisabled);
 
             ImGui.TableNextColumn();
             ret |= DrawLegacyDyePreview(rowIdx, disabled, dye, floatSize);
@@ -304,7 +305,7 @@ public partial class MtrlTab
                 ret                       = true;
             }
 
-            ImGuiUtil.HoverTooltip("Dye Template", ImGuiHoveredFlags.AllowWhenDisabled);
+            Im.Tooltip.OnHover("Dye Template"u8, HoveredFlags.AllowWhenDisabled);
 
             ImGui.TableNextColumn();
             ret |= DrawLegacyDyePreview(rowIdx, disabled, dye, floatSize);

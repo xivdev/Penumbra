@@ -96,13 +96,13 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         ImGui.TableNextColumn();
 
         ImUtf8.TextFramed(ShpMetaDrawer.SlotName(identifier.Slot), FrameColor);
-        ImUtf8.HoverTooltip("Model Slot"u8);
+        Im.Tooltip.OnHover("Model Slot"u8);
 
         ImGui.TableNextColumn();
         if (identifier.GenderRaceCondition is not GenderRace.Unknown)
         {
             ImUtf8.TextFramed($"{identifier.GenderRaceCondition.ToName()} ({identifier.GenderRaceCondition.ToRaceCode()})", FrameColor);
-            ImUtf8.HoverTooltip("Gender & Race Code for this attribute to be set.");
+            Im.Tooltip.OnHover("Gender & Race Code for this attribute to be set.");
         }
         else
         {
@@ -114,7 +114,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             ImUtf8.TextFramed($"{identifier.Id.Value.Id}", FrameColor);
         else
             ImUtf8.TextFramed("All IDs"u8, FrameColor);
-        ImUtf8.HoverTooltip("Primary ID"u8);
+        Im.Tooltip.OnHover("Primary ID"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Attribute.AsSpan, FrameColor);
@@ -128,7 +128,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var changes = ImUtf8.Checkbox("##atrEntry"u8, ref value);
         if (changes)
             entry = new AtrEntry(value);
-        ImUtf8.HoverTooltip("Whether to enable or disable this attribute for the selected items.");
+        Im.Tooltip.OnHover("Whether to enable or disable this attribute for the selected items.");
         return changes;
     }
 
@@ -146,7 +146,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip(allSlots
+        Im.Tooltip.OnHover(allSlots
             ? "When using all slots, you also need to use all IDs."u8
             : "Enable this attribute for all model IDs."u8);
 
@@ -167,7 +167,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip("Primary ID - You can usually find this as the 'e####' part of an item path or similar for customizations."u8);
+        Im.Tooltip.OnHover("Primary ID - You can usually find this as the 'e####' part of an item path or similar for customizations."u8);
 
         return ret;
     }
@@ -175,7 +175,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public bool DrawHumanSlot(ref AtrIdentifier identifier, float unscaledWidth = 150)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
         using (var combo = ImUtf8.Combo("##atrSlot"u8, ShpMetaDrawer.SlotName(identifier.Slot)))
         {
             if (combo)
@@ -208,14 +208,14 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
                 }
         }
 
-        ImUtf8.HoverTooltip("Model Slot"u8);
+        Im.Tooltip.OnHover("Model Slot"u8);
         return ret;
     }
 
     private static bool DrawGenderRaceConditionInput(ref AtrIdentifier identifier, float unscaledWidth = 250)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
 
         using (var combo = ImUtf8.Combo("##shpGenderRace"u8,
                    identifier.GenderRaceCondition is GenderRace.Unknown
@@ -243,7 +243,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip(
+        Im.Tooltip.OnHover(
             "Only activate this attribute for this gender & race code."u8);
 
         return ret;
@@ -257,7 +257,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var span = new Span<byte>(ptr, ShapeAttributeString.MaxLength + 1);
         using (ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !valid))
         {
-            ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
+            ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
             if (ImUtf8.InputText("##atrAttribute"u8, span, out int newLength, "Attribute..."u8))
             {
                 buffer.ForceLength((byte)newLength);
@@ -268,7 +268,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        ImUtf8.HoverTooltip("Supported attribute need to have the format `atrx_*` and a maximum length of 30 characters."u8);
+        Im.Tooltip.OnHover("Supported attribute need to have the format `atrx_*` and a maximum length of 30 characters."u8);
         return ret;
     }
 }

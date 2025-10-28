@@ -611,7 +611,7 @@ public class SettingsTab : ITab, IUiService
                         _config.Save();
                     }
 
-                    ImUtf8.HoverTooltip(val.Description);
+                    Im.Tooltip.OnHover(val.Description);
                 }
         }
 
@@ -699,14 +699,14 @@ public class SettingsTab : ITab, IUiService
         if (ImUtf8.ButtonEx("Delete all PCP Mods"u8, "Deletes all mods tagged with 'PCP' from the mod list."u8, disabled: !active))
             _pcpService.CleanPcpMods();
         if (!active)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
 
         Im.Line.Same();
         if (ImUtf8.ButtonEx("Delete all PCP Collections"u8, "Deletes all collections whose name starts with 'PCP/' from the collection list."u8,
                 disabled: !active))
             _pcpService.CleanPcpCollections();
         if (!active)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
 
         Checkbox("Allow Other Plugins Access to PCP Handling",
             "When creating or importing PCP files, other plugins can add and interpret their own data to the character.json file.",
@@ -1176,7 +1176,7 @@ public class SettingsTab : ITab, IUiService
         var enabled = _config.DeleteModModifier.IsActive();
         if (_cleanupService.Progress is not 0.0 and not 1.0)
         {
-            ImUtf8.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * ImUtf8.GlobalScale, Im.Style.FrameHeight),
+            ImUtf8.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * Im.Style.GlobalScale, Im.Style.FrameHeight),
                 $"{_cleanupService.Progress * 100}%");
             Im.Line.Same();
             if (ImUtf8.Button("Cancel##FileCleanup"u8))
@@ -1192,21 +1192,21 @@ public class SettingsTab : ITab, IUiService
                 !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanUnusedLocalData();
         if (!enabled)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
 
         if (ImUtf8.ButtonEx("Clear Backup Files"u8,
                 "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory."u8,
                 default, !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanBackupFiles();
         if (!enabled)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
 
         if (ImUtf8.ButtonEx("Clear All Unused Settings"u8,
                 "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8, default,
                 !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanupAllUnusedSettings();
         if (!enabled)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to remove settings.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to remove settings.");
     }
 
     /// <summary> Draw a checkbox that toggles the dalamud setting to wait for plugins on open. </summary>

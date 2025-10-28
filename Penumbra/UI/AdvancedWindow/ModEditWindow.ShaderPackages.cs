@@ -391,16 +391,16 @@ public partial class ModEditWindow
             ? "Parameter positions (continuations are grayed out, globally unused values are red, unused values within filters are yellow):"
             : "Parameter positions (continuations are grayed out):");
 
-        using var table = ImRaii.Table("##MaterialParamLayout", 5,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##MaterialParamLayout"u8, 5,
+            TableFlags.SizingFixedFit | TableFlags.RowBackground);
         if (!table)
             return false;
 
-        ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, 40 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("x",          ImGuiTableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("y",          ImGuiTableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("z",          ImGuiTableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
-        ImGui.TableSetupColumn("w",          ImGuiTableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
+        table.SetupColumn(StringU8.Empty, TableColumnFlags.WidthFixed, 40 * Im.Style.GlobalScale);
+        table.SetupColumn("x"u8,          TableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
+        table.SetupColumn("y"u8,          TableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
+        table.SetupColumn("z"u8,          TableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
+        table.SetupColumn("w"u8,          TableColumnFlags.WidthFixed, 250 * Im.Style.GlobalScale);
         ImGui.TableHeadersRow();
 
         var textColorStart = ImGuiColor.Text.Get().Color;
@@ -436,11 +436,11 @@ public partial class ModEditWindow
                         }
                     }
 
-                    ImUtf8.HoverTooltip(tooltip);
+                    Im.Tooltip.OnHover(tooltip);
                 }
 
                 if (deletable)
-                    ImUtf8.HoverTooltip("\nControl + Right-Click to remove."u8);
+                    Im.Tooltip.OnHover("\nControl + Right-Click to remove."u8);
             }
         }
 

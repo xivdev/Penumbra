@@ -199,8 +199,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         if (IsLoading)
         {
-            var radius    = 100 * ImUtf8.GlobalScale;
-            var thickness = (int)(20 * ImUtf8.GlobalScale);
+            var radius    = 100 * Im.Style.GlobalScale;
+            var thickness = (int)(20 * Im.Style.GlobalScale);
             var offsetX   = Im.ContentRegion.Available.X / 2 - radius;
             var offsetY   = Im.ContentRegion.Available.Y / 2 - radius;
             ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(offsetX, offsetY));
@@ -327,7 +327,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (!child)
             return;
 
-        using var table = ImRaii.Table("##missingFiles", 1, ImGuiTableFlags.RowBg, -Vector2.One);
+        using var table = Im.Table.Begin("##missingFiles"u8, 1, TableFlags.RowBackground, -Vector2.One);
         if (!table)
             return;
 
@@ -401,14 +401,14 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (!child)
             return;
 
-        using var table = ImRaii.Table("##duplicates", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.One);
+        using var table = Im.Table.Begin("##duplicates"u8, 3, TableFlags.RowBackground | TableFlags.SizingFixedFit, -Vector2.One);
         if (!table)
             return;
 
         var width = ImGui.CalcTextSize("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN ").X;
-        ImGui.TableSetupColumn("file", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("size", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("NNN.NNN  ").X);
-        ImGui.TableSetupColumn("hash", ImGuiTableColumnFlags.WidthFixed,
+        table.SetupColumn("file"u8, TableColumnFlags.WidthStretch);
+        table.SetupColumn("size", TableColumnFlags.WidthFixed, ImGui.CalcTextSize("NNN.NNN  "u8).X);
+        table.SetupColumn("hash"u8, TableColumnFlags.WidthFixed,
             ImGui.GetWindowWidth() > 2 * width ? width : ImGui.CalcTextSize("NNNNNNNN... ").X);
         foreach (var (set, size, hash) in _editor.Duplicates.Duplicates.Where(s => s.Paths.Length > 1))
         {
@@ -507,16 +507,16 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (!child)
             return;
 
-        using var list = ImRaii.Table("##table", 3, ImGuiTableFlags.RowBg, -Vector2.One);
-        if (!list)
+        using var table = Im.Table.Begin("##table"u8, 3, TableFlags.RowBackground, -Vector2.One);
+        if (!table)
             return;
 
         var idx      = 0;
         var iconSize = Im.Style.FrameHeight * Vector2.One;
         var pathSize = Im.ContentRegion.Available.X / 2 - iconSize.X;
-        ImGui.TableSetupColumn("button", ImGuiTableColumnFlags.WidthFixed, iconSize.X);
-        ImGui.TableSetupColumn("source", ImGuiTableColumnFlags.WidthFixed, pathSize);
-        ImGui.TableSetupColumn("value",  ImGuiTableColumnFlags.WidthFixed, pathSize);
+        table.SetupColumn("button"u8, TableColumnFlags.WidthFixed, iconSize.X);
+        table.SetupColumn("source"u8, TableColumnFlags.WidthFixed, pathSize);
+        table.SetupColumn("value"u8,  TableColumnFlags.WidthFixed, pathSize);
 
         foreach (var (gamePath, file) in _editor.SwapEditor.Swaps.ToList())
         {

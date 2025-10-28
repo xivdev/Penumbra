@@ -142,15 +142,15 @@ public class ResourceTreeViewer(
                 ImUtf8.InputText("##note"u8, ref _note, "Export note..."u8);
 
 
-                using var table = ImRaii.Table("##ResourceTree", 4,
-                    ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+                using var table = Im.Table.Begin("##ResourceTree"u8, 4,
+                    TableFlags.SizingFixedFit | TableFlags.RowBackground);
                 if (!table)
                     continue;
 
-                ImGui.TableSetupColumn(string.Empty,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
-                ImGui.TableSetupColumn("Game Path",   ImGuiTableColumnFlags.WidthStretch, 0.3f);
-                ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
-                ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed,
+                table.SetupColumn(StringU8.Empty,  TableColumnFlags.WidthStretch, 0.2f);
+                table.SetupColumn("Game Path"u8,   TableColumnFlags.WidthStretch, 0.3f);
+                table.SetupColumn("Actual Path"u8, TableColumnFlags.WidthStretch, 0.5f);
+                table.SetupColumn(StringU8.Empty, TableColumnFlags.WidthFixed,
                     actionCapacity * 3 * Im.Style.GlobalScale + (actionCapacity + 1) * Im.Style.FrameHeight);
                 ImGui.TableHeadersRow();
 

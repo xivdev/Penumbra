@@ -144,10 +144,10 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     protected override float CurrentWidth
-        => _config.Ephemeral.CurrentModSelectorWidth * ImUtf8.GlobalScale;
+        => _config.Ephemeral.CurrentModSelectorWidth * Im.Style.GlobalScale;
 
     protected override float MinimumAbsoluteRemainder
-        => 550 * ImUtf8.GlobalScale;
+        => 550 * Im.Style.GlobalScale;
 
     protected override float MinimumScaling
         => _config.Ephemeral.ModSelectorMinimumScale;
@@ -158,7 +158,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     protected override void SetSize(Vector2 size)
     {
         base.SetSize(size);
-        var adaptedSize = MathF.Round(size.X / ImUtf8.GlobalScale);
+        var adaptedSize = MathF.Round(size.X / Im.Style.GlobalScale);
         if (adaptedSize == _config.Ephemeral.CurrentModSelectorWidth)
             return;
 
@@ -257,7 +257,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         {
             var line           = ImGui.GetItemRectMin().Y;
             var itemPos        = ImGui.GetItemRectMax().X;
-            var maxWidth       = ImGui.GetWindowPos().X + ImGui.GetWindowContentRegionMax().X;
+            var maxWidth       = ImGui.GetWindowPos().X + Im.Window.MaximumContentRegion.X;
             var priorityString = $"[{state.Priority}]";
             var size           = ImGui.CalcTextSize(priorityString).X;
             var remainingSpace = maxWidth - itemPos;
@@ -405,10 +405,10 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (ImUtf8.InputText("##RenameMod"u8, ref currentName, flags: ImGuiInputTextFlags.EnterReturnsTrue))
         {
             _modManager.DataEditor.ChangeModName(leaf.Value, currentName);
-            ImGui.CloseCurrentPopup();
+            Im.Popup.CloseCurrent();
         }
 
-        ImUtf8.HoverTooltip("Enter a new name here to rename the changed mod."u8);
+        Im.Tooltip.OnHover("Enter a new name here to rename the changed mod."u8);
     }
 
     private void DeleteModButton(Vector2 size)
@@ -845,7 +845,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             SetFilterDirty();
         }
 
-        ImUtf8.HoverTooltip("Filter mods for their activation status.\nRight-Click to clear all filters."u8);
+        Im.Tooltip.OnHover("Filter mods for their activation status.\nRight-Click to clear all filters."u8);
         ImGui.SetCursorPos(pos);
         return (remainingWidth, rightClick);
     }

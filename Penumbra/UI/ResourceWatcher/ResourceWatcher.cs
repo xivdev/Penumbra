@@ -189,7 +189,7 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
         }
 
         var maxEntries = _config.MaxResourceWatcherRecords;
-        if (maxEntries != DefaultMaxEntries && ImGui.IsItemHovered())
+        if (maxEntries != DefaultMaxEntries && Im.Item.Hovered())
             ImGui.SetTooltip($"CTRL + Right-Click to reset to default {DefaultMaxEntries}.");
 
         if (!change)

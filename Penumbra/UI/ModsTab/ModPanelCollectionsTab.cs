@@ -41,15 +41,15 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         Im.Line.New();
         ImGui.Separator();
         Im.Line.New();
-        using var table = ImUtf8.Table("##modCollections"u8, 3, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##modCollections"u8, 3, TableFlags.SizingFixedFit | TableFlags.RowBackground);
         if (!table)
             return;
 
         var size           = ImUtf8.CalcTextSize(ToText(ModState.Unconfigured)).X + 20 * Im.Style.GlobalScale;
         var collectionSize = 200 * Im.Style.GlobalScale;
-        ImGui.TableSetupColumn("Collection",     ImGuiTableColumnFlags.WidthFixed, collectionSize);
-        ImGui.TableSetupColumn("State",          ImGuiTableColumnFlags.WidthFixed, size);
-        ImGui.TableSetupColumn("Inherited From", ImGuiTableColumnFlags.WidthFixed, collectionSize);
+        table.SetupColumn("Collection"u8,     TableColumnFlags.WidthFixed, collectionSize);
+        table.SetupColumn("State"u8,          TableColumnFlags.WidthFixed, size);
+        table.SetupColumn("Inherited From"u8, TableColumnFlags.WidthFixed, collectionSize);
 
         ImGui.TableHeadersRow();
         foreach (var (idx, (collection, parent, color, state)) in _cache.Index())

@@ -53,7 +53,7 @@ public class TexHeaderDrawer(IDragDropManager dragDrop) : Luna.IUiService
         }
         else if (_tex != null)
         {
-            using var table = ImRaii.Table("table", 2, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+            using var table = Im.Table.Begin("table"u8, 2, TableFlags.SizingFixedFit | TableFlags.RowBackground);
             if (!table)
                 return;
 

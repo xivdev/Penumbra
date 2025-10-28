@@ -56,14 +56,14 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
         var sizeFolders          = availableSizePercent * 65;
 
         var leaves = 0;
-        using (var table = ImUtf8.Table("mods"u8, 3, ImGuiTableFlags.RowBg))
+        using (var table = Im.Table.Begin("mods"u8, 3, TableFlags.RowBackground))
         {
             if (!table)
                 return selector.SelectedPaths.Count(l => l is ModFileSystem.Leaf);
 
-            ImUtf8.TableSetupColumn("type"u8, ImGuiTableColumnFlags.WidthFixed, sizeType.X);
-            ImUtf8.TableSetupColumn("mod"u8,  ImGuiTableColumnFlags.WidthFixed, sizeMods);
-            ImUtf8.TableSetupColumn("path"u8, ImGuiTableColumnFlags.WidthFixed, sizeFolders);
+            table.SetupColumn("type"u8, TableColumnFlags.WidthFixed, sizeType.X);
+            table.SetupColumn("mod"u8,  TableColumnFlags.WidthFixed, sizeMods);
+            table.SetupColumn("path"u8, TableColumnFlags.WidthFixed, sizeFolders);
 
             var i = 0;
             foreach (var (fullName, path) in selector.SelectedPaths.Select(p => (p.FullName(), p))

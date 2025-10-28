@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using Newtonsoft.Json.Linq;
 using OtterGui.Text;
 using Penumbra.GameData.Enums;
@@ -33,7 +34,8 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     protected override void DrawNew()
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy all current RSP manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Rsp)));
+        CopyToClipboardButton("Copy all current RSP manipulations to clipboard."u8,
+            new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Rsp)));
 
         ImGui.TableNextColumn();
         var canAdd = !Editor.Contains(Identifier);
@@ -80,19 +82,19 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.SubRace.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Model Set ID"u8);
+        Im.Tooltip.OnHover("Model Set ID"u8);
 
         ImGui.TableNextColumn();
         ImUtf8.TextFramed(identifier.Attribute.ToFullString(), FrameColor);
-        ImUtf8.HoverTooltip("Equip Slot"u8);
+        Im.Tooltip.OnHover("Equip Slot"u8);
     }
 
     private static bool DrawEntry(RspEntry defaultEntry, ref RspEntry entry, bool disabled)
     {
         using var dis = ImRaii.Disabled(disabled);
         ImGui.TableNextColumn();
-        var ret = DragInput("##rspValue"u8, [],                ImUtf8.GlobalScale * 150, entry.Value, defaultEntry.Value, out var newValue,
-            RspEntry.MinValue,              RspEntry.MaxValue, 0.001f,                   !disabled);
+        var ret = DragInput("##rspValue"u8, [],                Im.Style.GlobalScale * 150, entry.Value, defaultEntry.Value, out var newValue,
+            RspEntry.MinValue,              RspEntry.MaxValue, 0.001f,                     !disabled);
         if (ret)
             entry = new RspEntry(newValue);
         return ret;
@@ -101,7 +103,7 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawSubRace(ref RspIdentifier identifier, float unscaledWidth = 150)
     {
         var ret = Combos.SubRace("##rspSubRace", identifier.SubRace, out var subRace, unscaledWidth);
-        ImUtf8.HoverTooltip("Racial Clan"u8);
+        Im.Tooltip.OnHover("Racial Clan"u8);
         if (ret)
             identifier = identifier with { SubRace = subRace };
         return ret;
@@ -110,7 +112,7 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public static bool DrawAttribute(ref RspIdentifier identifier, float unscaledWidth = 200)
     {
         var ret = Combos.RspAttribute("##rspAttribute", identifier.Attribute, out var attribute, unscaledWidth);
-        ImUtf8.HoverTooltip("Scaling Attribute"u8);
+        Im.Tooltip.OnHover("Scaling Attribute"u8);
         if (ret)
             identifier = identifier with { Attribute = attribute };
         return ret;

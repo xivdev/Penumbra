@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Bindings.ImGui;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods.Groups;
@@ -43,7 +44,7 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
         if (ImUtf8.ButtonEx("Convert to Multi Group", editor.AvailableWidth, !convertible))
             editor.ActionQueue.Enqueue(() => e.ChangeToMulti(g));
         if (!convertible)
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled,
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
                 "Can not convert to multi group since maximum number of options is exceeded."u8);
     }
 

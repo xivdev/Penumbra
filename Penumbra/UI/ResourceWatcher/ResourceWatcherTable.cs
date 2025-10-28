@@ -86,7 +86,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
                 clicked |= ImUtf8.Selectable(shortPath.Span, false, ImGuiSelectableFlags.AllowItemOverlap);
             }
 
-            ImUtf8.HoverTooltip(path.Span);
+            Im.Tooltip.OnHover(path.Span);
         }
 
         if (clicked)

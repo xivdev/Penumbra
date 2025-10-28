@@ -62,14 +62,14 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
         if (!tree || map->Count == 0)
             return;
 
-        using var table = ImRaii.Table("##table", 4, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+        using var table = Im.Table.Begin("##table"u8, 4, TableFlags.SizingFixedFit | TableFlags.RowBackground);
         if (!table)
             return;
 
-        ImGui.TableSetupColumn("Hash", ImGuiTableColumnFlags.WidthFixed, _hashColumnWidth);
-        ImGui.TableSetupColumn("Ptr",  ImGuiTableColumnFlags.WidthFixed, _hashColumnWidth);
-        ImGui.TableSetupColumn("Path", ImGuiTableColumnFlags.WidthFixed, _pathColumnWidth);
-        ImGui.TableSetupColumn("Refs", ImGuiTableColumnFlags.WidthFixed, _refsColumnWidth);
+        table.SetupColumn("Hash"u8, TableColumnFlags.WidthFixed, _hashColumnWidth);
+        table.SetupColumn("Ptr"u8,  TableColumnFlags.WidthFixed, _hashColumnWidth);
+        table.SetupColumn("Path"u8, TableColumnFlags.WidthFixed, _pathColumnWidth);
+        table.SetupColumn("Refs"u8, TableColumnFlags.WidthFixed, _refsColumnWidth);
         ImGui.TableHeadersRow();
 
         resourceManager.IterateResourceMap(map, (hash, r) =>
@@ -132,7 +132,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
     private void SetTableWidths()
     {
         _hashColumnWidth = 100 * Im.Style.GlobalScale;
-        _pathColumnWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - 300 * Im.Style.GlobalScale;
+        _pathColumnWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - 300 * Im.Style.GlobalScale;
         _refsColumnWidth = 30 * Im.Style.GlobalScale;
     }
 }
