@@ -31,36 +31,38 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
     public ModCollection Create(string name, int index, ModCollection? duplicate)
     {
-        var newCollection = duplicate?.Duplicate(name, CurrentCollectionId, index)
-         ?? ModCollection.CreateEmpty(name, CurrentCollectionId, index, _modStorage.Count);
-        Add(newCollection);
+        var localId       = AllocateNextId();
+        var newCollection = duplicate?.Duplicate(name, localId, index)
+         ?? ModCollection.CreateEmpty(name, localId, index, _modStorage.Count);
+        AddAtLocalId(newCollection, localId);
         return newCollection;
     }
 
     public ModCollection CreateFromData(Guid id, string name, int version, Dictionary<string, ModSettings.SavedSettings> allSettings,
         IReadOnlyList<string> inheritances)
     {
+        var localId       = AllocateNextId();
         var newCollection = ModCollection.CreateFromData(_saveService, _modStorage,
-            new ModCollectionIdentity(id, CurrentCollectionId, name, Count), version, allSettings, inheritances);
-        Add(newCollection);
+            new ModCollectionIdentity(id, localId, name, Count), version, allSettings, inheritances);
+        AddAtLocalId(newCollection, localId);
         return newCollection;
     }
 
     public ModCollection CreateTemporary(string name, int index, int globalChangeCounter)
     {
-        var newCollection = ModCollection.CreateTemporary(name, CurrentCollectionId, index, globalChangeCounter);
-        Add(newCollection);
+        var localId       = AllocateNextId();
+        var newCollection = ModCollection.CreateTemporary(name, localId, index, globalChangeCounter);
+        AddAtLocalId(newCollection, localId);
         return newCollection;
     }
 
-    /// <remarks> Atomically add to _collectionLocal and increments _currentCollectionIdValue. </remarks>
-    private void Add(ModCollection newCollection)
+    /// <remarks> Atomically add to _collectionLocal at the id given. </remarks>
+    private void AddAtLocalId(ModCollection newCollection, LocalCollectionId id)
     {
-        _collectionsByLocal.AddOrUpdate(CurrentCollectionId,
+        _collectionsByLocal.AddOrUpdate(id,
             static (_, newColl) => newColl,
             static (_, _, newColl) => newColl,
             newCollection);
-        Interlocked.Increment(ref _currentCollectionIdValue);
     }
 
     public void Delete(ModCollection collection)
@@ -86,6 +88,9 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     
     /// <remarks> Starts at 1 because the empty collection gets Zero. </remarks>
     public LocalCollectionId CurrentCollectionId => new(_currentCollectionIdValue);
+    
+    private LocalCollectionId AllocateNextId () 
+        => new(Interlocked.Increment(ref _currentCollectionIdValue));
 
     /// <summary> Default enumeration skips the empty collection. </summary>
     public IEnumerator<ModCollection> GetEnumerator()
