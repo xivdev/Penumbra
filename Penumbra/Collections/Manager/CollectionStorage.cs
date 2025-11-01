@@ -33,8 +33,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     {
         var newCollection = duplicate?.Duplicate(name, CurrentCollectionId, index)
          ?? ModCollection.CreateEmpty(name, CurrentCollectionId, index, _modStorage.Count);
-        _collectionsByLocal[CurrentCollectionId] =  newCollection;
-        CurrentCollectionId                      += 1;
+        Add(newCollection);
         return newCollection;
     }
 
@@ -43,21 +42,29 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     {
         var newCollection = ModCollection.CreateFromData(_saveService, _modStorage,
             new ModCollectionIdentity(id, CurrentCollectionId, name, Count), version, allSettings, inheritances);
-        _collectionsByLocal[CurrentCollectionId] =  newCollection;
-        CurrentCollectionId                      += 1;
+        Add(newCollection);
         return newCollection;
     }
 
     public ModCollection CreateTemporary(string name, int index, int globalChangeCounter)
     {
         var newCollection = ModCollection.CreateTemporary(name, CurrentCollectionId, index, globalChangeCounter);
-        _collectionsByLocal[CurrentCollectionId] =  newCollection;
-        CurrentCollectionId                      += 1;
+        Add(newCollection);
         return newCollection;
     }
 
+    /// <remarks> Atomically add to _collectionLocal and increments _currentCollectionIdValue. </remarks>
+    private void Add(ModCollection newCollection)
+    {
+        _collectionsByLocal.AddOrUpdate(CurrentCollectionId,
+            static (_, newColl) => newColl,
+            static (_, _, newColl) => newColl,
+            newCollection);
+        Interlocked.Increment(ref _currentCollectionIdValue);
+    }
+
     public void Delete(ModCollection collection)
-        => _collectionsByLocal.Remove(collection.Identity.LocalId);
+        => _collectionsByLocal.TryRemove(collection.Identity.LocalId, out _);
 
     /// <remarks> The empty collection is always available at Index 0. </remarks>
     private readonly List<ModCollection> _collections =
@@ -66,7 +73,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     ];
 
     /// <remarks> A list of all collections ever created still existing by their local id. </remarks>
-    private readonly Dictionary<LocalCollectionId, ModCollection>
+    private readonly ConcurrentDictionary<LocalCollectionId, ModCollection>
         _collectionsByLocal = new() { [LocalCollectionId.Zero] = ModCollection.Empty };
 
 
@@ -186,7 +193,6 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         // Update indices.
         for (var i = collection.Identity.Index; i < Count; ++i)
             _collections[i].Identity.Index = i;
-        _collectionsByLocal.Remove(collection.Identity.LocalId);
 
         Penumbra.Messager.NotificationMessage($"Deleted collection {collection.Identity.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
