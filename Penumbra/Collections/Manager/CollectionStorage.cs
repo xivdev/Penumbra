@@ -201,22 +201,23 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// </summary>
     public bool RemoveCollection(ModCollection collection)
     {
-        if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= Count)
-        {
-            Penumbra.Messager.NotificationMessage("Can not remove the empty collection.", NotificationType.Error, false);
-            return false;
-        }
-
-        if (collection.Identity.Index == DefaultNamed.Identity.Index)
-        {
-            Penumbra.Messager.NotificationMessage("Can not remove the default collection.", NotificationType.Error, false);
-            return false;
-        }
-
-        Delete(collection);
-        _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
         lock (_collectionsLock) 
         {
+            if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= Count)
+            {
+                Penumbra.Messager.NotificationMessage("Can not remove the empty collection.", NotificationType.Error, false);
+                return false;
+            }
+
+            if (collection.Identity.Index == DefaultNamed.Identity.Index)
+            {
+                Penumbra.Messager.NotificationMessage("Can not remove the default collection.", NotificationType.Error, false);
+                return false;
+            }
+
+            Delete(collection);
+            _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
+
             _collections.RemoveAt(collection.Identity.Index);
             // Update indices.
             for (var i = collection.Identity.Index; i < _collections.Count; ++i)
