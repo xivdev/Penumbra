@@ -89,7 +89,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// <remarks> Starts at 1 because the empty collection gets Zero. </remarks>
     public LocalCollectionId CurrentCollectionId => new(_currentCollectionIdValue);
     
-    private LocalCollectionId AllocateNextId ()
+    private LocalCollectionId AllocateNextId()
     {
         var newLocalId = new LocalCollectionId(_currentCollectionIdValue);
         Interlocked.Increment(ref _currentCollectionIdValue);
