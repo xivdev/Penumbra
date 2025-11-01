@@ -207,7 +207,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     {
         lock (_collectionsLock) 
         {
-            if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= Count)
+            if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= _collections.Count)
             {
                 Penumbra.Messager.NotificationMessage("Can not remove the empty collection.", NotificationType.Error, false);
                 return false;
