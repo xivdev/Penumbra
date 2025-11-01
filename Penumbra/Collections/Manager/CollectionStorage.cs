@@ -94,23 +94,35 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
     /// <summary> Default enumeration skips the empty collection. </summary>
     public IEnumerator<ModCollection> GetEnumerator()
-        => _collections.Skip(1).GetEnumerator();
+        => GetModSnapShot().ToList().GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
     public int Count
-        => _collections.Count;
+    {
+        get
+        {
+            lock(_collectionsLock)
+                return _collections.Count;
+        }
+    }
 
     public ModCollection this[int index]
-        => _collections[index];
+    {    
+        get
+        {
+            lock(_collectionsLock)
+                return _collections[index];
+        }
+    }
 
     /// <summary> Find a collection by its name. If the name is empty or None, the empty collection is returned. </summary>
     public bool ByName(string name, [NotNullWhen(true)] out ModCollection? collection)
     {
         if (name.Length != 0)
-            return _collections.FindFirst(c => string.Equals(c.Identity.Name, name, StringComparison.OrdinalIgnoreCase), out collection);
-
+            lock(_collectionsLock)
+                return _collections.FindFirst(c => string.Equals(c.Identity.Name, name, StringComparison.OrdinalIgnoreCase), out collection);    
         collection = ModCollection.Empty;
         return true;
     }
@@ -119,8 +131,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     public bool ById(Guid id, [NotNullWhen(true)] out ModCollection? collection)
     {
         if (id != Guid.Empty)
-            return _collections.FindFirst(c => c.Identity.Id == id, out collection);
-
+            lock(_collectionsLock)
+                return _collections.FindFirst(c => c.Identity.Id == id, out collection);
         collection = ModCollection.Empty;
         return true;
     }
@@ -189,7 +201,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// </summary>
     public bool RemoveCollection(ModCollection collection)
     {
-        if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= _collections.Count)
+        if (collection.Identity.Index <= ModCollection.Empty.Identity.Index || collection.Identity.Index >= Count)
         {
             Penumbra.Messager.NotificationMessage("Can not remove the empty collection.", NotificationType.Error, false);
             return false;
@@ -203,11 +215,11 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
         Delete(collection);
         _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
-        lock (_collectionsLock)
+        lock (_collectionsLock) 
         {
             _collections.RemoveAt(collection.Identity.Index);
             // Update indices.
-            for (var i = collection.Identity.Index; i < Count; ++i)
+            for (var i = collection.Identity.Index; i < _collections.Count; ++i)
                 _collections[i].Identity.Index = i;
         }
 
@@ -322,12 +334,12 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
             return collection;
 
         if (AddCollection(ModCollectionIdentity.DefaultCollectionName, null))
-            return _collections[^1];
+            return this[^1];
 
         Penumbra.Messager.NotificationMessage(
             $"Unknown problem creating a collection with the name {ModCollectionIdentity.DefaultCollectionName}, which is required to exist.",
             NotificationType.Error);
-        return Count > 1 ? _collections[1] : _collections[0];
+        return Count > 1 ? this[1] : this[0];
     }
 
     /// <summary> Move all settings in all collections to unused settings. </summary>
