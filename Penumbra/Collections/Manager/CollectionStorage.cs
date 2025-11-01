@@ -71,6 +71,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     [
         ModCollection.Empty,
     ];
+    
+    private readonly Lock _collectionsLock = new();
 
     /// <remarks> A list of all collections ever created still existing by their local id. </remarks>
     private readonly ConcurrentDictionary<LocalCollectionId, ModCollection>
@@ -79,8 +81,11 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
     public readonly ModCollection DefaultNamed;
 
-    /// <remarks> Incremented by 1 because the empty collection gets Zero. </remarks>
-    public LocalCollectionId CurrentCollectionId { get; private set; } = LocalCollectionId.Zero + 1;
+    /// <remarks> Starts at 1 because the empty collection gets Zero. </remarks>
+    private int _currentCollectionIdValue = 1;
+    
+    /// <remarks> Starts at 1 because the empty collection gets Zero. </remarks>
+    public LocalCollectionId CurrentCollectionId => new(_currentCollectionIdValue);
 
     /// <summary> Default enumeration skips the empty collection. </summary>
     public IEnumerator<ModCollection> GetEnumerator()
@@ -162,8 +167,12 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         if (name.Length == 0)
             return false;
 
-        var newCollection = Create(name, _collections.Count, duplicate);
-        _collections.Add(newCollection);
+        ModCollection newCollection;
+        lock (_collectionsLock)
+        {
+            newCollection = Create(name, _collections.Count, duplicate);
+            _collections.Add(newCollection);
+        }
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
         Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.Identity.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
@@ -189,10 +198,13 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
         Delete(collection);
         _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
-        _collections.RemoveAt(collection.Identity.Index);
-        // Update indices.
-        for (var i = collection.Identity.Index; i < Count; ++i)
-            _collections[i].Identity.Index = i;
+        lock (_collectionsLock)
+        {
+            _collections.RemoveAt(collection.Identity.Index);
+            // Update indices.
+            for (var i = collection.Identity.Index; i < Count; ++i)
+                _collections[i].Identity.Index = i;
+        }
 
         Penumbra.Messager.NotificationMessage($"Deleted collection {collection.Identity.AnonymizedName}.", NotificationType.Success, false);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
@@ -316,15 +328,17 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// <summary> Move all settings in all collections to unused settings. </summary>
     private void OnModDiscoveryStarted()
     {
-        foreach (var collection in this)
+        var snapshot = GetModSnapShot();
+        foreach (var collection in snapshot)
             collection.Settings.PrepareModDiscovery(_modStorage);
     }
 
     /// <summary> Restore all settings in all collections to mods. </summary>
     private void OnModDiscoveryFinished()
     {
+        var snapshot = GetModSnapShot();
         // Re-apply all mod settings.
-        foreach (var collection in this)
+        foreach (var collection in snapshot)
             collection.Settings.ApplyModSettings(collection, _saveService, _modStorage);
     }
 
@@ -332,22 +346,23 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
         DirectoryInfo? newDirectory)
     {
+        var snapshot = GetModSnapShot();
         switch (type)
         {
             case ModPathChangeType.Added:
-                foreach (var collection in this)
+                foreach (var collection in snapshot)
                     collection.Settings.AddMod(mod);
                 break;
             case ModPathChangeType.Deleted:
-                foreach (var collection in this)
+                foreach (var collection in snapshot)
                     collection.Settings.RemoveMod(mod);
                 break;
             case ModPathChangeType.Moved:
-                foreach (var collection in this.Where(collection => collection.GetOwnSettings(mod.Index) != null))
+                foreach (var collection in snapshot.Where(collection => collection.GetOwnSettings(mod.Index) != null))
                     _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
                 break;
             case ModPathChangeType.Reloaded:
-                foreach (var collection in this)
+                foreach (var collection in snapshot)
                 {
                     if (collection.GetOwnSettings(mod.Index)?.Settings.FixAll(mod) ?? false)
                         _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
@@ -365,8 +380,9 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         type.HandlingInfo(out var requiresSaving, out _, out _);
         if (!requiresSaving)
             return;
-
-        foreach (var collection in this)
+        
+        var snapshot = GetModSnapShot();
+        foreach (var collection in snapshot)
         {
             if (collection.GetOwnSettings(mod.Index)?.HandleChanges(type, mod, group, option, movedToIdx) ?? false)
                 _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
@@ -380,11 +396,22 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         if (file.CurrentUsage == 0)
             return;
 
-        foreach (var collection in this)
+        var snapshot = GetModSnapShot();
+        foreach (var collection in snapshot)
         {
             var (settings, _) = collection.GetActualSettings(mod.Index);
             if (settings is { Enabled: true })
                 collection.Counters.IncrementChange();
         }
+    }
+    
+    private ModCollection[] GetModSnapShot()
+    {
+        ModCollection[] snapshot;
+        lock (_collectionsLock)
+        {
+            snapshot = _collections.Skip(1).ToArray();
+        }
+        return snapshot;
     }
 }
