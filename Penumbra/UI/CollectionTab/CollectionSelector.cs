@@ -1,7 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using OtterGui;
-using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -77,8 +75,8 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     protected override bool OnDraw(int idx)
     {
         using var color  = ImGuiColor.Header.Push(ColorId.SelectedCollection.Value());
-        var       ret    = ImGui.Selectable(Name(Items[idx]), idx == CurrentIdx);
-        using var source = ImRaii.DragDropSource();
+        var       ret    = Im.Selectable(Name(Items[idx]), idx == CurrentIdx);
+        using var source = Im.DragDrop.Source();
 
         if (idx == CurrentIdx)
             _tutorial.OpenTutorial(BasicTutorialSteps.CurrentCollection);
@@ -86,8 +84,8 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         if (source)
         {
             _dragging = Items[idx];
-            ImGui.SetDragDropPayload(PayloadString, null);
-            ImGui.TextUnformatted($"Assigning {Name(_dragging)} to...");
+            source.SetPayload(PayloadString);
+            Im.Text($"Assigning {Name(_dragging)} to...");
         }
 
         if (ret)
@@ -98,8 +96,8 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
 
     public void DragTargetAssignment(CollectionType type, ActorIdentifier identifier)
     {
-        using var target = ImRaii.DragDropTarget();
-        if (!target.Success || _dragging == null || !ImGuiUtil.IsDropping(PayloadString))
+        using var target = Im.DragDrop.Target();
+        if (!target.Success || _dragging is null || !target.IsDropping(PayloadString))
             return;
 
         _active.SetCollection(_dragging, type, _active.Individuals.GetGroup(identifier));

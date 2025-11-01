@@ -12,7 +12,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
         => "EditDesc"u8;
 
     private bool   _hasBeenEdited;
-    private string _description = string.Empty;
+    private StringU8 _description = StringU8.Empty;
 
     private object? _current;
     private bool    _opened;
@@ -22,7 +22,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
         _current       = mod;
         _opened        = true;
         _hasBeenEdited = false;
-        _description   = mod.Description;
+        _description   = new StringU8(mod.Description);
     }
 
     public void Open(IModGroup group)
@@ -30,7 +30,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
         _current       = group;
         _opened        = true;
         _hasBeenEdited = false;
-        _description   = group.Description;
+        _description   = new StringU8(group.Description);
     }
 
     public void Open(IModOption option)
@@ -38,7 +38,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
         _current       = option;
         _opened        = true;
         _hasBeenEdited = false;
-        _description   = option.Description;
+        _description   = new StringU8(option.Description);
     }
 
     public void Draw()
@@ -60,8 +60,8 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
         if (Im.Window.Appearing)
             Im.Keyboard.SetFocusHere();
 
-        ImEx.InputOnDeactivation.MultiLine("##editDescription"u8, _description, out _description, inputSize);
-        _hasBeenEdited |= Im.Item.Edited;
+        if (Im.Input.MultiLine("##editDescription"u8, ref _description, inputSize))
+            _hasBeenEdited = true;
         UiHelpers.DefaultLineSpace();
 
         var buttonSize = new Vector2(Im.Style.GlobalScale * 100, 0);
@@ -83,12 +83,12 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
 
         switch (_current)
         {
-            case Mod mod:           modManager.DataEditor.ChangeModDescription(mod, _description); break;
-            case IModGroup group:   modManager.OptionEditor.ChangeGroupDescription(group, _description); break;
-            case IModOption option: modManager.OptionEditor.ChangeOptionDescription(option, _description); break;
+            case Mod mod:           modManager.DataEditor.ChangeModDescription(mod, _description.ToString()); break;
+            case IModGroup group:   modManager.OptionEditor.ChangeGroupDescription(group, _description.ToString()); break;
+            case IModOption option: modManager.OptionEditor.ChangeOptionDescription(option, _description.ToString()); break;
         }
 
-        _description   = string.Empty;
+        _description   = StringU8.Empty;
         _hasBeenEdited = false;
         Im.Popup.CloseCurrent();
     }
@@ -98,7 +98,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
         if (!Im.Button("Cancel"u8, buttonSize) && !Im.Keyboard.IsPressed(Key.Escape))
             return;
 
-        _description   = string.Empty;
+        _description   = StringU8.Empty;
         _hasBeenEdited = false;
         Im.Popup.CloseCurrent();
     }

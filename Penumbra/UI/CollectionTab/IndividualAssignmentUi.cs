@@ -1,8 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Custom;
-using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
@@ -17,6 +14,13 @@ public class IndividualAssignmentUi : IDisposable
     private readonly CommunicatorService _communicator;
     private readonly ActorManager        _actors;
     private readonly CollectionManager   _collectionManager;
+
+    private readonly ObjectKindCombo _objectKindCombo = new(
+        ObjectKind.BattleNpc,
+        ObjectKind.EventNpc,
+        ObjectKind.Companion,
+        ObjectKind.MountType,
+        ObjectKind.Ornament);
 
     private WorldCombo _worldCombo     = null!;
     private NpcCombo   _mountCombo     = null!;
@@ -61,7 +65,7 @@ public class IndividualAssignmentUi : IDisposable
 
     public void DrawObjectKindCombo(float width)
     {
-        if (_ready && IndividualHelpers.DrawObjectKindCombo(width, _newKind, out _newKind, ObjectKinds))
+        if (_ready && _objectKindCombo.Draw("##objectKind"u8, ref _newKind, StringU8.Empty, width))
             UpdateIdentifiersInternal();
     }
 
@@ -70,8 +74,8 @@ public class IndividualAssignmentUi : IDisposable
         if (!_ready)
             return;
 
-        ImGui.SetNextItemWidth(width);
-        if (ImGui.InputTextWithHint("##NewCharacter", "Character Name...", ref _newCharacterName, 32))
+        Im.Item.SetNextWidth(width);
+        if (Im.Input.Text("##NewCharacter"u8, ref _newCharacterName, "Character Name..."u8))
             UpdateIdentifiersInternal();
     }
 
@@ -103,15 +107,6 @@ public class IndividualAssignmentUi : IDisposable
     private const string AlreadyAssigned           = "The Individual you specified has already been assigned a collection.";
     private const string NewNpcTooltipEmpty        = "Please select a valid NPC from the drop down menu first.";
 
-    private static readonly IReadOnlyList<ObjectKind> ObjectKinds = new[]
-    {
-        ObjectKind.BattleNpc,
-        ObjectKind.EventNpc,
-        ObjectKind.Companion,
-        ObjectKind.MountType,
-        ObjectKind.Ornament,
-    };
-
     private NpcCombo GetNpcCombo(ObjectKind kind)
         => kind switch
         {
@@ -127,11 +122,11 @@ public class IndividualAssignmentUi : IDisposable
     private void SetupCombos()
     {
         _worldCombo     = new WorldCombo(_actors.Data.Worlds);
-        _mountCombo     = new NpcCombo(new StringU8("##mounts"u8), _actors.Data.Mounts);
+        _mountCombo     = new NpcCombo(new StringU8("##mounts"u8),     _actors.Data.Mounts);
         _companionCombo = new NpcCombo(new StringU8("##companions"u8), _actors.Data.Companions);
-        _ornamentCombo  = new NpcCombo(new StringU8("##ornaments"u8), _actors.Data.Ornaments);
-        _bnpcCombo      = new NpcCombo(new StringU8("##bnpc"u8), _actors.Data.BNpcs);
-        _enpcCombo      = new NpcCombo(new StringU8("##enpc"u8), _actors.Data.ENpcs);
+        _ornamentCombo  = new NpcCombo(new StringU8("##ornaments"u8),  _actors.Data.Ornaments);
+        _bnpcCombo      = new NpcCombo(new StringU8("##bnpc"u8),       _actors.Data.BNpcs);
+        _enpcCombo      = new NpcCombo(new StringU8("##enpc"u8),       _actors.Data.ENpcs);
         _ready          = true;
     }
 
