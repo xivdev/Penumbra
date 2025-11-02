@@ -150,11 +150,11 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             ? "When using all slots, you also need to use all IDs."u8
             : "Enable this attribute for all model IDs."u8);
 
-        ImGui.SameLine(0, ImGui.GetStyle().ItemInnerSpacing.X);
+        Im.Line.Same(0, Im.Style.ItemInnerSpacing.X);
         if (all)
         {
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0.05f, 0.5f));
-            ImUtf8.TextFramed("All IDs"u8, ImGuiColor.FrameBackground.Get(all || allSlots ? ImGui.GetStyle().DisabledAlpha : 1f).Color,
+            using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0.05f, 0.5f));
+            ImUtf8.TextFramed("All IDs"u8, ImGuiColor.FrameBackground.Get(all || allSlots ? Im.Style.DisabledAlpha : 1f).Color,
                 new Vector2(unscaledWidth, 0), ImGuiColor.TextDisabled.Get().Color);
         }
         else
@@ -175,7 +175,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public bool DrawHumanSlot(ref AtrIdentifier identifier, float unscaledWidth = 150)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
         using (var combo = ImUtf8.Combo("##atrSlot"u8, ShpMetaDrawer.SlotName(identifier.Slot)))
         {
             if (combo)
@@ -215,7 +215,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     private static bool DrawGenderRaceConditionInput(ref AtrIdentifier identifier, float unscaledWidth = 250)
     {
         var ret = false;
-        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
 
         using (var combo = ImUtf8.Combo("##shpGenderRace"u8,
                    identifier.GenderRaceCondition is GenderRace.Unknown
@@ -257,7 +257,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var span = new Span<byte>(ptr, ShapeAttributeString.MaxLength + 1);
         using (ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !valid))
         {
-            ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
+            Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
             if (ImUtf8.InputText("##atrAttribute"u8, span, out int newLength, "Attribute..."u8))
             {
                 buffer.ForceLength((byte)newLength);

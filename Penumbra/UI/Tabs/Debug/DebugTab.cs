@@ -344,7 +344,7 @@ public class DebugTab : Window, ITab
                         ImGui.TableNextColumn();
                         var index = mod.Index;
                         if (index != lastIndex + 1)
-                            ImGui.TextUnformatted("!!!");
+                            Im.Text("!!!"u8);
                         lastIndex = index;
                     }
                 }
@@ -364,7 +364,7 @@ public class DebugTab : Window, ITab
                     PrintValue("Import Window Was Drawn", _importPopup.WasDrawn.ToString());
                     PrintValue("Import Popup Was Drawn",  _importPopup.PopupWasDrawn.ToString());
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted("Import Batches");
+                    Im.Text("Import Batches"u8);
                     ImGui.TableNextColumn();
                     foreach (var (index, batch) in _modImporter.ModBatches.Index())
                     {
@@ -373,13 +373,13 @@ public class DebugTab : Window, ITab
                     }
 
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted("Addable Mods");
+                    Im.Text("Addable Mods"u8);
                     ImGui.TableNextColumn();
                     foreach (var mod in _modImporter.AddableMods)
                     {
                         ImGui.TableNextColumn();
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(mod.Name);
+                        Im.Text(mod.Name);
                     }
                 }
             }
@@ -582,7 +582,7 @@ public class DebugTab : Window, ITab
         if (!ImGui.CollapsingHeader("Path Resolver"))
             return;
 
-        ImGui.TextUnformatted(
+        Im.Text(
             $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Identity.Name})");
         using (var drawTree = Im.Tree.Node("Draw Object to Object"u8))
         {
@@ -627,9 +627,9 @@ public class DebugTab : Window, ITab
                     foreach (var data in _pathState.CurrentData)
                     {
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted($"{data.AssociatedGameObject:X}");
+                        Im.Text($"{data.AssociatedGameObject:X}");
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(data.ModCollection.Identity.Name);
+                        Im.Text(data.ModCollection.Identity.Name);
                     }
             }
         }
@@ -726,7 +726,7 @@ public class DebugTab : Window, ITab
                     agent = &AgentBannerMIP.Instance()->AgentBannerInterface;
 
                 ImUtf8.Text("Agent: ");
-                ImGui.SameLine(0, 0);
+                Im.Line.Same(0, 0);
                 Penumbra.Dynamis.DrawPointer((nint)agent);
                 if (agent->Data != null)
                 {
@@ -742,7 +742,7 @@ public class DebugTab : Window, ITab
                 }
                 else
                 {
-                    ImGui.TextUnformatted("INACTIVE");
+                    Im.Text("INACTIVE"u8);
                 }
             }
         }
@@ -877,9 +877,9 @@ public class DebugTab : Window, ITab
             p =>
             {
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(p.Key);
+                Im.Text(p.Key);
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(string.Join(", ", p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
+                Im.Text(StringU8.Join(", "u8, p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
             });
         ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
     }
@@ -952,7 +952,7 @@ public class DebugTab : Window, ITab
                     var frame = new Vector2(Im.Style.TextHeight);
                     ImGui.ColorButton("###color", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
                     Im.Line.Same();
-                    ImGui.TextUnformatted($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");
+                    Im.Text($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");
                 }
 
                 foreach (var list in data.Scalars)
@@ -989,68 +989,41 @@ public class DebugTab : Window, ITab
         table.SetupColumn("\u0394 Slow-Path Calls"u8,     TableColumnFlags.WidthStretch, 0.2f);
         ImGui.TableHeadersRow();
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("characterglass.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterGlass}");
+        table.DrawColumn("characterglass.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.CharacterGlass}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("characterlegacy.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterLegacyShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterLegacy}");
+        table.DrawColumn("characterlegacy.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterLegacyShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.CharacterLegacy}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("characterocclusion.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterOcclusionShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterOcclusion}");
+        table.DrawColumn("characterocclusion.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterOcclusionShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.CharacterOcclusion}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("characterstockings.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterStockingsShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterStockings}");
+        table.DrawColumn("characterstockings.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterStockingsShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.CharacterStockings}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("charactertattoo.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTattooShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTattoo}");
+        table.DrawColumn("charactertattoo.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterTattooShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.CharacterTattoo}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("charactertransparency.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedCharacterTransparencyShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.CharacterTransparency}");
+        table.DrawColumn("charactertransparency.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterTransparencyShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.CharacterTransparency}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("hairmask.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedHairMaskShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.HairMask}");
+        table.DrawColumn("hairmask.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedHairMaskShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.HairMask}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("iris.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedIrisShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.Iris}");
+        table.DrawColumn("iris.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedIrisShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.Iris}");
 
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted("skin.shpk");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{_shaderReplacementFixer.ModdedSkinShpkCount}");
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted($"{slowPathCallDeltas.Skin}");
+        table.DrawColumn("skin.shpk"u8);
+        table.DrawColumn($"{_shaderReplacementFixer.ModdedSkinShpkCount}");
+        table.DrawColumn($"{slowPathCallDeltas.Skin}");
     }
 
     /// <summary> Draw information about the models, materials and resources currently loaded by the local player. </summary>
@@ -1102,7 +1075,7 @@ public class DebugTab : Window, ITab
             var imc = (ResourceHandle*)model->IMCArray[i];
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"Slot {i}");
+            Im.Text($"Slot {i}");
             ImGui.TableNextColumn();
             Penumbra.Dynamis.DrawPointer((nint)imc);
             ImGui.TableNextColumn();
@@ -1200,18 +1173,12 @@ public class DebugTab : Window, ITab
             if (r->RefCount < 10000)
                 return;
 
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(((ResourceCategory)r->Type.Value).ToString());
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(r->FileType.ToString("X"));
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(r->Id.ToString("X"));
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(((ulong)r).ToString("X"));
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(r->RefCount.ToString());
-            ImGui.TableNextColumn();
-            Im.Text(r->FileName.AsSpan());
+            Im.Table.DrawColumn($"{(ResourceCategory)r->Type.Value}");
+            Im.Table.DrawColumn($"{r->FileType:X}");
+            Im.Table.DrawColumn($"{r->Id:X}");
+            Im.Table.DrawColumn($"{(ulong)r:X}");
+            Im.Table.DrawColumn($"{r->RefCount}");
+            Im.Table.DrawColumn(r->FileName.AsSpan());
         });
     }
 
@@ -1266,9 +1233,9 @@ public class DebugTab : Window, ITab
     private static void PrintValue(string name, string value)
     {
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(name);
+        Im.Text(name);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(value);
+        Im.Text(value);
     }
 
     public override void Draw()
@@ -1289,7 +1256,7 @@ public class DebugTab : Window, ITab
     public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, nint address)
     {
         Penumbra.Dynamis.DrawPointer(address);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         ImUtf8.Text(label);
     }
 }

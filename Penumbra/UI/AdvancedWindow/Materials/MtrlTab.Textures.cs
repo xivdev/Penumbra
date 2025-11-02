@@ -82,7 +82,7 @@ public partial class MtrlTab
         float helpWidth;
         using (var _ = ImRaii.PushFont(UiBuilder.IconFont))
         {
-            helpWidth = ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize(FontAwesomeIcon.InfoCircle.ToIconString()).X;
+            helpWidth = Im.Style.ItemSpacing.X + ImGui.CalcTextSize(FontAwesomeIcon.InfoCircle.ToIconString()).X;
         }
 
         foreach (var (label, _, _, description, monoFont) in Textures)
@@ -151,7 +151,7 @@ public partial class MtrlTab
             }
 
             ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth(Im.ContentRegion.Available.X);
+            Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
             if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
                     disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
              && tmp.Length > 0
@@ -168,7 +168,7 @@ public partial class MtrlTab
                 if (description.Length > 0)
                     ImGuiUtil.LabeledHelpMarker(label, description);
                 else
-                    ImGui.TextUnformatted(label);
+                    Im.Text(label);
             }
 
             if (unfolded)
@@ -221,7 +221,7 @@ public partial class MtrlTab
         {
             ref var samplerFlags = ref Wrap(ref sampler.Flags);
 
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
             var addressMode = samplerFlags.UAddressMode;
             if (ComboTextureAddressMode("##UAddressMode"u8, ref addressMode))
             {
@@ -234,7 +234,7 @@ public partial class MtrlTab
             ImUtf8.LabeledHelpMarker("U Address Mode"u8,
                 "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range.");
 
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
             addressMode = samplerFlags.VAddressMode;
             if (ComboTextureAddressMode("##VAddressMode"u8, ref addressMode))
             {
@@ -248,7 +248,7 @@ public partial class MtrlTab
                 "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range.");
 
             var lodBias = samplerFlags.LodBias;
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
             if (ImUtf8.DragScalar("##LoDBias"u8, ref lodBias, -8.0f, 7.984375f, 0.1f))
             {
                 samplerFlags.LodBias = lodBias;
@@ -261,7 +261,7 @@ public partial class MtrlTab
                 "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
 
             var minLod = samplerFlags.MinLod;
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
             if (ImUtf8.DragScalar("##MinLoD"u8, ref minLod, 0, 15, 0.1f))
             {
                 samplerFlags.MinLod = minLod;
@@ -282,12 +282,12 @@ public partial class MtrlTab
         if (!t)
             return ret;
 
-        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
+        Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
         if (ImUtf8.InputScalar("Texture Flags"u8, ref texture.Flags, "%04X"u8,
                 flags: disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
             ret = true;
 
-        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 100.0f);
+        Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
         if (ImUtf8.InputScalar("Sampler Flags"u8, ref sampler.Flags, "%08X"u8,
                 flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
         {

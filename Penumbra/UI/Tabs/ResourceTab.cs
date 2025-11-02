@@ -25,7 +25,7 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
     public void DrawContent()
     {
         // Filter for resources containing the input string.
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         ImGui.InputTextWithHint("##resourceFilter", "Filter...", ref _resourceManagerFilter, Utf8GamePath.MaxGamePathLength);
 
         using var child = ImRaii.Child("##ResourceManagerTab", -Vector2.One);
@@ -40,9 +40,9 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
         Im.Line.New();
         unsafe
         {
-            ImGui.TextUnformatted(
+            Im.Text(
                 $"Static Address: 0x{(ulong)resourceManager.ResourceManagerAddress:X} (+0x{(ulong)resourceManager.ResourceManagerAddress - (ulong)sigScanner.Module.BaseAddress:X})");
-            ImGui.TextUnformatted($"Actual Address: 0x{(ulong)resourceManager.ResourceManager:X}");
+            Im.Text($"Actual Address: 0x{(ulong)resourceManager.ResourceManager:X}");
         }
     }
 

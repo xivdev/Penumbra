@@ -25,7 +25,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         var width = editor.AvailableWidth.X - 3 * ImUtf8.ItemInnerSpacing.X - Im.Style.ItemSpacing.X - ImUtf8.CalcTextSize("All Variants"u8).X - ImUtf8.CalcTextSize("Only Attributes"u8).X - 2 * ImUtf8.FrameHeight;
         ImEx.TextFramed(identifier.ToString(), new Vector2(width, 0), Rgba32.Transparent);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         var allVariants = group.AllVariants;
         if (ImUtf8.Checkbox("All Variants"u8, ref allVariants))
             editor.ModManager.OptionEditor.ImcEditor.ChangeAllVariants(group, allVariants);
@@ -52,7 +52,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             changes |= ImcMetaDrawer.DrawDecalId(defaultEntry, ref entry, true);
         }
 
-        ImGui.SameLine(0, editor.PriorityWidth);
+        Im.Line.Same(0, editor.PriorityWidth);
         using (ImUtf8.Group())
         {
             ImUtf8.TextFrameAligned("Material Animation ID"u8);
@@ -88,7 +88,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
                 ImUtf8.TextFrameAligned(option.Name);
         }
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         using (ImUtf8.Group())
         {
             DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, group.DefaultEntry.AttributeMask, group);
@@ -108,18 +108,18 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             using var id = ImRaii.PushId(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDefaultMultiBehaviour(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionName(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDescription(option);
 
             if (!option.IsDisableSubMod)
             {
-                ImUtf8.SameLineInner();
+                Im.Line.SameInner();
                 editor.DrawOptionDelete(option);
             }
         }
@@ -164,7 +164,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
 
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "ABCDEFGHIJ"u8.Slice(i, 1));
             if (i != 9)
-                ImUtf8.SameLineInner();
+                Im.Line.SameInner();
         }
     }
 

@@ -98,7 +98,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         DrawBox(ref entry, 0);
         for (var i = 1; i < Eqp.EqpAttributes[slot].Count; ++i)
         {
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             DrawBox(ref entry, i);
         }
 

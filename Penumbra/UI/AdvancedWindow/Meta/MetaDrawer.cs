@@ -79,7 +79,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         bool border)
     {
         int tmp = currentId;
-        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
         using var style = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, border);
         if (ImUtf8.InputScalar(label, ref tmp))
             tmp = Math.Clamp(tmp, minId, maxId);
@@ -98,7 +98,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         newValue = currentValue;
         var       c     = defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
-        ImGui.SetNextItemWidth(width);
+        Im.Item.SetNextWidth(width);
         if (ImUtf8.DragScalar(label, ref newValue, minValue, maxValue, speed))
             newValue = newValue <= minValue ? minValue : newValue >= maxValue ? maxValue : newValue;
 

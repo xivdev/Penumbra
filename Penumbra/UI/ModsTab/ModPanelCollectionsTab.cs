@@ -39,7 +39,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
             ImUtf8.Text($"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
 
         Im.Line.New();
-        ImGui.Separator();
+        Im.Separator();
         Im.Line.New();
         using var table = Im.Table.Begin("##modCollections"u8, 3, TableFlags.SizingFixedFit | TableFlags.RowBackground);
         if (!table)
@@ -65,7 +65,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                 if (context)
                 {
                     ImUtf8.Text(collection.Identity.Name);
-                    ImGui.Separator();
+                    Im.Separator();
                     using (ImRaii.Disabled(state is ModState.Enabled && parent == collection))
                     {
                         if (ImUtf8.MenuItem("Enable"u8))

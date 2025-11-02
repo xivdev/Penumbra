@@ -54,7 +54,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImUtf8.Text(info.Path.InternalName.Span[(Mod!.ModPath.FullName.Length + 1)..]);
             ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth(400 * Im.Style.GlobalScale);
+            Im.Item.SetNextWidth(400 * Im.Style.GlobalScale);
             var tmp = info.CurrentMaterials[0];
             if (ImUtf8.InputText("##0"u8, ref tmp))
                 info.SetMaterial(tmp, 0);
@@ -66,7 +66,7 @@ public partial class ModEditWindow
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
-                ImGui.SetNextItemWidth(400 * Im.Style.GlobalScale);
+                Im.Item.SetNextWidth(400 * Im.Style.GlobalScale);
                 tmp = info.CurrentMaterials[i];
                 if (ImUtf8.InputText(""u8, ref tmp))
                     info.SetMaterial(tmp, i);

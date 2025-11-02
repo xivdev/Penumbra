@@ -25,9 +25,9 @@ public class ChangedItemsTab(
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
-    private string _changedItemFilter    = string.Empty;
-    private string _changedItemModFilter = string.Empty;
-    private Vector2     _buttonSize;
+    private string  _changedItemFilter    = string.Empty;
+    private string  _changedItemModFilter = string.Empty;
+    private Vector2 _buttonSize;
 
     public void DrawContent()
     {
@@ -38,14 +38,14 @@ public class ChangedItemsTab(
         if (!child)
             return;
 
-        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + Im.Style.FrameHeight);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, Vector2.Zero)
-            .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
-            .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
-            .Push(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.01f, 0.5f));
+        _buttonSize = new Vector2(Im.Style.ItemSpacing.Y + Im.Style.FrameHeight);
+        using var style = ImStyleDouble.CellPadding.Push(Vector2.Zero)
+            .Push(ImStyleDouble.ItemSpacing,         Vector2.Zero)
+            .Push(ImStyleDouble.FramePadding,        Vector2.Zero)
+            .Push(ImStyleDouble.SelectableTextAlign, new Vector2(0.01f, 0.5f));
 
         var       skips = ImGuiClip.GetNecessarySkips(_buttonSize.Y);
-        using var table  = Im.Table.Begin("##changedItems"u8, 3, TableFlags.RowBackground, -Vector2.One);
+        using var table = Im.Table.Begin("##changedItems"u8, 3, TableFlags.RowBackground, -Vector2.One);
         if (!table)
             return;
 
@@ -64,11 +64,11 @@ public class ChangedItemsTab(
     {
         var varWidth = Im.ContentRegion.Available.X
           - 450 * Im.Style.GlobalScale
-          - ImGui.GetStyle().ItemSpacing.X;
-        ImGui.SetNextItemWidth(450 * Im.Style.GlobalScale);
+          - Im.Style.ItemSpacing.X;
+        Im.Item.SetNextWidth(450 * Im.Style.GlobalScale);
         Im.Input.Text("##changedItemsFilter"u8, ref _changedItemFilter, "Filter Item..."u8);
         Im.Line.Same();
-        ImGui.SetNextItemWidth(varWidth);
+        Im.Item.SetNextWidth(varWidth);
         Im.Input.Text("##changedItemsModFilter"u8, ref _changedItemModFilter, "Filter Mods..."u8);
         return varWidth;
     }
@@ -76,14 +76,15 @@ public class ChangedItemsTab(
     /// <summary> Apply the current filters. </summary>
     private bool FilterChangedItem(KeyValuePair<string, (Luna.SingleArray<IMod>, IIdentifiedObjectData)> item)
         => drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
-         && (_changedItemModFilter.Length is 0 || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter, StringComparison.OrdinalIgnoreCase)));
+         && (_changedItemModFilter.Length is 0
+             || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter, StringComparison.OrdinalIgnoreCase)));
 
     /// <summary> Draw a full column for a changed item. </summary>
     private void DrawChangedItemColumn(KeyValuePair<string, (Luna.SingleArray<IMod>, IIdentifiedObjectData)> item)
     {
         ImGui.TableNextColumn();
         drawer.DrawCategoryIcon(item.Value.Item2, _buttonSize.Y);
-        ImGui.SameLine(0, 0);
+        Im.Line.Same(0, 0);
         var name    = item.Value.Item2.ToName(item.Key);
         var clicked = ImUtf8.Selectable(name, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 });
         drawer.ChangedItemHandling(item.Value.Item2, clicked);

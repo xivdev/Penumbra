@@ -68,14 +68,14 @@ internal sealed class ResourceWatcherTable : Table<Record>
         else
         {
             var fileName = path.LastIndexOf((byte)'/');
-            using (ImRaii.Group())
+            using (Im.Group())
             {
                 CiByteString shortPath;
                 if (fileName != -1)
                 {
                     using var font = ImRaii.PushFont(UiBuilder.IconFont);
                     clicked = ImUtf8.Selectable(FontAwesomeIcon.EllipsisH.ToIconString());
-                    ImUtf8.SameLineInner();
+                    Im.Line.SameInner();
                     shortPath = path.Substring(fileName, path.Length - fileName);
                 }
                 else
@@ -124,14 +124,14 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
         public override void DrawColumn(Record item, int idx)
         {
-            ImGui.TextUnformatted(item.RecordType switch
+            Im.Text(item.RecordType switch
             {
-                RecordType.Request          => "REQ",
-                RecordType.ResourceLoad     => "LOAD",
-                RecordType.FileLoad         => "FILE",
-                RecordType.Destruction      => "DEST",
-                RecordType.ResourceComplete => "DONE",
-                _                           => string.Empty,
+                RecordType.Request          => "REQ"u8,
+                RecordType.ResourceLoad     => "LOAD"u8,
+                RecordType.FileLoad         => "FILE"u8,
+                RecordType.Destruction      => "DEST"u8,
+                RecordType.ResourceComplete => "DONE"u8,
+                _                           => StringU8.Empty,
             });
         }
     }
@@ -145,7 +145,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => lhs.Time.CompareTo(rhs.Time);
 
         public override void DrawColumn(Record item, int _)
-            => ImGui.TextUnformatted($"{item.Time.ToLongTimeString()}.{item.Time.Millisecond:D4}");
+            => Im.Text($"{item.Time.ToLongTimeString()}.{item.Time.Millisecond:D4}");
     }
 
     private sealed class Crc64Column : ColumnString<Record>
@@ -228,7 +228,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
         public override void DrawColumn(Record item, int idx)
         {
-            ImGui.TextUnformatted(item.Category.ToString());
+            Im.Text($"{item.Category}");
         }
     }
 
@@ -265,7 +265,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
         public override void DrawColumn(Record item, int idx)
         {
-            ImGui.TextUnformatted(item.ResourceType.ToString().ToLowerInvariant());
+            Im.Text($"{item.ResourceType.ToString().ToLowerInvariant()}");
         }
     }
 
@@ -406,12 +406,13 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
         protected static void DrawColumn(OptionalBool b)
         {
-            using var font = ImRaii.PushFont(UiBuilder.IconFont);
-            ImGui.TextUnformatted(b.Value switch
+            if (!b.HasValue)
+                return;
+
+            ImEx.Icon.Draw(b.Value switch
             {
-                null  => string.Empty,
-                true  => FontAwesomeIcon.Check.ToIconString(),
-                false => FontAwesomeIcon.Times.ToIconString(),
+                true => FontAwesomeIcon.Check.Icon(),
+                _    => FontAwesomeIcon.Times.Icon(),
             });
         }
     }

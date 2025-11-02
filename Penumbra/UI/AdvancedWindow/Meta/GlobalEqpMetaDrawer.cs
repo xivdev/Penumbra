@@ -86,7 +86,7 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
 
     public static bool DrawType(ref GlobalEqpManipulation identifier, float unscaledWidth = 250)
     {
-        ImGui.SetNextItemWidth(unscaledWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
         using var combo = ImUtf8.Combo("##geqpType"u8, identifier.Type.ToName());
         if (!combo)
             return false;

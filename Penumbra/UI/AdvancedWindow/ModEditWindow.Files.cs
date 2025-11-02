@@ -59,7 +59,7 @@ public partial class ModEditWindow
 
     private void DrawFilesOverviewMode()
     {
-        var height = Im.Style.TextHeightWithSpacing + 2 * ImGui.GetStyle().CellPadding.Y;
+        var height = Im.Style.TextHeightWithSpacing + 2 * Im.Style.CellPadding.Y;
         var skips  = ImGuiClip.GetNecessarySkips(height);
 
         using var table = Im.Table.Begin("##table"u8, 3, TableFlags.RowBackground | TableFlags.BordersInnerVertical, -Vector2.One);
@@ -70,7 +70,7 @@ public partial class ModEditWindow
         var width = Im.ContentRegion.Available.X / 8;
 
         table.SetupColumn("##file"u8,   TableColumnFlags.WidthFixed, width * 3);
-        table.SetupColumn("##path"u8,   TableColumnFlags.WidthFixed, width * 3 + ImGui.GetStyle().FrameBorderSize);
+        table.SetupColumn("##path"u8,   TableColumnFlags.WidthFixed, width * 3 + Im.Style.FrameBorderThickness);
         table.SetupColumn("##option"u8, TableColumnFlags.WidthFixed, width * 2);
 
         var idx = 0;
@@ -258,7 +258,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         var tmp = _fileIdx == i && _pathIdx == j ? _gamePathEdit : gamePath.ToString();
         var pos = ImGui.GetCursorPosX() - Im.Style.FrameHeight;
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength))
         {
             _fileIdx      = i;
@@ -303,7 +303,7 @@ public partial class ModEditWindow
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
         var pos = ImGui.GetCursorPosX() - Im.Style.FrameHeight;
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         if (ImGui.InputTextWithHint("##new", "Add New Path...", ref tmp, Utf8GamePath.MaxGamePathLength))
         {
             _fileIdx      = i;
@@ -346,8 +346,8 @@ public partial class ModEditWindow
     {
         Im.Line.New();
 
-        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(3 * Im.Style.GlobalScale, 0));
-        ImGui.SetNextItemWidth(30 * Im.Style.GlobalScale);
+        using var spacing = ImStyleDouble.ItemSpacing.Push(new Vector2(3 * Im.Style.GlobalScale, 0));
+        Im.Item.SetNextWidth(30 * Im.Style.GlobalScale);
         ImGui.DragInt("##skippedFolders", ref _folderSkip, 0.01f, 0, 10);
         ImGuiUtil.HoverTooltip("Skip the first N folders when automatically constructing the game path from the file path.");
         Im.Line.Same();
@@ -403,7 +403,7 @@ public partial class ModEditWindow
 
     private void DrawFileManagementNormal()
     {
-        ImGui.SetNextItemWidth(250 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(250 * Im.Style.GlobalScale);
         Im.Input.Text("##filter"u8, ref _fileFilter, "Filter paths..."u8);
         Im.Line.Same();
         ImGui.Checkbox("Show Game Paths", ref _showGamePaths);
@@ -430,19 +430,19 @@ public partial class ModEditWindow
 
     private void DrawFileManagementOverview()
     {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
-            .Push(ImGuiStyleVar.ItemSpacing,     Vector2.Zero)
-            .Push(ImGuiStyleVar.FrameBorderSize, ImGui.GetStyle().ChildBorderSize);
+        using var style = ImStyleSingle.FrameRounding.Push(0)
+            .Push(ImStyleDouble.ItemSpacing,          Vector2.Zero)
+            .Push(ImStyleSingle.FrameBorderThickness, Im.Style.ChildBorderThickness);
 
         var width = Im.ContentRegion.Available.X / 8;
 
-        ImGui.SetNextItemWidth(width * 3);
+        Im.Item.SetNextWidth(width * 3);
         Im.Input.Text("##fileFilter"u8, ref _fileOverviewFilter1, "Filter file..."u8);
         Im.Line.Same();
-        ImGui.SetNextItemWidth(width * 3);
+        Im.Item.SetNextWidth(width * 3);
         Im.Input.Text("##pathFilter"u8, ref _fileOverviewFilter2, "Filter path..."u8);
         Im.Line.Same();
-        ImGui.SetNextItemWidth(width * 2);
+        Im.Item.SetNextWidth(width * 2);
         Im.Input.Text("##optionFilter"u8, ref _fileOverviewFilter3, "Filter option..."u8);
     }
 }

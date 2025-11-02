@@ -253,7 +253,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         private static void DrawRaceCodeCombo(Vector2 buttonSize)
         {
-            ImGui.SetNextItemWidth(buttonSize.X);
+            Im.Item.SetNextWidth(buttonSize.X);
             using var combo = ImRaii.Combo("##RaceCode", RaceCodeName(_raceCode));
             if (!combo)
                 return;
@@ -269,10 +269,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         {
             DrawRaceCodeCombo(buttonSize);
             Im.Line.Same();
-            ImGui.SetNextItemWidth(buttonSize.X);
+            Im.Item.SetNextWidth(buttonSize.X);
             ImGui.InputTextWithHint("##suffixFrom", "From...", ref _materialSuffixFrom, 32);
             Im.Line.Same();
-            ImGui.SetNextItemWidth(buttonSize.X);
+            Im.Item.SetNextWidth(buttonSize.X);
             ImGui.InputTextWithHint("##suffixTo", "To...", ref _materialSuffixTo, 32);
             Im.Line.Same();
             var disabled = !MdlMaterialEditor.ValidString(_materialSuffixTo);
@@ -334,7 +334,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         foreach (var path in _editor.Files.Missing)
         {
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(path.FullName);
+            Im.Text(path.FullName);
         }
     }
 
@@ -384,7 +384,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (_editor.Duplicates.Duplicates.Count == 0)
         {
             Im.Line.New();
-            ImGui.TextUnformatted("No duplicates found.");
+            Im.Text("No duplicates found."u8);
             return;
         }
 
@@ -394,7 +394,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         if (_editor.Duplicates.SavedSpace > 0)
         {
             Im.Line.Same();
-            ImGui.TextUnformatted($"Frees up {Functions.HumanReadableSize(_editor.Duplicates.SavedSpace)} from your hard drive.");
+            Im.Text($"Frees up {Functions.HumanReadableSize(_editor.Duplicates.SavedSpace)} from your hard drive.");
         }
 
         using var child = ImRaii.Child("##duptable", -Vector2.One, true);
@@ -445,7 +445,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
     private bool DrawOptionSelectHeader()
     {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
+        using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero).Push(ImStyleSingle.FrameRounding, 0);
         var       width = new Vector2(Im.ContentRegion.Available.X / 3, 0);
         var       ret   = false;
         if (ImUtf8.ButtonEx("Default Option"u8, "Switch to the default option for the mod.\nThis resets unsaved changes."u8, width,
@@ -527,13 +527,13 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
             ImGui.TableNextColumn();
             var tmp = file.FullName;
-            ImGui.SetNextItemWidth(-1);
+            Im.Item.SetNextWidth(-1);
             if (ImGui.InputText("##value", ref tmp, Utf8GamePath.MaxGamePathLength) && tmp.Length > 0)
                 _editor.SwapEditor.Change(gamePath, new FullPath(tmp));
 
             ImGui.TableNextColumn();
             tmp = gamePath.Path.ToString();
-            ImGui.SetNextItemWidth(-1);
+            Im.Item.SetNextWidth(-1);
             if (ImGui.InputText("##key", ref tmp, Utf8GamePath.MaxGamePathLength)
              && Utf8GamePath.FromString(tmp, out var path)
              && !_editor.SwapEditor.Swaps.ContainsKey(path))
@@ -555,10 +555,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         }
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         ImGui.InputTextWithHint("##swapKey", "Load this file...", ref _newSwapValue, Utf8GamePath.MaxGamePathLength);
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         ImGui.InputTextWithHint("##swapValue", "... instead of this file.", ref _newSwapKey, Utf8GamePath.MaxGamePathLength);
     }
 

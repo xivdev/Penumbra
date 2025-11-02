@@ -16,19 +16,19 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
             using var id = ImRaii.PushId(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDefaultSingleBehaviour(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionName(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDescription(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDelete(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             ImGui.Dummy(new Vector2(editor.PriorityWidth, 0));
         }
 

@@ -226,12 +226,12 @@ public class ModPanelChangedItemsTab(
 
         _stateStorage = ImGui.GetStateStorage();
         cache.Update(selector.Selected, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
-        ImGui.Separator();
-        _buttonSize = new Vector2(ImGui.GetStyle().ItemSpacing.Y + Im.Style.FrameHeight);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, Vector2.Zero)
-            .Push(ImGuiStyleVar.ItemSpacing,         Vector2.Zero)
-            .Push(ImGuiStyleVar.FramePadding,        Vector2.Zero)
-            .Push(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.01f, 0.5f));
+        Im.Separator();
+        _buttonSize = new Vector2(Im.Style.ItemSpacing.Y + Im.Style.FrameHeight);
+        using var style = ImStyleDouble.CellPadding.Push(Vector2.Zero)
+            .Push(ImStyleDouble.ItemSpacing,         Vector2.Zero)
+            .Push(ImStyleDouble.FramePadding,        Vector2.Zero)
+            .Push(ImStyleDouble.SelectableTextAlign, new Vector2(0.01f, 0.5f));
         using var color = ImGuiColor.Button.Push(Rgba32.Transparent)
             .Push(ImGuiColor.ButtonActive,  Rgba32.Transparent)
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
@@ -348,7 +348,7 @@ public class ModPanelChangedItemsTab(
         ImGui.TableNextColumn();
         using var indent = ImRaii.PushIndent(1, obj.Child);
         drawer.DrawCategoryIcon(obj.Icon, _buttonSize.Y);
-        ImGui.SameLine(0, 0);
+        Im.Line.Same(0, 0);
         var clicked = ImUtf8.Selectable(obj.Text.Span, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 });
         drawer.ChangedItemHandling(obj.Data, clicked);
         ChangedItemDrawer.DrawModelData(obj.ModelData.Span, _buttonSize.Y);

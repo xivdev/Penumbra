@@ -142,7 +142,7 @@ public class ModPanelSettingsTab(
         using var group    = ImUtf8.Group();
         var       settings = selection.Settings;
         var       priority = _currentPriority ?? settings.Priority.Value;
-        ImGui.SetNextItemWidth(50 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(50 * Im.Style.GlobalScale);
         using var disabled = ImRaii.Disabled(_locked);
         if (ImUtf8.InputScalar("##Priority"u8, ref priority))
             _currentPriority = priority;
@@ -184,12 +184,12 @@ public class ModPanelSettingsTab(
     private void DrawRemoveSettings()
     {
         var drawInherited = !_inherited && !selection.Settings.IsEmpty;
-        var scroll        = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemInnerSpacing.X : 0;
+        var scroll        = ImGui.GetScrollMaxY() > 0 ? Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X : 0;
         var buttonSize    = ImUtf8.CalcTextSize("Turn Permanent_"u8).X;
         var offset = drawInherited
-            ? buttonSize + ImUtf8.CalcTextSize("Inherit Settings"u8).X + ImGui.GetStyle().FramePadding.X * 4 + ImGui.GetStyle().ItemSpacing.X
-            : buttonSize + ImGui.GetStyle().FramePadding.X * 2;
-        ImGui.SameLine(ImGui.GetWindowWidth() - offset - scroll);
+            ? buttonSize + ImUtf8.CalcTextSize("Inherit Settings"u8).X + Im.Style.FramePadding.X * 4 + Im.Style.ItemSpacing.X
+            : buttonSize + Im.Style.FramePadding.X * 2;
+        Im.Line.Same(ImGui.GetWindowWidth() - offset - scroll);
         var enabled = config.DeleteModModifier.IsActive();
         if (drawInherited)
         {

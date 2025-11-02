@@ -60,7 +60,7 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
     public void DrawContent()
     {
         var width = ImGui.CalcTextSize("nnnnnnnnnnnnnnnnnnnnnnnnnn").X;
-        using (var group = ImRaii.Group())
+        using (Im.Group())
         {
             _selector.Draw(width);
         }
@@ -68,7 +68,7 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
         _tutorial.OpenTutorial(BasicTutorialSteps.EditingCollections);
 
         Im.Line.Same();
-        using (var group = ImRaii.Group())
+        using (Im.Group())
         {
             DrawHeaderLine();
             DrawPanel();
@@ -83,10 +83,10 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
     private void DrawHeaderLine()
     {
         var       withSpacing = Im.Style.FrameHeightWithSpacing;
-        using var style       = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0).Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        using var style       = ImStyleSingle.FrameRounding.Push(0).Push(ImStyleDouble.ItemSpacing, Vector2.Zero);
         var       buttonSize  = new Vector2((Im.ContentRegion.Available.X - withSpacing) / 4f, Im.Style.FrameHeight);
 
-        using var _                = ImRaii.Group();
+        using var _                = Im.Group();
         var       tabSelectedColor = Im.Style[ImGuiColor.TabSelected];
         using var color            = ImGuiColor.Button.Push(tabSelectedColor, Mode is PanelMode.SimpleAssignment);
         if (ImGui.Button("Simple Assignments", buttonSize))
@@ -121,8 +121,8 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
 
     private void DrawPanel()
     {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        using var child = ImRaii.Child("##CollectionSettings", new Vector2(Im.ContentRegion.Available.X, 0), true);
+        using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
+        using var child = ImRaii.Child("##CollectionSettings", Im.ContentRegion.Available with { Y = 0 }, true);
         if (!child)
             return;
 
@@ -143,6 +143,6 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
                 break;
         }
 
-        style.Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        style.Push(ImStyleDouble.ItemSpacing, Vector2.Zero);
     }
 }

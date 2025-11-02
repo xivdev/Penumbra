@@ -1,4 +1,5 @@
 using Dalamud.Interface;
+using ImSharp;
 using OtterGui.Raii;
 using OtterGui.Text;
 using Penumbra.Mods.Groups;
@@ -14,19 +15,19 @@ public readonly struct MultiModGroupEditDrawer(ModGroupEditDrawer editor, MultiM
             using var id = ImRaii.PushId(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDefaultMultiBehaviour(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionName(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDescription(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDelete(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionPriority(option);
         }
 

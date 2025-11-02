@@ -18,16 +18,16 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
             using var id = ImUtf8.PushId(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDefaultMultiBehaviour(group, option, optionIdx);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionName(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDescription(option);
 
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             editor.DrawOptionDelete(option);
         }
 
@@ -60,7 +60,7 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
                 new Vector2(400 * Im.Style.GlobalScale, 0)))
             ImUtf8.OpenPopup("DataContainerNames"u8);
 
-        var sizeX = group.OptionData.Count * (ImGui.GetStyle().ItemInnerSpacing.X + Im.Style.FrameHeight) + 300 * Im.Style.GlobalScale;
+        var sizeX = group.OptionData.Count * (Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight) + 300 * Im.Style.GlobalScale;
         ImGui.SetNextWindowSize(new Vector2(sizeX, Im.Style.FrameHeightWithSpacing * Math.Min(16, group.Data.Count) + 200 * Im.Style.GlobalScale));
         using var popup = ImUtf8.Popup("DataContainerNames"u8);
         if (!popup)
@@ -69,11 +69,11 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
         foreach (var option in group.OptionData)
         {
             ImUtf8.RotatedText(option.Name, true);
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
         }
 
         Im.Line.New();
-        ImGui.Separator();
+        Im.Separator();
         using var child = ImUtf8.Child("##Child"u8, Im.ContentRegion.Available);
         ImGuiClip.ClippedDraw(group.Data, DrawRow, Im.Style.FrameHeightWithSpacing);
     }
@@ -88,7 +88,7 @@ public readonly struct CombiningModGroupEditDrawer(ModGroupEditDrawer editor, Co
                 id.Push(i);
                 var check = (index & (1 << i)) != 0;
                 ImUtf8.Checkbox(""u8, ref check);
-                ImUtf8.SameLineInner();
+                Im.Line.SameInner();
                 id.Pop();
             }
         }

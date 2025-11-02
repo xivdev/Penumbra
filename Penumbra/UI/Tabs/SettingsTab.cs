@@ -339,9 +339,9 @@ public class SettingsTab : ITab, IUiService
             _newModDirectory = _config.ModDirectory;
 
         bool save, selected;
-        using (ImRaii.Group())
+        using (Im.Group())
         {
-            ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
+            Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
             using (var color = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !_modManager.Valid))
             {
                 color.Push(ImGuiColor.TextDisabled, Colors.RegexWarningBorder, !_modManager.Valid);
@@ -350,7 +350,7 @@ public class SettingsTab : ITab, IUiService
             }
 
             selected = ImGui.IsItemActive();
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(Im.Style.GlobalScale * 3, 0));
+            using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3, 0));
             Im.Line.Same();
             DrawDirectoryPickerButton();
             style.Pop();
@@ -365,7 +365,7 @@ public class SettingsTab : ITab, IUiService
             ImGuiComponents.HelpMarker(tt);
             _tutorial.OpenTutorial(BasicTutorialSteps.GeneralTooltips);
             Im.Line.Same();
-            ImGui.TextUnformatted("Root Directory");
+            Im.Text("Root Directory"u8);
             ImGuiUtil.HoverTooltip(tt);
         }
 
@@ -444,7 +444,7 @@ public class SettingsTab : ITab, IUiService
         if (_singleGroupRadioMax == int.MaxValue)
             _singleGroupRadioMax = _config.SingleGroupRadioMax;
 
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImGui.DragInt("##SingleSelectRadioMax", ref _singleGroupRadioMax, 0.01f, 1))
             _singleGroupRadioMax = Math.Max(1, _singleGroupRadioMax);
 
@@ -472,7 +472,7 @@ public class SettingsTab : ITab, IUiService
         if (_collapsibleGroupMin == int.MaxValue)
             _collapsibleGroupMin = _config.OptionGroupCollapsibleMin;
 
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImGui.DragInt("##CollapsibleGroupMin", ref _collapsibleGroupMin, 0.01f, 1))
             _collapsibleGroupMin = Math.Max(2, _collapsibleGroupMin);
 
@@ -598,7 +598,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawFolderSortType()
     {
         var sortMode = _config.SortMode;
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         using (var combo = ImUtf8.Combo("##sortMode", sortMode.Name))
         {
             if (combo)
@@ -620,7 +620,7 @@ public class SettingsTab : ITab, IUiService
 
     private void DrawRenameSettings()
     {
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         using (var combo = ImRaii.Combo("##renameSettings", _config.ShowRename.GetData().Name))
         {
             if (combo)
@@ -643,7 +643,7 @@ public class SettingsTab : ITab, IUiService
             "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector.";
         ImGuiComponents.HelpMarker(tt);
         Im.Line.Same();
-        ImGui.TextUnformatted("Rename Fields in Mod Context Menu");
+        Im.Text("Rename Fields in Mod Context Menu"u8);
         ImGuiUtil.HoverTooltip(tt);
     }
 
@@ -740,9 +740,9 @@ public class SettingsTab : ITab, IUiService
     {
         var       tmp     = _config.DefaultModImportPath;
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
-        using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
+        using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
 
-        ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
+        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
         if (ImGui.InputText("##defaultModImport", ref tmp, 256))
             _config.DefaultModImportPath = tmp;
 
@@ -781,8 +781,8 @@ public class SettingsTab : ITab, IUiService
     {
         var       tmp     = _config.ExportDirectory;
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
-        using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
-        ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
+        using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
+        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
         if (ImGui.InputText("##defaultModExport", ref tmp, 256))
             _tempExportDirectory = tmp;
 
@@ -818,8 +818,8 @@ public class SettingsTab : ITab, IUiService
     {
         var       tmp     = _tempWatchDirectory ?? _config.WatchDirectory;
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
-        using var style   = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, spacing);
-        ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
+        using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
+        Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
         if (ImGui.InputText("##fileWatchPath", ref tmp, 256))
             _tempWatchDirectory = tmp;
 
@@ -830,7 +830,7 @@ public class SettingsTab : ITab, IUiService
             _tempWatchDirectory = null;
         }
 
-        ImGui.SameLine();
+        Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##fileWatch", UiHelpers.IconButtonSize,
                 "Select a directory via dialog.", false, true))
         {
@@ -855,7 +855,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawDefaultModAuthor()
     {
         var tmp = _config.DefaultModAuthor;
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImGui.InputText("##defaultAuthor", ref tmp, 64))
             _config.DefaultModAuthor = tmp;
 
@@ -869,7 +869,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawDefaultModImportFolder()
     {
         var tmp = _config.DefaultImportFolder;
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImGui.InputText("##defaultImportFolder", ref tmp, 64))
             _config.DefaultImportFolder = tmp;
 
@@ -884,7 +884,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawPcpFolder()
     {
         var tmp = _config.PcpSettings.FolderName;
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImUtf8.InputText("##pcpFolder"u8, ref tmp))
             _config.PcpSettings.FolderName = tmp;
 
@@ -898,7 +898,7 @@ public class SettingsTab : ITab, IUiService
     private void DrawPcpExtension()
     {
         var tmp = _config.PcpSettings.PcpExtension;
-        ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
+        Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
         if (ImUtf8.InputText("##pcpExtension"u8, ref tmp))
             _config.PcpSettings.PcpExtension = tmp;
 
@@ -975,10 +975,10 @@ public class SettingsTab : ITab, IUiService
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
         DrawEnableDebugModeBox();
-        ImGui.Separator();
+        Im.Separator();
         DrawReloadResourceButton();
         DrawReloadFontsButton();
-        ImGui.Separator();
+        Im.Separator();
         DrawCleanupButtons();
         Im.Line.New();
     }
@@ -1027,7 +1027,7 @@ public class SettingsTab : ITab, IUiService
         if (_compactor.MassCompactRunning)
         {
             ImGui.ProgressBar((float)_compactor.CurrentIndex / _compactor.TotalFiles,
-                new Vector2(Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X - UiHelpers.IconButtonSize.X,
+                new Vector2(Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - UiHelpers.IconButtonSize.X,
                     Im.Style.FrameHeight),
                 _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
             Im.Line.Same();
@@ -1055,19 +1055,19 @@ public class SettingsTab : ITab, IUiService
                 ? "Height is smaller than default: This may look undesirable."
                 : string.Empty;
         var buttonWidth = UiHelpers.InputTextWidth.X / 2.5f;
-        ImGui.SetNextItemWidth(buttonWidth);
+        Im.Item.SetNextWidth(buttonWidth);
         if (ImGui.DragInt("##xMinSize", ref x, 0.1f, 500, 1500))
             _minimumX = x;
         var edited = ImGui.IsItemDeactivatedAfterEdit();
 
         Im.Line.Same();
-        ImGui.SetNextItemWidth(buttonWidth);
+        Im.Item.SetNextWidth(buttonWidth);
         if (ImGui.DragInt("##yMinSize", ref y, 0.1f, 300, 1500))
             _minimumY = y;
         edited |= ImGui.IsItemDeactivatedAfterEdit();
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton("Reset##resetMinSize", new Vector2(buttonWidth / 2 - ImGui.GetStyle().ItemSpacing.X * 2, 0),
+        if (ImGuiUtil.DrawDisabledButton("Reset##resetMinSize", new Vector2(buttonWidth / 2 - Im.Style.ItemSpacing.X * 2, 0),
                 $"Reset minimum dimensions to ({Configuration.Constants.MinimumSizeX}, {Configuration.Constants.MinimumSizeY}).",
                 x == Configuration.Constants.MinimumSizeX && y == Configuration.Constants.MinimumSizeY))
         {
@@ -1095,7 +1095,7 @@ public class SettingsTab : ITab, IUiService
 
     private void DrawHdrRenderTargets()
     {
-        ImGui.SetNextItemWidth(ImUtf8.CalcTextSize("M"u8).X * 5.0f + Im.Style.FrameHeight);
+        Im.Item.SetNextWidth(ImUtf8.CalcTextSize("M"u8).X * 5.0f + Im.Style.FrameHeight);
         using (var combo = ImUtf8.Combo("##hdrRenderTarget"u8, _config.HdrRenderTargets ? "HDR"u8 : "SDR"u8))
         {
             if (combo)
@@ -1234,11 +1234,11 @@ public class SettingsTab : ITab, IUiService
     /// <summary> Draw the support button group on the right-hand side of the window. </summary>
     private void DrawSupportButtons()
     {
-        var width = ImGui.CalcTextSize(UiHelpers.SupportInfoButtonText).X + ImGui.GetStyle().FramePadding.X * 2;
+        var width = ImGui.CalcTextSize(UiHelpers.SupportInfoButtonText).X + Im.Style.FramePadding.X * 2;
         var xPos  = ImGui.GetWindowWidth() - width;
         // Respect the scroll bar width.
         if (ImGui.GetScrollMaxY() > 0)
-            xPos -= ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().FramePadding.X;
+            xPos -= Im.Style.ScrollbarSize + Im.Style.FramePadding.X;
 
         ImGui.SetCursorPos(new Vector2(xPos, Im.Style.FrameHeightWithSpacing));
         UiHelpers.DrawSupportButton(_penumbra);

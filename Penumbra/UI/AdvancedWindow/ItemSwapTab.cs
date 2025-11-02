@@ -106,7 +106,7 @@ public class ItemSwapTab : IDisposable, ITab
             foreach (var swap in _swapData.Swaps)
                 DrawSwap(swap);
         else
-            ImGui.TextUnformatted(NonExistentText());
+            Im.Text(NonExistentText());
     }
 
     public void Dispose()
@@ -419,7 +419,7 @@ public class ItemSwapTab : IDisposable, ITab
     {
         var newModAvailable = _loadException == null && _swapData.Loaded;
 
-        ImGui.SetNextItemWidth(width);
+        Im.Item.SetNextWidth(width);
         if (ImGui.InputTextWithHint("##newModName", "New Mod Name...", ref _newModName, 64))
         { }
 
@@ -438,12 +438,12 @@ public class ItemSwapTab : IDisposable, ITab
         ImGuiUtil.HoverTooltip("Instead of writing every single non-default file to the newly created mod or option,\n"
           + "even those available from game files, use File Swaps to default game files where possible.");
 
-        ImGui.SetNextItemWidth((width - ImGui.GetStyle().ItemSpacing.X) / 2);
+        Im.Item.SetNextWidth((width - Im.Style.ItemSpacing.X) / 2);
         if (ImGui.InputTextWithHint("##groupName", "Group Name...", ref _newGroupName, 32))
             UpdateOption();
 
         Im.Line.Same();
-        ImGui.SetNextItemWidth((width - ImGui.GetStyle().ItemSpacing.X) / 2);
+        Im.Item.SetNextWidth((width - Im.Style.ItemSpacing.X) / 2);
         if (ImGui.InputTextWithHint("##optionName", "New Option Name...", ref _newOptionName, 32))
             UpdateOption();
 
@@ -512,10 +512,10 @@ public class ItemSwapTab : IDisposable, ITab
         var (article1, article2, selector) = GetAccessorySelector(_slotFrom, true);
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted($"Take {article1}");
+        Im.Text($"Take {article1}");
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(100 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(100 * Im.Style.GlobalScale);
         using (var combo = ImRaii.Combo("##fromType", ToName(_slotFrom)))
         {
             if (combo)
@@ -539,10 +539,10 @@ public class ItemSwapTab : IDisposable, ITab
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted($"and put {article2} on {article1}");
+        Im.Text($"and put {article2} on {article1}");
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(100 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(100 * Im.Style.GlobalScale);
         using (var combo = ImRaii.Combo("##toType", ToName(_slotTo)))
         {
             if (combo)
@@ -598,7 +598,7 @@ public class ItemSwapTab : IDisposable, ITab
         using var table = Im.Table.Begin("##settings"u8, 2, TableFlags.SizingFixedFit);
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(text1);
+        Im.Text(text1);
         ImGui.TableNextColumn();
         _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * Im.Style.GlobalScale,
             Im.Style.TextHeightWithSpacing);
@@ -611,7 +611,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(text2);
+        Im.Text(text2);
         ImGui.TableNextColumn();
         _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * Im.Style.GlobalScale,
             Im.Style.TextHeightWithSpacing);
@@ -675,10 +675,10 @@ public class ItemSwapTab : IDisposable, ITab
     {
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(text);
+        Im.Text(text);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(InputWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(InputWidth * Im.Style.GlobalScale);
         if (ImGui.InputInt("##targetId", ref _targetId))
             _targetId = Math.Clamp(_targetId, 0, byte.MaxValue);
 
@@ -689,10 +689,10 @@ public class ItemSwapTab : IDisposable, ITab
     {
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(text);
+        Im.Text(text);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(InputWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(InputWidth * Im.Style.GlobalScale);
         if (ImGui.InputInt("##sourceId", ref _sourceId))
             _sourceId = Math.Clamp(_sourceId, 0, byte.MaxValue);
 
@@ -703,7 +703,7 @@ public class ItemSwapTab : IDisposable, ITab
     {
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(text);
+        Im.Text(text);
 
         ImGui.TableNextColumn();
         _dirty |= Combos.Gender("##Gender", _currentGender, out _currentGender);
@@ -727,25 +727,25 @@ public class ItemSwapTab : IDisposable, ITab
         }
     }
 
-    private string NonExistentText()
+    private ReadOnlySpan<byte> NonExistentText()
         => _lastTab switch
         {
-            SwapType.Hat      => "One of the selected hats does not seem to exist.",
-            SwapType.Top      => "One of the selected tops does not seem to exist.",
-            SwapType.Gloves   => "One of the selected pairs of gloves does not seem to exist.",
-            SwapType.Pants    => "One of the selected pants does not seem to exist.",
-            SwapType.Shoes    => "One of the selected pairs of shoes does not seem to exist.",
-            SwapType.Earrings => "One of the selected earrings does not seem to exist.",
-            SwapType.Necklace => "One of the selected necklaces does not seem to exist.",
-            SwapType.Bracelet => "One of the selected bracelets does not seem to exist.",
-            SwapType.Ring     => "One of the selected rings does not seem to exist.",
-            SwapType.Glasses  => "One of the selected glasses does not seem to exist.",
-            SwapType.Hair     => "One of the selected hairstyles does not seem to exist for this gender and race combo.",
-            SwapType.Face     => "One of the selected faces does not seem to exist for this gender and race combo.",
-            SwapType.Ears     => "One of the selected ear types does not seem to exist for this gender and race combo.",
-            SwapType.Tail     => "One of the selected tails does not seem to exist for this gender and race combo.",
-            SwapType.Weapon   => "One of the selected weapons or tools does not seem to exist.",
-            _                 => string.Empty,
+            SwapType.Hat      => "One of the selected hats does not seem to exist."u8,
+            SwapType.Top      => "One of the selected tops does not seem to exist."u8,
+            SwapType.Gloves   => "One of the selected pairs of gloves does not seem to exist."u8,
+            SwapType.Pants    => "One of the selected pants does not seem to exist."u8,
+            SwapType.Shoes    => "One of the selected pairs of shoes does not seem to exist."u8,
+            SwapType.Earrings => "One of the selected earrings does not seem to exist."u8,
+            SwapType.Necklace => "One of the selected necklaces does not seem to exist."u8,
+            SwapType.Bracelet => "One of the selected bracelets does not seem to exist."u8,
+            SwapType.Ring     => "One of the selected rings does not seem to exist."u8,
+            SwapType.Glasses  => "One of the selected glasses does not seem to exist."u8,
+            SwapType.Hair     => "One of the selected hairstyles does not seem to exist for this gender and race combo."u8,
+            SwapType.Face     => "One of the selected faces does not seem to exist for this gender and race combo."u8,
+            SwapType.Ears     => "One of the selected ear types does not seem to exist for this gender and race combo."u8,
+            SwapType.Tail     => "One of the selected tails does not seem to exist for this gender and race combo."u8,
+            SwapType.Weapon   => "One of the selected weapons or tools does not seem to exist."u8,
+            _                 => StringU8.Empty,
         };
 
     private static void DrawSwap(Swap swap)

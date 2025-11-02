@@ -355,12 +355,12 @@ public partial class MtrlTab
     {
         if (disabled)
         {
-            ImGui.TextUnformatted("Shader Package: " + Mtrl.ShaderPackage.Name);
+            Im.Text($"Shader Package: {Mtrl.ShaderPackage.Name}");
             return false;
         }
 
         var ret = false;
-        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 250.0f);
+        Im.Item.SetNextWidth(Im.Style.GlobalScale * 250.0f);
         using var c = ImRaii.Combo("Shader Package", Mtrl.ShaderPackage.Name);
         if (c)
             foreach (var value in GetShpkNames())
@@ -382,7 +382,7 @@ public partial class MtrlTab
     private bool DrawShaderFlagsInput(bool disabled)
     {
         var shpkFlags = (int)Mtrl.ShaderPackage.Flags;
-        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 250.0f);
+        Im.Item.SetNextWidth(Im.Style.GlobalScale * 250.0f);
         if (!ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
                 flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
             return false;
@@ -456,7 +456,7 @@ public partial class MtrlTab
                 values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
             if (!disabled && shpkKey.HasValue)
             {
-                ImGui.SetNextItemWidth(Im.Style.GlobalScale * 250.0f);
+                Im.Item.SetNextWidth(Im.Style.GlobalScale * 250.0f);
                 using (var c = ImUtf8.Combo(""u8, currentLabel))
                 {
                     if (c)

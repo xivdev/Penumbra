@@ -53,7 +53,7 @@ public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, D
 
         DrawStatistics();
         ImUtf8.Dummy(0);
-        ImGui.Separator();
+        Im.Separator();
         ImUtf8.Dummy(0);
         var report = renderTargetHdrEnabler.TextureReport;
         if (report == null)

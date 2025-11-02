@@ -56,21 +56,21 @@ public class ModsTab(
             selector.Draw();
             Im.Line.Same();
             ImGui.SetCursorPosX(MathF.Round(ImGui.GetCursorPosX()));
-            using var group = ImRaii.Group();
+            using var group = Im.Group();
             collectionHeader.Draw(false);
 
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-            using (var child = ImRaii.Child("##ModsTabMod", new Vector2(Im.ContentRegion.Available.X, config.HideRedrawBar ? 0 : -Im.Style.FrameHeight),
+            using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
+            using (var child = ImRaii.Child("##ModsTabMod", Im.ContentRegion.Available with { Y = config.HideRedrawBar ? 0 : -Im.Style.FrameHeight },
                        true, ImGuiWindowFlags.HorizontalScrollbar))
             {
                 style.Pop();
                 if (child)
                     panel.Draw();
 
-                style.Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+                style.Push(ImStyleDouble.ItemSpacing, Vector2.Zero);
             }
 
-            style.Push(ImGuiStyleVar.FrameRounding, 0);
+            style.Push(ImStyleSingle.FrameRounding, 0);
             DrawRedrawLine();
         }
         catch (Exception e)
@@ -96,7 +96,7 @@ public class ModsTab(
 
         var frameHeight = new Vector2(0, Im.Style.FrameHeight);
         var frameColor  = ImGuiColor.FrameBackground.Get().Color;
-        using (var _ = ImRaii.Group())
+        using (Im.Group())
         {
             using (ImRaii.PushFont(UiBuilder.IconFont))
             {

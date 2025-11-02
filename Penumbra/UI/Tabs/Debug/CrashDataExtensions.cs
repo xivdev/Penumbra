@@ -10,33 +10,33 @@ public static class CrashDataExtensions
 {
     public static void DrawMeta(this CrashData data)
     {
-        using (ImRaii.Group())
+        using (Im.Group())
         {
-            ImGui.TextUnformatted(nameof(data.Mode));
-            ImGui.TextUnformatted(nameof(data.CrashTime));
-            ImGui.TextUnformatted("Current Age");
-            ImGui.TextUnformatted(nameof(data.Version));
-            ImGui.TextUnformatted(nameof(data.GameVersion));
-            ImGui.TextUnformatted(nameof(data.ExitCode));
-            ImGui.TextUnformatted(nameof(data.ProcessId));
-            ImGui.TextUnformatted(nameof(data.TotalModdedFilesLoaded));
-            ImGui.TextUnformatted(nameof(data.TotalCharactersLoaded));
-            ImGui.TextUnformatted(nameof(data.TotalVFXFuncsInvoked));
+            Im.Text(nameof(data.Mode));
+            Im.Text(nameof(data.CrashTime));
+            Im.Text("Current Age"u8);
+            Im.Text(nameof(data.Version));
+            Im.Text(nameof(data.GameVersion));
+            Im.Text(nameof(data.ExitCode));
+            Im.Text(nameof(data.ProcessId));
+            Im.Text(nameof(data.TotalModdedFilesLoaded));
+            Im.Text(nameof(data.TotalCharactersLoaded));
+            Im.Text(nameof(data.TotalVFXFuncsInvoked));
         }
 
         Im.Line.Same();
-        using (ImRaii.Group())
+        using (Im.Group())
         {
-            ImGui.TextUnformatted(data.Mode);
-            ImGui.TextUnformatted(data.CrashTime.ToString());
-            ImGui.TextUnformatted((DateTimeOffset.UtcNow - data.CrashTime).ToString(@"dd\.hh\:mm\:ss"));
-            ImGui.TextUnformatted(data.Version);
-            ImGui.TextUnformatted(data.GameVersion);
-            ImGui.TextUnformatted(data.ExitCode.ToString());
-            ImGui.TextUnformatted(data.ProcessId.ToString());
-            ImGui.TextUnformatted(data.TotalModdedFilesLoaded.ToString());
-            ImGui.TextUnformatted(data.TotalCharactersLoaded.ToString());
-            ImGui.TextUnformatted(data.TotalVFXFuncsInvoked.ToString());
+            Im.Text(data.Mode);
+            Im.Text($"{data.CrashTime}");
+            Im.Text((DateTimeOffset.UtcNow - data.CrashTime).ToString(@"dd\.hh\:mm\:ss"));
+            Im.Text(data.Version);
+            Im.Text(data.GameVersion);
+            Im.Text($"{data.ExitCode}");
+            Im.Text($"{data.ProcessId}");
+            Im.Text($"{data.TotalModdedFilesLoaded}");
+            Im.Text($"{data.TotalCharactersLoaded}");
+            Im.Text($"{data.TotalVFXFuncsInvoked}");
         }
     }
 

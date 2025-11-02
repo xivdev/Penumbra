@@ -103,7 +103,7 @@ public partial class ModEditWindow
         if (!ImGui.CollapsingHeader("Import / Export"))
             return;
 
-        var childSize = new Vector2((Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
+        var childSize = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) / 2, 0);
 
         DrawImport(tab, childSize, disabled);
         Im.Line.Same();
@@ -123,7 +123,7 @@ public partial class ModEditWindow
                 if (!GetFirstModel(m.Files, out var file))
                     return false;
 
-                ImGui.TextUnformatted($"Dragging model for editing: {Path.GetFileName(file)}");
+                Im.Text($"Dragging model for editing: {Path.GetFileName(file)}");
                 return true;
             });
 
@@ -155,7 +155,7 @@ public partial class ModEditWindow
 
         if (tab.GamePaths == null)
         {
-            ImGui.TextUnformatted(tab.IoExceptions.Count == 0 ? "Resolving model game paths." : "Failed to resolve model game paths.");
+            Im.Text(tab.IoExceptions.Count is 0 ? "Resolving model game paths."u8 : "Failed to resolve model game paths."u8);
 
             return;
         }
@@ -200,7 +200,7 @@ public partial class ModEditWindow
         using var frame = ImRaii.FramedGroup("Exceptions", size, headerPreIcon: FontAwesomeIcon.TimesCircle,
             borderColor: Colors.RegexWarningBorder);
 
-        var spaceAvail = Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X - 100;
+        var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, exception) in tab.IoExceptions.Index())
         {
             using var id       = ImRaii.PushId(index);
@@ -226,7 +226,7 @@ public partial class ModEditWindow
         var       size  = new Vector2(Im.ContentRegion.Available.X, 0);
         using var frame = ImRaii.FramedGroup("Warnings", size, headerPreIcon: FontAwesomeIcon.ExclamationCircle, borderColor: 0xFF40FFFF);
 
-        var spaceAvail = Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X - 100;
+        var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, warning) in tab.IoWarnings.Index())
         {
             using var id       = ImRaii.PushId(index);
@@ -257,7 +257,7 @@ public partial class ModEditWindow
             return;
         }
 
-        ImGui.TextUnformatted("No associated game path detected. Valid game paths are currently necessary for exporting.");
+        Im.Text("No associated game path detected. Valid game paths are currently necessary for exporting."u8);
         if (!ImGui.InputTextWithHint("##customInput", "Enter custom game path...", ref _customPath, 256))
             return;
 
@@ -270,22 +270,22 @@ public partial class ModEditWindow
     {
         const string label       = "Game Path";
         var          preview     = tab.GamePaths![tab.GamePathIndex].ToString();
-        var          labelWidth  = ImGui.CalcTextSize(label).X + ImGui.GetStyle().ItemInnerSpacing.X;
-        var          buttonWidth = Im.ContentRegion.Available.X - labelWidth - ImGui.GetStyle().ItemSpacing.X;
+        var          labelWidth  = ImGui.CalcTextSize(label).X + Im.Style.ItemInnerSpacing.X;
+        var          buttonWidth = Im.ContentRegion.Available.X - labelWidth - Im.Style.ItemSpacing.X;
         if (tab.GamePaths!.Count == 1)
         {
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
+            using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0, 0.5f));
             using var color = ImGuiColor.Button.Push(Im.Style[ImGuiColor.FrameBackground])
                 .Push(ImGuiColor.ButtonHovered, Im.Style[ImGuiColor.FrameBackgroundHovered])
                 .Push(ImGuiColor.ButtonActive,  Im.Style[ImGuiColor.FrameBackgroundActive]);
-            using var group = ImRaii.Group();
+            using var group = Im.Group();
             ImGui.Button(preview, new Vector2(buttonWidth, 0));
-            ImGui.SameLine(0, ImGui.GetStyle().ItemInnerSpacing.X);
-            ImGui.TextUnformatted("Game Path");
+            Im.Line.Same(0, Im.Style.ItemInnerSpacing.X);
+            Im.Text("Game Path"u8);
         }
         else
         {
-            ImGui.SetNextItemWidth(buttonWidth);
+            Im.Item.SetNextWidth(buttonWidth);
             using var combo = ImRaii.Combo("Game Path", preview);
             if (combo.Success)
                 foreach (var (index, path) in tab.GamePaths.Index())
@@ -306,7 +306,7 @@ public partial class ModEditWindow
     {
         const string text = "Documentation →";
 
-        var framePadding = ImGui.GetStyle().FramePadding;
+        var framePadding = Im.Style.FramePadding;
         var width        = ImGui.CalcTextSize(text).X + framePadding.X * 2;
 
         // Draw the link button. We set the background colour to transparent to mimic the look of a link.
@@ -331,7 +331,7 @@ public partial class ModEditWindow
         {
             var text = $"{invalidMaterialCount} invalid material{(invalidMaterialCount > 1 ? "s" : "")}";
             var size = ImGui.CalcTextSize(text).X;
-            ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+            ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + Im.Style.FramePadding.Y));
             ImGuiUtil.TextColored(0xFF0000FF, text);
             ImGui.SetCursorPos(newPos);
         }
@@ -364,7 +364,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         ImGui.InputTextWithHint("##newMaterial", "Add new material...", ref _modelNewMaterial, Utf8GamePath.MaxGamePathLength, inputFlags);
         var validName = tab.ValidateMaterial(_modelNewMaterial);
         ImGui.TableNextColumn();
@@ -388,11 +388,11 @@ public partial class ModEditWindow
         var       ret = false;
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted($"Material #{materialIndex + 1}");
+        Im.Text($"Material #{materialIndex + 1}");
 
         var temp = materials[materialIndex];
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         if (ImGui.InputText($"##material{materialIndex}", ref temp, Utf8GamePath.MaxGamePathLength, inputFlags)
          && temp.Length > 0
          && temp != materials[materialIndex]
@@ -477,7 +477,7 @@ public partial class ModEditWindow
         // Vertex elements
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted("Vertex Elements");
+        Im.Text("Vertex Elements"u8);
 
         ImGui.TableNextColumn();
         DrawVertexElementDetails(file.VertexDeclarations[meshIndex].VertexElements);
@@ -485,7 +485,7 @@ public partial class ModEditWindow
         // Mesh material
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted("Material");
+        Im.Text("Material"u8);
 
         ImGui.TableNextColumn();
         var ret = DrawMaterialCombo(tab, meshIndex, disabled);
@@ -521,13 +521,13 @@ public partial class ModEditWindow
         foreach (var element in vertexElements)
         {
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{(MdlFile.VertexUsage)element.Usage}");
+            Im.Text($"{(MdlFile.VertexUsage)element.Usage}");
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{(MdlFile.VertexType)element.Type}");
+            Im.Text($"{(MdlFile.VertexType)element.Type}");
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{element.Stream}");
+            Im.Text($"{element.Stream}");
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{element.Offset}");
+            Im.Text($"{element.Offset}");
         }
     }
 
@@ -535,7 +535,7 @@ public partial class ModEditWindow
     {
         var       mesh = tab.Mdl.Meshes[meshIndex];
         using var _    = ImRaii.Disabled(disabled);
-        ImGui.SetNextItemWidth(-1);
+        Im.Item.SetNextWidth(-1);
         using var materialCombo = ImRaii.Combo("##material", tab.Mdl.Materials[mesh.MaterialIndex]);
 
         if (!materialCombo)
@@ -563,7 +563,7 @@ public partial class ModEditWindow
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted($"Attributes #{subMeshOffset + 1}");
+        Im.Text($"Attributes #{subMeshOffset + 1}");
 
         ImGui.TableNextColumn();
         var data       = disabled ? _preview : _main;

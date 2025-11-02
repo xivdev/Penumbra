@@ -25,7 +25,7 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
 
     private void DrawData()
     {
-        using var _      = ImRaii.Group();
+        using var _      = Im.Group();
         using var header = ImRaii.CollapsingHeader("Crash Handler");
         if (!header)
             return;
@@ -76,7 +76,7 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
     {
         dragDrop.CreateImGuiSource("LogDragDrop", m => m.Files.Any(f => f.EndsWith("Penumbra.log")), m =>
         {
-            ImGui.TextUnformatted("Dragging Penumbra.log for import.");
+            Im.Text("Dragging Penumbra.log for import."u8);
             return true;
         });
     }
@@ -118,7 +118,7 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
 
         if (data == null)
         {
-            ImGui.TextUnformatted("Nothing loaded.");
+            Im.Text("Nothing loaded."u8);
             return;
         }
 

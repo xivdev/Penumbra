@@ -142,7 +142,7 @@ public partial class ModEditWindow
 
         var text = $"{otherOptionData.TotalCount} Edits in other Options";
         var size = ImGui.CalcTextSize(text).X;
-        ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+        ImGui.SetCursorPos(new Vector2(Im.ContentRegion.Available.X - size, oldPos + Im.Style.FramePadding.Y));
         Im.Text(text, ColorId.RedundantAssignment.Value().FullAlpha());
         if (Im.Item.Hovered())
         {

@@ -124,14 +124,14 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     {
         ImGui.TableNextColumn();
         var change = DrawMaterialId(defaultEntry, ref entry, addDefault);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         change |= DrawMaterialAnimationId(defaultEntry, ref entry, addDefault);
 
         ImGui.TableNextColumn();
         change |= DrawDecalId(defaultEntry, ref entry, addDefault);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         change |= DrawVfxId(defaultEntry, ref entry, addDefault);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         change |= DrawSoundId(defaultEntry, ref entry, addDefault);
 
         ImGui.TableNextColumn();
@@ -296,7 +296,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
 
             if (i < ImcEntry.NumAttributes - 1)
-                ImUtf8.SameLineInner();
+                Im.Line.SameInner();
         }
 
         return changes;

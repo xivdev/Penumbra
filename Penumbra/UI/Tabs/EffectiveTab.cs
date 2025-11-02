@@ -30,7 +30,7 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
         if (!child)
             return;
 
-        var       height = Im.Style.TextHeightWithSpacing + 2 * ImGui.GetStyle().CellPadding.Y;
+        var       height = Im.Style.TextHeightWithSpacing + 2 * Im.Style.CellPadding.Y;
         var       skips  = ImGuiClip.GetNecessarySkips(height);
         using var table  = Im.Table.Begin("##EffectiveChangesTable"u8, 3, TableFlags.RowBackground);
         if (!table)
@@ -73,12 +73,12 @@ public class EffectiveTab(CollectionManager collectionManager, CollectionSelectH
     private void DrawFilters()
     {
         var tmp = _effectiveGamePathFilter;
-        ImGui.SetNextItemWidth(_effectiveLeftTextLength);
+        Im.Item.SetNextWidth(_effectiveLeftTextLength);
         if (ImGui.InputTextWithHint("##gamePathFilter", "Filter game path...", ref tmp, 256))
             _effectiveGamePathFilter = tmp;
 
-        ImGui.SameLine(_effectiveArrowLength + _effectiveLeftTextLength + 3 * ImGui.GetStyle().ItemSpacing.X);
-        ImGui.SetNextItemWidth(-1);
+        Im.Line.Same(_effectiveArrowLength + _effectiveLeftTextLength + 3 * Im.Style.ItemSpacing.X);
+        Im.Item.SetNextWidth(-1);
         tmp = _effectiveFilePathFilter;
         if (ImGui.InputTextWithHint("##fileFilter", "Filter file path...", ref tmp, 256))
             _effectiveFilePathFilter = tmp;

@@ -302,7 +302,7 @@ public partial class ModEditWindow
         var ret = false;
         if (!disabled)
         {
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 150.0f);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 150.0f);
             if (ImGuiUtil.InputUInt16($"{char.ToUpper(slotLabel[0])}{slotLabel[1..].ToLower()}", ref resource.Slot, ImGuiInputTextFlags.None))
                 ret = true;
         }
@@ -363,8 +363,8 @@ public partial class ModEditWindow
     {
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
         var pos = ImGui.GetCursorScreenPos()
-          + new Vector2(ImGui.CalcTextSize(label).X + 3 * ImGui.GetStyle().ItemInnerSpacing.X + Im.Style.FrameHeight,
-                ImGui.GetStyle().FramePadding.Y);
+          + new Vector2(ImGui.CalcTextSize(label).X + 3 * Im.Style.ItemInnerSpacing.X + Im.Style.FrameHeight,
+                Im.Style.FramePadding.Y);
 
         var ret = ImUtf8.CollapsingHeader(label);
         ImGui.GetWindowDrawList()
@@ -491,10 +491,10 @@ public partial class ModEditWindow
 
     private static void DrawShaderPackageStartCombo(ShpkTab tab)
     {
-        using var s = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
-        using (ImRaii.PushFont(UiBuilder.MonoFont))
+        using var s = ImStyleDouble.ItemSpacing.Push(Im.Style.ItemInnerSpacing);
+        using (Im.Font.PushMono())
         {
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 400);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 400);
             using var c = ImUtf8.Combo("##Start", tab.Orphans[tab.NewMaterialParamStart].Name);
             if (c)
                 foreach (var(idx, start) in tab.Orphans.Index())
@@ -510,10 +510,10 @@ public partial class ModEditWindow
 
     private static void DrawShaderPackageEndCombo(ShpkTab tab)
     {
-        using var s = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing);
-        using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
+        using var s = ImStyleDouble.ItemSpacing.Push(Im.Style.ItemInnerSpacing);
+        using (Im.Font.PushMono())
         {
-            ImGui.SetNextItemWidth(Im.Style.GlobalScale * 400);
+            Im.Item.SetNextWidth(Im.Style.GlobalScale * 400);
             using var c = ImUtf8.Combo("##End", tab.Orphans[tab.NewMaterialParamEnd].Name);
             if (c)
             {
@@ -542,7 +542,7 @@ public partial class ModEditWindow
         DrawShaderPackageStartCombo(tab);
         DrawShaderPackageEndCombo(tab);
 
-        ImGui.SetNextItemWidth(Im.Style.GlobalScale * 400);
+        Im.Item.SetNextWidth(Im.Style.GlobalScale * 400);
         var newName = tab.NewMaterialParamName.Value!;
         if (ImUtf8.InputText("Name", ref newName))
             tab.NewMaterialParamName = newName;

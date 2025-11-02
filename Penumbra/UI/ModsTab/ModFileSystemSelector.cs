@@ -263,9 +263,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             var remainingSpace = maxWidth - itemPos;
             var offset         = remainingSpace - size;
             if (ImGui.GetScrollMaxY() == 0)
-                offset -= ImGui.GetStyle().ItemInnerSpacing.X;
+                offset -= Im.Style.ItemInnerSpacing.X;
 
-            if (offset > ImGui.GetStyle().ItemSpacing.X)
+            if (offset > Im.Style.ItemSpacing.X)
                 ImGui.GetWindowDrawList().AddText(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, priorityString);
         }
     }
@@ -391,13 +391,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void RenameLeafMod(ModFileSystem.Leaf leaf)
     {
-        ImGui.Separator();
+        Im.Separator();
         RenameLeaf(leaf);
     }
 
     private void RenameMod(ModFileSystem.Leaf leaf)
     {
-        ImGui.Separator();
+        Im.Separator();
         var currentName = leaf.Value.Name;
         if (ImGui.IsWindowAppearing())
             ImGui.SetKeyboardFocusHere(0);
@@ -796,8 +796,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (!combo)
             return ret;
 
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
-            ImGui.GetStyle().ItemSpacing with { Y = 3 * Im.Style.GlobalScale });
+        using var style = ImStyleDouble.ItemSpacing.PushY(3 * Im.Style.GlobalScale);
 
         if (ImUtf8.Checkbox("Everything"u8, ref everything))
         {
@@ -814,7 +813,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         foreach (var group in ModFilterExtensions.Groups)
         {
-            ImGui.Separator();
+            Im.Separator();
             foreach (var (flag, name) in group)
             {
                 if (ImUtf8.Checkbox(name, ref _stateFilter, flag))

@@ -30,16 +30,16 @@ public partial class ModEditWindow
     private void DrawGenderRaceSelector(PbdTab tab)
     {
         using var group = ImUtf8.Group();
-        var       width = ImUtf8.CalcTextSize("Hellsguard - Female (Child)____0000"u8).X + 2 * ImGui.GetStyle().WindowPadding.X;
-        using (ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
-                   .Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero))
+        var       width = ImUtf8.CalcTextSize("Hellsguard - Female (Child)____0000"u8).X + 2 * Im.Style.WindowPadding.X;
+        using (ImStyleSingle.FrameRounding.Push(0)
+                   .Push(ImStyleDouble.ItemSpacing, Vector2.Zero))
         {
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ImUtf8.InputText("##grFilter"u8, ref _pbdData.RaceCodeFilter, "Filter..."u8);
         }
 
         using var child = ImUtf8.Child("GenderRace"u8,
-            new Vector2(width, ImGui.GetContentRegionMax().Y - Im.Style.FrameHeight - ImGui.GetStyle().WindowPadding.Y), true);
+            new Vector2(width, ImGui.GetContentRegionMax().Y - Im.Style.FrameHeight - Im.Style.WindowPadding.Y), true);
         if (!child)
             return;
 
@@ -70,15 +70,15 @@ public partial class ModEditWindow
     {
         using var group = ImUtf8.Group();
         var       width = 200 * Im.Style.GlobalScale;
-        using (ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0)
-                   .Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero))
+        using (ImStyleSingle.FrameRounding.Push(0)
+                   .Push(ImStyleDouble.ItemSpacing, Vector2.Zero))
         {
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ImUtf8.InputText("##boneFilter"u8, ref _pbdData.BoneFilter, "Filter..."u8);
         }
 
         using var child = ImUtf8.Child("Bone"u8,
-            new Vector2(width, ImGui.GetContentRegionMax().Y - Im.Style.FrameHeight - ImGui.GetStyle().WindowPadding.Y), true);
+            new Vector2(width, ImGui.GetContentRegionMax().Y - Im.Style.FrameHeight - Im.Style.WindowPadding.Y), true);
         if (!child)
             return;
 
@@ -107,7 +107,7 @@ public partial class ModEditWindow
     private bool DrawBoneData(PbdTab tab, bool disabled)
     {
         using var child = ImUtf8.Child("Data"u8,
-            Im.ContentRegion.Available with { Y = ImGui.GetContentRegionMax().Y - ImGui.GetStyle().WindowPadding.Y }, true);
+            Im.ContentRegion.Available with { Y = ImGui.GetContentRegionMax().Y - Im.Style.WindowPadding.Y }, true);
         if (!child)
             return false;
 
@@ -117,12 +117,12 @@ public partial class ModEditWindow
         if (!_pbdData.SelectedDeformer!.DeformMatrices.TryGetValue(_pbdData.SelectedBone, out var matrix))
             return false;
 
-        var width       = UiBuilder.MonoFont.GetCharAdvance('0') * 12 + ImGui.GetStyle().FramePadding.X * 2;
+        var width       = UiBuilder.MonoFont.GetCharAdvance('0') * 12 + Im.Style.FramePadding.X * 2;
         var dummyHeight = Im.Style.TextHeight / 2;
         var ret         = DrawAddNewBone(tab, disabled, matrix, width);
 
         ImUtf8.Dummy(0, dummyHeight);
-        ImGui.Separator();
+        Im.Separator();
         ImUtf8.Dummy(0, dummyHeight);
         ret |= DrawDeformerMatrix(disabled, matrix, width);
         ImUtf8.Dummy(0, dummyHeight);
@@ -130,7 +130,7 @@ public partial class ModEditWindow
 
 
         ImUtf8.Dummy(0, dummyHeight);
-        ImGui.Separator();
+        Im.Separator();
         ImUtf8.Dummy(0, dummyHeight);
         ret |= DrawDecomposedData(disabled, matrix, width);
 
@@ -141,20 +141,20 @@ public partial class ModEditWindow
     {
         var ret = false;
         ImUtf8.TextFrameAligned("Copy the values of the bone "u8);
-        ImGui.SameLine(0, 0);
+        Im.Line.Same(0, 0);
         using (ImGuiColor.Text.Push(ColorId.NewMod.Value()))
         {
             ImUtf8.TextFrameAligned(_pbdData.SelectedBone);
         }
 
-        ImGui.SameLine(0, 0);
+        Im.Line.Same(0, 0);
         ImUtf8.TextFrameAligned(" to a new bone of name"u8);
 
-        var fullWidth = width * 4 + ImGui.GetStyle().ItemSpacing.X * 3;
-        ImGui.SetNextItemWidth(fullWidth);
+        var fullWidth = width * 4 + Im.Style.ItemSpacing.X * 3;
+        Im.Item.SetNextWidth(fullWidth);
         ImUtf8.InputText("##newBone"u8, ref _pbdData.NewBoneName, "New Bone Name..."u8);
         ImUtf8.TextFrameAligned("for all races that have a corresponding bone."u8);
-        ImGui.SameLine(0, fullWidth - width - ImGui.GetItemRectSize().X);
+        Im.Line.Same(0, fullWidth - width - ImGui.GetItemRectSize().X);
         if (ImUtf8.ButtonEx("Apply"u8, ""u8, new Vector2(width, 0),
                 disabled || _pbdData.NewBoneName.Length == 0 || _pbdData.SelectedBone == null))
         {
@@ -198,7 +198,7 @@ public partial class ModEditWindow
             for (var j = 0; j < 4; ++j)
             {
                 using var id = ImUtf8.PushId(i * 4 + j);
-                ImGui.SetNextItemWidth(width);
+                Im.Item.SetNextWidth(width);
                 var tmp = matrix[i, j];
                 if (ImUtf8.InputScalar(""u8, ref tmp, "% 12.8f"u8))
                 {
@@ -261,42 +261,42 @@ public partial class ModEditWindow
             using var font = ImRaii.PushFont(UiBuilder.MonoFont);
             using var _    = ImRaii.Disabled(disabled);
 
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##ScaleX"u8, ref scale.X, "% 12.8f"u8);
 
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##ScaleY"u8, ref scale.Y, "% 12.8f"u8);
 
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##ScaleZ"u8, ref scale.Z, "% 12.8f"u8);
 
 
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##TranslationX"u8, ref translation.X, "% 12.8f"u8);
 
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##TranslationY"u8, ref translation.Y, "% 12.8f"u8);
 
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##TranslationZ"u8, ref translation.Z, "% 12.8f"u8);
 
 
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##RotationR"u8, ref rotation.W, "% 12.8f"u8);
 
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##RotationI"u8, ref rotation.X, "% 12.8f"u8);
 
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##RotationJ"u8, ref rotation.Y, "% 12.8f"u8);
             Im.Line.Same();
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             ret |= ImUtf8.InputScalar("##RotationK"u8, ref rotation.Z, "% 12.8f"u8);
         }
 

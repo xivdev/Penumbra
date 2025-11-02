@@ -96,7 +96,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         {
             using var color = ImGuiColor.Text.Push(disabledColor, !value);
             ImUtf8.Text("All, "u8);
-            ImGui.SameLine(0, 0);
+            Im.Line.Same(0, 0);
         }
 
         foreach (var slot in ShapeAttributeManager.UsedModels)
@@ -106,7 +106,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
             using var color = ImGuiColor.Text.Push(disabledColor, !value2);
             ImUtf8.Text($"All {slot.ToName()}, ");
-            ImGui.SameLine(0, 0);
+            Im.Line.Same(0, 0);
         }
 
         foreach (var gr in ShapeAttributeHashSet.GenderRaceValues.Skip(1))
@@ -115,7 +115,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             {
                 using var color = ImGuiColor.Text.Push(disabledColor, !value3);
                 ImUtf8.Text($"All {gr.ToName()}, ");
-                ImGui.SameLine(0, 0);
+                Im.Line.Same(0, 0);
             }
             else
             {
@@ -126,7 +126,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
                     using var color = ImGuiColor.Text.Push(disabledColor, !value4);
                     ImUtf8.Text($"All {gr.ToName()} {slot.ToName()}, ");
-                    ImGui.SameLine(0, 0);
+                    Im.Line.Same(0, 0);
                 }
             }
         }
@@ -141,7 +141,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 {
                     using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
                     ImUtf8.Text($"{slot.ToName()} {id.Id:D4}, ");
-                    ImGui.SameLine(0, 0);
+                    Im.Line.Same(0, 0);
                 }
             }
             else
@@ -156,7 +156,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     {
                         using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
                         ImUtf8.Text($"{gr.ToName()} {slot.ToName()} #{id.Id:D4}, ");
-                        ImGui.SameLine(0, 0);
+                        Im.Line.Same(0, 0);
                     }
 
                     currentFlags &= ~0x3u;
@@ -208,10 +208,10 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
                     ImUtf8.Text(shape.AsSpan());
-                    ImGui.SameLine(0, 0);
+                    Im.Line.Same(0, 0);
                     ImUtf8.Text(",  "u8);
                     if (idx % 8 < 7)
-                        ImGui.SameLine(0, 0);
+                        Im.Line.Same(0, 0);
                 }
             }
             else
@@ -265,10 +265,10 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
                     ImUtf8.Text(attribute.AsSpan());
-                    ImGui.SameLine(0, 0);
+                    Im.Line.Same(0, 0);
                     ImUtf8.Text(",  "u8);
                     if (idx % 8 < 7)
-                        ImGui.SameLine(0, 0);
+                        Im.Line.Same(0, 0);
                 }
             }
             else

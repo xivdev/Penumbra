@@ -41,7 +41,7 @@ public class ModPanelHeader : IDisposable
         using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
             ? ImRaii.Child("HeaderChild", new Vector2(Im.ContentRegion.Available.X, maxHeight), false)
             : null;
-        using (ImRaii.Group())
+        using (Im.Group())
         {
             var offset = DrawModName();
             DrawVersion(offset);
@@ -75,7 +75,7 @@ public class ModPanelHeader : IDisposable
         {
             using var f = _nameFont.Push();
             _modName      = name;
-            _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * Im.Style.GlobalScale);
+            _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (Im.Style.FramePadding.X + 2 * Im.Style.GlobalScale);
         }
 
         // Author
@@ -84,7 +84,7 @@ public class ModPanelHeader : IDisposable
             var author = _mod.Author.Length is 0 ? string.Empty : $"by  {_mod.Author}";
             _modAuthor      = _mod.Author;
             _modAuthorWidth = ImGui.CalcTextSize(author).X;
-            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
+            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + Im.Style.ItemSpacing.X;
         }
 
         // Version
@@ -103,9 +103,9 @@ public class ModPanelHeader : IDisposable
              && (uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp);
             _modWebsiteButton = _websiteValid ? "Open Website" : _modWebsite.Length == 0 ? string.Empty : $"from  {_modWebsite}";
             _modWebsiteButtonWidth = _websiteValid
-                ? ImGui.CalcTextSize(_modWebsiteButton).X + 2 * ImGui.GetStyle().FramePadding.X
+                ? ImGui.CalcTextSize(_modWebsiteButton).X + 2 * Im.Style.FramePadding.X
                 : ImGui.CalcTextSize(_modWebsiteButton).X;
-            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
+            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + Im.Style.ItemSpacing.X;
         }
     }
 
@@ -141,7 +141,7 @@ public class ModPanelHeader : IDisposable
         var decidingWidth = Math.Max(_secondRowWidth, ImGui.GetWindowWidth());
         var offsetWidth   = (decidingWidth - _modNameWidth) / 2;
         var offsetVersion = _modVersion.Length > 0
-            ? _modVersionWidth + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X
+            ? _modVersionWidth + Im.Style.ItemSpacing.X + Im.Style.WindowPadding.X
             : 0;
         var offset = Math.Max(offsetWidth, offsetVersion);
         if (offset > 0)
@@ -160,8 +160,8 @@ public class ModPanelHeader : IDisposable
     private void DrawVersion(float offset)
     {
         var oldPos = ImGui.GetCursorPos();
-        ImGui.SetCursorPos(new Vector2(2 * offset + _modNameWidth - _modVersionWidth - ImGui.GetStyle().WindowPadding.X,
-            ImGui.GetStyle().FramePadding.Y));
+        ImGui.SetCursorPos(new Vector2(2 * offset + _modNameWidth - _modVersionWidth - Im.Style.WindowPadding.X,
+            Im.Style.FramePadding.Y));
         ImGuiUtil.TextColored(Colors.MetaInfoText, _modVersion);
         ImGui.SetCursorPos(oldPos);
     }
@@ -196,7 +196,7 @@ public class ModPanelHeader : IDisposable
         {
             ImGui.SetCursorPosX(offset);
             DrawAuthor();
-            ImGui.SameLine(offset + _modNameWidth - _modWebsiteButtonWidth);
+            Im.Line.Same(offset + _modNameWidth - _modWebsiteButtonWidth);
             DrawWebsite();
         }
         else
@@ -216,11 +216,11 @@ public class ModPanelHeader : IDisposable
     /// <summary> Draw the author text. </summary>
     private void DrawAuthor()
     {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
         ImGuiUtil.TextColored(Colors.MetaInfoText, "by ");
         Im.Line.Same();
         style.Pop();
-        ImGui.TextUnformatted(_modAuthor);
+        Im.Text(_modAuthor);
     }
 
     /// <summary>
@@ -251,11 +251,11 @@ public class ModPanelHeader : IDisposable
         }
         else
         {
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+            using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
             ImGuiUtil.TextColored(Colors.MetaInfoText, "from ");
             Im.Line.Same();
             style.Pop();
-            ImGui.TextUnformatted(_modWebsite);
+            Im.Text(_modWebsite);
         }
     }
 

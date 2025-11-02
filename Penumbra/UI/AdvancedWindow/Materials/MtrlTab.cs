@@ -139,7 +139,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
             ImGuiComponents.HelpMarker("Enabling transparency for shader package characterstockings.shpk will crash the game.");
         }
 
-        ImGui.SameLine(200 * Im.Style.GlobalScale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+        Im.Line.Same(200 * Im.Style.GlobalScale + Im.Style.ItemSpacing.X + Im.Style.WindowPadding.X);
         tmp = shaderFlags.HideBackfaces;
         if (ImUtf8.Checkbox("Hide Backfaces"u8, ref tmp))
         {
@@ -150,7 +150,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         if (_shpkLoading)
         {
-            ImGui.SameLine(400 * Im.Style.GlobalScale + 2 * ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+            Im.Line.Same(400 * Im.Style.GlobalScale + 2 * Im.Style.ItemSpacing.X + Im.Style.WindowPadding.X);
 
             ImUtf8.Text("Loading shader (.shpk) file. Some functionality will only be available after this is done."u8,
                 ImGuiUtil.HalfBlendText(0x808000u)); // Half cyan

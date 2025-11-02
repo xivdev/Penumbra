@@ -70,7 +70,7 @@ public class ModPanelEditTab(
 
         UiHelpers.DefaultLineSpace();
         var sharedTagsEnabled     = predefinedTagManager.Enabled;
-        var sharedTagButtonOffset = sharedTagsEnabled ? Im.Style.FrameHeight + ImGui.GetStyle().FramePadding.X : 0;
+        var sharedTagButtonOffset = sharedTagsEnabled ? Im.Style.FrameHeight + Im.Style.FramePadding.X : 0;
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
@@ -181,7 +181,7 @@ public class ModPanelEditTab(
                 UiHelpers.InputTextWidth.X))
             modManager.DataEditor.ChangeModWebsite(_mod, newWebsite);
 
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(Im.Style.GlobalScale * 3));
+        using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3));
 
         var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
         if (ImGui.Button("Edit Description", reducedSize))
@@ -210,7 +210,7 @@ public class ModPanelEditTab(
     {
         ImEx.TextFramed($"{DateTimeOffset.FromUnixTimeMilliseconds(_mod.ImportDate).ToLocalTime():yyyy/MM/dd HH:mm}",
             new Vector2(UiHelpers.InputTextMinusButton3, 0), ImGuiColor.FrameBackground.Get(0.5f));
-        ImGui.SameLine(0, 3 * Im.Style.GlobalScale);
+        Im.Line.Same(0, 3 * Im.Style.GlobalScale);
 
         var canRefresh = config.DeleteModModifier.IsActive();
         var tt = canRefresh
@@ -219,7 +219,7 @@ public class ModPanelEditTab(
 
         if (ImUtf8.IconButton(FontAwesomeIcon.Sync, tt, disabled: !canRefresh))
             modManager.DataEditor.ResetModImportDate(_mod);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         ImUtf8.Text("Import Date"u8);
     }
 
@@ -260,7 +260,7 @@ public class ModPanelEditTab(
 
         public static void Draw(ModManager modManager, Mod mod, Vector2 buttonSize)
         {
-            ImGui.SetNextItemWidth(buttonSize.X * 2 + ImGui.GetStyle().ItemSpacing.X);
+            Im.Item.SetNextWidth(buttonSize.X * 2 + Im.Style.ItemSpacing.X);
             var tmp = _currentModDirectory ?? mod.ModPath.Name;
             if (ImGui.InputText("##newModMove", ref tmp, 64))
             {
@@ -323,7 +323,7 @@ public class ModPanelEditTab(
         public static bool Text(string label, int field, int option, string oldValue, out string value, uint maxLength, float width)
         {
             var tmp = field == _currentField && option == _optionIndex ? _currentEdit ?? oldValue : oldValue;
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
 
             if (ImGui.InputText(label, ref tmp))
             {
@@ -347,7 +347,7 @@ public class ModPanelEditTab(
         public static bool Priority(string label, int field, int option, ModPriority oldValue, out ModPriority value, float width)
         {
             var tmp = (field == _currentField && option == _optionIndex ? _currentGroupPriority ?? oldValue : oldValue).Value;
-            ImGui.SetNextItemWidth(width);
+            Im.Item.SetNextWidth(width);
             if (ImGui.InputInt(label, ref tmp, 0, 0))
             {
                 _currentGroupPriority = new ModPriority(tmp);

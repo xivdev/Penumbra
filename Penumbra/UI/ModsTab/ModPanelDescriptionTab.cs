@@ -30,7 +30,7 @@ public class ModPanelDescriptionTab(
 
         ImGui.Dummy(ImEx.ScaledVector(2));
         var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
-            ? (true, Im.Style.FrameHeight + ImGui.GetStyle().WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0))
+            ? (true, Im.Style.FrameHeight + Im.Style.WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? Im.Style.ScrollbarSize : 0))
             : (false, 0);
         var tagIdx = _localTags.Draw("Local Tags: ",
             "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
@@ -50,7 +50,7 @@ public class ModPanelDescriptionTab(
                 ImGui.CalcTextSize("Local ").X - ImGui.CalcTextSize("Mod ").X);
 
         ImGui.Dummy(ImEx.ScaledVector(2));
-        ImGui.Separator();
+        Im.Separator();
 
         ImGuiUtil.TextWrapped(selector.Selected!.Description);
     }

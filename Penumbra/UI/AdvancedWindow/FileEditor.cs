@@ -98,8 +98,8 @@ public class FileEditor<T>(
 
     private void DefaultInput()
     {
-        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = Im.Style.GlobalScale * 3 });
-        ImGui.SetNextItemWidth(Im.ContentRegion.Available.X - 2 * (Im.Style.GlobalScale * 3 + Im.Style.FrameHeight));
+        using var spacing = ImStyleDouble.ItemSpacing.PushX(Im.Style.GlobalScale * 3);
+        Im.Item.SetNextWidth(Im.ContentRegion.Available.X - 2 * (Im.Style.GlobalScale * 3 + Im.Style.FrameHeight));
         ImGui.InputTextWithHint("##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength);
         _inInput = ImGui.IsItemActive();
         if (ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0)
@@ -245,7 +245,7 @@ public class FileEditor<T>(
         {
             if (_currentFile == null)
             {
-                ImGui.TextUnformatted($"Could not parse selected {fileType} file.");
+                Im.Text($"Could not parse selected {fileType} file.");
                 if (_currentException != null)
                 {
                     using var tab = ImRaii.PushIndent();
@@ -265,13 +265,13 @@ public class FileEditor<T>(
             {
                 Im.Line.New();
                 Im.Line.New();
-                ImGui.TextUnformatted($"Preview of {_defaultPath}:");
-                ImGui.Separator();
+                Im.Text($"Preview of {_defaultPath}:");
+                Im.Separator();
             }
 
             if (_defaultFile == null)
             {
-                ImGui.TextUnformatted($"Could not parse provided {fileType} game file:\n");
+                Im.Text($"Could not parse provided {fileType} game file:\n");
                 if (_defaultException != null)
                 {
                     using var tab = ImRaii.PushIndent();
@@ -306,8 +306,8 @@ public class FileEditor<T>(
             if (Im.Item.Hovered())
             {
                 using var tt = ImRaii.Tooltip();
-                ImGui.TextUnformatted("All Game Paths");
-                ImGui.Separator();
+                Im.Text("All Game Paths"u8);
+                Im.Separator();
                 using var t = Im.Table.Begin("##Tooltip"u8, 2, TableFlags.SizingFixedFit);
                 foreach (var (option, gamePath) in file.SubModUsage)
                 {
@@ -315,7 +315,7 @@ public class FileEditor<T>(
                     ImUtf8.Text(gamePath.Path.Span);
                     ImGui.TableNextColumn();
                     using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
-                    ImGui.TextUnformatted(option.GetFullName());
+                    Im.Text(option.GetFullName());
                 }
             }
 

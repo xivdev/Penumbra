@@ -84,22 +84,22 @@ public sealed class ModGroupEditDrawer(
     private void DrawGroupNameRow(IModGroup group, int idx)
     {
         DrawGroupName(group);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawGroupMoveButtons(group, idx);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawGroupOpenFile(group, idx);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawGroupDescription(group);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawGroupDelete(group);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawGroupPriority(group);
     }
 
     private void DrawGroupName(IModGroup group)
     {
         var text = _currentGroupEdited == group ? _currentGroupName ?? group.Name : group.Name;
-        ImGui.SetNextItemWidth(_groupNameWidth);
+        Im.Item.SetNextWidth(_groupNameWidth);
         using var border = ImRaii.PushFrameBorder(Im.Style.GlobalScale * 2, Colors.RegexWarningBorder, !_isGroupNameValid);
         if (ImUtf8.InputText("##GroupName"u8, ref text))
         {
@@ -140,7 +140,7 @@ public sealed class ModGroupEditDrawer(
         var priority = _currentGroupEdited == group
             ? (_currentGroupPriority ?? group.Priority).Value
             : group.Priority.Value;
-        ImGui.SetNextItemWidth(PriorityWidth);
+        Im.Item.SetNextWidth(PriorityWidth);
         if (ImGui.InputInt("##GroupPriority", ref priority))
         {
             _currentGroupEdited   = group;
@@ -177,7 +177,7 @@ public sealed class ModGroupEditDrawer(
             Im.Tooltip.OnHover($"Move this group up to group {idx}.");
 
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         var isLast = idx == group.Mod.Groups.Count - 1;
         if (ImUtf8.IconButton(FontAwesomeIcon.ArrowDown, isLast))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.MoveModGroup(group, idx + 1));
@@ -247,7 +247,7 @@ public sealed class ModGroupEditDrawer(
     internal void DrawOptionPriority(MultiSubMod option)
     {
         var priority = option.Priority.Value;
-        ImGui.SetNextItemWidth(PriorityWidth);
+        Im.Item.SetNextWidth(PriorityWidth);
         if (ImUtf8.InputScalarOnDeactivated("##Priority"u8, ref priority))
             ModManager.OptionEditor.MultiEditor.ChangeOptionPriority(option, new ModPriority(priority));
         Im.Tooltip.OnHover("Option priority inside the mod."u8);
@@ -257,7 +257,7 @@ public sealed class ModGroupEditDrawer(
     internal void DrawOptionName(IModOption option)
     {
         var name = option.Name;
-        ImGui.SetNextItemWidth(_optionNameWidth);
+        Im.Item.SetNextWidth(_optionNameWidth);
         if (ImUtf8.InputTextOnDeactivated("##Name"u8, ref name))
             ModManager.OptionEditor.RenameOption(option, name);
     }
@@ -282,11 +282,11 @@ public sealed class ModGroupEditDrawer(
         ImUtf8.Selectable($"Option #{count + 1}", false, size: OptionIdxSelectable);
         Target(group, count);
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         ImUtf8.IconDummy();
 
-        ImUtf8.SameLineInner();
-        ImGui.SetNextItemWidth(_optionNameWidth);
+        Im.Line.SameInner();
+        Im.Item.SetNextWidth(_optionNameWidth);
         var newName = _newOptionGroup == group
             ? NewOptionName ?? string.Empty
             : string.Empty;
@@ -296,7 +296,7 @@ public sealed class ModGroupEditDrawer(
             _newOptionGroup = group;
         }
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         return newName;
     }
 
@@ -362,7 +362,7 @@ public sealed class ModGroupEditDrawer(
         PriorityWidth       = 50 * Im.Style.GlobalScale;
         AvailableWidth      = new Vector2(totalWidth + 3 * _spacing + 2 * _buttonSize.X + PriorityWidth, 0);
         _groupNameWidth     = totalWidth - 3 * (_buttonSize.X + _spacing);
-        _spacing            = ImGui.GetStyle().ItemInnerSpacing.X;
+        _spacing            = Im.Style.ItemInnerSpacing.X;
         OptionIdxSelectable = ImUtf8.CalcTextSize("Option #88."u8);
         _optionNameWidth    = totalWidth - OptionIdxSelectable.X - _buttonSize.X - 2 * _spacing;
         _deleteEnabled      = config.DeleteModModifier.IsActive();

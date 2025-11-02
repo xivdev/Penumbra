@@ -44,14 +44,14 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
     {
         using var tree = ImUtf8.TreeNode("Currently Selected Objects###Selected"u8,
             ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.NoTreePushOnOpen);
-        ImGui.Separator();
+        Im.Separator();
 
 
         if (!tree)
             return selector.SelectedPaths.Count(l => l is ModFileSystem.Leaf);
 
         var sizeType             = new Vector2(Im.Style.FrameHeight);
-        var availableSizePercent = (Im.ContentRegion.Available.X - sizeType.X - 4 * ImGui.GetStyle().CellPadding.X) / 100;
+        var availableSizePercent = (Im.ContentRegion.Available.X - sizeType.X - 4 * Im.Style.CellPadding.X) / 100;
         var sizeMods             = availableSizePercent * 35;
         var sizeFolders          = availableSizePercent * 65;
 
@@ -84,7 +84,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             }
         }
 
-        ImGui.Separator();
+        Im.Separator();
         return leaves;
     }
 
@@ -100,9 +100,9 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
 
         var predefinedTagsEnabled = tagManager.Enabled;
         var inputWidth = predefinedTagsEnabled
-            ? Im.ContentRegion.Available.X - 2 * width.X - 3 * ImGui.GetStyle().ItemInnerSpacing.X - Im.Style.FrameHeight
-            : Im.ContentRegion.Available.X - 2 * (width.X + ImGui.GetStyle().ItemInnerSpacing.X);
-        ImGui.SetNextItemWidth(inputWidth);
+            ? Im.ContentRegion.Available.X - 2 * width.X - 3 * Im.Style.ItemInnerSpacing.X - Im.Style.FrameHeight
+            : Im.ContentRegion.Available.X - 2 * (width.X + Im.Style.ItemInnerSpacing.X);
+        Im.Item.SetNextWidth(inputWidth);
         ImUtf8.InputText("##tag"u8, ref _tag, "Local Tag Name..."u8);
 
         UpdateTagCache();
@@ -114,7 +114,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
                 ? "No tag specified."
                 : $"All mods selected already contain the tag \"{_tag}\", either locally or as mod data."
             : $"Add the tag \"{_tag}\" to {_addMods.Count} mods as a local tag:\n\n\t{string.Join("\n\t", _addMods.Select(m => m.Name))}";
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         if (ImUtf8.ButtonEx(label, tooltip, width, _addMods.Count == 0))
             foreach (var mod in _addMods)
                 editor.ChangeLocalTag(mod, mod.LocalTags.Count, _tag);
@@ -127,19 +127,19 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
                 ? "No tag specified."
                 : $"No selected mod contains the tag \"{_tag}\" locally."
             : $"Remove the local tag \"{_tag}\" from {_removeMods.Count} mods:\n\n\t{string.Join("\n\t", _removeMods.Select(m => m.Item1.Name))}";
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         if (ImUtf8.ButtonEx(label, tooltip, width, _removeMods.Count == 0))
             foreach (var (mod, index) in _removeMods)
                 editor.ChangeLocalTag(mod, index, string.Empty);
         
         if (predefinedTagsEnabled)
         {
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             tagManager.DrawToggleButton();
             tagManager.DrawListMulti(selector.SelectedPaths.OfType<ModFileSystem.Leaf>().Select(l => l.Value));
         }
 
-        ImGui.Separator();
+        Im.Separator();
     }
 
     private void UpdateTagCache()

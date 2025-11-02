@@ -130,8 +130,8 @@ public class ModPanelTabBar : IUiService
 
     private void DrawFavoriteButton(Mod mod, float height)
     {
-        var size   = ImEx.Icon.CalculateSize(LunaStyle.FavoriteIcon) + ImGui.GetStyle().FramePadding * 2;
-        var newPos = new Vector2(ImGui.GetWindowWidth() - size.X - ImGui.GetStyle().ItemSpacing.X, height);
+        var size   = ImEx.Icon.CalculateSize(LunaStyle.FavoriteIcon) + Im.Style.FramePadding * 2;
+        var newPos = new Vector2(ImGui.GetWindowWidth() - size.X - Im.Style.ItemSpacing.X, height);
         if (ImGui.GetScrollMaxX() > 0)
             newPos.X += ImGui.GetScrollX();
 

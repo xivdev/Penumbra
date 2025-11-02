@@ -106,7 +106,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             changes = true;
         }
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         if (DragInput("##gmpRotationB"u8, "Rotation B in Degrees"u8, rotationWidth, entry.RotationB, defaultEntry.RotationB, out var rotationB,
                 (ushort)0,                (ushort)360,               0.05f,         !disabled))
         {
@@ -114,7 +114,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             changes = true;
         }
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         if (DragInput("##gmpRotationC"u8, "Rotation C in Degrees"u8, rotationWidth, entry.RotationC, defaultEntry.RotationC, out var rotationC,
                 (ushort)0,                (ushort)360,               0.05f,         !disabled))
         {
@@ -131,7 +131,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             changes = true;
         }
 
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         if (DragInput("##gmpUnkB"u8, "Animation Type B?"u8, unkWidth, entry.UnknownB, defaultEntry.UnknownB, out var unknownB,
                 (byte)0,             (byte)15,              0.01f,    !disabled))
         {

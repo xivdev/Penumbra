@@ -205,7 +205,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
             return false;
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(200 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(200 * Im.Style.GlobalScale);
         if (ImUtf8.InputText("##BoneName"u8, entry.FullSpan, out TerminatedByteString newBone))
         {
             entry.SetBoneName(newBone);
@@ -214,31 +214,31 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Bone Name"u8);
 
-        ImGui.SetNextItemWidth(200 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(200 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchScale"u8, ref entry.Scale);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Scale"u8);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchOffsetX"u8, ref entry.OffsetX);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Offset X-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchRotationX"u8, ref entry.RotationX);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation X-Axis"u8);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchOffsetY"u8, ref entry.OffsetY);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Offset Y-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchRotationY"u8, ref entry.RotationY);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation Y-Axis"u8);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchOffsetZ"u8, ref entry.OffsetZ);
         Im.Tooltip.OnHover("Offset Z-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(120 * Im.Style.GlobalScale);
         changes |= ImUtf8.InputScalar("##AtchRotationZ"u8, ref entry.RotationZ);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation Z-Axis"u8);
 
@@ -280,7 +280,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     private static bool DrawEntryIndexInput(ref AtchIdentifier identifier, AtchPoint currentAtchPoint)
     {
         var index = identifier.EntryIndex;
-        ImGui.SetNextItemWidth(40 * Im.Style.GlobalScale);
+        Im.Item.SetNextWidth(40 * Im.Style.GlobalScale);
         var ret = ImUtf8.DragScalar("##AtchEntry"u8, ref index, 0, (ushort)(currentAtchPoint.Entries.Length - 1), 0.05f,
             ImGuiSliderFlags.AlwaysClamp);
         Im.Tooltip.OnHover("State Entry Index"u8);

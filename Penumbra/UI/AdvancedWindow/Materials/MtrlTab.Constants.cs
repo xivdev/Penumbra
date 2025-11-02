@@ -173,7 +173,7 @@ public partial class MtrlTab
                 if (buffer.Length > 0)
                 {
                     using var id = ImRaii.PushId($"##{constant.Id:X8}:{slice.Start}");
-                    ImGui.SetNextItemWidth(MaterialConstantSize * Im.Style.GlobalScale);
+                    Im.Item.SetNextWidth(MaterialConstantSize * Im.Style.GlobalScale);
                     if (editor.Draw(buffer[slice], disabled))
                     {
                         ret = true;
@@ -186,7 +186,7 @@ public partial class MtrlTab
                     var canReset = _associatedShpk?.MaterialParamsDefaults != null
                         ? defaultValue.Length > 0 && !defaultValue.SequenceEqual(buffer[slice])
                         : buffer[slice].ContainsAnyExcept((byte)0);
-                    ImUtf8.SameLineInner();
+                    Im.Line.SameInner();
                     if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Backspace.ToIconString(), Im.Style.FrameHeight * Vector2.One,
                             "Reset this constant to its default value.\n\nHold Ctrl to unlock.", !ImGui.GetIO().KeyCtrl || !canReset, true))
                     {
@@ -204,7 +204,7 @@ public partial class MtrlTab
                     if (description.Length > 0)
                         ImGuiUtil.LabeledHelpMarker(label, description);
                     else
-                        ImGui.TextUnformatted(label);
+                        Im.Text(label);
                 }
             }
         }

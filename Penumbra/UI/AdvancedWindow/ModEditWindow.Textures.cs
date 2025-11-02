@@ -81,7 +81,7 @@ public partial class ModEditWindow
     private void SaveAsCombo()
     {
         var (text, desc) = SaveAsStrings[_currentSaveAs];
-        ImGui.SetNextItemWidth(-Im.Style.FrameHeight - ImGui.GetStyle().ItemSpacing.X);
+        Im.Item.SetNextWidth(-Im.Style.FrameHeight - Im.Style.ItemSpacing.X);
         using var combo = ImRaii.Combo("##format", text);
         ImGuiUtil.HoverTooltip(desc);
         if (!combo)
@@ -137,8 +137,8 @@ public partial class ModEditWindow
                 ? "This saves the texture in place. This is not revertible."
                 : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.";
 
-            var buttonSize2 = new Vector2((Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X) / 2,     0);
-            var buttonSize3 = new Vector2((Im.ContentRegion.Available.X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
+            var buttonSize2 = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) / 2,     0);
+            var buttonSize3 = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X * 2) / 3, 0);
             if (ImGuiUtil.DrawDisabledButton("Save in place", buttonSize2,
                     tt, !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs == (int)CombinedTexture.TextureSaveType.AsIs))
             {
@@ -204,7 +204,7 @@ public partial class ModEditWindow
             case TaskStatus.Canceled:
             case TaskStatus.Faulted:
             {
-                ImGui.TextUnformatted("Could not save file:");
+                Im.Text("Could not save file:"u8);
                 using var color = ImGuiColor.Text.Push(new Vector4(1, 0, 0, 1));
                 ImGuiUtil.TextWrapped(_center.SaveTask.Exception?.ToString() ?? "Unknown Error");
                 break;
@@ -283,11 +283,11 @@ public partial class ModEditWindow
         var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - Im.Style.TextHeight;
         if (_overlayCollapsed)
         {
-            var width = windowWidth - ImGui.GetStyle().FramePadding.X * 3;
+            var width = windowWidth - Im.Style.FramePadding.X * 3;
             return new Vector2(width / 2, -1);
         }
 
-        return new Vector2((windowWidth - ImGui.GetStyle().FramePadding.X * 5) / 3, -1);
+        return new Vector2((windowWidth - Im.Style.FramePadding.X * 5) / 3, -1);
     }
 
     private void DrawTextureTab()
@@ -304,11 +304,11 @@ public partial class ModEditWindow
                     if (!GetFirstTexture(m.Files, out var file))
                         return false;
 
-                    ImGui.TextUnformatted($"Dragging texture for editing: {Path.GetFileName(file)}");
+                    Im.Text($"Dragging texture for editing: {Path.GetFileName(file)}");
                     return true;
                 });
             var childWidth = GetChildWidth();
-            var imageSize  = new Vector2(childWidth.X - ImGui.GetStyle().FramePadding.X * 2);
+            var imageSize  = new Vector2(childWidth.X - Im.Style.FramePadding.X * 2);
             DrawInputChild("Input Texture", _left, childWidth, imageSize);
             Im.Line.Same();
             DrawOutputChild(childWidth, imageSize);

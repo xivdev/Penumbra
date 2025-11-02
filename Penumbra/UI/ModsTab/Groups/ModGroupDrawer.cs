@@ -202,14 +202,14 @@ public sealed class ModGroupDrawer : Luna.IUiService
 
     private void DrawMultiPopup(IModGroup group, int groupIdx, string label)
     {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.PopupBorderSize, 1);
+        using var style = ImStyleSingle.PopupBorderThickness.Push(Im.Style.GlobalScale);
         using var popup = ImRaii.Popup(label);
         if (!popup)
             return;
 
-        ImGui.TextUnformatted(group.Name);
+        Im.Text(group.Name);
         using var disabled = ImRaii.Disabled(_locked);
-        ImGui.Separator();
+        Im.Separator();
         if (ImUtf8.Selectable("Enable All"u8))
             SetModSetting(group, groupIdx, Setting.AllBits(group.Options.Count));
 
@@ -230,13 +230,13 @@ public sealed class ModGroupDrawer : Luna.IUiService
             var buttonTextShow = $"Show {options.Count} Options";
             var buttonTextHide = $"Hide {options.Count} Options";
             var buttonWidth = Math.Max(ImUtf8.CalcTextSize(buttonTextShow).X, ImUtf8.CalcTextSize(buttonTextHide).X)
-              + 2 * ImGui.GetStyle().FramePadding.X;
+              + 2 * Im.Style.FramePadding.X;
             minWidth = Math.Max(buttonWidth, minWidth);
             if (shown)
             {
                 var pos = ImGui.GetCursorPos();
                 ImGui.Dummy(UiHelpers.IconButtonSize);
-                using (var _ = ImRaii.Group())
+                using (Im.Group())
                 {
                     draw();
                 }
@@ -253,9 +253,9 @@ public sealed class ModGroupDrawer : Luna.IUiService
             else
             {
                 var optionWidth = options.Max(o => ImUtf8.CalcTextSize(o.Name).X)
-                  + ImGui.GetStyle().ItemInnerSpacing.X
+                  + Im.Style.ItemInnerSpacing.X
                   + Im.Style.FrameHeight
-                  + ImGui.GetStyle().FramePadding.X;
+                  + Im.Style.FramePadding.X;
                 var width = Math.Max(optionWidth, minWidth);
                 if (ImUtf8.Button(buttonTextShow, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);

@@ -305,9 +305,8 @@ public partial class MtrlTab
 
     private static void CtBlendRect(Vector2 rcMin, Vector2 rcMax, uint topColor, uint bottomColor)
     {
-        var style          = ImGui.GetStyle();
-        var frameRounding  = style.FrameRounding;
-        var frameThickness = style.FrameBorderSize;
+        var frameRounding  = Im.Style.FrameRounding;
+        var frameThickness = Im.Style.FrameBorderThickness;
         var borderColor    = ImGuiColor.Border.Get();
         var drawList       = ImGui.GetWindowDrawList();
         if (topColor == bottomColor)
@@ -504,17 +503,17 @@ public partial class MtrlTab
         if (_config.EditRawTileTransforms)
         {
             var tmp = value;
-            ImGui.SetNextItemWidth(floatSize);
+            Im.Item.SetNextWidth(floatSize);
             ret |= CtDragHalf("##TileTransformUU"u8, "Tile Repeat U"u8, ref tmp.UU, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
-            ImUtf8.SameLineInner();
-            ImGui.SetNextItemWidth(floatSize);
+            Im.Line.SameInner();
+            Im.Item.SetNextWidth(floatSize);
             ret |= CtDragHalf("##TileTransformVV"u8, "Tile Repeat V"u8, ref tmp.VV, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
             if (!twoRowLayout)
-                ImUtf8.SameLineInner();
-            ImGui.SetNextItemWidth(floatSize);
+                Im.Line.SameInner();
+            Im.Item.SetNextWidth(floatSize);
             ret |= CtDragHalf("##TileTransformUV"u8, "Tile Skew U"u8, ref tmp.UV, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
-            ImUtf8.SameLineInner();
-            ImGui.SetNextItemWidth(floatSize);
+            Im.Line.SameInner();
+            Im.Item.SetNextWidth(floatSize);
             ret |= CtDragHalf("##TileTransformVU"u8, "Tile Skew V"u8, ref tmp.VU, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
             if (!ret || tmp == value)
                 return false;
@@ -526,23 +525,23 @@ public partial class MtrlTab
             value.Decompose(out var scale, out var rotation, out var shear);
             rotation *= 180.0f / MathF.PI;
             shear    *= 180.0f / MathF.PI;
-            ImGui.SetNextItemWidth(floatSize);
+            Im.Item.SetNextWidth(floatSize);
             var scaleXChanged = CtDragScalar("##TileScaleU"u8, "Tile Scale U"u8, ref scale.X, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
             var activated     = ImGui.IsItemActivated();
             var deactivated   = ImGui.IsItemDeactivated();
-            ImUtf8.SameLineInner();
-            ImGui.SetNextItemWidth(floatSize);
+            Im.Line.SameInner();
+            Im.Item.SetNextWidth(floatSize);
             var scaleYChanged = CtDragScalar("##TileScaleV"u8, "Tile Scale V"u8, ref scale.Y, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
             activated   |= ImGui.IsItemActivated();
             deactivated |= ImGui.IsItemDeactivated();
             if (!twoRowLayout)
-                ImUtf8.SameLineInner();
-            ImGui.SetNextItemWidth(floatSize);
+                Im.Line.SameInner();
+            Im.Item.SetNextWidth(floatSize);
             var rotationChanged = CtDragScalar("##TileRotation"u8, "Tile Rotation"u8, ref rotation, "%.0f°"u8, -180.0f, 180.0f, 1.0f);
             activated   |= ImGui.IsItemActivated();
             deactivated |= ImGui.IsItemDeactivated();
-            ImUtf8.SameLineInner();
-            ImGui.SetNextItemWidth(floatSize);
+            Im.Line.SameInner();
+            Im.Item.SetNextWidth(floatSize);
             var shearChanged = CtDragScalar("##TileShear"u8, "Tile Shear"u8, ref shear, "%.0f°"u8, -90.0f, 90.0f, 1.0f);
             activated   |= ImGui.IsItemActivated();
             deactivated |= ImGui.IsItemDeactivated();

@@ -41,12 +41,12 @@ public class AddGroupDrawer : Luna.IUiService
 
     private void DrawBasicGroups(Mod mod, float width, Vector2 buttonWidth)
     {
-        ImGui.SetNextItemWidth(width);
+        Im.Item.SetNextWidth(width);
         if (ImUtf8.InputText("##name"u8, ref _groupName, "Enter New Name..."u8))
             _groupNameValid = ModGroupEditor.VerifyFileName(mod, null, _groupName, false);
 
         DrawSingleGroupButton(mod, buttonWidth);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         DrawMultiGroupButton(mod, buttonWidth);
         DrawCombiningGroupButton(mod, buttonWidth);
     }
@@ -93,27 +93,27 @@ public class AddGroupDrawer : Luna.IUiService
     private void DrawImcInput(float width)
     {
         var change = ImcMetaDrawer.DrawObjectType(ref _imcIdentifier, width);
-        ImUtf8.SameLineInner();
+        Im.Line.SameInner();
         change |= ImcMetaDrawer.DrawPrimaryId(ref _imcIdentifier, width);
         if (_imcIdentifier.ObjectType is ObjectType.Weapon or ObjectType.Monster)
         {
             change |= ImcMetaDrawer.DrawSecondaryId(ref _imcIdentifier, width);
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             change |= ImcMetaDrawer.DrawVariant(ref _imcIdentifier, width);
         }
         else if (_imcIdentifier.ObjectType is ObjectType.DemiHuman)
         {
             var quarterWidth = (width - ImUtf8.ItemInnerSpacing.X / Im.Style.GlobalScale) / 2;
             change |= ImcMetaDrawer.DrawSecondaryId(ref _imcIdentifier, width);
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             change |= ImcMetaDrawer.DrawSlot(ref _imcIdentifier, quarterWidth);
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             change |= ImcMetaDrawer.DrawVariant(ref _imcIdentifier, quarterWidth);
         }
         else
         {
             change |= ImcMetaDrawer.DrawSlot(ref _imcIdentifier, width);
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             change |= ImcMetaDrawer.DrawVariant(ref _imcIdentifier, width);
         }
 
@@ -144,7 +144,7 @@ public class AddGroupDrawer : Luna.IUiService
 
         if (_entryInvalid)
         {
-            ImUtf8.SameLineInner();
+            Im.Line.SameInner();
             var text = _imcFileExists
                 ? "IMC Entry Does Not Exist"u8
                 : "IMC File Does Not Exist"u8;
