@@ -88,6 +88,7 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.RedrawObject.Provider(pi, api.Redraw),
             IpcSubscribers.RedrawAll.Provider(pi, api.Redraw),
             IpcSubscribers.GameObjectRedrawn.Provider(pi, api.Redraw),
+            IpcSubscribers.RedrawCollectionMembers.Provider(pi, api.Redraw),
 
             IpcSubscribers.ResolveDefaultPath.Provider(pi, api.Resolve),
             IpcSubscribers.ResolveInterfacePath.Provider(pi, api.Resolve),
