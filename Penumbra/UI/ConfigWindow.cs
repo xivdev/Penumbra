@@ -1,10 +1,10 @@
 using Dalamud.Plugin;
 using ImSharp;
 using Luna;
-using Penumbra.Api.Enums;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
+using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra.UI;
 
@@ -14,7 +14,7 @@ public sealed class ConfigWindow : Window
     private readonly Configuration           _config;
     private readonly ValidityChecker         _validityChecker;
     private          Penumbra?               _penumbra;
-    private          ConfigTabBar            _configTabs = null!;
+    private          MainTabBar              _configTabs = null!;
     private          string?                 _lastException;
 
     public ConfigWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
@@ -32,15 +32,15 @@ public sealed class ConfigWindow : Window
 
     public void OpenSettings()
     {
-        _configTabs.SelectTab = TabType.Settings;
-        IsOpen                = true;
+        _configTabs.NextTab = TabType.Settings;
+        IsOpen              = true;
     }
 
-    public void Setup(Penumbra penumbra, ConfigTabBar configTabs)
+    public void Setup(Penumbra penumbra, MainTabBar configTabs)
     {
-        _penumbra             = penumbra;
-        _configTabs           = configTabs;
-        _configTabs.SelectTab = _config.Ephemeral.SelectedTab;
+        _penumbra           = penumbra;
+        _configTabs         = configTabs;
+        _configTabs.NextTab = _config.Ephemeral.SelectedTab;
     }
 
     public override bool DrawConditions()
@@ -98,12 +98,7 @@ public sealed class ConfigWindow : Window
             }
             else
             {
-                var type = _configTabs.Draw();
-                if (type != _config.Ephemeral.SelectedTab)
-                {
-                    _config.Ephemeral.SelectedTab = type;
-                    _config.Ephemeral.Save();
-                }
+                _configTabs.Draw();
             }
 
             _lastException = null;

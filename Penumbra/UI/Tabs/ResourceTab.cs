@@ -4,17 +4,21 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using ImSharp;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Widgets;
+using Penumbra.Api.Enums;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
-    : ITab, Luna.IUiService
+public sealed class ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
+    : ITab<TabType>
 {
+    public TabType Identifier
+        => TabType.ResourceManager;
+
     public ReadOnlySpan<byte> Label
         => "Resource Manager"u8;
 
@@ -52,7 +56,8 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
     private string _resourceManagerFilter = string.Empty;
 
     /// <summary> Draw a single resource map. </summary>
-    private unsafe void DrawResourceMap(ResourceCategory category, uint ext, StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>* map)
+    private unsafe void DrawResourceMap(ResourceCategory category, uint ext,
+        StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>* map)
     {
         if (map == null)
             return;

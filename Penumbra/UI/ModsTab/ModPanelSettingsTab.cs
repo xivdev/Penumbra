@@ -1,8 +1,8 @@
 using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using OtterGui.Raii;
 using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.UI.Classes;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -22,7 +22,7 @@ public class ModPanelSettingsTab(
     CommunicatorService communicator,
     ModGroupDrawer modGroupDrawer,
     Configuration config)
-    : ITab, Luna.IUiService
+    : ITab<ModPanelTab>
 {
     private bool _inherited;
     private bool _temporary;
@@ -32,7 +32,10 @@ public class ModPanelSettingsTab(
     public ReadOnlySpan<byte> Label
         => "Settings"u8;
 
-    public void DrawHeader()
+    public ModPanelTab Identifier
+        => ModPanelTab.Settings;
+
+    public void PostTabButton()
         => tutorial.OpenTutorial(BasicTutorialSteps.ModOptions);
 
     public void Reset()

@@ -7,7 +7,7 @@ using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using ImSharp;
-using OtterGui.Widgets;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
@@ -19,7 +19,7 @@ using Penumbra.GameData.Interop;
 
 namespace Penumbra.UI.Tabs;
 
-public class ModsTab(
+public sealed class ModsTab(
     ModManager modManager,
     CollectionManager collectionManager,
     ModFileSystemSelector selector,
@@ -31,7 +31,7 @@ public class ModsTab(
     CollectionSelectHeader collectionHeader,
     ITargetManager targets,
     ObjectManager objects)
-    : ITab, Luna.IUiService
+    : ITab<TabType>
 {
     private readonly ActiveCollections _activeCollections = collectionManager.Active;
 
@@ -41,7 +41,10 @@ public class ModsTab(
     public ReadOnlySpan<byte> Label
         => "Mods"u8;
 
-    public void DrawHeader()
+    public TabType Identifier
+        => TabType.Mods;
+
+    public void PostTabButton()
         => tutorial.OpenTutorial(BasicTutorialSteps.Mods);
 
     public Mod SelectMod
@@ -60,7 +63,8 @@ public class ModsTab(
             collectionHeader.Draw(false);
 
             using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
-            using (var child = ImRaii.Child("##ModsTabMod", Im.ContentRegion.Available with { Y = config.HideRedrawBar ? 0 : -Im.Style.FrameHeight },
+            using (var child = ImRaii.Child("##ModsTabMod",
+                       Im.ContentRegion.Available with { Y = config.HideRedrawBar ? 0 : -Im.Style.FrameHeight },
                        true, ImGuiWindowFlags.HorizontalScrollbar))
             {
                 style.Pop();

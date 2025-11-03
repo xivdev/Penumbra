@@ -134,7 +134,7 @@ public class Penumbra : IDalamudPlugin
         AsyncTask.Run(() =>
             {
                 var system = _services.GetService<PenumbraWindowSystem>();
-                system.Window.Setup(this, _services.GetService<ConfigTabBar>());
+                system.Window.Setup(this, _services.GetService<MainTabBar>());
                 _services.GetService<CommandHandler>();
                 if (!_disposed)
                 {
@@ -199,8 +199,12 @@ public class Penumbra : IDalamudPlugin
     {
         ReadOnlySpan<string> relevantPlugins =
         [
-            "Glamourer", "MareSynchronos", "CustomizePlus", "SimpleHeels", "VfxEditor", "heliosphere-plugin", "Ktisis", "Brio", "DynamicBridge",
-            "IllusioVitae", "Aetherment", "LoporritSync", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn",
+            "Glamourer", "CustomizePlus", "SimpleHeels",
+            "Ktisis", "Brio",
+            "heliosphere-plugin", "VfxEditor", "IllusioVitae", "Aetherment",
+            "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn",
+            "MareSynchronos", "LoporritSync", "KittenSync", "Snowcloak", "LightlessSync", "Sphene", "XivSync", "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni"
+
         ];
         var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)

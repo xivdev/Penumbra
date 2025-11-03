@@ -1,9 +1,9 @@
 using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -15,19 +15,22 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class ChangedItemsTab(
+public sealed class ChangedItemsTab(
     CollectionManager collectionManager,
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
     CommunicatorService communicator)
-    : ITab, Luna.IUiService
+    : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
-    private string  _changedItemFilter    = string.Empty;
-    private string  _changedItemModFilter = string.Empty;
-    private Vector2 _buttonSize;
+    public TabType Identifier
+        => TabType.ChangedItems;
+
+    private         string  _changedItemFilter    = string.Empty;
+    private         string  _changedItemModFilter = string.Empty;
+    private         Vector2 _buttonSize;
 
     public void DrawContent()
     {
@@ -105,7 +108,7 @@ public class ChangedItemsTab(
         if (ImUtf8.Selectable(first.Name, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 })
          && ImGui.GetIO().KeyCtrl
          && first is Mod mod)
-            communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
+            communicator.SelectTab.Invoke(new SelectTab.Arguments(Api.Enums.TabType.Mods, mod));
 
         if (!Im.Item.Hovered())
             return;

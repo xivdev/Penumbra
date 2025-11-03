@@ -2,7 +2,7 @@ using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImSharp;
-using OtterGui.Widgets;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
@@ -16,7 +16,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
-public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
+public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 {
     public const int        DefaultMaxEntries = 1024;
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
@@ -95,6 +95,9 @@ public sealed class ResourceWatcher : IDisposable, ITab, Luna.IUiService
 
     public ReadOnlySpan<byte> Label
         => "Resource Logger"u8;
+
+    public TabType Identifier
+        => TabType.ResourceWatcher;
 
     public void DrawContent()
     {

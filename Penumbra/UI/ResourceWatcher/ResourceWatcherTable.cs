@@ -2,10 +2,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using ImSharp;
 using Luna;
-using OtterGui;
-using OtterGui.Raii;
 using OtterGui.Table;
-using OtterGui.Text;
 using Penumbra.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -54,16 +51,16 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => DrawByteString(item.Path, 280 * Im.Style.GlobalScale);
     }
 
-    private static unsafe void DrawByteString(CiByteString path, float length)
+    private static void DrawByteString(CiByteString path, float length)
     {
         if (path.IsEmpty)
             return;
 
-        var size    = ImUtf8.CalcTextSize(path.Span);
+        var size    = Im.Font.CalculateSize(path.Span);
         var clicked = false;
         if (size.X <= length)
         {
-            clicked = ImUtf8.Selectable(path.Span);
+            clicked = Im.Selectable(path.Span);
         }
         else
         {
@@ -71,10 +68,11 @@ internal sealed class ResourceWatcherTable : Table<Record>
             using (Im.Group())
             {
                 CiByteString shortPath;
-                if (fileName != -1)
+                var          icon = FontAwesomeIcon.EllipsisH.Icon();
+                if (fileName is not -1)
                 {
-                    using var font = ImRaii.PushFont(UiBuilder.IconFont);
-                    clicked = ImUtf8.Selectable(FontAwesomeIcon.EllipsisH.ToIconString());
+                    using var font = AwesomeIcon.Font.Push();
+                    clicked = Im.Selectable(icon.Span);
                     Im.Line.SameInner();
                     shortPath = path.Substring(fileName, path.Length - fileName);
                 }
@@ -83,14 +81,14 @@ internal sealed class ResourceWatcherTable : Table<Record>
                     shortPath = path;
                 }
 
-                clicked |= ImUtf8.Selectable(shortPath.Span, false, ImGuiSelectableFlags.AllowItemOverlap);
+                clicked |= Im.Selectable(shortPath.Span, false, SelectableFlags.AllowOverlap);
             }
 
             Im.Tooltip.OnHover(path.Span);
         }
 
         if (clicked)
-            ImUtf8.SetClipboardText(path.Span);
+            Im.Clipboard.Set(path.Span);
     }
 
     private sealed class RecordTypeColumn : ColumnFlags<RecordType, Record>
@@ -153,13 +151,13 @@ internal sealed class ResourceWatcherTable : Table<Record>
         public override float Width
             => UiBuilder.MonoFont.GetCharAdvance('0') * 17;
 
-        public override unsafe string ToName(Record item)
-            => item.Crc64 != 0 ? $"{item.Crc64:X16}" : string.Empty;
+        public override string ToName(Record item)
+            => item.Crc64 is not 0 ? $"{item.Crc64:X16}" : string.Empty;
 
         public override unsafe void DrawColumn(Record item, int _)
         {
-            using var font = ImRaii.PushFont(UiBuilder.MonoFont, item.Handle != null);
-            ImUtf8.Text(ToName(item));
+            using var font = item.Handle is null ? null : Im.Font.PushMono();
+            Im.Text(ToName(item));
         }
     }
 
@@ -334,17 +332,17 @@ internal sealed class ResourceWatcherTable : Table<Record>
             var (icon, color, tt) = item.LoadState switch
             {
                 LoadState.Success => (FontAwesomeIcon.CheckCircle, ColorId.IncreasedMetaValue.Value(),
-                    $"Successfully loaded ({(byte)item.LoadState})."),
+                    new StringU8($"Successfully loaded ({(byte)item.LoadState}).")),
                 LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value(),
-                    $"Dependencies failed to load ({(byte)item.LoadState})."),
+                    new StringU8($"Dependencies failed to load ({(byte)item.LoadState}).")),
                 <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(),
-                    $"Not yet loaded ({(byte)item.LoadState})."),
-                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), $"Loading asynchronously ({(byte)item.LoadState})."),
+                    new StringU8($"Not yet loaded ({(byte)item.LoadState}).")),
+                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), new StringU8($"Loading asynchronously ({(byte)item.LoadState}).")),
                 > LoadState.Success => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
-                    $"Failed to load ({(byte)item.LoadState})."),
+                    new StringU8($"Failed to load ({(byte)item.LoadState}).")),
             };
             ImEx.Icon.Draw(icon.Icon(), color);
-            ImGuiUtil.HoverTooltip(tt);
+            Im.Tooltip.OnHover(tt);
         }
 
         public override int Compare(Record lhs, Record rhs)
@@ -361,8 +359,8 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
         public override unsafe void DrawColumn(Record item, int _)
         {
-            using var font = ImRaii.PushFont(UiBuilder.MonoFont, item.Handle != null);
-            ImGuiUtil.RightAlign(ToName(item));
+            using var font = item.Handle is null ? null : Im.Font.PushMono();
+            ImEx.TextRightAligned(ToName(item));
         }
     }
 
@@ -447,7 +445,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => 30 * Im.Style.GlobalScale;
 
         public override void DrawColumn(Record item, int _)
-            => ImGuiUtil.RightAlign(item.RefCount.ToString());
+            => ImEx.TextRightAligned($"{item.RefCount}");
 
         public override int Compare(Record lhs, Record rhs)
             => lhs.RefCount.CompareTo(rhs.RefCount);
@@ -462,7 +460,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => item.OsThreadId.ToString();
 
         public override void DrawColumn(Record item, int _)
-            => ImGuiUtil.RightAlign(ToName(item));
+            => ImEx.TextRightAligned($"{item.OsThreadId}");
 
         public override int Compare(Record lhs, Record rhs)
             => lhs.OsThreadId.CompareTo(rhs.OsThreadId);

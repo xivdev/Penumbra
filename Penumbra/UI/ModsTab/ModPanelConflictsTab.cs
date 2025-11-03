@@ -13,10 +13,13 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab, IUiService
+public class ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector) : ITab<ModPanelTab>
 {
     public ReadOnlySpan<byte> Label
         => "Conflicts"u8;
+
+    public ModPanelTab Identifier
+        => ModPanelTab.Conflicts;
 
     public bool IsVisible
         => collectionManager.Active.Current.Conflicts(selector.Selected!).Any(c => !GetPriority(c).IsHidden);

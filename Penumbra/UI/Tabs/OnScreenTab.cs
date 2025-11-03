@@ -1,9 +1,10 @@
-using OtterGui.Widgets;
+using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra.UI.Tabs;
 
-public class OnScreenTab(ResourceTreeViewerFactory resourceTreeViewerFactory) : ITab, Luna.IUiService
+public sealed class OnScreenTab(ResourceTreeViewerFactory resourceTreeViewerFactory) : ITab<TabType>
 {
     private readonly ResourceTreeViewer _viewer = resourceTreeViewerFactory.Create(0, delegate { }, delegate { });
 
@@ -12,4 +13,7 @@ public class OnScreenTab(ResourceTreeViewerFactory resourceTreeViewerFactory) : 
 
     public void DrawContent()
         => _viewer.Draw();
+
+    public TabType Identifier
+        => TabType.OnScreen;
 }

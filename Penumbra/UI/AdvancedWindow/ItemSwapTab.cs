@@ -4,7 +4,6 @@ using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
@@ -25,6 +24,7 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
+using ITab = OtterGui.Widgets.ITab;
 using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;

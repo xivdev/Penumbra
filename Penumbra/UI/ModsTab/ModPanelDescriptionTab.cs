@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Raii;
-using OtterGui;
+using Luna;
 using OtterGui.Widgets;
 using Penumbra.Mods.Manager;
 
@@ -12,7 +11,7 @@ public class ModPanelDescriptionTab(
     TutorialService tutorial,
     ModManager modManager,
     PredefinedTagManager predefinedTagsConfig)
-    : ITab, Luna.IUiService
+    : ITab<ModPanelTab>
 {
     private readonly TagButtons _localTags = new();
     private readonly TagButtons _modTags   = new();
@@ -20,15 +19,17 @@ public class ModPanelDescriptionTab(
     public ReadOnlySpan<byte> Label
         => "Description"u8;
 
+    public ModPanelTab Identifier
+        => ModPanelTab.Description;
+
     public void DrawContent()
     {
-        using var child = ImRaii.Child("##description");
+        using var child = Im.Child.Begin("##description"u8);
         if (!child)
             return;
 
-        ImGui.Dummy(ImEx.ScaledVector(2));
-
-        ImGui.Dummy(ImEx.ScaledVector(2));
+        Im.ScaledDummy(2, 2);
+        Im.ScaledDummy(2, 2);
         var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
             ? (true, Im.Style.FrameHeight + Im.Style.WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? Im.Style.ScrollbarSize : 0))
             : (false, 0);
@@ -49,9 +50,9 @@ public class ModPanelDescriptionTab(
                 selector.Selected!.ModTags, out _, false,
                 ImGui.CalcTextSize("Local ").X - ImGui.CalcTextSize("Mod ").X);
 
-        ImGui.Dummy(ImEx.ScaledVector(2));
+        Im.ScaledDummy(2, 2);
         Im.Separator();
 
-        ImGuiUtil.TextWrapped(selector.Selected!.Description);
+        Im.TextWrapped(selector.Selected!.Description);
     }
 }

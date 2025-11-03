@@ -1,9 +1,10 @@
-using OtterGui.Widgets;
-using Penumbra.Services;
+using Luna;
+using Penumbra.Api.Enums;
+using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI.Tabs;
 
-public class MessagesTab(MessageService messages) : ITab, Luna.IUiService
+public sealed class MessagesTab(MessageService messages) : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
         => "Messages"u8;
@@ -13,4 +14,7 @@ public class MessagesTab(MessageService messages) : ITab, Luna.IUiService
 
     public void DrawContent()
         => messages.DrawNotificationLog();
+
+    public TabType Identifier
+        => TabType.Messages;
 }

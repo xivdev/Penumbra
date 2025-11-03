@@ -1,7 +1,6 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -12,6 +11,7 @@ using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop;
 using Penumbra.Interop.Hooks.PostProcessing;
@@ -23,9 +23,12 @@ using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Tabs;
 
-public class SettingsTab : ITab, IUiService
+public sealed class SettingsTab : ITab<TabType>
 {
     public const int RootDirectoryMaxLength = 64;
+
+    public TabType Identifier
+        => TabType.Settings;
 
     public ReadOnlySpan<byte> Label
         => "Settings"u8;

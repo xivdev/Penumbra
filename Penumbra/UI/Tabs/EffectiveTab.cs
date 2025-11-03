@@ -1,10 +1,11 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using ImSharp;
+using Luna;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Text;
-using OtterGui.Widgets;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
@@ -15,11 +16,14 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
-    : ITab, Luna.IUiService
+public sealed class EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
+    : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
         => "Effective Changes"u8;
+
+    public TabType Identifier
+        => TabType.EffectiveChanges;
 
     public void DrawContent()
     {

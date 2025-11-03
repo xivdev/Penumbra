@@ -14,6 +14,7 @@ using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
+using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra.Services;
 

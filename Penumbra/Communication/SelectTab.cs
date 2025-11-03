@@ -10,7 +10,7 @@ public sealed class SelectTab(Logger log) : EventBase<SelectTab.Arguments, Selec
     public enum Priority
     {
         /// <seealso cref="UI.Tabs.ConfigTabBar.OnSelectTab"/>
-        ConfigTabBar = 0,
+        MainTabBar = 0,
     }
 
     /// <summary> The arguments for a SelectTab event. </summary>

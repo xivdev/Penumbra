@@ -10,6 +10,7 @@ using Penumbra.UI;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
+using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra;
 

@@ -2,8 +2,9 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Plugin;
 using ImSharp;
+using Luna;
 using OtterGui.Raii;
-using OtterGui.Widgets;
+using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Mods.Manager;
@@ -12,7 +13,7 @@ using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
-public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
+public sealed class CollectionsTab : ITab<TabType>, IDisposable
 {
     private readonly EphemeralConfig    _config;
     private readonly CollectionSelector _selector;
@@ -37,6 +38,9 @@ public sealed class CollectionsTab : IDisposable, ITab, Luna.IUiService
             _config.Save();
         }
     }
+
+    public TabType Identifier
+        => TabType.Collections;
 
     public CollectionsTab(IDalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
         CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, SaveService saveService)

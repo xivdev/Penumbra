@@ -6,7 +6,6 @@ using Luna;
 using OtterGui;
 using OtterGui.Services;
 using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -23,7 +22,7 @@ public class ModPanelChangedItemsTab(
     ImGuiCacheService cacheService,
     Configuration config,
     ModDataEditor dataEditor)
-    : ITab, Luna.IUiService
+    : ITab<ModPanelTab>
 {
     private readonly ImGuiCacheService.CacheId _cacheId = cacheService.GetNewId();
 
@@ -208,6 +207,9 @@ public class ModPanelChangedItemsTab(
 
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
+
+    public ModPanelTab Identifier
+        => ModPanelTab.ChangedItems;
 
     public bool IsVisible
         => selector.Selected!.ChangedItems.Count > 0;

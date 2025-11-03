@@ -1,9 +1,6 @@
 using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility;
 using ImSharp;
-using OtterGui.Raii;
-using OtterGui.Text;
-using OtterGui.Widgets;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
@@ -11,7 +8,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSelector selector) : ITab, Luna.IUiService
+public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSelector selector) : ITab<ModPanelTab>
 {
     private enum ModState
     {
@@ -25,18 +22,21 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
     public ReadOnlySpan<byte> Label
         => "Collections"u8;
 
+    public ModPanelTab Identifier
+        => ModPanelTab.Collections;
+
     public void DrawContent()
     {
         var (direct, inherited) = CountUsage(selector.Selected!);
         Im.Line.New();
-        if (direct == 1)
-            ImUtf8.Text("This Mod is directly configured in 1 collection."u8);
-        else if (direct == 0)
-            ImUtf8.Text("This mod is entirely unused."u8, Colors.RegexWarningBorder);
-        else
-            ImUtf8.Text($"This Mod is directly configured in {direct} collections.");
+        switch (direct)
+        {
+            case 1:  Im.Text("This Mod is directly configured in 1 collection."u8); break;
+            case 0:  Im.Text("This mod is entirely unused."u8, Colors.RegexWarningBorder); break;
+            default: Im.Text($"This Mod is directly configured in {direct} collections."); break;
+        }
         if (inherited > 0)
-            ImUtf8.Text($"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
+            Im.Text($"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
 
         Im.Line.New();
         Im.Separator();
@@ -45,7 +45,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         if (!table)
             return;
 
-        var size           = ImUtf8.CalcTextSize(ToText(ModState.Unconfigured)).X + 20 * Im.Style.GlobalScale;
+        var size           = Im.Font.CalculateSize(ToText(ModState.Unconfigured)).X + 20 * Im.Style.GlobalScale;
         var collectionSize = 200 * Im.Style.GlobalScale;
         table.SetupColumn("Collection"u8,     TableColumnFlags.WidthFixed, collectionSize);
         table.SetupColumn("State"u8,          TableColumnFlags.WidthFixed, size);
@@ -54,21 +54,21 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         ImGui.TableHeadersRow();
         foreach (var (idx, (collection, parent, color, state)) in _cache.Index())
         {
-            using var id = ImUtf8.PushId(idx);
-            ImUtf8.DrawTableColumn(collection.Identity.Name);
+            using var id = Im.Id.Push(idx);
+            table.DrawColumn(collection.Identity.Name);
 
-            ImGui.TableNextColumn();
-            ImUtf8.Text(ToText(state), color);
+            table.NextColumn();
+            Im.Text(ToText(state), color);
 
-            using (var context = ImUtf8.PopupContextItem("Context"u8))
+            using (var context = Im.Popup.BeginContextItem("Context"u8))
             {
                 if (context)
                 {
-                    ImUtf8.Text(collection.Identity.Name);
+                    Im.Text(collection.Identity.Name);
                     Im.Separator();
-                    using (ImRaii.Disabled(state is ModState.Enabled && parent == collection))
+                    using (Im.Disabled(state is ModState.Enabled && parent == collection))
                     {
-                        if (ImUtf8.MenuItem("Enable"u8))
+                        if (Im.Menu.Item("Enable"u8))
                         {
                             if (parent != collection)
                                 manager.Editor.SetModInheritance(collection, selector.Selected!, false);
@@ -76,9 +76,9 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                         }
                     }
 
-                    using (ImRaii.Disabled(state is ModState.Disabled && parent == collection))
+                    using (Im.Disabled(state is ModState.Disabled && parent == collection))
                     {
-                        if (ImUtf8.MenuItem("Disable"u8))
+                        if (Im.Menu.Item("Disable"u8))
                         {
                             if (parent != collection)
                                 manager.Editor.SetModInheritance(collection, selector.Selected!, false);
@@ -86,15 +86,15 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                         }
                     }
 
-                    using (ImRaii.Disabled(parent != collection))
+                    using (Im.Disabled(parent != collection))
                     {
-                        if (ImUtf8.MenuItem("Inherit"u8))
+                        if (Im.Menu.Item("Inherit"u8))
                             manager.Editor.SetModInheritance(collection, selector.Selected!, true);
                     }
                 }
             }
 
-            ImUtf8.DrawTableColumn(parent == collection ? string.Empty : parent.Identity.Name);
+            table.DrawColumn(parent == collection ? StringU8.Empty : parent.Identity.Name);
         }
     }
 

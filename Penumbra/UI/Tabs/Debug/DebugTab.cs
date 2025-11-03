@@ -14,8 +14,8 @@ using Luna;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.Api;
+using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.DataContainers;
@@ -67,7 +67,7 @@ public class Diagnostics(ServiceManager provider) : IUiService
     }
 }
 
-public class DebugTab : Window, ITab
+public sealed class DebugTab : Window, ITab<TabType>
 {
     private readonly Configuration                      _config;
     private readonly CollectionManager                  _collectionManager;
@@ -172,6 +172,9 @@ public class DebugTab : Window, ITab
 
     public bool IsVisible
         => _config is { DebugMode: true, Ephemeral.DebugSeparateWindow: false };
+
+    public TabType Identifier
+        => TabType.Debug;
 
 #if DEBUG
     private const string DebugVersionString = "(Debug)";
