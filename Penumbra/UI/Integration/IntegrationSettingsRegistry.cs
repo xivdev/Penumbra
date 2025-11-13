@@ -100,7 +100,12 @@ public sealed class IntegrationSettingsRegistry : IService, IDisposable
     }
 
     private IExposedPlugin? GetPlugin(Delegate @delegate)
-        => null; // TODO Use IDalamudPluginInterface.GetPlugin(Assembly) when it's in Dalamud stable.
+        => @delegate.Method.DeclaringType
+            switch
+            {
+                null     => null,
+                var type => _pluginInterface.GetPlugin(type.Assembly),
+            };
 
     private int FindSectionIndex(string internalName)
         => _sections.FindIndex(section => section.InternalName.Equals(internalName, StringComparison.Ordinal));
