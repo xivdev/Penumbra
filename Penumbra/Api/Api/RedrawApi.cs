@@ -43,7 +43,7 @@ public class RedrawApi(RedrawService redrawService, IFramework framework, Collec
                 helpers.AssociatedCollection(actor.ObjectIndex, out var modCollection);
                 if (collection == modCollection)
                 {
-                    framework.RunOnFrameworkThread(() => redrawService.RedrawObject(actor.ObjectIndex, setting));
+                     redrawService.RedrawObject(actor.ObjectIndex, setting);
                 }
             }
         });
