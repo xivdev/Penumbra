@@ -5,20 +5,24 @@ using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
+using Penumbra.UI.Integration;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra.Api.Api;
 
 public class UiApi : IPenumbraApiUi, IApiService, IDisposable
 {
-    private readonly CommunicatorService _communicator;
-    private readonly ConfigWindow        _configWindow;
-    private readonly ModManager          _modManager;
+    private readonly CommunicatorService         _communicator;
+    private readonly ConfigWindow                _configWindow;
+    private readonly ModManager                  _modManager;
+    private readonly IntegrationSettingsRegistry _integrationSettings;
 
-    public UiApi(CommunicatorService communicator, ConfigWindow configWindow, ModManager modManager)
+    public UiApi(CommunicatorService communicator, ConfigWindow configWindow, ModManager modManager, IntegrationSettingsRegistry integrationSettings)
     {
-        _communicator = communicator;
-        _configWindow = configWindow;
-        _modManager   = modManager;
+        _communicator        = communicator;
+        _configWindow        = configWindow;
+        _modManager          = modManager;
+        _integrationSettings = integrationSettings;
         _communicator.ChangedItemHover.Subscribe(OnChangedItemHover, ChangedItemHover.Priority.Default);
         _communicator.ChangedItemClick.Subscribe(OnChangedItemClick, ChangedItemClick.Priority.Default);
     }
@@ -98,4 +102,12 @@ public class UiApi : IPenumbraApiUi, IApiService, IDisposable
         var (type, id) = data.ToApiObject();
         ChangedItemTooltip.Invoke(type, id);
     }
+
+    public PenumbraApiEc RegisterSettingsSection(Action draw)
+        => _integrationSettings.RegisterSection(draw);
+
+    public PenumbraApiEc UnregisterSettingsSection(Action draw)
+        => _integrationSettings.UnregisterSection(draw)
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.NothingChanged;
 }
