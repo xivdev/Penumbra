@@ -6,9 +6,9 @@ using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
 using TabType = Penumbra.Api.Enums.TabType;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.MainWindow;
 
-public sealed class ConfigWindow : Window
+public sealed class MainWindow : Window
 {
     private readonly IDalamudPluginInterface _pluginInterface;
     private readonly Configuration           _config;
@@ -17,7 +17,7 @@ public sealed class ConfigWindow : Window
     private          MainTabBar              _configTabs = null!;
     private          string?                 _lastException;
 
-    public ConfigWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
+    public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial)
         : base(GetLabel(checker))
     {

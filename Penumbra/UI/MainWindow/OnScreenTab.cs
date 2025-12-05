@@ -2,7 +2,7 @@ using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.UI.AdvancedWindow;
 
-namespace Penumbra.UI.Tabs;
+namespace Penumbra.UI.MainWindow;
 
 public sealed class OnScreenTab(ResourceTreeViewerFactory resourceTreeViewerFactory) : ITab<TabType>
 {

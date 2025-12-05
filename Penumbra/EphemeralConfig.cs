@@ -1,12 +1,12 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Newtonsoft.Json;
-using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Enums;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
+using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;

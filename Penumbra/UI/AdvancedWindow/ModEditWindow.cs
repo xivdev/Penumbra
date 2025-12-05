@@ -407,9 +407,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         var width = ImGui.CalcTextSize("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN ").X;
         table.SetupColumn("file"u8, TableColumnFlags.WidthStretch);
-        table.SetupColumn("size", TableColumnFlags.WidthFixed, ImGui.CalcTextSize("NNN.NNN  "u8).X);
+        table.SetupColumn("size"u8, TableColumnFlags.WidthFixed, ImGui.CalcTextSize("NNN.NNN  "u8).X);
         table.SetupColumn("hash"u8, TableColumnFlags.WidthFixed,
-            ImGui.GetWindowWidth() > 2 * width ? width : ImGui.CalcTextSize("NNNNNNNN... ").X);
+            ImGui.GetWindowWidth() > 2 * width ? width : Im.Font.CalculateSize("NNNNNNNN... "u8).X);
         foreach (var (set, size, hash) in _editor.Duplicates.Duplicates.Where(s => s.Paths.Length > 1))
         {
             ImGui.TableNextColumn();

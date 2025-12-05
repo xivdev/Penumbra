@@ -1,4 +1,6 @@
+using ImSharp;
 using Luna;
+using Luna.Generators;
 using Penumbra.Collections;
 using Penumbra.Enums;
 using Penumbra.Interop;
@@ -9,21 +11,31 @@ using Penumbra.String.Classes;
 namespace Penumbra.UI.ResourceWatcher;
 
 [Flags]
+[NamedEnum(Utf16: false)]
 public enum RecordType : byte
 {
-    Request          = 0x01,
-    ResourceLoad     = 0x02,
-    FileLoad         = 0x04,
-    Destruction      = 0x08,
+    [Name("REQ")]
+    Request = 0x01,
+
+    [Name("LOAD")]
+    ResourceLoad = 0x02,
+
+    [Name("FILE")]
+    FileLoad = 0x04,
+
+    [Name("DEST")]
+    Destruction = 0x08,
+
+    [Name("DONE")]
     ResourceComplete = 0x10,
 }
 
-internal unsafe struct Record
+internal unsafe struct Record()
 {
     public DateTime             Time;
-    public CiByteString         Path;
-    public CiByteString         OriginalPath;
-    public string               AssociatedGameObject;
+    public StringU8             Path;
+    public StringU8             OriginalPath;
+    public string               AssociatedGameObject = string.Empty;
     public ModCollection?       Collection;
     public ResourceHandle*      Handle;
     public ResourceTypeFlag     ResourceType;
@@ -42,8 +54,8 @@ internal unsafe struct Record
         => new()
         {
             Time                 = DateTime.UtcNow,
-            Path                 = path.IsOwned ? path : path.Clone(),
-            OriginalPath         = CiByteString.Empty,
+            Path                 = new StringU8(path.Span, false),
+            OriginalPath         = StringU8.Empty,
             Collection           = null,
             Handle               = null,
             ResourceType         = ResourceExtensions.Type(path).ToFlag(),
@@ -63,8 +75,8 @@ internal unsafe struct Record
         => new()
         {
             Time                 = DateTime.UtcNow,
-            Path                 = fullPath.InternalName.IsOwned ? fullPath.InternalName : fullPath.InternalName.Clone(),
-            OriginalPath         = path.IsOwned ? path : path.Clone(),
+            Path                 = new StringU8(fullPath.InternalName.Span, false),
+            OriginalPath         = new StringU8(path.Span,                  false),
             Collection           = resolve.Valid ? resolve.ModCollection : null,
             Handle               = null,
             ResourceType         = ResourceExtensions.Type(path).ToFlag(),
@@ -82,12 +94,12 @@ internal unsafe struct Record
 
     public static Record CreateDefaultLoad(CiByteString path, ResourceHandle* handle, ModCollection collection, string associatedGameObject)
     {
-        path = path.IsOwned ? path : path.Clone();
+        var p = new StringU8(path.Span, false);
         return new Record
         {
             Time                 = DateTime.UtcNow,
-            Path                 = path,
-            OriginalPath         = path,
+            Path                 = p,
+            OriginalPath         = p,
             Collection           = collection,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),
@@ -109,8 +121,8 @@ internal unsafe struct Record
         => new()
         {
             Time                 = DateTime.UtcNow,
-            Path                 = path.InternalName.IsOwned ? path.InternalName : path.InternalName.Clone(),
-            OriginalPath         = originalPath.IsOwned ? originalPath : originalPath.Clone(),
+            Path                 = new StringU8(path.InternalName.Span, false),
+            OriginalPath         = new StringU8(originalPath.Span,      false),
             Collection           = collection,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),
@@ -128,12 +140,12 @@ internal unsafe struct Record
 
     public static Record CreateDestruction(ResourceHandle* handle)
     {
-        var path = handle->FileName().Clone();
+        var path = new StringU8(handle->FileName().Span, false);
         return new Record
         {
             Time                 = DateTime.UtcNow,
             Path                 = path,
-            OriginalPath         = CiByteString.Empty,
+            OriginalPath         = StringU8.Empty,
             Collection           = null,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),
@@ -154,8 +166,8 @@ internal unsafe struct Record
         => new()
         {
             Time                 = DateTime.UtcNow,
-            Path                 = path.IsOwned ? path : path.Clone(),
-            OriginalPath         = CiByteString.Empty,
+            Path                 = new StringU8(path.Span, false),
+            OriginalPath         = StringU8.Empty,
             Collection           = null,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),
@@ -171,12 +183,13 @@ internal unsafe struct Record
             OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
-    public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath, ReadOnlySpan<byte> additionalData)
+    public static Record CreateResourceComplete(CiByteString path, ResourceHandle* handle, Utf8GamePath originalPath,
+        ReadOnlySpan<byte> additionalData)
         => new()
         {
             Time                 = DateTime.UtcNow,
             Path                 = CombinedPath(path, additionalData),
-            OriginalPath         = originalPath.Path.IsOwned ? originalPath.Path : originalPath.Path.Clone(),
+            OriginalPath         = new StringU8(originalPath.Path.Span, false),
             Collection           = null,
             Handle               = handle,
             ResourceType         = handle->FileType.ToFlag(),
@@ -192,16 +205,16 @@ internal unsafe struct Record
             OsThreadId           = ProcessThreadApi.GetCurrentThreadId(),
         };
 
-    private static CiByteString CombinedPath(CiByteString path, ReadOnlySpan<byte> additionalData)
+    private static StringU8 CombinedPath(CiByteString path, ReadOnlySpan<byte> additionalData)
     {
         if (additionalData.Length is 0)
-            return path.IsOwned ? path : path.Clone();
+            return new StringU8(path.Span, false);
 
         fixed (byte* ptr = additionalData)
         {
             // If a path has additional data and is split, it is always in the form of |{additionalData}|{path},
             // so we can just read from the start of additional data - 1 and sum their length +2 for the pipes.
-            return new CiByteString(new ReadOnlySpan<byte>(ptr - 1, additionalData.Length + 2 + path.Length)).Clone();
+            return new StringU8(new ReadOnlySpan<byte>(ptr - 1, additionalData.Length + 2 + path.Length));
         }
     }
 }

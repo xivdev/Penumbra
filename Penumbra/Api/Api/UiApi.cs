@@ -4,19 +4,20 @@ using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
+using Penumbra.UI.MainWindow;
 
 namespace Penumbra.Api.Api;
 
 public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
-    private readonly ConfigWindow        _configWindow;
+    private readonly MainWindow        _mainWindow;
     private readonly ModManager          _modManager;
 
-    public UiApi(CommunicatorService communicator, ConfigWindow configWindow, ModManager modManager)
+    public UiApi(CommunicatorService communicator, MainWindow mainWindow, ModManager modManager)
     {
         _communicator = communicator;
-        _configWindow = configWindow;
+        _mainWindow = mainWindow;
         _modManager   = modManager;
         _communicator.ChangedItemHover.Subscribe(OnChangedItemHover, ChangedItemHover.Priority.Default);
         _communicator.ChangedItemClick.Subscribe(OnChangedItemClick, ChangedItemClick.Priority.Default);
@@ -57,7 +58,7 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
 
     public PenumbraApiEc OpenMainWindow(TabType tab, string modDirectory, string modName)
     {
-        _configWindow.IsOpen = true;
+        _mainWindow.IsOpen = true;
         if (!Enum.IsDefined(tab))
             return PenumbraApiEc.InvalidArgument;
 
@@ -77,7 +78,7 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
     }
 
     public void CloseMainWindow()
-        => _configWindow.IsOpen = false;
+        => _mainWindow.IsOpen = false;
 
     private void OnChangedItemClick(in ChangedItemClick.Arguments arguments)
     {

@@ -1,9 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Raii;
-using OtterGui.Text;
-using OtterGuiInternal.Utility;
+using Luna;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods.Groups;
@@ -22,30 +18,36 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         var entry        = group.DefaultEntry;
         var changes      = false;
 
-        var width = editor.AvailableWidth.X - 3 * ImUtf8.ItemInnerSpacing.X - Im.Style.ItemSpacing.X - ImUtf8.CalcTextSize("All Variants"u8).X - ImUtf8.CalcTextSize("Only Attributes"u8).X - 2 * ImUtf8.FrameHeight;
+        var width = editor.AvailableWidth.X
+          - 3 * Im.Style.ItemInnerSpacing.X
+          - Im.Style.ItemSpacing.X
+          - Im.Font.CalculateSize("All Variants"u8).X
+          - Im.Font.CalculateSize("Only Attributes"u8).X
+          - 2 * Im.Style.FrameHeight;
         ImEx.TextFramed(identifier.ToString(), new Vector2(width, 0), Rgba32.Transparent);
 
         Im.Line.SameInner();
         var allVariants = group.AllVariants;
-        if (ImUtf8.Checkbox("All Variants"u8, ref allVariants))
+        if (Im.Checkbox("All Variants"u8, ref allVariants))
             editor.ModManager.OptionEditor.ImcEditor.ChangeAllVariants(group, allVariants);
         Im.Tooltip.OnHover("Make this group overwrite all corresponding variants for this identifier, not just the one specified."u8);
 
         Im.Line.Same();
         var onlyAttributes = group.OnlyAttributes;
-        if (ImUtf8.Checkbox("Only Attributes"u8, ref onlyAttributes))
+        if (Im.Checkbox("Only Attributes"u8, ref onlyAttributes))
             editor.ModManager.OptionEditor.ImcEditor.ChangeOnlyAttributes(group, onlyAttributes);
-        Im.Tooltip.OnHover("Only overwrite the attribute flags and take all the other values from the game's default entry instead of the one configured here.\n\nMainly useful if used with All Variants to keep the material IDs for each variant."u8);
+        Im.Tooltip.OnHover(
+            "Only overwrite the attribute flags and take all the other values from the game's default entry instead of the one configured here.\n\nMainly useful if used with All Variants to keep the material IDs for each variant."u8);
 
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.TextFrameAligned("Material ID"u8);
-            ImUtf8.TextFrameAligned("VFX ID"u8);
-            ImUtf8.TextFrameAligned("Decal ID"u8);
+            ImEx.TextFrameAligned("Material ID"u8);
+            ImEx.TextFrameAligned("VFX ID"u8);
+            ImEx.TextFrameAligned("Decal ID"u8);
         }
 
         Im.Line.Same();
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
             changes |= ImcMetaDrawer.DrawMaterialId(defaultEntry, ref entry, true);
             changes |= ImcMetaDrawer.DrawVfxId(defaultEntry, ref entry, true);
@@ -53,48 +55,48 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         }
 
         Im.Line.Same(0, editor.PriorityWidth);
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.TextFrameAligned("Material Animation ID"u8);
-            ImUtf8.TextFrameAligned("Sound ID"u8);
-            ImUtf8.TextFrameAligned("Can Be Disabled"u8);
+            ImEx.TextFrameAligned("Material Animation ID"u8);
+            ImEx.TextFrameAligned("Sound ID"u8);
+            ImEx.TextFrameAligned("Can Be Disabled"u8);
         }
 
         Im.Line.Same();
 
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
             changes |= ImcMetaDrawer.DrawMaterialAnimationId(defaultEntry, ref entry, true);
             changes |= ImcMetaDrawer.DrawSoundId(defaultEntry, ref entry, true);
             var canBeDisabled = group.CanBeDisabled;
-            if (ImUtf8.Checkbox("##disabled"u8, ref canBeDisabled))
+            if (Im.Checkbox("##disabled"u8, ref canBeDisabled))
                 editor.ModManager.OptionEditor.ImcEditor.ChangeCanBeDisabled(group, canBeDisabled);
         }
 
         if (changes)
             editor.ModManager.OptionEditor.ImcEditor.ChangeDefaultEntry(group, entry);
 
-        ImGui.Dummy(Vector2.Zero);
+        Im.Dummy(Vector2.Zero);
         DrawOptions();
         var attributeCache = new ImcAttributeCache(group);
         DrawNewOption(attributeCache);
-        ImGui.Dummy(Vector2.Zero);
+        Im.Dummy(Vector2.Zero);
 
 
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.TextFrameAligned("Default Attributes"u8);
+            ImEx.TextFrameAligned("Default Attributes"u8);
             foreach (var option in group.OptionData.Where(o => !o.IsDisableSubMod))
-                ImUtf8.TextFrameAligned(option.Name);
+                ImEx.TextFrameAligned(option.Name);
         }
 
         Im.Line.SameInner();
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
             DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, group.DefaultEntry.AttributeMask, group);
             foreach (var (idx, option) in group.OptionData.Index().Where(o => !o.Item.IsDisableSubMod))
             {
-                using var id = ImUtf8.PushId(idx);
+                using var id = Im.Id.Push(idx);
                 DrawAttributes(editor.ModManager.OptionEditor.ImcEditor, attributeCache, option.AttributeMask, option,
                     group.DefaultEntry.AttributeMask);
             }
@@ -105,7 +107,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
     {
         foreach (var (optionIdx, option) in group.OptionData.Index())
         {
-            using var id = ImRaii.PushId(optionIdx);
+            using var id = Im.Id.Push(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
             Im.Line.SameInner();
@@ -127,7 +129,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
 
     private void DrawNewOption(in ImcAttributeCache cache)
     {
-        var dis       = cache.LowestUnsetMask == 0;
+        var dis       = cache.LowestUnsetMask is 0;
         var name      = editor.DrawNewOptionBase(group, group.Options.Count);
         var validName = name.Length > 0;
         var tt = dis
@@ -135,7 +137,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             : validName
                 ? "Add a new option to this group."u8
                 : "Please enter a name for the new option."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, default, !validName || dis))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !validName || dis))
         {
             editor.ModManager.OptionEditor.ImcEditor.AddOption(group, cache, name);
             editor.NewOptionName = null;
@@ -147,13 +149,13 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
     {
         for (var i = 0; i < ImcEntry.NumAttributes; ++i)
         {
-            using var id        = ImRaii.PushId(i);
+            using var id        = Im.Id.Push(i);
             var       flag      = 1 << i;
-            var       value     = (mask & flag) != 0;
-            var       inDefault = defaultMask.HasValue && (defaultMask & flag) != 0;
-            using (ImRaii.Disabled(defaultMask != null && !cache.CanChange(i)))
+            var       value     = (mask & flag) is not 0;
+            var       inDefault = defaultMask.HasValue && (defaultMask & flag) is not 0;
+            using (Im.Disabled(defaultMask is not null && !cache.CanChange(i)))
             {
-                if (inDefault ? NegativeCheckbox.Instance.Draw(""u8, ref value) : ImUtf8.Checkbox(""u8, ref value))
+                if (inDefault ? NegativeCheckbox.Instance.Draw(""u8, ref value) : Im.Checkbox(""u8, ref value))
                 {
                     if (data is ImcModGroup g)
                         editor.ChangeDefaultAttribute(g, cache, i, value);
@@ -175,7 +177,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
         protected override void RenderSymbol(bool value, Vector2 position, float size)
         {
             if (value)
-                SymbolHelpers.RenderCross(ImGui.GetWindowDrawList(), position, ImGuiColor.CheckMark.Get().Color, size);
+                Im.Render.Cross(Im.Window.DrawList, position, ImGuiColor.CheckMark.Get(), size);
         }
 
         protected override bool NextValue(bool value)

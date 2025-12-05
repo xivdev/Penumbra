@@ -1,11 +1,12 @@
 using Dalamud.Plugin;
 using ImSharp;
+using Luna;
 using Penumbra.Mods;
 using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanel : IDisposable, Luna.IUiService
+public class ModPanel : IDisposable, IPanel
 {
     private readonly MultiModPanel  _multiModPanel;
     private readonly ModSelection   _selection;
@@ -23,6 +24,9 @@ public class ModPanel : IDisposable, Luna.IUiService
         _selection.Subscribe(OnSelectionChange, ModSelection.Priority.ModPanel);
         OnSelectionChange(new ModSelection.Arguments(null, _selection.Mod));
     }
+
+    public ReadOnlySpan<byte> Id
+        => "MP"u8;
 
     public void Draw()
     {

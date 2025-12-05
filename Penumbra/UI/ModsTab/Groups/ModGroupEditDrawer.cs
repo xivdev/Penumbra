@@ -1,12 +1,8 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
-using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Text;
-using OtterGui.Text.EndObjects;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
@@ -50,7 +46,6 @@ public sealed class ModGroupEditDrawer(
     private bool    _deleteEnabled;
 
     private string?      _currentGroupName;
-    private ModPriority? _currentGroupPriority;
     private IModGroup?   _currentGroupEdited;
     private bool         _isGroupNameValid = true;
 
@@ -58,14 +53,11 @@ public sealed class ModGroupEditDrawer(
     private IModOption? _dragDropOption;
     private bool        _draggingAcross;
 
-    internal string? CombiningDisplayName;
-    internal int     CombiningDisplayIndex;
-
     public void Draw(Mod mod)
     {
         PrepareStyle();
 
-        using var id = ImUtf8.PushId("##GroupEdit"u8);
+        using var id = Im.Id.Push("ge"u8);
         foreach (var (groupIdx, group) in mod.Groups.Index())
             DrawGroup(group, groupIdx);
 
@@ -75,7 +67,7 @@ public sealed class ModGroupEditDrawer(
 
     private void DrawGroup(IModGroup group, int idx)
     {
-        using var id    = ImUtf8.PushId(idx);
+        using var id    = Im.Id.Push(idx);
         using var frame = ImRaii.FramedGroup($"Group #{idx + 1}");
         DrawGroupNameRow(group, idx);
         group.EditDrawer(this).Draw();
@@ -100,15 +92,15 @@ public sealed class ModGroupEditDrawer(
     {
         var text = _currentGroupEdited == group ? _currentGroupName ?? group.Name : group.Name;
         Im.Item.SetNextWidth(_groupNameWidth);
-        using var border = ImRaii.PushFrameBorder(Im.Style.GlobalScale * 2, Colors.RegexWarningBorder, !_isGroupNameValid);
-        if (ImUtf8.InputText("##GroupName"u8, ref text))
+        using var border = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale * 2, !_isGroupNameValid);
+        if (Im.Input.Text("##GroupName"u8, ref text))
         {
             _currentGroupEdited = group;
             _currentGroupName   = text;
             _isGroupNameValid   = text == group.Name || ModGroupEditor.VerifyFileName(group.Mod, group, text, false);
         }
 
-        if (ImGui.IsItemDeactivated())
+        if (Im.Item.Deactivated)
         {
             if (_currentGroupName != null && _isGroupNameValid)
                 ModManager.OptionEditor.RenameModGroup(group, _currentGroupName);
@@ -125,50 +117,33 @@ public sealed class ModGroupEditDrawer(
 
     private void DrawGroupDelete(IModGroup group)
     {
-        if (ImUtf8.IconButton(FontAwesomeIcon.Trash, !_deleteEnabled))
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, !_deleteEnabled))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.DeleteModGroup(group));
 
-        if (_deleteEnabled)
-            Im.Tooltip.OnHover("Delete this option group."u8);
-        else
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
-                $"Delete this option group.\nHold {config.DeleteModModifier} while clicking to delete.");
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Delete this option group."u8);
+        if (!_deleteEnabled)
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {config.DeleteModModifier} while clicking to delete.");
     }
 
     private void DrawGroupPriority(IModGroup group)
     {
-        var priority = _currentGroupEdited == group
-            ? (_currentGroupPriority ?? group.Priority).Value
-            : group.Priority.Value;
         Im.Item.SetNextWidth(PriorityWidth);
-        if (ImGui.InputInt("##GroupPriority", ref priority))
-        {
-            _currentGroupEdited   = group;
-            _currentGroupPriority = new ModPriority(priority);
-        }
-
-        if (ImGui.IsItemDeactivated())
-        {
-            if (_currentGroupPriority.HasValue)
-                ModManager.OptionEditor.ChangeGroupPriority(group, _currentGroupPriority.Value);
-            _currentGroupEdited   = null;
-            _currentGroupPriority = null;
-        }
-
-        ImGuiUtil.HoverTooltip("Group Priority");
+        if (ImEx.InputOnDeactivation.Scalar("##GroupPriority"u8, group.Priority.Value, out var newPriority))
+            ModManager.OptionEditor.ChangeGroupPriority(group, new ModPriority(newPriority));
+        Im.Tooltip.OnHover("Group Priority"u8);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawGroupDescription(IModGroup group)
     {
-        if (ImUtf8.IconButton(FontAwesomeIcon.Edit, "Edit group description."u8))
+        if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit group description."u8))
             descriptionPopup.Open(group);
     }
 
     private void DrawGroupMoveButtons(IModGroup group, int idx)
     {
-        var isFirst = idx == 0;
-        if (ImUtf8.IconButton(FontAwesomeIcon.ArrowUp, isFirst))
+        var isFirst = idx is 0;
+        if (ImEx.Icon.Button(FontAwesomeIcon.ArrowUp.Icon(), isFirst))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.MoveModGroup(group, idx - 1));
 
         if (isFirst)
@@ -179,7 +154,7 @@ public sealed class ModGroupEditDrawer(
 
         Im.Line.SameInner();
         var isLast = idx == group.Mod.Groups.Count - 1;
-        if (ImUtf8.IconButton(FontAwesomeIcon.ArrowDown, isLast))
+        if (ImEx.Icon.Button(FontAwesomeIcon.ArrowDown.Icon(), isLast))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.MoveModGroup(group, idx + 1));
 
         if (isLast)
@@ -192,7 +167,7 @@ public sealed class ModGroupEditDrawer(
     {
         var fileName   = filenames.OptionGroupFile(group.Mod, idx, config.ReplaceNonAsciiOnImport);
         var fileExists = File.Exists(fileName);
-        if (ImUtf8.IconButton(FontAwesomeIcon.FileExport, !fileExists))
+        if (ImEx.Icon.Button(LunaStyle.OpenExternalIcon, !fileExists))
             try
             {
                 Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
@@ -212,8 +187,8 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionPosition(IModGroup group, IModOption option, int optionIdx)
     {
-        ImGui.AlignTextToFramePadding();
-        ImUtf8.Selectable($"Option #{optionIdx + 1}", false, size: OptionIdxSelectable);
+        Im.Cursor.FrameAlign();
+        Im.Selectable($"Option #{optionIdx + 1}", size: OptionIdxSelectable);
         Target(group, optionIdx);
         Source(option);
     }
@@ -222,7 +197,7 @@ public sealed class ModGroupEditDrawer(
     internal void DrawOptionDefaultSingleBehaviour(IModGroup group, IModOption option, int optionIdx)
     {
         var isDefaultOption = group.DefaultSettings.AsIndex == optionIdx;
-        if (ImUtf8.RadioButton("##default"u8, isDefaultOption))
+        if (Im.RadioButton("##default"u8, isDefaultOption))
             ModManager.OptionEditor.ChangeModGroupDefaultOption(group, Setting.Single(optionIdx));
         Im.Tooltip.OnHover($"Set {option.Name} as the default choice for this group.");
     }
@@ -231,7 +206,7 @@ public sealed class ModGroupEditDrawer(
     internal void DrawOptionDefaultMultiBehaviour(IModGroup group, IModOption option, int optionIdx)
     {
         var isDefaultOption = group.DefaultSettings.HasFlag(optionIdx);
-        if (ImUtf8.Checkbox("##default"u8, ref isDefaultOption))
+        if (Im.Checkbox("##default"u8, ref isDefaultOption))
             ModManager.OptionEditor.ChangeModGroupDefaultOption(group, group.DefaultSettings.SetBit(optionIdx, isDefaultOption));
         Im.Tooltip.OnHover($"{(isDefaultOption ? "Disable"u8 : "Enable"u8)} {option.Name} per default in this group.");
     }
@@ -239,33 +214,31 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionDescription(IModOption option)
     {
-        if (ImUtf8.IconButton(FontAwesomeIcon.Edit, "Edit option description."u8))
+        if (ImEx.Icon.Button(LunaStyle.EditIcon, "Edit option description."u8))
             descriptionPopup.Open(option);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionPriority(MultiSubMod option)
     {
-        var priority = option.Priority.Value;
         Im.Item.SetNextWidth(PriorityWidth);
-        if (ImUtf8.InputScalarOnDeactivated("##Priority"u8, ref priority))
-            ModManager.OptionEditor.MultiEditor.ChangeOptionPriority(option, new ModPriority(priority));
+        if (ImEx.InputOnDeactivation.Scalar("##Priority"u8, option.Priority.Value, out var newValue))
+            ModManager.OptionEditor.MultiEditor.ChangeOptionPriority(option, new ModPriority(newValue));
         Im.Tooltip.OnHover("Option priority inside the mod."u8);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionName(IModOption option)
     {
-        var name = option.Name;
         Im.Item.SetNextWidth(_optionNameWidth);
-        if (ImUtf8.InputTextOnDeactivated("##Name"u8, ref name))
-            ModManager.OptionEditor.RenameOption(option, name);
+        if (ImEx.InputOnDeactivation.Text("##Name"u8, option.Name, out string newName))
+            ModManager.OptionEditor.RenameOption(option, newName);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void DrawOptionDelete(IModOption option)
     {
-        if (ImUtf8.IconButton(FontAwesomeIcon.Trash, !_deleteEnabled))
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, !_deleteEnabled))
             ActionQueue.Enqueue(() => ModManager.OptionEditor.DeleteOption(option));
 
         if (_deleteEnabled)
@@ -278,19 +251,19 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal string DrawNewOptionBase(IModGroup group, int count)
     {
-        ImGui.AlignTextToFramePadding();
-        ImUtf8.Selectable($"Option #{count + 1}", false, size: OptionIdxSelectable);
+        Im.Cursor.FrameAlign();
+        Im.Selectable($"Option #{count + 1}", size: OptionIdxSelectable);
         Target(group, count);
 
         Im.Line.SameInner();
-        ImUtf8.IconDummy();
+        Im.FrameDummy();
 
         Im.Line.SameInner();
         Im.Item.SetNextWidth(_optionNameWidth);
         var newName = _newOptionGroup == group
             ? NewOptionName ?? string.Empty
             : string.Empty;
-        if (ImUtf8.InputText("##newOption"u8, ref newName, "Add new option..."u8))
+        if (Im.Input.Text("##newOption"u8, ref newName, "Add new option..."u8))
         {
             NewOptionName   = newName;
             _newOptionGroup = group;
@@ -303,33 +276,33 @@ public sealed class ModGroupEditDrawer(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Source(IModOption option)
     {
-        using var source = ImUtf8.DragDropSource();
+        using var source = Im.DragDrop.Source();
         if (!source)
             return;
 
         var across = option.Group is ITexToolsGroup;
 
-        if (!DragDropSource.SetPayload(across ? AcrossGroupsLabel : InsideGroupLabel))
+        if (!source.SetPayload(across ? AcrossGroupsLabel : InsideGroupLabel))
         {
             _dragDropGroup  = option.Group;
             _dragDropOption = option;
             _draggingAcross = across;
         }
 
-        ImUtf8.Text($"Dragging option {option.Name} from group {option.Group.Name}...");
+        Im.Text($"Dragging option {option.Name} from group {option.Group.Name}...");
     }
 
     private void Target(IModGroup group, int optionIdx)
     {
         if (_dragDropGroup != group
-         && (!_draggingAcross || (_dragDropGroup != null && group is MultiModGroup { Options.Count: >= IModGroup.MaxMultiOptions })))
+         && (!_draggingAcross || _dragDropGroup is not null && group is MultiModGroup { Options.Count: >= IModGroup.MaxMultiOptions }))
             return;
 
-        using var target = ImUtf8.DragDropTarget();
+        using var target = Im.DragDrop.Target();
         if (!target.IsDropping(_draggingAcross ? AcrossGroupsLabel : InsideGroupLabel))
             return;
 
-        if (_dragDropGroup != null && _dragDropOption != null)
+        if (_dragDropGroup is not null && _dragDropOption is not null)
         {
             if (_dragDropGroup == group)
             {
@@ -358,12 +331,12 @@ public sealed class ModGroupEditDrawer(
     private void PrepareStyle()
     {
         var totalWidth = 400f * Im.Style.GlobalScale;
-        _buttonSize         = new Vector2(ImUtf8.FrameHeight);
+        _buttonSize         = new Vector2(Im.Style.FrameHeight);
         PriorityWidth       = 50 * Im.Style.GlobalScale;
         AvailableWidth      = new Vector2(totalWidth + 3 * _spacing + 2 * _buttonSize.X + PriorityWidth, 0);
         _groupNameWidth     = totalWidth - 3 * (_buttonSize.X + _spacing);
         _spacing            = Im.Style.ItemInnerSpacing.X;
-        OptionIdxSelectable = ImUtf8.CalcTextSize("Option #88."u8);
+        OptionIdxSelectable = Im.Font.CalculateSize("Option #88."u8);
         _optionNameWidth    = totalWidth - OptionIdxSelectable.X - _buttonSize.X - 2 * _spacing;
         _deleteEnabled      = config.DeleteModModifier.IsActive();
     }

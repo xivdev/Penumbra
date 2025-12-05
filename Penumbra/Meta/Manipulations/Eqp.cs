@@ -15,7 +15,7 @@ public readonly record struct EqpIdentifier(PrimaryId SetId, EquipSlot Slot) : I
         => MetaIndex.Eqp;
 
     public override string ToString()
-        => $"Eqp - {SetId} - {Slot}";
+        => $"EQP - {SetId} - {Slot}";
 
     public bool Validate()
     {

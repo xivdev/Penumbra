@@ -9,10 +9,9 @@ using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Services;
-using Penumbra.UI.Classes;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.Classes;
 
 public class ChangedItemDrawer : IDisposable, IUiService
 {
@@ -119,7 +118,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
         var ret = leftClicked ? MouseButton.Left : MouseButton.None;
         ret = Im.Item.RightClicked() ? MouseButton.Right : ret;
         ret = Im.Item.MiddleClicked() ? MouseButton.Middle : ret;
-        if (ret != MouseButton.None)
+        if (ret is not MouseButton.None)
             _communicator.ChangedItemClick.Invoke(new ChangedItemClick.Arguments(ret, data));
         if (!Im.Item.Hovered())
             return;
@@ -139,7 +138,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
     public static void DrawModelData(IIdentifiedObjectData data, float height)
     {
         var additionalData = data.AdditionalData;
-        if (additionalData.Length == 0)
+        if (additionalData.Length is 0)
             return;
 
         Im.Line.Same();
@@ -151,7 +150,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
     /// <summary> Draw the model information, right-justified. </summary>
     public static void DrawModelData(ReadOnlySpan<byte> text, float height)
     {
-        if (text.Length == 0)
+        if (text.Length is 0)
             return;
 
         Im.Line.Same();

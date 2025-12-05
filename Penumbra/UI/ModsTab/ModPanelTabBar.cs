@@ -3,6 +3,7 @@ using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.Classes;
 using ImGuiColor = ImSharp.ImGuiColor;
 
 namespace Penumbra.UI.ModsTab;
@@ -31,7 +32,7 @@ public class ModPanelTabBar : TabBar<ModPanelTab>
         TutorialService tutorial, ModPanelCollectionsTab collections, Logger log)
         : base(nameof(ModPanelTabBar), log, settings, description, conflicts, changedItems, collections, edit)
     {
-        Flags       = TabBarFlags.NoTooltip;
+        Flags       = TabBarFlags.NoTooltip | TabBarFlags.FittingPolicyScroll;
         Settings    = settings;
         Edit        = edit;
         _modManager = modManager;

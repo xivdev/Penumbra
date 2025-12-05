@@ -1,7 +1,7 @@
-using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImSharp;
+using ImSharp.Containers;
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -27,7 +27,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     private readonly ResourceLoader           _loader;
     private readonly ResourceHandleDestructor _destructor;
     private readonly ActorManager             _actors;
-    private readonly List<Record>             _records    = [];
+    private readonly ObservableList<Record>   _records    = [];
     private readonly ConcurrentQueue<Record>  _newRecords = [];
     private readonly ResourceWatcherTable     _table;
     private          string                   _logFilter = string.Empty;
@@ -43,7 +43,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         _resources                   =  resources;
         _destructor                  =  destructor;
         _loader                      =  loader;
-        _table                       =  new ResourceWatcherTable(config.Ephemeral, _records);
+        _table                       =  new ResourceWatcherTable(new ResourceWatcherConfig(), _records);
         _resources.ResourceRequested += OnResourceRequested;
         _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
         _loader.ResourceLoaded   += OnResourceLoaded;
@@ -71,7 +71,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
             ? Record.CreateRequest(original.Path, false, _1.Value, _2)
             : Record.CreateRequest(original.Path, false);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
-            _newRecords.Enqueue(record);
+            Enqueue(record);
     }
 
     public unsafe void Dispose()
@@ -90,7 +90,6 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     {
         _records.Clear();
         _newRecords.Clear();
-        _table.Reset();
     }
 
     public ReadOnlySpan<byte> Label
@@ -103,7 +102,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     {
         UpdateRecords();
 
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + Im.Style.TextHeightWithSpacing / 2);
+        Im.Cursor.Y += Im.Style.TextHeightWithSpacing / 2;
         var isEnabled = _ephemeral.EnableResourceWatcher;
         if (Im.Checkbox("Enable"u8, ref isEnabled))
         {
@@ -138,7 +137,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         Im.Cursor.Y += Im.Style.TextHeightWithSpacing / 2;
 
-        _table.Draw(Im.Style.TextHeightWithSpacing);
+        _table.Draw();
     }
 
     private void DrawFilterInput()
@@ -184,8 +183,8 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     {
         Im.Item.SetNextWidthScaled(80);
         Im.Input.Scalar("Max. Entries"u8, ref _newMaxEntries);
-        var change = ImGui.IsItemDeactivatedAfterEdit();
-        if (Im.Item.RightClicked() && ImGui.GetIO().KeyCtrl)
+        var change = Im.Item.DeactivatedAfterEdit;
+        if (Im.Item.RightClicked() && Im.Io.KeyControl)
         {
             change         = true;
             _newMaxEntries = DefaultMaxEntries;
@@ -193,7 +192,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         var maxEntries = _config.MaxResourceWatcherRecords;
         if (maxEntries != DefaultMaxEntries && Im.Item.Hovered())
-            ImGui.SetTooltip($"CTRL + Right-Click to reset to default {DefaultMaxEntries}.");
+            Im.Tooltip.Set($"CTRL + Right-Click to reset to default {DefaultMaxEntries}.");
 
         if (!change)
             return;
@@ -219,8 +218,6 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         if (_records.Count > _config.MaxResourceWatcherRecords)
             _records.RemoveRange(0, _records.Count - _config.MaxResourceWatcherRecords);
-
-        _table.Reset();
     }
 
 
@@ -235,7 +232,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         var record = Record.CreateRequest(original.Path, sync);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
-            _newRecords.Enqueue(record);
+            Enqueue(record);
     }
 
     private unsafe void OnResourceLoaded(ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData data)
@@ -262,7 +259,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
             ? Record.CreateDefaultLoad(path.Path, handle, data.ModCollection, Name(data))
             : Record.CreateLoad(manipulatedPath.Value, path.Path, handle, data.ModCollection, Name(data));
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
-            _newRecords.Enqueue(record);
+            Enqueue(record);
     }
 
     private unsafe void OnResourceComplete(ResourceHandle* resource, CiByteString path, Utf8GamePath original,
@@ -280,7 +277,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         var record = Record.CreateResourceComplete(path, resource, original, additionalData);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
-            _newRecords.Enqueue(record);
+            Enqueue(record);
     }
 
     private unsafe void OnFileLoaded(ResourceHandle* resource, CiByteString path, bool success, bool custom, ReadOnlySpan<byte> _)
@@ -294,7 +291,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         var record = Record.CreateFileLoad(path, resource, success, custom);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
-            _newRecords.Enqueue(record);
+            Enqueue(record);
     }
 
     private unsafe void OnResourceDestroyed(in ResourceHandleDestructor.Arguments arguments)
@@ -308,7 +305,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
         var record = Record.CreateDestruction(arguments.ResourceHandle);
         if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
-            _newRecords.Enqueue(record);
+            Enqueue(record);
     }
 
     public unsafe string Name(ResolveData resolve, string none = "")
@@ -335,5 +332,16 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         }
 
         return $"0x{resolve.AssociatedGameObject:X}";
+    }
+
+    private void Enqueue(Record record)
+    {
+        lock (_newRecords)
+        {
+            // Discard entries that exceed the number of records.
+            while (_newRecords.Count >= _config.MaxResourceWatcherRecords)
+                _newRecords.TryDequeue(out _);
+            _newRecords.Enqueue(record);
+        }
     }
 }

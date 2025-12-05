@@ -11,6 +11,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 

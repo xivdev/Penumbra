@@ -1,10 +1,8 @@
-using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using FFXIVClientStructs.STD;
 using ImSharp;
-using OtterGui.Text;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -20,13 +18,13 @@ public unsafe class GlobalVariablesDrawer(
     /// <summary> Draw information about some game global variables. </summary>
     public void Draw()
     {
-        var header = ImUtf8.CollapsingHeader("Global Variables"u8);
+        var header = Im.Tree.Header("Global Variables"u8);
         Im.Tooltip.OnHover("Draw information about global variables. Can provide useful starting points for a memory viewer."u8);
         if (!header)
             return;
 
         var actionManager = (ActionTimelineManager**)ActionTimelineManager.Instance();
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
             Penumbra.Dynamis.DrawPointer(characterUtility.Address);
             Penumbra.Dynamis.DrawPointer(residentResources.Address);
@@ -39,16 +37,16 @@ public unsafe class GlobalVariablesDrawer(
         }
 
         Im.Line.Same();
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.Text("CharacterUtility"u8);
-            ImUtf8.Text("ResidentResourceManager"u8);
-            ImUtf8.Text("ScheduleManagement"u8);
-            ImUtf8.Text("ActionTimelineManager*"u8);
-            ImUtf8.Text("ActionTimelineManager"u8);
-            ImUtf8.Text("SchedulerResourceManagement*"u8);
-            ImUtf8.Text("SchedulerResourceManagement"u8);
-            ImUtf8.Text("Device"u8);
+            Im.Text("CharacterUtility"u8);
+            Im.Text("ResidentResourceManager"u8);
+            Im.Text("ScheduleManagement"u8);
+            Im.Text("ActionTimelineManager*"u8);
+            Im.Text("ActionTimelineManager"u8);
+            Im.Text("SchedulerResourceManagement*"u8);
+            Im.Text("SchedulerResourceManagement"u8);
+            Im.Text("Device"u8);
         }
 
         DrawCharacterUtility();
@@ -64,7 +62,7 @@ public unsafe class GlobalVariablesDrawer(
     /// </summary>
     private void DrawCharacterUtility()
     {
-        using var tree = ImUtf8.TreeNode("Character Utility"u8);
+        using var tree = Im.Tree.Node("Character Utility"u8);
         if (!tree)
             return;
 
@@ -76,30 +74,30 @@ public unsafe class GlobalVariablesDrawer(
         {
             var intern   = CharacterUtility.ReverseIndices[idx];
             var resource = characterUtility.Address->Resource(idx);
-            ImUtf8.DrawTableColumn($"[{idx}]");
-            ImGui.TableNextColumn();
+            table.DrawColumn($"[{idx}]");
+            table.NextColumn();
             Penumbra.Dynamis.DrawPointer(resource);
-            if (resource == null)
+            if (resource is null)
             {
-                ImGui.TableNextRow();
+                table.NextRow();
                 continue;
             }
 
-            ImUtf8.DrawTableColumn(resource->CsHandle.FileName.AsSpan());
-            ImGui.TableNextColumn();
+            table.DrawColumn(resource->CsHandle.FileName.AsSpan());
+            table.NextColumn();
             var data   = (nint)resource->CsHandle.GetData();
             var length = resource->CsHandle.GetLength();
             Penumbra.Dynamis.DrawPointer(data);
-            ImUtf8.DrawTableColumn(length.ToString());
-            ImGui.TableNextColumn();
-            if (intern.Value != -1)
+            table.DrawColumn($"{length}");
+            table.NextColumn();
+            if (intern.Value is -1)
             {
                 Penumbra.Dynamis.DrawPointer(characterUtility.DefaultResource(intern).Address);
-                ImUtf8.DrawTableColumn($"{characterUtility.DefaultResource(intern).Size}");
+                table.DrawColumn($"{characterUtility.DefaultResource(intern).Size}");
             }
             else
             {
-                ImGui.TableNextColumn();
+                table.NextColumn();
             }
         }
     }
@@ -107,11 +105,11 @@ public unsafe class GlobalVariablesDrawer(
     /// <summary> Draw information about the resident resource files. </summary>
     private void DrawResidentResources()
     {
-        using var tree = ImUtf8.TreeNode("Resident Resources"u8);
+        using var tree = Im.Tree.Node("Resident Resources"u8);
         if (!tree)
             return;
 
-        if (residentResources.Address == null || residentResources.Address->NumResources == 0)
+        if (residentResources.Address is null || residentResources.Address->NumResources is 0)
             return;
 
         using var table = Im.Table.Begin("##ResidentResources"u8, 5, TableFlags.RowBackground | TableFlags.SizingFixedFit,
@@ -122,45 +120,40 @@ public unsafe class GlobalVariablesDrawer(
         for (var idx = 0; idx < residentResources.Address->NumResources; ++idx)
         {
             var resource = residentResources.Address->ResourceList[idx];
-            ImUtf8.DrawTableColumn($"[{idx}]");
-            ImGui.TableNextColumn();
+            table.DrawColumn($"[{idx}]");
+            table.NextColumn();
             Penumbra.Dynamis.DrawPointer(resource);
-            if (resource == null)
+            if (resource is null)
             {
-                ImGui.TableNextRow();
+                table.NextRow();
                 continue;
             }
 
-            ImUtf8.DrawTableColumn(resource->CsHandle.FileName.AsSpan());
-            ImGui.TableNextColumn();
+            table.DrawColumn(resource->CsHandle.FileName.AsSpan());
+            table.NextColumn();
             var data   = (nint)resource->CsHandle.GetData();
             var length = resource->CsHandle.GetLength();
             Penumbra.Dynamis.DrawPointer(data);
-            ImUtf8.DrawTableColumn(length.ToString());
+            table.DrawColumn($"{length}");
         }
     }
 
-    private string       _schedulerFilterList   = string.Empty;
-    private string       _schedulerFilterMap    = string.Empty;
-    private CiByteString _schedulerFilterListU8 = CiByteString.Empty;
-    private CiByteString _schedulerFilterMapU8  = CiByteString.Empty;
-    private int          _shownResourcesList    = 0;
-    private int          _shownResourcesMap     = 0;
+    private StringU8 _schedulerFilterList = StringU8.Empty;
+    private StringU8 _schedulerFilterMap  = StringU8.Empty;
+    private int      _shownResourcesList;
+    private int      _shownResourcesMap;
 
     private void DrawSchedulerResourcesMap()
     {
-        using var tree = ImUtf8.TreeNode("Scheduler Resources (Map)"u8);
+        using var tree = Im.Tree.Node("Scheduler Resources (Map)"u8);
         if (!tree)
             return;
 
-        if (scheduler.Address == null || scheduler.Scheduler == null)
+        if (scheduler.Address is null || scheduler.Scheduler is null)
             return;
 
-        if (ImUtf8.InputText("##SchedulerMapFilter"u8, ref _schedulerFilterMap, "Filter..."u8))
-            _schedulerFilterMapU8 = CiByteString.FromString(_schedulerFilterMap, out var t, MetaDataComputation.All, false)
-                ? t
-                : CiByteString.Empty;
-        ImUtf8.Text($"{_shownResourcesMap} / {scheduler.Scheduler->Resources.LongCount}");
+        Im.Input.Text("##SchedulerMapFilter"u8, ref _schedulerFilterMap, "Filter..."u8);
+        Im.Text($"{_shownResourcesMap} / {scheduler.Scheduler->Resources.LongCount}");
         using var table = Im.Table.Begin("##SchedulerMapResources"u8, 10, TableFlags.RowBackground | TableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
@@ -170,27 +163,27 @@ public unsafe class GlobalVariablesDrawer(
         var map   = (StdMap<int, FFXIVClientStructs.Interop.Pointer<SchedulerResource>>*)&scheduler.Scheduler->Resources;
         var total = 0;
         _shownResourcesMap = 0;
-        foreach (var (key, resourcePtr) in *map)
+        foreach (var (_, resourcePtr) in *map)
         {
             var resource = resourcePtr.Value;
-            if (_schedulerFilterMap.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterMapU8.Span) >= 0)
+            if (_schedulerFilterMap.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterMap.Span) >= 0)
             {
-                ImUtf8.DrawTableColumn($"[{total:D4}]");
-                ImUtf8.DrawTableColumn($"{resource->Name.Unk1}");
-                ImUtf8.DrawTableColumn(new CiByteString(resource->Name.Buffer, MetaDataComputation.None).Span);
-                ImUtf8.DrawTableColumn($"{resource->Consumers}");
-                ImUtf8.DrawTableColumn($"{resource->Unk1}"); // key
-                ImGui.TableNextColumn();
+                table.DrawColumn($"[{total:D4}]");
+                table.DrawColumn($"{resource->Name.Unk1}");
+                table.DrawColumn(new CiByteString(resource->Name.Buffer).Span);
+                table.DrawColumn($"{resource->Consumers}");
+                table.DrawColumn($"{resource->Unk1}"); // key
+                table.NextColumn();
                 Penumbra.Dynamis.DrawPointer(resource);
-                ImGui.TableNextColumn();
+                table.NextColumn();
                 var resourceHandle = *((ResourceHandle**)resource + 3);
                 Penumbra.Dynamis.DrawPointer(resourceHandle);
-                ImGui.TableNextColumn();
-                ImUtf8.CopyOnClickSelectable(resourceHandle->FileName().Span);
-                ImGui.TableNextColumn();
-                uint dataLength = 0;
+                table.NextColumn();
+                ImEx.CopyOnClickSelectable(resourceHandle->FileName().Span);
+                table.NextColumn();
+                var dataLength = 0u;
                 Penumbra.Dynamis.DrawPointer(resource->GetResourceData(&dataLength));
-                ImUtf8.DrawTableColumn($"{dataLength}");
+                table.DrawColumn($"{dataLength}");
                 ++_shownResourcesMap;
             }
 
@@ -200,18 +193,15 @@ public unsafe class GlobalVariablesDrawer(
 
     private void DrawSchedulerResourcesList()
     {
-        using var tree = ImUtf8.TreeNode("Scheduler Resources (List)"u8);
+        using var tree = Im.Tree.Node("Scheduler Resources (List)"u8);
         if (!tree)
             return;
 
-        if (scheduler.Address == null || scheduler.Scheduler == null)
+        if (scheduler.Address is null || scheduler.Scheduler is null)
             return;
 
-        if (ImUtf8.InputText("##SchedulerListFilter"u8, ref _schedulerFilterList, "Filter..."u8))
-            _schedulerFilterListU8 = CiByteString.FromString(_schedulerFilterList, out var t, MetaDataComputation.All, false)
-                ? t
-                : CiByteString.Empty;
-        ImUtf8.Text($"{_shownResourcesList} / {scheduler.Scheduler->Resources.LongCount}");
+        Im.Input.Text("##SchedulerListFilter"u8, ref _schedulerFilterList, "Filter..."u8);
+        Im.Text($"{_shownResourcesList} / {scheduler.Scheduler->Resources.LongCount}");
         using var table = Im.Table.Begin("##SchedulerListResources"u8, 10, TableFlags.RowBackground | TableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
@@ -220,26 +210,26 @@ public unsafe class GlobalVariablesDrawer(
         var resource = scheduler.Scheduler->Begin;
         var total    = 0;
         _shownResourcesList = 0;
-        while (resource != null && total < scheduler.Scheduler->Resources.Count)
+        while (resource is not null && total < scheduler.Scheduler->Resources.Count)
         {
-            if (_schedulerFilterList.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterListU8.Span) >= 0)
+            if (_schedulerFilterList.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterList.Span) >= 0)
             {
-                ImUtf8.DrawTableColumn($"[{total:D4}]");
-                ImUtf8.DrawTableColumn($"{resource->Name.Unk1}");
-                ImUtf8.DrawTableColumn(new CiByteString(resource->Name.Buffer, MetaDataComputation.None).Span);
-                ImUtf8.DrawTableColumn($"{resource->Consumers}");
-                ImUtf8.DrawTableColumn($"{resource->Unk1}"); // key
-                ImGui.TableNextColumn();
+                table.DrawColumn($"[{total:D4}]");
+                table.DrawColumn($"{resource->Name.Unk1}");
+                table.DrawColumn(new CiByteString(resource->Name.Buffer).Span);
+                table.DrawColumn($"{resource->Consumers}");
+                table.DrawColumn($"{resource->Unk1}"); // key
+                table.NextColumn();
                 Penumbra.Dynamis.DrawPointer(resource);
-                ImGui.TableNextColumn();
+                table.NextColumn();
                 var resourceHandle = *((ResourceHandle**)resource + 3);
                 Penumbra.Dynamis.DrawPointer(resourceHandle);
-                ImGui.TableNextColumn();
-                ImUtf8.CopyOnClickSelectable(resourceHandle->FileName().Span);
-                ImGui.TableNextColumn();
+                table.NextColumn();
+                ImEx.CopyOnClickSelectable(resourceHandle->FileName().Span);
+                table.NextColumn();
                 uint dataLength = 0;
                 Penumbra.Dynamis.DrawPointer(resource->GetResourceData(&dataLength));
-                ImUtf8.DrawTableColumn($"{dataLength}");
+                table.DrawColumn($"{dataLength}");
                 ++_shownResourcesList;
             }
 

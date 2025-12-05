@@ -1,11 +1,49 @@
 using Dalamud.Interface.ImGuiNotification;
+using ImSharp;
 using Luna;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
+using Penumbra.UI.ModsTab;
+using Penumbra.UI.ModsTab.Selector;
 using FileSystemChangeType = OtterGui.Filesystem.FileSystemChangeType;
 
 namespace Penumbra.Mods.Manager;
+
+public sealed class ModTab : TwoPanelLayout, ITab<TabType>
+{
+    public override ReadOnlySpan<byte> Label
+        => "Mods2"u8;
+
+    public ModTab(ModFileSystemDrawer drawer, ModPanel panel, CollectionSelectHeader collectionHeader)
+    {
+        LeftHeader  = drawer.Header;
+        LeftFooter  = drawer.Footer;
+        LeftPanel   = drawer;
+        RightPanel  = panel;
+        RightHeader = collectionHeader;
+    }
+
+    public void DrawContent()
+        => Draw();
+
+    public TabType Identifier
+        => TabType.Mods;
+
+    protected override void SetSize(Vector2 newSize)
+    {
+        base.SetSize(newSize);
+        ((ModFileSystemDrawer)LeftPanel).Config.Ephemeral.CurrentModSelectorWidth = newSize.X / Im.Style.GlobalScale;
+    }
+
+    protected override float MinimumWidth
+        => ((ModFileSystemDrawer)LeftPanel).Footer.Buttons.Count * Im.Style.FrameHeight;
+
+    protected override float MaximumWidth
+        => Im.Window.Width - 500 * Im.Style.GlobalScale;
+}
 
 public sealed class ModFileSystem2 : BaseFileSystem, IDisposable, IRequiredService
 {
@@ -14,7 +52,7 @@ public sealed class ModFileSystem2 : BaseFileSystem, IDisposable, IRequiredServi
     private readonly ModFileSystemSaver  _saver;
 
     public ModFileSystem2(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage)
-        : base("ModFileSystem", log)
+        : base("ModFileSystem", log, true)
     {
         _config       = config;
         _communicator = communicator;

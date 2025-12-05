@@ -1,8 +1,7 @@
 using ImSharp;
 using Luna;
-using Penumbra.UI.Classes;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.Classes;
 
 public class IncognitoService(TutorialService tutorial, Configuration config) : IUiService
 {

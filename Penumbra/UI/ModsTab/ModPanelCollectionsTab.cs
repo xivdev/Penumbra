@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
 using Penumbra.Collections;
@@ -50,8 +49,8 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
         table.SetupColumn("Collection"u8,     TableColumnFlags.WidthFixed, collectionSize);
         table.SetupColumn("State"u8,          TableColumnFlags.WidthFixed, size);
         table.SetupColumn("Inherited From"u8, TableColumnFlags.WidthFixed, collectionSize);
+        table.HeaderRow();
 
-        ImGui.TableHeadersRow();
         foreach (var (idx, (collection, parent, color, state)) in _cache.Index())
         {
             using var id = Im.Id.Push(idx);

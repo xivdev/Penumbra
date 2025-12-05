@@ -1,8 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
 using ImSharp;
-using OtterGui.Text;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
@@ -18,18 +15,18 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
     public void Draw()
     {
-        ImUtf8.InputScalar("Object Index"u8, ref _objectIndex);
+        Im.Input.Scalar("Object Index"u8, ref _objectIndex);
         var actor = objects[0];
         if (!actor.IsCharacter)
         {
-            ImUtf8.Text("No valid character."u8);
+            Im.Text("No valid character."u8);
             return;
         }
 
         var human = actor.Model;
         if (!human.IsHuman)
         {
-            ImUtf8.Text("No valid character."u8);
+            Im.Text("No valid character."u8);
             return;
         }
 
@@ -42,7 +39,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
     private unsafe void DrawCollectionAttributeCache(Actor actor)
     {
         var       data      = resolver.IdentifyCollection(actor.AsObject, true);
-        using var treeNode1 = ImUtf8.TreeNode($"Collection Attribute Cache ({data.ModCollection})");
+        using var treeNode1 = Im.Tree.Node($"Collection Attribute Cache ({data.ModCollection})");
         if (!treeNode1.Success || !data.ModCollection.HasCache)
             return;
 
@@ -52,19 +49,19 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
         table.SetupColumn("Attribute"u8, TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
         table.SetupColumn("State"u8,     TableColumnFlags.WidthStretch);
+        table.HeaderRow();
 
-        ImGui.TableHeadersRow();
         foreach (var (attribute, set) in data.ModCollection.MetaCache!.Atr.Data.OrderBy(a => a.Key))
         {
-            ImUtf8.DrawTableColumn(attribute.AsSpan);
-            DrawValues(attribute, set);
+            table.DrawColumn(attribute.AsSpan);
+            DrawValues(table, attribute, set);
         }
     }
 
     private unsafe void DrawCollectionShapeCache(Actor actor)
     {
         var       data      = resolver.IdentifyCollection(actor.AsObject, true);
-        using var treeNode1 = ImUtf8.TreeNode($"Collection Shape Cache ({data.ModCollection})");
+        using var treeNode1 = Im.Tree.Node($"Collection Shape Cache ({data.ModCollection})");
         if (!treeNode1.Success || !data.ModCollection.HasCache)
             return;
 
@@ -75,27 +72,27 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         table.SetupColumn("Condition"u8, TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
         table.SetupColumn("Shape"u8,     TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
         table.SetupColumn("State"u8,     TableColumnFlags.WidthStretch);
+        table.HeaderRow();
 
-        ImGui.TableHeadersRow();
         foreach (var condition in Enum.GetValues<ShapeConnectorCondition>())
         {
             foreach (var (shape, set) in data.ModCollection.MetaCache!.Shp.State(condition).OrderBy(shp => shp.Key))
             {
-                ImUtf8.DrawTableColumn(condition.ToString());
-                ImUtf8.DrawTableColumn(shape.AsSpan);
-                DrawValues(shape, set);
+                table.DrawColumn($"{condition}");
+                table.DrawColumn(shape.AsSpan);
+                DrawValues(table, shape, set);
             }
         }
     }
 
-    private static void DrawValues(in ShapeAttributeString shapeAttribute, ShapeAttributeHashSet set)
+    private static void DrawValues(in Im.TableDisposable table, in ShapeAttributeString _, ShapeAttributeHashSet set)
     {
-        ImGui.TableNextColumn();
+        table.NextColumn();
         var disabledColor = Im.Style[ImGuiColor.TextDisabled];
         if (set.All is { } value)
         {
             using var color = ImGuiColor.Text.Push(disabledColor, !value);
-            ImUtf8.Text("All, "u8);
+            Im.Text("All, "u8);
             Im.Line.Same(0, 0);
         }
 
@@ -105,7 +102,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 continue;
 
             using var color = ImGuiColor.Text.Push(disabledColor, !value2);
-            ImUtf8.Text($"All {slot.ToName()}, ");
+            Im.Text($"All {slot.ToNameU8()}, ");
             Im.Line.Same(0, 0);
         }
 
@@ -114,7 +111,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             if (set[gr] is { } value3)
             {
                 using var color = ImGuiColor.Text.Push(disabledColor, !value3);
-                ImUtf8.Text($"All {gr.ToName()}, ");
+                Im.Text($"All {gr.ToNameU8()}, ");
                 Im.Line.Same(0, 0);
             }
             else
@@ -125,7 +122,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                         continue;
 
                     using var color = ImGuiColor.Text.Push(disabledColor, !value4);
-                    ImUtf8.Text($"All {gr.ToName()} {slot.ToName()}, ");
+                    Im.Text($"All {gr.ToNameU8()} {slot.ToNameU8()}, ");
                     Im.Line.Same(0, 0);
                 }
             }
@@ -140,7 +137,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 if (set[slot, GenderRace.Unknown] != enabled)
                 {
                     using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
-                    ImUtf8.Text($"{slot.ToName()} {id.Id:D4}, ");
+                    Im.Text($"{slot.ToNameU8()} {id.Id:D4}, ");
                     Im.Line.Same(0, 0);
                 }
             }
@@ -155,7 +152,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     if (set[slot, gr] != enabled)
                     {
                         using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
-                        ImUtf8.Text($"{gr.ToName()} {slot.ToName()} #{id.Id:D4}, ");
+                        Im.Text($"{gr.ToNameU8()} {slot.ToNameU8()} #{id.Id:D4}, ");
                         Im.Line.Same(0, 0);
                     }
 
@@ -169,7 +166,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
     private unsafe void DrawCharacterShapes(Model human)
     {
-        using var treeNode2 = ImUtf8.TreeNode("Character Model Shapes"u8);
+        using var treeNode2 = Im.Tree.Node("Character Model Shapes"u8);
         if (!treeNode2)
             return;
 
@@ -184,49 +181,48 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         table.SetupColumn("ID"u8,      TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
         table.SetupColumn("Count"u8,   TableColumnFlags.WidthFixed, 30 * Im.Style.GlobalScale);
         table.SetupColumn("Shapes"u8,  TableColumnFlags.WidthStretch);
-
-        ImGui.TableHeadersRow();
+        table.HeaderRow();
 
         var disabledColor = Im.Style[ImGuiColor.TextDisabled];
         for (var i = 0; i < human.AsHuman->SlotCount; ++i)
         {
-            ImUtf8.DrawTableColumn($"{(uint)i:D2}");
-            ImUtf8.DrawTableColumn(((HumanSlot)i).ToName());
+            table.DrawColumn($"{(uint)i:D2}");
+            table.DrawColumn(((HumanSlot)i).ToNameU8());
 
-            ImGui.TableNextColumn();
+            table.NextColumn();
             var model = human.AsHuman->Models[i];
             Penumbra.Dynamis.DrawPointer((nint)model);
             if (model is not null)
             {
                 var mask = model->EnabledShapeKeyIndexMask;
-                ImUtf8.DrawTableColumn($"{mask:X8}");
-                ImUtf8.DrawTableColumn($"{human.GetModelId((HumanSlot)i):D4}");
-                ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Shapes.Count}");
-                ImGui.TableNextColumn();
+                table.DrawColumn($"{mask:X8}");
+                table.DrawColumn($"{human.GetModelId((HumanSlot)i):D4}");
+                table.DrawColumn($"{model->ModelResourceHandle->Shapes.Count}");
+                table.NextColumn();
                 foreach (var (idx, (shape, flag)) in model->ModelResourceHandle->Shapes.Index())
                 {
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
-                    ImUtf8.Text(shape.AsSpan());
+                    Im.Text(shape.AsSpan());
                     Im.Line.Same(0, 0);
-                    ImUtf8.Text(",  "u8);
+                    Im.Text(",  "u8);
                     if (idx % 8 < 7)
                         Im.Line.Same(0, 0);
                 }
             }
             else
             {
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
+                table.NextColumn();
+                table.NextColumn();
+                table.NextColumn();
+                table.NextColumn();
             }
         }
     }
 
     private unsafe void DrawCharacterAttributes(Model human)
     {
-        using var treeNode2 = ImUtf8.TreeNode("Character Model Attributes"u8);
+        using var treeNode2 = Im.Tree.Node("Character Model Attributes"u8);
         if (!treeNode2)
             return;
 
@@ -241,42 +237,41 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         table.SetupColumn("ID"u8,         TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
         table.SetupColumn("Count"u8,      TableColumnFlags.WidthFixed, 30 * Im.Style.GlobalScale);
         table.SetupColumn("Attributes"u8, TableColumnFlags.WidthStretch);
-
-        ImGui.TableHeadersRow();
+        table.HeaderRow();
 
         var disabledColor = Im.Style[ImGuiColor.TextDisabled];
         for (var i = 0; i < human.AsHuman->SlotCount; ++i)
         {
-            ImUtf8.DrawTableColumn($"{(uint)i:D2}");
-            ImUtf8.DrawTableColumn(((HumanSlot)i).ToName());
+            table.DrawColumn($"{(uint)i:D2}");
+            table.DrawColumn(((HumanSlot)i).ToNameU8());
 
-            ImGui.TableNextColumn();
+            table.NextColumn();
             var model = human.AsHuman->Models[i];
             Penumbra.Dynamis.DrawPointer((nint)model);
             if (model is not null)
             {
                 var mask = model->EnabledAttributeIndexMask;
-                ImUtf8.DrawTableColumn($"{mask:X8}");
-                ImUtf8.DrawTableColumn($"{human.GetModelId((HumanSlot)i):D4}");
-                ImUtf8.DrawTableColumn($"{model->ModelResourceHandle->Attributes.Count}");
-                ImGui.TableNextColumn();
+                table.DrawColumn($"{mask:X8}");
+                table.DrawColumn($"{human.GetModelId((HumanSlot)i):D4}");
+                table.DrawColumn($"{model->ModelResourceHandle->Attributes.Count}");
+                table.NextColumn();
                 foreach (var (idx, (attribute, flag)) in model->ModelResourceHandle->Attributes.Index())
                 {
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
-                    ImUtf8.Text(attribute.AsSpan());
+                    Im.Text(attribute.AsSpan());
                     Im.Line.Same(0, 0);
-                    ImUtf8.Text(",  "u8);
+                    Im.Text(",  "u8);
                     if (idx % 8 < 7)
                         Im.Line.Same(0, 0);
                 }
             }
             else
             {
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
+                table.NextColumn();
+                table.NextColumn();
+                table.NextColumn();
+                table.NextColumn();
             }
         }
     }

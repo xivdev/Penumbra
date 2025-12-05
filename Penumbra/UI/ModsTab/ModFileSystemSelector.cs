@@ -184,7 +184,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     // Customization points.
     public override ISortMode<Mod> SortMode
-        => _config.SortMode;
+        => ISortMode<Mod>.FoldersFirst;
 
     protected override uint ExpandedFolderColor
         => ColorId.FolderExpanded.Value().Color;

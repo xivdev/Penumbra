@@ -17,7 +17,7 @@ public sealed class OptionSelectCombo(ModEditor editor, ModEditWindow window)
     protected override void DrawCombo(string label, string preview, string tooltip, int currentSelected, float previewWidth, float itemHeight,
         ImGuiComboFlags flags)
     {
-        _border.PushBorder(ImStyleBorder.Frame, ColorId.FolderLine.Value());
+        _border.Push(ImStyleBorder.Frame, ColorId.FolderLine.Value());
         base.DrawCombo(label, preview, tooltip, currentSelected, previewWidth, itemHeight, flags);
         _border.Dispose();
     }

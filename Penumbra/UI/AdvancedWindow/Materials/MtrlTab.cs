@@ -77,7 +77,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         if (!ImUtf8.ButtonEx("Update MTRL Version to Dawntrail"u8,
                 "Try using this if the material can not be loaded or should use legacy shaders.\n\nThis is not revertible."u8,
-                new Vector2(-0.1f, 0), false, 0, Colors.PressEnterWarningBg))
+                new Vector2(-0.1f, 0), false, 0, new Rgba32(Colors.PressEnterWarningBg).Color))
             return false;
 
         Mtrl.MigrateToDawntrail();

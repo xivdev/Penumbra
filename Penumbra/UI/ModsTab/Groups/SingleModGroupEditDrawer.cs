@@ -1,8 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Raii;
-using OtterGui.Text;
+using Luna;
 using Penumbra.Mods.Groups;
 
 namespace Penumbra.UI.ModsTab.Groups;
@@ -13,7 +10,7 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
     {
         foreach (var (optionIdx, option) in group.OptionData.Index())
         {
-            using var id = ImRaii.PushId(optionIdx);
+            using var id = Im.Id.Push(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
             Im.Line.SameInner();
@@ -29,7 +26,7 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
             editor.DrawOptionDelete(option);
 
             Im.Line.SameInner();
-            ImGui.Dummy(new Vector2(editor.PriorityWidth, 0));
+            Im.Dummy(new Vector2(editor.PriorityWidth, 0));
         }
 
         DrawNewOption();
@@ -39,9 +36,9 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
     private void DrawConvertButton()
     {
         var convertible = group.Options.Count <= IModGroup.MaxMultiOptions;
-        var g = group;
-        var e = editor.ModManager.OptionEditor.SingleEditor;
-        if (ImUtf8.ButtonEx("Convert to Multi Group", editor.AvailableWidth, !convertible))
+        var g           = group;
+        var e           = editor.ModManager.OptionEditor.SingleEditor;
+        if (ImEx.Button("Convert to Multi Group"u8, editor.AvailableWidth, !convertible))
             editor.ActionQueue.Enqueue(() => e.ChangeToMulti(g));
         if (!convertible)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
@@ -57,9 +54,9 @@ public readonly struct SingleModGroupEditDrawer(ModGroupEditDrawer editor, Singl
         var name = editor.DrawNewOptionBase(group, count);
 
         var validName = name.Length > 0;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, validName
                 ? "Add a new option to this group."u8
-                : "Please enter a name for the new option."u8, default, !validName))
+                : "Please enter a name for the new option."u8, !validName))
         {
             editor.ModManager.OptionEditor.SingleEditor.AddOption(group, name);
             editor.NewOptionName = null;

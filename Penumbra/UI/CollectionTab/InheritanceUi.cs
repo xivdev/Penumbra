@@ -221,7 +221,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         var tt = inheritance switch
         {
             InheritanceManager.ValidInheritance.Empty     => "No valid collection to inherit from selected.",
-            InheritanceManager.ValidInheritance.Valid     => $"Let the {TutorialService.SelectedCollection} inherit from this collection.",
+            InheritanceManager.ValidInheritance.Valid     => $"Let the Selected Collection inherit from this collection.",
             InheritanceManager.ValidInheritance.Self      => "The collection can not inherit from itself.",
             InheritanceManager.ValidInheritance.Contained => "Already inheriting from this collection.",
             InheritanceManager.ValidInheritance.Circle    => "Inheriting from this collection would lead to cyclic inheritance.",
@@ -307,7 +307,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
         }
 
         Im.Tooltip.OnHover(
-            $"Control + Right-Click to switch the {TutorialService.SelectedCollection} to this one.{(withDelete ? "\nControl + Shift + Right-Click to remove this inheritance."u8 : StringU8.Empty)}");
+            $"Control + Right-Click to switch the Selected Collection to this one.{(withDelete ? "\nControl + Shift + Right-Click to remove this inheritance."u8 : StringU8.Empty)}");
     }
 
     private string Name(ModCollection collection)

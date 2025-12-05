@@ -31,7 +31,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.UI.Classes;
-using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
 using Penumbra.GameData.Data;
@@ -94,7 +93,6 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly DictEmote                          _emotes;
     private readonly Diagnostics                        _diagnostics;
     private readonly ObjectManager                      _objects;
-    private readonly IClientState                       _clientState;
     private readonly IDataManager                       _dataManager;
     private readonly IpcTester                          _ipcTester;
     private readonly CrashHandlerPanel                  _crashHandlerPanel;
@@ -107,9 +105,9 @@ public sealed class DebugTab : Window, ITab<TabType>
     private readonly ModMigratorDebug                   _modMigratorDebug;
     private readonly ShapeInspector                     _shapeInspector;
     private readonly FileWatcher.FileWatcherDrawer      _fileWatcherDrawer;
+    private readonly DragDropManager                    _dragDropManager;
 
-    public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects,
-        IClientState clientState, IDataManager dataManager,
+    public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         ResourceManagerService resourceManager, ResourceLoader resourceLoader, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
@@ -118,7 +116,8 @@ public sealed class DebugTab : Window, ITab<TabType>
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
         SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
-        ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer)
+        ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
+        DragDropManager dragDropManager)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
     {
         IsOpen = true;
@@ -161,9 +160,9 @@ public sealed class DebugTab : Window, ITab<TabType>
         _renderTargetDrawer        = renderTargetDrawer;
         _modMigratorDebug          = modMigratorDebug;
         _shapeInspector            = shapeInspector;
-        _fileWatcherDrawer    = fileWatcherDrawer;
+        _fileWatcherDrawer         = fileWatcherDrawer;
+        _dragDropManager           = dragDropManager;
         _objects                   = objects;
-        _clientState               = clientState;
         _dataManager               = dataManager;
     }
 
@@ -209,6 +208,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _globalVariablesDrawer.Draw();
         DrawCloudApi();
         DrawDebugTabIpc();
+        _dragDropManager.DrawDebugInfo();
     }
 
 
@@ -265,7 +265,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using (var resourceNode = ImUtf8.TreeNode("Custom Resources"u8))
                 {
                     if (resourceNode)
-                        foreach (var (path, resource) in collection._cache!.CustomResources)
+                        foreach (var (path, resource) in collection.Cache!.CustomResources)
                         {
                             ImUtf8.TreeNode($"{path} -> 0x{(ulong)resource.ResourceHandle:X}",
                                 ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
@@ -274,7 +274,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
                 using var modNode = ImUtf8.TreeNode("Enabled Mods"u8);
                 if (modNode)
-                    foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
+                    foreach (var (mod, paths, manips) in collection.Cache!.ModData.Data.OrderBy(t => t.Item1.Name))
                     {
                         using var id    = mod is TemporaryMod t ? Im.Id.Push(t.Priority.Value) : Im.Id.Push(((Mod)mod).ModPath.Name);
                         using var node2 = Im.Tree.Node(mod.Name);
@@ -318,9 +318,9 @@ public sealed class DebugTab : Window, ITab<TabType>
             {
                 PrintValue("Penumbra Version",                 $"{_validityChecker.Version} {DebugVersionString}");
                 PrintValue("Git Commit Hash",                  _validityChecker.CommitHash);
-                PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Identity.Name);
+                PrintValue("Selected Collection",               _collectionManager.Active.Current.Identity.Name);
                 PrintValue("    has Cache",                    _collectionManager.Active.Current.HasCache.ToString());
-                PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Identity.Name);
+                PrintValue("Base Collection",                  _collectionManager.Active.Default.Identity.Name);
                 PrintValue("    has Cache",                    _collectionManager.Active.Default.HasCache.ToString());
                 PrintValue("Mod Manager BasePath",             _modManager.BasePath.Name);
                 PrintValue("Mod Manager BasePath-Full",        _modManager.BasePath.FullName);
@@ -1032,15 +1032,15 @@ public sealed class DebugTab : Window, ITab<TabType>
     /// <summary> Draw information about the models, materials and resources currently loaded by the local player. </summary>
     private unsafe void DrawPlayerModelInfo()
     {
-        var player = _clientState.LocalPlayer;
-        var name   = player?.Name.ToString() ?? "NULL";
-        if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || player == null)
+        var player = _objects[0];
+        var name   = player.Valid ? player.StoredName() : "NULL"u8;
+        if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || !player.Valid)
             return;
 
         DrawCopyableAddress("PlayerCharacter"u8, player.Address);
 
-        var model = (CharacterBase*)((Character*)player.Address)->GameObject.GetDrawObject();
-        if (model == null)
+        var model = player.Model;
+        if (!model.IsCharacterBase)
             return;
 
         DrawCopyableAddress("CharacterBase"u8, model);
@@ -1050,11 +1050,11 @@ public sealed class DebugTab : Window, ITab<TabType>
             if (t1)
             {
                 ImGuiUtil.DrawTableColumn("Flags");
-                ImGuiUtil.DrawTableColumn($"{model->StateFlags}");
+                ImGuiUtil.DrawTableColumn($"{model.AsCharacterBase->StateFlags}");
                 ImGuiUtil.DrawTableColumn("Has Model In Slot Loaded");
-                ImGuiUtil.DrawTableColumn($"{model->HasModelInSlotLoaded:X8}");
+                ImGuiUtil.DrawTableColumn($"{model.AsCharacterBase->HasModelInSlotLoaded:X8}");
                 ImGuiUtil.DrawTableColumn("Has Model Files In Slot Loaded");
-                ImGuiUtil.DrawTableColumn($"{model->HasModelFilesInSlotLoaded:X8}");
+                ImGuiUtil.DrawTableColumn($"{model.AsCharacterBase->HasModelFilesInSlotLoaded:X8}");
             }
         }
 
@@ -1073,9 +1073,9 @@ public sealed class DebugTab : Window, ITab<TabType>
         ImGui.TableNextColumn();
         ImGui.TableHeader("Model File");
 
-        for (var i = 0; i < model->SlotCount; ++i)
+        for (var i = 0; i < model.AsCharacterBase->SlotCount; ++i)
         {
-            var imc = (ResourceHandle*)model->IMCArray[i];
+            var imc = (ResourceHandle*)model.AsCharacterBase->IMCArray[i];
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             Im.Text($"Slot {i}");
@@ -1085,7 +1085,7 @@ public sealed class DebugTab : Window, ITab<TabType>
             if (imc is not null)
                 Im.Text(imc->FileName().Span);
 
-            var mdl = (RenderModel*)model->Models[i];
+            var mdl = (RenderModel*)model.AsCharacterBase->Models[i];
             ImGui.TableNextColumn();
             Penumbra.Dynamis.DrawPointer((nint)mdl);
             if (mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara)

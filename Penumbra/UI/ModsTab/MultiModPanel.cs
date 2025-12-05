@@ -1,16 +1,12 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using ImSharp;
 using Luna;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
 
-public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor, PredefinedTagManager tagManager) : Luna.IUiService
+public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor, PredefinedTagManager tagManager) : IUiService
 {
     public void Draw()
     {
@@ -18,7 +14,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             return;
 
         Im.Line.New();
-        var treeNodePos = ImGui.GetCursorPos();
+        var treeNodePos = Im.Cursor.Position;
         var numLeaves   = DrawModList();
         DrawCounts(treeNodePos, numLeaves);
         DrawMultiTagger();
@@ -26,24 +22,24 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
 
     private void DrawCounts(Vector2 treeNodePos, int numLeaves)
     {
-        var startPos   = ImGui.GetCursorPos();
+        var startPos   = Im.Cursor.Position;
         var numFolders = selector.SelectedPaths.Count - numLeaves;
-        var text = (numLeaves, numFolders) switch
+        Utf8StringHandler<TextStringHandlerBuffer> text = (numLeaves, numFolders) switch
         {
-            (0, 0)   => string.Empty, // should not happen
+            (0, 0)   => StringU8.Empty, // should not happen
             (> 0, 0) => $"{numLeaves} Mods",
             (0, > 0) => $"{numFolders} Folders",
             _        => $"{numLeaves} Mods, {numFolders} Folders",
         };
-        ImGui.SetCursorPos(treeNodePos);
-        ImUtf8.TextRightAligned(text);
-        ImGui.SetCursorPos(startPos);
+        Im.Cursor.Position = treeNodePos;
+        ImEx.TextRightAligned(ref text);
+        Im.Cursor.Position = startPos;
     }
 
     private int DrawModList()
     {
-        using var tree = ImUtf8.TreeNode("Currently Selected Objects###Selected"u8,
-            ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.NoTreePushOnOpen);
+        using var tree = Im.Tree.Node("Currently Selected Objects###Selected"u8,
+            TreeNodeFlags.DefaultOpen | TreeNodeFlags.NoTreePushOnOpen);
         Im.Separator();
 
 
@@ -69,16 +65,16 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             foreach (var (fullName, path) in selector.SelectedPaths.Select(p => (p.FullName(), p))
                          .OrderBy(p => p.Item1, StringComparer.OrdinalIgnoreCase))
             {
-                using var id = ImRaii.PushId(i++);
+                using var id = Im.Id.Push(i++);
                 var (icon, text) = path is ModFileSystem.Leaf l
-                    ? (FontAwesomeIcon.FileCircleMinus, l.Value.Name)
-                    : (FontAwesomeIcon.FolderMinus, string.Empty);
-                ImGui.TableNextColumn();
-                if (ImUtf8.IconButton(icon, "Remove from selection."u8, sizeType))
+                    ? (FontAwesomeIcon.FileCircleMinus.Icon(), l.Value.Name)
+                    : (FontAwesomeIcon.FolderMinus.Icon(), string.Empty);
+                table.NextColumn();
+                if (ImEx.Icon.Button(icon, "Remove from selection."u8, false, sizeType))
                     selector.RemovePathFromMultiSelection(path);
 
-                ImUtf8.DrawFrameColumn(text);
-                ImUtf8.DrawFrameColumn(fullName);
+                table.DrawFrameColumn(text);
+                table.DrawFrameColumn(fullName);
                 if (path is ModFileSystem.Leaf)
                     ++leaves;
             }
@@ -95,7 +91,7 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
     private void DrawMultiTagger()
     {
         var width = ImEx.ScaledVector(150, 0);
-        ImUtf8.TextFrameAligned("Multi Tagger:"u8);
+        ImEx.TextFrameAligned("Multi Tagger:"u8);
         Im.Line.Same();
 
         var predefinedTagsEnabled = tagManager.Enabled;
@@ -103,32 +99,32 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
             ? Im.ContentRegion.Available.X - 2 * width.X - 3 * Im.Style.ItemInnerSpacing.X - Im.Style.FrameHeight
             : Im.ContentRegion.Available.X - 2 * (width.X + Im.Style.ItemInnerSpacing.X);
         Im.Item.SetNextWidth(inputWidth);
-        ImUtf8.InputText("##tag"u8, ref _tag, "Local Tag Name..."u8);
+        Im.Input.Text("##tag"u8, ref _tag, "Local Tag Name..."u8);
 
         UpdateTagCache();
-        var label = _addMods.Count > 0
+        Utf8StringHandler<LabelStringHandlerBuffer> label = _addMods.Count > 0
             ? $"Add to {_addMods.Count} Mods"
             : "Add";
-        var tooltip = _addMods.Count == 0
-            ? _tag.Length == 0
+        Utf8StringHandler<TextStringHandlerBuffer> tooltip = _addMods.Count is 0
+            ? _tag.Length is 0
                 ? "No tag specified."
                 : $"All mods selected already contain the tag \"{_tag}\", either locally or as mod data."
             : $"Add the tag \"{_tag}\" to {_addMods.Count} mods as a local tag:\n\n\t{string.Join("\n\t", _addMods.Select(m => m.Name))}";
         Im.Line.SameInner();
-        if (ImUtf8.ButtonEx(label, tooltip, width, _addMods.Count == 0))
+        if (ImEx.Button(label, width, tooltip, _addMods.Count is 0))
             foreach (var mod in _addMods)
                 editor.ChangeLocalTag(mod, mod.LocalTags.Count, _tag);
 
         label = _removeMods.Count > 0
             ? $"Remove from {_removeMods.Count} Mods"
             : "Remove";
-        tooltip = _removeMods.Count == 0
-            ? _tag.Length == 0
+        tooltip = _removeMods.Count is 0
+            ? _tag.Length is 0
                 ? "No tag specified."
                 : $"No selected mod contains the tag \"{_tag}\" locally."
             : $"Remove the local tag \"{_tag}\" from {_removeMods.Count} mods:\n\n\t{string.Join("\n\t", _removeMods.Select(m => m.Item1.Name))}";
         Im.Line.SameInner();
-        if (ImUtf8.ButtonEx(label, tooltip, width, _removeMods.Count == 0))
+        if (ImEx.Button(label, width, tooltip, _removeMods.Count is 0))
             foreach (var (mod, index) in _removeMods)
                 editor.ChangeLocalTag(mod, index, string.Empty);
         

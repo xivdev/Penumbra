@@ -1,7 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
 using ImSharp;
-using OtterGui.Text;
 using Penumbra.Interop.Hooks;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -12,19 +10,19 @@ public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : Luna.
 
     public void Draw()
     {
-        using var header = ImUtf8.CollapsingHeaderId("Generate Hook Override"u8);
+        using var header = Im.Tree.HeaderId("Generate Hook Override"u8);
         if (!header)
             return;
 
         _overrides ??= HookOverrides.Instance.Clone();
 
-        if (ImUtf8.Button("Save"u8))
+        if (Im.Button("Save"u8))
             _overrides.Write(pluginInterface);
 
         Im.Line.Same();
         var path   = Path.Combine(pluginInterface.GetPluginConfigDirectory(), HookOverrides.FileName);
         var exists = File.Exists(path);
-        if (ImUtf8.ButtonEx("Delete"u8, disabled: !exists, tooltip: exists ? ""u8 : "File does not exist."u8))
+        if (ImEx.Button("Delete"u8, disabled: !exists, tooltip: exists ? ""u8 : "File does not exist."u8))
             try
             {
                 File.Delete(path);
@@ -36,23 +34,23 @@ public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : Luna.
 
         bool? allVisible = null;
         Im.Line.Same();
-        if (ImUtf8.Button("Disable All Visible Hooks"u8))
+        if (Im.Button("Disable All Visible Hooks"u8))
             allVisible = true;
         Im.Line.Same();
-        if (ImUtf8.Button("Enable All VisibleHooks"u8))
+        if (Im.Button("Enable All VisibleHooks"u8))
             allVisible = false;
 
         bool? all = null;
         Im.Line.Same();
-        if (ImUtf8.Button("Disable All Hooks"))
+        if (Im.Button("Disable All Hooks"u8))
             all = true;
         Im.Line.Same();
-        if (ImUtf8.Button("Enable All Hooks"))
+        if (Im.Button("Enable All Hooks"u8))
             all = false;
 
         foreach (var propertyField in typeof(HookOverrides).GetFields().Where(f => f is { IsStatic: false, FieldType.IsValueType: true }))
         {
-            using var tree = ImUtf8.TreeNode(propertyField.Name);
+            using var tree = Im.Tree.Node(propertyField.Name);
             if (!tree)
             {
                 if (all.HasValue)
@@ -72,7 +70,7 @@ public class HookOverrideDrawer(IDalamudPluginInterface pluginInterface) : Luna.
                 foreach (var valueField in propertyField.FieldType.GetFields())
                 {
                     var value = valueField.GetValue(property) as bool? ?? false;
-                    if (ImUtf8.Checkbox($"Disable {valueField.Name}", ref value) || allVisible.HasValue)
+                    if (Im.Checkbox($"Disable {valueField.Name}", ref value) || allVisible.HasValue)
                     {
                         valueField.SetValue(property, allVisible ?? value);
                         propertyField.SetValue(_overrides, property);

@@ -4,6 +4,7 @@ using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow.Materials;
 

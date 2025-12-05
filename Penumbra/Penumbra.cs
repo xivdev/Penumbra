@@ -3,8 +3,6 @@ using Dalamud.Plugin.Services;
 using ImSharp;
 using Lumina.Excel.Sheets;
 using Luna;
-using OtterGui;
-using OtterGui.Tasks;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -21,6 +19,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.MainWindow;
 using Penumbra.UI.Tabs;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
@@ -131,7 +130,7 @@ public class Penumbra : IDalamudPlugin
 
     private void SetupInterface()
     {
-        AsyncTask.Run(() =>
+        Task.Run(() =>
             {
                 var system = _services.GetService<PenumbraWindowSystem>();
                 system.Window.Setup(this, _services.GetService<MainTabBar>());
@@ -144,12 +143,16 @@ public class Penumbra : IDalamudPlugin
                         var mods              = _services.GetService<ModManager>();
                         var editWindowFactory = _services.GetService<ModEditWindowFactory>();
                         foreach (var identifier in _config.Ephemeral.AdvancedEditingOpenForModPaths)
+                        {
                             if (mods.TryGetMod(identifier, out var mod))
                                 editWindowFactory.OpenForMod(mod);
+                        }
                     }
                 }
                 else
+                {
                     system.Dispose();
+                }
             }
         );
     }
@@ -203,8 +206,8 @@ public class Penumbra : IDalamudPlugin
             "Ktisis", "Brio",
             "heliosphere-plugin", "VfxEditor", "IllusioVitae", "Aetherment",
             "DynamicBridge", "GagSpeak", "ProjectGagSpeak", "RoleplayingVoiceDalamud", "AQuestReborn",
-            "MareSynchronos", "LoporritSync", "KittenSync", "Snowcloak", "LightlessSync", "Sphene", "XivSync", "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni"
-
+            "MareSynchronos", "LoporritSync", "KittenSync", "Snowcloak", "LightlessSync", "Sphene", "XivSync",
+            "MareSempiterne" /* PlayerSync */, "AnatoliIliou", "LaciSynchroni",
         ];
         var plugins = _services.GetService<IDalamudPluginInterface>().InstalledPlugins
             .GroupBy(p => p.InternalName)
@@ -238,7 +241,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append(
             $"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}{(cloudSynced ? ", Cloud-Synced" : "")}\n");
         sb.Append(
-            $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
+            $"> **`Free Drive Space:            `** {(drive != null ? FormattingFunctions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
         sb.Append($"> **`Game Data Files:             `** {(_gameData.HasModifiedGameDataFiles ? "Modified" : "Pristine")}\n");
         sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
         sb.Append($"> **`Auto-UI-Reduplication:       `** {_config.AutoReduplicateUiOnImport}\n");
@@ -285,7 +288,7 @@ public class Penumbra : IDalamudPlugin
             sb.Append($"> **`{id[0].Incognito(name) + ':',-29}`** {collection.Identity.AnonymizedName}\n");
 
         foreach (var collection in _collectionManager.Caches.Active)
-            PrintCollection(collection, collection._cache!);
+            PrintCollection(collection, collection.Cache!);
 
         return sb.ToString();
 

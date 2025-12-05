@@ -1,8 +1,8 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
 using OtterGui.Widgets;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -31,7 +31,7 @@ public class ModPanelDescriptionTab(
         Im.ScaledDummy(2, 2);
         Im.ScaledDummy(2, 2);
         var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
-            ? (true, Im.Style.FrameHeight + Im.Style.WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? Im.Style.ScrollbarSize : 0))
+            ? (true, Im.Style.FrameHeight + Im.Style.WindowPadding.X + (Im.Scroll.MaximumY > 0 ? Im.Style.ScrollbarSize : 0))
             : (false, 0);
         var tagIdx = _localTags.Draw("Local Tags: ",
             "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
@@ -48,7 +48,7 @@ public class ModPanelDescriptionTab(
         if (selector.Selected!.ModTags.Count > 0)
             _modTags.Draw("Mod Tags: ", "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod.",
                 selector.Selected!.ModTags, out _, false,
-                ImGui.CalcTextSize("Local ").X - ImGui.CalcTextSize("Mod ").X);
+                Im.Font.CalculateSize("Local "u8).X - Im.Font.CalculateSize("Mod "u8).X);
 
         Im.ScaledDummy(2, 2);
         Im.Separator();

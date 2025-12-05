@@ -31,7 +31,7 @@ public static class ModFilterExtensions
 {
     public const ModFilter UnfilteredStateMods = (ModFilter)((1 << 22) - 1);
 
-    public static IReadOnlyList<(ModFilter On, ModFilter Off, string Name)> TriStatePairs =
+    public static readonly IReadOnlyList<(ModFilter On, ModFilter Off, string Name)> TriStatePairs =
     [
         (ModFilter.Enabled, ModFilter.Disabled, "Enabled"),
         (ModFilter.IsNew, ModFilter.NotNew, "Newly Imported"),
@@ -43,7 +43,7 @@ public static class ModFilterExtensions
         (ModFilter.Temporary, ModFilter.NotTemporary, "Temporary"),
     ];
 
-    public static IReadOnlyList<IReadOnlyList<(ModFilter Filter, string Name)>> Groups =
+    public static readonly IReadOnlyList<IReadOnlyList<(ModFilter Filter, string Name)>> Groups =
     [
         [
             (ModFilter.NoConflict, "Has No Conflicts"),

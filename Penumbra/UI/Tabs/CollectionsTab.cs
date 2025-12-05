@@ -1,14 +1,13 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Plugin;
 using ImSharp;
 using Luna;
-using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
@@ -63,7 +62,7 @@ public sealed class CollectionsTab : ITab<TabType>, IDisposable
 
     public void DrawContent()
     {
-        var width = ImGui.CalcTextSize("nnnnnnnnnnnnnnnnnnnnnnnnnn").X;
+        var width = Im.Font.CalculateSize("nnnnnnnnnnnnnnnnnnnnnnnnnn"u8).X;
         using (Im.Group())
         {
             _selector.Draw(width);
@@ -93,28 +92,28 @@ public sealed class CollectionsTab : ITab<TabType>, IDisposable
         using var _                = Im.Group();
         var       tabSelectedColor = Im.Style[ImGuiColor.TabSelected];
         using var color            = ImGuiColor.Button.Push(tabSelectedColor, Mode is PanelMode.SimpleAssignment);
-        if (ImGui.Button("Simple Assignments", buttonSize))
+        if (Im.Button("Simple Assignments"u8, buttonSize))
             Mode = PanelMode.SimpleAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.SimpleAssignments);
         Im.Line.Same();
 
         color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.IndividualAssignment);
-        if (ImGui.Button("Individual Assignments", buttonSize))
+        if (Im.Button("Individual Assignments"u8, buttonSize))
             Mode = PanelMode.IndividualAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.IndividualAssignments);
         Im.Line.Same();
 
         color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.GroupAssignment);
-        if (ImGui.Button("Group Assignments", buttonSize))
+        if (Im.Button("Group Assignments"u8, buttonSize))
             Mode = PanelMode.GroupAssignment;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.GroupAssignments);
         Im.Line.Same();
 
         color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.Details);
-        if (ImGui.Button("Collection Details", buttonSize))
+        if (Im.Button("Collection Details"u8, buttonSize))
             Mode = PanelMode.Details;
         color.Pop();
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionDetails);
@@ -126,7 +125,7 @@ public sealed class CollectionsTab : ITab<TabType>, IDisposable
     private void DrawPanel()
     {
         using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
-        using var child = ImRaii.Child("##CollectionSettings", Im.ContentRegion.Available with { Y = 0 }, true);
+        using var child = Im.Child.Begin("##CollectionSettings"U8, Im.ContentRegion.Available with { Y = 0 }, true);
         if (!child)
             return;
 

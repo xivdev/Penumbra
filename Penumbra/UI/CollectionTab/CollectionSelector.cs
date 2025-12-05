@@ -70,8 +70,6 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     protected override bool Filtered(int idx)
         => !Items[idx].Identity.Name.Contains(Filter, StringComparison.OrdinalIgnoreCase);
 
-    private const string PayloadString = "Collection";
-
     protected override bool OnDraw(int idx)
     {
         using var color  = ImGuiColor.Header.Push(ColorId.SelectedCollection.Value());
@@ -84,7 +82,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         if (source)
         {
             _dragging = Items[idx];
-            source.SetPayload(PayloadString);
+            source.SetPayload("Collection"u8);
             Im.Text($"Assigning {Name(_dragging)} to...");
         }
 
@@ -97,7 +95,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
     public void DragTargetAssignment(CollectionType type, ActorIdentifier identifier)
     {
         using var target = Im.DragDrop.Target();
-        if (!target.Success || _dragging is null || !target.IsDropping(PayloadString))
+        if (!target.Success || _dragging is null || !target.IsDropping("Collection"u8))
             return;
 
         _active.SetCollection(_dragging, type, _active.Individuals.GetGroup(identifier));

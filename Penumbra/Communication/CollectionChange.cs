@@ -2,6 +2,7 @@ using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.UI.CollectionTab;
+using Penumbra.UI.MainWindow;
 
 namespace Penumbra.Communication;
 
@@ -11,6 +12,9 @@ public sealed class CollectionChange(Logger log)
 {
     public enum Priority
     {
+        /// <see cref="EffectiveTab.Cache.OnCollectionChange"/>
+        EffectiveChangesCache = int.MinValue,
+
         /// <seealso cref="Api.DalamudSubstitutionProvider.OnCollectionChange"/>
         DalamudSubstitutionProvider = -3,
 
@@ -28,6 +32,9 @@ public sealed class CollectionChange(Logger log)
 
         /// <seealso cref="global::Penumbra.Interop.PathResolving.IdentifiedCollectionCache.CollectionChangeClear" />
         IdentifiedCollectionCache = 0,
+
+        /// <seealso cref="ChangedItemsTab.Cache.OnCollectionChange" />
+        ChangedItemsTabCache = 0,
 
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnCollectionChange" />
         ItemSwapTab = 0,

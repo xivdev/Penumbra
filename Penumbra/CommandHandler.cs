@@ -13,6 +13,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI;
 using Penumbra.UI.Knowledge;
+using Penumbra.UI.MainWindow;
 
 namespace Penumbra;
 
@@ -24,7 +25,7 @@ public class CommandHandler : IDisposable, IApiService
     private readonly RedrawService     _redrawService;
     private readonly IChatGui          _chat;
     private readonly Configuration     _config;
-    private readonly ConfigWindow      _configWindow;
+    private readonly MainWindow      _mainWindow;
     private readonly ActorManager      _actors;
     private readonly ModManager        _modManager;
     private readonly CollectionManager _collectionManager;
@@ -33,14 +34,14 @@ public class CommandHandler : IDisposable, IApiService
     private readonly KnowledgeWindow   _knowledgeWindow;
 
     public CommandHandler(IFramework framework, ICommandManager commandManager, IChatGui chat, RedrawService redrawService,
-        Configuration config, ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors,
+        Configuration config, MainWindow mainWindow, ModManager modManager, CollectionManager collectionManager, ActorManager actors,
         Penumbra penumbra,
         CollectionEditor collectionEditor, KnowledgeWindow knowledgeWindow)
     {
         _commandManager    = commandManager;
         _redrawService     = redrawService;
         _config            = config;
-        _configWindow      = configWindow;
+        _mainWindow      = mainWindow;
         _modManager        = modManager;
         _collectionManager = collectionManager;
         _actors            = actors;
@@ -146,11 +147,11 @@ public class CommandHandler : IDisposable, IApiService
 
     private bool ToggleWindow(string arguments)
     {
-        var value = ParseTrueFalseToggle(arguments) ?? !_configWindow.IsOpen;
-        if (value == _configWindow.IsOpen)
+        var value = ParseTrueFalseToggle(arguments) ?? !_mainWindow.IsOpen;
+        if (value == _mainWindow.IsOpen)
             return false;
 
-        _configWindow.Toggle();
+        _mainWindow.Toggle();
         return true;
     }
 
@@ -211,12 +212,12 @@ public class CommandHandler : IDisposable, IApiService
         if (value)
         {
             Print("Penumbra UI locked in place.");
-            _configWindow.Flags |= WindowFlags.NoMove | WindowFlags.NoResize;
+            _mainWindow.Flags |= WindowFlags.NoMove | WindowFlags.NoResize;
         }
         else
         {
             Print("Penumbra UI unlocked.");
-            _configWindow.Flags &= ~(WindowFlags.NoMove | WindowFlags.NoResize);
+            _mainWindow.Flags &= ~(WindowFlags.NoMove | WindowFlags.NoResize);
         }
 
         _config.Ephemeral.FixMainWindow = value;

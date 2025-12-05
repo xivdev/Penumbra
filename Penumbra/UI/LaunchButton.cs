@@ -10,21 +10,21 @@ namespace Penumbra.UI;
 /// </summary>
 public class LaunchButton : IDisposable, Luna.IUiService
 {
-    private readonly ConfigWindow     _configWindow;
-    private readonly IUiBuilder       _uiBuilder;
-    private readonly ITitleScreenMenu _title;
-    private readonly string           _fileName;
-    private readonly ITextureProvider _textureProvider;
+    private readonly MainWindow.MainWindow _mainWindow;
+    private readonly IUiBuilder            _uiBuilder;
+    private readonly ITitleScreenMenu      _title;
+    private readonly string                _fileName;
+    private readonly ITextureProvider      _textureProvider;
 
     private IReadOnlyTitleScreenMenuEntry? _entry;
 
     /// <summary>
     /// Register the launch button to be created on the next draw event.
     /// </summary>
-    public LaunchButton(IDalamudPluginInterface pi, ITitleScreenMenu title, ConfigWindow ui, ITextureProvider textureProvider)
+    public LaunchButton(IDalamudPluginInterface pi, ITitleScreenMenu title, MainWindow.MainWindow ui, ITextureProvider textureProvider)
     {
         _uiBuilder       = pi.UiBuilder;
-        _configWindow    = ui;
+        _mainWindow    = ui;
         _textureProvider = textureProvider;
         _title           = title;
         _entry           = null;
@@ -59,5 +59,5 @@ public class LaunchButton : IDisposable, Luna.IUiService
     }
 
     private void OnTriggered()
-        => _configWindow.Toggle();
+        => _mainWindow.Toggle();
 }

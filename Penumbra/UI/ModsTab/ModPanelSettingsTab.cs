@@ -1,8 +1,5 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.UI.Classes;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -51,11 +48,11 @@ public class ModPanelSettingsTab(
         _temporary = selection.TemporarySettings != null;
         _locked    = (selection.TemporarySettings?.Lock ?? 0) > 0;
 
-        ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableNextColumn();
+        table.SetupScrollFreeze(0, 1);
+        table.NextColumn();
         DrawTemporaryWarning();
         DrawInheritedWarning();
-        ImGui.Dummy(Vector2.Zero);
+        Im.Dummy(Vector2.Zero);
         communicator.PreSettingsPanelDraw.Invoke(new PreSettingsPanelDraw.Arguments(selection.Mod!));
         DrawEnabledInput();
         tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
@@ -64,7 +61,7 @@ public class ModPanelSettingsTab(
         tutorial.OpenTutorial(BasicTutorialSteps.Priority);
         DrawRemoveSettings();
 
-        ImGui.TableNextColumn();
+        table.NextColumn();
         communicator.PostEnabledDraw.Invoke(new PostEnabledDraw.Arguments(selection.Mod!));
 
         modGroupDrawer.Draw(selection.Mod!, selection.Settings, selection.TemporarySettings);
@@ -78,11 +75,11 @@ public class ModPanelSettingsTab(
         if (!_temporary)
             return;
 
-        using var color = ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Value().ToVector()));
-        var       width = new Vector2(Im.ContentRegion.Available.X, 0);
-        if (ImUtf8.ButtonEx($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
-                width,
-                _locked))
+        using var color =
+            ImGuiColor.Button.Push(Rgba32.TintColor(Im.Style[ImGuiColor.Button], ColorId.TemporaryModSettingsTint.Value().ToVector()));
+        var width = Im.ContentRegion.Available with { Y = 0 };
+        if (ImEx.Button($"These settings are temporarily set by {selection.TemporarySettings!.Source}{(_locked ? " and locked." : ".")}",
+                width, _locked))
             collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!, null);
 
         Im.Tooltip.OnHover("Changing settings in temporary settings will not save them across sessions.\n"u8
@@ -96,8 +93,8 @@ public class ModPanelSettingsTab(
             return;
 
         using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
-        var       width = new Vector2(Im.ContentRegion.Available.X, 0);
-        if (ImUtf8.ButtonEx($"These settings are inherited from {selection.Collection.Identity.Name}.", width, _locked))
+        var       width = Im.ContentRegion.Available with { Y = 0 };
+        if (ImEx.Button($"These settings are inherited from {selection.Collection.Identity.Name}.", width, _locked))
         {
             if (_temporary)
             {
@@ -118,8 +115,8 @@ public class ModPanelSettingsTab(
     private void DrawEnabledInput()
     {
         var       enabled  = selection.Settings.Enabled;
-        using var disabled = ImRaii.Disabled(_locked);
-        if (!ImUtf8.Checkbox("Enabled"u8, ref enabled))
+        using var disabled = Im.Disabled(_locked);
+        if (!Im.Checkbox("Enabled"u8, ref enabled))
             return;
 
         modManager.SetKnown(selection.Mod!);
@@ -142,19 +139,19 @@ public class ModPanelSettingsTab(
     /// </summary>
     private void DrawPriorityInput()
     {
-        using var group    = ImUtf8.Group();
+        using var group    = Im.Group();
         var       settings = selection.Settings;
         var       priority = _currentPriority ?? settings.Priority.Value;
         Im.Item.SetNextWidth(50 * Im.Style.GlobalScale);
-        using var disabled = ImRaii.Disabled(_locked);
-        if (ImUtf8.InputScalar("##Priority"u8, ref priority))
+        using var disabled = Im.Disabled(_locked);
+        if (Im.Input.Scalar("##Priority"u8, ref priority))
             _currentPriority = priority;
         if (new ModPriority(priority).IsHidden)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
                 $"This priority is special-cased to hide this mod in conflict tabs ({ModPriority.HiddenMin}, {ModPriority.HiddenMax}).");
 
 
-        if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
+        if (Im.Item.DeactivatedAfterEdit && _currentPriority.HasValue)
         {
             if (_currentPriority != settings.Priority.Value)
             {
@@ -176,8 +173,12 @@ public class ModPanelSettingsTab(
             _currentPriority = null;
         }
 
-        ImUtf8.LabeledHelpMarker("Priority"u8, "Mods with a higher number here take precedence before Mods with a lower number.\n"u8
-          + "That means, if Mod A should overwrite changes from Mod B, Mod A should have a higher priority number than Mod B."u8);
+        var hovered = LunaStyle.DrawHelpMarker();
+        Im.Line.SameInner();
+        Im.Text("Priority"u8);
+        if (hovered || Im.Item.Hovered())
+            Im.Tooltip.Set("Mods with a higher number here take precedence before Mods with a lower number.\n"u8
+              + "That means, if Mod A should overwrite changes from Mod B, Mod A should have a higher priority number than Mod B."u8);
     }
 
     /// <summary>
@@ -187,26 +188,26 @@ public class ModPanelSettingsTab(
     private void DrawRemoveSettings()
     {
         var drawInherited = !_inherited && !selection.Settings.IsEmpty;
-        var scroll        = ImGui.GetScrollMaxY() > 0 ? Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X : 0;
-        var buttonSize    = ImUtf8.CalcTextSize("Turn Permanent_"u8).X;
+        var scroll        = Im.Scroll.MaximumY > 0 ? Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X : 0;
+        var buttonSize    = Im.Font.CalculateSize("Turn Permanent_"u8).X;
         var offset = drawInherited
-            ? buttonSize + ImUtf8.CalcTextSize("Inherit Settings"u8).X + Im.Style.FramePadding.X * 4 + Im.Style.ItemSpacing.X
+            ? buttonSize + Im.Font.CalculateSize("Inherit Settings"u8).X + Im.Style.FramePadding.X * 4 + Im.Style.ItemSpacing.X
             : buttonSize + Im.Style.FramePadding.X * 2;
-        Im.Line.Same(ImGui.GetWindowWidth() - offset - scroll);
+        Im.Line.Same(Im.Window.Width - offset - scroll);
         var enabled = config.DeleteModModifier.IsActive();
         if (drawInherited)
         {
             var inherit = (enabled, _locked) switch
             {
-                (true, false) => ImUtf8.ButtonEx("Inherit Settings"u8,
+                (true, false) => ImEx.Button("Inherit Settings"u8,
                     "Remove current settings from this collection so that it can inherit them.\n"u8
                   + "If no inherited collection has settings for this mod, it will be disabled."u8),
-                (false, false) => ImUtf8.ButtonEx("Inherit Settings"u8,
+                (false, false) => ImEx.Button("Inherit Settings"u8, default,
                     $"Remove current settings from this collection so that it can inherit them.\nHold {config.DeleteModModifier} to inherit.",
-                    default, true),
-                (_, true) => ImUtf8.ButtonEx("Inherit Settings"u8,
+                    true),
+                (_, true) => ImEx.Button("Inherit Settings"u8, default,
                     "Remove current settings from this collection so that it can inherit them.\nThe settings are currently locked and can not be changed."u8,
-                    default, true),
+                    true),
             };
             if (inherit)
             {
@@ -229,12 +230,11 @@ public class ModPanelSettingsTab(
         if (_temporary)
         {
             var overwrite = enabled
-                ? ImUtf8.ButtonEx("Turn Permanent"u8,
-                    "Overwrite the actual settings for this mod in this collection with the current temporary settings."u8,
-                    new Vector2(buttonSize, 0))
-                : ImUtf8.ButtonEx("Turn Permanent"u8,
+                ? ImEx.Button("Turn Permanent"u8, new Vector2(buttonSize, 0),
+                    "Overwrite the actual settings for this mod in this collection with the current temporary settings."u8)
+                : ImEx.Button("Turn Permanent"u8, new Vector2(buttonSize, 0),
                     $"Overwrite the actual settings for this mod in this collection with the current temporary settings.\nHold {config.DeleteModModifier} to overwrite.",
-                    new Vector2(buttonSize, 0), true);
+                    true);
             if (overwrite)
             {
                 var settings = collectionManager.Active.Current.GetTempSettings(selection.Mod!.Index)!;
@@ -256,7 +256,7 @@ public class ModPanelSettingsTab(
         else
         {
             var actual = collectionManager.Active.Current.GetActualSettings(selection.Mod!.Index).Settings;
-            if (ImUtf8.ButtonEx("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
+            if (ImEx.Button("Turn Temporary"u8, "Copy the current settings over to temporary settings to experiment with them."u8))
                 collectionManager.Editor.SetTemporarySettings(collectionManager.Active.Current, selection.Mod!,
                     new TemporaryModSettings(selection.Mod!, actual));
         }

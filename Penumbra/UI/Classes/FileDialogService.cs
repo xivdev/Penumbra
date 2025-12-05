@@ -6,7 +6,7 @@ using Luna;
 using Penumbra.Communication;
 using Penumbra.Services;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.Classes;
 
 public class FileDialogService : IDisposable, IUiService
 {

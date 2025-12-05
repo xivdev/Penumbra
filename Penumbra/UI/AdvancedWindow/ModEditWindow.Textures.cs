@@ -56,8 +56,8 @@ public partial class ModEditWindow
             {
                 TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input"u8, "Import Image..."u8,
                     "Can import game paths as well as your own files."u8, Mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
-                if (_textureSelectCombo.Draw("##combo",
-                        "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
+                if (_textureSelectCombo.Draw("##combo"u8,
+                        "Select the textures included in this mod on your drive or the ones they replace from the game files."u8, tex.Path,
                         Mod.ModPath.FullName.Length + 1, out var newPath)
                  && newPath != tex.Path)
                     tex.Load(_textures, newPath);
@@ -199,7 +199,7 @@ public partial class ModEditWindow
             case TaskStatus.WaitingForActivation:
             case TaskStatus.WaitingToRun:
             case TaskStatus.Running:
-                ImGuiUtil.DrawTextButton("Computing...", -Vector2.UnitX, Colors.PressEnterWarningBg);
+                ImGuiUtil.DrawTextButton("Computing...", -Vector2.UnitX, new Rgba32(Colors.PressEnterWarningBg).Color);
                 break;
             case TaskStatus.Canceled:
             case TaskStatus.Faulted:

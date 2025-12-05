@@ -19,7 +19,7 @@ public class CollectionSelectHeader(
     CollectionResolver resolver,
     Configuration config,
     CollectionCombo combo)
-    : IUiService
+    : IHeader
 {
     private readonly        ActiveCollections _activeCollections = collectionManager.Active;
     private static readonly AwesomeIcon       Icon               = FontAwesomeIcon.Stopwatch;
@@ -160,5 +160,31 @@ public class CollectionSelectHeader(
         if (ImEx.Button(name, buttonWidth, tooltip, disabled))
             _activeCollections.SetCollection(collection!, CollectionType.Current);
         Im.Line.Same();
+    }
+
+    public bool Collapsed
+        => false;
+
+    public void Draw(Vector2 size)
+    {
+        using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
+        DrawTemporaryCheckbox();
+        Im.Line.Same();
+        var comboWidth = (size.X - Im.Style.FrameHeight) / 4f;
+        var buttonSize = new Vector2(comboWidth * 3f / 4f, 0f);
+        using (var _ = Im.Group())
+        {
+            DrawCollectionButton(buttonSize, GetDefaultCollectionInfo(),   1);
+            DrawCollectionButton(buttonSize, GetInterfaceCollectionInfo(), 2);
+            DrawCollectionButton(buttonSize, GetPlayerCollectionInfo(),    3);
+            DrawCollectionButton(buttonSize, GetInheritedCollectionInfo(), 4);
+
+            combo.Draw("##collectionSelector"u8, comboWidth, ColorId.SelectedCollection.Value());
+        }
+
+        tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
+
+        if (!_activeCollections.CurrentCollectionInUse)
+            ImEx.TextFramed("The currently selected collection is not used in any way."u8, -Vector2.UnitX, Colors.PressEnterWarningBg);
     }
 }

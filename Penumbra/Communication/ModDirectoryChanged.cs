@@ -1,5 +1,6 @@
 using Luna;
 using Penumbra.Api.Api;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Communication;
 
@@ -12,7 +13,7 @@ public sealed class ModDirectoryChanged(Logger log)
         /// <seealso cref="PluginStateApi.ModDirectoryChanged"/>
         Api = 0,
 
-        /// <seealso cref="UI.FileDialogService.OnModDirectoryChange"/>
+        /// <seealso cref="UI.Classes.FileDialogService.OnModDirectoryChange"/>
         FileDialogService = 0,
     }
 

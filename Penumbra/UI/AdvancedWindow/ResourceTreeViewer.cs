@@ -60,7 +60,7 @@ public class ResourceTreeViewer(
         if (!_task.IsCompleted)
         {
             Im.Line.New();
-            Im.Text("Calculating character list...");
+            Im.Text("Calculating character list..."u8);
         }
         else if (_task.Exception != null)
         {

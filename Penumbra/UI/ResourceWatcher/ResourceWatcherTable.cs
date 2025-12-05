@@ -1,57 +1,110 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using ImSharp;
+using ImSharp.Containers;
+using ImSharp.Table;
 using Luna;
-using OtterGui.Table;
 using Penumbra.Enums;
 using Penumbra.Interop.Structs;
-using Penumbra.String;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
-internal sealed class ResourceWatcherTable : Table<Record>
+public class ResourceWatcherConfig
 {
-    public ResourceWatcherTable(EphemeralConfig config, IReadOnlyCollection<Record> records)
-        : base("##records",
-            records,
-            new PathColumn { Label                     = "Path" },
-            new RecordTypeColumn(config) { Label       = "Record" },
-            new CollectionColumn { Label               = "Collection" },
-            new ObjectColumn { Label                   = "Game Object" },
-            new CustomLoadColumn { Label               = "Custom" },
-            new SynchronousLoadColumn { Label          = "Sync" },
-            new OriginalPathColumn { Label             = "Original Path" },
-            new ResourceCategoryColumn(config) { Label = "Category" },
-            new ResourceTypeColumn(config) { Label     = "Type" },
-            new HandleColumn { Label                   = "Resource" },
-            new LoadStateColumn { Label                = "State" },
-            new RefCountColumn { Label                 = "#Ref" },
-            new DateColumn { Label                     = "Time" },
-            new Crc64Column { Label                    = "Crc64" },
-            new OsThreadColumn { Label                 = "TID" }
-        )
+    public int                  Version            = 1;
+    public bool                 Enabled            = false;
+    public int                  MaxEntries         = 500;
+    public bool                 StoreOnlyMatching  = true;
+    public bool                 WriteToLog         = false;
+    public string               LogFilter          = string.Empty;
+    public string               PathFilter         = string.Empty;
+    public string               CollectionFilter   = string.Empty;
+    public string               ObjectFilter       = string.Empty;
+    public string               OriginalPathFilter = string.Empty;
+    public string               ResourceFilter     = string.Empty;
+    public string               CrcFilter          = string.Empty;
+    public string               RefFilter          = string.Empty;
+    public string               ThreadFilter       = string.Empty;
+    public RecordType           RecordFilter       = Enum.GetValues<RecordType>().Or();
+    public BoolEnum             CustomFilter       = BoolEnum.True | BoolEnum.False | BoolEnum.Unknown;
+    public BoolEnum             SyncFilter         = BoolEnum.True | BoolEnum.False | BoolEnum.Unknown;
+    public ResourceCategoryFlag CategoryFilter     = ResourceExtensions.AllResourceCategories;
+    public ResourceTypeFlag     TypeFilter         = ResourceExtensions.AllResourceTypes;
+    public LoadStateFlag        LoadStateFilter    = Enum.GetValues<LoadStateFlag>().Or();
+
+    public void Save()
     { }
+}
 
-    public void Reset()
-        => FilterDirty = true;
+[Flags]
+public enum BoolEnum : byte
+{
+    True    = 0x01,
+    False   = 0x02,
+    Unknown = 0x04,
+}
 
-    private sealed class PathColumn : ColumnString<Record>
+[Flags]
+public enum LoadStateFlag : byte
+{
+    Success   = 0x01,
+    Async     = 0x02,
+    Failed    = 0x04,
+    FailedSub = 0x08,
+    Unknown   = 0x10,
+    None      = 0xFF,
+}
+
+internal sealed unsafe class CachedRecord(Record record)
+{
+    public readonly Record          Record = record;
+    public readonly string          PathU16 = record.Path.ToString();
+    public readonly StringU8        TypeName = new(record.RecordType.ToName());
+    public readonly StringU8        Time = new($"{record.Time.ToLongTimeString()}.{record.Time.Millisecond:D4}");
+    public readonly StringPair      Crc64 = new($"{record.Crc64:X16}");
+    public readonly StringU8        Collection = record.Collection is null ? StringU8.Empty : new StringU8(record.Collection.Identity.Name);
+    public readonly StringU8        AssociatedGameObject = new(record.AssociatedGameObject);
+    public readonly string          OriginalPath = record.OriginalPath.ToString();
+    public readonly StringU8        ResourceCategory = new($"{record.Category}");
+    public readonly StringU8        ResourceType = new(record.ResourceType.ToString().ToLowerInvariant());
+    public readonly string          HandleU16 = $"0x{(nint)record.Handle:X}";
+    public readonly SizedStringPair Thread = new($"{record.OsThreadId}");
+    public readonly SizedStringPair RefCount = new($"{record.RefCount}");
+}
+
+internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<CachedRecord>>
+{
+    private readonly IReadOnlyList<Record> _records;
+
+    public bool WouldBeVisible(Record record)
     {
-        public override float Width
-            => 300 * Im.Style.GlobalScale;
-
-        public override string ToName(Record item)
-            => item.Path.ToString();
-
-        public override int Compare(Record lhs, Record rhs)
-            => lhs.Path.CompareTo(rhs.Path);
-
-        public override void DrawColumn(Record item, int _)
-            => DrawByteString(item.Path, 280 * Im.Style.GlobalScale);
+        var cached = new CachedRecord(record);
+        return Columns.All(c => c.WouldBeVisible(cached, -1));
     }
 
-    private static void DrawByteString(CiByteString path, float length)
+    public ResourceWatcherTable(ResourceWatcherConfig config, IReadOnlyList<Record> records)
+        : base(new StringU8("##records"u8),
+            new PathColumn(config) { Label             = new StringU8("Path"u8) },
+            new RecordTypeColumn(config) { Label       = new StringU8("Record"u8) },
+            new CollectionColumn(config) { Label       = new StringU8("Collection"u8) },
+            new ObjectColumn(config) { Label           = new StringU8("Game Object"u8) },
+            new CustomLoadColumn(config) { Label       = new StringU8("Custom"u8) },
+            new SynchronousLoadColumn(config) { Label  = new StringU8("Sync"u8) },
+            new OriginalPathColumn(config) { Label     = new StringU8("Original Path"u8) },
+            new ResourceCategoryColumn(config) { Label = new StringU8("Category"u8) },
+            new ResourceTypeColumn(config) { Label     = new StringU8("Type"u8) },
+            new HandleColumn(config) { Label           = new StringU8("Resource"u8) },
+            new LoadStateColumn(config) { Label        = new StringU8("State"u8) },
+            new RefCountColumn(config) { Label         = new StringU8("#Ref"u8) },
+            new DateColumn { Label                     = new StringU8("Time"u8) },
+            new Crc64Column(config) { Label            = new StringU8("Crc64"u8) },
+            new OsThreadColumn(config) { Label         = new StringU8("TID"u8) }
+        )
+    {
+        _records = records;
+    }
+
+    private static void DrawByteString(StringU8 path, float length)
     {
         if (path.IsEmpty)
             return;
@@ -64,24 +117,24 @@ internal sealed class ResourceWatcherTable : Table<Record>
         }
         else
         {
-            var fileName = path.LastIndexOf((byte)'/');
+            var fileName = path.Span.LastIndexOf((byte)'/');
             using (Im.Group())
             {
-                CiByteString shortPath;
-                var          icon = FontAwesomeIcon.EllipsisH.Icon();
+                ReadOnlySpan<byte> shortPath;
+                var                icon = FontAwesomeIcon.EllipsisH.Icon();
                 if (fileName is not -1)
                 {
                     using var font = AwesomeIcon.Font.Push();
                     clicked = Im.Selectable(icon.Span);
                     Im.Line.SameInner();
-                    shortPath = path.Substring(fileName, path.Length - fileName);
+                    shortPath = path.Span.Slice(fileName, path.Length - fileName);
                 }
                 else
                 {
                     shortPath = path;
                 }
 
-                clicked |= Im.Selectable(shortPath.Span, false, SelectableFlags.AllowOverlap);
+                clicked |= Im.Selectable(shortPath, false, SelectableFlags.AllowOverlap);
             }
 
             Im.Tooltip.OnHover(path.Span);
@@ -91,378 +144,496 @@ internal sealed class ResourceWatcherTable : Table<Record>
             Im.Clipboard.Set(path.Span);
     }
 
-    private sealed class RecordTypeColumn : ColumnFlags<RecordType, Record>
-    {
-        private readonly EphemeralConfig _config;
 
-        public RecordTypeColumn(EphemeralConfig config)
+    private sealed class PathColumn : TextColumn<CachedRecord>
+    {
+        private readonly ResourceWatcherConfig _config;
+
+        public PathColumn(ResourceWatcherConfig config)
         {
-            AllFlags = ResourceWatcher.AllRecords;
-            _config  = config;
+            _config       = config;
+            UnscaledWidth = 300;
+            Filter.Set(config.PathFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
 
-        public override float Width
-            => 80 * Im.Style.GlobalScale;
-
-        public override bool FilterFunc(Record item)
-            => FilterValue.HasFlag(item.RecordType);
-
-        public override RecordType FilterValue
-            => _config.ResourceWatcherRecordTypes;
-
-        protected override void SetValue(RecordType value, bool enable)
+        private void OnFilterChanged()
         {
-            if (enable)
-                _config.ResourceWatcherRecordTypes |= value;
-            else
-                _config.ResourceWatcherRecordTypes &= ~value;
-
+            _config.PathFilter = Filter.Text;
             _config.Save();
         }
 
-        public override void DrawColumn(Record item, int idx)
+        public override void DrawColumn(in CachedRecord item, int globalIndex)
         {
-            Im.Text(item.RecordType switch
-            {
-                RecordType.Request          => "REQ"u8,
-                RecordType.ResourceLoad     => "LOAD"u8,
-                RecordType.FileLoad         => "FILE"u8,
-                RecordType.Destruction      => "DEST"u8,
-                RecordType.ResourceComplete => "DONE"u8,
-                _                           => StringU8.Empty,
-            });
+            DrawByteString(item.Record.Path, 290 * Im.Style.GlobalScale);
         }
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.PathU16;
+
+        protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
+            => item.Record.Path;
     }
 
-    private sealed class DateColumn : Column<Record>
+    private sealed class RecordTypeColumn : FlagColumn<RecordType, CachedRecord>
     {
-        public override float Width
-            => 80 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override int Compare(Record lhs, Record rhs)
-            => lhs.Time.CompareTo(rhs.Time);
-
-        public override void DrawColumn(Record item, int _)
-            => Im.Text($"{item.Time.ToLongTimeString()}.{item.Time.Millisecond:D4}");
-    }
-
-    private sealed class Crc64Column : ColumnString<Record>
-    {
-        public override float Width
-            => UiBuilder.MonoFont.GetCharAdvance('0') * 17;
-
-        public override string ToName(Record item)
-            => item.Crc64 is not 0 ? $"{item.Crc64:X16}" : string.Empty;
-
-        public override unsafe void DrawColumn(Record item, int _)
+        public RecordTypeColumn(ResourceWatcherConfig config)
         {
-            using var font = item.Handle is null ? null : Im.Font.PushMono();
-            Im.Text(ToName(item));
+            _config       = config;
+            UnscaledWidth = 80;
+            Filter.LoadValue(config.RecordFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
+
+        private void OnFilterChanged()
+        {
+            _config.RecordFilter = Filter.FilterValue;
+            _config.Save();
+        }
+
+        protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
+            => item.TypeName;
+
+        protected override IReadOnlyList<(RecordType Value, StringU8 Name)> EnumData
+            => Enum.GetValues<RecordType>().Select(t => (t, new StringU8(t.ToName()))).ToArray();
+
+        protected override RecordType GetValue(in CachedRecord item, int globalIndex)
+            => item.Record.RecordType;
+    }
+
+    private sealed class DateColumn : BasicColumn<CachedRecord>
+    {
+        public DateColumn()
+            => UnscaledWidth = 80;
+
+        public override int Compare(in CachedRecord lhs, int lhsGlobalIndex, in CachedRecord rhs, int rhsGlobalIndex)
+            => lhs.Record.Time.CompareTo(rhs.Record.Time);
+
+        public override void DrawColumn(in CachedRecord item, int globalIndex)
+            => Im.Text(item.Time);
+    }
+
+    private sealed class Crc64Column : TextColumn<CachedRecord>
+    {
+        private readonly ResourceWatcherConfig _config;
+
+        public Crc64Column(ResourceWatcherConfig config)
+        {
+            _config       = config;
+            UnscaledWidth = 17 * 8;
+            Filter.Set(config.CrcFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
+
+        private void OnFilterChanged()
+        {
+            _config.CrcFilter = Filter.Text;
+            _config.Save();
+        }
+
+        public override int Compare(in CachedRecord lhs, int lhsGlobalIndex, in CachedRecord rhs, int rhsGlobalIndex)
+            => lhs.Record.Crc64.CompareTo(rhs.Record.Crc64);
+
+        public override void DrawColumn(in CachedRecord item, int globalIndex)
+        {
+            if (item.Record.Crc64 is 0)
+                return;
+
+            using var font = Im.Font.PushMono();
+            base.DrawColumn(in item, globalIndex);
+        }
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.Crc64;
+
+        protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
+            => item.Crc64;
     }
 
 
-    private sealed class CollectionColumn : ColumnString<Record>
+    private sealed class CollectionColumn : TextColumn<CachedRecord>
     {
-        public override float Width
-            => 80 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override string ToName(Record item)
-            => (item.Collection != null ? item.Collection.Identity.Name : null) ?? string.Empty;
+        public CollectionColumn(ResourceWatcherConfig config)
+        {
+            _config       = config;
+            UnscaledWidth = 80;
+            Filter.Set(config.CollectionFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
+
+        private void OnFilterChanged()
+        {
+            _config.CollectionFilter = Filter.Text;
+            _config.Save();
+        }
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.Record.Collection?.Identity.Name ?? string.Empty;
+
+        protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
+            => item.Collection;
     }
 
-    private sealed class ObjectColumn : ColumnString<Record>
+    private sealed class ObjectColumn : TextColumn<CachedRecord>
     {
-        public override float Width
-            => 200 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override string ToName(Record item)
+        public ObjectColumn(ResourceWatcherConfig config)
+        {
+            _config       = config;
+            UnscaledWidth = 150;
+            Filter.Set(config.ObjectFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
+
+        private void OnFilterChanged()
+        {
+            _config.ObjectFilter = Filter.Text;
+            _config.Save();
+        }
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.Record.AssociatedGameObject;
+
+        protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => item.AssociatedGameObject;
     }
 
-    private sealed class OriginalPathColumn : ColumnString<Record>
+    private sealed class OriginalPathColumn : TextColumn<CachedRecord>
     {
-        public override float Width
-            => 200 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override string ToName(Record item)
-            => item.OriginalPath.ToString();
-
-        public override int Compare(Record lhs, Record rhs)
-            => lhs.OriginalPath.CompareTo(rhs.OriginalPath);
-
-        public override void DrawColumn(Record item, int _)
-            => DrawByteString(item.OriginalPath, 190 * Im.Style.GlobalScale);
-    }
-
-    private sealed class ResourceCategoryColumn : ColumnFlags<ResourceCategoryFlag, Record>
-    {
-        private readonly EphemeralConfig _config;
-
-        public ResourceCategoryColumn(EphemeralConfig config)
+        public OriginalPathColumn(ResourceWatcherConfig config)
         {
-            _config  = config;
-            AllFlags = ResourceExtensions.AllResourceCategories;
+            _config       = config;
+            UnscaledWidth = 200;
+            Filter.Set(config.OriginalPathFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
 
-        public override float Width
-            => 80 * Im.Style.GlobalScale;
-
-        public override bool FilterFunc(Record item)
-            => FilterValue.HasFlag(item.Category);
-
-        public override ResourceCategoryFlag FilterValue
-            => _config.ResourceWatcherResourceCategories;
-
-        protected override void SetValue(ResourceCategoryFlag value, bool enable)
+        private void OnFilterChanged()
         {
-            if (enable)
-                _config.ResourceWatcherResourceCategories |= value;
-            else
-                _config.ResourceWatcherResourceCategories &= ~value;
-
+            _config.OriginalPathFilter = Filter.Text;
             _config.Save();
         }
 
-        public override void DrawColumn(Record item, int idx)
+        public override void DrawColumn(in CachedRecord item, int globalIndex)
         {
-            Im.Text($"{item.Category}");
+            DrawByteString(item.Record.OriginalPath, 190 * Im.Style.GlobalScale);
         }
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.OriginalPath;
+
+        protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
+            => item.Record.OriginalPath;
     }
 
-    private sealed class ResourceTypeColumn : ColumnFlags<ResourceTypeFlag, Record>
+    private sealed class ResourceCategoryColumn : FlagColumn<ResourceCategoryFlag, CachedRecord>
     {
-        private readonly EphemeralConfig _config;
+        private readonly ResourceWatcherConfig _config;
 
-        public ResourceTypeColumn(EphemeralConfig config)
+        public ResourceCategoryColumn(ResourceWatcherConfig config)
         {
-            _config  = config;
-            AllFlags = Enum.GetValues<ResourceTypeFlag>().Aggregate((v, f) => v | f);
-            for (var i = 0; i < Names.Length; ++i)
-                Names[i] = Names[i].ToLowerInvariant();
+            _config       = config;
+            UnscaledWidth = 80;
+            Filter.LoadValue(config.CategoryFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
 
-        public override float Width
-            => 50 * Im.Style.GlobalScale;
-
-        public override bool FilterFunc(Record item)
-            => FilterValue.HasFlag(item.ResourceType);
-
-        public override ResourceTypeFlag FilterValue
-            => _config.ResourceWatcherResourceTypes;
-
-        protected override void SetValue(ResourceTypeFlag value, bool enable)
+        private void OnFilterChanged()
         {
-            if (enable)
-                _config.ResourceWatcherResourceTypes |= value;
-            else
-                _config.ResourceWatcherResourceTypes &= ~value;
-
+            _config.CategoryFilter = Filter.FilterValue;
             _config.Save();
         }
 
-        public override void DrawColumn(Record item, int idx)
-        {
-            Im.Text($"{item.ResourceType.ToString().ToLowerInvariant()}");
-        }
+        protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
+            => item.ResourceCategory;
+
+        protected override IReadOnlyList<(ResourceCategoryFlag Value, StringU8 Name)> EnumData { get; } =
+            Enum.GetValues<ResourceCategoryFlag>().Select(r => (r, new StringU8($"{r}"))).ToArray();
+
+        protected override ResourceCategoryFlag GetValue(in CachedRecord item, int globalIndex)
+            => item.Record.Category;
     }
 
-    private sealed class LoadStateColumn : ColumnFlags<LoadStateColumn.LoadStateFlag, Record>
+    private sealed class ResourceTypeColumn : FlagColumn<ResourceTypeFlag, CachedRecord>
     {
-        public override float Width
-            => 50 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        [Flags]
-        public enum LoadStateFlag : byte
+        public ResourceTypeColumn(ResourceWatcherConfig config)
         {
-            Success   = 0x01,
-            Async     = 0x02,
-            Failed    = 0x04,
-            FailedSub = 0x08,
-            Unknown   = 0x10,
-            None      = 0xFF,
+            _config       = config;
+            UnscaledWidth = 50;
+            Filter.LoadValue(config.TypeFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
 
-        protected override string[] Names
-            => new[]
-            {
-                "Loaded",
-                "Loading",
-                "Failed",
-                "Dependency Failed",
-                "Unknown",
-                "None",
-            };
-
-        public LoadStateColumn()
+        private void OnFilterChanged()
         {
-            AllFlags     = Enum.GetValues<LoadStateFlag>().Aggregate((v, f) => v | f);
-            _filterValue = AllFlags;
+            _config.TypeFilter = Filter.FilterValue;
+            _config.Save();
         }
 
-        private LoadStateFlag _filterValue;
+        protected override IReadOnlyList<(ResourceTypeFlag Value, StringU8 Name)> EnumData { get; } =
+            Enum.GetValues<ResourceTypeFlag>().Select(r => (r, new StringU8(r.ToString().ToLowerInvariant()))).ToArray();
 
-        public override LoadStateFlag FilterValue
-            => _filterValue;
+        protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
+            => item.ResourceType;
 
-        protected override void SetValue(LoadStateFlag value, bool enable)
+        protected override ResourceTypeFlag GetValue(in CachedRecord item, int globalIndex)
+            => item.Record.ResourceType;
+    }
+
+    private sealed class LoadStateColumn : FlagColumn<LoadStateFlag, CachedRecord>
+    {
+        private readonly ResourceWatcherConfig _config;
+
+        public LoadStateColumn(ResourceWatcherConfig config)
         {
-            if (enable)
-                _filterValue |= value;
-            else
-                _filterValue &= ~value;
+            _config       = config;
+            UnscaledWidth = 50;
+            Filter.LoadValue(config.LoadStateFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
 
-        public override bool FilterFunc(Record item)
-            => item.LoadState switch
-            {
-                LoadState.None              => FilterValue.HasFlag(LoadStateFlag.None),
-                LoadState.Success           => FilterValue.HasFlag(LoadStateFlag.Success),
-                LoadState.FailedSubResource => FilterValue.HasFlag(LoadStateFlag.FailedSub),
-                <= LoadState.Constructed    => FilterValue.HasFlag(LoadStateFlag.Unknown),
-                < LoadState.Success         => FilterValue.HasFlag(LoadStateFlag.Async),
-                > LoadState.Success         => FilterValue.HasFlag(LoadStateFlag.Failed),
-            };
-
-        public override void DrawColumn(Record item, int _)
+        private void OnFilterChanged()
         {
-            if (item.LoadState == LoadState.None)
+            _config.LoadStateFilter = Filter.FilterValue;
+            _config.Save();
+        }
+
+        public override void DrawColumn(in CachedRecord item, int globalIndex)
+        {
+            if (item.Record.LoadState == LoadState.None)
                 return;
 
-            var (icon, color, tt) = item.LoadState switch
+            var (icon, color, tt) = item.Record.LoadState switch
             {
                 LoadState.Success => (FontAwesomeIcon.CheckCircle, ColorId.IncreasedMetaValue.Value(),
-                    new StringU8($"Successfully loaded ({(byte)item.LoadState}).")),
+                    new StringU8($"Successfully loaded ({(byte)item.Record.LoadState}).")),
                 LoadState.FailedSubResource => (FontAwesomeIcon.ExclamationCircle, ColorId.DecreasedMetaValue.Value(),
-                    new StringU8($"Dependencies failed to load ({(byte)item.LoadState}).")),
+                    new StringU8($"Dependencies failed to load ({(byte)item.Record.LoadState}).")),
                 <= LoadState.Constructed => (FontAwesomeIcon.QuestionCircle, ColorId.UndefinedMod.Value(),
-                    new StringU8($"Not yet loaded ({(byte)item.LoadState}).")),
-                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(), new StringU8($"Loading asynchronously ({(byte)item.LoadState}).")),
+                    new StringU8($"Not yet loaded ({(byte)item.Record.LoadState}).")),
+                < LoadState.Success => (FontAwesomeIcon.Clock, ColorId.FolderLine.Value(),
+                    new StringU8($"Loading asynchronously ({(byte)item.Record.LoadState}).")),
                 > LoadState.Success => (FontAwesomeIcon.Times, ColorId.DecreasedMetaValue.Value(),
-                    new StringU8($"Failed to load ({(byte)item.LoadState}).")),
+                    new StringU8($"Failed to load ({(byte)item.Record.LoadState}).")),
             };
             ImEx.Icon.Draw(icon.Icon(), color);
             Im.Tooltip.OnHover(tt);
         }
 
-        public override int Compare(Record lhs, Record rhs)
-            => lhs.LoadState.CompareTo(rhs.LoadState);
-    }
+        public override int Compare(in CachedRecord lhs, int lhsGlobalIndex, in CachedRecord rhs, int rhsGlobalIndex)
+            => lhs.Record.LoadState.CompareTo(rhs.Record.LoadState);
 
-    private sealed class HandleColumn : ColumnString<Record>
-    {
-        public override float Width
-            => 120 * Im.Style.GlobalScale;
+        protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
+            => StringU8.Empty;
 
-        public override unsafe string ToName(Record item)
-            => item.Handle == null ? string.Empty : $"0x{(ulong)item.Handle:X}";
+        protected override IReadOnlyList<(LoadStateFlag Value, StringU8 Name)> EnumData { get; }
+            =
+            [
+                (LoadStateFlag.Success, new StringU8("Loaded"u8)),
+                (LoadStateFlag.Async, new StringU8("Loading"u8)),
+                (LoadStateFlag.Failed, new StringU8("Failed"u8)),
+                (LoadStateFlag.FailedSub, new StringU8("Dependency Failed"u8)),
+                (LoadStateFlag.Unknown, new StringU8("Unknown"u8)),
+                (LoadStateFlag.None, new StringU8("None"u8)),
+            ];
 
-        public override unsafe void DrawColumn(Record item, int _)
-        {
-            using var font = item.Handle is null ? null : Im.Font.PushMono();
-            ImEx.TextRightAligned(ToName(item));
-        }
-    }
-
-    [Flags]
-    private enum BoolEnum : byte
-    {
-        True    = 0x01,
-        False   = 0x02,
-        Unknown = 0x04,
-    }
-
-    private class OptBoolColumn : ColumnFlags<BoolEnum, Record>
-    {
-        private BoolEnum _filter;
-
-        public OptBoolColumn()
-        {
-            AllFlags =  BoolEnum.True | BoolEnum.False | BoolEnum.Unknown;
-            _filter  =  AllFlags;
-            Flags    &= ~ImGuiTableColumnFlags.NoSort;
-        }
-
-        protected bool FilterFunc(OptionalBool b)
-            => b.Value switch
+        protected override LoadStateFlag GetValue(in CachedRecord item, int globalIndex)
+            => item.Record.LoadState switch
             {
-                null  => _filter.HasFlag(BoolEnum.Unknown),
-                true  => _filter.HasFlag(BoolEnum.True),
-                false => _filter.HasFlag(BoolEnum.False),
+                LoadState.None              => LoadStateFlag.None,
+                LoadState.Success           => LoadStateFlag.Success,
+                LoadState.FailedSubResource => LoadStateFlag.FailedSub,
+                <= LoadState.Constructed    => LoadStateFlag.Unknown,
+                < LoadState.Success         => LoadStateFlag.Async,
+                > LoadState.Success         => LoadStateFlag.Failed,
             };
+    }
 
-        public override BoolEnum FilterValue
-            => _filter;
+    private sealed class HandleColumn : TextColumn<CachedRecord>
+    {
+        private readonly ResourceWatcherConfig _config;
 
-        protected override void SetValue(BoolEnum value, bool enable)
+        public HandleColumn(ResourceWatcherConfig config)
         {
-            if (enable)
-                _filter |= value;
-            else
-                _filter &= ~value;
+            _config       = config;
+            UnscaledWidth = 120;
+            Filter.Set(config.ResourceFilter);
+            Filter.FilterChanged += OnFilterChanged;
         }
 
-        protected static void DrawColumn(OptionalBool b)
+        private void OnFilterChanged()
         {
-            if (!b.HasValue)
+            _config.ResourceFilter = Filter.Text;
+            _config.Save();
+        }
+
+        public override unsafe void DrawColumn(in CachedRecord item, int globalIndex)
+        {
+            if (item.Record.RecordType is RecordType.Request)
                 return;
 
-            ImEx.Icon.Draw(b.Value switch
-            {
-                true => FontAwesomeIcon.Check.Icon(),
-                _    => FontAwesomeIcon.Times.Icon(),
-            });
+            Penumbra.Dynamis.DrawPointer(item.Record.Handle);
         }
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.HandleU16;
+
+        protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
+            => StringU8.Empty;
+    }
+
+
+    private abstract class OptBoolColumn : FlagColumn<BoolEnum, CachedRecord>
+    {
+        protected OptBoolColumn(float width)
+        {
+            UnscaledWidth =  width;
+            Flags         &= ~TableColumnFlags.NoSort;
+        }
+
+        public override void DrawColumn(in CachedRecord item, int globalIndex)
+        {
+            var value = GetValue(item, globalIndex);
+            if (value is BoolEnum.Unknown)
+                return;
+
+            ImEx.Icon.Draw(value is BoolEnum.True
+                ? FontAwesomeIcon.Check.Icon()
+                : FontAwesomeIcon.Times.Icon()
+            );
+        }
+
+        protected override IReadOnlyList<(BoolEnum Value, StringU8 Name)> EnumData { get; } =
+        [
+            (BoolEnum.True, new StringU8("True"u8)),
+            (BoolEnum.False, new StringU8("False"u8)),
+            (BoolEnum.Unknown, new StringU8("Unknown"u8)),
+        ];
+
+        protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
+            => StringU8.Empty;
+
+        protected static BoolEnum ToValue(OptionalBool value)
+            => value.Value switch
+            {
+                true  => BoolEnum.True,
+                false => BoolEnum.False,
+                null  => BoolEnum.Unknown,
+            };
     }
 
     private sealed class CustomLoadColumn : OptBoolColumn
     {
-        public override float Width
-            => 60 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override bool FilterFunc(Record item)
-            => FilterFunc(item.CustomLoad);
+        public CustomLoadColumn(ResourceWatcherConfig config)
+            : base(60f)
+        {
+            _config = config;
+            Filter.LoadValue(config.CustomFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
 
-        public override void DrawColumn(Record item, int idx)
-            => DrawColumn(item.CustomLoad);
+        private void OnFilterChanged()
+        {
+            _config.CustomFilter = Filter.FilterValue;
+            _config.Save();
+        }
+
+        protected override BoolEnum GetValue(in CachedRecord item, int globalIndex)
+            => ToValue(item.Record.CustomLoad);
     }
 
     private sealed class SynchronousLoadColumn : OptBoolColumn
     {
-        public override float Width
-            => 45 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override bool FilterFunc(Record item)
-            => FilterFunc(item.Synchronously);
+        public SynchronousLoadColumn(ResourceWatcherConfig config)
+            : base(45)
+        {
+            _config = config;
+            Filter.LoadValue(config.SyncFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
 
-        public override void DrawColumn(Record item, int idx)
-            => DrawColumn(item.Synchronously);
+        private void OnFilterChanged()
+        {
+            _config.SyncFilter = Filter.FilterValue;
+            _config.Save();
+        }
+
+        protected override BoolEnum GetValue(in CachedRecord item, int globalIndex)
+            => ToValue(item.Record.Synchronously);
     }
 
-    private sealed class RefCountColumn : Column<Record>
+    private sealed class RefCountColumn : NumberColumn<uint, CachedRecord>
     {
-        public override float Width
-            => 30 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override void DrawColumn(Record item, int _)
-            => ImEx.TextRightAligned($"{item.RefCount}");
+        public RefCountColumn(ResourceWatcherConfig config)
+        {
+            _config       = config;
+            UnscaledWidth = 60;
+            Filter.Set(config.RefFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
 
-        public override int Compare(Record lhs, Record rhs)
-            => lhs.RefCount.CompareTo(rhs.RefCount);
+        private void OnFilterChanged()
+        {
+            _config.RefFilter = Filter.Text;
+            _config.Save();
+        }
+
+        public override uint ToValue(in CachedRecord item, int globalIndex)
+            => item.Record.RefCount;
+
+        protected override SizedString DisplayNumber(in CachedRecord item, int globalIndex)
+            => item.RefCount;
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.RefCount;
     }
 
-    private sealed class OsThreadColumn : ColumnString<Record>
+    private sealed class OsThreadColumn : NumberColumn<uint, CachedRecord>
     {
-        public override float Width
-            => 60 * Im.Style.GlobalScale;
+        private readonly ResourceWatcherConfig _config;
 
-        public override string ToName(Record item)
-            => item.OsThreadId.ToString();
+        public OsThreadColumn(ResourceWatcherConfig config)
+        {
+            _config       = config;
+            UnscaledWidth = 60;
+            Filter.Set(config.ThreadFilter);
+            Filter.FilterChanged += OnFilterChanged;
+        }
 
-        public override void DrawColumn(Record item, int _)
-            => ImEx.TextRightAligned($"{item.OsThreadId}");
+        private void OnFilterChanged()
+        {
+            _config.ThreadFilter = Filter.Text;
+            _config.Save();
+        }
 
-        public override int Compare(Record lhs, Record rhs)
-            => lhs.OsThreadId.CompareTo(rhs.OsThreadId);
+        public override uint ToValue(in CachedRecord item, int globalIndex)
+            => item.Record.OsThreadId;
+
+        protected override SizedString DisplayNumber(in CachedRecord item, int globalIndex)
+            => item.Thread;
+
+        protected override string ComparisonText(in CachedRecord item, int globalIndex)
+            => item.Thread;
     }
+
+    public override IEnumerable<CachedRecord> GetItems()
+        => new CacheListAdapter<Record, CachedRecord>(_records, arg => new CachedRecord(arg));
+
+    protected override TableCache<CachedRecord> CreateCache()
+        => new(this);
 }

@@ -1,6 +1,4 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Text;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.AtchStructs;
 
@@ -10,47 +8,47 @@ public static class AtchDrawer
 {
     public static void Draw(AtchFile file)
     {
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.Text("Entries: "u8);
-            ImUtf8.Text("States: "u8);
+            Im.Text("Entries: "u8);
+            Im.Text("States: "u8);
         }
 
         Im.Line.Same();
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.Text($"{file.Points.Count}");
+            Im.Text($"{file.Points.Count}");
             if (file.Points.Count == 0)
             {
-                ImUtf8.Text("0"u8);
+                Im.Text("0"u8);
                 return;
             }
 
-            ImUtf8.Text($"{file.Points[0].Entries.Length}");
+            Im.Text($"{file.Points[0].Entries.Length}");
         }
 
         foreach (var (index, entry) in file.Points.Index())
         {
-            using var id   = ImUtf8.PushId(index);
-            using var tree = ImUtf8.TreeNode($"{index:D3}: {entry.Type.ToName()}");
-            if (tree)
-            {
-                ImUtf8.TreeNode(entry.Accessory ? "Accessory"u8 : "Weapon"u8, ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-                foreach (var (i, state) in entry.Entries.Index())
-                {
-                    id.Push(i);
-                    using var t = ImUtf8.TreeNode(state.Bone);
-                    if (t)
-                    {
-                        ImUtf8.TreeNode($"Scale: {state.Scale}", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-                        ImUtf8.TreeNode($"Offset: {state.Offset.X} | {state.Offset.Y} | {state.Offset.Z}",
-                            ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-                        ImUtf8.TreeNode($"Rotation: {state.Rotation.X} | {state.Rotation.Y} | {state.Rotation.Z}",
-                            ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-                    }
+            using var id   = Im.Id.Push(index);
+            using var tree = Im.Tree.Node($"{index:D3}: {entry.Type.ToName()}");
+            if (!tree)
+                continue;
 
-                    id.Pop();
+            Im.Tree.Node(entry.Accessory ? "Accessory"u8 : "Weapon"u8, TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+            foreach (var (i, state) in entry.Entries.Index())
+            {
+                id.Push(i);
+                using var t = Im.Tree.Node(state.Bone);
+                if (t)
+                {
+                    Im.Tree.Node($"Scale: {state.Scale}", TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+                    Im.Tree.Node($"Offset: {state.Offset.X} | {state.Offset.Y} | {state.Offset.Z}",
+                        TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+                    Im.Tree.Node($"Rotation: {state.Rotation.X} | {state.Rotation.Y} | {state.Rotation.Z}",
+                        TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
                 }
+
+                id.Pop();
             }
         }
     }

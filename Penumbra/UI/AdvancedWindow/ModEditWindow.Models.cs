@@ -91,7 +91,7 @@ public partial class ModEditWindow
 
         if (!ImUtf8.ButtonEx("Update MDL Version from V5 to V6"u8,
                 "Try using this if the bone weights of a pre-Dawntrail model seem wrong.\n\nThis is not revertible."u8,
-                new Vector2(-0.1f, 0), false, 0, Colors.PressEnterWarningBg))
+                new Vector2(-0.1f, 0), false, 0, new Rgba32(Colors.PressEnterWarningBg).Color))
             return;
 
         tab.Mdl.ConvertV5ToV6();
@@ -198,7 +198,7 @@ public partial class ModEditWindow
 
         var size = new Vector2(Im.ContentRegion.Available.X, 0);
         using var frame = ImRaii.FramedGroup("Exceptions", size, headerPreIcon: FontAwesomeIcon.TimesCircle,
-            borderColor: Colors.RegexWarningBorder);
+            borderColor: new Rgba32(Colors.RegexWarningBorder).Color);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, exception) in tab.IoExceptions.Index())
@@ -304,7 +304,7 @@ public partial class ModEditWindow
 
     private void DrawDocumentationLink(string address)
     {
-        const string text = "Documentation →";
+        var text = "Documentation →"u8;
 
         var framePadding = Im.Style.FramePadding;
         var width        = ImGui.CalcTextSize(text).X + framePadding.X * 2;

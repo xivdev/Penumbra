@@ -66,7 +66,7 @@ public readonly record struct ShpIdentifier(
     public override string ToString()
     {
         var sb = new StringBuilder(64);
-        sb.Append("Shp - ")
+        sb.Append("SHP - ")
             .Append(Shape);
         if (Slot is HumanSlot.Unknown)
         {

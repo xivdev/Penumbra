@@ -6,6 +6,7 @@ using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.UI.AdvancedWindow.Materials;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 

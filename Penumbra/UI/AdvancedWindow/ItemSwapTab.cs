@@ -565,7 +565,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         Im.Line.Same();
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
-            Colors.PressEnterWarningBg);
+            new Rgba32(Colors.PressEnterWarningBg).Color);
         if (Im.Item.Hovered())
             ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, selector.CurrentSelection.Item.Name))
                 .Select(i => i.Name)));
@@ -626,7 +626,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         Im.Line.Same();
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Count - 1} other Items.", Vector2.Zero,
-            Colors.PressEnterWarningBg);
+            new Rgba32(Colors.PressEnterWarningBg).Color);
         if (Im.Item.Hovered())
             ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, targetSelector.CurrentSelection.Item.Name))
                 .Select(i => i.Name)));
@@ -723,7 +723,7 @@ public class ItemSwapTab : IDisposable, ITab
                     ModelRace.AuRa,
                     ModelRace.Hrothgar,
                 ],
-                RaceEnumExtensions.ToName);
+                ModelRaceExtensions.ToName);
         }
     }
 
@@ -750,7 +750,7 @@ public class ItemSwapTab : IDisposable, ITab
 
     private static void DrawSwap(Swap swap)
     {
-        var       flags = swap.ChildSwaps.Count == 0 ? ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf : ImGuiTreeNodeFlags.DefaultOpen;
+        var       flags = swap.ChildSwaps.Count is 0 ? ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf : ImGuiTreeNodeFlags.DefaultOpen;
         using var tree  = ImRaii.TreeNode(SwapToString(swap), flags);
         if (!tree)
             return;

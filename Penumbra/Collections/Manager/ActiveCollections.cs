@@ -320,7 +320,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of {"Base Collection"} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -335,7 +335,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(interfaceName, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Interface Collection {interfaceName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -350,7 +350,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(currentName, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
+                $"Last choice of Selected Collection {currentName} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
                 NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
@@ -395,7 +395,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(defaultId, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of {"Base Collection"} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -410,7 +410,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(interfaceId, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of {"Interface Collection"} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -425,7 +425,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(currentId, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentId} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
+                $"Last choice of Selected Collection {currentId} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
                 NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;

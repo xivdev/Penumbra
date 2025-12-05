@@ -14,6 +14,7 @@ using Penumbra.Meta;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
+using Penumbra.UI.Classes;
 using static Penumbra.Interop.Structs.StructExtensions;
 using CharaBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using SpanTextWriter = Luna.SpanTextWriter;

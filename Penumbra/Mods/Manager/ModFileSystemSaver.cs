@@ -15,6 +15,9 @@ public sealed class ModFileSystemSaver(Logger log, BaseFileSystem fileSystem, Sa
     protected override string EmptyFoldersFile(FilenameService provider)
         => provider.FileSystemEmptyFolders;
 
+    protected override string SelectionFile(FilenameService provider)
+        => provider.FileSystemSelectedNodes;
+
     protected override string MigrationFile(FilenameService provider)
         => provider.OldFilesystemFile;
 

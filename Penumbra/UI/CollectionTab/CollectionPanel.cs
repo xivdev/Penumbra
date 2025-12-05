@@ -272,7 +272,7 @@ public sealed class CollectionPanel(
         if (!context)
             return;
 
-        using (ImGuiColor.Text.Push(Colors.DiscordColor))
+        using (ImGuiColor.Text.Push(LunaStyle.DiscordColor))
         {
             if (Im.Menu.Item("Use no mods."u8))
                 _active.SetCollection(ModCollection.Empty, type, _active.Individuals.GetGroup(identifier));
@@ -349,7 +349,7 @@ public sealed class CollectionPanel(
             return;
 
         using var target = Im.DragDrop.Target();
-        if (!target || !target.IsDropping("DragIndividual"))
+        if (!target || !target.IsDropping("DragIndividual"u8))
             return;
 
         var currentIdx = _active.Individuals.Index(id);
@@ -376,7 +376,7 @@ public sealed class CollectionPanel(
                     break;
                 case CollectionType.MalePlayerCharacter:
                     ImEx.TextMultiColored("Overruled by "u8)
-                        .Then("Male Racial Player"u8, Colors.DiscordColor)
+                        .Then("Male Racial Player"u8, LunaStyle.DiscordColor)
                         .Then(", "u8)
                         .Then("Your Character"u8, ColorId.HandledConflictMod.Value().Color)
                         .Then(", or "u8)
@@ -386,7 +386,7 @@ public sealed class CollectionPanel(
                     break;
                 case CollectionType.FemalePlayerCharacter:
                     ImEx.TextMultiColored("Overruled by "u8)
-                        .Then("Female Racial Player"u8, Colors.ReniColorActive)
+                        .Then("Female Racial Player"u8, LunaStyle.ReniColorActive)
                         .Then(", "u8)
                         .Then("Your Character"u8, ColorId.HandledConflictMod.Value().Color)
                         .Then(", or "u8)
@@ -396,24 +396,24 @@ public sealed class CollectionPanel(
                     break;
                 case CollectionType.MaleNonPlayerCharacter:
                     ImEx.TextMultiColored("Overruled by "u8)
-                        .Then("Male Racial NPC"u8, Colors.DiscordColor)
+                        .Then("Male Racial NPC"u8, LunaStyle.DiscordColor)
                         .Then(", "u8)
                         .Then("Children"u8, ColorId.FolderLine.Value().Color)
                         .Then(", "u8)
                         .Then("Elderly"u8, Colors.MetaInfoText)
                         .Then(", or "u8)
                         .Then("Individual "u8, ColorId.NewMod.Value().Color)
-                        .Then("Assignments.")
+                        .Then("Assignments."u8)
                         .End();
                     break;
                 case CollectionType.FemaleNonPlayerCharacter:
                     ImEx.TextMultiColored("Overruled by "u8)
-                        .Then("Female Racial NPC"u8, Colors.ReniColorActive)
+                        .Then("Female Racial NPC"u8, LunaStyle.ReniColorActive)
                         .Then(", "u8)
                         .Then("Children"u8, ColorId.FolderLine.Value().Color)
                         .Then(", "u8)
                         .Then("Elderly"u8, Colors.MetaInfoText)
-                        .Then(", or ")
+                        .Then(", or "u8)
                         .Then("Individual "u8, ColorId.NewMod.Value().Color)
                         .Then("Assignments."u8)
                         .End();

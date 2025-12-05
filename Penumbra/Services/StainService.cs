@@ -8,11 +8,11 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.AdvancedWindow.Materials;
+using FilterComboColors = Penumbra.UI.Classes.FilterComboColors;
 using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.Services;
 
-// TODO
 //public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile) : SimpleFilterCombo<StmKeyType>(SimpleFilterType.Text)
 //    where TDyePack : unmanaged, IDyePack
 //{

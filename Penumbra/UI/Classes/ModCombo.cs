@@ -1,8 +1,10 @@
 using ImSharp;
 using Luna;
+using Penumbra.Mods;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Manager;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.UI.Classes;
 
 public class ModCombo(ModStorage modStorage) : SimpleFilterCombo<Mod>(SimpleFilterType.Regex), IUiService
 {

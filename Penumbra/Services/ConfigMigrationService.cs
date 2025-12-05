@@ -1,12 +1,10 @@
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
-using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Enums;
 using Penumbra.Interop.Services;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
@@ -22,7 +20,7 @@ namespace Penumbra.Services;
 /// Contains everything to migrate from older versions of the config to the current,
 /// including deprecated fields.
 /// </summary>
-public class ConfigMigrationService(SaveService saveService, BackupService backupService) : Luna.IService
+public class ConfigMigrationService(SaveService saveService, BackupService backupService) : IService
 {
     private Configuration _config = null!;
     private JObject       _data   = null!;
@@ -179,15 +177,15 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         SortMode = _data[nameof(SortMode)]?.ToObject<SortModeV3>() ?? SortMode;
         _config.SortMode = SortMode switch
         {
-            SortModeV3.FoldersFirst           => ISortMode<Mod>.FoldersFirst,
-            SortModeV3.Lexicographical        => ISortMode<Mod>.Lexicographical,
-            SortModeV3.InverseFoldersFirst    => ISortMode<Mod>.InverseFoldersFirst,
-            SortModeV3.InverseLexicographical => ISortMode<Mod>.InverseLexicographical,
-            SortModeV3.FoldersLast            => ISortMode<Mod>.FoldersLast,
-            SortModeV3.InverseFoldersLast     => ISortMode<Mod>.InverseFoldersLast,
-            SortModeV3.InternalOrder          => ISortMode<Mod>.InternalOrder,
-            SortModeV3.InternalOrderInverse   => ISortMode<Mod>.InverseInternalOrder,
-            _                                 => ISortMode<Mod>.FoldersFirst,
+            SortModeV3.FoldersFirst           => ISortMode.FoldersFirst,
+            SortModeV3.Lexicographical        => ISortMode.Lexicographical,
+            SortModeV3.InverseFoldersFirst    => ISortMode.InverseFoldersFirst,
+            SortModeV3.InverseLexicographical => ISortMode.InverseLexicographical,
+            SortModeV3.FoldersLast            => ISortMode.FoldersLast,
+            SortModeV3.InverseFoldersLast     => ISortMode.InverseFoldersLast,
+            SortModeV3.InternalOrder          => ISortMode.InternalOrder,
+            SortModeV3.InternalOrderInverse   => ISortMode.InverseInternalOrder,
+            _                                 => ISortMode.FoldersFirst,
         };
         _config.Version = 4;
     }
@@ -378,7 +376,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
                 var settings = setting["Settings"]!.ToObject<Dictionary<string, Setting>>()
                  ?? setting["Conf"]!.ToObject<Dictionary<string, Setting>>();
 
-                dict[modName] = new ModSettings.SavedSettings()
+                dict[modName] = new ModSettings.SavedSettings
                 {
                     Enabled  = enabled,
                     Priority = priority,
@@ -393,7 +391,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
 
             var emptyStorage = new ModStorage();
             // Only used for saving and immediately discarded, so the local collection id here is irrelevant.
-            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, ModCollectionIdentity.New(ModCollectionIdentity.DefaultCollectionName, LocalCollectionId.Zero, 1), 0, dict, []);
+            var collection = ModCollection.CreateFromData(saveService, emptyStorage,
+                ModCollectionIdentity.New(ModCollectionIdentity.DefaultCollectionName, LocalCollectionId.Zero, 1), 0, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

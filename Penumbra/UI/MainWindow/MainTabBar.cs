@@ -1,21 +1,24 @@
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.UI.Tabs;
 using Penumbra.UI.Tabs.Debug;
 using Watcher = Penumbra.UI.ResourceWatcher.ResourceWatcher;
 
-namespace Penumbra.UI.Tabs;
+namespace Penumbra.UI.MainWindow;
 
 public sealed class MainTabBar : TabBar<TabType>, IDisposable
 {
-    public readonly  ModsTab         Mods;
+    public readonly  Tabs.ModsTab    Mods;
     private readonly EphemeralConfig _config;
     private readonly SelectTab       _selectTab;
 
     public MainTabBar(Logger log,
         SettingsTab settings,
-        ModsTab mods,
+        Tabs.ModsTab mods,
+        ModTab mods2,
         CollectionsTab collections,
         ChangedItemsTab changedItems,
         EffectiveTab effectiveChanges,
@@ -24,7 +27,7 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
         Watcher watcher,
         OnScreenTab onScreen,
         MessagesTab messages, EphemeralConfig config, CommunicatorService communicator)
-        : base(nameof(MainTabBar), log, settings, collections, mods, changedItems, effectiveChanges, onScreen,
+        : base(nameof(MainTabBar), log, settings, collections, mods, mods2, changedItems, effectiveChanges, onScreen,
             resources, watcher, debug, messages)
     {
         Mods       = mods;

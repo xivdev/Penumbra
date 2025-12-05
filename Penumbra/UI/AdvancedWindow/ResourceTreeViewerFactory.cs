@@ -3,6 +3,7 @@ using Luna;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 

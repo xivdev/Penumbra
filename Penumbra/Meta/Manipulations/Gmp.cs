@@ -15,7 +15,7 @@ public readonly record struct GmpIdentifier(PrimaryId SetId) : IMetaIdentifier, 
         => MetaIndex.Gmp;
 
     public override string ToString()
-        => $"Gmp - {SetId}";
+        => $"GMP - {SetId}";
 
     public bool Validate()
         // No known conditions.

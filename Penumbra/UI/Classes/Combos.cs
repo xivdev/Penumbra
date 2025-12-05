@@ -9,10 +9,10 @@ public static class Combos
 {
     // Different combos to use with enums.
     public static bool Race(string label, ModelRace current, out ModelRace race, float unscaledWidth = 100)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out race, RaceEnumExtensions.ToName, 1);
+        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out race, ModelRaceExtensions.ToName, 1);
 
     public static bool Gender(string label, Gender current, out Gender gender, float unscaledWidth = 120)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth, current, out gender, RaceEnumExtensions.ToName, 1);
+        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth, current, out gender, GenderExtensions.ToName, 1);
 
     public static bool EqdpEquipSlot(string label, EquipSlot current, out EquipSlot slot, float unscaledWidth = 100)
         => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out slot, EquipSlotExtensions.EqdpSlots,
@@ -27,7 +27,7 @@ public static class Combos
             EquipSlotExtensions.ToName);
 
     public static bool SubRace(string label, SubRace current, out SubRace subRace, float unscaledWidth = 150)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out subRace, RaceEnumExtensions.ToName, 1);
+        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out subRace, SubRaceExtensions.ToName, 1);
 
     public static bool RspAttribute(string label, RspAttribute current, out RspAttribute attribute, float unscaledWidth = 200)
         => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out attribute,

@@ -54,7 +54,7 @@ public readonly record struct EstIdentifier(PrimaryId SetId, EstType Slot, Gende
         => (MetaIndex)Slot;
 
     public override string ToString()
-        => $"Est - {SetId} - {Slot} - {GenderRace.ToName()}";
+        => $"EST - {SetId} - {Slot} - {GenderRace.ToName()}";
 
     public bool Validate()
     {

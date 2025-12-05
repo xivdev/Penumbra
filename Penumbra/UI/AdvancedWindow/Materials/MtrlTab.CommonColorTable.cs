@@ -1,6 +1,5 @@
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Utility;
 using ImSharp;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Files;
@@ -26,8 +25,8 @@ public partial class MtrlTab
         if (!_shpkLoading && !TextureIds.Contains(ShpkFile.TableSamplerId) || Mtrl.Table == null)
             return false;
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
-        if (!ImUtf8.CollapsingHeader("Color Table"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        if (!Im.Tree.Header("Color Table"u8, TreeNodeFlags.DefaultOpen))
             return false;
 
         ColorTableCopyAllClipboardButton();
@@ -91,7 +90,7 @@ public partial class MtrlTab
     {
         var (dyeId1, (name1, dyeColor1, gloss1)) = _stainService.StainCombo1.CurrentSelection;
         var (dyeId2, (name2, dyeColor2, gloss2)) = _stainService.StainCombo2.CurrentSelection;
-        var tt = dyeId1 == 0 && dyeId2 == 0
+        var tt = dyeId1 is 0 && dyeId2 is 0
             ? "Select a preview dye first."u8
             : "Apply all preview values corresponding to the dye template and chosen dye where dyeing is enabled."u8;
         if (ImUtf8.ButtonEx("Apply Preview Dye"u8, tt, disabled: disabled || dyeId1 == 0 && dyeId2 == 0))
@@ -303,31 +302,31 @@ public partial class MtrlTab
             CancelColorTableHighlight();
     }
 
-    private static void CtBlendRect(Vector2 rcMin, Vector2 rcMax, uint topColor, uint bottomColor)
+    private static void CtBlendRect(Vector2 rcMin, Vector2 rcMax, Rgba32 topColor, Rgba32 bottomColor)
     {
         var frameRounding  = Im.Style.FrameRounding;
         var frameThickness = Im.Style.FrameBorderThickness;
         var borderColor    = ImGuiColor.Border.Get();
-        var drawList       = ImGui.GetWindowDrawList();
+        var drawList       = Im.Window.DrawList.Shape;
         if (topColor == bottomColor)
         {
-            drawList.AddRectFilled(rcMin, rcMax, topColor, frameRounding, ImDrawFlags.RoundCornersDefault);
+            drawList.RectangleFilled(rcMin, rcMax, topColor, frameRounding);
         }
         else
         {
-            drawList.AddRectFilled(
+            drawList.RectangleFilled(
                 rcMin, rcMax with { Y = float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3) },
-                topColor, frameRounding, ImDrawFlags.RoundCornersTopLeft | ImDrawFlags.RoundCornersTopRight);
-            drawList.AddRectFilledMultiColor(
+                topColor, frameRounding, ImDrawFlagsRectangle.RoundCornersTop);
+            drawList.RectangleMulticolor(
                 rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3) },
                 rcMax with { Y = float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3) },
                 topColor, topColor, bottomColor, bottomColor);
-            drawList.AddRectFilled(
+            drawList.RectangleFilled(
                 rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3) }, rcMax,
-                bottomColor, frameRounding, ImDrawFlags.RoundCornersBottomLeft | ImDrawFlags.RoundCornersBottomRight);
+                bottomColor, frameRounding, ImDrawFlagsRectangle.RoundCornersTop);
         }
 
-        drawList.AddRect(rcMin, rcMax, borderColor.Color, frameRounding, ImDrawFlags.RoundCornersDefault, frameThickness);
+        drawList.Rectangle(rcMin, rcMax, borderColor.Color, frameRounding, default, frameThickness);
     }
 
     private static bool CtColorPicker(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, HalfColor current, Action<HalfColor> setter,

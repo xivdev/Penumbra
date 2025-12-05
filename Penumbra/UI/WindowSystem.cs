@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using Luna;
 using Penumbra.Interop.Services;
 using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.Classes;
 using Penumbra.UI.Knowledge;
 using Penumbra.UI.Tabs.Debug;
 
@@ -10,15 +11,15 @@ namespace Penumbra.UI;
 
 public class PenumbraWindowSystem : IDisposable, IUiService
 {
-    private readonly IUiBuilder         _uiBuilder;
-    private readonly WindowSystem       _windowSystem;
-    private readonly FileDialogService  _fileDialog;
-    private readonly TextureArraySlicer _textureArraySlicer;
-    public readonly  ConfigWindow       Window;
-    public readonly  PenumbraChangelog  Changelog;
-    public readonly  KnowledgeWindow    KnowledgeWindow;
+    private readonly IUiBuilder            _uiBuilder;
+    private readonly WindowSystem          _windowSystem;
+    private readonly FileDialogService     _fileDialog;
+    private readonly TextureArraySlicer    _textureArraySlicer;
+    public readonly  MainWindow.MainWindow Window;
+    public readonly  PenumbraChangelog     Changelog;
+    public readonly  KnowledgeWindow       KnowledgeWindow;
 
-    public PenumbraWindowSystem(IDalamudPluginInterface pi, Configuration config, PenumbraChangelog changelog, ConfigWindow window,
+    public PenumbraWindowSystem(IDalamudPluginInterface pi, Configuration config, PenumbraChangelog changelog, MainWindow.MainWindow window,
         LaunchButton _, ModEditWindowFactory editWindowFactory, FileDialogService fileDialog, ImportPopup importPopup, DebugTab debugTab,
         KnowledgeWindow knowledgeWindow, TextureArraySlicer textureArraySlicer, WindowSystem windowSystem)
     {

@@ -182,7 +182,7 @@ public class ModPanelEditTab(
         var tt = fileExists
             ? "Open the metadata json file in the text editor of your choice."u8
             : "The metadata json file does not exist."u8;
-        using (Im.Id.Push("meta"))
+        using (Im.Id.Push("meta"u8))
         {
             if (ImEx.Icon.Button(LunaStyle.FileExportIcon, tt, !fileExists))
                 Process.Start(new ProcessStartInfo(filenames.ModMetaPath(_mod)) { UseShellExecute = true });

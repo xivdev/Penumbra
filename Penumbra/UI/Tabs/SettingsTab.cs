@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Plugin;
@@ -7,7 +6,6 @@ using Dalamud.Utility;
 using ImSharp;
 using Luna;
 using OtterGui;
-using OtterGui.Raii;
 using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Api;
@@ -20,6 +18,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
+using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.UI.Tabs;
 
@@ -57,9 +56,6 @@ public sealed class SettingsTab : ITab<TabType>
     private readonly CleanupService              _cleanupService;
     private readonly AttributeHook               _attributeHook;
     private readonly PcpService                  _pcpService;
-
-    private int _minimumX = int.MaxValue;
-    private int _minimumY = int.MaxValue;
 
     private readonly TagButtons _sharedTags = new();
 
@@ -103,119 +99,43 @@ public sealed class SettingsTab : ITab<TabType>
         _pcpService           = pcpService;
     }
 
-    public void DrawHeader()
+    public void PostTabButton()
     {
         _tutorial.OpenTutorial(BasicTutorialSteps.Fin);
         _tutorial.OpenTutorial(BasicTutorialSteps.Faq1);
         _tutorial.OpenTutorial(BasicTutorialSteps.Faq2);
     }
 
-    public sealed class TestFlattened : IFlattenedTreeNode
-    {
-        public int ParentIndex      { get; set; }
-        public int StartsLineTo     { get; set; }
-        public int IndentationDepth { get; set; }
-
-        public void Draw()
-        {
-            Im.Tree.Node("",
-                TreeNodeFlags.DefaultOpen
-              | TreeNodeFlags.NoTreePushOnOpen); //Im.Selectable($"{ParentIndex} {StartsLineTo} {IndentationDepth}"));
-        }
-    }
-
-    private static readonly List<TestFlattened> List =
-    [
-        new()
-        {
-            IndentationDepth = 0,
-            ParentIndex      = -1,
-            StartsLineTo     = 2,
-        },
-        new()
-        {
-            IndentationDepth = 1,
-            ParentIndex      = 0,
-            StartsLineTo     = -1,
-        },
-        new()
-        {
-            IndentationDepth = 1,
-            ParentIndex      = 0,
-            StartsLineTo     = -1,
-        },
-        new()
-        {
-            IndentationDepth = 0,
-            ParentIndex      = -1,
-            StartsLineTo     = 8,
-        },
-        new()
-        {
-            IndentationDepth = 1,
-            ParentIndex      = 3,
-            StartsLineTo     = 6,
-        },
-        new()
-        {
-            IndentationDepth = 2,
-            ParentIndex      = 4,
-            StartsLineTo     = -1,
-        },
-        new()
-        {
-            IndentationDepth = 2,
-            ParentIndex      = 4,
-            StartsLineTo     = 7,
-        },
-        new()
-        {
-            IndentationDepth = 3,
-            ParentIndex      = 6,
-            StartsLineTo     = -1,
-        },
-        new()
-        {
-            IndentationDepth = 1,
-            ParentIndex      = 3,
-            StartsLineTo     = -1,
-        },
-    ];
-
     public void DrawContent()
     {
-        using var child = ImRaii.Child("##SettingsTab", -Vector2.One, false);
+        using var child = Im.Child.Begin("##SettingsTab"u8, -Vector2.One);
         if (!child)
             return;
 
-        using var c2 = ImRaii.Child("a", new Vector2(300, 5 * Im.Style.TextHeightWithSpacing), true,
-            ImGuiWindowFlags.AlwaysVerticalScrollbar);
-        TreeLine.Draw(List, 0xFFFFFFFF);
+        DrawEnabledBox();
+        EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
+            v => _config.Ephemeral.FixMainWindow = v);
 
-        //DrawEnabledBox();
-        //EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
-        //    v => _config.Ephemeral.FixMainWindow = v);
-        //
-        //Im.Line.New();
-        //DrawRootFolder();
-        //DrawDirectoryButtons();
-        //Im.Line.New();
-        //Im.Line.New();
-        //
-        //DrawGeneralSettings();
-        //_migrationDrawer.Draw();
-        //DrawColorSettings();
-        //DrawPredefinedTagsSection();
-        //DrawAdvancedSettings();
-        //DrawSupportButtons();
+        Im.Line.New();
+        DrawRootFolder();
+        DrawDirectoryButtons();
+        Im.Line.New();
+        Im.Line.New();
+
+        DrawGeneralSettings();
+        _migrationDrawer.Draw();
+        DrawColorSettings();
+        DrawPredefinedTagsSection();
+        DrawAdvancedSettings();
+        DrawSupportButtons();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void Checkbox(string label, string tooltip, bool current, Action<bool> setter)
     {
-        using var id  = ImRaii.PushId(label);
+        using var id  = Im.Id.Push(label);
         var       tmp = current;
-        if (ImGui.Checkbox(string.Empty, ref tmp) && tmp != current)
+        if (Im.Checkbox(StringU8.Empty, ref tmp) && tmp != current)
         {
             setter(tmp);
             _config.Save();
@@ -228,9 +148,9 @@ public sealed class SettingsTab : ITab<TabType>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void EphemeralCheckbox(string label, string tooltip, bool current, Action<bool> setter)
     {
-        using var id  = ImRaii.PushId(label);
+        using var id  = Im.Id.Push(label);
         var       tmp = current;
-        if (ImGui.Checkbox(string.Empty, ref tmp) && tmp != current)
+        if (Im.Checkbox(StringU8.Empty, ref tmp) && tmp != current)
         {
             setter(tmp);
             _config.Ephemeral.Save();
@@ -252,21 +172,12 @@ public sealed class SettingsTab : ITab<TabType>
         var       w     = new Vector2(width, 0);
         var (text, valid) = CheckRootDirectoryPath(newName, old, selected);
 
-        return (ImGui.Button(text, w) || saved) && valid;
+        return (Im.Button(text, w) || saved) && valid;
     }
 
     /// <summary> Check a potential new root directory for validity and return the button text and whether it is valid. </summary>
     private (string Text, bool Valid) CheckRootDirectoryPath(string newName, string old, bool selected)
     {
-        static bool IsSubPathOf(string basePath, string subPath)
-        {
-            if (basePath.Length == 0)
-                return false;
-
-            var rel = Path.GetRelativePath(basePath, subPath);
-            return rel == "." || !rel.StartsWith('.') && !Path.IsPathRooted(rel);
-        }
-
         if (newName.Length > RootDirectoryMaxLength)
             return ($"Path is too long. The maximum length is {RootDirectoryMaxLength}.", false);
 
@@ -305,6 +216,15 @@ public sealed class SettingsTab : ITab<TabType>
         return selected
             ? ($"Press Enter or Click Here to Save (Current Directory: {old})", true)
             : ($"Click Here to Save (Current Directory: {old})", true);
+
+        static bool IsSubPathOf(string basePath, string subPath)
+        {
+            if (basePath.Length == 0)
+                return false;
+
+            var rel = Path.GetRelativePath(basePath, subPath);
+            return rel == "." || !rel.StartsWith('.') && !Path.IsPathRooted(rel);
+        }
     }
 
     /// <summary> Changing the base mod directory. </summary>
@@ -316,8 +236,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// </summary>
     private void DrawDirectoryPickerButton()
     {
-        if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Folder.ToIconString(), UiHelpers.IconButtonSize,
-                "Select a directory via dialog.", false, true))
+        if (!ImEx.Icon.Button(LunaStyle.FolderIcon, "Select a directory via dialog."u8))
             return;
 
         _newModDirectory ??= _config.ModDirectory;
@@ -348,11 +267,11 @@ public sealed class SettingsTab : ITab<TabType>
             using (var color = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !_modManager.Valid))
             {
                 color.Push(ImGuiColor.TextDisabled, Colors.RegexWarningBorder, !_modManager.Valid);
-                save = ImGui.InputTextWithHint("##rootDirectory", "Enter Root Directory here (MANDATORY)...", ref _newModDirectory,
-                    RootDirectoryMaxLength, ImGuiInputTextFlags.EnterReturnsTrue);
+                save = Im.Input.Text("##rootDirectory"u8, ref _newModDirectory, "Enter Root Directory here (MANDATORY)..."u8,
+                    InputTextFlags.EnterReturnsTrue, RootDirectoryMaxLength);
             }
 
-            selected = ImGui.IsItemActive();
+            selected = Im.Item.Active;
             using var style = ImStyleDouble.ItemSpacing.Push(new Vector2(Im.Style.GlobalScale * 3, 0));
             Im.Line.Same();
             DrawDirectoryPickerButton();
@@ -374,11 +293,11 @@ public sealed class SettingsTab : ITab<TabType>
 
         _tutorial.OpenTutorial(BasicTutorialSteps.ModDirectory);
         Im.Line.Same();
-        var pos = ImGui.GetCursorPosX();
+        var pos = Im.Cursor.Y;
         Im.Line.New();
 
         if (_config.ModDirectory != _newModDirectory
-         && _newModDirectory.Length != 0
+         && _newModDirectory.Length is not 0
          && DrawPressEnterWarning(_newModDirectory, _config.ModDirectory, pos, save, selected))
             _modManager.DiscoverMods(_newModDirectory, out _newModDirectory);
     }
@@ -399,7 +318,7 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawEnabledBox()
     {
         var enabled = _config.EnableMods;
-        if (ImGui.Checkbox("Enable Mods", ref enabled))
+        if (Im.Checkbox("Enable Mods"u8, ref enabled))
             _penumbra.SetEnabled(enabled);
 
         _tutorial.OpenTutorial(BasicTutorialSteps.EnableMods);
@@ -412,7 +331,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw all settings pertaining to the Mod Selector. </summary>
     private void DrawGeneralSettings()
     {
-        if (!ImGui.CollapsingHeader("General"))
+        if (!Im.Tree.Header("General"u8))
         {
             _tutorial.OpenTutorial(BasicTutorialSteps.GeneralSettings);
             return;
@@ -439,27 +358,15 @@ public sealed class SettingsTab : ITab<TabType>
         Im.Line.New();
     }
 
-    private int _singleGroupRadioMax = int.MaxValue;
-
     /// <summary> Draw a selection for the maximum number of single select options displayed as a radio toggle. </summary>
     private void DrawSingleSelectRadioMax()
     {
-        if (_singleGroupRadioMax == int.MaxValue)
-            _singleGroupRadioMax = _config.SingleGroupRadioMax;
-
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImGui.DragInt("##SingleSelectRadioMax", ref _singleGroupRadioMax, 0.01f, 1))
-            _singleGroupRadioMax = Math.Max(1, _singleGroupRadioMax);
-
-        if (ImGui.IsItemDeactivated())
+        if (ImEx.InputOnDeactivation.Drag("##SingleSelectRadioMax"u8, _config.SingleGroupRadioMax, out var newValue, 1, null, 0.01f,
+                SliderFlags.AlwaysClamp))
         {
-            if (_singleGroupRadioMax != _config.SingleGroupRadioMax)
-            {
-                _config.SingleGroupRadioMax = _singleGroupRadioMax;
-                _config.Save();
-            }
-
-            _singleGroupRadioMax = int.MaxValue;
+            _config.SingleGroupRadioMax = newValue;
+            _config.Save();
         }
 
         ImGuiUtil.LabeledHelpMarker("Upper Limit for Single-Selection Group Radio Buttons",
@@ -467,27 +374,15 @@ public sealed class SettingsTab : ITab<TabType>
           + "All other Single-Selection Groups will be displayed as a set of Radio-Buttons.");
     }
 
-    private int _collapsibleGroupMin = int.MaxValue;
-
     /// <summary> Draw a selection for the minimum number of options after which a group is drawn as collapsible. </summary>
     private void DrawCollapsibleGroupMin()
     {
-        if (_collapsibleGroupMin == int.MaxValue)
-            _collapsibleGroupMin = _config.OptionGroupCollapsibleMin;
-
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImGui.DragInt("##CollapsibleGroupMin", ref _collapsibleGroupMin, 0.01f, 1))
-            _collapsibleGroupMin = Math.Max(2, _collapsibleGroupMin);
-
-        if (ImGui.IsItemDeactivated())
+        if (ImEx.InputOnDeactivation.Drag("##CollapsibleGroupMin"u8, _config.OptionGroupCollapsibleMin, out var newValue, 2, null, 0.01f,
+                SliderFlags.AlwaysClamp))
         {
-            if (_collapsibleGroupMin != _config.OptionGroupCollapsibleMin)
-            {
-                _config.OptionGroupCollapsibleMin = _collapsibleGroupMin;
-                _config.Save();
-            }
-
-            _collapsibleGroupMin = int.MaxValue;
+            _config.OptionGroupCollapsibleMin = newValue;
+            _config.Save();
         }
 
         ImGuiUtil.LabeledHelpMarker("Collapsible Option Group Limit",
@@ -575,24 +470,24 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Use Interface Collection for other Plugin UIs",
             "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud.",
             _dalamudSubstitutionProvider.Enabled, _dalamudSubstitutionProvider.Set);
-        Checkbox($"Use {TutorialService.AssignedCollections} in Lobby",
+        Checkbox($"Use {"Assigned Collections"} in Lobby",
             "If this is disabled, no mods are applied to characters in the lobby or at the aesthetician.",
             _config.ShowModsInLobby, v => _config.ShowModsInLobby = v);
-        Checkbox($"Use {TutorialService.AssignedCollections} in Character Window",
+        Checkbox($"Use {"Assigned Collections"} in Character Window",
             "Use the individual collection for your characters name or the Your Character collection in your main character window, if it is set.",
             _config.UseCharacterCollectionInMainWindow, v => _config.UseCharacterCollectionInMainWindow = v);
-        Checkbox($"Use {TutorialService.AssignedCollections} in Adventurer Cards",
+        Checkbox($"Use {"Assigned Collections"} in Adventurer Cards",
             "Use the appropriate individual collection for the adventurer card you are currently looking at, based on the adventurer's name.",
             _config.UseCharacterCollectionsInCards, v => _config.UseCharacterCollectionsInCards = v);
-        Checkbox($"Use {TutorialService.AssignedCollections} in Try-On Window",
+        Checkbox($"Use {"Assigned Collections"} in Try-On Window",
             "Use the individual collection for your character's name in your try-on, dye preview or glamour plate window, if it is set.",
             _config.UseCharacterCollectionInTryOn, v => _config.UseCharacterCollectionInTryOn = v);
         Checkbox("Use No Mods in Inspect Windows", "Use the empty collection for characters you are inspecting, regardless of the character.\n"
           + "Takes precedence before the next option.", _config.UseNoModsInInspect, v => _config.UseNoModsInInspect = v);
-        Checkbox($"Use {TutorialService.AssignedCollections} in Inspect Windows",
+        Checkbox($"Use {"Assigned Collections"} in Inspect Windows",
             "Use the appropriate individual collection for the character you are currently inspecting, based on their name.",
             _config.UseCharacterCollectionInInspect, v => _config.UseCharacterCollectionInInspect = v);
-        Checkbox($"Use {TutorialService.AssignedCollections} based on Ownership",
+        Checkbox($"Use {"Assigned Collections"} based on Ownership",
             "Use the owner's name to determine the appropriate individual collection for mounts, companions, accessories and combat pets.",
             _config.UseOwnerNameForCharacterCollection, v => _config.UseOwnerNameForCharacterCollection = v);
     }
@@ -605,9 +500,9 @@ public sealed class SettingsTab : ITab<TabType>
         using (var combo = ImUtf8.Combo("##sortMode", sortMode.Name))
         {
             if (combo)
-                foreach (var val in Configuration.Constants.ValidSortModes)
+                foreach (var val in ISortMode.Valid.Values)
                 {
-                    if (ImUtf8.Selectable(val.Name, val.GetType() == sortMode.GetType()) && val.GetType() != sortMode.GetType())
+                    if (Im.Selectable(val.Name, val.Equals(sortMode)) && !val.Equals(sortMode))
                     {
                         _config.SortMode = val;
                         _selector.SetFilterDirty();
@@ -624,13 +519,13 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawRenameSettings()
     {
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        using (var combo = ImRaii.Combo("##renameSettings", _config.ShowRename.GetData().Name))
+        using (var combo = Im.Combo.Begin("##renameSettings"u8, _config.ShowRename.GetData().Name))
         {
             if (combo)
                 foreach (var value in Enum.GetValues<RenameField>())
                 {
                     var (name, desc) = value.GetData();
-                    if (ImGui.Selectable(name, _config.ShowRename == value))
+                    if (Im.Selectable(name, _config.ShowRename == value))
                     {
                         _config.ShowRename = value;
                         _selector.SetRenameSearchPath(value);
@@ -741,16 +636,15 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default import path for a mod. </summary>
     private void DrawDefaultModImportPath()
     {
-        var       tmp     = _config.DefaultModImportPath;
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
-        if (ImGui.InputText("##defaultModImport", ref tmp, 256))
-            _config.DefaultModImportPath = tmp;
-
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (ImEx.InputOnDeactivation.Text("##defaultModImport"u8, _config.DefaultModImportPath, out string newDirectory))
+        {
+            _config.DefaultModImportPath = newDirectory;
             _config.Save();
+        }
 
         Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##import", UiHelpers.IconButtonSize,
@@ -777,20 +671,14 @@ public sealed class SettingsTab : ITab<TabType>
             "Set the directory that gets opened when using the file picker to import mods for the first time.");
     }
 
-    private string _tempExportDirectory = string.Empty;
-
     /// <summary> Draw input for the default export/backup path for mods. </summary>
     private void DrawDefaultModExportPath()
     {
-        var       tmp     = _config.ExportDirectory;
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
-        if (ImGui.InputText("##defaultModExport", ref tmp, 256))
-            _tempExportDirectory = tmp;
-
-        if (ImGui.IsItemDeactivatedAfterEdit())
-            _modExportManager.UpdateExportDirectory(_tempExportDirectory);
+        if (ImEx.InputOnDeactivation.Text("##defaultModExport"u8, _config.ExportDirectory, out string newDirectory))
+            _modExportManager.UpdateExportDirectory(newDirectory);
 
         Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##export", UiHelpers.IconButtonSize,
@@ -814,28 +702,18 @@ public sealed class SettingsTab : ITab<TabType>
           + "Keep this empty to use the root directory.");
     }
 
-    private string? _tempWatchDirectory;
-
     /// <summary> Draw input for the Automatic Mod import path. </summary>
     private void DrawFileWatcherPath()
     {
-        var       tmp     = _tempWatchDirectory ?? _config.WatchDirectory;
+        using var id      = Im.Id.Push("fw"u8);
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
-        if (ImGui.InputText("##fileWatchPath", ref tmp, 256))
-            _tempWatchDirectory = tmp;
-
-        if (ImGui.IsItemDeactivated() && _tempWatchDirectory is not null)
-        {
-            if (ImGui.IsItemDeactivatedAfterEdit())
-                _fileWatcher.UpdateDirectory(_tempWatchDirectory);
-            _tempWatchDirectory = null;
-        }
+        if (ImEx.InputOnDeactivation.Text("##path"u8, _config.WatchDirectory, out string newDirectory, maxLength: 256))
+            _fileWatcher.UpdateDirectory(newDirectory);
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##fileWatch", UiHelpers.IconButtonSize,
-                "Select a directory via dialog.", false, true))
+        if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Select a directory via dialog."u8))
         {
             var startDir = _config.WatchDirectory.Length > 0 && Directory.Exists(_config.WatchDirectory)
                 ? _config.WatchDirectory
@@ -857,13 +735,12 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default name to input as author into newly generated mods. </summary>
     private void DrawDefaultModAuthor()
     {
-        var tmp = _config.DefaultModAuthor;
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImGui.InputText("##defaultAuthor", ref tmp, 64))
-            _config.DefaultModAuthor = tmp;
-
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (ImEx.InputOnDeactivation.Text("##author"u8, _config.DefaultModAuthor, out string newAuthor))
+        {
+            _config.DefaultModAuthor = newAuthor;
             _config.Save();
+        }
 
         ImGuiUtil.LabeledHelpMarker("Default Mod Author", "Set the default author stored for newly created mods.");
     }
@@ -871,13 +748,12 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default folder to sort put newly imported mods into. </summary>
     private void DrawDefaultModImportFolder()
     {
-        var tmp = _config.DefaultImportFolder;
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImGui.InputText("##defaultImportFolder", ref tmp, 64))
-            _config.DefaultImportFolder = tmp;
-
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (ImEx.InputOnDeactivation.Text("##importFolder"u8, _config.DefaultImportFolder, out string newFolder))
+        {
+            _config.DefaultImportFolder = newFolder;
             _config.Save();
+        }
 
         ImGuiUtil.LabeledHelpMarker("Default Mod Import Organizational Folder",
             "Set the default Penumbra mod folder to place newly imported mods into.\nLeave blank to import into Root.");
@@ -886,13 +762,12 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default folder to sort put newly imported mods into. </summary>
     private void DrawPcpFolder()
     {
-        var tmp = _config.PcpSettings.FolderName;
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImUtf8.InputText("##pcpFolder"u8, ref tmp))
-            _config.PcpSettings.FolderName = tmp;
-
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (ImEx.InputOnDeactivation.Text("##pcpFolder"u8, _config.PcpSettings.FolderName, out string newFolder))
+        {
+            _config.PcpSettings.FolderName = newFolder;
             _config.Save();
+        }
 
         ImGuiUtil.LabeledHelpMarker("Default PCP Organizational Folder",
             "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root.");
@@ -900,16 +775,15 @@ public sealed class SettingsTab : ITab<TabType>
 
     private void DrawPcpExtension()
     {
-        var tmp = _config.PcpSettings.PcpExtension;
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        if (ImUtf8.InputText("##pcpExtension"u8, ref tmp))
-            _config.PcpSettings.PcpExtension = tmp;
-
-        if (ImGui.IsItemDeactivatedAfterEdit())
+        if (ImEx.InputOnDeactivation.Text("##pcpExtension"u8, _config.PcpSettings.PcpExtension, out string newExtension))
+        {
+            _config.PcpSettings.PcpExtension = newExtension;
             _config.Save();
+        }
 
         Im.Line.SameInner();
-        if (ImEx.Button("Reset##pcpExtension"u8, Vector2.Zero, "Reset the extension to its default value of \".pcp\".",
+        if (ImEx.Button("Reset##pcpExtension"u8, Vector2.Zero, "Reset the extension to its default value of \".pcp\"."u8,
                 _config.PcpSettings.PcpExtension is ".pcp"))
         {
             _config.PcpSettings.PcpExtension = ".pcp";
@@ -934,7 +808,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw the entire Color subsection. </summary>
     private void DrawColorSettings()
     {
-        if (!ImGui.CollapsingHeader("Colors"))
+        if (!Im.Tree.Header("Colors"u8))
             return;
 
         foreach (var color in Enum.GetValues<ColorId>())
@@ -953,7 +827,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw all advanced settings. </summary>
     private void DrawAdvancedSettings()
     {
-        var header = ImGui.CollapsingHeader("Advanced");
+        var header = Im.Tree.Header("Advanced"u8);
 
         if (!header)
             return;
@@ -1029,7 +903,7 @@ public sealed class SettingsTab : ITab<TabType>
 
         if (_compactor.MassCompactRunning)
         {
-            ImGui.ProgressBar((float)_compactor.CurrentIndex / _compactor.TotalFiles,
+            Im.ProgressBar((float)_compactor.CurrentIndex / _compactor.TotalFiles,
                 new Vector2(Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - UiHelpers.IconButtonSize.X,
                     Im.Style.FrameHeight),
                 _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
@@ -1040,60 +914,51 @@ public sealed class SettingsTab : ITab<TabType>
         }
         else
         {
-            ImGui.Dummy(UiHelpers.IconButtonSize);
+            Im.FrameDummy();
         }
     }
 
     /// <summary> Draw two integral inputs for minimum dimensions of this window. </summary>
     private void DrawMinimumDimensionConfig()
     {
-        var x = _minimumX == int.MaxValue ? (int)_config.MinimumSize.X : _minimumX;
-        var y = _minimumY == int.MaxValue ? (int)_config.MinimumSize.Y : _minimumY;
-
-        var warning = x < Configuration.Constants.MinimumSizeX
-            ? y < Configuration.Constants.MinimumSizeY
-                ? "Size is smaller than default: This may look undesirable."
-                : "Width is smaller than default: This may look undesirable."
-            : y < Configuration.Constants.MinimumSizeY
-                ? "Height is smaller than default: This may look undesirable."
-                : string.Empty;
+        var warning = _config.MinimumSize.X < Configuration.Constants.MinimumSizeX
+            ? _config.MinimumSize.Y < Configuration.Constants.MinimumSizeY
+                ? "Size is smaller than default: This may look undesirable."u8
+                : "Width is smaller than default: This may look undesirable."u8
+            : _config.MinimumSize.Y < Configuration.Constants.MinimumSizeY
+                ? "Height is smaller than default: This may look undesirable."u8
+                : StringU8.Empty;
         var buttonWidth = UiHelpers.InputTextWidth.X / 2.5f;
         Im.Item.SetNextWidth(buttonWidth);
-        if (ImGui.DragInt("##xMinSize", ref x, 0.1f, 500, 1500))
-            _minimumX = x;
-        var edited = ImGui.IsItemDeactivatedAfterEdit();
-
+        if (ImEx.InputOnDeactivation.Drag("##xMinSize"u8, (int)_config.MinimumSize.X, out var newX, 500, 1500, 0.1f))
+        {
+            _config.MinimumSize.X = newX;
+            _config.Save();
+        }
         Im.Line.Same();
         Im.Item.SetNextWidth(buttonWidth);
-        if (ImGui.DragInt("##yMinSize", ref y, 0.1f, 300, 1500))
-            _minimumY = y;
-        edited |= ImGui.IsItemDeactivatedAfterEdit();
+        if (ImEx.InputOnDeactivation.Drag("##yMinSize"u8, (int)_config.MinimumSize.Y, out var newY, 300, 1500, 0.1f))
+        {
+            _config.MinimumSize.Y = newY;
+            _config.Save();
+        }
 
         Im.Line.Same();
         if (ImGuiUtil.DrawDisabledButton("Reset##resetMinSize", new Vector2(buttonWidth / 2 - Im.Style.ItemSpacing.X * 2, 0),
                 $"Reset minimum dimensions to ({Configuration.Constants.MinimumSizeX}, {Configuration.Constants.MinimumSizeY}).",
-                x == Configuration.Constants.MinimumSizeX && y == Configuration.Constants.MinimumSizeY))
+                _config.MinimumSize is { X: Configuration.Constants.MinimumSizeX, Y: Configuration.Constants.MinimumSizeY }))
         {
-            x      = Configuration.Constants.MinimumSizeX;
-            y      = Configuration.Constants.MinimumSizeY;
-            edited = true;
+            _config.MinimumSize = new Vector2(Configuration.Constants.MinimumSizeX, Configuration.Constants.MinimumSizeY);
+            _config.Save();
         }
 
         ImGuiUtil.LabeledHelpMarker("Minimum Window Dimensions",
             "Set the minimum dimensions for resizing this window. Reducing these dimensions may cause the window to look bad or more confusing and is not recommended.");
 
         if (warning.Length > 0)
-            ImGuiUtil.DrawTextButton(warning, UiHelpers.InputTextWidth, Colors.PressEnterWarningBg);
+            ImEx.TextFramed(warning, UiHelpers.InputTextWidth, Colors.PressEnterWarningBg);
         else
             Im.Line.New();
-
-        if (!edited)
-            return;
-
-        _config.MinimumSize = new Vector2(x, y);
-        _minimumX           = int.MaxValue;
-        _minimumY           = int.MaxValue;
-        _config.Save();
     }
 
     private void DrawHdrRenderTargets()
@@ -1127,7 +992,7 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawEnableHttpApiBox()
     {
         var http = _config.EnableHttpApi;
-        if (ImGui.Checkbox("##http", ref http))
+        if (Im.Checkbox("##http"u8, ref http))
         {
             if (http)
                 _httpApi.CreateWebServer();
@@ -1147,7 +1012,7 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawEnableDebugModeBox()
     {
         var tmp = _config.DebugMode;
-        if (ImGui.Checkbox("##debugMode", ref tmp) && tmp != _config.DebugMode)
+        if (Im.Checkbox("##debugMode"u8, ref tmp) && tmp != _config.DebugMode)
         {
             _config.DebugMode = tmp;
             _config.Save();
@@ -1217,7 +1082,7 @@ public sealed class SettingsTab : ITab<TabType>
     {
         if (!_dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool value))
         {
-            using var disabled = ImRaii.Disabled();
+            using var disabled = Im.Disabled();
             Checkbox("Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)", string.Empty, false, _ => { });
         }
         else
@@ -1237,39 +1102,39 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw the support button group on the right-hand side of the window. </summary>
     private void DrawSupportButtons()
     {
-        var width = ImGui.CalcTextSize(UiHelpers.SupportInfoButtonText).X + Im.Style.FramePadding.X * 2;
-        var xPos  = ImGui.GetWindowWidth() - width;
+        var width = Im.Font.CalculateSize(UiHelpers.SupportInfoButtonText).X + Im.Style.FramePadding.X * 2;
+        var xPos  = Im.Window.Width - width;
         // Respect the scroll bar width.
-        if (ImGui.GetScrollMaxY() > 0)
+        if (Im.Scroll.MaximumY> 0)
             xPos -= Im.Style.ScrollbarSize + Im.Style.FramePadding.X;
 
-        ImGui.SetCursorPos(new Vector2(xPos, Im.Style.FrameHeightWithSpacing));
+        Im.Cursor.Position = new Vector2(xPos, Im.Style.FrameHeightWithSpacing);
         UiHelpers.DrawSupportButton(_penumbra);
 
-        ImGui.SetCursorPos(new Vector2(xPos, 0));
+        Im.Cursor.Position = new Vector2(xPos, 0);
         SupportButton.Discord(Penumbra.Messager, width);
 
-        ImGui.SetCursorPos(new Vector2(xPos, 2 * Im.Style.FrameHeightWithSpacing));
+        Im.Cursor.Position = new Vector2(xPos, 2 * Im.Style.FrameHeightWithSpacing);
         SupportButton.ReniGuide(Penumbra.Messager, width);
 
-        ImGui.SetCursorPos(new Vector2(xPos, 3 * Im.Style.FrameHeightWithSpacing));
-        if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))
+        Im.Cursor.Position = new Vector2(xPos, 3 * Im.Style.FrameHeightWithSpacing);
+        if (Im.Button("Restart Tutorial"u8, new Vector2(width, 0)))
         {
             _config.Ephemeral.TutorialStep = 0;
             _config.Ephemeral.Save();
         }
 
-        ImGui.SetCursorPos(new Vector2(xPos, 4 * Im.Style.FrameHeightWithSpacing));
-        if (ImGui.Button("Show Changelogs", new Vector2(width, 0)))
+        Im.Cursor.Position = new Vector2(xPos, 4 * Im.Style.FrameHeightWithSpacing);
+        if (Im.Button("Show Changelogs"u8, new Vector2(width, 0)))
             _penumbra.ForceChangelogOpen();
 
-        ImGui.SetCursorPos(new Vector2(xPos,                            5 * Im.Style.FrameHeightWithSpacing));
+        Im.Cursor.Position = new Vector2(xPos, 5 * Im.Style.FrameHeightWithSpacing);
         SupportButton.KoFiPatreon(Penumbra.Messager, new Vector2(width, 0));
     }
 
     private void DrawPredefinedTagsSection()
     {
-        if (!ImGui.CollapsingHeader("Tags"))
+        if (!Im.Tree.Header("Tags"u8))
             return;
 
         var tagIdx = _sharedTags.Draw("Predefined Tags: ",

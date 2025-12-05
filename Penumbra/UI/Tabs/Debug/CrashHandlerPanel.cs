@@ -1,9 +1,6 @@
 using System.Text.Json;
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.DragDrop;
 using ImSharp;
-using OtterGui;
-using OtterGui.Raii;
 using Penumbra.CrashHandler;
 using Penumbra.Services;
 
@@ -26,14 +23,14 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
     private void DrawData()
     {
         using var _      = Im.Group();
-        using var header = ImRaii.CollapsingHeader("Crash Handler");
+        using var header = Im.Tree.HeaderId("Crash Handler"u8);
         if (!header)
             return;
 
         DrawButtons();
         DrawMainData();
-        DrawObject("Last Manual Dump", _lastDump, null);
-        DrawObject(_lastLoadedFile.Length > 0 ? $"Loaded File ({_lastLoadedFile})###Loaded File" : "Loaded File", _lastLoad,
+        DrawObject("Last Manual Dump"u8, _lastDump, null);
+        DrawObject(_lastLoadedFile.Length > 0 ? $"Loaded File ({_lastLoadedFile})###Loaded File" : "Loaded File"u8, _lastLoad,
             _lastLoadException);
     }
 
@@ -43,38 +40,46 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
         if (!table)
             return;
 
-        PrintValue("Enabled",                  config.UseCrashHandler);
-        PrintValue("Copied Executable Path",   service.CopiedExe);
-        PrintValue("Original Executable Path", service.OriginalExe);
-        PrintValue("Log File Path",            service.LogPath);
-        PrintValue("XIV Process ID",           service.ProcessId.ToString());
-        PrintValue("Crash Handler Running",    service.IsRunning.ToString());
-        PrintValue("Crash Handler Process ID", service.ChildProcessId.ToString());
-        PrintValue("Crash Handler Exit Code",  service.ChildExitCode.ToString());
+        table.DrawColumn("Enabled"u8);
+        table.DrawColumn($"{config.UseCrashHandler}");
+        table.DrawColumn("Copied Executable Path"u8);
+        table.DrawColumn(service.CopiedExe);
+        table.DrawColumn("Original Executable Path"u8);
+        table.DrawColumn(service.OriginalExe);
+        table.DrawColumn("Log File Path"u8);
+        table.DrawColumn(service.LogPath);
+        table.DrawColumn("XIV Process ID"u8);
+        table.DrawColumn($"{service.ProcessId}");
+        table.DrawColumn("Crash Handler Running"u8);
+        table.DrawColumn($"{service.IsRunning}");
+        table.DrawColumn("Crash Handler Process ID"u8);
+        table.DrawColumn($"{service.ChildProcessId}");
+        table.DrawColumn("Crash Handler Exit Code"u8);
+        table.DrawColumn($"{service.ChildExitCode}");
     }
 
     private void DrawButtons()
     {
-        if (ImGui.Button("Dump Crash Handler Memory"))
+        if (Im.Button("Dump Crash Handler Memory"u8))
             _lastDump = service.Dump()?.Deserialize<CrashData>();
 
-        if (ImGui.Button("Enable"))
+        if (Im.Button("Enable"u8))
             service.Enable();
 
         Im.Line.Same();
-        if (ImGui.Button("Disable"))
+        if (Im.Button("Disable"u8))
             service.Disable();
 
-        if (ImGui.Button("Shutdown Crash Handler"))
+        if (Im.Button("Shutdown Crash Handler"u8))
             service.CloseCrashHandler();
         Im.Line.Same();
-        if (ImGui.Button("Relaunch Crash Handler"))
+        if (Im.Button("Relaunch Crash Handler"u8))
             service.LaunchCrashHandler();
     }
 
     private void DrawDropSource()
     {
-        dragDrop.CreateImGuiSource("LogDragDrop", m => m.Files.Any(f => f.EndsWith("Penumbra.log")), m =>
+        dragDrop.CreateImGuiSource("LogDragDrop", m => m.Files.Any(f => f.EndsWith("Penumbra.log")), _ =>
         {
             Im.Text("Dragging Penumbra.log for import."u8);
             return true;
@@ -104,19 +109,19 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
         }
     }
 
-    private static void DrawObject(string name, CrashData? data, Exception? ex)
+    private static void DrawObject(Utf8StringHandler<LabelStringHandlerBuffer> name, CrashData? data, Exception? ex)
     {
-        using var tree = ImRaii.TreeNode(name);
+        using var tree = Im.Tree.Node(name);
         if (!tree)
             return;
 
-        if (ex != null)
+        if (ex is not null)
         {
-            ImGuiUtil.TextWrapped(ex.ToString());
+            Im.TextWrapped($"{ex}");
             return;
         }
 
-        if (data == null)
+        if (data is null)
         {
             Im.Text("Nothing loaded."u8);
             return;
@@ -126,11 +131,5 @@ public class CrashHandlerPanel(CrashHandlerService service, Configuration config
         data.DrawFiles();
         data.DrawCharacters();
         data.DrawVfxInvocations();
-    }
-
-    private static void PrintValue<T>(string label, in T data)
-    {
-        ImGuiUtil.DrawTableColumn(label);
-        ImGuiUtil.DrawTableColumn(data?.ToString() ?? "NULL");
     }
 }

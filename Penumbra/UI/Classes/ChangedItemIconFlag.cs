@@ -1,7 +1,7 @@
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.Classes;
 
 [Flags]
 public enum ChangedItemIconFlag : uint

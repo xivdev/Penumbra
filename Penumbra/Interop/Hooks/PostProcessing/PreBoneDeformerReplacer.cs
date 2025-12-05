@@ -50,7 +50,7 @@ public sealed unsafe class PreBoneDeformerReplacer : IDisposable, Luna.IRequired
     private SafeResourceHandle GetPreBoneDeformerForCharacter(CharacterBase* drawObject)
     {
         var resolveData = _collectionResolver.IdentifyCollection(&drawObject->DrawObject, true);
-        if (resolveData.ModCollection._cache is not { } cache)
+        if (resolveData.ModCollection.Cache is not { } cache)
             return _resourceLoader.LoadResolvedSafeResource(ResourceCategory.Chara, ResourceType.Pbd, PreBoneDeformerPath.Path, resolveData);
 
         return cache.CustomResources.Get(ResourceCategory.Chara, ResourceType.Pbd, PreBoneDeformerPath, resolveData);
