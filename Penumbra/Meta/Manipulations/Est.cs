@@ -1,3 +1,4 @@
+using Luna.Generators;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Data;
@@ -7,6 +8,7 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Manipulations;
 
+[NamedEnum]
 public enum EstType : byte
 {
     Hair = MetaIndex.HairEst,
@@ -120,9 +122,9 @@ public readonly record struct EstEntry(ushort Value)
     }
 }
 
-public static class EstTypeExtension
+public static partial class EstTypeExtension
 {
-    public static string ToName(this EstType type)
+    public static string ToSuffix(this EstType type)
         => type switch
         {
             EstType.Hair => "hair",

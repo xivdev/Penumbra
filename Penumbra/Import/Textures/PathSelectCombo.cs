@@ -9,7 +9,7 @@ namespace Penumbra.Import.Textures;
 
 public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBase<PathSelectCombo.PathData>
 {
-    public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<HintStringHandlerBuffer> tooltip, string current,
+    public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> tooltip, string current,
         int skipPrefix, out string newPath)
     {
         _skipPrefix = skipPrefix;

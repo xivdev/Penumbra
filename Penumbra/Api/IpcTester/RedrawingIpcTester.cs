@@ -38,7 +38,7 @@ public class RedrawingIpcTester : Luna.IUiService, IDisposable
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(RedrawObject.Label, "Redraw by Index"u8))
+        using (IpcTester.DrawIntro(RedrawObject.LabelU8, "Redraw by Index"u8))
         {
             var tmp = _redrawIndex;
             table.NextColumn();
@@ -50,14 +50,14 @@ public class RedrawingIpcTester : Luna.IUiService, IDisposable
                 new RedrawObject(_pi).Invoke(_redrawIndex);
         }
 
-        using (IpcTester.DrawIntro(RedrawAll.Label, "Redraw All"u8))
+        using (IpcTester.DrawIntro(RedrawAll.LabelU8, "Redraw All"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Redraw##All"u8))
                 new RedrawAll(_pi).Invoke();
         }
 
-        using (IpcTester.DrawIntro(GameObjectRedrawn.Label, "Last Redrawn Object:"u8))
+        using (IpcTester.DrawIntro(GameObjectRedrawn.LabelU8, "Last Redrawn Object:"u8))
         {
             table.DrawColumn(_lastRedrawnString);
         }

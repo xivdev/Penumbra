@@ -3,7 +3,7 @@ using OtterGui;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.Combos;
 
 public static class Combos
 {
@@ -31,7 +31,7 @@ public static class Combos
 
     public static bool RspAttribute(string label, RspAttribute current, out RspAttribute attribute, float unscaledWidth = 200)
         => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out attribute,
-            RspAttributeExtensions.ToFullString, 0, 1);
+            RspAttributeExtensions.ToName, 0, 1);
 
     public static bool EstSlot(string label, EstType current, out EstType attribute, float unscaledWidth = 200)
         => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out attribute);

@@ -1,14 +1,8 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
-using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
-using OtterGui;
 using OtterGui.Classes;
-using OtterGui.Raii;
-using OtterGui.Text;
 using OtterGui.Widgets;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
@@ -39,7 +33,7 @@ public class FileEditor<T>(
 {
     public void Draw()
     {
-        using var tab = ImRaii.TabItem(tabName);
+        using var tab = Im.TabBar.BeginItem(tabName);
         if (!tab)
         {
             _quickImport = null;
@@ -55,7 +49,7 @@ public class FileEditor<T>(
         RedrawOnSaveBox();
         Im.Line.Same();
         DefaultInput();
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
         DrawFilePanel();
     }
@@ -63,13 +57,13 @@ public class FileEditor<T>(
     private void RedrawOnSaveBox()
     {
         var redraw = config.Ephemeral.ForceRedrawOnFileChange;
-        if (ImGui.Checkbox("Redraw on Save", ref redraw))
+        if (Im.Checkbox("Redraw on Save"u8, ref redraw))
         {
             config.Ephemeral.ForceRedrawOnFileChange = redraw;
             config.Ephemeral.Save();
         }
 
-        ImGuiUtil.HoverTooltip("Force a redraw of your player character whenever you save a file here.");
+        Im.Tooltip.OnHover("Force a redraw of your player character whenever you save a file here."u8);
     }
 
     public void Dispose()
@@ -92,7 +86,7 @@ public class FileEditor<T>(
     private T?           _defaultFile;
     private Exception?   _defaultException;
 
-    private readonly Combo _combo = new(config, getFiles);
+    private readonly Combo _combo = new(getFiles);
 
     private ModEditWindow.QuickImportAction? _quickImport;
 
@@ -100,9 +94,9 @@ public class FileEditor<T>(
     {
         using var spacing = ImStyleDouble.ItemSpacing.PushX(Im.Style.GlobalScale * 3);
         Im.Item.SetNextWidth(Im.ContentRegion.Available.X - 2 * (Im.Style.GlobalScale * 3 + Im.Style.FrameHeight));
-        ImGui.InputTextWithHint("##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength);
-        _inInput = ImGui.IsItemActive();
-        if (ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0)
+        Im.Input.Text("##defaultInput"u8, ref _defaultPath, "Input game path to compare..."u8, maxLength: Utf8GamePath.MaxGamePathLength);
+        _inInput = Im.Item.Active;
+        if (Im.Item.DeactivatedAfterEdit && _defaultPath.Length > 0)
         {
             _isDefaultPathUtf8Valid = Utf8GamePath.FromString(_defaultPath, out _defaultPathUtf8);
             _quickImport            = null;
@@ -110,7 +104,7 @@ public class FileEditor<T>(
             try
             {
                 var file = gameData.GetFile(_defaultPath);
-                if (file != null)
+                if (file is not null)
                 {
                     _defaultException = null;
                     (_defaultFile as IDisposable)?.Dispose();
@@ -131,8 +125,7 @@ public class FileEditor<T>(
         }
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Save.ToIconString(), new Vector2(Im.Style.FrameHeight), "Export this file.",
-                _defaultFile == null, true))
+        if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Export this file."u8, _defaultFile is null))
             fileDialog.OpenSavePicker($"Export {_defaultPath} to...", fileType, Path.GetFileNameWithoutExtension(_defaultPath), fileType,
                 (success, name) =>
                 {
@@ -152,8 +145,7 @@ public class FileEditor<T>(
         _quickImport ??=
             ModEditWindow.QuickImportAction.Prepare(owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(Im.Style.FrameHeight),
-                $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
+        if (ImEx.Icon.Button(LunaStyle.ImportIcon, $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute))
         {
             try
             {
@@ -211,7 +203,7 @@ public class FileEditor<T>(
     private void SaveButton()
     {
         var canSave = _changed && _currentFile is { Valid: true };
-        if (ImGuiUtil.DrawDisabledButton("Save to File", Vector2.Zero,
+        if (ImEx.Button("Save to File"u8, Vector2.Zero,
                 $"Save the selected {fileType} file with all changes applied. This is not revertible.", !canSave))
             SaveFile();
     }
@@ -219,14 +211,14 @@ public class FileEditor<T>(
     public void SaveFile()
     {
         compactor.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
-        if (owner.Mod != null)
+        if (owner.Mod is not null)
             communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, _currentPath));
         _changed = false;
     }
 
     private void ResetButton()
     {
-        if (ImGuiUtil.DrawDisabledButton("Reset Changes", Vector2.Zero,
+        if (ImEx.Button("Reset Changes"u8, Vector2.Zero,
                 $"Reset all changes made to the {fileType} file.", !_changed))
         {
             var tmp = _currentPath;
@@ -237,31 +229,31 @@ public class FileEditor<T>(
 
     private void DrawFilePanel()
     {
-        using var child = ImRaii.Child("##filePanel", -Vector2.One, true);
+        using var child = Im.Child.Begin("##filePanel"u8, Im.ContentRegion.Available, true);
         if (!child)
             return;
 
-        if (_currentPath != null)
+        if (_currentPath is not null)
         {
-            if (_currentFile == null)
+            if (_currentFile is null)
             {
                 Im.Text($"Could not parse selected {fileType} file.");
-                if (_currentException != null)
+                if (_currentException is not null)
                 {
-                    using var tab = ImRaii.PushIndent();
-                    ImGuiUtil.TextWrapped(_currentException.ToString());
+                    using var tab = Im.Indent();
+                    Im.TextWrapped($"{_currentException}");
                 }
             }
             else
             {
-                using var id = ImRaii.PushId(0);
+                using var id = Im.Id.Push(0);
                 _changed |= drawEdit(_currentFile, false);
             }
         }
 
         if (!_inInput && _defaultPath.Length > 0)
         {
-            if (_currentPath != null)
+            if (_currentPath is not null)
             {
                 Im.Line.New();
                 Im.Line.New();
@@ -272,50 +264,46 @@ public class FileEditor<T>(
             if (_defaultFile == null)
             {
                 Im.Text($"Could not parse provided {fileType} game file:\n");
-                if (_defaultException != null)
+                if (_defaultException is not null)
                 {
-                    using var tab = ImRaii.PushIndent();
-                    ImGuiUtil.TextWrapped(_defaultException.ToString());
+                    using var tab = Im.Indent();
+                    Im.TextWrapped($"{_defaultException}");
                 }
             }
             else
             {
-                using var id = ImRaii.PushId(1);
+                using var id = Im.Id.Push(1);
                 drawEdit(_defaultFile, true);
             }
         }
     }
 
-    private class Combo : FilterComboCache<FileRegistry>
+    private class Combo(Func<IReadOnlyList<FileRegistry>> generator)
+        : FilterComboCache<FileRegistry>(generator, MouseWheelType.None, Penumbra.Log)
     {
-        private readonly Configuration _config;
-
-        public Combo(Configuration config, Func<IReadOnlyList<FileRegistry>> generator)
-            : base(generator, MouseWheelType.None, Penumbra.Log)
-            => _config = config;
-
         protected override bool DrawSelectable(int globalIdx, bool selected)
         {
             var  file = Items[globalIdx];
             bool ret;
-            using (var c = ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
+            using (ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
             {
-                ret = ImGui.Selectable(file.RelPath.ToString(), selected);
+                ret = Im.Selectable(file.RelPath.ToString(), selected);
             }
 
             if (Im.Item.Hovered())
             {
-                using var tt = ImRaii.Tooltip();
+                using var tt = Im.Tooltip.Begin();
                 Im.Text("All Game Paths"u8);
                 Im.Separator();
                 using var t = Im.Table.Begin("##Tooltip"u8, 2, TableFlags.SizingFixedFit);
-                foreach (var (option, gamePath) in file.SubModUsage)
+                if (t)
                 {
-                    ImGui.TableNextColumn();
-                    ImUtf8.Text(gamePath.Path.Span);
-                    ImGui.TableNextColumn();
-                    using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
-                    Im.Text(option.GetFullName());
+                    foreach (var (option, gamePath) in file.SubModUsage)
+                    {
+                        t.DrawColumn(gamePath.Path.Span);
+                        using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
+                        t.DrawColumn(option.GetFullName());
+                    }
                 }
             }
 
@@ -323,7 +311,7 @@ public class FileEditor<T>(
             {
                 Im.Line.Same();
                 using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
-                ImGuiUtil.RightAlign(file.SubModUsage[0].Item2.Path.ToString());
+                ImEx.TextRightAligned($"{file.SubModUsage[0].Item2.Path}");
             }
 
             return ret;

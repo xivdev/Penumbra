@@ -1,11 +1,6 @@
-using Dalamud.Interface.Components;
 using Dalamud.Plugin.Services;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
-using OtterGui.Widgets;
+using Luna;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Interop;
@@ -75,9 +70,8 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         if (disabled || Mtrl.IsDawntrail)
             return false;
 
-        if (!ImUtf8.ButtonEx("Update MTRL Version to Dawntrail"u8,
-                "Try using this if the material can not be loaded or should use legacy shaders.\n\nThis is not revertible."u8,
-                new Vector2(-0.1f, 0), false, 0, new Rgba32(Colors.PressEnterWarningBg).Color))
+        if (!ImEx.Button("Update MTRL Version to Dawntrail"u8, Colors.PressEnterWarningBg, default, Im.ContentRegion.Available with { Y = 0 },
+                "Try using this if the material can not be loaded or should use legacy shaders.\n\nThis is not revertible."u8))
             return false;
 
         Mtrl.MigrateToDawntrail();
@@ -96,17 +90,17 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         DrawMaterialLivePreviewRebind(disabled);
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
         var ret = DrawBackFaceAndTransparency(disabled);
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
         ret |= DrawShaderSection(disabled);
 
         ret |= DrawTextureSection(disabled);
         ret |= DrawColorTableSection(disabled);
         ret |= DrawConstantsSection(disabled);
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
         DrawOtherMaterialDetails(disabled);
 
         return !disabled && ret;
@@ -118,15 +112,15 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
         var ret = false;
 
-        using var dis = ImRaii.Disabled(disabled);
+        using var dis = Im.Disabled(disabled);
 
         var tmp = shaderFlags.EnableTransparency;
 
         // guardrail: the game crashes if transparency is enabled on characterstockings.shpk
         var disallowTransparency = Mtrl.ShaderPackage.Name == "characterstockings.shpk";
-        using (ImRaii.Disabled(disallowTransparency))
+        using (Im.Disabled(disallowTransparency))
         {
-            if (ImUtf8.Checkbox("Enable Transparency"u8, ref tmp))
+            if (Im.Checkbox("Enable Transparency"u8, ref tmp))
             {
                 shaderFlags.EnableTransparency = tmp;
                 ret                            = true;
@@ -135,13 +129,11 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         }
 
         if (disallowTransparency)
-        {
-            ImGuiComponents.HelpMarker("Enabling transparency for shader package characterstockings.shpk will crash the game.");
-        }
+            LunaStyle.DrawHelpMarker("Enabling transparency for shader package characterstockings.shpk will crash the game."u8);
 
         Im.Line.Same(200 * Im.Style.GlobalScale + Im.Style.ItemSpacing.X + Im.Style.WindowPadding.X);
         tmp = shaderFlags.HideBackfaces;
-        if (ImUtf8.Checkbox("Hide Backfaces"u8, ref tmp))
+        if (Im.Checkbox("Hide Backfaces"u8, ref tmp))
         {
             shaderFlags.HideBackfaces = tmp;
             ret                       = true;
@@ -152,8 +144,8 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         {
             Im.Line.Same(400 * Im.Style.GlobalScale + 2 * Im.Style.ItemSpacing.X + Im.Style.WindowPadding.X);
 
-            ImUtf8.Text("Loading shader (.shpk) file. Some functionality will only be available after this is done."u8,
-                ImGuiUtil.HalfBlendText(0x808000u)); // Half cyan
+            Im.Text("Loading shader (.shpk) file. Some functionality will only be available after this is done."u8,
+                ImGuiColor.Text.Get().HalfBlend(0x808000));
         }
 
         return ret;
@@ -161,29 +153,29 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
     private void DrawOtherMaterialDetails(bool _)
     {
-        if (!ImUtf8.CollapsingHeader("Further Content"u8))
+        if (!Im.Tree.Header("Further Content"u8))
             return;
 
-        using (var sets = ImUtf8.TreeNode("UV Sets"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        using (var sets = Im.Tree.Node("UV Sets"u8, TreeNodeFlags.DefaultOpen))
         {
             if (sets)
                 foreach (var set in Mtrl.UvSets)
-                    ImUtf8.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
+                    Im.Tree.Leaf($"#{set.Index:D2} - {set.Name}");
         }
 
-        using (var sets = ImUtf8.TreeNode("Color Sets"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        using (var sets = Im.Tree.Node("Color Sets"u8, TreeNodeFlags.DefaultOpen))
         {
             if (sets)
                 foreach (var set in Mtrl.ColorSets)
-                    ImUtf8.TreeNode($"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf).Dispose();
+                    Im.Tree.Leaf($"#{set.Index:D2} - {set.Name}");
         }
 
         if (Mtrl.AdditionalData.Length <= 0)
             return;
 
-        using var t = ImUtf8.TreeNode($"Additional Data (Size: {Mtrl.AdditionalData.Length})###AdditionalData");
+        using var t = Im.Tree.Node($"Additional Data (Size: {Mtrl.AdditionalData.Length})###AdditionalData");
         if (t)
-            Widget.DrawHexViewer(Mtrl.AdditionalData);
+            ImEx.HexViewer(Mtrl.AdditionalData);
     }
 
     private void UnpinResources(bool all)
@@ -209,7 +201,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         UpdateConstants();
     }
 
-    public unsafe void Dispose()
+    public void Dispose()
     {
         UnbindFromMaterialInstances();
         if (Writable)

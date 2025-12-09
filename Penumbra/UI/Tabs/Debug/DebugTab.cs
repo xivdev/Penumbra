@@ -7,7 +7,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using ImSharp;
 using Luna;
@@ -47,7 +46,7 @@ public class Diagnostics(ServiceManager provider) : IUiService
 {
     public void DrawDiagnostics()
     {
-        if (!ImGui.CollapsingHeader("Diagnostics"))
+        if (!Im.Tree.Header("Diagnostics"u8))
             return;
 
         using var table = Im.Table.Begin("##data"u8, 4, TableFlags.RowBackground);
@@ -214,7 +213,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private unsafe void DrawCollectionCaches()
     {
-        if (!ImGui.CollapsingHeader(
+        if (!Im.Tree.Header(
                 $"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1} Caches)###Collections"))
             return;
 
@@ -242,21 +241,21 @@ public sealed class DebugTab : Window, ITab<TabType>
                                 collection.Inheritance.FlatHierarchy.Count);
                             for (var i = 0; i < max; ++i)
                             {
-                                ImGui.TableNextColumn();
+                                table.NextColumn();
                                 if (i < collection.Inheritance.DirectlyInheritsFrom.Count)
                                     ImUtf8.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
-                                ImGui.TableNextColumn();
+                                    Im.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
+                                table.NextColumn();
                                 if (i < collection.Inheritance.DirectlyInheritedBy.Count)
                                     ImUtf8.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
-                                ImGui.TableNextColumn();
+                                    Im.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
+                                table.NextColumn();
                                 if (i < collection.Inheritance.FlatHierarchy.Count)
                                     ImUtf8.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
                                 else
-                                    ImGui.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
+                                    Im.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                             }
                         }
                     }
@@ -266,10 +265,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                 {
                     if (resourceNode)
                         foreach (var (path, resource) in collection.Cache!.CustomResources)
-                        {
-                            ImUtf8.TreeNode($"{path} -> 0x{(ulong)resource.ResourceHandle:X}",
-                                ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
-                        }
+                            Im.Tree.Leaf($"{path} -> 0x{(ulong)resource.ResourceHandle:X}");
                 }
 
                 using var modNode = ImUtf8.TreeNode("Enabled Mods"u8);
@@ -282,18 +278,16 @@ public sealed class DebugTab : Window, ITab<TabType>
                             continue;
 
                         foreach (var path in paths)
-
-                            Im.Tree.Node(path.Path.Span, TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+                            Im.Tree.Leaf(path.Path.Span);
 
                         foreach (var manip in manips)
-                            Im.Tree.Node($"{manip}", TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+                            Im.Tree.Leaf($"{manip}");
                     }
             }
             else
             {
                 using var color = ImGuiColor.Text.Push(ColorId.UndefinedMod.Value());
-                Im.Tree.Node($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})",
-                    TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+                Im.Tree.Leaf($"{collection.Identity.Name} (Change Counter {collection.Counters.Change})");
             }
         }
     }
@@ -301,11 +295,11 @@ public sealed class DebugTab : Window, ITab<TabType>
     /// <summary> Draw general information about mod and collection state. </summary>
     private void DrawDebugTabGeneral()
     {
-        if (!ImGui.CollapsingHeader("General"))
+        if (!Im.Tree.Header("General"u8))
             return;
 
         var separateWindow = _config.Ephemeral.DebugSeparateWindow;
-        if (ImGui.Checkbox("Draw as Separate Window", ref separateWindow))
+        if (Im.Checkbox("Draw as Separate Window"u8, ref separateWindow))
         {
             IsOpen                                = true;
             _config.Ephemeral.DebugSeparateWindow = separateWindow;
@@ -316,18 +310,18 @@ public sealed class DebugTab : Window, ITab<TabType>
         {
             if (table)
             {
-                PrintValue("Penumbra Version",                 $"{_validityChecker.Version} {DebugVersionString}");
-                PrintValue("Git Commit Hash",                  _validityChecker.CommitHash);
-                PrintValue("Selected Collection",               _collectionManager.Active.Current.Identity.Name);
-                PrintValue("    has Cache",                    _collectionManager.Active.Current.HasCache.ToString());
-                PrintValue("Base Collection",                  _collectionManager.Active.Default.Identity.Name);
-                PrintValue("    has Cache",                    _collectionManager.Active.Default.HasCache.ToString());
-                PrintValue("Mod Manager BasePath",             _modManager.BasePath.Name);
-                PrintValue("Mod Manager BasePath-Full",        _modManager.BasePath.FullName);
-                PrintValue("Mod Manager BasePath IsRooted",    Path.IsPathRooted(_config.ModDirectory).ToString());
-                PrintValue("Mod Manager BasePath Exists",      Directory.Exists(_modManager.BasePath.FullName).ToString());
-                PrintValue("Mod Manager Valid",                _modManager.Valid.ToString());
-                PrintValue("Web Server Enabled",               _httpApi.Enabled.ToString());
+                table.DrawDataPair("Penumbra Version"u8,              $"{_validityChecker.Version} {DebugVersionString}");
+                table.DrawDataPair("Git Commit Hash"u8,               _validityChecker.CommitHash);
+                table.DrawDataPair("Selected Collection"u8,           _collectionManager.Active.Current.Identity.Name);
+                table.DrawDataPair("    has Cache"u8,                 _collectionManager.Active.Current.HasCache.ToString());
+                table.DrawDataPair("Base Collection"u8,               _collectionManager.Active.Default.Identity.Name);
+                table.DrawDataPair("    has Cache"u8,                 _collectionManager.Active.Default.HasCache.ToString());
+                table.DrawDataPair("Mod Manager BasePath"u8,          _modManager.BasePath.Name);
+                table.DrawDataPair("Mod Manager BasePath-Full"u8,     _modManager.BasePath.FullName);
+                table.DrawDataPair("Mod Manager BasePath IsRooted"u8, Path.IsPathRooted(_config.ModDirectory).ToString());
+                table.DrawDataPair("Mod Manager BasePath Exists"u8,   Directory.Exists(_modManager.BasePath.FullName).ToString());
+                table.DrawDataPair("Mod Manager Valid"u8,             _modManager.Valid.ToString());
+                table.DrawDataPair("Web Server Enabled"u8,            _httpApi.Enabled.ToString());
             }
         }
 
@@ -343,8 +337,8 @@ public sealed class DebugTab : Window, ITab<TabType>
                     var lastIndex = -1;
                     foreach (var mod in _modManager)
                     {
-                        PrintValue(mod.Name, mod.Index.ToString("D5"));
-                        ImGui.TableNextColumn();
+                        table.DrawDataPair(mod.Name, $"{mod.Index:D5}");
+                        table.NextColumn();
                         var index = mod.Index;
                         if (index != lastIndex + 1)
                             Im.Text("!!!"u8);
@@ -362,27 +356,24 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (table)
                 {
                     var importing = _modImporter.IsImporting(out var importer);
-                    PrintValue("Is Importing",            importing.ToString());
-                    PrintValue("Importer State",          (importer?.State ?? ImporterState.None).ToString());
-                    PrintValue("Import Window Was Drawn", _importPopup.WasDrawn.ToString());
-                    PrintValue("Import Popup Was Drawn",  _importPopup.PopupWasDrawn.ToString());
-                    ImGui.TableNextColumn();
-                    Im.Text("Import Batches"u8);
-                    ImGui.TableNextColumn();
+                    table.DrawDataPair("Is Importing"u8,            importing.ToString());
+                    table.DrawDataPair("Importer State"u8,          (importer?.State ?? ImporterState.None).ToString());
+                    table.DrawDataPair("Import Window Was Drawn"u8, _importPopup.WasDrawn.ToString());
+                    table.DrawDataPair("Import Popup Was Drawn"u8,  _importPopup.PopupWasDrawn.ToString());
+                    table.DrawColumn("Import Batches"u8);
+                    table.NextColumn();
                     foreach (var (index, batch) in _modImporter.ModBatches.Index())
                     {
                         foreach (var mod in batch)
-                            PrintValue(index.ToString(), mod);
+                            table.DrawDataPair($"{index}", mod);
                     }
 
-                    ImGui.TableNextColumn();
-                    Im.Text("Addable Mods"u8);
-                    ImGui.TableNextColumn();
+                    table.DrawColumn("Addable Mods"u8);
+                    table.NextColumn();
                     foreach (var mod in _modImporter.AddableMods)
                     {
-                        ImGui.TableNextColumn();
-                        ImGui.TableNextColumn();
-                        Im.Text(mod.Name);
+                        table.NextColumn();
+                        table.DrawColumn(mod.Name);
                     }
                 }
             }
@@ -396,15 +387,15 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (table)
                 {
                     foreach (var important in _framework.Important)
-                        PrintValue(important, "Immediate");
+                        table.DrawDataPair(important, "Immediate"u8);
 
                     foreach (var (idx, onTick) in _framework.OnTick.Index())
-                        PrintValue(onTick, $"{idx + 1} Tick(s) From Now");
+                        table.DrawDataPair(onTick, $"{idx + 1} Tick(s) From Now");
 
                     foreach (var (time, name) in _framework.Delayed)
                     {
                         var span = time - DateTime.UtcNow;
-                        PrintValue(name, $"After {span.Minutes:D2}:{span.Seconds:D2}.{span.Milliseconds / 10:D2} (+ Ticks)");
+                        table.DrawDataPair(name, $"After {span.Minutes:D2}:{span.Seconds:D2}.{span.Milliseconds / 10:D2} (+ Ticks)");
                     }
                 }
             }
@@ -417,10 +408,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using var table = Im.Table.Begin("##Tasks"u8, 2, TableFlags.RowBackground);
                 if (table)
                     foreach (var task in _textureManager.Tasks)
-                    {
-                        ImGuiUtil.DrawTableColumn(task.Key.ToString()!);
-                        ImGuiUtil.DrawTableColumn(task.Value.Item1.Status.ToString());
-                    }
+                        table.DrawDataPair(task.Key.ToString()!, $"{task.Value.Item1.Status}");
             }
         }
 
@@ -431,63 +419,63 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using var table = Im.Table.Begin("##redraws"u8, 3, TableFlags.RowBackground);
                 if (table)
                 {
-                    ImGuiUtil.DrawTableColumn("In GPose");
-                    ImGuiUtil.DrawTableColumn(_redraws.InGPose.ToString());
-                    ImGui.TableNextColumn();
+                    table.DrawDataPair("In GPose"u8, $"{_redraws.InGPose}");
+                    table.NextColumn();
 
-                    ImGuiUtil.DrawTableColumn("Target");
-                    ImGuiUtil.DrawTableColumn(_redraws.Target.ToString());
-                    ImGui.TableNextColumn();
+                    table.DrawDataPair("Target"u8, $"{_redraws.Target}");
+                    table.NextColumn();
 
                     foreach (var (idx, objectIdx) in _redraws.Queue.Index())
                     {
-                        var (actualIdx, state) = objectIdx < 0 ? (~objectIdx, "Queued") : (objectIdx, "Invisible");
-                        ImGuiUtil.DrawTableColumn($"Redraw Queue #{idx}");
-                        ImGuiUtil.DrawTableColumn(actualIdx.ToString());
-                        ImGuiUtil.DrawTableColumn(state);
+                        var (actualIdx, state) =
+                            objectIdx < 0 ? RefTuple.Create(~objectIdx, "Queued"u8) : RefTuple.Create(objectIdx, "Invisible"u8);
+                        table.DrawColumn($"Redraw Queue #{idx}");
+                        table.DrawColumn($"{actualIdx}");
+                        table.DrawColumn(state);
                     }
 
                     foreach (var (idx, objectIdx) in _redraws.AfterGPoseQueue.Index())
                     {
-                        var (actualIdx, state) = objectIdx < 0 ? (~objectIdx, "Queued") : (objectIdx, "Invisible");
-                        ImGuiUtil.DrawTableColumn($"GPose Queue #{idx}");
-                        ImGuiUtil.DrawTableColumn(actualIdx.ToString());
-                        ImGuiUtil.DrawTableColumn(state);
+                        var (actualIdx, state) =
+                            objectIdx < 0 ? RefTuple.Create(~objectIdx, "Queued"u8) : RefTuple.Create(objectIdx, "Invisible"u8);
+                        table.DrawColumn($"GPose Queue #{idx}");
+                        table.DrawColumn($"{actualIdx}");
+                        table.DrawColumn(state);
                     }
 
                     foreach (var (idx, name) in _redraws.GPoseNames.OfType<string>().Index())
                     {
-                        ImGuiUtil.DrawTableColumn($"GPose Name #{idx}");
-                        ImGuiUtil.DrawTableColumn(name);
-                        ImGui.TableNextColumn();
+                        table.DrawColumn($"GPose Name #{idx}");
+                        table.DrawColumn(name);
+                        table.NextColumn();
                     }
                 }
             }
         }
 
-        using (var tree = ImUtf8.TreeNode("String Memory"u8))
+        using (var tree = Im.Tree.Node("String Memory"u8))
         {
             if (tree)
             {
-                using (ImUtf8.Group())
+                using (Im.Group())
                 {
-                    ImUtf8.Text("Currently Allocated Strings"u8);
-                    ImUtf8.Text("Total Allocated Strings"u8);
-                    ImUtf8.Text("Free'd Allocated Strings"u8);
-                    ImUtf8.Text("Currently Allocated Bytes"u8);
-                    ImUtf8.Text("Total Allocated Bytes"u8);
-                    ImUtf8.Text("Free'd Allocated Bytes"u8);
+                    Im.Text("Currently Allocated Strings"u8);
+                    Im.Text("Total Allocated Strings"u8);
+                    Im.Text("Free'd Allocated Strings"u8);
+                    Im.Text("Currently Allocated Bytes"u8);
+                    Im.Text("Total Allocated Bytes"u8);
+                    Im.Text("Free'd Allocated Bytes"u8);
                 }
 
                 Im.Line.Same();
                 using (ImUtf8.Group())
                 {
-                    ImUtf8.Text($"{PenumbraStringMemory.CurrentStrings}");
-                    ImUtf8.Text($"{PenumbraStringMemory.AllocatedStrings}");
-                    ImUtf8.Text($"{PenumbraStringMemory.FreedStrings}");
-                    ImUtf8.Text($"{PenumbraStringMemory.CurrentBytes}");
-                    ImUtf8.Text($"{PenumbraStringMemory.AllocatedBytes}");
-                    ImUtf8.Text($"{PenumbraStringMemory.FreedBytes}");
+                    Im.Text($"{PenumbraStringMemory.CurrentStrings}");
+                    Im.Text($"{PenumbraStringMemory.AllocatedStrings}");
+                    Im.Text($"{PenumbraStringMemory.FreedStrings}");
+                    Im.Text($"{PenumbraStringMemory.CurrentBytes}");
+                    Im.Text($"{PenumbraStringMemory.AllocatedBytes}");
+                    Im.Text($"{PenumbraStringMemory.FreedBytes}");
                 }
             }
         }
@@ -497,7 +485,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private void DrawPerformanceTab()
     {
-        if (!ImGui.CollapsingHeader("Performance"))
+        if (!Im.Tree.Node("Performance"u8))
             return;
 
         using (var start = Im.Tree.Node("Startup Performance"u8, TreeNodeFlags.DefaultOpen))
@@ -509,10 +497,10 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private unsafe void DrawActorsDebug()
     {
-        if (!ImGui.CollapsingHeader("Actors"))
+        if (!Im.Tree.Node("Actors"u8))
             return;
 
-        using (var objectTree = ImUtf8.TreeNode("Object Manager"u8))
+        using (var objectTree = Im.Tree.Node("Object Manager"u8))
         {
             if (objectTree)
             {
@@ -523,36 +511,36 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (!table)
                     return;
 
-                DrawSpecial("Current Player",  _actors.GetCurrentPlayer());
-                DrawSpecial("Current Inspect", _actors.GetInspectPlayer());
-                DrawSpecial("Current Card",    _actors.GetCardPlayer());
-                DrawSpecial("Current Glamour", _actors.GetGlamourPlayer());
+                DrawSpecial("Current Player"u8,  _actors.GetCurrentPlayer());
+                DrawSpecial("Current Inspect"u8, _actors.GetInspectPlayer());
+                DrawSpecial("Current Card"u8,    _actors.GetCardPlayer());
+                DrawSpecial("Current Glamour"u8, _actors.GetGlamourPlayer());
 
                 foreach (var obj in _objects)
                 {
-                    ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL");
-                    ImGui.TableNextColumn();
+                    table.DrawColumn(obj.Address != nint.Zero ? $"{((GameObject*)obj.Address)->ObjectIndex}" : "NULL"u8);
+                    table.NextColumn();
                     Penumbra.Dynamis.DrawPointer(obj.Address);
-                    ImGui.TableNextColumn();
+                    table.NextColumn();
                     if (obj.Address != nint.Zero)
                         Penumbra.Dynamis.DrawPointer((nint)((Character*)obj.Address)->GameObject.GetDrawObject());
                     var identifier = _actors.FromObject(obj, out _, false, true, false);
-                    ImGuiUtil.DrawTableColumn(_actors.ToString(identifier));
+                    table.DrawColumn(_actors.ToString(identifier));
                     var id = obj.AsObject->ObjectKind is ObjectKind.BattleNpc
                         ? $"{identifier.DataId} | {obj.AsObject->BaseId}"
                         : identifier.DataId.ToString();
-                    ImGuiUtil.DrawTableColumn(id);
-                    ImGui.TableNextColumn();
+                    table.DrawColumn(id);
+                    table.NextColumn();
                     Penumbra.Dynamis.DrawPointer(obj.Address != nint.Zero ? *(nint*)obj.Address : nint.Zero);
-                    ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero ? $"0x{obj.AsObject->EntityId:X}" : "NULL");
-                    ImGuiUtil.DrawTableColumn(obj.Address != nint.Zero
+                    table.DrawColumn(obj.Address != nint.Zero ? $"0x{obj.AsObject->EntityId:X}" : "NULL");
+                    table.DrawColumn(obj.Address != nint.Zero
                         ? obj.AsObject->IsCharacter() ? $"Character: {obj.AsCharacter->ObjectKind}" : "No Character"
                         : "NULL");
                 }
             }
         }
 
-        using (var shapeTree = ImUtf8.TreeNode("Shape Inspector"u8))
+        using (var shapeTree = Im.Tree.Node("Shape Inspector"u8))
         {
             if (shapeTree)
                 _shapeInspector.Draw();
@@ -560,19 +548,19 @@ public sealed class DebugTab : Window, ITab<TabType>
 
         return;
 
-        void DrawSpecial(string name, ActorIdentifier id)
+        void DrawSpecial(ReadOnlySpan<byte> name, ActorIdentifier id)
         {
             if (!id.IsValid)
                 return;
 
-            ImGuiUtil.DrawTableColumn(name);
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(_actors.ToString(id));
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(string.Empty);
-            ImGuiUtil.DrawTableColumn(string.Empty);
+            Im.Table.DrawColumn(name);
+            Im.Table.DrawColumn(StringU8.Empty);
+            Im.Table.DrawColumn(StringU8.Empty);
+            Im.Table.DrawColumn(_actors.ToString(id));
+            Im.Table.DrawColumn(StringU8.Empty);
+            Im.Table.DrawColumn(StringU8.Empty);
+            Im.Table.DrawColumn(StringU8.Empty);
+            Im.Table.DrawColumn(StringU8.Empty);
         }
     }
 
@@ -582,7 +570,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     /// </summary>
     private unsafe void DrawPathResolverDebug()
     {
-        if (!ImGui.CollapsingHeader("Path Resolver"))
+        if (!Im.Tree.Node("Path Resolver"u8))
             return;
 
         Im.Text(
@@ -598,25 +586,25 @@ public sealed class DebugTab : Window, ITab<TabType>
                                  .ThenBy(kvp => kvp.Value.Item3)
                                  .ThenBy(kvp => kvp.Key.Address))
                     {
-                        ImGui.TableNextColumn();
-                        ImUtf8.CopyOnClickSelectable($"{drawObject}");
-                        ImUtf8.DrawTableColumn($"{gameObjectPtr.Index}");
+                        table.NextColumn();
+                        Penumbra.Dynamis.DrawPointer(drawObject.Address);
+                        table.DrawColumn($"{gameObjectPtr.Index}");
                         using (ImGuiColor.Text.Push(new Vector4(1, 0, 0, 1), gameObjectPtr.Index != idx))
                         {
-                            ImUtf8.DrawTableColumn($"{idx}");
+                            table.DrawColumn($"{idx}");
                         }
 
-                        ImUtf8.DrawTableColumn(child ? "Child"u8 : "Main"u8);
-                        ImGui.TableNextColumn();
-                        ImUtf8.CopyOnClickSelectable($"{gameObjectPtr}");
+                        table.DrawColumn(child ? "Child"u8 : "Main"u8);
+                        table.NextColumn();
+                        Penumbra.Dynamis.DrawPointer(gameObjectPtr);
                         using (ImGuiColor.Text.Push(new Vector4(1, 0, 0, 1), _objects[idx] != gameObjectPtr))
                         {
-                            ImUtf8.DrawTableColumn($"{_objects[idx]}");
+                            table.DrawColumn($"{_objects[idx]}");
                         }
 
-                        ImUtf8.DrawTableColumn(gameObjectPtr.Utf8Name.Span);
+                        table.DrawColumn(gameObjectPtr.Utf8Name.Span);
                         var collection = _collectionResolver.IdentifyCollection(gameObjectPtr.AsObject, true);
-                        ImUtf8.DrawTableColumn(collection.ModCollection.Identity.Name);
+                        table.DrawColumn(collection.ModCollection.Identity.Name);
                     }
             }
         }
@@ -629,10 +617,9 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (table)
                     foreach (var data in _pathState.CurrentData)
                     {
-                        ImGui.TableNextColumn();
-                        Im.Text($"{data.AssociatedGameObject:X}");
-                        ImGui.TableNextColumn();
-                        Im.Text(data.ModCollection.Identity.Name);
+                        table.NextColumn();
+                        Penumbra.Dynamis.DrawPointer(data.AssociatedGameObject);
+                        table.DrawColumn(data.ModCollection.Identity.Name);
                     }
             }
         }
@@ -644,27 +631,27 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using var table = Im.Table.Begin("###ResourceCollectionResolverTable"u8, 4, TableFlags.SizingFixedFit);
                 if (table)
                 {
-                    ImGuiUtil.DrawTableColumn("Current Mtrl Data");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.MtrlData.ModCollection.Identity.Name);
-                    ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.MtrlData.AssociatedGameObject:X}");
-                    ImGui.TableNextColumn();
+                    table.DrawColumn("Current Mtrl Data"u8);
+                    table.DrawColumn(_subfileHelper.MtrlData.ModCollection.Identity.Name);
+                    table.DrawColumn($"0x{_subfileHelper.MtrlData.AssociatedGameObject:X}");
+                    table.NextColumn();
 
-                    ImGuiUtil.DrawTableColumn("Current Avfx Data");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.AvfxData.ModCollection.Identity.Name);
-                    ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.AvfxData.AssociatedGameObject:X}");
-                    ImGui.TableNextColumn();
+                    table.DrawColumn("Current Avfx Data"u8);
+                    table.DrawColumn(_subfileHelper.AvfxData.ModCollection.Identity.Name);
+                    table.DrawColumn($"0x{_subfileHelper.AvfxData.AssociatedGameObject:X}");
+                    table.NextColumn();
 
-                    ImGuiUtil.DrawTableColumn("Current Resources");
-                    ImGuiUtil.DrawTableColumn(_subfileHelper.Count.ToString());
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
+                    table.DrawColumn("Current Resources"u8);
+                    table.DrawColumn($"{_subfileHelper.Count}");
+                    table.NextColumn();
+                    table.NextColumn();
 
                     foreach (var (resource, resolve) in _subfileHelper)
                     {
-                        ImGuiUtil.DrawTableColumn($"0x{resource:X}");
-                        ImGuiUtil.DrawTableColumn(resolve.ModCollection.Identity.Name);
-                        ImGuiUtil.DrawTableColumn($"0x{resolve.AssociatedGameObject:X}");
-                        ImGuiUtil.DrawTableColumn($"{((ResourceHandle*)resource)->FileName()}");
+                        table.DrawColumn($"0x{resource:X}");
+                        table.DrawColumn(resolve.ModCollection.Identity.Name);
+                        table.DrawColumn($"0x{resolve.AssociatedGameObject:X}");
+                        table.DrawColumn($"{((ResourceHandle*)resource)->FileName()}");
                     }
                 }
             }
@@ -679,10 +666,10 @@ public sealed class DebugTab : Window, ITab<TabType>
                     foreach (var (address, identifier, collection) in _identifiedCollectionCache
                                  .OrderBy(kvp => ((GameObject*)kvp.Address)->ObjectIndex))
                     {
-                        ImGuiUtil.DrawTableColumn($"{((GameObject*)address)->ObjectIndex}");
-                        ImGuiUtil.DrawTableColumn($"0x{address:X}");
-                        ImGuiUtil.DrawTableColumn(identifier.ToString());
-                        ImGuiUtil.DrawTableColumn(collection.Identity.Name);
+                        table.DrawColumn($"{((GameObject*)address)->ObjectIndex}");
+                        table.DrawColumn($"0x{address:X}");
+                        table.DrawColumn($"{identifier}");
+                        table.DrawColumn(collection.Identity.Name);
                     }
             }
         }
@@ -695,8 +682,8 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (table)
                     foreach (var (idx, actor) in _cutsceneService.Actors)
                     {
-                        ImGuiUtil.DrawTableColumn($"Cutscene Actor {idx}");
-                        ImGuiUtil.DrawTableColumn(actor.Name.ToString());
+                        table.DrawColumn($"Cutscene Actor {idx}");
+                        table.DrawColumn(((Actor)actor.Address).StoredName());
                     }
             }
         }
@@ -708,13 +695,13 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using var table = Im.Table.Begin("###PGroupTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                 {
-                    ImGuiUtil.DrawTableColumn("Group Members");
-                    ImGuiUtil.DrawTableColumn(GroupManager.Instance()->MainGroup.MemberCount.ToString());
+                    table.DrawColumn("Group Members"u8);
+                    table.DrawColumn($"{GroupManager.Instance()->MainGroup.MemberCount}");
                     for (var i = 0; i < 8; ++i)
                     {
-                        ImGuiUtil.DrawTableColumn($"Member #{i}");
+                        table.DrawColumn($"Member #{i}");
                         var member = GroupManager.Instance()->MainGroup.GetPartyMemberByIndex(i);
-                        ImGuiUtil.DrawTableColumn(member == null ? "NULL" : new ByteString(member->Name).ToString());
+                        table.DrawColumn(member is null ? "NULL"u8 : member->Name);
                     }
                 }
             }
@@ -728,8 +715,8 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (agent->Data == null)
                     agent = &AgentBannerMIP.Instance()->AgentBannerInterface;
 
-                ImUtf8.Text("Agent: ");
-                Im.Line.Same(0, 0);
+                Im.Text("Agent: "u8);
+                Im.Line.NoSpacing();
                 Penumbra.Dynamis.DrawPointer((nint)agent);
                 if (agent->Data != null)
                 {
@@ -767,7 +754,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private void DrawData()
     {
-        if (!ImGui.CollapsingHeader("Game Data"))
+        if (!Im.Tree.Node("Game Data"u8))
             return;
 
         DrawEmotes();
@@ -865,8 +852,8 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (!mainTree)
             return;
 
-        ImGui.InputText("File Name",  ref _emoteSearchFile, 256);
-        ImGui.InputText("Emote Name", ref _emoteSearchName, 256);
+        Im.Input.Text("File Name"u8,  ref _emoteSearchFile);
+        Im.Input.Text("Emote Name"u8, ref _emoteSearchName);
         using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
             new Vector2(-1, 12 * Im.Style.TextHeightWithSpacing));
         if (!table)
@@ -879,10 +866,8 @@ public sealed class DebugTab : Window, ITab<TabType>
                  || p.Value.Any(s => s.Name.ToDalamudString().TextValue.Contains(_emoteSearchName, StringComparison.OrdinalIgnoreCase))),
             p =>
             {
-                ImGui.TableNextColumn();
-                Im.Text(p.Key);
-                ImGui.TableNextColumn();
-                Im.Text(StringU8.Join(", "u8, p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
+                Im.Table.DrawColumn(p.Key);
+                Im.Table.DrawColumn(StringU8.Join(", "u8, p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
             });
         ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
     }
@@ -896,7 +881,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (!mainTree)
             return;
 
-        if (ImGui.InputText("Key", ref _tmbKeyFilter, 256))
+        if (Im.Input.Text("Key"u8, ref _tmbKeyFilter))
             _tmbKeyFilterU8 = CiByteString.FromString(_tmbKeyFilter, out var r, MetaDataComputation.All) ? r : CiByteString.Empty;
         using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
             new Vector2(-1, 12 * Im.Style.TextHeightWithSpacing));
@@ -951,9 +936,9 @@ public sealed class DebugTab : Window, ITab<TabType>
                 foreach (var list in data.Colors)
                 {
                     var color = list[i];
-                    ImGui.TableNextColumn();
+                    table.NextColumn();
                     var frame = new Vector2(Im.Style.TextHeight);
-                    ImGui.ColorButton("###color", new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
+                    Im.Color.Button("###color"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
                     Im.Line.Same();
                     Im.Text($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");
                 }
@@ -970,11 +955,11 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private void DrawShaderReplacementFixer()
     {
-        if (!ImGui.CollapsingHeader("Shader Replacement Fixer"))
+        if (!Im.Tree.Header("Shader Replacement Fixer"u8))
             return;
 
         var enableShaderReplacementFixer = _shaderReplacementFixer.Enabled;
-        if (ImGui.Checkbox("Enable Shader Replacement Fixer", ref enableShaderReplacementFixer))
+        if (Im.Checkbox("Enable Shader Replacement Fixer"u8, ref enableShaderReplacementFixer))
             _shaderReplacementFixer.Enabled = enableShaderReplacementFixer;
 
         if (!enableShaderReplacementFixer)
@@ -990,7 +975,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         table.SetupColumn("Shader Package Name"u8,        TableColumnFlags.WidthStretch, 0.6f);
         table.SetupColumn("Materials with Modded ShPk"u8, TableColumnFlags.WidthStretch, 0.2f);
         table.SetupColumn("\u0394 Slow-Path Calls"u8,     TableColumnFlags.WidthStretch, 0.2f);
-        ImGui.TableHeadersRow();
+        table.HeaderRow();
 
         table.DrawColumn("characterglass.shpk"u8);
         table.DrawColumn($"{_shaderReplacementFixer.ModdedCharacterGlassShpkCount}");
@@ -1034,7 +1019,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     {
         var player = _objects[0];
         var name   = player.Valid ? player.StoredName() : "NULL"u8;
-        if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || !player.Valid)
+        if (!Im.Tree.Header($"Player Model Info: {name}##Draw") || !player.Valid)
             return;
 
         DrawCopyableAddress("PlayerCharacter"u8, player.Address);
@@ -1062,37 +1047,35 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (!table)
             return;
 
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Slot");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Imc Ptr");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Imc File");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Model Ptr");
-        ImGui.TableNextColumn();
-        ImGui.TableHeader("Model File");
+        table.NextColumn();
+        table.Header("Slot"u8);
+        table.NextColumn();
+        table.Header("Imc Ptr"u8);
+        table.NextColumn();
+        table.Header("Imc File"u8);
+        table.NextColumn();
+        table.Header("Model Ptr"u8);
+        table.NextColumn();
+        table.Header("Model File"u8);
 
         for (var i = 0; i < model.AsCharacterBase->SlotCount; ++i)
         {
             var imc = (ResourceHandle*)model.AsCharacterBase->IMCArray[i];
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
-            Im.Text($"Slot {i}");
-            ImGui.TableNextColumn();
+            table.NextRow();
+            table.DrawColumn($"Slot {i}");
+            table.NextColumn();
             Penumbra.Dynamis.DrawPointer((nint)imc);
-            ImGui.TableNextColumn();
+            table.NextColumn();
             if (imc is not null)
                 Im.Text(imc->FileName().Span);
 
             var mdl = (RenderModel*)model.AsCharacterBase->Models[i];
-            ImGui.TableNextColumn();
+            table.NextColumn();
             Penumbra.Dynamis.DrawPointer((nint)mdl);
-            if (mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara)
+            if (mdl is null || mdl->ResourceHandle is null || mdl->ResourceHandle->Category is not ResourceCategory.Chara)
                 continue;
 
-            ImGui.TableNextColumn();
-            Im.Text(mdl->ResourceHandle->FileName().Span);
+            table.DrawColumn(mdl->ResourceHandle->FileName().Span);
         }
     }
 
@@ -1101,17 +1084,17 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private void DrawCrcCache()
     {
-        var header = ImUtf8.CollapsingHeader("CRC Cache"u8);
+        var header = Im.Tree.Header("CRC Cache"u8);
         if (!header)
             return;
 
-        if (ImUtf8.InputText("##crcInput"u8, ref _crcInput, "Input path for CRC..."u8))
+        if (Im.Input.Text("##crcInput"u8, ref _crcInput, "Input path for CRC..."u8))
             _crcPath = new FullPath(_crcInput);
 
         using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-        ImUtf8.Text($"   CRC32: {_crcPath.InternalName.CiCrc32:X8}");
-        ImUtf8.Text($"CI CRC32: {_crcPath.InternalName.Crc32:X8}");
-        ImUtf8.Text($"   CRC64: {_crcPath.Crc64:X16}");
+        Im.Text($"   CRC32: {_crcPath.InternalName.CiCrc32:X8}");
+        Im.Text($"CI CRC32: {_crcPath.InternalName.Crc32:X8}");
+        Im.Text($"   CRC64: {_crcPath.Crc64:X16}");
 
         using var table = Im.Table.Begin("table"u8, 2);
         if (!table)
@@ -1119,14 +1102,12 @@ public sealed class DebugTab : Window, ITab<TabType>
 
         table.SetupColumn("Hash"u8, TableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
         table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
-        ImGui.TableHeadersRow();
+        table.HeaderRow();
 
         foreach (var (hash, type) in _rsfService.CustomCache)
         {
-            ImGui.TableNextColumn();
-            ImUtf8.Text($"{hash:X16}");
-            ImGui.TableNextColumn();
-            ImUtf8.Text($"{type}");
+            table.DrawColumn($"{hash:X16}");
+            table.DrawColumn($"{type}");
         }
     }
 
@@ -1149,7 +1130,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         table.SetupColumn("Resource Handle"u8, TableColumnFlags.WidthStretch, 0.2f);
         table.SetupColumn("Actual Path"u8,     TableColumnFlags.WidthStretch, 0.4f);
         table.SetupColumn("Original Path"u8,   TableColumnFlags.WidthStretch, 0.4f);
-        ImGui.TableHeadersRow();
+        table.HeaderRow();
 
         foreach (var (handle, original) in ongoingLoads)
         {
@@ -1162,8 +1143,8 @@ public sealed class DebugTab : Window, ITab<TabType>
     /// <summary> Draw resources with unusual reference count. </summary>
     private unsafe void DrawResourceProblems()
     {
-        var header = ImGui.CollapsingHeader("Resource Problems");
-        ImGuiUtil.HoverTooltip("Draw resources with unusually high reference count to detect overflows.");
+        var header = Im.Tree.HeaderId("Resource Problems"u8);
+        Im.Tooltip.OnHover("Draw resources with unusually high reference count to detect overflows."u8);
         if (!header)
             return;
 
@@ -1197,7 +1178,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
         using var id = ImRaii.PushId("CloudApiTester"u8);
 
-        if (ImUtf8.InputText("Path"u8, ref _cloudTesterPath, flags: ImGuiInputTextFlags.EnterReturnsTrue))
+        if (Im.Input.Text("Path"u8, ref _cloudTesterPath, flags: InputTextFlags.EnterReturnsTrue))
             try
             {
                 _cloudTesterReturn = CloudApi.IsCloudSynced(_cloudTesterPath);
@@ -1232,15 +1213,6 @@ public sealed class DebugTab : Window, ITab<TabType>
         _ipcTester.Draw();
     }
 
-    /// <summary> Helper to print a property and its value in a 2-column table. </summary>
-    private static void PrintValue(string name, string value)
-    {
-        ImGui.TableNextColumn();
-        Im.Text(name);
-        ImGui.TableNextColumn();
-        Im.Text(value);
-    }
-
     public override void Draw()
         => DrawContent();
 
@@ -1252,9 +1224,6 @@ public sealed class DebugTab : Window, ITab<TabType>
         _config.Ephemeral.DebugSeparateWindow = false;
         _config.Ephemeral.Save();
     }
-
-    public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, void* address)
-        => DrawCopyableAddress(label, (nint)address);
 
     public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, nint address)
     {

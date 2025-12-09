@@ -28,7 +28,7 @@ public class MetaIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(GetPlayerMetaManipulations.Label, "Player Meta Manipulations"u8))
+        using (IpcTester.DrawIntro(GetPlayerMetaManipulations.LabelU8, "Player Meta Manipulations"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Copy to Clipboard##Player"u8))
@@ -38,7 +38,7 @@ public class MetaIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
             }
         }
 
-        using (IpcTester.DrawIntro(GetMetaManipulations.Label, "Game Object Manipulations"u8))
+        using (IpcTester.DrawIntro(GetMetaManipulations.LabelU8, "Game Object Manipulations"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Copy to Clipboard##GameObject"u8))

@@ -173,12 +173,8 @@ public class ModPanelSettingsTab(
             _currentPriority = null;
         }
 
-        var hovered = LunaStyle.DrawHelpMarker();
-        Im.Line.SameInner();
-        Im.Text("Priority"u8);
-        if (hovered || Im.Item.Hovered())
-            Im.Tooltip.Set("Mods with a higher number here take precedence before Mods with a lower number.\n"u8
-              + "That means, if Mod A should overwrite changes from Mod B, Mod A should have a higher priority number than Mod B."u8);
+        LunaStyle.DrawAlignedHelpMarkerLabel("Priority"u8, "Mods with a higher number here take precedence before Mods with a lower number.\n"u8
+          + "That means, if Mod A should overwrite changes from Mod B, Mod A should have a higher priority number than Mod B."u8);
     }
 
     /// <summary>

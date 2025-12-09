@@ -1,8 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Text;
+using Luna;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta;
@@ -32,14 +29,14 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current Gmp manipulations to clipboard."u8,
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Gmp)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
@@ -68,21 +65,21 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     private static bool DrawIdentifierInput(ref GmpIdentifier identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         return DrawPrimaryId(ref identifier);
     }
 
     private static void DrawIdentifier(GmpIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.SetId.Id}", default, FrameColor);
         Im.Tooltip.OnHover("Model Set ID"u8);
     }
 
     private static bool DrawEntry(GmpEntry defaultEntry, ref GmpEntry entry, bool disabled)
     {
-        using var dis = ImRaii.Disabled(disabled);
-        ImGui.TableNextColumn();
+        using var dis = Im.Disabled(disabled);
+        Im.Table.NextColumn();
         var changes = false;
         if (Checkmark("##gmpEnabled"u8, "Gimmick Enabled", entry.Enabled, defaultEntry.Enabled, out var enabled))
         {
@@ -90,7 +87,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             changes = true;
         }
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (Checkmark("##gmpAnimated"u8, "Gimmick Animated", entry.Animated, defaultEntry.Animated, out var animated))
         {
             entry   = entry with { Animated = animated };
@@ -98,7 +95,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         }
 
         var rotationWidth = 75 * Im.Style.GlobalScale;
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (DragInput("##gmpRotationA"u8, "Rotation A in Degrees"u8, rotationWidth, entry.RotationA, defaultEntry.RotationA, out var rotationA,
                 (ushort)0,                (ushort)360,               0.05f,         !disabled))
         {
@@ -123,7 +120,7 @@ public sealed class GmpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         }
 
         var unkWidth = 50 * Im.Style.GlobalScale;
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (DragInput("##gmpUnkA"u8, "Animation Type A?"u8, unkWidth, entry.UnknownA, defaultEntry.UnknownA, out var unknownA,
                 (byte)0,             (byte)15,              0.01f,    !disabled))
         {

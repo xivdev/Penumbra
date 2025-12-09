@@ -66,12 +66,12 @@ public class UiIpcTester : Luna.IUiService, IDisposable
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(PostSettingsDraw.Label, "Last Drawn Mod"u8))
+        using (IpcTester.DrawIntro(PostSettingsDraw.LabelU8, "Last Drawn Mod"u8))
         {
             table.DrawColumn(_lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None"u8);
         }
 
-        using (IpcTester.DrawIntro(IpcSubscribers.ChangedItemTooltip.Label, "Add Tooltip"u8))
+        using (IpcTester.DrawIntro(IpcSubscribers.ChangedItemTooltip.LabelU8, "Add Tooltip"u8))
         {
             table.NextColumn();
             if (Im.Checkbox("##tooltip"u8, ref _subscribedToTooltip))
@@ -86,7 +86,7 @@ public class UiIpcTester : Luna.IUiService, IDisposable
             ImEx.TextFrameAligned(_lastHovered);
         }
 
-        using (IpcTester.DrawIntro(IpcSubscribers.ChangedItemClicked.Label, "Subscribe Click"u8))
+        using (IpcTester.DrawIntro(IpcSubscribers.ChangedItemClicked.LabelU8, "Subscribe Click"u8))
         {
             table.NextColumn();
             if (Im.Checkbox("##click"u8, ref _subscribedToClick))
@@ -101,7 +101,7 @@ public class UiIpcTester : Luna.IUiService, IDisposable
             ImEx.TextFrameAligned(_lastClicked);
         }
 
-        using (IpcTester.DrawIntro(OpenMainWindow.Label, "Open Mod Window"u8))
+        using (IpcTester.DrawIntro(OpenMainWindow.LabelU8, "Open Mod Window"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Open##window"u8))
@@ -111,7 +111,7 @@ public class UiIpcTester : Luna.IUiService, IDisposable
             Im.Text($"{_ec}");
         }
 
-        using (IpcTester.DrawIntro(CloseMainWindow.Label, "Close Mod Window"u8))
+        using (IpcTester.DrawIntro(CloseMainWindow.LabelU8, "Close Mod Window"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Close##window"u8))

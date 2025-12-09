@@ -1,10 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
 using OtterGui.Text.Widget.Editors;
 using Penumbra.GameData.Files.ShaderStructs;
 using static Penumbra.GameData.Files.ShpkFile;
@@ -150,19 +145,18 @@ public partial class MtrlTab
 
     private bool DrawConstantsSection(bool disabled)
     {
-        if (Constants.Count == 0)
+        if (Constants.Count is 0)
             return false;
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
-        if (!ImGui.CollapsingHeader("Material Constants"))
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        using var tree = Im.Tree.HeaderId("Material Constants"u8);
+        if (!tree)
             return false;
-
-        using var _ = ImRaii.PushId("MaterialConstants");
 
         var ret = false;
         foreach (var (header, group) in Constants)
         {
-            using var t = ImRaii.TreeNode(header, ImGuiTreeNodeFlags.DefaultOpen);
+            using var t = Im.Tree.Node(header, TreeNodeFlags.DefaultOpen);
             if (!t)
                 continue;
 
@@ -172,8 +166,8 @@ public partial class MtrlTab
                 var buffer   = Mtrl.GetConstantValue<byte>(constant);
                 if (buffer.Length > 0)
                 {
-                    using var id = ImRaii.PushId($"##{constant.Id:X8}:{slice.Start}");
-                    Im.Item.SetNextWidth(MaterialConstantSize * Im.Style.GlobalScale);
+                    using var id = Im.Id.Push($"##{constant.Id:X8}:{slice.Start}");
+                    Im.Item.SetNextWidthScaled(MaterialConstantSize);
                     if (editor.Draw(buffer[slice], disabled))
                     {
                         ret = true;
@@ -187,8 +181,7 @@ public partial class MtrlTab
                         ? defaultValue.Length > 0 && !defaultValue.SequenceEqual(buffer[slice])
                         : buffer[slice].ContainsAnyExcept((byte)0);
                     Im.Line.SameInner();
-                    if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Backspace.ToIconString(), Im.Style.FrameHeight * Vector2.One,
-                            "Reset this constant to its default value.\n\nHold Ctrl to unlock.", !ImGui.GetIO().KeyCtrl || !canReset, true))
+                    if (ImEx.Icon.Button(LunaStyle.RefreshIcon, "Reset this constant to its default value.\n\nHold Ctrl to unlock."u8, !Im.Io.KeyControl || !canReset))
                     {
                         ret = true;
                         if (defaultValue.Length > 0)
@@ -199,10 +192,10 @@ public partial class MtrlTab
                         SetMaterialParameter(constant.Id, slice.Start, buffer[slice]);
                     }
 
-                    Im.Line.Same();
-                    using var font = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
+                    Im.Line.SameInner();
+                    using var font = Im.Font.Mono.Push(monoFont);
                     if (description.Length > 0)
-                        ImGuiUtil.LabeledHelpMarker(label, description);
+                        LunaStyle.DrawHelpMarker(label, description);
                     else
                         Im.Text(label);
                 }

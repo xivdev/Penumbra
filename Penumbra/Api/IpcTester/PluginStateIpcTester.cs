@@ -64,31 +64,31 @@ public class PluginStateIpcTester : IUiService, IDisposable
         DrawList(IpcSubscribers.Initialized.Label, "Last Initialized"u8, _initializedList);
         DrawList(IpcSubscribers.Disposed.Label,    "Last Disposed"u8,    _disposedList);
 
-        using (IpcTester.DrawIntro(ApiVersion.Label, "Current Version"u8))
+        using (IpcTester.DrawIntro(ApiVersion.LabelU8, "Current Version"u8))
         {
             var (breaking, features) = new ApiVersion(_pi).Invoke();
             table.DrawColumn($"{breaking}.{features:D4}");
         }
 
-        using (IpcTester.DrawIntro(GetEnabledState.Label, "Current State"u8))
+        using (IpcTester.DrawIntro(GetEnabledState.LabelU8, "Current State"u8))
         {
             table.DrawColumn($"{new GetEnabledState(_pi).Invoke()}");
         }
 
-        using (IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change"u8))
+        using (IpcTester.DrawIntro(IpcSubscribers.EnabledChange.LabelU8, "Last Change"u8))
         {
             table.DrawColumn(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never"u8);
         }
 
-        using (IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features"u8))
+        using (IpcTester.DrawIntro(SupportedFeatures.LabelU8, "Supported Features"u8))
         {
             table.DrawColumn(StringU8.Join(", "u8, new SupportedFeatures(_pi).Invoke()));
         }
 
-        using (IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features"u8))
+        using (IpcTester.DrawIntro(CheckSupportedFeatures.LabelU8, "Missing Features"u8))
             table.DrawColumn(StringU8.Join(", "u8, new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
 
-        using (IpcTester.DrawIntro(GetConfiguration.Label, "Configuration"u8))
+        using (IpcTester.DrawIntro(GetConfiguration.LabelU8, "Configuration"u8))
         {
             DrawConfigPopup();
             table.NextColumn();
@@ -99,12 +99,12 @@ public class PluginStateIpcTester : IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetModDirectory.Label, "Current Mod Directory"u8))
+        using (IpcTester.DrawIntro(GetModDirectory.LabelU8, "Current Mod Directory"u8))
         {
             table.DrawColumn(new GetModDirectory(_pi).Invoke());
         }
 
-        using (IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.Label, "Last Mod Directory Change"u8))
+        using (IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.LabelU8, "Last Mod Directory Change"u8))
         {
             table.DrawColumn(_lastModDirectoryTime > DateTimeOffset.MinValue
                 ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"

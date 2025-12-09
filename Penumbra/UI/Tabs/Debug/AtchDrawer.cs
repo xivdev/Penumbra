@@ -34,18 +34,16 @@ public static class AtchDrawer
             if (!tree)
                 continue;
 
-            Im.Tree.Node(entry.Accessory ? "Accessory"u8 : "Weapon"u8, TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+            Im.Tree.Leaf(entry.Accessory ? "Accessory"u8 : "Weapon"u8);
             foreach (var (i, state) in entry.Entries.Index())
             {
                 id.Push(i);
                 using var t = Im.Tree.Node(state.Bone);
                 if (t)
                 {
-                    Im.Tree.Node($"Scale: {state.Scale}", TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
-                    Im.Tree.Node($"Offset: {state.Offset.X} | {state.Offset.Y} | {state.Offset.Z}",
-                        TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
-                    Im.Tree.Node($"Rotation: {state.Rotation.X} | {state.Rotation.Y} | {state.Rotation.Z}",
-                        TreeNodeFlags.Bullet | TreeNodeFlags.Leaf).Dispose();
+                    Im.Tree.Leaf($"Scale: {state.Scale}");
+                    Im.Tree.Leaf($"Offset: {state.Offset.X} | {state.Offset.Y} | {state.Offset.Z}");
+                    Im.Tree.Leaf($"Rotation: {state.Rotation.X} | {state.Rotation.Y} | {state.Rotation.Z}");
                 }
 
                 id.Pop();

@@ -1,13 +1,10 @@
-using Dalamud.Interface;
+using System.Collections.Frozen;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
 using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -27,6 +24,7 @@ using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
+using Penumbra.UI.Combos;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -154,7 +152,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             sb.Append($"   |   {subMods} Options");
 
         if (size > 0)
-            sb.Append($"   |   {_editor.Files.Available.Count} Files ({Functions.HumanReadableSize(size)})");
+            sb.Append($"   |   {_editor.Files.Available.Count} Files ({FormattingFunctions.HumanReadableSize(size)})");
 
         if (unused > 0)
             sb.Append($"   |   {unused} Unused Files");
@@ -203,12 +201,12 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             var thickness = (int)(20 * Im.Style.GlobalScale);
             var offsetX   = Im.ContentRegion.Available.X / 2 - radius;
             var offsetY   = Im.ContentRegion.Available.Y / 2 - radius;
-            ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(offsetX, offsetY));
+            Im.Cursor.Position += new Vector2(offsetX, offsetY);
             ImEx.Spinner("##spinner"u8, radius, thickness, ImGuiColor.Text.Get());
             return;
         }
 
-        using var tabBar = ImUtf8.TabBar("##tabs"u8);
+        using var tabBar = Im.TabBar.Begin("##tabs"u8);
         if (!tabBar)
             return;
 
@@ -223,7 +221,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _materialTab.Draw();
         DrawTextureTab();
         _shaderPackageTab.Draw();
-        using (var tab = ImUtf8.TabItem("Item Swap"u8))
+        using (var tab = tabBar.Item("Item Swap"u8))
         {
             if (tab)
                 _itemSwapTab.DrawContent();
@@ -235,6 +233,15 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         DrawMaterialReassignmentTab();
     }
 
+    private static readonly FrozenDictionary<GenderRace, StringU8> RaceCodeNames = Enum.GetValues<GenderRace>().ToFrozenDictionary(v => v, v =>
+    {
+        if (v is GenderRace.Unknown)
+            return new StringU8("All Races and Genders");
+
+        var (gender, race) = v.Split();
+        return new StringU8($"({v.ToRaceCode()}) {race.ToNameU8()} {gender.ToNameU8()} ");
+    });
+
     /// <summary> A row of three buttonSizes and a help marker that can be used for material suffix changing. </summary>
     private static class MaterialSuffix
     {
@@ -242,25 +249,16 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         private static string     _materialSuffixTo   = string.Empty;
         private static GenderRace _raceCode           = GenderRace.Unknown;
 
-        private static string RaceCodeName(GenderRace raceCode)
-        {
-            if (raceCode == GenderRace.Unknown)
-                return "All Races and Genders";
-
-            var (gender, race) = raceCode.Split();
-            return $"({raceCode.ToRaceCode()}) {race.ToName()} {gender.ToName()} ";
-        }
-
         private static void DrawRaceCodeCombo(Vector2 buttonSize)
         {
             Im.Item.SetNextWidth(buttonSize.X);
-            using var combo = ImRaii.Combo("##RaceCode", RaceCodeName(_raceCode));
+            using var combo = Im.Combo.Begin("##RaceCode"u8, RaceCodeNames[_raceCode]);
             if (!combo)
                 return;
 
-            foreach (var raceCode in Enum.GetValues<GenderRace>())
+            foreach (var (raceCode, name) in RaceCodeNames)
             {
-                if (ImGui.Selectable(RaceCodeName(raceCode), _raceCode == raceCode))
+                if (Im.Selectable(name, _raceCode == raceCode))
                     _raceCode = raceCode;
             }
         }
@@ -270,175 +268,172 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             DrawRaceCodeCombo(buttonSize);
             Im.Line.Same();
             Im.Item.SetNextWidth(buttonSize.X);
-            ImGui.InputTextWithHint("##suffixFrom", "From...", ref _materialSuffixFrom, 32);
+            Im.Input.Text("##suffixFrom"u8, ref _materialSuffixFrom, "From..."u8);
             Im.Line.Same();
             Im.Item.SetNextWidth(buttonSize.X);
-            ImGui.InputTextWithHint("##suffixTo", "To...", ref _materialSuffixTo, 32);
+            Im.Input.Text("##suffixTo"u8, ref _materialSuffixTo, "To..."u8);
             Im.Line.Same();
             var disabled = !MdlMaterialEditor.ValidString(_materialSuffixTo);
-            var tt = _materialSuffixTo.Length == 0
+            Utf8StringHandler<TextStringHandlerBuffer> tt = _materialSuffixTo.Length is 0
                 ? "Please enter a target suffix."
                 : _materialSuffixFrom == _materialSuffixTo
                     ? "The source and target are identical."
                     : disabled
                         ? "The suffix is invalid."
-                        : _materialSuffixFrom.Length == 0
-                            ? _raceCode == GenderRace.Unknown
+                        : _materialSuffixFrom.Length is 0
+                            ? _raceCode is GenderRace.Unknown
                                 ? "Convert all skin material suffices to the target."
                                 : "Convert all skin material suffices for the given race code to the target."
-                            : _raceCode == GenderRace.Unknown
+                            : _raceCode is GenderRace.Unknown
                                 ? $"Convert all skin material suffices that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'."
                                 : $"Convert all skin material suffices for the given race code that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'.";
-            if (ImGuiUtil.DrawDisabledButton("Change Material Suffix", buttonSize, tt, disabled))
+            if (ImEx.Button("Change Material Suffix"u8, buttonSize, tt, disabled))
                 editor.MdlMaterialEditor.ReplaceAllMaterials(_materialSuffixTo, _materialSuffixFrom, _raceCode);
 
             var anyChanges = editor.MdlMaterialEditor.ModelFiles.Any(m => m.Changed);
-            if (ImGuiUtil.DrawDisabledButton("Save All Changes", buttonSize,
-                    anyChanges ? "Irreversibly rewrites all currently applied changes to model files." : "No changes made yet.", !anyChanges))
+            if (ImEx.Button("Save All Changes"u8, buttonSize,
+                    anyChanges ? "Irreversibly rewrites all currently applied changes to model files."u8 : "No changes made yet."u8,
+                    !anyChanges))
                 editor.MdlMaterialEditor.SaveAllModels(editor.Compactor);
 
             Im.Line.Same();
-            if (ImGuiUtil.DrawDisabledButton("Revert All Changes", buttonSize,
-                    anyChanges ? "Revert all currently made and unsaved changes." : "No changes made yet.", !anyChanges))
+            if (ImEx.Button("Revert All Changes"u8, buttonSize,
+                    anyChanges ? "Revert all currently made and unsaved changes."u8 : "No changes made yet."u8, !anyChanges))
                 editor.MdlMaterialEditor.RestoreAllModels();
 
-            Im.Line.Same();
-            ImGuiComponents.HelpMarker(
-                "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
-              + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
-              + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones.");
+            Im.Line.SameInner();
+            LunaStyle.DrawAlignedHelpMarker(
+                "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"u8
+              + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"u8
+              + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones."u8);
         }
     }
 
     private void DrawMissingFilesTab()
     {
-        if (_editor.Files.Missing.Count == 0)
+        if (_editor.Files.Missing.Count is 0)
             return;
 
-        using var tab = ImRaii.TabItem("Missing Files");
+        using var tab = Im.TabBar.BeginItem("Missing Files"u8);
         if (!tab)
             return;
 
         Im.Line.New();
-        if (ImGui.Button("Remove Missing Files from Mod"))
+        if (Im.Button("Remove Missing Files from Mod"u8))
             _editor.FileEditor.RemoveMissingPaths(Mod!, _editor.Option!);
 
-        using var child = ImRaii.Child("##unusedFiles", -Vector2.One, true);
+        using var child = Im.Child.Begin("##unusedFiles"u8, Im.ContentRegion.Available, true);
         if (!child)
             return;
 
-        using var table = Im.Table.Begin("##missingFiles"u8, 1, TableFlags.RowBackground, -Vector2.One);
+        using var table = Im.Table.Begin("##missingFiles"u8, 1, TableFlags.RowBackground, Im.ContentRegion.Available);
         if (!table)
             return;
 
         foreach (var path in _editor.Files.Missing)
-        {
-            ImGui.TableNextColumn();
-            Im.Text(path.FullName);
-        }
+            table.DrawColumn(path.FullName);
     }
 
     private void DrawDuplicatesTab()
     {
-        using var tab = ImRaii.TabItem("Duplicates");
+        using var tab = Im.TabBar.BeginItem("Duplicates"u8);
         if (!tab)
             return;
 
         if (_editor.Duplicates.Worker.IsCompleted)
         {
-            if (ImGuiUtil.DrawDisabledButton("Scan for Duplicates", Vector2.Zero,
-                    "Search for identical files in this mod. This may take a while.", false))
+            if (ImEx.Button("Scan for Duplicates"u8, Vector2.Zero,
+                    "Search for identical files in this mod. This may take a while."u8))
                 _editor.Duplicates.StartDuplicateCheck(_editor.Files.Available);
         }
         else
         {
-            if (ImGuiUtil.DrawDisabledButton("Cancel Scanning for Duplicates", Vector2.Zero, "Cancel the current scanning operation...", false))
+            if (ImEx.Button("Cancel Scanning for Duplicates"u8, Vector2.Zero, "Cancel the current scanning operation..."u8))
                 _editor.Duplicates.Clear();
         }
 
-        const string desc =
-            "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"
-          + "This will also delete all unused files and directories if it succeeds.\n"
-          + "Care was taken that a failure should not destroy the mod but revert to its original state, but you use this at your own risk anyway.";
-
         var modifier = _config.DeleteModModifier.IsActive();
-
-        var tt = _allowReduplicate ? desc :
-            modifier ? desc : desc + $"\n\nNo duplicates detected! Hold {_config.DeleteModModifier} to force normalization anyway.";
 
         if (_editor.ModNormalizer.Running)
         {
-            ImGui.ProgressBar((float)_editor.ModNormalizer.Step / _editor.ModNormalizer.TotalSteps,
+            Im.ProgressBar((float)_editor.ModNormalizer.Step / _editor.ModNormalizer.TotalSteps,
                 new Vector2(300 * Im.Style.GlobalScale, Im.Style.FrameHeight),
                 $"{_editor.ModNormalizer.Step} / {_editor.ModNormalizer.TotalSteps}");
         }
-        else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
+        else if (ImEx.Button("Re-Duplicate and Normalize Mod"u8, Vector2.Zero,
+                     "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"u8
+                   + "This will also delete all unused files and directories if it succeeds.\n"u8
+                   + "Care was taken that a failure should not destroy the mod but revert to its original state, but you use this at your own risk anyway."u8,
+                     !_allowReduplicate && !modifier))
         {
             _editor.ModNormalizer.Normalize(Mod!);
             _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(Mod!, _editor.GroupIdx, _editor.DataIdx), TaskScheduler.Default);
         }
 
+        if (_allowReduplicate && !modifier)
+            Im.Tooltip.OnHover($"\n\nNo duplicates detected! Hold {_config.DeleteModModifier} to force normalization anyway.");
+
         if (!_editor.Duplicates.Worker.IsCompleted)
             return;
 
-        if (_editor.Duplicates.Duplicates.Count == 0)
+        if (_editor.Duplicates.Duplicates.Count is 0)
         {
             Im.Line.New();
             Im.Text("No duplicates found."u8);
             return;
         }
 
-        if (ImGui.Button("Delete and Redirect Duplicates"))
+        if (Im.Button("Delete and Redirect Duplicates"u8))
             _editor.Duplicates.DeleteDuplicates(_editor.Files, _editor.Mod!, _editor.Option!, true);
 
         if (_editor.Duplicates.SavedSpace > 0)
         {
             Im.Line.Same();
-            Im.Text($"Frees up {Functions.HumanReadableSize(_editor.Duplicates.SavedSpace)} from your hard drive.");
+            Im.Text($"Frees up {FormattingFunctions.HumanReadableSize(_editor.Duplicates.SavedSpace)} from your hard drive.");
         }
 
-        using var child = ImRaii.Child("##duptable", -Vector2.One, true);
+        using var child = Im.Child.Begin("##duptable"u8, Im.ContentRegion.Available, true);
         if (!child)
             return;
 
-        using var table = Im.Table.Begin("##duplicates"u8, 3, TableFlags.RowBackground | TableFlags.SizingFixedFit, -Vector2.One);
+        using var table = Im.Table.Begin("##duplicates"u8, 3, TableFlags.RowBackground | TableFlags.SizingFixedFit, Im.ContentRegion.Available);
         if (!table)
             return;
 
-        var width = ImGui.CalcTextSize("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN ").X;
+        var width = Im.Font.CalculateSize("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN "u8).X;
         table.SetupColumn("file"u8, TableColumnFlags.WidthStretch);
-        table.SetupColumn("size"u8, TableColumnFlags.WidthFixed, ImGui.CalcTextSize("NNN.NNN  "u8).X);
+        table.SetupColumn("size"u8, TableColumnFlags.WidthFixed, Im.Font.CalculateSize("NNN.NNN  "u8).X);
         table.SetupColumn("hash"u8, TableColumnFlags.WidthFixed,
-            ImGui.GetWindowWidth() > 2 * width ? width : Im.Font.CalculateSize("NNNNNNNN... "u8).X);
+            Im.Window.Width > 2 * width ? width : Im.Font.CalculateSize("NNNNNNNN... "u8).X);
         foreach (var (set, size, hash) in _editor.Duplicates.Duplicates.Where(s => s.Paths.Length > 1))
         {
-            ImGui.TableNextColumn();
-            using var tree = ImRaii.TreeNode(set[0].FullName[(Mod!.ModPath.FullName.Length + 1)..],
-                ImGuiTreeNodeFlags.NoTreePushOnOpen);
-            ImGui.TableNextColumn();
-            ImGuiUtil.RightAlign(Functions.HumanReadableSize(size));
-            ImGui.TableNextColumn();
-            using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
+            table.NextColumn();
+            using var tree = Im.Tree.Node(set[0].FullName[(Mod!.ModPath.FullName.Length + 1)..],
+                TreeNodeFlags.NoTreePushOnOpen);
+            table.NextColumn();
+            ImEx.TextRightAligned(FormattingFunctions.HumanReadableSize(size));
+            table.NextColumn();
+            using (var _ = Im.Font.PushMono())
             {
-                if (ImGui.GetWindowWidth() > 2 * width)
-                    ImGuiUtil.RightAlign(string.Concat(hash.Select(b => b.ToString("X2"))));
+                if (Im.Window.Width > 2 * width)
+                    ImEx.TextRightAligned(FormattingFunctions.BytewiseHex(hash));
                 else
-                    ImGuiUtil.RightAlign(string.Concat(hash.Take(4).Select(b => b.ToString("X2"))) + "...");
+                    ImEx.TextRightAligned($"{FormattingFunctions.BytewiseHex(hash.AsSpan(4))}...");
             }
 
             if (!tree)
                 continue;
 
-            using var indent = ImRaii.PushIndent();
+            using var indent = Im.Indent();
             foreach (var duplicate in set.Skip(1))
             {
-                ImGui.TableNextColumn();
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
-                using var node = ImRaii.TreeNode(duplicate.FullName[(Mod!.ModPath.FullName.Length + 1)..], ImGuiTreeNodeFlags.Leaf);
-                ImGui.TableNextColumn();
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
-                ImGui.TableNextColumn();
-                ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint);
+                table.NextColumn();
+                table.SetBackgroundColor(TableBackgroundTarget.Cell, Colors.RedTableBgTint);
+                Im.Tree.Leaf(duplicate.FullName.AsSpan(Mod!.ModPath.FullName.Length + 1), TreeNodeFlags.Leaf);
+                table.NextColumn();
+                table.SetBackgroundColor(TableBackgroundTarget.Cell, Colors.RedTableBgTint);
+                table.NextColumn();
+                table.SetBackgroundColor(TableBackgroundTarget.Cell, Colors.RedTableBgTint);
             }
         }
     }
@@ -448,7 +443,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero).Push(ImStyleSingle.FrameRounding, 0);
         var       width = new Vector2(Im.ContentRegion.Available.X / 3, 0);
         var       ret   = false;
-        if (ImUtf8.ButtonEx("Default Option"u8, "Switch to the default option for the mod.\nThis resets unsaved changes."u8, width,
+        if (ImEx.Button("Default Option"u8, width, "Switch to the default option for the mod.\nThis resets unsaved changes."u8,
                 _editor.Option is DefaultSubMod))
         {
             _editor.LoadOption(-1, 0).Wait();
@@ -456,17 +451,16 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         }
 
         Im.Line.Same();
-        if (ImUtf8.ButtonEx("Refresh Data"u8, "Refresh data for the current option.\nThis resets unsaved changes."u8, width))
+        if (ImEx.Button("Refresh Data"u8, width, "Refresh data for the current option.\nThis resets unsaved changes."u8))
         {
             _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx).Wait();
             ret = true;
         }
 
         Im.Line.Same();
-        if (_optionSelect.Draw(width.X))
+        if (_optionSelect.Draw("##option"u8, _editor.Option?.GetFullName() ?? string.Empty, default, width.X, out var option))
         {
-            var (groupIdx, dataIdx) = _optionSelect.CurrentSelection.Index;
-            _editor.LoadOption(groupIdx, dataIdx).Wait();
+            _editor.LoadOption(option.GroupIndex, option.DataIndex).Wait();
             ret = true;
         }
 
@@ -478,36 +472,36 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
     private void DrawSwapTab()
     {
-        using var tab = ImRaii.TabItem("File Swaps");
+        using var tab = Im.TabBar.BeginItem("File Swaps"u8);
         if (!tab)
             return;
 
         DrawOptionSelectHeader();
 
         var setsEqual = !_editor.SwapEditor.Changes;
-        var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
+        var tt        = setsEqual ? "No changes staged."u8 : "Apply the currently staged changes to the option."u8;
         Im.Line.New();
-        if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
+        if (ImEx.Button("Apply Changes"u8, Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Apply(_editor.Option!);
 
         Im.Line.Same();
-        tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
-        if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
+        tt = setsEqual ? "No changes staged."u8 : "Revert all currently staged changes."u8;
+        if (ImEx.Button("Revert Changes"u8, Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Revert(_editor.Option!);
 
         var otherSwaps = _editor.Mod!.TotalSwapCount - _editor.Option!.FileSwaps.Count;
         if (otherSwaps > 0)
         {
             Im.Line.Same();
-            ImGuiUtil.DrawTextButton($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
+            ImEx.TextFramed($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
                 ColorId.RedundantAssignment.Value().Color);
         }
 
-        using var child = ImRaii.Child("##swaps", -Vector2.One, true);
+        using var child = Im.Child.Begin("##swaps"u8, Im.ContentRegion.Available, true);
         if (!child)
             return;
 
-        using var table = Im.Table.Begin("##table"u8, 3, TableFlags.RowBackground, -Vector2.One);
+        using var table = Im.Table.Begin("##table"u8, 3, TableFlags.RowBackground, Im.ContentRegion.Available);
         if (!table)
             return;
 
@@ -520,46 +514,45 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         foreach (var (gamePath, file) in _editor.SwapEditor.Swaps.ToList())
         {
-            using var id = ImRaii.PushId(idx++);
-            ImGui.TableNextColumn();
-            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this swap.", false, true))
+            using var id = Im.Id.Push(idx++);
+            table.NextColumn();
+            if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this swap."u8))
                 _editor.SwapEditor.Remove(gamePath);
 
-            ImGui.TableNextColumn();
+            table.NextColumn();
             var tmp = file.FullName;
             Im.Item.SetNextWidth(-1);
-            if (ImGui.InputText("##value", ref tmp, Utf8GamePath.MaxGamePathLength) && tmp.Length > 0)
+            if (Im.Input.Text("##value"u8, ref tmp, maxLength: Utf8GamePath.MaxGamePathLength) && tmp.Length > 0)
                 _editor.SwapEditor.Change(gamePath, new FullPath(tmp));
 
-            ImGui.TableNextColumn();
+            table.NextColumn();
             tmp = gamePath.Path.ToString();
             Im.Item.SetNextWidth(-1);
-            if (ImGui.InputText("##key", ref tmp, Utf8GamePath.MaxGamePathLength)
+            if (Im.Input.Text("##key"u8, ref tmp, maxLength: Utf8GamePath.MaxGamePathLength)
              && Utf8GamePath.FromString(tmp, out var path)
              && !_editor.SwapEditor.Swaps.ContainsKey(path))
                 _editor.SwapEditor.Change(gamePath, path);
         }
 
-        ImGui.TableNextColumn();
+        table.NextColumn();
         var addable = Utf8GamePath.FromString(_newSwapKey, out var newPath)
          && newPath.Length > 0
          && _newSwapValue.Length > 0
          && _newSwapValue != _newSwapKey
          && !_editor.SwapEditor.Swaps.ContainsKey(newPath);
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, "Add a new file swap to this option.", !addable,
-                true))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, "Add a new file swap to this option."u8, !addable))
         {
             _editor.SwapEditor.Add(newPath, new FullPath(_newSwapValue));
             _newSwapKey   = string.Empty;
             _newSwapValue = string.Empty;
         }
 
-        ImGui.TableNextColumn();
+        table.NextColumn();
         Im.Item.SetNextWidth(-1);
-        ImGui.InputTextWithHint("##swapKey", "Load this file...", ref _newSwapValue, Utf8GamePath.MaxGamePathLength);
-        ImGui.TableNextColumn();
+        Im.Input.Text("##swapKey"u8, ref _newSwapValue, "Load this file..."u8, maxLength: Utf8GamePath.MaxGamePathLength);
+        table.NextColumn();
         Im.Item.SetNextWidth(-1);
-        ImGui.InputTextWithHint("##swapValue", "... instead of this file.", ref _newSwapKey, Utf8GamePath.MaxGamePathLength);
+        Im.Input.Text("##swapValue"u8, ref _newSwapKey, "... instead of this file."u8, maxLength: Utf8GamePath.MaxGamePathLength);
     }
 
     /// <summary>
@@ -573,10 +566,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     internal FullPath FindBestMatch(Utf8GamePath path)
     {
         var currentFile = _activeCollections.Current.ResolvePath(path);
-        if (currentFile != null)
+        if (currentFile is not null)
             return currentFile.Value;
 
-        if (Mod != null)
+        if (Mod is not null)
         {
             foreach (var option in Mod.Groups.OrderByDescending(g => g.Priority))
             {
@@ -594,22 +587,16 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     internal HashSet<Utf8GamePath> FindPathsStartingWith(CiByteString prefix)
     {
         var ret = new HashSet<Utf8GamePath>();
-
         foreach (var path in _activeCollections.Current.ResolvedFiles.Keys)
         {
             if (path.Path.StartsWith(prefix))
                 ret.Add(path);
         }
 
-        if (Mod != null)
+        if (Mod is not null)
             foreach (var option in Mod.AllDataContainers)
-            {
-                foreach (var path in option.Files.Keys)
-                {
-                    if (path.Path.StartsWith(prefix))
-                        ret.Add(path);
-                }
-            }
+                foreach (var path in option.Files.Keys.Where(path => path.Path.StartsWith(prefix)))
+                    ret.Add(path);
 
         return ret;
     }

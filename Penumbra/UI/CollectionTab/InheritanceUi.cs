@@ -115,8 +115,7 @@ public class InheritanceUi(CollectionManager collectionManager, IncognitoService
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
-            Im.Tree.Node($"{Name(inheritance)}###{inheritance.Identity.Id}",
-                TreeNodeFlags.NoTreePushOnOpen | TreeNodeFlags.Leaf | TreeNodeFlags.Bullet).Dispose();
+            Im.Tree.Leaf($"{Name(inheritance)}###{inheritance.Identity.Id}", TreeNodeFlags.NoTreePushOnOpen);
             var (minRect, maxRect) = (Im.Item.UpperLeftCorner, Im.Item.LowerRightCorner);
             DrawInheritanceTreeClicks(inheritance, false);
 

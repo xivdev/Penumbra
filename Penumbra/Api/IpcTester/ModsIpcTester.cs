@@ -82,7 +82,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(GetModList.Label, "Mods"u8))
+        using (IpcTester.DrawIntro(GetModList.LabelU8, "Mods"u8))
         {
             DrawModsPopup();
             table.NextColumn();
@@ -93,7 +93,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(ReloadMod.Label, "Reload Mod"u8))
+        using (IpcTester.DrawIntro(ReloadMod.LabelU8, "Reload Mod"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Reload"u8))
@@ -104,7 +104,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
         }
 
 
-        using (IpcTester.DrawIntro(InstallMod.Label, "Install Mod"u8))
+        using (IpcTester.DrawIntro(InstallMod.LabelU8, "Install Mod"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Install"u8))
@@ -113,7 +113,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             Im.Text($"{_lastInstallEc}");
         }
 
-        using (IpcTester.DrawIntro(AddMod.Label, "Add Mod"u8))
+        using (IpcTester.DrawIntro(AddMod.LabelU8, "Add Mod"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Add"u8))
@@ -122,7 +122,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             Im.Text($"{_lastAddEc}");
         }
 
-        using (IpcTester.DrawIntro(DeleteMod.Label, "Delete Mod"u8))
+        using (IpcTester.DrawIntro(DeleteMod.LabelU8, "Delete Mod"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Delete"u8))
@@ -131,7 +131,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             Im.Text(_lastDeleteEc.ToString());
         }
 
-        using (IpcTester.DrawIntro(GetChangedItems.Label, "Get Changed Items"u8))
+        using (IpcTester.DrawIntro(GetChangedItems.LabelU8, "Get Changed Items"u8))
         {
             DrawChangedItemsPopup();
             table.NextColumn();
@@ -142,13 +142,13 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetModPath.Label, "Current Path"u8))
+        using (IpcTester.DrawIntro(GetModPath.LabelU8, "Current Path"u8))
         {
             var (ec, path, def, nameDef) = new GetModPath(_pi).Invoke(_modDirectory, _modName);
             table.DrawColumn($"{path} ({(def ? "Custom" : "Default")} Path, {(nameDef ? "Custom" : "Default")} Name) [{ec}]");
         }
 
-        using (IpcTester.DrawIntro(SetModPath.Label, "Set Path"u8))
+        using (IpcTester.DrawIntro(SetModPath.LabelU8, "Set Path"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Set"u8))
@@ -158,19 +158,19 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             Im.Text($"{_lastSetPathEc}");
         }
 
-        using (IpcTester.DrawIntro(ModDeleted.Label, "Last Mod Deleted"u8))
+        using (IpcTester.DrawIntro(ModDeleted.LabelU8, "Last Mod Deleted"u8))
         {
             if (_lastDeletedModTime > DateTimeOffset.UnixEpoch)
                 table.DrawColumn($"{_lastDeletedMod} at {_lastDeletedModTime}");
         }
 
-        using (IpcTester.DrawIntro(ModAdded.Label, "Last Mod Added"u8))
+        using (IpcTester.DrawIntro(ModAdded.LabelU8, "Last Mod Added"u8))
         {
             if (_lastAddedModTime > DateTimeOffset.UnixEpoch)
                 table.DrawColumn($"{_lastAddedMod} at {_lastAddedModTime}");
         }
 
-        using (IpcTester.DrawIntro(ModMoved.Label, "Last Mod Moved"))
+        using (IpcTester.DrawIntro(ModMoved.LabelU8, "Last Mod Moved"u8))
         {
             if (_lastMovedModTime > DateTimeOffset.UnixEpoch)
                 table.DrawColumn($"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}");

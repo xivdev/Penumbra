@@ -58,27 +58,26 @@ public class TemporaryIpcTester(
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro("Last Error", $"{_lastTempError}"))
+        using (IpcTester.DrawIntro("Last Error"u8, $"{_lastTempError}"))
         {
             table.DrawColumn("Last Created Collection"u8);
             table.NextColumn();
             LunaStyle.DrawGuid(LastCreatedCollectionId);
         }
 
-        using (IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Create Temporary Collection"u8))
+        using (IpcTester.DrawIntro(CreateTemporaryCollection.LabelU8, "Create Temporary Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Create##Collection"u8))
             {
-                _lastTempError = new CreateTemporaryCollection(pi).Invoke(_identity, _tempCollectionName, out LastCreatedCollectionId);
-                if (_tempGuid is null)
-                    _tempGuid = LastCreatedCollectionId;
+                _lastTempError =   new CreateTemporaryCollection(pi).Invoke(_identity, _tempCollectionName, out LastCreatedCollectionId);
+                _tempGuid      ??= LastCreatedCollectionId;
             }
         }
 
         var guid = _tempGuid.GetValueOrDefault(Guid.Empty);
 
-        using (IpcTester.DrawIntro(DeleteTemporaryCollection.Label, "Delete Temporary Collection"u8))
+        using (IpcTester.DrawIntro(DeleteTemporaryCollection.LabelU8, "Delete Temporary Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Delete##Collection"u8))
@@ -88,14 +87,14 @@ public class TemporaryIpcTester(
                 _lastTempError = new DeleteTemporaryCollection(pi).Invoke(LastCreatedCollectionId);
         }
 
-        using (IpcTester.DrawIntro(AssignTemporaryCollection.Label, "Assign Temporary Collection"u8))
+        using (IpcTester.DrawIntro(AssignTemporaryCollection.LabelU8, "Assign Temporary Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Assign##NamedCollection"u8))
                 _lastTempError = new AssignTemporaryCollection(pi).Invoke(guid, _tempActorIndex, _forceOverwrite);
         }
 
-        using (IpcTester.DrawIntro(AddTemporaryMod.Label, "Add Temporary Mod to specific Collection"u8))
+        using (IpcTester.DrawIntro(AddTemporaryMod.LabelU8, "Add Temporary Mod to specific Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Add##Mod"u8))
@@ -104,7 +103,7 @@ public class TemporaryIpcTester(
                     _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
         }
 
-        using (IpcTester.DrawIntro(CreateTemporaryCollection.Label, "Copy Existing Collection"u8))
+        using (IpcTester.DrawIntro(CreateTemporaryCollection.LabelU8, "Copy Existing Collection"u8))
         {
             table.NextColumn();
             if (ImEx.Button("Copy##Collection"u8, Vector2.Zero,
@@ -118,7 +117,7 @@ public class TemporaryIpcTester(
             }
         }
 
-        using (IpcTester.DrawIntro(AddTemporaryModAll.Label, "Add Temporary Mod to all Collections"u8))
+        using (IpcTester.DrawIntro(AddTemporaryModAll.LabelU8, "Add Temporary Mod to all Collections"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Add##All"u8))
@@ -127,21 +126,21 @@ public class TemporaryIpcTester(
                     _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
         }
 
-        using (IpcTester.DrawIntro(RemoveTemporaryMod.Label, "Remove Temporary Mod from specific Collection"u8))
+        using (IpcTester.DrawIntro(RemoveTemporaryMod.LabelU8, "Remove Temporary Mod from specific Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Remove##Mod"u8))
                 _lastTempError = new RemoveTemporaryMod(pi).Invoke(_tempModName, guid, int.MaxValue);
         }
 
-        using (IpcTester.DrawIntro(RemoveTemporaryModAll.Label, "Remove Temporary Mod from all Collections"u8))
+        using (IpcTester.DrawIntro(RemoveTemporaryModAll.LabelU8, "Remove Temporary Mod from all Collections"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Remove##ModAll"u8))
                 _lastTempError = new RemoveTemporaryModAll(pi).Invoke(_tempModName, int.MaxValue);
         }
 
-        using (IpcTester.DrawIntro(SetTemporaryModSettings.Label, "Set Temporary Mod Settings (to default) in specific Collection"u8))
+        using (IpcTester.DrawIntro(SetTemporaryModSettings.LabelU8, "Set Temporary Mod Settings (to default) in specific Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Set##SetTemporary"u8))
@@ -150,7 +149,8 @@ public class TemporaryIpcTester(
                     "IPC Tester", 1337);
         }
 
-        using (IpcTester.DrawIntro(SetTemporaryModSettingsPlayer.Label, "Set Temporary Mod Settings (to default) in game object collection"u8))
+        using (IpcTester.DrawIntro(SetTemporaryModSettingsPlayer.LabelU8,
+                   "Set Temporary Mod Settings (to default) in game object collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Set##SetTemporaryPlayer"u8))
@@ -159,7 +159,7 @@ public class TemporaryIpcTester(
                     "IPC Tester", 1337);
         }
 
-        using (IpcTester.DrawIntro(RemoveTemporaryModSettings.Label, "Remove Temporary Mod Settings from specific Collection"u8))
+        using (IpcTester.DrawIntro(RemoveTemporaryModSettings.LabelU8, "Remove Temporary Mod Settings from specific Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Remove##RemoveTemporary"u8))
@@ -169,7 +169,7 @@ public class TemporaryIpcTester(
                 _lastTempError = new RemoveTemporaryModSettings(pi).Invoke(guid, _modDirectory, 1338);
         }
 
-        using (IpcTester.DrawIntro(RemoveTemporaryModSettingsPlayer.Label, "Remove Temporary Mod Settings from game object Collection"u8))
+        using (IpcTester.DrawIntro(RemoveTemporaryModSettingsPlayer.LabelU8, "Remove Temporary Mod Settings from game object Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Remove##RemoveTemporaryPlayer"u8))
@@ -179,7 +179,7 @@ public class TemporaryIpcTester(
                 _lastTempError = new RemoveTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, _modDirectory, 1338);
         }
 
-        using (IpcTester.DrawIntro(RemoveAllTemporaryModSettings.Label, "Remove All Temporary Mod Settings from specific Collection"u8))
+        using (IpcTester.DrawIntro(RemoveAllTemporaryModSettings.LabelU8, "Remove All Temporary Mod Settings from specific Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Remove##RemoveAllTemporary"u8))
@@ -189,7 +189,7 @@ public class TemporaryIpcTester(
                 _lastTempError = new RemoveAllTemporaryModSettings(pi).Invoke(guid, 1338);
         }
 
-        using (IpcTester.DrawIntro(RemoveAllTemporaryModSettingsPlayer.Label,
+        using (IpcTester.DrawIntro(RemoveAllTemporaryModSettingsPlayer.LabelU8,
                    "Remove All Temporary Mod Settings from game object Collection"u8))
         {
             table.NextColumn();
@@ -200,7 +200,7 @@ public class TemporaryIpcTester(
                 _lastTempError = new RemoveAllTemporaryModSettingsPlayer(pi).Invoke(_tempActorIndex, 1338);
         }
 
-        using (IpcTester.DrawIntro(QueryTemporaryModSettings.Label, "Query Temporary Mod Settings from specific Collection"u8))
+        using (IpcTester.DrawIntro(QueryTemporaryModSettings.LabelU8, "Query Temporary Mod Settings from specific Collection"u8))
         {
             table.NextColumn();
             Im.SmallButton("Query##QueryTemporaryModSettings"u8);
@@ -219,7 +219,7 @@ public class TemporaryIpcTester(
             }
         }
 
-        using (IpcTester.DrawIntro(QueryTemporaryModSettingsPlayer.Label, "Query Temporary Mod Settings from game object Collection"u8))
+        using (IpcTester.DrawIntro(QueryTemporaryModSettingsPlayer.LabelU8, "Query Temporary Mod Settings from game object Collection"u8))
         {
             table.NextColumn();
             Im.SmallButton("Query##QueryTemporaryModSettingsPlayer"u8);

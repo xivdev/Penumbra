@@ -1,24 +1,58 @@
+using Luna.Generators;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace Penumbra.Meta.Manipulations;
 
+[NamedEnum(Utf16: false)]
+[TooltipEnum]
 [JsonConverter(typeof(StringEnumConverter))]
 public enum GlobalEqpType
 {
+    [Name("Always Show Earrings")]
+    [Tooltip("Prevents the game from hiding earrings through other models when a specific earring is worn.")]
     DoNotHideEarrings,
+
+    [Name("Always Show Necklaces")]
+    [Tooltip("Prevents the game from hiding necklaces through other models when a specific necklace is worn.")]
     DoNotHideNecklace,
+
+    [Name("Always Show Bracelets")]
+    [Tooltip("Prevents the game from hiding bracelets through other models when a specific bracelet is worn.")]
     DoNotHideBracelets,
+
+    [Name("Always Show Rings (Right Finger)")]
+    [Tooltip(
+        "Prevents the game from hiding rings worn on the right finger through other models when a specific ring is worn on the right finger.")]
     DoNotHideRingR,
+
+    [Name("Always Show Rings (Left Finger)")]
+    [Tooltip(
+        "Prevents the game from hiding rings worn on the left finger through other models when a specific ring is worn on the left finger.")]
     DoNotHideRingL,
+
+    [Name("Always Show Hats for Hrothgar")]
+    [Tooltip("Prevents the game from hiding any hats for Hrothgar that are normally flagged to not display on them.")]
     DoNotHideHrothgarHats,
+
+    [Name("Always Show Hats for Viera")]
+    [Tooltip("Prevents the game from hiding any hats for Viera that are normally flagged to not display on them.")]
     DoNotHideVieraHats,
+
+    [Name("Always Hide Horns (Au Ra)")]
+    [Tooltip("Forces the game to hide Au Ra horns regardless of headwear.")]
     HideHorns,
+
+    [Name("Always Hide Horns (Viera)")]
+    [Tooltip("Forces the game to hide Viera ears regardless of headwear.")]
     HideVieraEars,
+
+    [Name("Always Hide Horns (Miqo'te)")]
+    [Tooltip("Forces the game to hide Miqo'te ears regardless of headwear.")]
     HideMiqoteEars,
 }
 
-public static class GlobalEqpExtensions
+public static partial class GlobalEqpExtensions
 {
     public static bool HasCondition(this GlobalEqpType type)
         => type switch
@@ -34,44 +68,5 @@ public static class GlobalEqpExtensions
             GlobalEqpType.HideVieraEars         => false,
             GlobalEqpType.HideMiqoteEars        => false,
             _                                   => false,
-        };
-
-
-    public static ReadOnlySpan<byte> ToName(this GlobalEqpType type)
-        => type switch
-        {
-            GlobalEqpType.DoNotHideEarrings     => "Always Show Earrings"u8,
-            GlobalEqpType.DoNotHideNecklace     => "Always Show Necklaces"u8,
-            GlobalEqpType.DoNotHideBracelets    => "Always Show Bracelets"u8,
-            GlobalEqpType.DoNotHideRingR        => "Always Show Rings (Right Finger)"u8,
-            GlobalEqpType.DoNotHideRingL        => "Always Show Rings (Left Finger)"u8,
-            GlobalEqpType.DoNotHideHrothgarHats => "Always Show Hats for Hrothgar"u8,
-            GlobalEqpType.DoNotHideVieraHats    => "Always Show Hats for Viera"u8,
-            GlobalEqpType.HideHorns             => "Always Hide Horns (Au Ra)"u8,
-            GlobalEqpType.HideVieraEars         => "Always Hide Ears (Viera)"u8,
-            GlobalEqpType.HideMiqoteEars        => "Always Hide Ears (Miqo'te)"u8,
-            _                                   => "\0"u8,
-        };
-
-    public static ReadOnlySpan<byte> ToDescription(this GlobalEqpType type)
-        => type switch
-        {
-            GlobalEqpType.DoNotHideEarrings => "Prevents the game from hiding earrings through other models when a specific earring is worn."u8,
-            GlobalEqpType.DoNotHideNecklace =>
-                "Prevents the game from hiding necklaces through other models when a specific necklace is worn."u8,
-            GlobalEqpType.DoNotHideBracelets =>
-                "Prevents the game from hiding bracelets through other models when a specific bracelet is worn."u8,
-            GlobalEqpType.DoNotHideRingR =>
-                "Prevents the game from hiding rings worn on the right finger through other models when a specific ring is worn on the right finger."u8,
-            GlobalEqpType.DoNotHideRingL =>
-                "Prevents the game from hiding rings worn on the left finger through other models when a specific ring is worn on the left finger."u8,
-            GlobalEqpType.DoNotHideHrothgarHats =>
-                "Prevents the game from hiding any hats for Hrothgar that are normally flagged to not display on them."u8,
-            GlobalEqpType.DoNotHideVieraHats =>
-                "Prevents the game from hiding any hats for Viera that are normally flagged to not display on them."u8,
-            GlobalEqpType.HideHorns      => "Forces the game to hide Au Ra horns regardless of headwear."u8,
-            GlobalEqpType.HideVieraEars  => "Forces the game to hide Viera ears regardless of headwear."u8,
-            GlobalEqpType.HideMiqoteEars => "Forces the game to hide Miqo'te ears regardless of headwear."u8,
-            _                            => "\0"u8,
         };
 }

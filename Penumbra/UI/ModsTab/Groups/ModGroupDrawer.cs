@@ -1,9 +1,5 @@
-using Dalamud.Interface.Components;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
+using Luna;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -15,7 +11,7 @@ using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.ModsTab.Groups;
 
-public sealed class ModGroupDrawer : Luna.IUiService
+public sealed class ModGroupDrawer : IUiService
 {
     private readonly List<(IModGroup, int)> _blockGroupCache = [];
     private          bool                   _temporary;
@@ -42,10 +38,10 @@ public sealed class ModGroupDrawer : Luna.IUiService
         protected override bool DrawSelectable(int globalIdx, bool selected)
         {
             var option = _group!.Options[globalIdx];
-            var ret    = ImUtf8.Selectable(option.Name, globalIdx == CurrentSelectionIdx);
+            var ret    = Im.Selectable(option.Name, globalIdx == CurrentSelectionIdx);
 
             if (option.Description.Length > 0)
-                ImUtf8.SelectableHelpMarker(option.Description);
+                LunaStyle.DrawHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
 
             return ret;
         }
@@ -89,8 +85,12 @@ public sealed class ModGroupDrawer : Luna.IUiService
                     break;
 
                 case GroupDrawBehaviour.SingleSelection:
-                    ImGuiUtil.Dummy(UiHelpers.DefaultSpace, useDummy);
-                    useDummy = false;
+                    if (useDummy)
+                    {
+                        Im.Dummy(UiHelpers.DefaultSpace);
+                        useDummy = false;
+                    }
+
                     DrawSingleGroupCombo(group, idx, settings.IsEmpty ? group.DefaultSettings : settings.Settings[idx]);
                     break;
             }
@@ -99,8 +99,12 @@ public sealed class ModGroupDrawer : Luna.IUiService
         useDummy = true;
         foreach (var (group, idx) in _blockGroupCache)
         {
-            ImGuiUtil.Dummy(UiHelpers.DefaultSpace, useDummy);
-            useDummy = false;
+            if (useDummy)
+            {
+                Im.Dummy(UiHelpers.DefaultSpace);
+                useDummy = false;
+            }
+
             var option = settings.IsEmpty ? group.DefaultSettings : settings.Settings[idx];
             if (group.Behaviour is GroupDrawBehaviour.MultiSelection)
                 DrawMultiGroup(group, idx, option);
@@ -115,15 +119,19 @@ public sealed class ModGroupDrawer : Luna.IUiService
     /// </summary>
     private void DrawSingleGroupCombo(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id             = ImUtf8.PushId(groupIdx);
+        using var id             = Im.Id.Push(groupIdx);
         var       selectedOption = setting.AsIndex;
-        using var disabled       = ImRaii.Disabled(_locked);
+        using var disabled       = Im.Disabled(_locked);
         _combo.Draw(group, groupIdx, selectedOption);
-        Im.Line.Same();
         if (group.Description.Length > 0)
-            ImUtf8.LabeledHelpMarker(group.Name, group.Description);
+        {
+            LunaStyle.DrawHelpMarkerLabel(group.Name, group.Description);
+        }
         else
-            ImUtf8.Text(group.Name);
+        {
+            Im.Line.SameInner();
+            Im.Text(group.Name);
+        }
     }
 
     /// <summary>
@@ -132,7 +140,7 @@ public sealed class ModGroupDrawer : Luna.IUiService
     /// </summary>
     private void DrawSingleGroupRadio(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id             = ImUtf8.PushId(groupIdx);
+        using var id             = Im.Id.Push(groupIdx);
         var       selectedOption = setting.AsIndex;
         var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
         var       options        = group.Options;
@@ -143,19 +151,19 @@ public sealed class ModGroupDrawer : Luna.IUiService
 
         void DrawOptions()
         {
-            using var disabled = ImRaii.Disabled(_locked);
+            using var disabled = Im.Disabled(_locked);
             for (var idx = 0; idx < group.Options.Count; ++idx)
             {
-                using var i      = ImUtf8.PushId(idx);
+                using var i      = Im.Id.Push(idx);
                 var       option = options[idx];
-                if (ImUtf8.RadioButton(option.Name, selectedOption == idx))
+                if (Im.RadioButton(option.Name, selectedOption == idx))
                     SetModSetting(group, groupIdx, Setting.Single(idx));
 
-                if (option.Description.Length <= 0)
+                if (option.Description.Length is 0)
                     continue;
 
-                Im.Line.Same();
-                ImGuiComponents.HelpMarker(option.Description);
+                Im.Line.SameInner();
+                LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
             }
         }
     }
@@ -166,54 +174,54 @@ public sealed class ModGroupDrawer : Luna.IUiService
     /// </summary>
     private void DrawMultiGroup(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id       = ImUtf8.PushId(groupIdx);
+        using var id       = Im.Id.Push(groupIdx);
         var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
         var       options  = group.Options;
         DrawCollapseHandling(options, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
-        var label = $"##multi{groupIdx}";
+        var label = new StringU8($"##multi{groupIdx}");
         if (Im.Item.RightClicked())
-            ImUtf8.OpenPopup($"##multi{groupIdx}");
+            Im.Popup.Open(label);
 
         DrawMultiPopup(group, groupIdx, label);
         return;
 
         void DrawOptions()
         {
-            using var disabled = ImRaii.Disabled(_locked);
+            using var disabled = Im.Disabled(_locked);
             for (var idx = 0; idx < options.Count; ++idx)
             {
-                using var i       = ImUtf8.PushId(idx);
+                using var i       = Im.Id.Push(idx);
                 var       option  = options[idx];
                 var       enabled = setting.HasFlag(idx);
 
-                if (ImUtf8.Checkbox(option.Name, ref enabled))
+                if (Im.Checkbox(option.Name, ref enabled))
                     SetModSetting(group, groupIdx, setting.SetBit(idx, enabled));
 
                 if (option.Description.Length > 0)
                 {
-                    Im.Line.Same();
-                    ImGuiComponents.HelpMarker(option.Description);
+                    Im.Line.SameInner();
+                    LunaStyle.DrawAlignedHelpMarker(option.Description, treatAsHovered: Im.Item.Hovered());
                 }
             }
         }
     }
 
-    private void DrawMultiPopup(IModGroup group, int groupIdx, string label)
+    private void DrawMultiPopup(IModGroup group, int groupIdx, StringU8 label)
     {
         using var style = ImStyleSingle.PopupBorderThickness.Push(Im.Style.GlobalScale);
-        using var popup = ImRaii.Popup(label);
+        using var popup = Im.Popup.Begin(label);
         if (!popup)
             return;
 
         Im.Text(group.Name);
-        using var disabled = ImRaii.Disabled(_locked);
+        using var disabled = Im.Disabled(_locked);
         Im.Separator();
-        if (ImUtf8.Selectable("Enable All"u8))
+        if (Im.Selectable("Enable All"u8))
             SetModSetting(group, groupIdx, Setting.AllBits(group.Options.Count));
 
-        if (ImUtf8.Selectable("Disable All"u8))
+        if (Im.Selectable("Disable All"u8))
             SetModSetting(group, groupIdx, Setting.Zero);
     }
 
@@ -225,40 +233,40 @@ public sealed class ModGroupDrawer : Luna.IUiService
         }
         else
         {
-            var collapseId     = ImUtf8.GetId("Collapse");
-            var shown          = ImGui.GetStateStorage().GetBool(collapseId, true);
-            var buttonTextShow = $"Show {options.Count} Options";
-            var buttonTextHide = $"Hide {options.Count} Options";
-            var buttonWidth = Math.Max(ImUtf8.CalcTextSize(buttonTextShow).X, ImUtf8.CalcTextSize(buttonTextHide).X)
+            var collapseId     = Im.Id.Get("Collapse"u8);
+            var shown          = Im.State.Storage.GetBool(collapseId, true);
+            var buttonTextShow = new StringU8($"Show {options.Count} Options");
+            var buttonTextHide = new StringU8($"Hide {options.Count} Options");
+            var buttonWidth = Math.Max(Im.Font.CalculateSize(buttonTextShow).X, Im.Font.CalculateSize(buttonTextHide).X)
               + 2 * Im.Style.FramePadding.X;
             minWidth = Math.Max(buttonWidth, minWidth);
             if (shown)
             {
-                var pos = ImGui.GetCursorPos();
-                ImGui.Dummy(UiHelpers.IconButtonSize);
+                var pos = Im.Cursor.Position;
+                Im.FrameDummy();
                 using (Im.Group())
                 {
                     draw();
                 }
 
 
-                var width  = Math.Max(ImGui.GetItemRectSize().X, minWidth);
-                var endPos = ImGui.GetCursorPos();
-                ImGui.SetCursorPos(pos);
-                if (ImUtf8.Button(buttonTextHide, new Vector2(width, 0)))
-                    ImGui.GetStateStorage().SetBool(collapseId, !shown);
+                var width  = Math.Max(Im.Item.Size.X, minWidth);
+                var endPos = Im.Cursor.Position;
+                Im.Cursor.Position = pos;
+                if (Im.Button(buttonTextHide, new Vector2(width, 0)))
+                    Im.State.Storage.SetBool(collapseId, !shown);
 
-                ImGui.SetCursorPos(endPos);
+                Im.Cursor.Position = endPos;
             }
             else
             {
-                var optionWidth = options.Max(o => ImUtf8.CalcTextSize(o.Name).X)
+                var optionWidth = options.Max(o => Im.Font.CalculateSize(o.Name).X)
                   + Im.Style.ItemInnerSpacing.X
                   + Im.Style.FrameHeight
                   + Im.Style.FramePadding.X;
                 var width = Math.Max(optionWidth, minWidth);
-                if (ImUtf8.Button(buttonTextShow, new Vector2(width, 0)))
-                    ImGui.GetStateStorage().SetBool(collapseId, !shown);
+                if (Im.Button(buttonTextShow, new Vector2(width, 0)))
+                    Im.State.Storage.SetBool(collapseId, !shown);
             }
         }
     }

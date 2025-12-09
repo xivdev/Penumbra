@@ -1,7 +1,4 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.Objects;
@@ -27,7 +24,7 @@ public partial class MtrlTab
         if (Im.Button("Reload live preview"u8))
             BindToMaterialInstances();
 
-        if (_materialPreviewers.Count != 0 || _colorTablePreviewers.Count != 0)
+        if (_materialPreviewers.Count is not 0 || _colorTablePreviewers.Count is not 0)
             return;
 
         Im.Line.Same();
@@ -62,7 +59,7 @@ public partial class MtrlTab
 
         UpdateMaterialPreview();
 
-        if (Mtrl.Table == null)
+        if (Mtrl.Table is null)
             return;
 
         foreach (var materialInfo in instances)
@@ -207,10 +204,10 @@ public partial class MtrlTab
 
     private void UpdateColorTableRowPreview(int rowIdx)
     {
-        if (_colorTablePreviewers.Count == 0)
+        if (_colorTablePreviewers.Count is 0)
             return;
 
-        if (Mtrl.Table == null)
+        if (Mtrl.Table is null)
             return;
 
         var row = Mtrl.Table switch
@@ -219,7 +216,7 @@ public partial class MtrlTab
             ColorTable table             => table[rowIdx],
             _                            => throw new InvalidOperationException($"Unsupported color table type {Mtrl.Table.GetType()}"),
         };
-        if (Mtrl.DyeTable != null)
+        if (Mtrl.DyeTable is not null)
         {
             var dyeRow = Mtrl.DyeTable switch
             {
@@ -251,15 +248,15 @@ public partial class MtrlTab
 
     private void UpdateColorTablePreview()
     {
-        if (_colorTablePreviewers.Count == 0)
+        if (_colorTablePreviewers.Count is 0)
             return;
 
-        if (Mtrl.Table == null)
+        if (Mtrl.Table is null)
             return;
 
         var rows    = new ColorTable(Mtrl.Table);
-        var dyeRows = Mtrl.DyeTable != null ? ColorDyeTable.CastOrConvert(Mtrl.DyeTable) : null;
-        if (dyeRows != null)
+        var dyeRows = Mtrl.DyeTable is not null ? ColorDyeTable.CastOrConvert(Mtrl.DyeTable) : null;
+        if (dyeRows is not null)
         {
             ReadOnlySpan<StainId> stainIds =
             [

@@ -1,15 +1,11 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
@@ -35,19 +31,19 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current IMC manipulations to clipboard."u8,
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Imc)));
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = _fileExists && !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : !_fileExists ? "This IMC file does not exist."u8 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
             UpdateEntry();
 
-        using var disabled = ImRaii.Disabled();
+        using var disabled = Im.Disabled();
         DrawEntry(Entry, ref Entry, false);
     }
 
@@ -63,82 +59,81 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     private static bool DrawIdentifierInput(ref ImcIdentifier identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var change = DrawObjectType(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         change |= DrawPrimaryId(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
             change |= DrawSlot(ref identifier);
         else
             change |= DrawSecondaryId(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         change |= DrawVariant(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.ObjectType is ObjectType.DemiHuman)
             change |= DrawSlot(ref identifier, 70f);
         else
-            ImUtf8.ScaledDummy(70f);
+            Im.ScaledDummy(70f);
         return change;
     }
 
     private static void DrawIdentifier(ImcIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.ObjectType.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.ObjectType.ToName(), default, FrameColor);
         Im.Tooltip.OnHover("Object Type"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.PrimaryId.Id}", FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.PrimaryId.Id}", default, FrameColor);
         Im.Tooltip.OnHover("Primary ID");
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.ObjectType is ObjectType.Equipment or ObjectType.Accessory)
         {
-            ImUtf8.TextFramed(identifier.EquipSlot.ToName(), FrameColor);
+            ImEx.TextFramed(identifier.EquipSlot.ToNameU8(), default, FrameColor);
             Im.Tooltip.OnHover("Equip Slot"u8);
         }
         else
         {
-            ImUtf8.TextFramed($"{identifier.SecondaryId.Id}", FrameColor);
+            ImEx.TextFramed($"{identifier.SecondaryId.Id}", default, FrameColor);
             Im.Tooltip.OnHover("Secondary ID"u8);
         }
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.Variant.Id}", FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.Variant.Id}", default, FrameColor);
         Im.Tooltip.OnHover("Variant"u8);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.ObjectType is ObjectType.DemiHuman)
         {
-            ImUtf8.TextFramed(identifier.EquipSlot.ToName(), FrameColor);
+            ImEx.TextFramed(identifier.EquipSlot.ToNameU8(), default, FrameColor);
             Im.Tooltip.OnHover("Equip Slot"u8);
         }
     }
 
     private static bool DrawEntry(ImcEntry defaultEntry, ref ImcEntry entry, bool addDefault)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var change = DrawMaterialId(defaultEntry, ref entry, addDefault);
         Im.Line.SameInner();
         change |= DrawMaterialAnimationId(defaultEntry, ref entry, addDefault);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         change |= DrawDecalId(defaultEntry, ref entry, addDefault);
         Im.Line.SameInner();
         change |= DrawVfxId(defaultEntry, ref entry, addDefault);
         Im.Line.SameInner();
         change |= DrawSoundId(defaultEntry, ref entry, addDefault);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         change |= DrawAttributes(defaultEntry, ref entry);
         return change;
     }
-
 
     protected override IEnumerable<(ImcIdentifier, ImcEntry)> Enumerate()
         => Editor.Imc
@@ -155,7 +150,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
-        var ret = Combos.ImcType("##imcType", identifier.ObjectType, out var type, width);
+        var ret = Combos.Combos.ImcType("##imcType", identifier.ObjectType, out var type, width);
         Im.Tooltip.OnHover("Object Type"u8);
 
         if (ret)
@@ -216,9 +211,9 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         {
             case ObjectType.Equipment:
             case ObjectType.DemiHuman:
-                ret = Combos.EqpEquipSlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
+                ret = Combos.Combos.EqpEquipSlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
                 break;
-            case ObjectType.Accessory: ret = Combos.AccessorySlot("##slot", identifier.EquipSlot, out slot, unscaledWidth); break;
+            case ObjectType.Accessory: ret = Combos.Combos.AccessorySlot("##slot", identifier.EquipSlot, out slot, unscaledWidth); break;
             default:                   return false;
         }
 
@@ -284,7 +279,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var changes = false;
         for (var i = 0; i < ImcEntry.NumAttributes; ++i)
         {
-            using var id    = ImRaii.PushId(i);
+            using var id    = Im.Id.Push(i);
             var       flag  = 1 << i;
             var       value = (entry.AttributeMask & flag) != 0;
             var       def   = (defaultEntry.AttributeMask & flag) != 0;

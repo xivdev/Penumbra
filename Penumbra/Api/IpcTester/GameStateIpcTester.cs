@@ -70,7 +70,7 @@ public class GameStateIpcTester : IUiService, IDisposable
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(GetDrawObjectInfo.Label, "Draw Object Info"u8))
+        using (IpcTester.DrawIntro(GetDrawObjectInfo.LabelU8, "Draw Object Info"u8))
         {
             table.NextColumn();
             if (_currentDrawObject == nint.Zero)
@@ -86,12 +86,12 @@ public class GameStateIpcTester : IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetCutsceneParentIndex.Label, "Cutscene Parent"u8))
+        using (IpcTester.DrawIntro(GetCutsceneParentIndex.LabelU8, "Cutscene Parent"u8))
         {
             table.DrawColumn($"{new GetCutsceneParentIndex(_pi).Invoke(_currentCutsceneActor)}");
         }
 
-        using (IpcTester.DrawIntro(SetCutsceneParentIndex.Label, "Cutscene Parent"u8))
+        using (IpcTester.DrawIntro(SetCutsceneParentIndex.LabelU8, "Cutscene Parent"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Set Parent"u8))
@@ -99,7 +99,7 @@ public class GameStateIpcTester : IUiService, IDisposable
                     .Invoke(_currentCutsceneActor, _currentCutsceneParent);
         }
 
-        using (IpcTester.DrawIntro(CreatingCharacterBase.Label, "Last Drawobject created"u8))
+        using (IpcTester.DrawIntro(CreatingCharacterBase.LabelU8, "Last Drawobject created"u8))
         {
             if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
                 table.DrawColumn(_lastCreatedDrawObject != nint.Zero
@@ -107,7 +107,7 @@ public class GameStateIpcTester : IUiService, IDisposable
                     : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}");
         }
 
-        using (IpcTester.DrawIntro(IpcSubscribers.GameObjectResourcePathResolved.Label, "Last GamePath resolved"u8))
+        using (IpcTester.DrawIntro(IpcSubscribers.GameObjectResourcePathResolved.LabelU8, "Last GamePath resolved"u8))
         {
             if (_lastResolvedGamePathTime < DateTimeOffset.Now)
                 table.DrawColumn(

@@ -1,12 +1,7 @@
-using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -326,7 +321,7 @@ public partial class MtrlTab
     private bool DrawShaderSection(bool disabled)
     {
         var ret = false;
-        if (ImGui.CollapsingHeader(_shaderHeader))
+        if (Im.Tree.Header(_shaderHeader))
         {
             ret |= DrawPackageNameInput(disabled);
             ret |= DrawShaderFlagsInput(disabled);
@@ -335,17 +330,17 @@ public partial class MtrlTab
             DrawMaterialShaders();
         }
 
-        if (!_shpkLoading && (_associatedShpk == null || _associatedShpkDevkit == null))
+        if (!_shpkLoading && (_associatedShpk is null || _associatedShpkDevkit is null))
         {
-            ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+            Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
 
-            if (_associatedShpk == null)
-                ImUtf8.Text("Unable to find a suitable shader (.shpk) file for cross-references. Some functionality will be missing."u8,
-                    ImGuiUtil.HalfBlendText(0x80u)); // Half red
+            if (_associatedShpk is null)
+                Im.Text("Unable to find a suitable shader (.shpk) file for cross-references. Some functionality will be missing."u8,
+                    ImGuiColor.Text.Get().HalfBlend(0x80)); // Half red
             else
-                ImUtf8.Text(
+                Im.Text(
                     "No dev-kit file found for this material's shaders. Please install one for optimal editing experience, such as actual constant names instead of hexadecimal identifiers."u8,
-                    ImGuiUtil.HalfBlendText(0x8080u)); // Half yellow
+                    ImGuiColor.Text.Get().HalfBlend(0x8080u)); // Half yellow
         }
 
         return ret;
@@ -360,12 +355,12 @@ public partial class MtrlTab
         }
 
         var ret = false;
-        Im.Item.SetNextWidth(Im.Style.GlobalScale * 250.0f);
-        using var c = ImRaii.Combo("Shader Package", Mtrl.ShaderPackage.Name);
+        Im.Item.SetNextWidthScaled(250.0f);
+        using var c = Im.Combo.Begin("Shader Package"u8, Mtrl.ShaderPackage.Name);
         if (c)
             foreach (var value in GetShpkNames())
             {
-                if (!ImGui.Selectable(value, value == Mtrl.ShaderPackage.Name))
+                if (!Im.Selectable(value, value == Mtrl.ShaderPackage.Name))
                     continue;
 
                 Mtrl.ShaderPackage.Name = value;
@@ -382,9 +377,9 @@ public partial class MtrlTab
     private bool DrawShaderFlagsInput(bool disabled)
     {
         var shpkFlags = (int)Mtrl.ShaderPackage.Flags;
-        Im.Item.SetNextWidth(Im.Style.GlobalScale * 250.0f);
-        if (!ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
-                flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
+        Im.Item.SetNextWidthScaled(250.0f);
+        if (!Im.Input.Scalar("Shader Flags"u8, ref shpkFlags, 0, 0,
+                InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
             return false;
 
         Mtrl.ShaderPackage.Flags = (uint)shpkFlags;
@@ -398,24 +393,19 @@ public partial class MtrlTab
     /// </summary>
     private void DrawCustomAssociations()
     {
-        const string tooltip = "Click to copy file path to clipboard.";
-        var text = _associatedShpk == null
-            ? "Associated .shpk file: None"
-            : $"Associated .shpk file: {_loadedShpkPathName}";
-        var devkitText = _associatedShpkDevkit == null
-            ? "Associated dev-kit file: None"
-            : $"Associated dev-kit file: {_loadedShpkDevkitPathName}";
-        var baseDevkitText = _associatedBaseDevkit == null
-            ? "Base dev-kit file: None"
-            : $"Base dev-kit file: {_loadedBaseDevkitPathName}";
+        var tooltip = "Click to copy file path to clipboard."u8;
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        ImEx.CopyOnClickSelectable(_associatedShpk is null ? "Associated .shpk file: None" : $"Associated .shpk file: {_loadedShpkPathName}",
+            _loadedShpkPathName, tooltip);
+        ImEx.CopyOnClickSelectable(
+            _associatedShpkDevkit is null ? "Associated dev-kit file: None" : $"Associated dev-kit file: {_loadedShpkDevkitPathName}",
+            _loadedShpkDevkitPathName, tooltip);
+        ImEx.CopyOnClickSelectable(
+            _associatedBaseDevkit is null ? "Base dev-kit file: None" : $"Base dev-kit file: {_loadedBaseDevkitPathName}",
+            _loadedBaseDevkitPathName, tooltip);
 
-        ImUtf8.CopyOnClickSelectable(text,           _loadedShpkPathName,       tooltip);
-        ImUtf8.CopyOnClickSelectable(devkitText,     _loadedShpkDevkitPathName, tooltip);
-        ImUtf8.CopyOnClickSelectable(baseDevkitText, _loadedBaseDevkitPathName, tooltip);
-
-        if (ImUtf8.Button("Associate Custom .shpk File"u8))
+        if (Im.Button("Associate Custom .shpk File"u8))
             _fileDialog.OpenFilePicker("Associate Custom .shpk File...", ".shpk", (success, name) =>
             {
                 if (success)
@@ -424,19 +414,17 @@ public partial class MtrlTab
 
         var moddedPath = FindAssociatedShpk(out var defaultPath, out var gamePath);
         Im.Line.Same();
-        if (ImUtf8.ButtonEx("Associate Default .shpk File"u8, moddedPath.ToPath(), Vector2.Zero,
-                moddedPath.Equals(_loadedShpkPath)))
+        if (ImEx.Button("Associate Default .shpk File"u8, Vector2.Zero, moddedPath.ToPath(), moddedPath.Equals(_loadedShpkPath)))
             LoadShpk(moddedPath);
 
         if (!gamePath.Path.Equals(moddedPath.InternalName))
         {
             Im.Line.Same();
-            if (ImUtf8.ButtonEx("Associate Unmodded .shpk File", defaultPath, Vector2.Zero,
-                    gamePath.Path.Equals(_loadedShpkPath.InternalName)))
+            if (ImEx.Button("Associate Unmodded .shpk File"u8, Vector2.Zero, defaultPath, gamePath.Path.Equals(_loadedShpkPath.InternalName)))
                 LoadShpk(new FullPath(gamePath));
         }
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
     }
 
     private bool DrawMaterialShaderKeys(bool disabled)
@@ -447,22 +435,22 @@ public partial class MtrlTab
         var ret = false;
         foreach (var (label, index, description, monoFont, values) in _shaderKeys)
         {
-            using var font         = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
+            using var font         = Im.Font.Mono.Push(monoFont);
             ref var   key          = ref Mtrl.ShaderPackage.ShaderKeys[index];
-            using var id           = ImUtf8.PushId((int)key.Key);
+            using var id           = Im.Id.Push((int)key.Key);
             var       shpkKey      = _associatedShpk?.GetMaterialKeyById(key.Key);
             var       currentValue = key.Value;
             var (currentLabel, _, currentDescription) =
                 values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
             if (!disabled && shpkKey.HasValue)
             {
-                Im.Item.SetNextWidth(Im.Style.GlobalScale * 250.0f);
-                using (var c = ImUtf8.Combo(""u8, currentLabel))
+                Im.Item.SetNextWidthScaled(250.0f);
+                using (var c = Im.Combo.Begin(StringU8.Empty, currentLabel))
                 {
                     if (c)
                         foreach (var (valueLabel, value, valueDescription) in values)
                         {
-                            if (ImGui.Selectable(valueLabel, value == currentValue))
+                            if (Im.Selectable(valueLabel, value == currentValue))
                             {
                                 key.Value = value;
                                 ret       = true;
@@ -471,24 +459,24 @@ public partial class MtrlTab
                             }
 
                             if (valueDescription.Length > 0)
-                                ImGuiUtil.SelectableHelpMarker(valueDescription);
+                                LunaStyle.DrawRightAlignedHelpMarker(valueDescription);
                         }
                 }
 
-                Im.Line.Same();
+                Im.Line.SameInner();
                 if (description.Length > 0)
-                    ImGuiUtil.LabeledHelpMarker(label, description);
+                    LunaStyle.DrawHelpMarkerLabel(label, description);
                 else
-                    ImUtf8.Text(label);
+                    Im.Text(label);
             }
             else if (description.Length > 0 || currentDescription.Length > 0)
             {
-                ImUtf8.LabeledHelpMarker($"{label}: {currentLabel}",
+                LunaStyle.DrawHelpMarkerLabel($"{label}: {currentLabel}",
                     description + (description.Length > 0 && currentDescription.Length > 0 ? "\n\n" : string.Empty) + currentDescription);
             }
             else
             {
-                ImUtf8.Text($"{label}: {currentLabel}");
+                Im.Text($"{label}: {currentLabel}");
             }
         }
 
@@ -497,19 +485,19 @@ public partial class MtrlTab
 
     private void DrawMaterialShaders()
     {
-        if (_associatedShpk == null)
+        if (_associatedShpk is null)
             return;
 
-        using (var node = ImUtf8.TreeNode("Candidate Shaders"u8))
+        using (var node = Im.Tree.Node("Candidate Shaders"u8))
         {
             if (node)
-                ImUtf8.Text(_shadersString.Span);
+                Im.Text(_shadersString.Span);
         }
 
         if (_shaderComment.Length > 0)
         {
-            ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
-            ImUtf8.Text(_shaderComment);
+            Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
+            Im.Text(_shaderComment);
         }
     }
 }

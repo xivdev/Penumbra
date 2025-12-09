@@ -1,8 +1,6 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Text;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
@@ -30,14 +28,14 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current global EQP manipulations to clipboard."u8,
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.GlobalEqp)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier);
 
         DrawIdentifierInput(ref Identifier);
@@ -60,41 +58,41 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
 
     private static void DrawIdentifierInput(ref GlobalEqpManipulation identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         DrawType(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.Type.HasCondition())
             DrawCondition(ref identifier);
         else
-            ImUtf8.ScaledDummy(100);
+            Im.ScaledDummy(100);
     }
 
     private static void DrawIdentifier(GlobalEqpManipulation identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Type.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Type.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Global EQP Type"u8);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.Type.HasCondition())
         {
-            ImUtf8.TextFramed($"{identifier.Condition.Id}", FrameColor);
+            ImEx.TextFramed($"{identifier.Condition.Id}", default, FrameColor);
             Im.Tooltip.OnHover("Conditional Model ID"u8);
         }
     }
 
     public static bool DrawType(ref GlobalEqpManipulation identifier, float unscaledWidth = 250)
     {
-        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
-        using var combo = ImUtf8.Combo("##geqpType"u8, identifier.Type.ToName());
+        Im.Item.SetNextWidthScaled(unscaledWidth);
+        using var combo = Im.Combo.Begin("##geqpType"u8, identifier.Type.ToNameU8());
         if (!combo)
             return false;
 
         var ret = false;
         foreach (var type in Enum.GetValues<GlobalEqpType>())
         {
-            if (ImUtf8.Selectable(type.ToName(), type == identifier.Type))
+            if (Im.Selectable(type.ToNameU8(), type == identifier.Type))
             {
                 identifier = new GlobalEqpManipulation
                 {
@@ -104,7 +102,7 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
                 ret = true;
             }
 
-            Im.Tooltip.OnHover(type.ToDescription());
+            Im.Tooltip.OnHover(type.Tooltip());
         }
 
         return ret;

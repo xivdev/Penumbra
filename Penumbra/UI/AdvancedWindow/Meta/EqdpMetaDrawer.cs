@@ -1,16 +1,12 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
@@ -34,15 +30,15 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current EQDP manipulations to clipboard."u8, new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Eqdp)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var validRaceCode = CharacterUtilityData.EqdpIdx(Identifier.GenderRace, false) >= 0;
         var canAdd        = validRaceCode && !Editor.Contains(Identifier);
         var tt = canAdd   ? "Stage this edit."u8 :
             validRaceCode ? "This entry is already edited."u8 : "This combination of race and gender can not be used."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
@@ -72,44 +68,44 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     private static bool DrawIdentifierInput(ref EqdpIdentifier identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var changes = DrawPrimaryId(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawRace(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawGender(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawEquipSlot(ref identifier);
         return changes;
     }
 
     private static void DrawIdentifier(EqdpIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.SetId.Id}", default, FrameColor);
         Im.Tooltip.OnHover("Model Set ID"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Race.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Model Race"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Gender.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Gender.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Gender"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Slot.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Slot.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Equip Slot"u8);
     }
 
     private static bool DrawEntry(EqdpEntryInternal defaultEntry, ref EqdpEntryInternal entry, bool disabled)
     {
         var       changes = false;
-        using var dis     = ImRaii.Disabled(disabled);
-        ImGui.TableNextColumn();
+        using var dis     = Im.Disabled(disabled);
+        Im.Table.NextColumn();
         if (Checkmark("Material##eqdp"u8, "\0"u8, entry.Material, defaultEntry.Material, out var newMaterial))
         {
             entry   = entry with { Material = newMaterial };
@@ -139,7 +135,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     public static bool DrawRace(ref EqdpIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Race("##eqdpRace", identifier.Race, out var race, unscaledWidth);
+        var ret = Combos.Combos.Race("##eqdpRace", identifier.Race, out var race, unscaledWidth);
         Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
@@ -148,7 +144,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     public static bool DrawGender(ref EqdpIdentifier identifier, float unscaledWidth = 120)
     {
-        var ret = Combos.Gender("##eqdpGender", identifier.Gender, out var gender, unscaledWidth);
+        var ret = Combos.Combos.Gender("##eqdpGender", identifier.Gender, out var gender, unscaledWidth);
         Im.Tooltip.OnHover("Gender"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(gender, identifier.Race) };
@@ -157,7 +153,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     public static bool DrawEquipSlot(ref EqdpIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.EqdpEquipSlot("##eqdpSlot", identifier.Slot, out var slot, unscaledWidth);
+        var ret = Combos.Combos.EqdpEquipSlot("##eqdpSlot", identifier.Slot, out var slot, unscaledWidth);
         Im.Tooltip.OnHover("Equip Slot"u8);
         if (ret)
             identifier = identifier with { Slot = slot };

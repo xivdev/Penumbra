@@ -108,7 +108,7 @@ public sealed class ModelManager(
         if (targetId == EstEntry.Zero)
             return [];
 
-        return [GamePaths.Sklb.Customization(info.GenderRace, type.ToName(), targetId.AsId)];
+        return [GamePaths.Sklb.Customization(info.GenderRace, type.ToSuffix(), targetId.AsId)];
     }
 
     /// <summary> Try to resolve the absolute path to a .mtrl from the potentially-partial path provided by a model. </summary>

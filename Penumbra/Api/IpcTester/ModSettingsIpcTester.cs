@@ -63,14 +63,14 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
 
         IpcTester.DrawIntro("Last Error"u8, $"{_lastSettingsError}").Dispose();
 
-        using (IpcTester.DrawIntro(ModSettingChanged.Label, "Last Mod Setting Changed"u8))
+        using (IpcTester.DrawIntro(ModSettingChanged.LabelU8, "Last Mod Setting Changed"u8))
         {
             table.DrawColumn(_lastSettingChangeMod.Length > 0
                 ? $"{_lastSettingChangeType} of {_lastSettingChangeMod} in {_lastSettingChangeCollection}{(_lastSettingChangeInherited ? " (Inherited)" : string.Empty)} at {_lastSettingChange}"
                 : "None"u8);
         }
 
-        using (IpcTester.DrawIntro(GetAvailableModSettings.Label, "Get Available Settings"u8))
+        using (IpcTester.DrawIntro(GetAvailableModSettings.LabelU8, "Get Available Settings"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Get##Available"u8))
@@ -80,7 +80,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetCurrentModSettings.Label, "Get Current Settings"u8))
+        using (IpcTester.DrawIntro(GetCurrentModSettings.LabelU8, "Get Current Settings"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Get##Current"u8))
@@ -103,7 +103,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetCurrentModSettingsWithTemp.Label, "Get Current Settings With Temp"u8))
+        using (IpcTester.DrawIntro(GetCurrentModSettingsWithTemp.LabelU8, "Get Current Settings With Temp"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Get##CurrentTemp"u8))
@@ -127,7 +127,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(GetAllModSettings.Label, "Get All Mod Settings"u8))
+        using (IpcTester.DrawIntro(GetAllModSettings.LabelU8, "Get All Mod Settings"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Get##All"u8))
@@ -144,7 +144,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
             }
         }
 
-        using (IpcTester.DrawIntro(TryInheritMod.Label, "Inherit Mod"u8))
+        using (IpcTester.DrawIntro(TryInheritMod.LabelU8, "Inherit Mod"u8))
         {
             table.NextColumn();
             Im.Checkbox("##inherit"u8, ref _settingsInherit);
@@ -154,7 +154,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
                     .Invoke(collection, _settingsModDirectory, _settingsInherit, _settingsModName);
         }
 
-        using (IpcTester.DrawIntro(TrySetMod.Label, "Set Enabled"u8))
+        using (IpcTester.DrawIntro(TrySetMod.LabelU8, "Set Enabled"u8))
         {
             table.NextColumn();
             Im.Checkbox("##enabled"u8, ref _settingsEnabled);
@@ -164,7 +164,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
                     .Invoke(collection, _settingsModDirectory, _settingsEnabled, _settingsModName);
         }
 
-        using (IpcTester.DrawIntro(TrySetModPriority.Label, "Set Priority"u8))
+        using (IpcTester.DrawIntro(TrySetModPriority.LabelU8, "Set Priority"u8))
         {
             table.NextColumn();
             Im.Item.SetNextWidthScaled(200);
@@ -175,7 +175,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
                     .Invoke(collection, _settingsModDirectory, _settingsPriority, _settingsModName);
         }
 
-        using (IpcTester.DrawIntro(CopyModSettings.Label, "Copy Mod Settings"u8))
+        using (IpcTester.DrawIntro(CopyModSettings.LabelU8, "Copy Mod Settings"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Copy Settings"u8))
@@ -185,7 +185,7 @@ public class ModSettingsIpcTester : Luna.IUiService, IDisposable
         }
 
 
-        using (IpcTester.DrawIntro(TrySetModSetting.Label, "Set Setting(s)"u8))
+        using (IpcTester.DrawIntro(TrySetModSetting.LabelU8, "Set Setting(s)"u8))
         {
             if (_availableSettings == null)
                 return;

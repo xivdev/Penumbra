@@ -1,11 +1,7 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
 using ImSharp;
 using Luna;
 using OtterGui;
 using OtterGui.Services;
-using OtterGui.Text;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -41,7 +37,7 @@ public class ModPanelChangedItemsTab(
             public IIdentifiedObjectData Data;
             public ByteString            Text;
             public ByteString            ModelData;
-            public uint                  Id;
+            public ImGuiId               Id;
             public int                   Children;
             public ChangedItemIconFlag   Icon;
             public bool                  Expandable;
@@ -62,7 +58,7 @@ public class ModPanelChangedItemsTab(
                     Children   = 0,
                 };
 
-            public static Container Parent(string text, IIdentifiedObjectData data, uint id, int children, bool expanded)
+            public static Container Parent(string text, IIdentifiedObjectData data, ImGuiId id, int children, bool expanded)
                 => new()
                 {
                     Child      = false,
@@ -191,8 +187,8 @@ public class ModPanelChangedItemsTab(
                 }
                 else
                 {
-                    var id       = ImUtf8.GetId($"{mainItem.Item.PrimaryId}{(int)mainItem.Item.Type}");
-                    var expanded = ImGui.GetStateStorage().GetBool(id, defaultExpansion);
+                    var id       = Im.Id.Get($"{mainItem.Item.PrimaryId}{(int)mainItem.Item.Type}");
+                    var expanded = Im.State.Storage.GetBool(id, defaultExpansion);
                     Data.Add(Container.Parent(mainItem.Item.Name, mainItem, id, list.Count - 1, expanded));
                     AnyExpandable = true;
                     if (!expanded)
@@ -214,8 +210,6 @@ public class ModPanelChangedItemsTab(
     public bool IsVisible
         => selector.Selected!.ChangedItems.Count > 0;
 
-    private ImGuiStoragePtr _stateStorage;
-
     private Vector2 _buttonSize;
     private Rgba32  _starColor;
 
@@ -226,7 +220,6 @@ public class ModPanelChangedItemsTab(
 
         drawer.DrawTypeFilter();
 
-        _stateStorage = ImGui.GetStateStorage();
         cache.Update(selector.Selected, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
         Im.Separator();
         _buttonSize = new Vector2(Im.Style.ItemSpacing.Y + Im.Style.FrameHeight);
@@ -258,17 +251,17 @@ public class ModPanelChangedItemsTab(
 
     private void DrawContainerExpandable(ChangedItemsCache.Container obj, int idx)
     {
-        using var id = ImUtf8.PushId(idx);
-        ImGui.TableNextColumn();
+        using var id = Im.Id.Push(idx);
+        Im.Table.NextColumn();
         if (obj.Expandable)
         {
-            if (ImUtf8.IconButton(obj.Expanded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight,
-                    obj.Expanded     ? "Hide the other items using the same model." :
+            if (ImEx.Icon.Button(obj.Expanded ? LunaStyle.ExpandDownIcon : LunaStyle.CollapseUpIcon,
+                    obj.Expanded     ? "Hide the other items using the same model."u8 :
                     obj.Children > 1 ? $"Show {obj.Children} other items using the same model." :
-                                       "Show one other item using the same model.",
+                                       "Show one other item using the same model."u8,
                     _buttonSize))
             {
-                _stateStorage.SetBool(obj.Id, !obj.Expanded);
+                Im.State.Storage.SetBool(obj.Id, !obj.Expanded);
                 if (cacheService.TryGetCache<ChangedItemsCache>(_cacheId, out var cache))
                     cache.Reset();
             }
@@ -279,7 +272,7 @@ public class ModPanelChangedItemsTab(
         }
         else
         {
-            ImGui.Dummy(_buttonSize);
+            Im.Dummy(_buttonSize);
         }
 
         DrawBaseContainer(obj, idx);
@@ -287,7 +280,7 @@ public class ModPanelChangedItemsTab(
 
     private void DrawContainer(ChangedItemsCache.Container obj, int idx)
     {
-        using var id = ImUtf8.PushId(idx);
+        using var id = Im.Id.Push(idx);
         DrawBaseContainer(obj, idx);
     }
 
@@ -301,7 +294,7 @@ public class ModPanelChangedItemsTab(
                 "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8,
                 textColor: textColor, size: _buttonSize))
             dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, false, true);
-        using var context = ImUtf8.PopupContextItem("StarContext"u8);
+        using var context = Im.Popup.BeginContextItem("StarContext"u8);
         if (!context)
             return;
 
@@ -314,10 +307,10 @@ public class ModPanelChangedItemsTab(
                 if (cache.Data[idx].Data is IdentifiedItem it)
                 {
                     if (selector.Selected!.PreferredChangedItems.Contains(it.Item.Id)
-                     && ImUtf8.MenuItem("Remove Parent from Local Preferred Items"u8))
+                     && Im.Menu.Item("Remove Parent from Local Preferred Items"u8))
                         dataEditor.RemovePreferredItem(selector.Selected!, it.Item.Id, false);
                     if (selector.Selected!.DefaultPreferredItems.Contains(it.Item.Id)
-                     && ImUtf8.MenuItem("Remove Parent from Default Preferred Items"u8))
+                     && Im.Menu.Item("Remove Parent from Default Preferred Items"u8))
                         dataEditor.RemovePreferredItem(selector.Selected!, it.Item.Id, true);
                 }
 
@@ -327,19 +320,19 @@ public class ModPanelChangedItemsTab(
         var enabled = !selector.Selected!.DefaultPreferredItems.Contains(item.Item.Id);
         if (enabled)
         {
-            if (ImUtf8.MenuItem("Add to Local and Default Preferred Changed Items"u8))
+            if (Im.Menu.Item("Add to Local and Default Preferred Changed Items"u8))
                 dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, true, true);
         }
         else
         {
-            if (ImUtf8.MenuItem("Remove from Default Preferred Changed Items"u8))
+            if (Im.Menu.Item("Remove from Default Preferred Changed Items"u8))
                 dataEditor.RemovePreferredItem(selector.Selected!, item.Item.Id, true);
         }
 
-        if (ImUtf8.MenuItem("Reset Local Preferred Items to Default"u8))
+        if (Im.Menu.Item("Reset Local Preferred Items to Default"u8))
             dataEditor.ResetPreferredItems(selector.Selected!);
 
-        if (ImUtf8.MenuItem("Clear Local and Default Preferred Items not Changed by the Mod"u8))
+        if (Im.Menu.Item("Clear Local and Default Preferred Items not Changed by the Mod"u8))
             dataEditor.ClearInvalidPreferredItems(selector.Selected!);
     }
 
@@ -347,11 +340,11 @@ public class ModPanelChangedItemsTab(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DrawBaseContainer(in ChangedItemsCache.Container obj, int _)
     {
-        ImGui.TableNextColumn();
-        using var indent = ImRaii.PushIndent(1, obj.Child);
+        Im.Table.NextColumn();
+        using var indent = Im.Indent(1, obj.Child);
         drawer.DrawCategoryIcon(obj.Icon, _buttonSize.Y);
-        Im.Line.Same(0, 0);
-        var clicked = ImUtf8.Selectable(obj.Text.Span, false, ImGuiSelectableFlags.None, _buttonSize with { X = 0 });
+        Im.Line.NoSpacing();
+        var clicked = Im.Selectable(obj.Text.Span, false, SelectableFlags.None, _buttonSize with { X = 0 });
         drawer.ChangedItemHandling(obj.Data, clicked);
         ChangedItemDrawer.DrawModelData(obj.ModelData.Span, _buttonSize.Y);
     }

@@ -80,6 +80,12 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
     public void CloseMainWindow()
         => _mainWindow.IsOpen = false;
 
+    public PenumbraApiEc RegisterSettingsSection(Action draw)
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc UnregisterSettingsSection(Action draw)
+        => throw new NotImplementedException();
+
     private void OnChangedItemClick(in ChangedItemClick.Arguments arguments)
     {
         if (ChangedItemClicked == null)

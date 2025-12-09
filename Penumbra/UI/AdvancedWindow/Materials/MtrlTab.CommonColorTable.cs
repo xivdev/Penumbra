@@ -1,12 +1,9 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using ImSharp;
-using Penumbra.GameData.Files.MaterialStructs;
+using Luna;
 using Penumbra.GameData.Files;
-using OtterGui.Text;
+using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Structs;
-using OtterGui.Raii;
-using OtterGui.Text.Widget;
 
 namespace Penumbra.UI.AdvancedWindow.Materials;
 
@@ -15,8 +12,6 @@ public partial class MtrlTab
     private static readonly float HalfMinValue = (float)Half.MinValue;
     private static readonly float HalfMaxValue = (float)Half.MaxValue;
     private static readonly float HalfEpsilon  = (float)Half.Epsilon;
-
-    private static readonly FontAwesomeCheckbox ApplyStainCheckbox = new(FontAwesomeIcon.FillDrip);
 
     private static (Vector2 Scale, float Rotation, float Shear)? _pinnedTileTransform;
 
@@ -35,15 +30,15 @@ public partial class MtrlTab
         if (!disabled)
         {
             Im.Line.Same();
-            ImUtf8.IconDummy();
+            Im.FrameDummy();
             Im.Line.Same();
             ret |= ColorTableDyeableCheckbox();
         }
 
-        if (Mtrl.DyeTable != null)
+        if (Mtrl.DyeTable is not null)
         {
             Im.Line.Same();
-            ImUtf8.IconDummy();
+            Im.FrameDummy();
             Im.Line.Same();
             ret |= DrawPreviewDye(disabled);
         }
@@ -65,7 +60,7 @@ public partial class MtrlTab
         if (Mtrl.Table == null)
             return;
 
-        if (!ImUtf8.Button("Export All Rows to Clipboard"u8, ImEx.ScaledVector(200, 0)))
+        if (!Im.Button("Export All Rows to Clipboard"u8, ImEx.ScaledVector(200, 0)))
             return;
 
         try
@@ -78,7 +73,7 @@ public partial class MtrlTab
             data2.TryCopyTo(array.AsSpan(data1.Length));
 
             var text = Convert.ToBase64String(array);
-            ImGui.SetClipboardText(text);
+            Im.Clipboard.Set(text);
         }
         catch
         {
@@ -93,7 +88,7 @@ public partial class MtrlTab
         var tt = dyeId1 is 0 && dyeId2 is 0
             ? "Select a preview dye first."u8
             : "Apply all preview values corresponding to the dye template and chosen dye where dyeing is enabled."u8;
-        if (ImUtf8.ButtonEx("Apply Preview Dye"u8, tt, disabled: disabled || dyeId1 == 0 && dyeId2 == 0))
+        if (ImEx.Button("Apply Preview Dye"u8, default, tt, disabled || dyeId1 is 0 && dyeId2 is 0))
         {
             var ret = false;
             if (Mtrl.DyeTable != null)
@@ -108,11 +103,11 @@ public partial class MtrlTab
         }
 
         Im.Line.Same();
-        var label = dyeId1 == 0 ? "Preview Dye 1###previewDye1" : $"{name1} (Preview 1)###previewDye1";
+        var label = dyeId1 is 0 ? "Preview Dye 1###previewDye1" : $"{name1} (Preview 1)###previewDye1";
         if (_stainService.StainCombo1.Draw(label, dyeColor1, string.Empty, true, gloss1))
             UpdateColorTablePreview();
         Im.Line.Same();
-        label = dyeId2 == 0 ? "Preview Dye 2###previewDye2" : $"{name2} (Preview 2)###previewDye2";
+        label = dyeId2 is 0 ? "Preview Dye 2###previewDye2" : $"{name2} (Preview 2)###previewDye2";
         if (_stainService.StainCombo2.Draw(label, dyeColor2, string.Empty, true, gloss2))
             UpdateColorTablePreview();
         return false;
@@ -120,15 +115,15 @@ public partial class MtrlTab
 
     private bool ColorTablePasteAllClipboardButton(bool disabled)
     {
-        if (Mtrl.Table == null)
+        if (Mtrl.Table is null)
             return false;
 
-        if (!ImUtf8.ButtonEx("Import All Rows from Clipboard"u8, ImEx.ScaledVector(200, 0), disabled))
+        if (!ImEx.Button("Import All Rows from Clipboard"u8, ImEx.ScaledVector(200, 0), disabled))
             return false;
 
         try
         {
-            var text     = ImGui.GetClipboardText();
+            var text     = Im.Clipboard.GetUtf16();
             var data     = Convert.FromBase64String(text);
             var table    = Mtrl.Table.AsBytes();
             var dyeTable = Mtrl.DyeTable != null ? Mtrl.DyeTable.AsBytes() : [];
@@ -154,21 +149,20 @@ public partial class MtrlTab
         if (Mtrl.Table == null)
             return;
 
-        if (!ImUtf8.IconButton(FontAwesomeIcon.Clipboard, "Export this row to your clipboard."u8,
-                Im.Style.FrameHeight * Vector2.One))
+        if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, "Export this row to your clipboard."u8))
             return;
 
         try
         {
             var data1 = Mtrl.Table.RowAsBytes(rowIdx);
-            var data2 = Mtrl.DyeTable != null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
+            var data2 = Mtrl.DyeTable is not null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
 
             var array = new byte[data1.Length + data2.Length];
             data1.TryCopyTo(array);
             data2.TryCopyTo(array.AsSpan(data1.Length));
 
             var text = Convert.ToBase64String(array);
-            ImGui.SetClipboardText(text);
+            Im.Clipboard.Set(text);
         }
         catch
         {
@@ -178,8 +172,8 @@ public partial class MtrlTab
 
     private bool ColorTableDyeableCheckbox()
     {
-        var dyeable = Mtrl.DyeTable != null;
-        var ret     = ImUtf8.Checkbox("Dyeable"u8, ref dyeable);
+        var dyeable = Mtrl.DyeTable is not null;
+        var ret     = Im.Checkbox("Dyeable"u8, ref dyeable);
 
         if (ret)
         {
@@ -199,18 +193,17 @@ public partial class MtrlTab
 
     private bool ColorTablePasteFromClipboardButton(int rowIdx, bool disabled)
     {
-        if (Mtrl.Table == null)
+        if (Mtrl.Table is null)
             return false;
 
-        if (ImUtf8.IconButton(FontAwesomeIcon.Paste,
-                "Import an exported row from your clipboard onto this row.\n\nRight-Click for more options."u8,
-                Im.Style.FrameHeight * Vector2.One, disabled))
+        if (ImEx.Icon.Button(LunaStyle.FromClipboardIcon,
+                "Import an exported row from your clipboard onto this row.\n\nRight-Click for more options."u8, disabled))
             try
             {
-                var text   = ImGui.GetClipboardText();
+                var text   = Im.Clipboard.GetUtf16();
                 var data   = Convert.FromBase64String(text);
                 var row    = Mtrl.Table.RowAsBytes(rowIdx);
-                var dyeRow = Mtrl.DyeTable != null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
+                var dyeRow = Mtrl.DyeTable is not null ? Mtrl.DyeTable.RowAsBytes(rowIdx) : [];
                 if (data.Length != row.Length && data.Length != row.Length + dyeRow.Length)
                     return false;
 
@@ -232,23 +225,23 @@ public partial class MtrlTab
     private unsafe bool ColorTablePasteFromClipboardContext(int rowIdx, bool disabled)
     {
         if (!disabled && Im.Item.RightClicked())
-            ImUtf8.OpenPopup("context"u8);
+            Im.Popup.Open("context"u8);
 
-        using var context = ImUtf8.Popup("context"u8);
+        using var context = Im.Popup.Begin("context"u8);
         if (!context)
             return false;
 
-        using var _ = ImRaii.Disabled(disabled);
+        using var _ = Im.Disabled(disabled);
 
         IColorTable.ValueTypes    copy    = 0;
         IColorDyeTable.ValueTypes dyeCopy = 0;
-        if (ImUtf8.Selectable("Import Colors Only"u8))
+        if (Im.Selectable("Import Colors Only"u8))
         {
             copy    = IColorTable.ValueTypes.Colors;
             dyeCopy = IColorDyeTable.ValueTypes.Colors;
         }
 
-        if (ImUtf8.Selectable("Import Other Values Only"u8))
+        if (Im.Selectable("Import Other Values Only"u8))
         {
             copy    = ~IColorTable.ValueTypes.Colors;
             dyeCopy = ~IColorDyeTable.ValueTypes.Colors;
@@ -259,7 +252,7 @@ public partial class MtrlTab
 
         try
         {
-            var text   = ImGui.GetClipboardText();
+            var text   = Im.Clipboard.GetUtf16();
             var data   = Convert.FromBase64String(text);
             var row    = Mtrl.Table!.RowAsHalves(rowIdx);
             var halves = new Span<Half>(Unsafe.AsPointer(ref data[0]), row.Length);
@@ -280,9 +273,9 @@ public partial class MtrlTab
 
     private void ColorTablePairHighlightButton(int pairIdx, bool disabled)
     {
-        ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
+        ImEx.Icon.Button(LunaStyle.OnHoverIcon,
             "Highlight this pair of rows on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
-            Im.Style.FrameHeight * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
+            disabled || _colorTablePreviewers.Count is 0);
 
         if (Im.Item.Hovered())
             HighlightColorTablePair(pairIdx);
@@ -292,9 +285,9 @@ public partial class MtrlTab
 
     private void ColorTableRowHighlightButton(int rowIdx, bool disabled)
     {
-        ImUtf8.IconButton(FontAwesomeIcon.Crosshairs,
+        ImEx.Icon.Button(LunaStyle.OnHoverIcon,
             "Highlight this row on your character, if possible.\n\nHighlight colors can be configured in Penumbra's settings."u8,
-            Im.Style.FrameHeight * Vector2.One, disabled || _colorTablePreviewers.Count == 0);
+            disabled || _colorTablePreviewers.Count is 0);
 
         if (Im.Item.Hovered())
             HighlightColorTableRow(rowIdx);
@@ -335,24 +328,24 @@ public partial class MtrlTab
         var ret       = false;
         var inputSqrt = PseudoSqrtRgb((Vector3)current);
         var tmp       = inputSqrt;
-        if (ImUtf8.ColorEdit(label, ref tmp,
-                ImGuiColorEditFlags.NoInputs
-              | ImGuiColorEditFlags.DisplayRgb
-              | ImGuiColorEditFlags.InputRgb
-              | ImGuiColorEditFlags.NoTooltip
-              | ImGuiColorEditFlags.Hdr)
+        if (Im.Color.Editor(label, ref tmp,
+                ColorEditorFlags.NoInputs
+              | ColorEditorFlags.DisplayRgb
+              | ColorEditorFlags.InputRgb
+              | ColorEditorFlags.NoTooltip
+              | ColorEditorFlags.Hdr)
          && tmp != inputSqrt)
         {
             setter((HalfColor)PseudoSquareRgb(tmp));
             ret = true;
         }
 
-        if (letter.Length > 0 && ImGui.IsItemVisible())
+        if (letter.Length > 0 && Im.Item.Visible)
         {
-            var textSize  = ImUtf8.CalcTextSize(letter);
-            var center    = ImGui.GetItemRectMin() + (ImGui.GetItemRectSize() - textSize) / 2;
+            var textSize  = Im.Font.CalculateSize(letter);
+            var center    = Im.Item.UpperLeftCorner + (Im.Item.Size - textSize) / 2;
             var textColor = inputSqrt.LengthSquared() < 0.25f ? 0x80FFFFFFu : 0x80000000u;
-            ImGui.GetWindowDrawList().AddText(letter, center, textColor);
+            Im.Window.DrawList.Text(center, textColor, letter);
         }
 
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
@@ -370,19 +363,19 @@ public partial class MtrlTab
         else
         {
             var tmp = Vector4.Zero;
-            ImUtf8.ColorEdit(label, ref tmp,
-                ImGuiColorEditFlags.NoInputs
-              | ImGuiColorEditFlags.DisplayRgb
-              | ImGuiColorEditFlags.InputRgb
-              | ImGuiColorEditFlags.NoTooltip
-              | ImGuiColorEditFlags.Hdr
-              | ImGuiColorEditFlags.AlphaPreview);
+            Im.Color.Editor(label, ref tmp,
+                ColorEditorFlags.NoInputs
+              | ColorEditorFlags.DisplayRgb
+              | ColorEditorFlags.InputRgb
+              | ColorEditorFlags.NoTooltip
+              | ColorEditorFlags.Hdr
+              | ColorEditorFlags.AlphaPreview);
 
-            if (letter.Length > 0 && ImGui.IsItemVisible())
+            if (letter.Length > 0 && Im.Item.Visible)
             {
-                var textSize = ImUtf8.CalcTextSize(letter);
-                var center   = ImGui.GetItemRectMin() + (ImGui.GetItemRectSize() - textSize) / 2;
-                ImGui.GetWindowDrawList().AddText(letter, center, 0x80000000u);
+                var textSize = Im.Font.CalculateSize(letter);
+                var center   = Im.Item.UpperLeftCorner + (Im.Item.Size - textSize) / 2;
+                Im.Window.DrawList.Text(center, 0x80000000u, letter);
             }
 
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
@@ -392,7 +385,7 @@ public partial class MtrlTab
     private static bool CtApplyStainCheckbox(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, bool current, Action<bool> setter)
     {
         var tmp    = current;
-        var result = ApplyStainCheckbox.Draw(label, ref tmp);
+        var result = ImEx.IconCheckbox(label, FontAwesomeIcon.FillDrip.Icon(), ref tmp);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == current)
             return false;
@@ -405,7 +398,7 @@ public partial class MtrlTab
         float max, float speed, Action<Half> setter)
     {
         var tmp    = (float)value;
-        var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
@@ -422,7 +415,7 @@ public partial class MtrlTab
         float min, float max, float speed)
     {
         var tmp    = (float)value;
-        var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result)
             return false;
@@ -437,7 +430,7 @@ public partial class MtrlTab
 
     private static void CtDragHalf(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, Half? value, ReadOnlySpan<byte> format)
     {
-        using var _              = ImRaii.Disabled();
+        using var _              = Im.Disabled();
         var       valueOrDefault = value ?? Half.Zero;
         var       floatValue     = (float)valueOrDefault;
         CtDragHalf(label, description, valueOrDefault, value.HasValue ? format : "-"u8, floatValue, floatValue, 0.0f, Nop);
@@ -447,7 +440,7 @@ public partial class MtrlTab
         T max, float speed, Action<T> setter) where T : unmanaged, INumber<T>
     {
         var tmp    = value;
-        var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
@@ -460,7 +453,7 @@ public partial class MtrlTab
         T max, float speed) where T : unmanaged, INumber<T>
     {
         var tmp    = value;
-        var result = ImUtf8.DragScalar(label, ref tmp, format, min, max, speed);
+        var result = Im.Drag(label, ref tmp, format, min, max, speed);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, description);
         if (!result || tmp == value)
             return false;
@@ -472,7 +465,7 @@ public partial class MtrlTab
     private static void CtDragScalar<T>(ReadOnlySpan<byte> label, ReadOnlySpan<byte> description, T? value, ReadOnlySpan<byte> format)
         where T : unmanaged, INumber<T>
     {
-        using var _              = ImRaii.Disabled();
+        using var _              = Im.Disabled();
         var       valueOrDefault = value ?? T.Zero;
         CtDragScalar(label, description, valueOrDefault, value.HasValue ? format : "-"u8, valueOrDefault, valueOrDefault, 0.0f, Nop);
     }
@@ -526,24 +519,24 @@ public partial class MtrlTab
             shear    *= 180.0f / MathF.PI;
             Im.Item.SetNextWidth(floatSize);
             var scaleXChanged = CtDragScalar("##TileScaleU"u8, "Tile Scale U"u8, ref scale.X, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
-            var activated     = ImGui.IsItemActivated();
-            var deactivated   = ImGui.IsItemDeactivated();
+            var activated     = Im.Item.Activated;
+            var deactivated   = Im.Item.Deactivated;
             Im.Line.SameInner();
             Im.Item.SetNextWidth(floatSize);
             var scaleYChanged = CtDragScalar("##TileScaleV"u8, "Tile Scale V"u8, ref scale.Y, "%.2f"u8, HalfMinValue, HalfMaxValue, 0.1f);
-            activated   |= ImGui.IsItemActivated();
-            deactivated |= ImGui.IsItemDeactivated();
+            activated   |= Im.Item.Activated;
+            deactivated |= Im.Item.Deactivated;
             if (!twoRowLayout)
                 Im.Line.SameInner();
             Im.Item.SetNextWidth(floatSize);
             var rotationChanged = CtDragScalar("##TileRotation"u8, "Tile Rotation"u8, ref rotation, "%.0f°"u8, -180.0f, 180.0f, 1.0f);
-            activated   |= ImGui.IsItemActivated();
-            deactivated |= ImGui.IsItemDeactivated();
+            activated   |= Im.Item.Activated;
+            deactivated |= Im.Item.Deactivated;
             Im.Line.SameInner();
             Im.Item.SetNextWidth(floatSize);
             var shearChanged = CtDragScalar("##TileShear"u8, "Tile Shear"u8, ref shear, "%.0f°"u8, -90.0f, 90.0f, 1.0f);
-            activated   |= ImGui.IsItemActivated();
-            deactivated |= ImGui.IsItemDeactivated();
+            activated   |= Im.Item.Activated;
+            deactivated |= Im.Item.Deactivated;
             if (deactivated)
                 _pinnedTileTransform = null;
             else if (activated)

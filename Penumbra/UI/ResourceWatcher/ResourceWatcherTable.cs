@@ -59,7 +59,7 @@ internal sealed unsafe class CachedRecord(Record record)
 {
     public readonly Record          Record = record;
     public readonly string          PathU16 = record.Path.ToString();
-    public readonly StringU8        TypeName = new(record.RecordType.ToName());
+    public readonly StringU8        TypeName = new(record.RecordType.ToNameU8());
     public readonly StringU8        Time = new($"{record.Time.ToLongTimeString()}.{record.Time.Millisecond:D4}");
     public readonly StringPair      Crc64 = new($"{record.Crc64:X16}");
     public readonly StringU8        Collection = record.Collection is null ? StringU8.Empty : new StringU8(record.Collection.Identity.Name);
@@ -197,7 +197,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             => item.TypeName;
 
         protected override IReadOnlyList<(RecordType Value, StringU8 Name)> EnumData
-            => Enum.GetValues<RecordType>().Select(t => (t, new StringU8(t.ToName()))).ToArray();
+            => Enum.GetValues<RecordType>().Select(t => (t, new StringU8(t.ToNameU8()))).ToArray();
 
         protected override RecordType GetValue(in CachedRecord item, int globalIndex)
             => item.Record.RecordType;

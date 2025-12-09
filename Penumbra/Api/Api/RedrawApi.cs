@@ -28,6 +28,11 @@ public class RedrawApi(RedrawService redrawService, IFramework framework) : IPen
         framework.RunOnFrameworkThread(() => redrawService.RedrawAll(setting));
     }
 
+    public void RedrawCollectionMembers(Guid collectionId, RedrawType setting)
+    {
+        throw new NotImplementedException();
+    }
+
     public event GameObjectRedrawnDelegate? GameObjectRedrawn
     {
         add => redrawService.GameObjectRedrawn += value;

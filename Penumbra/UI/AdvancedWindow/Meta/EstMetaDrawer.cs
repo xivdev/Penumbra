@@ -1,15 +1,11 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
@@ -33,14 +29,14 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current EST manipulations to clipboard."u8,
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Est)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
@@ -71,16 +67,16 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     private static bool DrawIdentifierInput(ref EstIdentifier identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var changes = DrawPrimaryId(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawRace(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawGender(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawSlot(ref identifier);
 
         return changes;
@@ -88,27 +84,27 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     private static void DrawIdentifier(EstIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed($"{identifier.SetId.Id}", FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.SetId.Id}", default, FrameColor);
         Im.Tooltip.OnHover("Model Set ID"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Race.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Model Race"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Gender.ToName(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Gender.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Gender"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Slot.ToString(), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Slot.ToNameU8(), default, FrameColor);
         Im.Tooltip.OnHover("Extra Skeleton Type"u8);
     }
 
     private static bool DrawEntry(EstEntry defaultEntry, ref EstEntry entry, bool disabled)
     {
-        using var dis = ImRaii.Disabled(disabled);
-        ImGui.TableNextColumn();
+        using var dis = Im.Disabled(disabled);
+        Im.Table.NextColumn();
         var ret = DragInput("##estValue"u8, [],    100f * Im.Style.GlobalScale, entry.Value, defaultEntry.Value, out var newValue, (ushort)0,
             ushort.MaxValue,                0.05f, !disabled);
         if (ret)
@@ -129,7 +125,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawRace(ref EstIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Race("##estRace", identifier.Race, out var race, unscaledWidth);
+        var ret = Combos.Combos.Race("##estRace", identifier.Race, out var race, unscaledWidth);
         Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
@@ -138,7 +134,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawGender(ref EstIdentifier identifier, float unscaledWidth = 120)
     {
-        var ret = Combos.Gender("##estGender", identifier.Gender, out var gender, unscaledWidth);
+        var ret = Combos.Combos.Gender("##estGender", identifier.Gender, out var gender, unscaledWidth);
         Im.Tooltip.OnHover("Gender"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(gender, identifier.Race) };
@@ -147,7 +143,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawSlot(ref EstIdentifier identifier, float unscaledWidth = 200)
     {
-        var ret = Combos.EstSlot("##estSlot", identifier.Slot, out var slot, unscaledWidth);
+        var ret = Combos.Combos.EstSlot("##estSlot", identifier.Slot, out var slot, unscaledWidth);
         Im.Tooltip.OnHover("Extra Skeleton Type"u8);
         if (ret)
             identifier = identifier with { Slot = slot };

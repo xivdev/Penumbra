@@ -1,11 +1,8 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
 using OtterGui;
-using OtterGui.Raii;
 using OtterGui.Text;
-using Penumbra.Api.Api;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -41,11 +38,11 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
             _initialized = true;
         }
 
-        using var id = ImUtf8.PushId((int)Identifier.Type);
+        using var id = Im.Id.Push((int)Identifier.Type);
         DrawNew();
 
         var height = ColumnHeight;
-        var skips  = ImGuiClip.GetNecessarySkipsAtPos(height, ImGui.GetCursorPosY(), Count);
+        var skips  = ImGuiClip.GetNecessarySkipsAtPos(height, Im.Cursor.Y, Count);
         if (skips < Count)
         {
             var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
@@ -99,7 +96,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         var       c     = defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         Im.Item.SetNextWidth(width);
-        if (ImUtf8.DragScalar(label, ref newValue, minValue, maxValue, speed))
+        if (Im.Drag(label, ref newValue, minValue, maxValue, speed))
             newValue = newValue <= minValue ? minValue : newValue >= maxValue ? maxValue : newValue;
 
         if (addDefault)
@@ -120,7 +117,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         var       c     = defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
-        ImUtf8.Checkbox(label, ref newValue);
+        Im.Checkbox(label, ref newValue);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
         return newValue != currentValue;
     }
@@ -135,29 +132,29 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         var       c     = defaultValue != currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
         using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
-        ImUtf8.Checkbox(label, ref newValue);
+        Im.Checkbox(label, ref newValue);
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
         return newValue != currentValue;
     }
 
     protected void DrawMetaButtons(TIdentifier identifier, TEntry entry)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy this manipulation to clipboard."u8,
             new Lazy<JToken?>(() => new JArray { MetaDictionary.Serialize(identifier, entry)! }));
 
-        ImGui.TableNextColumn();
-        if (ImUtf8.IconButton(FontAwesomeIcon.Trash, "Delete this meta manipulation."u8))
+        Im.Table.NextColumn();
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this meta manipulation."u8))
             Editor.Changes |= Editor.Remove(identifier);
     }
 
     protected void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, Lazy<JToken?> manipulations)
     {
-        if (!ImUtf8.IconButton(FontAwesomeIcon.Clipboard, tooltip))
+        if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, tooltip))
             return;
 
         var text = Functions.ToCompressedBase64(manipulations.Value, 0);
         if (text.Length > 0)
-            ImGui.SetClipboardText(text);
+            Im.Clipboard.Set(text);
     }
 }

@@ -277,11 +277,10 @@ public class ModPanelEditTab(
                 Reset();
             }
 
-            Im.Line.Same();
-            if (LunaStyle.DrawAlignedHelpMarker())
-                Im.Tooltip.Set(
-                    "The mod directory name is used to correspond stored settings and sort orders, otherwise it has no influence on anything that is displayed.\n"u8
-                  + "This can currently not be used on pre-existing folders and does not support merges or overwriting."u8);
+            Im.Line.SameInner();
+            LunaStyle.DrawAlignedHelpMarker(StringU8.Empty,
+                "The mod directory name is used to correspond stored settings and sort orders, otherwise it has no influence on anything that is displayed.\n"u8
+              + "This can currently not be used on pre-existing folders and does not support merges or overwriting."u8);
         }
     }
 
@@ -297,15 +296,15 @@ public class ModPanelEditTab(
         public const int Path    = -6;
 
         // Temporary strings
-        private static string?      _currentEdit;
-        private static int          _currentField = None;
-        private static int          _optionIndex  = None;
+        private static string? _currentEdit;
+        private static int     _currentField = None;
+        private static int     _optionIndex  = None;
 
         public static void Reset()
         {
-            _currentEdit          = null;
-            _currentField         = None;
-            _optionIndex          = None;
+            _currentEdit  = null;
+            _currentField = None;
+            _optionIndex  = None;
         }
 
         public static bool Text(ReadOnlySpan<byte> label, int field, int option, string oldValue, out string value, float width)

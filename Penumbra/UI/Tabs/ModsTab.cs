@@ -31,7 +31,7 @@ public sealed class ModsTab(
 {
     private readonly ActiveCollections _activeCollections = collectionManager.Active;
 
-    public bool IsVisible
+    public bool IsEnabled
         => modManager.Valid;
 
     public ReadOnlySpan<byte> Label
@@ -102,6 +102,7 @@ public sealed class ModsTab(
             {
                 ImEx.TextFramed(LunaStyle.HelpMarker.Span, frameHeight, frameColor);
             }
+
             Im.Line.Same();
             ImEx.TextFramed("Redraw:        "u8, frameHeight, frameColor);
         }

@@ -24,31 +24,31 @@ public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(ResolveDefaultPath.Label, "Default Collection Resolve"u8))
+        using (IpcTester.DrawIntro(ResolveDefaultPath.LabelU8, "Default Collection Resolve"u8))
         {
             if (_currentResolvePath.Length is not 0)
                 table.DrawColumn(new ResolveDefaultPath(pi).Invoke(_currentResolvePath));
         }
 
-        using (IpcTester.DrawIntro(ResolveInterfacePath.Label, "Interface Collection Resolve"u8))
+        using (IpcTester.DrawIntro(ResolveInterfacePath.LabelU8, "Interface Collection Resolve"u8))
         {
             if (_currentResolvePath.Length is not 0)
                 table.DrawColumn(new ResolveInterfacePath(pi).Invoke(_currentResolvePath));
         }
 
-        using (IpcTester.DrawIntro(ResolvePlayerPath.Label, "Player Collection Resolve"u8))
+        using (IpcTester.DrawIntro(ResolvePlayerPath.LabelU8, "Player Collection Resolve"u8))
         {
             if (_currentResolvePath.Length is not 0)
                 table.DrawColumn(new ResolvePlayerPath(pi).Invoke(_currentResolvePath));
         }
 
-        using (IpcTester.DrawIntro(ResolveGameObjectPath.Label, "Game Object Collection Resolve"u8))
+        using (IpcTester.DrawIntro(ResolveGameObjectPath.LabelU8, "Game Object Collection Resolve"u8))
         {
             if (_currentResolvePath.Length is not 0)
                 table.DrawColumn(new ResolveGameObjectPath(pi).Invoke(_currentResolvePath, _currentReverseIdx));
         }
 
-        using (IpcTester.DrawIntro(ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)"u8))
+        using (IpcTester.DrawIntro(ReverseResolvePlayerPath.LabelU8, "Reversed Game Paths (Player)"u8))
         {
             if (_currentReversePath.Length is not 0)
             {
@@ -62,7 +62,7 @@ public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
             }
         }
 
-        using (IpcTester.DrawIntro(ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)"u8))
+        using (IpcTester.DrawIntro(ReverseResolveGameObjectPath.LabelU8, "Reversed Game Paths (Game Object)"u8))
         {
             if (_currentReversePath.Length is not 0)
             {
@@ -79,7 +79,7 @@ public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         string[] forwardArray = _currentResolvePath.Length > 0 ? [_currentResolvePath] : [];
         string[] reverseArray = _currentReversePath.Length > 0 ? [_currentReversePath] : [];
 
-        using (IpcTester.DrawIntro(ResolvePlayerPaths.Label, "Resolved Paths (Player)"u8))
+        using (IpcTester.DrawIntro(ResolvePlayerPaths.LabelU8, "Resolved Paths (Player)"u8))
         {
             if (forwardArray.Length > 0 || reverseArray.Length > 0)
             {
@@ -88,7 +88,7 @@ public class ResolveIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
             }
         }
 
-        using (IpcTester.DrawIntro(ResolvePlayerPathsAsync.Label, "Resolved Paths Async (Player)"u8))
+        using (IpcTester.DrawIntro(ResolvePlayerPathsAsync.LabelU8, "Resolved Paths Async (Player)"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Start"u8))

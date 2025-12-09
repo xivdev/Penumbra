@@ -1,9 +1,6 @@
 using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
+using Luna;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.MaterialStructs.SamplerFlags;
@@ -79,25 +76,20 @@ public partial class MtrlTab
 
         TextureLabelWidth = 50f * Im.Style.GlobalScale;
 
-        float helpWidth;
-        using (var _ = ImRaii.PushFont(UiBuilder.IconFont))
-        {
-            helpWidth = Im.Style.ItemSpacing.X + ImGui.CalcTextSize(FontAwesomeIcon.InfoCircle.ToIconString()).X;
-        }
+        var helpWidth = Im.Style.ItemSpacing.X + ImEx.Icon.CalculateSize(FontAwesomeIcon.InfoCircle.Icon()).X;
 
         foreach (var (label, _, _, description, monoFont) in Textures)
         {
             if (!monoFont)
-                TextureLabelWidth = Math.Max(TextureLabelWidth, ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
+                TextureLabelWidth = Math.Max(TextureLabelWidth, Im.Font.CalculateSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
         }
 
-        using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
+        using (Im.Font.PushMono())
         {
             foreach (var (label, _, _, description, monoFont) in Textures)
             {
                 if (monoFont)
-                    TextureLabelWidth = Math.Max(TextureLabelWidth,
-                        ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
+                    TextureLabelWidth = Math.Max(TextureLabelWidth, Im.Font.CalculateSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
             }
         }
 
@@ -122,8 +114,8 @@ public partial class MtrlTab
         if (Textures.Count == 0)
             return false;
 
-        ImGui.Dummy(new Vector2(Im.Style.TextHeight / 2));
-        if (!ImGui.CollapsingHeader("Textures and Samplers", ImGuiTreeNodeFlags.DefaultOpen))
+        Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
+        if (!Im.Tree.Header("Textures and Samplers"u8, TreeNodeFlags.DefaultOpen))
             return false;
 
         var       frameHeight = Im.Style.FrameHeight;
@@ -135,13 +127,11 @@ public partial class MtrlTab
         table.SetupColumn("Name"u8,       TableColumnFlags.WidthFixed, TextureLabelWidth * Im.Style.GlobalScale);
         foreach (var (label, textureI, samplerI, description, monoFont) in Textures)
         {
-            using var _        = ImRaii.PushId(samplerI);
+            using var _        = Im.Id.Push(samplerI);
             var       tmp      = Mtrl.Textures[textureI].Path;
             var       unfolded = UnfoldedTextures.Contains(samplerI);
-            ImGui.TableNextColumn();
-            if (ImGuiUtil.DrawDisabledButton((unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight).ToIconString(),
-                    new Vector2(frameHeight),
-                    "Settings for this texture and the associated sampler", false, true))
+            table.NextColumn();
+            if (ImEx.Icon.Button(unfolded ? LunaStyle.ExpandDownIcon : LunaStyle.CollapseUpIcon, "Settings for this texture and the associated sampler"u8))
             {
                 unfolded = !unfolded;
                 if (unfolded)
@@ -150,10 +140,9 @@ public partial class MtrlTab
                     UnfoldedTextures.Remove(samplerI);
             }
 
-            ImGui.TableNextColumn();
+            table.NextColumn();
             Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
-            if (ImGui.InputText(string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
-                    disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)
+            if (Im.Input.Text(StringU8.Empty, ref tmp, default, disabled ? InputTextFlags.ReadOnly : InputTextFlags.None, Utf8GamePath.MaxGamePathLength)
              && tmp.Length > 0
              && tmp != Mtrl.Textures[textureI].Path)
             {
@@ -161,22 +150,21 @@ public partial class MtrlTab
                 Mtrl.Textures[textureI].Path = tmp;
             }
 
-            ImGui.TableNextColumn();
-            using (ImRaii.PushFont(UiBuilder.MonoFont, monoFont))
+            table.NextColumn();
+            using (Im.Font.Mono.Push(monoFont))
             {
-                ImGui.AlignTextToFramePadding();
                 if (description.Length > 0)
-                    ImGuiUtil.LabeledHelpMarker(label, description);
+                    LunaStyle.DrawHelpMarkerLabel(label, description);
                 else
-                    Im.Text(label);
+                    ImEx.TextFrameAligned(label);
             }
 
             if (unfolded)
             {
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
+                table.NextColumn();
+                table.NextColumn();
                 ret |= DrawMaterialSampler(disabled, textureI, samplerI);
-                ImGui.TableNextColumn();
+                table.NextColumn();
             }
         }
 
@@ -185,20 +173,20 @@ public partial class MtrlTab
 
     private static bool ComboTextureAddressMode(ReadOnlySpan<byte> label, ref TextureAddressMode value)
     {
-        using var c = ImUtf8.Combo(label, value.ToString());
+        using var c = Im.Combo.Begin(label, value.ToNameU8());
         if (!c)
             return false;
 
         var ret = false;
         foreach (var mode in Enum.GetValues<TextureAddressMode>())
         {
-            if (ImGui.Selectable(mode.ToString(), mode == value))
+            if (Im.Selectable(mode.ToNameU8(), mode == value))
             {
                 value = mode;
                 ret   = true;
             }
 
-            ImUtf8.SelectableHelpMarker(TextureAddressModeTooltip(mode));
+            LunaStyle.DrawRightAlignedHelpMarker(TextureAddressModeTooltip(mode));
         }
 
         return ret;
@@ -211,7 +199,7 @@ public partial class MtrlTab
         ref var sampler = ref Mtrl.ShaderPackage.Samplers[samplerIdx];
 
         var dx11 = texture.DX11;
-        if (ImUtf8.Checkbox("Prepend -- to the file name on DirectX 11"u8, ref dx11))
+        if (Im.Checkbox("Prepend -- to the file name on DirectX 11"u8, ref dx11))
         {
             texture.DX11 = dx11;
             ret          = true;
@@ -221,7 +209,7 @@ public partial class MtrlTab
         {
             ref var samplerFlags = ref Wrap(ref sampler.Flags);
 
-            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
+            Im.Item.SetNextWidthScaled(100.0f);
             var addressMode = samplerFlags.UAddressMode;
             if (ComboTextureAddressMode("##UAddressMode"u8, ref addressMode))
             {
@@ -230,11 +218,11 @@ public partial class MtrlTab
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
             }
 
-            Im.Line.Same();
-            ImUtf8.LabeledHelpMarker("U Address Mode"u8,
-                "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range.");
+            Im.Line.SameInner();
+            LunaStyle.DrawHelpMarkerLabel("U Address Mode"u8,
+                "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range."u8);
 
-            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
+            Im.Item.SetNextWidthScaled(100.0f);
             addressMode = samplerFlags.VAddressMode;
             if (ComboTextureAddressMode("##VAddressMode"u8, ref addressMode))
             {
@@ -244,12 +232,12 @@ public partial class MtrlTab
             }
 
             Im.Line.Same();
-            ImUtf8.LabeledHelpMarker("V Address Mode"u8,
-                "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range.");
+            LunaStyle.DrawHelpMarkerLabel("V Address Mode"u8,
+                "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range."u8);
 
             var lodBias = samplerFlags.LodBias;
-            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
-            if (ImUtf8.DragScalar("##LoDBias"u8, ref lodBias, -8.0f, 7.984375f, 0.1f))
+            Im.Item.SetNextWidthScaled(100.0f);
+            if (Im.Drag("##LoDBias"u8, ref lodBias, -8.0f, 7.984375f, 0.1f))
             {
                 samplerFlags.LodBias = lodBias;
                 ret                  = true;
@@ -257,12 +245,12 @@ public partial class MtrlTab
             }
 
             Im.Line.Same();
-            ImUtf8.LabeledHelpMarker("Level of Detail Bias"u8,
-                "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
+            LunaStyle.DrawHelpMarkerLabel("Level of Detail Bias"u8,
+                "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther."u8);
 
             var minLod = samplerFlags.MinLod;
-            Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
-            if (ImUtf8.DragScalar("##MinLoD"u8, ref minLod, 0, 15, 0.1f))
+            Im.Item.SetNextWidthScaled(100.0f);
+            if (Im.Drag("##MinLoD"u8, ref minLod, 0, 15, 0.1f))
             {
                 samplerFlags.MinLod = minLod;
                 ret                 = true;
@@ -270,26 +258,25 @@ public partial class MtrlTab
             }
 
             Im.Line.Same();
-            ImUtf8.LabeledHelpMarker("Minimum Level of Detail"u8,
-                "Most detailed mipmap level to use.\n\n0 is the full-sized texture, 1 is the half-sized texture, 2 is the quarter-sized texture, and so on.\n15 will forcibly reduce the texture to its smallest mipmap.");
+            LunaStyle.DrawHelpMarkerLabel("Minimum Level of Detail"u8,
+                "Most detailed mipmap level to use.\n\n0 is the full-sized texture, 1 is the half-sized texture, 2 is the quarter-sized texture, and so on.\n15 will forcibly reduce the texture to its smallest mipmap."u8);
         }
         else
         {
-            ImUtf8.Text("This texture does not have a dedicated sampler."u8);
+            Im.Text("This texture does not have a dedicated sampler."u8);
         }
 
-        using var t = ImUtf8.TreeNode("Advanced Settings"u8);
+        using var t = Im.Tree.Node("Advanced Settings"u8);
         if (!t)
             return ret;
 
-        Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
-        if (ImUtf8.InputScalar("Texture Flags"u8, ref texture.Flags, "%04X"u8,
-                flags: disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
+        Im.Item.SetNextWidthScaled(100.0f);
+        if (Im.Input.Scalar("Texture Flags"u8, ref texture.Flags, "%04X"u8,
+                flags: disabled ? InputTextFlags.ReadOnly : InputTextFlags.None))
             ret = true;
 
-        Im.Item.SetNextWidth(Im.Style.GlobalScale * 100.0f);
-        if (ImUtf8.InputScalar("Sampler Flags"u8, ref sampler.Flags, "%08X"u8,
-                flags: ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
+        Im.Item.SetNextWidthScaled(100.0f);
+        if (Im.Input.Scalar("Sampler Flags"u8, ref sampler.Flags, "%08X"u8, flags: InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
         {
             ret = true;
             SetSamplerFlags(sampler.SamplerId, sampler.Flags);

@@ -93,7 +93,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         {
             using var color = ImGuiColor.Text.Push(disabledColor, !value);
             Im.Text("All, "u8);
-            Im.Line.Same(0, 0);
+            Im.Line.NoSpacing();
         }
 
         foreach (var slot in ShapeAttributeManager.UsedModels)
@@ -103,7 +103,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
             using var color = ImGuiColor.Text.Push(disabledColor, !value2);
             Im.Text($"All {slot.ToNameU8()}, ");
-            Im.Line.Same(0, 0);
+            Im.Line.NoSpacing();
         }
 
         foreach (var gr in ShapeAttributeHashSet.GenderRaceValues.Skip(1))
@@ -112,7 +112,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
             {
                 using var color = ImGuiColor.Text.Push(disabledColor, !value3);
                 Im.Text($"All {gr.ToNameU8()}, ");
-                Im.Line.Same(0, 0);
+                Im.Line.NoSpacing();
             }
             else
             {
@@ -123,7 +123,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
                     using var color = ImGuiColor.Text.Push(disabledColor, !value4);
                     Im.Text($"All {gr.ToNameU8()} {slot.ToNameU8()}, ");
-                    Im.Line.Same(0, 0);
+                    Im.Line.NoSpacing();
                 }
             }
         }
@@ -138,7 +138,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                 {
                     using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
                     Im.Text($"{slot.ToNameU8()} {id.Id:D4}, ");
-                    Im.Line.Same(0, 0);
+                    Im.Line.NoSpacing();
                 }
             }
             else
@@ -153,7 +153,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     {
                         using var color = ImGuiColor.Text.Push(disabledColor, !enabled);
                         Im.Text($"{gr.ToNameU8()} {slot.ToNameU8()} #{id.Id:D4}, ");
-                        Im.Line.Same(0, 0);
+                        Im.Line.NoSpacing();
                     }
 
                     currentFlags &= ~0x3u;
@@ -204,10 +204,10 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
                     Im.Text(shape.AsSpan());
-                    Im.Line.Same(0, 0);
+                    Im.Line.NoSpacing();
                     Im.Text(",  "u8);
                     if (idx % 8 < 7)
-                        Im.Line.Same(0, 0);
+                        Im.Line.NoSpacing();
                 }
             }
             else
@@ -260,10 +260,10 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
                     var       disabled = (mask & (1u << flag)) is 0;
                     using var color    = ImGuiColor.Text.Push(disabledColor, disabled);
                     Im.Text(attribute.AsSpan());
-                    Im.Line.Same(0, 0);
+                    Im.Line.NoSpacing();
                     Im.Text(",  "u8);
                     if (idx % 8 < 7)
-                        Im.Line.Same(0, 0);
+                        Im.Line.NoSpacing();
                 }
             }
             else

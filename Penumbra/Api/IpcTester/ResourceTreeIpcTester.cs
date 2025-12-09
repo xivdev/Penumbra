@@ -41,7 +41,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(GetGameObjectResourcePaths.Label, "Get GameObject resource paths"u8))
+        using (IpcTester.DrawIntro(GetGameObjectResourcePaths.LabelU8, "Get GameObject resource paths"u8))
         {
             DrawPopup("GetGameObjectResourcePaths"u8, ref _lastGameObjectResourcePaths, DrawResourcePaths,
                 _lastCallDuration);
@@ -63,7 +63,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             }
         }
 
-        using (IpcTester.DrawIntro(GetPlayerResourcePaths.Label, "Get local player resource paths"u8))
+        using (IpcTester.DrawIntro(GetPlayerResourcePaths.LabelU8, "Get local player resource paths"u8))
         {
             DrawPopup("GetPlayerResourcePaths"u8, ref _lastPlayerResourcePaths!, DrawResourcePaths, _lastCallDuration);
             table.NextColumn();
@@ -82,7 +82,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             }
         }
 
-        using (IpcTester.DrawIntro(GetGameObjectResourcesOfType.Label, "Get GameObject resources of type"u8))
+        using (IpcTester.DrawIntro(GetGameObjectResourcesOfType.LabelU8, "Get GameObject resources of type"u8))
         {
             DrawPopup("GetGameObjectResourcesOfType"u8, ref _lastGameObjectResourcesOfType, DrawResourcesOfType,
                 _lastCallDuration);
@@ -104,7 +104,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             }
         }
 
-        using (IpcTester.DrawIntro(GetPlayerResourcesOfType.Label, "Get local player resources of type"u8))
+        using (IpcTester.DrawIntro(GetPlayerResourcesOfType.LabelU8, "Get local player resources of type"u8))
         {
             DrawPopup("GetPlayerResourcesOfType"u8, ref _lastPlayerResourcesOfType, DrawResourcesOfType,
                 _lastCallDuration);
@@ -124,7 +124,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             }
         }
 
-        using (IpcTester.DrawIntro(GetGameObjectResourceTrees.Label, "Get GameObject resource trees"u8))
+        using (IpcTester.DrawIntro(GetGameObjectResourceTrees.LabelU8, "Get GameObject resource trees"u8))
         {
             DrawPopup("GetGameObjectResourceTrees"u8, ref _lastGameObjectResourceTrees, DrawResourceTrees,
                 _lastCallDuration);
@@ -146,7 +146,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             }
         }
 
-        using (IpcTester.DrawIntro(GetPlayerResourceTrees.Label, "Get local player resource trees"u8))
+        using (IpcTester.DrawIntro(GetPlayerResourceTrees.LabelU8, "Get local player resource trees"u8))
         {
             DrawPopup("GetPlayerResourceTrees"u8, ref _lastPlayerResourceTrees, DrawResourceTrees!, _lastCallDuration);
             table.NextColumn();
@@ -200,13 +200,13 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
         {
             if (item == null)
             {
-                Im.Tree.Node($"{label}: null", TreeNodeFlags.Leaf).Dispose();
+                Im.Tree.Leaf($"{label}: null");
                 continue;
             }
 
             if (firstSeen.TryGetValue(item, out var firstLabel))
             {
-                Im.Tree.Node($"{label}: same as {firstLabel}", TreeNodeFlags.Leaf).Dispose();
+                Im.Tree.Leaf($"{label}: same as {firstLabel}");
                 continue;
             }
 

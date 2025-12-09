@@ -35,7 +35,7 @@ public class EditingIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         if (!table)
             return;
 
-        using (IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 1"u8))
+        using (IpcTester.DrawIntro(ConvertTextureFile.LabelU8, "Convert Texture 1"u8))
         {
             table.NextColumn();
             if (ImEx.Button("Save 1"u8, Vector2.Zero, StringU8.Empty, _task1 is { IsCompleted: false }))
@@ -46,7 +46,7 @@ public class EditingIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
                 Im.Tooltip.Set($"{_task1.Exception}");
         }
 
-        using (IpcTester.DrawIntro(ConvertTextureFile.Label, "Convert Texture 2"u8))
+        using (IpcTester.DrawIntro(ConvertTextureFile.LabelU8, "Convert Texture 2"u8))
         {
             table.NextColumn();
             if (ImEx.Button("Save 2"u8, Vector2.Zero, StringU8.Empty, _task2 is { IsCompleted: false }))

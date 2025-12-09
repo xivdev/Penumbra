@@ -48,7 +48,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
         using (Im.Group())
         {
             Im.Text("Merge "u8);
-            Im.Line.Same(0, 0);
+            Im.Line.NoSpacing();
             if (size - textSize < minComboSize)
             {
                 Im.Text("selected mod"u8, ColorId.FolderLine.Value());
@@ -59,7 +59,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
                 Im.Text(modMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
             }
 
-            Im.Line.Same(0, 0);
+            Im.Line.NoSpacing();
             Im.Text(" into"u8);
         }
 

@@ -293,7 +293,7 @@ public sealed class SettingsTab : ITab<TabType>
 
         _tutorial.OpenTutorial(BasicTutorialSteps.ModDirectory);
         Im.Line.Same();
-        var pos = Im.Cursor.Y;
+        var pos = Im.Cursor.X;
         Im.Line.New();
 
         if (_config.ModDirectory != _newModDirectory

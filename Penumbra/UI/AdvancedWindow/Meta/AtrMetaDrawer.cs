@@ -1,9 +1,6 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
 using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Raii;
-using OtterGui.Text;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -28,7 +25,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         => 7;
 
     public override float ColumnHeight
-        => ImUtf8.FrameHeightSpacing;
+        => Im.Style.FrameHeightWithSpacing;
 
     protected override void Initialize()
     {
@@ -38,18 +35,18 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current ATR manipulations to clipboard."u8,
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Atr)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier) && _identifierValid;
         var tt = canAdd
             ? "Stage this edit."u8
             : _identifierValid
                 ? "This entry does not contain a valid attribute."u8
                 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, AtrEntry.False);
 
         DrawIdentifierInput(ref Identifier);
@@ -77,55 +74,55 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     private bool DrawIdentifierInput(ref AtrIdentifier identifier)
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var changes = DrawHumanSlot(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawGenderRaceConditionInput(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawPrimaryId(ref identifier);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawAttributeKeyInput(ref identifier, ref _buffer, ref _identifierValid);
         return changes;
     }
 
     private static void DrawIdentifier(AtrIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-
-        ImUtf8.TextFramed(ShpMetaDrawer.SlotName(identifier.Slot), FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(ShpMetaDrawer.SlotName(identifier.Slot), default, FrameColor);
         Im.Tooltip.OnHover("Model Slot"u8);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.GenderRaceCondition is not GenderRace.Unknown)
         {
-            ImUtf8.TextFramed($"{identifier.GenderRaceCondition.ToName()} ({identifier.GenderRaceCondition.ToRaceCode()})", FrameColor);
+            ImEx.TextFramed($"{identifier.GenderRaceCondition.ToNameU8()} ({identifier.GenderRaceCondition.ToRaceCode()})", default,
+                FrameColor);
             Im.Tooltip.OnHover("Gender & Race Code for this attribute to be set.");
         }
         else
         {
-            ImUtf8.TextFramed("Any Gender & Race"u8, FrameColor);
+            ImEx.TextFramed("Any Gender & Race"u8, default, FrameColor);
         }
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (identifier.Id.HasValue)
-            ImUtf8.TextFramed($"{identifier.Id.Value.Id}", FrameColor);
+            ImEx.TextFramed($"{identifier.Id.Value.Id}", default, FrameColor);
         else
-            ImUtf8.TextFramed("All IDs"u8, FrameColor);
+            ImEx.TextFramed("All IDs"u8, default, FrameColor);
         Im.Tooltip.OnHover("Primary ID"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Attribute.AsSpan, FrameColor);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Attribute.AsSpan, default, FrameColor);
     }
 
     private static bool DrawEntry(ref AtrEntry entry, bool disabled)
     {
-        using var dis = ImRaii.Disabled(disabled);
-        ImGui.TableNextColumn();
+        using var dis = Im.Disabled(disabled);
+        Im.Table.NextColumn();
         var value   = entry.Value;
-        var changes = ImUtf8.Checkbox("##atrEntry"u8, ref value);
+        var changes = Im.Checkbox("##atrEntry"u8, ref value);
         if (changes)
             entry = new AtrEntry(value);
         Im.Tooltip.OnHover("Whether to enable or disable this attribute for the selected items.");
@@ -137,9 +134,9 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var allSlots = identifier.Slot is HumanSlot.Unknown;
         var all      = !identifier.Id.HasValue;
         var ret      = false;
-        using (ImRaii.Disabled(allSlots))
+        using (Im.Disabled(allSlots))
         {
-            if (ImUtf8.Checkbox("##atrAll"u8, ref all))
+            if (Im.Checkbox("##atrAll"u8, ref all))
             {
                 identifier = identifier with { Id = all ? null : 0 };
                 ret        = true;
@@ -150,12 +147,12 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             ? "When using all slots, you also need to use all IDs."u8
             : "Enable this attribute for all model IDs."u8);
 
-        Im.Line.Same(0, Im.Style.ItemInnerSpacing.X);
+        Im.Line.SameInner();
         if (all)
         {
             using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0.05f, 0.5f));
-            ImUtf8.TextFramed("All IDs"u8, ImGuiColor.FrameBackground.Get(all || allSlots ? Im.Style.DisabledAlpha : 1f).Color,
-                new Vector2(unscaledWidth, 0), ImGuiColor.TextDisabled.Get().Color);
+            ImEx.TextFramed("All IDs"u8, new Vector2(unscaledWidth, 0),
+                ImGuiColor.FrameBackground.Get(all || allSlots ? Im.Style.DisabledAlpha : 1f).Color, ImGuiColor.TextDisabled.Get().Color);
         }
         else
         {
@@ -175,13 +172,13 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     public bool DrawHumanSlot(ref AtrIdentifier identifier, float unscaledWidth = 150)
     {
         var ret = false;
-        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
-        using (var combo = ImUtf8.Combo("##atrSlot"u8, ShpMetaDrawer.SlotName(identifier.Slot)))
+        Im.Item.SetNextWidthScaled(unscaledWidth);
+        using (var combo = Im.Combo.Begin("##atrSlot"u8, ShpMetaDrawer.SlotName(identifier.Slot)))
         {
             if (combo)
                 foreach (var slot in ShpMetaDrawer.AvailableSlots)
                 {
-                    if (!ImUtf8.Selectable(ShpMetaDrawer.SlotName(slot), slot == identifier.Slot) || slot == identifier.Slot)
+                    if (!Im.Selectable(ShpMetaDrawer.SlotName(slot), slot == identifier.Slot) || slot == identifier.Slot)
                         continue;
 
                     ret = true;
@@ -215,16 +212,16 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
     private static bool DrawGenderRaceConditionInput(ref AtrIdentifier identifier, float unscaledWidth = 250)
     {
         var ret = false;
-        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
+        Im.Item.SetNextWidthScaled(unscaledWidth);
 
-        using (var combo = ImUtf8.Combo("##shpGenderRace"u8,
+        using (var combo = Im.Combo.Begin("##shpGenderRace"u8,
                    identifier.GenderRaceCondition is GenderRace.Unknown
-                       ? "Any Gender & Race"
-                       : $"{identifier.GenderRaceCondition.ToName()} ({identifier.GenderRaceCondition.ToRaceCode()})"))
+                       ? "Any Gender & Race"u8
+                       : $"{identifier.GenderRaceCondition.ToNameU8()} ({identifier.GenderRaceCondition.ToRaceCode()})"))
         {
             if (combo)
             {
-                if (ImUtf8.Selectable("Any Gender & Race"u8, identifier.GenderRaceCondition is GenderRace.Unknown)
+                if (Im.Selectable("Any Gender & Race"u8, identifier.GenderRaceCondition is GenderRace.Unknown)
                  && identifier.GenderRaceCondition is not GenderRace.Unknown)
                 {
                     identifier = identifier with { GenderRaceCondition = GenderRace.Unknown };
@@ -233,7 +230,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
                 foreach (var gr in ShapeAttributeHashSet.GenderRaceValues.Skip(1))
                 {
-                    if (ImUtf8.Selectable($"{gr.ToName()} ({gr.ToRaceCode()})", identifier.GenderRaceCondition == gr)
+                    if (Im.Selectable($"{gr.ToNameU8()} ({gr.ToRaceCode()})", identifier.GenderRaceCondition == gr)
                      && identifier.GenderRaceCondition != gr)
                     {
                         identifier = identifier with { GenderRaceCondition = gr };
@@ -243,8 +240,7 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
             }
         }
 
-        Im.Tooltip.OnHover(
-            "Only activate this attribute for this gender & race code."u8);
+        Im.Tooltip.OnHover("Only activate this attribute for this gender & race code."u8);
 
         return ret;
     }
@@ -257,8 +253,8 @@ public sealed class AtrMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         var span = new Span<byte>(ptr, ShapeAttributeString.MaxLength + 1);
         using (ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, !valid))
         {
-            Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
-            if (ImUtf8.InputText("##atrAttribute"u8, span, out int newLength, "Attribute..."u8))
+            Im.Item.SetNextWidthScaled(unscaledWidth);
+            if (Im.Input.Text("##atrAttribute"u8, span, out ulong newLength, "Attribute..."u8))
             {
                 buffer.ForceLength((byte)newLength);
                 valid = buffer.ValidateCustomAttributeString();

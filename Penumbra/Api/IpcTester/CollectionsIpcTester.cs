@@ -54,7 +54,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
             Im.Text(!_oldCollection.HasValue ? "Created" : _oldCollection.ToString()!);
 
         table.NextRow();
-        using (IpcTester.DrawIntro(GetCollectionsByIdentifier.Label, "Collection Identifier"u8))
+        using (IpcTester.DrawIntro(GetCollectionsByIdentifier.LabelU8, "Collection Identifier"u8))
         {
             var collectionList = new GetCollectionsByIdentifier(pi).Invoke(_collectionId.GetValueOrDefault().ToString());
             if (collectionList.Count == 0)
@@ -75,27 +75,27 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
             }
         }
 
-        using (IpcTester.DrawIntro(GetCollection.Label, "Current Collection"u8))
+        using (IpcTester.DrawIntro(GetCollection.LabelU8, "Current Collection"u8))
         {
             DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Current));
         }
 
-        using (IpcTester.DrawIntro(GetCollection.Label, "Default Collection"u8))
+        using (IpcTester.DrawIntro(GetCollection.LabelU8, "Default Collection"u8))
         {
             DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Default));
         }
 
-        using (IpcTester.DrawIntro(GetCollection.Label, "Interface Collection"u8))
+        using (IpcTester.DrawIntro(GetCollection.LabelU8, "Interface Collection"u8))
         {
             DrawCollection(table, new GetCollection(pi).Invoke(ApiCollectionType.Interface));
         }
 
-        using (IpcTester.DrawIntro(GetCollection.Label, "Special Collection"u8))
+        using (IpcTester.DrawIntro(GetCollection.LabelU8, "Special Collection"u8))
         {
             DrawCollection(table, new GetCollection(pi).Invoke(_type));
         }
 
-        using (IpcTester.DrawIntro(GetCollections.Label, "Collections"u8))
+        using (IpcTester.DrawIntro(GetCollections.LabelU8, "Collections"u8))
         {
             DrawCollectionPopup();
             table.NextColumn();
@@ -106,7 +106,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
             }
         }
 
-        using (IpcTester.DrawIntro(GetCollectionForObject.Label, "Get Object Collection"u8))
+        using (IpcTester.DrawIntro(GetCollectionForObject.LabelU8, "Get Object Collection"u8))
         {
             var (valid, individual, effectiveCollection) = new GetCollectionForObject(pi).Invoke(_objectIdx);
             DrawCollection(table, effectiveCollection);
@@ -114,7 +114,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
             Im.Text($"({(valid ? "Valid" : "Invalid")} Object{(individual ? ", Individual Assignment)" : ")")}");
         }
 
-        using (IpcTester.DrawIntro(SetCollection.Label, "Set Special Collection"u8))
+        using (IpcTester.DrawIntro(SetCollection.LabelU8, "Set Special Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Set##SpecialCollection"u8))
@@ -125,7 +125,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
                 (_returnCode, _oldCollection) = new SetCollection(pi).Invoke(_type, null, _allowCreation, _allowDeletion);
         }
 
-        using (IpcTester.DrawIntro(SetCollectionForObject.Label, "Set Object Collection"u8))
+        using (IpcTester.DrawIntro(SetCollectionForObject.LabelU8, "Set Object Collection"u8))
         {
             table.NextColumn();
             if (Im.SmallButton("Set##ObjectCollection"u8))
@@ -136,7 +136,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
                 (_returnCode, _oldCollection) = new SetCollectionForObject(pi).Invoke(_objectIdx, null, _allowCreation, _allowDeletion);
         }
 
-        using (IpcTester.DrawIntro(GetChangedItemsForCollection.Label, "Changed Item List"u8))
+        using (IpcTester.DrawIntro(GetChangedItemsForCollection.LabelU8, "Changed Item List"u8))
         {
             DrawChangedItemPopup();
             table.NextColumn();
