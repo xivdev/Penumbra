@@ -136,7 +136,7 @@ public sealed unsafe class MaterialTemplatePickers : IUiService
                 continue;
 
             var texture = textureRHs[j].Value->CsHandle.Texture;
-            if (texture == null)
+            if (texture == null || sliceIndex >= texture->ArraySize)
                 continue;
 
             var handle = _textureArraySlicer.GetImGuiHandle(texture, sliceIndex);
