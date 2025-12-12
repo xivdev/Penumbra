@@ -803,7 +803,7 @@ public sealed class SettingsTab : ITab<TabType>
             _config.EditRawTileTransforms, v => _config.EditRawTileTransforms = v);
 
         Checkbox("Advanced Editing: Always Highlight Color Row Pair when Hovering Selection Button",
-            "Make the whole color row pair selection button highlight the pair in game, instead of just the crosshair, even without holding Ctrl.",
+            "Make the whole color row pair selection button highlight the pair in game, instead of just the crosshair, even without holding Control.",
             _config.WholePairSelectorAlwaysHighlights, v => _config.WholePairSelectorAlwaysHighlights = v);
     }
 
