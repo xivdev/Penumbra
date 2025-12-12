@@ -325,6 +325,7 @@ public partial class MtrlTab
         {
             ret |= DrawPackageNameInput(disabled);
             ret |= DrawShaderFlagsInput(disabled);
+            ret |= DrawAdditionalFlagsInput(disabled);
             DrawCustomAssociations();
             ret |= DrawMaterialShaderKeys(disabled);
             DrawMaterialShaders();
@@ -378,12 +379,30 @@ public partial class MtrlTab
     {
         var shpkFlags = (int)Mtrl.ShaderPackage.Flags;
         Im.Item.SetNextWidthScaled(250.0f);
-        if (!Im.Input.Scalar("Shader Flags"u8, ref shpkFlags, 0, 0,
-                InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
+        if (!Im.Input.Scalar("Shader Flags"u8, ref shpkFlags, "%08X"u8,
+                flags: InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
             return false;
 
         Mtrl.ShaderPackage.Flags = (uint)shpkFlags;
         SetShaderPackageFlags((uint)shpkFlags);
+        return true;
+    }
+
+    private bool DrawAdditionalFlagsInput(bool disabled)
+    {
+        const uint lockedFlags = 0x00000FFC;
+
+        if (Mtrl.AdditionalData.Length < 4)
+            return false;
+
+        var originalFlags   = Mtrl.TableFlags.Flags;
+        var additionalFlags = originalFlags;
+        Im.Item.SetNextWidthScaled(250.0f);
+        if (!Im.Input.Scalar("Additional Flags"u8, ref additionalFlags, "%08X"u8,
+                flags: InputTextFlags.CharsHexadecimal | (disabled ? InputTextFlags.ReadOnly : InputTextFlags.None)))
+            return false;
+
+        Mtrl.TableFlags = new((additionalFlags & ~lockedFlags) | (originalFlags & lockedFlags));
         return true;
     }
 
