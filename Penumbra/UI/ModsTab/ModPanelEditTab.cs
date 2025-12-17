@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using OtterGui.Widgets;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
@@ -25,8 +24,6 @@ public class ModPanelEditTab(
     AddGroupDrawer addGroupDrawer)
     : ITab<ModPanelTab>
 {
-    private readonly TagButtons _modTags = new();
-
     private ModFileSystem.Leaf _leaf = null!;
     private Mod                _mod  = null!;
 
@@ -68,7 +65,7 @@ public class ModPanelEditTab(
         UiHelpers.DefaultLineSpace();
         var sharedTagsEnabled     = predefinedTagManager.Enabled;
         var sharedTagButtonOffset = sharedTagsEnabled ? Im.Style.FrameHeight + Im.Style.FramePadding.X : 0;
-        var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
+        var tagIdx = TagButtons.Draw("Mod Tags: "u8, "Edit tags by clicking them, or add new tags. Empty tags are removed."u8, _mod.ModTags,
             out var editedTag, rightEndOffset: sharedTagButtonOffset);
         if (tagIdx >= 0)
             modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);

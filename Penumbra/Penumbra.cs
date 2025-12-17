@@ -20,10 +20,9 @@ using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.MainWindow;
-using Penumbra.UI.Tabs;
 using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
 using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
-using DynamisIpc = OtterGui.Services.DynamisIpc;
+using DynamisIpc = Luna.DynamisIpc;
 using MessageService = Penumbra.Services.MessageService;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
@@ -34,7 +33,7 @@ public class Penumbra : IDalamudPlugin
 {
     public static readonly OtterGui.Log.Logger Log = new();
     public static          MessageService      Messager { get; private set; } = null!;
-    public static          DynamisIpc          Dynamis  { get; private set; } = null!;
+    public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
     private readonly ResidentResourceManager _residentResources;
@@ -293,8 +292,10 @@ public class Penumbra : IDalamudPlugin
         return sb.ToString();
 
         void PrintCollection(ModCollection c, CollectionCache _)
-            => sb.Append(
+        {
+            sb.Append(
                 $"> **`Collection {c.Identity.AnonymizedName + ':',-18}`** Inheritances: `{c.Inheritance.DirectlyInheritsFrom.Count,3}`, Enabled Mods: `{c.ActualSettings.Count(s => s is { Enabled: true }),4}`, Conflicts: `{c.AllConflicts.SelectMany(x => x).Sum(x => x is { HasPriority: true, Solved: true } ? x.Conflicts.Count : 0),5}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0),5}`\n");
+        }
     }
 
     private static string CollectLocaleEnvironmentVariables()

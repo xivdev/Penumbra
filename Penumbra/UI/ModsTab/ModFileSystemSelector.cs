@@ -19,6 +19,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
+using Penumbra.UI.ModsTab.Selector;
 using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI.ModsTab;
@@ -380,7 +381,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                 : null;
 
         _fileDialog.OpenFilePicker("Import Mod Pack",
-            "Mod Packs{.ttmp,.ttmp2,.pmp,.pcp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp,.pcp},Archives{.zip,.7z,.rar},Penumbra Character Packs{.pcp}", (s, f) =>
+            "Mod Packs{.ttmp,.ttmp2,.pmp,.pcp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp,.pcp},Archives{.zip,.7z,.rar},Penumbra Character Packs{.pcp}",
+            (s, f) =>
             {
                 if (!s)
                     return;
@@ -412,7 +414,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private void DeleteModButton(Vector2 size)
-        => DeleteSelectionButton(size, Unsafe.BitCast<DoubleModifier, OtterGui.Classes.DoubleModifier>(_config.DeleteModModifier), "mod", "mods", _modManager.DeleteMod);
+        => DeleteSelectionButton(size, Unsafe.BitCast<DoubleModifier, OtterGui.Classes.DoubleModifier>(_config.DeleteModModifier), "mod",
+            "mods",                    _modManager.DeleteMod);
 
     private void AddHelpButton(Vector2 size)
     {
@@ -573,7 +576,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         public ModPriority Priority;
     }
 
-    private ModFilter _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+    private ModTypeFilter _stateTypeFilter = ModTypeFilterExtensions.UnfilteredStateMods;
 
     private void SetFilterTooltip()
     {
@@ -608,13 +611,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     /// Uses count == 0 to check for has-not and count != 0 for has.
     /// Returns true if it should be filtered and false if not. 
     /// </summary>
-    private bool CheckFlags(int count, ModFilter hasNoFlag, ModFilter hasFlag)
+    private bool CheckFlags(int count, ModTypeFilter hasNoFlag, ModTypeFilter hasFlag)
         => count switch
         {
-            0 when _stateFilter.HasFlag(hasNoFlag) => false,
-            0                                      => true,
-            _ when _stateFilter.HasFlag(hasFlag)   => false,
-            _                                      => true,
+            0 when _stateTypeFilter.HasFlag(hasNoFlag) => false,
+            0                                          => true,
+            _ when _stateTypeFilter.HasFlag(hasFlag)   => false,
+            _                                          => true,
         };
 
     /// <summary>
@@ -628,7 +631,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (path is ModFileSystem.Folder f)
         {
             state = default;
-            return ModFilterExtensions.UnfilteredStateMods != _stateFilter
+            return ModTypeFilterExtensions.UnfilteredStateMods != _stateTypeFilter
              || !_filter.IsVisible(f);
         }
 
@@ -671,38 +674,38 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         var isNew = _modManager.IsNew(mod);
         // Handle mod details.
-        if (CheckFlags(mod.TotalFileCount,     ModFilter.HasNoFiles,             ModFilter.HasFiles)
-         || CheckFlags(mod.TotalSwapCount,     ModFilter.HasNoFileSwaps,         ModFilter.HasFileSwaps)
-         || CheckFlags(mod.TotalManipulations, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations)
-         || CheckFlags(mod.HasOptions ? 1 : 0, ModFilter.HasNoConfig,            ModFilter.HasConfig)
-         || CheckFlags(isNew ? 1 : 0,          ModFilter.NotNew,                 ModFilter.IsNew))
+        if (CheckFlags(mod.TotalFileCount,     ModTypeFilter.HasNoFiles,             ModTypeFilter.HasFiles)
+         || CheckFlags(mod.TotalSwapCount,     ModTypeFilter.HasNoFileSwaps,         ModTypeFilter.HasFileSwaps)
+         || CheckFlags(mod.TotalManipulations, ModTypeFilter.HasNoMetaManipulations, ModTypeFilter.HasMetaManipulations)
+         || CheckFlags(mod.HasOptions ? 1 : 0, ModTypeFilter.HasNoConfig,            ModTypeFilter.HasConfig)
+         || CheckFlags(isNew ? 1 : 0,          ModTypeFilter.NotNew,                 ModTypeFilter.IsNew))
             return true;
 
         // Handle Favoritism
-        if (!_stateFilter.HasFlag(ModFilter.Favorite) && mod.Favorite
-         || !_stateFilter.HasFlag(ModFilter.NotFavorite) && !mod.Favorite)
+        if (!_stateTypeFilter.HasFlag(ModTypeFilter.Favorite) && mod.Favorite
+         || !_stateTypeFilter.HasFlag(ModTypeFilter.NotFavorite) && !mod.Favorite)
             return true;
 
         // Handle Temporary
-        if (!_stateFilter.HasFlag(ModFilter.Temporary) || !_stateFilter.HasFlag(ModFilter.NotTemporary))
+        if (!_stateTypeFilter.HasFlag(ModTypeFilter.Temporary) || !_stateTypeFilter.HasFlag(ModTypeFilter.NotTemporary))
         {
-            if (settings == null && _stateFilter.HasFlag(ModFilter.Temporary))
+            if (settings == null && _stateTypeFilter.HasFlag(ModTypeFilter.Temporary))
                 return true;
 
-            if (settings != null && settings.IsTemporary() != _stateFilter.HasFlag(ModFilter.Temporary))
+            if (settings != null && settings.IsTemporary() != _stateTypeFilter.HasFlag(ModTypeFilter.Temporary))
                 return true;
         }
 
         // Handle Inheritance
         if (collection == _collectionManager.Active.Current)
         {
-            if (!_stateFilter.HasFlag(ModFilter.Uninherited))
+            if (!_stateTypeFilter.HasFlag(ModTypeFilter.Uninherited))
                 return true;
         }
         else
         {
             state.Color = ColorId.InheritedMod;
-            if (!_stateFilter.HasFlag(ModFilter.Inherited))
+            if (!_stateTypeFilter.HasFlag(ModTypeFilter.Inherited))
                 return true;
         }
 
@@ -719,9 +722,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (settings == null)
         {
             state.Color = ColorId.UndefinedMod;
-            if (!_stateFilter.HasFlag(ModFilter.Undefined)
-             || !_stateFilter.HasFlag(ModFilter.Disabled)
-             || !_stateFilter.HasFlag(ModFilter.NoConflict))
+            if (!_stateTypeFilter.HasFlag(ModTypeFilter.Undefined)
+             || !_stateTypeFilter.HasFlag(ModTypeFilter.Disabled)
+             || !_stateTypeFilter.HasFlag(ModTypeFilter.NoConflict))
                 return true;
         }
         else if (!settings.Enabled)
@@ -729,13 +732,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             state.Color = collection != _collectionManager.Active.Current
                 ? ColorId.InheritedDisabledMod
                 : ColorId.DisabledMod;
-            if (!_stateFilter.HasFlag(ModFilter.Disabled)
-             || !_stateFilter.HasFlag(ModFilter.NoConflict))
+            if (!_stateTypeFilter.HasFlag(ModTypeFilter.Disabled)
+             || !_stateTypeFilter.HasFlag(ModTypeFilter.NoConflict))
                 return true;
         }
         else
         {
-            if (!_stateFilter.HasFlag(ModFilter.Enabled))
+            if (!_stateTypeFilter.HasFlag(ModTypeFilter.Enabled))
                 return true;
 
             // Conflicts can only be relevant if the mod is enabled.
@@ -744,20 +747,20 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             {
                 if (conflicts.Any(c => !c.Solved))
                 {
-                    if (!_stateFilter.HasFlag(ModFilter.UnsolvedConflict))
+                    if (!_stateTypeFilter.HasFlag(ModTypeFilter.UnsolvedConflict))
                         return true;
 
                     state.Color = ColorId.ConflictingMod;
                 }
                 else
                 {
-                    if (!_stateFilter.HasFlag(ModFilter.SolvedConflict))
+                    if (!_stateTypeFilter.HasFlag(ModTypeFilter.SolvedConflict))
                         return true;
 
                     state.Color = ColorId.HandledConflictMod;
                 }
             }
-            else if (!_stateFilter.HasFlag(ModFilter.NoConflict))
+            else if (!_stateTypeFilter.HasFlag(ModTypeFilter.NoConflict))
             {
                 return true;
             }
@@ -781,7 +784,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (ApplyStringFilters(leaf, mod))
             return true;
 
-        if (_stateFilter != ModFilterExtensions.UnfilteredStateMods)
+        if (_stateTypeFilter != ModTypeFilterExtensions.UnfilteredStateMods)
             return CheckStateFilters(mod, settings, collection, ref state);
 
         (state.Color, state.Tint) = GetTextColor(mod, settings, collection);
@@ -800,23 +803,23 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         if (ImUtf8.Checkbox("Everything"u8, ref everything))
         {
-            _stateFilter = everything ? ModFilterExtensions.UnfilteredStateMods : 0;
+            _stateTypeFilter = everything ? ModTypeFilterExtensions.UnfilteredStateMods : 0;
             SetFilterDirty();
         }
 
         ImGui.Dummy(new Vector2(0, 5 * Im.Style.GlobalScale));
-        foreach (var (onFlag, offFlag, name) in ModFilterExtensions.TriStatePairs)
+        foreach (var (onFlag, offFlag, name) in ModTypeFilterExtensions.TriStatePairs)
         {
-            if (TriStateCheckbox.Instance.Draw(name, ref _stateFilter, onFlag, offFlag))
+            if (TriStateCheckbox.Instance.Draw(name, ref _stateTypeFilter, onFlag, offFlag))
                 SetFilterDirty();
         }
 
-        foreach (var group in ModFilterExtensions.Groups)
+        foreach (var group in ModTypeFilterExtensions.Groups)
         {
             Im.Separator();
             foreach (var (flag, name) in group)
             {
-                if (ImUtf8.Checkbox(name, ref _stateFilter, flag))
+                if (ImUtf8.Checkbox(name, ref _stateTypeFilter, flag))
                     SetFilterDirty();
             }
         }
@@ -831,7 +834,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         var remainingWidth = width - Im.Style.FrameHeight;
         var comboPos       = new Vector2(pos.X + remainingWidth, pos.Y);
 
-        var everything = _stateFilter == ModFilterExtensions.UnfilteredStateMods;
+        var everything = _stateTypeFilter == ModTypeFilterExtensions.UnfilteredStateMods;
 
         ImGui.SetCursorPos(comboPos);
         // Draw combo button
@@ -840,7 +843,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _tutorial.OpenTutorial(BasicTutorialSteps.ModFilters);
         if (rightClick)
         {
-            _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+            _stateTypeFilter = ModTypeFilterExtensions.UnfilteredStateMods;
             SetFilterDirty();
         }
 

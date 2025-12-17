@@ -34,8 +34,11 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     public AtchMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
         : base(editor, metaFiles)
     {
-        _combo = new AtchPointCombo(() => _currentBaseAtchFile?.Points.Select(p => p.Type).ToList() ?? []);
+        _combo = new AtchPointCombo(this);
     }
+
+    public IEnumerable<AtchType> GetPoints()
+        => _currentBaseAtchFile?.Points.Select(p => p.Type) ?? [];
 
     private sealed class RaceCodeException(string filePath) : Exception($"Could not identify race code from path {filePath}.");
 
@@ -75,7 +78,8 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
         }
         catch (Exception ex)
         {
-            Penumbra.Messager.AddMessage(new Notification(ex, "Unable to import .atch file.", "Could not import .atch file:", NotificationType.Warning));
+            Penumbra.Messager.AddMessage(new Notification(ex, "Unable to import .atch file.", "Could not import .atch file:",
+                NotificationType.Warning));
         }
     }
 
@@ -89,7 +93,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
         Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : "This entry is already edited."u8;
-        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
@@ -245,7 +249,8 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
     {
         var isMale = identifier.Gender is Gender.Male;
 
-        if (!ImEx.Icon.Button(isMale ? FontAwesomeIcon.Mars.Icon() : FontAwesomeIcon.Venus.Icon(), "Gender"u8, buttonColor: disabled ? 0x000F0000u : 0)
+        if (!ImEx.Icon.Button(isMale ? FontAwesomeIcon.Mars.Icon() : FontAwesomeIcon.Venus.Icon(), "Gender"u8,
+                buttonColor: disabled ? 0x000F0000u : 0)
          || disabled)
             return false;
 
@@ -255,11 +260,10 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 
     private static bool DrawPointInput(ref AtchIdentifier identifier, AtchPointCombo combo)
     {
-        if (!combo.Draw("##AtchPoint", identifier.Type.ToName(), "Attachment Point Type", 160 * Im.Style.GlobalScale,
-                Im.Style.TextHeightWithSpacing))
+        if (!combo.Draw("##AtchPoint"u8, identifier.Type, "Attachment Point Type"u8, 160 * Im.Style.GlobalScale, out var newType))
             return false;
 
-        identifier = identifier with { Type = combo.CurrentSelection };
+        identifier = identifier with { Type = newType };
         return true;
     }
 

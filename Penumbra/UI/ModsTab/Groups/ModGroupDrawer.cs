@@ -141,12 +141,11 @@ public sealed class ModGroupDrawer : IUiService
     private void DrawSingleGroupRadio(IModGroup group, int groupIdx, Setting setting)
     {
         using var id             = Im.Id.Push(groupIdx);
-        var       selectedOption = setting.AsIndex;
-        var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
         var       options        = group.Options;
-        DrawCollapseHandling(options, minWidth, DrawOptions);
+        var       selectedOption = setting.AsIndex;
+        using var g              = ImEx.FramedGroup(group.Name, LunaStyle.HelpMarker, group.Description);
+        DrawCollapseHandling(options, g.MinimumWidth, DrawOptions);
 
-        Widget.EndFramedGroup();
         return;
 
         void DrawOptions()
@@ -174,12 +173,13 @@ public sealed class ModGroupDrawer : IUiService
     /// </summary>
     private void DrawMultiGroup(IModGroup group, int groupIdx, Setting setting)
     {
-        using var id       = Im.Id.Push(groupIdx);
-        var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
-        var       options  = group.Options;
-        DrawCollapseHandling(options, minWidth, DrawOptions);
+        using var id      = Im.Id.Push(groupIdx);
+        var       options = group.Options;
+        using (var g = ImEx.FramedGroup(group.Name, LunaStyle.HelpMarker, group.Description))
+        {
+            DrawCollapseHandling(options, g.MinimumWidth, DrawOptions);
+        }
 
-        Widget.EndFramedGroup();
         var label = new StringU8($"##multi{groupIdx}");
         if (Im.Item.RightClicked())
             Im.Popup.Open(label);

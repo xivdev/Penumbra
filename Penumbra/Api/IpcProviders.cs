@@ -66,6 +66,7 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.GetCurrentModSettings.Provider(pi, api.ModSettings),
             IpcSubscribers.GetCurrentModSettingsWithTemp.Provider(pi, api.ModSettings),
             IpcSubscribers.GetAllModSettings.Provider(pi, api.ModSettings),
+            IpcSubscribers.GetSettingsInAllCollections.Provider(pi, api.ModSettings),
             IpcSubscribers.TryInheritMod.Provider(pi, api.ModSettings),
             IpcSubscribers.TrySetMod.Provider(pi, api.ModSettings),
             IpcSubscribers.TrySetModPriority.Provider(pi, api.ModSettings),
@@ -97,6 +98,8 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.ReverseResolvePlayerPath.Provider(pi, api.Resolve),
             IpcSubscribers.ResolvePlayerPaths.Provider(pi, api.Resolve),
             IpcSubscribers.ResolvePlayerPathsAsync.Provider(pi, api.Resolve),
+            IpcSubscribers.ResolvePath.Provider(pi, api.Resolve),
+            IpcSubscribers.ResolvePaths.Provider(pi, api.Resolve),
 
             IpcSubscribers.GetGameObjectResourcePaths.Provider(pi, api.ResourceTree),
             IpcSubscribers.GetPlayerResourcePaths.Provider(pi, api.ResourceTree),

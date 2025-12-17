@@ -79,13 +79,9 @@ public class ResourceTreeViewer(
                 using (ImGuiColor.Text.Push(CategoryColor(category).Value()))
                 {
                     var isOpen = Im.Tree.Header($"{(incognito.IncognitoMode ? tree.AnonymizedName : tree.Name)}###{index}",
-                        index == 0 ? TreeNodeFlags.DefaultOpen : 0);
+                        index is 0 ? TreeNodeFlags.DefaultOpen : 0);
                     if (debugMode)
-                    {
-                        using var _ = Im.Font.PushMono();
-                        Im.Tooltip.OnHover(
-                            $"Object Index:        {tree.GameObjectIndex}\nObject Address:      0x{tree.GameObjectAddress:X16}\nDraw Object Address: 0x{tree.DrawObjectAddress:X16}");
-                    }
+                        HeaderInteraction(tree);
 
                     if (!isOpen)
                         continue;
@@ -295,11 +291,7 @@ public class ResourceTreeViewer(
                 }
 
                 if (debugMode)
-                {
-                    using var _ = Im.Font.PushMono();
-                    Im.Tooltip.OnHover(
-                        $"Resource Type:   {resourceNode.Type}\nObject Address:  0x{resourceNode.ObjectAddress:X16}\nResource Handle: 0x{resourceNode.ResourceHandle:X16}\nLength:          0x{resourceNode.Length:X16}");
-                }
+                    ResourceInteraction(resourceNode);
             }
 
             table.NextColumn();
@@ -316,8 +308,9 @@ public class ResourceTreeViewer(
                 if (Im.Item.Clicked())
                     Im.Clipboard.Set(allPaths);
                 using var tt = Im.Tooltip.Begin();
+                using var c  = Im.Color.PushDefault(ImGuiColor.Text);
                 Im.Text(allPaths);
-                Im.Text("\n\nClick to copy to clipboard."u8);
+                Im.Text("\nClick to copy to clipboard."u8);
             }
 
             table.NextColumn();
@@ -360,14 +353,13 @@ public class ResourceTreeViewer(
                 if (hasMod && Im.Item.RightClicked() && Im.Io.KeyControl)
                     communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
 
-                Im.Tooltip.OnHover(
-                    $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
+                Im.Tooltip.OnHover(default, $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}", true);
             }
             else
             {
                 Im.Selectable(GetPathStatusLabel(resourceNode.FullPathStatus), false, SelectableFlags.Disabled,
                     Im.ContentRegion.Available with { Y = frameHeight });
-                Im.Tooltip.OnHover(
+                Im.Tooltip.OnHover(default,
                     $"{GetPathStatusDescription(resourceNode.FullPathStatus)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}");
             }
 
@@ -384,7 +376,9 @@ public class ResourceTreeViewer(
         return;
 
         string GetAdditionalDataSuffix(CiByteString data)
-            => !debugMode || data.IsEmpty ? string.Empty : $"\n\nAdditional Data: {data}";
+        {
+            return !debugMode || data.IsEmpty ? string.Empty : $"\n\nAdditional Data: {data}";
+        }
 
         NodeVisibility GetNodeVisibility(nint nodePathHash, ResourceNode node, ChangedItemIconFlag parentFilterIcon)
         {
@@ -447,7 +441,8 @@ public class ResourceTreeViewer(
                 _writableCache.Add(resourceNode.FullPath, writable);
             }
 
-            if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Export this file."u8, resourceNode.FullPath.FullName.Length is 0 || writable is null, buttonSize))
+            if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Export this file."u8, resourceNode.FullPath.FullName.Length is 0 || writable is null,
+                    buttonSize))
             {
                 var fullPathStr = resourceNode.FullPath.FullName;
                 var ext = resourceNode.PossibleGamePaths.Length == 1
@@ -491,6 +486,56 @@ public class ResourceTreeViewer(
                 "The actual path to this file is unavailable, because it seems to have been moved or deleted since it was loaded."u8,
             _ => "The actual path to this file is unavailable."u8,
         };
+
+    private static void HeaderInteraction(ResourceTree tree)
+    {
+        Im.Tooltip.OnHover(default, $"Object Index:        {tree.GameObjectIndex}\nObject Address:      0x{tree.GameObjectAddress:X16}\nDraw Object Address: 0x{tree.DrawObjectAddress:X16}", true, Im.Font.Mono);
+        if (tree.GameObjectAddress == nint.Zero)
+            return;
+
+        using var context = Im.Popup.BeginContextItem();
+        if (context)
+        {
+            using var text = Im.Color.PushDefault(ImGuiColor.Text);
+            if (Im.Menu.Item("Copy Game Object Address"u8))
+                Im.Clipboard.Set($"0x{tree.GameObjectAddress:X}");
+            if (Penumbra.Dynamis.IsSubscribed && Im.Menu.Item("Inspect Game Object"u8))
+                Penumbra.Dynamis.InspectObject(tree.GameObjectAddress, $"{tree.Name} Game Object");
+            if (tree.DrawObjectAddress != nint.Zero)
+            {
+                if (Im.Menu.Item("Copy Draw Object Address"u8))
+                    Im.Clipboard.Set($"0x{tree.DrawObjectAddress:X}");
+                if (Penumbra.Dynamis.IsSubscribed && Im.Menu.Item("Inspect Draw Object"u8))
+                    Penumbra.Dynamis.InspectObject(tree.DrawObjectAddress, $"{tree.Name} Draw Object");
+            }
+        }
+    }
+
+    private static void ResourceInteraction(ResourceNode node)
+    {
+        Im.Tooltip.OnHover(default, $"Resource Type:   {node.Type}\nObject Address:  0x{node.ObjectAddress:X16}\nResource Handle: 0x{node.ResourceHandle:X16}\nLength:          0x{node.Length:X16}",
+            true, Im.Font.Mono);
+
+        if (node.ResourceHandle == nint.Zero)
+            return;
+
+        using var context = Im.Popup.BeginContextItem();
+        if (context)
+        {
+            using var text = Im.Color.PushDefault(ImGuiColor.Text);
+            if (Im.Menu.Item("Copy Resource Handle Address"u8))
+                Im.Clipboard.Set($"0x{node.ResourceHandle:X}");
+            if (Penumbra.Dynamis.IsSubscribed && Im.Menu.Item("Inspect Resource Handle"u8))
+                Penumbra.Dynamis.InspectObject(node.ResourceHandle, $"{node.Name} Resource Handle");
+            if (node.ObjectAddress != nint.Zero)
+            {
+                if (Im.Menu.Item("Copy Object Address"u8))
+                    Im.Clipboard.Set($"0x{node.ObjectAddress:X}");
+                if (Penumbra.Dynamis.IsSubscribed && Im.Menu.Item("Inspect Object"u8))
+                    Penumbra.Dynamis.InspectObject(node.ObjectAddress, $"{node.Name} Object");
+            }
+        }
+    }
 
     [Flags]
     private enum TreeCategory : uint

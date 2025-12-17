@@ -1,13 +1,8 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Components;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImSharp;
 using Luna;
-using OtterGui;
-using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -56,8 +51,6 @@ public sealed class SettingsTab : ITab<TabType>
     private readonly CleanupService              _cleanupService;
     private readonly AttributeHook               _attributeHook;
     private readonly PcpService                  _pcpService;
-
-    private readonly TagButtons _sharedTags = new();
 
     private string _lastCloudSyncTestedPath = string.Empty;
     private bool   _lastCloudSyncTestResult;
@@ -113,7 +106,7 @@ public sealed class SettingsTab : ITab<TabType>
             return;
 
         DrawEnabledBox();
-        EphemeralCheckbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.Ephemeral.FixMainWindow,
+        EphemeralCheckbox("Lock Main Window"u8, "Prevent the main window from being resized or moved."u8, _config.Ephemeral.FixMainWindow,
             v => _config.Ephemeral.FixMainWindow = v);
 
         Im.Line.New();
@@ -131,7 +124,7 @@ public sealed class SettingsTab : ITab<TabType>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void Checkbox(string label, string tooltip, bool current, Action<bool> setter)
+    private void Checkbox(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, bool current, Action<bool> setter)
     {
         using var id  = Im.Id.Push(label);
         var       tmp = current;
@@ -141,12 +134,11 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        Im.Line.Same();
-        ImGuiUtil.LabeledHelpMarker(label, tooltip);
+        LunaStyle.DrawAlignedHelpMarkerLabel(label, tooltip);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void EphemeralCheckbox(string label, string tooltip, bool current, Action<bool> setter)
+    private void EphemeralCheckbox(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, bool current, Action<bool> setter)
     {
         using var id  = Im.Id.Push(label);
         var       tmp = current;
@@ -156,8 +148,7 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Ephemeral.Save();
         }
 
-        Im.Line.Same();
-        ImGuiUtil.LabeledHelpMarker(label, tooltip);
+        LunaStyle.DrawAlignedHelpMarkerLabel(label, tooltip);
     }
 
     #region Main Settings
@@ -197,7 +188,7 @@ public sealed class SettingsTab : ITab<TabType>
         if (IsSubPathOf(dalamud.FullName, newName))
             return ("Path is not allowed to be inside your Dalamud directories.", false);
 
-        if (Functions.GetDownloadsFolder(out var downloads) && IsSubPathOf(downloads, newName))
+        if (WindowsFunctions.GetDownloadsFolder(out var downloads) && IsSubPathOf(downloads, newName))
             return ("Path is not allowed to be inside your Downloads folder.", false);
 
         var gameDir = _gameData.GameData.DataPath.Parent!.Parent!.FullName;
@@ -219,7 +210,7 @@ public sealed class SettingsTab : ITab<TabType>
 
         static bool IsSubPathOf(string basePath, string subPath)
         {
-            if (basePath.Length == 0)
+            if (basePath.Length is 0)
                 return false;
 
             var rel = Path.GetRelativePath(basePath, subPath);
@@ -276,19 +267,19 @@ public sealed class SettingsTab : ITab<TabType>
             Im.Line.Same();
             DrawDirectoryPickerButton();
             style.Pop();
-            Im.Line.Same();
 
-            const string tt = "This is where Penumbra will store your extracted mod files.\n"
-              + "TTMP files are not copied, just extracted.\n"
-              + "This directory needs to be accessible and you need write access here.\n"
-              + "It is recommended that this directory is placed on a fast hard drive, preferably an SSD.\n"
-              + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"
-              + "Definitely do not place it in your Dalamud directory or any sub-directory thereof.";
-            ImGuiComponents.HelpMarker(tt);
+            var tt = "This is where Penumbra will store your extracted mod files.\n"u8
+              + "TTMP files are not copied, just extracted.\n"u8
+              + "This directory needs to be accessible and you need write access here.\n"u8
+              + "It is recommended that this directory is placed on a fast hard drive, preferably an SSD.\n"u8
+              + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"u8
+              + "Definitely do not place it in your Dalamud directory or any sub-directory thereof."u8;
+
+            LunaStyle.DrawAlignedHelpMarker(tt);
             _tutorial.OpenTutorial(BasicTutorialSteps.GeneralTooltips);
-            Im.Line.Same();
+            Im.Line.SameInner();
             Im.Text("Root Directory"u8);
-            ImGuiUtil.HoverTooltip(tt);
+            Im.Tooltip.OnHover(tt);
         }
 
         _tutorial.OpenTutorial(BasicTutorialSteps.ModDirectory);
@@ -308,9 +299,9 @@ public sealed class SettingsTab : ITab<TabType>
         UiHelpers.DrawOpenDirectoryButton(0, _modManager.BasePath, _modManager.Valid);
         Im.Line.Same();
         var tt = _modManager.Valid
-            ? "Force Penumbra to completely re-scan your root directory as if it was restarted."
-            : "The currently selected folder is not valid. Please select a different folder.";
-        if (ImGuiUtil.DrawDisabledButton("Rediscover Mods", Vector2.Zero, tt, !_modManager.Valid))
+            ? "Force Penumbra to completely re-scan your root directory as if it was restarted."u8
+            : "The currently selected folder is not valid. Please select a different folder."u8;
+        if (ImEx.Button("Rediscover Mods"u8, Vector2.Zero, tt, !_modManager.Valid))
             _modManager.DiscoverMods();
     }
 
@@ -369,9 +360,9 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("Upper Limit for Single-Selection Group Radio Buttons",
-            "All Single-Selection Groups with more options than specified here will be displayed as Combo-Boxes at the top.\n"
-          + "All other Single-Selection Groups will be displayed as a set of Radio-Buttons.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Upper Limit for Single-Selection Group Radio Buttons"u8,
+            "All Single-Selection Groups with more options than specified here will be displayed as Combo-Boxes at the top.\n"u8
+          + "All other Single-Selection Groups will be displayed as a set of Radio-Buttons."u8);
     }
 
     /// <summary> Draw a selection for the minimum number of options after which a group is drawn as collapsible. </summary>
@@ -385,33 +376,33 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("Collapsible Option Group Limit",
-            "Lower Limit for option groups displaying the Collapse/Expand button at the top.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Collapsible Option Group Limit"u8,
+            "Lower Limit for option groups displaying the Collapse/Expand button at the top."u8);
     }
 
 
     /// <summary> Draw the window hiding state checkboxes.  </summary>
     private void DrawHidingSettings()
     {
-        Checkbox("Open Config Window at Game Start", "Whether the Penumbra main window should be open or closed after launching the game.",
+        Checkbox("Open Config Window at Game Start"u8, "Whether the Penumbra main window should be open or closed after launching the game."u8,
             _config.OpenWindowAtStart,               v => _config.OpenWindowAtStart = v);
 
-        Checkbox("Hide Config Window when UI is Hidden",
-            "Hide the Penumbra main window when you manually hide the in-game user interface.", _config.HideUiWhenUiHidden,
+        Checkbox("Hide Config Window when UI is Hidden"u8,
+            "Hide the Penumbra main window when you manually hide the in-game user interface."u8, _config.HideUiWhenUiHidden,
             v =>
             {
                 _config.HideUiWhenUiHidden                   = v;
                 _pluginInterface.UiBuilder.DisableUserUiHide = !v;
             });
-        Checkbox("Hide Config Window when in Cutscenes",
-            "Hide the Penumbra main window when you are currently watching a cutscene.", _config.HideUiInCutscenes,
+        Checkbox("Hide Config Window when in Cutscenes"u8,
+            "Hide the Penumbra main window when you are currently watching a cutscene."u8, _config.HideUiInCutscenes,
             v =>
             {
                 _config.HideUiInCutscenes                        = v;
                 _pluginInterface.UiBuilder.DisableCutsceneUiHide = !v;
             });
-        Checkbox("Hide Config Window when in GPose",
-            "Hide the Penumbra main window when you are currently in GPose mode.", _config.HideUiInGPose,
+        Checkbox("Hide Config Window when in GPose"u8,
+            "Hide the Penumbra main window when you are currently in GPose mode."u8, _config.HideUiInGPose,
             v =>
             {
                 _config.HideUiInGPose                         = v;
@@ -422,15 +413,15 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw all settings that do not fit into other categories. </summary>
     private void DrawMiscSettings()
     {
-        Checkbox("Automatically Select Character-Associated Collection",
-            "On every login, automatically select the collection associated with the current character as the current collection for editing.",
+        Checkbox("Automatically Select Character-Associated Collection"u8,
+            "On every login, automatically select the collection associated with the current character as the current collection for editing."u8,
             _config.AutoSelectCollection, _autoSelector.SetAutomaticSelection);
-        Checkbox("Print Chat Command Success Messages to Chat",
-            "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here.",
+        Checkbox("Print Chat Command Success Messages to Chat"u8,
+            "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here."u8,
             _config.PrintSuccessfulCommandsToChat, v => _config.PrintSuccessfulCommandsToChat = v);
-        Checkbox("Hide Redraw Bar in Mod Panel", "Hides the lower redraw buttons in the mod panel in your Mods tab.",
+        Checkbox("Hide Redraw Bar in Mod Panel"u8, "Hides the lower redraw buttons in the mod panel in your Mods tab."u8,
             _config.HideRedrawBar,               v => _config.HideRedrawBar = v);
-        Checkbox("Hide Changed Item Filters", "Hides the category filter line in the Changed Items tab and the Changed Items mod panel.",
+        Checkbox("Hide Changed Item Filters"u8, "Hides the category filter line in the Changed Items tab and the Changed Items mod panel."u8,
             _config.HideChangedItemFilters,   v =>
             {
                 _config.HideChangedItemFilters = v;
@@ -446,19 +437,19 @@ public sealed class SettingsTab : ITab<TabType>
             _config.ChangedItemDisplay = v;
             _config.Save();
         });
-        ImUtf8.LabeledHelpMarker("Mod Changed Item Display"u8,
+        LunaStyle.DrawAlignedHelpMarkerLabel("Mod Changed Item Display"u8,
             "Configure how to display the changed items of a single mod in the mods info panel."u8);
 
-        Checkbox("Omit Machinist Offhands in Changed Items",
-            "Omits all Aetherotransformers (machinist offhands) in the changed items tabs because any change on them changes all of them at the moment.\n\n"
-          + "Changing this triggers a rediscovery of your mods so all changed items can be updated.",
+        Checkbox("Omit Machinist Offhands in Changed Items"u8,
+            "Omits all Aetherotransformers (machinist offhands) in the changed items tabs because any change on them changes all of them at the moment.\n\n"u8
+          + "Changing this triggers a rediscovery of your mods so all changed items can be updated."u8,
             _config.HideMachinistOffhandFromChangedItems, v =>
             {
                 _config.HideMachinistOffhandFromChangedItems = v;
                 _modManager.DiscoverMods();
             });
-        Checkbox("Hide Priority Numbers in Mod Selector",
-            "Hides the bracketed non-zero priority numbers displayed in the mod selector when there is enough space for them.",
+        Checkbox("Hide Priority Numbers in Mod Selector"u8,
+            "Hides the bracketed non-zero priority numbers displayed in the mod selector when there is enough space for them."u8,
             _config.HidePrioritiesInSelector, v => _config.HidePrioritiesInSelector = v);
         DrawSingleSelectRadioMax();
         DrawCollapsibleGroupMin();
@@ -467,28 +458,28 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw all settings pertaining to actor identification for collections. </summary>
     private void DrawIdentificationSettings()
     {
-        Checkbox("Use Interface Collection for other Plugin UIs",
-            "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud.",
+        Checkbox("Use Interface Collection for other Plugin UIs"u8,
+            "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud."u8,
             _dalamudSubstitutionProvider.Enabled, _dalamudSubstitutionProvider.Set);
-        Checkbox($"Use {"Assigned Collections"} in Lobby",
-            "If this is disabled, no mods are applied to characters in the lobby or at the aesthetician.",
+        Checkbox("Use Assigned Collections in Lobby"u8,
+            "If this is disabled, no mods are applied to characters in the lobby or at the aesthetician."u8,
             _config.ShowModsInLobby, v => _config.ShowModsInLobby = v);
-        Checkbox($"Use {"Assigned Collections"} in Character Window",
-            "Use the individual collection for your characters name or the Your Character collection in your main character window, if it is set.",
+        Checkbox("Use Assigned Collections in Character Window"u8,
+            "Use the individual collection for your characters name or the Your Character collection in your main character window, if it is set."u8,
             _config.UseCharacterCollectionInMainWindow, v => _config.UseCharacterCollectionInMainWindow = v);
-        Checkbox($"Use {"Assigned Collections"} in Adventurer Cards",
-            "Use the appropriate individual collection for the adventurer card you are currently looking at, based on the adventurer's name.",
+        Checkbox("Use Assigned Collections in Adventurer Cards"u8,
+            "Use the appropriate individual collection for the adventurer card you are currently looking at, based on the adventurer's name."u8,
             _config.UseCharacterCollectionsInCards, v => _config.UseCharacterCollectionsInCards = v);
-        Checkbox($"Use {"Assigned Collections"} in Try-On Window",
-            "Use the individual collection for your character's name in your try-on, dye preview or glamour plate window, if it is set.",
+        Checkbox("Use Assigned Collections in Try-On Window"u8,
+            "Use the individual collection for your character's name in your try-on, dye preview or glamour plate window, if it is set."u8,
             _config.UseCharacterCollectionInTryOn, v => _config.UseCharacterCollectionInTryOn = v);
-        Checkbox("Use No Mods in Inspect Windows", "Use the empty collection for characters you are inspecting, regardless of the character.\n"
-          + "Takes precedence before the next option.", _config.UseNoModsInInspect, v => _config.UseNoModsInInspect = v);
-        Checkbox($"Use {"Assigned Collections"} in Inspect Windows",
-            "Use the appropriate individual collection for the character you are currently inspecting, based on their name.",
+        Checkbox("Use No Mods in Inspect Windows"u8, "Use the empty collection for characters you are inspecting, regardless of the character.\n"u8
+          + "Takes precedence before the next option."u8, _config.UseNoModsInInspect, v => _config.UseNoModsInInspect = v);
+        Checkbox("Use Assigned Collections in Inspect Windows"u8,
+            "Use the appropriate individual collection for the character you are currently inspecting, based on their name."u8,
             _config.UseCharacterCollectionInInspect, v => _config.UseCharacterCollectionInInspect = v);
-        Checkbox($"Use {"Assigned Collections"} based on Ownership",
-            "Use the owner's name to determine the appropriate individual collection for mounts, companions, accessories and combat pets.",
+        Checkbox("Use Assigned Collections based on Ownership"u8,
+            "Use the owner's name to determine the appropriate individual collection for mounts, companions, accessories and combat pets."u8,
             _config.UseOwnerNameForCharacterCollection, v => _config.UseOwnerNameForCharacterCollection = v);
     }
 
@@ -497,7 +488,7 @@ public sealed class SettingsTab : ITab<TabType>
     {
         var sortMode = _config.SortMode;
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        using (var combo = ImUtf8.Combo("##sortMode", sortMode.Name))
+        using (var combo = Im.Combo.Begin("##sortMode"u8, sortMode.Name))
         {
             if (combo)
                 foreach (var val in ISortMode.Valid.Values)
@@ -513,36 +504,28 @@ public sealed class SettingsTab : ITab<TabType>
                 }
         }
 
-        ImGuiUtil.LabeledHelpMarker("Sort Mode", "Choose the sort mode for the mod selector in the mods tab.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Sort Mode"u8, "Choose the sort mode for the mod selector in the mods tab."u8);
     }
 
     private void DrawRenameSettings()
     {
         Im.Item.SetNextWidth(UiHelpers.InputTextWidth.X);
-        using (var combo = Im.Combo.Begin("##renameSettings"u8, _config.ShowRename.GetData().Name))
+        using (var combo = Im.Combo.Begin("##renameSettings"u8, _config.ShowRename.ToNameU8()))
         {
             if (combo)
                 foreach (var value in Enum.GetValues<RenameField>())
                 {
-                    var (name, desc) = value.GetData();
-                    if (Im.Selectable(name, _config.ShowRename == value))
+                    if (Im.Selectable(value.ToNameU8(), _config.ShowRename == value))
                     {
                         _config.ShowRename = value;
                         _selector.SetRenameSearchPath(value);
                         _config.Save();
                     }
-
-                    ImGuiUtil.HoverTooltip(desc);
+                    Im.Tooltip.OnHover(value.Tooltip());
                 }
         }
 
-        Im.Line.Same();
-        const string tt =
-            "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector.";
-        ImGuiComponents.HelpMarker(tt);
-        Im.Line.Same();
-        Im.Text("Rename Fields in Mod Context Menu"u8);
-        ImGuiUtil.HoverTooltip(tt);
+        LunaStyle.DrawAlignedHelpMarkerLabel("Rename Fields in Mod Context Menu"u8, "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector."u8);
     }
 
     /// <summary> Draw all settings pertaining to the mod selector. </summary>
@@ -550,7 +533,7 @@ public sealed class SettingsTab : ITab<TabType>
     {
         DrawFolderSortType();
         DrawRenameSettings();
-        Checkbox("Open Folders by Default", "Whether to start with all folders collapsed or expanded in the mod selector.",
+        Checkbox("Open Folders by Default"u8, "Whether to start with all folders collapsed or expanded in the mod selector."u8,
             _config.OpenFoldersByDefault,   v =>
             {
                 _config.OpenFoldersByDefault = v;
@@ -579,43 +562,42 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw all settings pertaining to import and export of mods. </summary>
     private void DrawModHandlingSettings()
     {
-        Checkbox("Use Temporary Settings Per Default",
-            "When you make any changes to your collection, apply them as temporary changes first and require a click to 'turn permanent' if you want to keep them.",
+        Checkbox("Use Temporary Settings Per Default"u8,
+            "When you make any changes to your collection, apply them as temporary changes first and require a click to 'turn permanent' if you want to keep them."u8,
             _config.DefaultTemporaryMode, v => _config.DefaultTemporaryMode = v);
-        Checkbox("Replace Non-Standard Symbols On Import",
-            "Replace all non-ASCII symbols in mod and option names with underscores when importing mods.", _config.ReplaceNonAsciiOnImport,
+        Checkbox("Replace Non-Standard Symbols On Import"u8,
+            "Replace all non-ASCII symbols in mod and option names with underscores when importing mods."u8, _config.ReplaceNonAsciiOnImport,
             v => _config.ReplaceNonAsciiOnImport = v);
-        Checkbox("Always Open Import at Default Directory",
-            "Open the import window at the location specified here every time, forgetting your previous path.",
+        Checkbox("Always Open Import at Default Directory"u8,
+            "Open the import window at the location specified here every time, forgetting your previous path."u8,
             _config.AlwaysOpenDefaultImport, v => _config.AlwaysOpenDefaultImport = v);
-        Checkbox("Handle PCP Files",
-            "When encountering specific mods, usually but not necessarily denoted by a .pcp file ending, Penumbra will automatically try to create an associated collection and assign it to a specific character for this mod package. This can turn this behaviour off if unwanted.",
+        Checkbox("Handle PCP Files"u8,
+            "When encountering specific mods, usually but not necessarily denoted by a .pcp file ending, Penumbra will automatically try to create an associated collection and assign it to a specific character for this mod package. This can turn this behaviour off if unwanted."u8,
             !_config.PcpSettings.DisableHandling, v => _config.PcpSettings.DisableHandling = !v);
 
         var active = _config.DeleteModModifier.IsActive();
         Im.Line.Same();
-        if (ImUtf8.ButtonEx("Delete all PCP Mods"u8, "Deletes all mods tagged with 'PCP' from the mod list."u8, disabled: !active))
+        if (ImEx.Button("Delete all PCP Mods"u8, default, "Deletes all mods tagged with 'PCP' from the mod list."u8, !active))
             _pcpService.CleanPcpMods();
         if (!active)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
 
         Im.Line.Same();
-        if (ImUtf8.ButtonEx("Delete all PCP Collections"u8, "Deletes all collections whose name starts with 'PCP/' from the collection list."u8,
-                disabled: !active))
+        if (ImEx.Button("Delete all PCP Collections"u8, default, "Deletes all collections whose name starts with 'PCP/' from the collection list."u8, !active))
             _pcpService.CleanPcpCollections();
         if (!active)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
 
-        Checkbox("Allow Other Plugins Access to PCP Handling",
-            "When creating or importing PCP files, other plugins can add and interpret their own data to the character.json file.",
+        Checkbox("Allow Other Plugins Access to PCP Handling"u8,
+            "When creating or importing PCP files, other plugins can add and interpret their own data to the character.json file."u8,
             _config.PcpSettings.AllowIpc, v => _config.PcpSettings.AllowIpc = v);
 
-        Checkbox("Create PCP Collections",
-            "When importing PCP files, create the associated collection.",
+        Checkbox("Create PCP Collections"u8,
+            "When importing PCP files, create the associated collection."u8,
             _config.PcpSettings.CreateCollection, v => _config.PcpSettings.CreateCollection = v);
 
-        Checkbox("Assign PCP Collections",
-            "When importing PCP files and creating the associated collection, assign it to the associated character.",
+        Checkbox("Assign PCP Collections"u8,
+            "When importing PCP files and creating the associated collection, assign it to the associated character."u8,
             _config.PcpSettings.AssignCollection, v => _config.PcpSettings.AssignCollection = v);
         DrawDefaultModImportPath();
         DrawDefaultModAuthor();
@@ -623,11 +605,11 @@ public sealed class SettingsTab : ITab<TabType>
         DrawPcpFolder();
         DrawPcpExtension();
         DrawDefaultModExportPath();
-        Checkbox("Enable Directory Watcher",
-            "Enables a File Watcher that automatically listens for Mod files that enter a specified directory, causing Penumbra to open a popup to import these mods.",
+        Checkbox("Enable Directory Watcher"u8,
+            "Enables a File Watcher that automatically listens for Mod files that enter a specified directory, causing Penumbra to open a popup to import these mods."u8,
             _config.EnableDirectoryWatch, _fileWatcher.Toggle);
-        Checkbox("Enable Fully Automatic Import",
-            "Uses the File Watcher in order to skip the query popup and automatically import any new mods.",
+        Checkbox("Enable Fully Automatic Import"u8,
+            "Uses the File Watcher in order to skip the query popup and automatically import any new mods."u8,
             _config.EnableAutomaticModImport, v => _config.EnableAutomaticModImport = v);
         DrawFileWatcherPath();
     }
@@ -636,19 +618,19 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw input for the default import path for a mod. </summary>
     private void DrawDefaultModImportPath()
     {
+        using var id      = Im.Id.Push("##dmi"u8);
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
 
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
-        if (ImEx.InputOnDeactivation.Text("##defaultModImport"u8, _config.DefaultModImportPath, out string newDirectory))
+        if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.DefaultModImportPath, out string newDirectory))
         {
             _config.DefaultModImportPath = newDirectory;
             _config.Save();
         }
 
-        Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##import", UiHelpers.IconButtonSize,
-                "Select a directory via dialog.", false, true))
+        Im.Line.SameInner();
+        if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Select a directory via dialog."u8))
         {
             var startDir = _config.DefaultModImportPath.Length > 0 && Directory.Exists(_config.DefaultModImportPath)
                 ? _config.DefaultModImportPath
@@ -667,22 +649,22 @@ public sealed class SettingsTab : ITab<TabType>
         }
 
         style.Pop();
-        ImGuiUtil.LabeledHelpMarker("Default Mod Import Directory",
-            "Set the directory that gets opened when using the file picker to import mods for the first time.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Default Mod Import Directory"u8,
+            "Set the directory that gets opened when using the file picker to import mods for the first time."u8);
     }
 
     /// <summary> Draw input for the default export/backup path for mods. </summary>
     private void DrawDefaultModExportPath()
     {
+        using var id      = Im.Id.Push("##dme"u8);
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
-        if (ImEx.InputOnDeactivation.Text("##defaultModExport"u8, _config.ExportDirectory, out string newDirectory))
+        if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.ExportDirectory, out string newDirectory))
             _modExportManager.UpdateExportDirectory(newDirectory);
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##export", UiHelpers.IconButtonSize,
-                "Select a directory via dialog.", false, true))
+        if (ImEx.Icon.Button(LunaStyle.FolderIcon, "Select a directory via dialog."u8))
         {
             var startDir = _config.ExportDirectory.Length > 0 && Directory.Exists(_config.ExportDirectory)
                 ? _config.ExportDirectory
@@ -697,9 +679,9 @@ public sealed class SettingsTab : ITab<TabType>
         }
 
         style.Pop();
-        ImGuiUtil.LabeledHelpMarker("Default Mod Export Directory",
-            "Set the directory mods get saved to when using the export function or loaded from when reimporting backups.\n"
-          + "Keep this empty to use the root directory.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Default Mod Export Directory"u8,
+            "Set the directory mods get saved to when using the export function or loaded from when reimporting backups.\n"u8
+          + "Keep this empty to use the root directory."u8);
     }
 
     /// <summary> Draw input for the Automatic Mod import path. </summary>
@@ -709,7 +691,7 @@ public sealed class SettingsTab : ITab<TabType>
         var       spacing = new Vector2(Im.Style.GlobalScale * 3);
         using var style   = ImStyleDouble.ItemSpacing.Push(spacing);
         Im.Item.SetNextWidth(UiHelpers.InputTextMinusButton3);
-        if (ImEx.InputOnDeactivation.Text("##path"u8, _config.WatchDirectory, out string newDirectory, maxLength: 256))
+        if (ImEx.InputOnDeactivation.Text(StringU8.Empty, _config.WatchDirectory, out string newDirectory, maxLength: 256))
             _fileWatcher.UpdateDirectory(newDirectory);
 
         Im.Line.Same();
@@ -728,8 +710,8 @@ public sealed class SettingsTab : ITab<TabType>
         }
 
         style.Pop();
-        ImGuiUtil.LabeledHelpMarker("Automatic Import Director",
-            "Choose the Directory the File Watcher listens to.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Automatic Import Director"u8,
+            "Choose the Directory the File Watcher listens to."u8);
     }
 
     /// <summary> Draw input for the default name to input as author into newly generated mods. </summary>
@@ -742,7 +724,7 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("Default Mod Author", "Set the default author stored for newly created mods.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Default Mod Author"u8, "Set the default author stored for newly created mods."u8);
     }
 
     /// <summary> Draw input for the default folder to sort put newly imported mods into. </summary>
@@ -755,8 +737,8 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("Default Mod Import Organizational Folder",
-            "Set the default Penumbra mod folder to place newly imported mods into.\nLeave blank to import into Root.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Default Mod Import Organizational Folder"u8,
+            "Set the default Penumbra mod folder to place newly imported mods into.\nLeave blank to import into Root."u8);
     }
 
     /// <summary> Draw input for the default folder to sort put newly imported mods into. </summary>
@@ -769,8 +751,9 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("Default PCP Organizational Folder",
-            "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Default PCP Organizational Folder"u8,
+            "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root."u8);
+
     }
 
     private void DrawPcpExtension()
@@ -790,16 +773,16 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("PCP Extension",
-            "The extension used when exporting PCP files. Should generally be either \".pcp\" or \".pmp\".");
+        LunaStyle.DrawAlignedHelpMarkerLabel("PCP Extension"u8,
+            "The extension used when exporting PCP files. Should generally be either \".pcp\" or \".pmp\"."u8);
     }
 
 
     /// <summary> Draw all settings pertaining to advanced editing of mods. </summary>
     private void DrawModEditorSettings()
     {
-        Checkbox("Advanced Editing: Edit Raw Tile UV Transforms",
-            "Edit the raw matrix components of tile UV transforms, instead of having them decomposed into scale, rotation and shear.",
+        Checkbox("Advanced Editing: Edit Raw Tile UV Transforms"u8,
+            "Edit the raw matrix components of tile UV transforms, instead of having them decomposed into scale, rotation and shear."u8,
             _config.EditRawTileTransforms, v => _config.EditRawTileTransforms = v);
 
         Checkbox("Advanced Editing: Always Highlight Color Row Pair when Hovering Selection Button",
@@ -819,8 +802,11 @@ public sealed class SettingsTab : ITab<TabType>
         {
             var (defaultColor, name, description) = color.Data();
             var currentColor = _config.Colors.GetValueOrDefault(color, defaultColor);
-            if (Widget.ColorPicker(name, description, currentColor, c => _config.Colors[color] = c, defaultColor))
+            if (ImEx.ColorPicker(name, description, currentColor, out var newColor, defaultColor))
+            {
+                _config.Colors[color] = newColor.Color;
                 _config.Save();
+            }
         }
 
         Im.Line.New();
@@ -839,19 +825,19 @@ public sealed class SettingsTab : ITab<TabType>
         DrawCrashHandler();
         DrawMinimumDimensionConfig();
         DrawHdrRenderTargets();
-        Checkbox("Auto Deduplicate on Import",
-            "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
+        Checkbox("Auto Deduplicate on Import"u8,
+            "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files."u8,
             _config.AutoDeduplicateOnImport, v => _config.AutoDeduplicateOnImport = v);
-        Checkbox("Auto Reduplicate UI Files on PMP Import",
-            "Automatically reduplicate and normalize UI-specific files on import from PMP files. This is STRONGLY recommended because deduplicated UI files crash the game.",
+        Checkbox("Auto Reduplicate UI Files on PMP Import"u8,
+            "Automatically reduplicate and normalize UI-specific files on import from PMP files. This is STRONGLY recommended because deduplicated UI files crash the game."u8,
             _config.AutoReduplicateUiOnImport, v => _config.AutoReduplicateUiOnImport = v);
         DrawCompressionBox();
-        Checkbox("Keep Default Metadata Changes on Import",
-            "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
-          + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
+        Checkbox("Keep Default Metadata Changes on Import"u8,
+            "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "u8
+          + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option."u8,
             _config.KeepDefaultMetaChanges, v => _config.KeepDefaultMetaChanges = v);
-        Checkbox("Enable Custom Shape and Attribute Support",
-            "Penumbra will allow for custom shape keys and attributes for modded models to be considered and combined.",
+        Checkbox("Enable Custom Shape and Attribute Support"u8,
+            "Penumbra will allow for custom shape keys and attributes for modded models to be considered and combined."u8,
             _config.EnableCustomShapes, _attributeHook.SetState);
         DrawWaitForPluginsReflection();
         DrawEnableHttpApiBox();
@@ -866,8 +852,8 @@ public sealed class SettingsTab : ITab<TabType>
 
     private void DrawCrashHandler()
     {
-        Checkbox("Enable Penumbra Crash Logging (Experimental)",
-            "Enables Penumbra to launch a secondary process that records some game activity which may or may not help diagnosing Penumbra-related game crashes.",
+        Checkbox("Enable Penumbra Crash Logging (Experimental)"u8,
+            "Enables Penumbra to launch a secondary process that records some game activity which may or may not help diagnosing Penumbra-related game crashes."u8,
             _config.UseCrashHandler ?? false,
             v =>
             {
@@ -883,8 +869,8 @@ public sealed class SettingsTab : ITab<TabType>
         if (!_compactor.CanCompact)
             return;
 
-        Checkbox("Use Filesystem Compression",
-            "Use Windows functionality to transparently reduce storage size of mod files on your computer. This might cost performance, but seems to generally be beneficial to performance by shifting more responsibility to the underused CPU and away from the overused hard drives.",
+        Checkbox("Use Filesystem Compression"u8,
+            "Use Windows functionality to transparently reduce storage size of mod files on your computer. This might cost performance, but seems to generally be beneficial to performance by shifting more responsibility to the underused CPU and away from the overused hard drives."u8,
             _config.UseFileSystemCompression,
             v =>
             {
@@ -892,15 +878,15 @@ public sealed class SettingsTab : ITab<TabType>
                 _compactor.Enabled               = v;
             });
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton("Compress Existing Files", Vector2.Zero,
-                "Try to compress all files in your root directory. This will take a while.",
+        if (ImEx.Button("Compress Existing Files"u8, Vector2.Zero,
+                "Try to compress all files in your root directory. This will take a while."u8,
                 _compactor.MassCompactRunning || !_modManager.Valid))
             _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.Xpress8K,
                 true);
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton("Decompress Existing Files", Vector2.Zero,
-                "Try to decompress all files in your root directory. This will take a while.",
+        if (ImEx.Button("Decompress Existing Files"u8, Vector2.Zero,
+                "Try to decompress all files in your root directory. This will take a while."u8,
                 _compactor.MassCompactRunning || !_modManager.Valid))
             _compactor.StartMassCompact(_modManager.BasePath.EnumerateFiles("*.*", SearchOption.AllDirectories), CompressionAlgorithm.None,
                 true);
@@ -912,8 +898,7 @@ public sealed class SettingsTab : ITab<TabType>
                     Im.Style.FrameHeight),
                 _compactor.CurrentFile?.FullName[(_modManager.BasePath.FullName.Length + 1)..] ?? "Gathering Files...");
             Im.Line.Same();
-            if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Ban.ToIconString(), UiHelpers.IconButtonSize, "Cancel the mass action.",
-                    !_compactor.MassCompactRunning, true))
+            if (ImEx.Icon.Button(LunaStyle.CancelIcon, "Cancel the mass action."u8, !_compactor.MassCompactRunning))
                 _compactor.CancelMassCompact();
         }
         else
@@ -939,6 +924,7 @@ public sealed class SettingsTab : ITab<TabType>
             _config.MinimumSize.X = newX;
             _config.Save();
         }
+
         Im.Line.Same();
         Im.Item.SetNextWidth(buttonWidth);
         if (ImEx.InputOnDeactivation.Drag("##yMinSize"u8, (int)_config.MinimumSize.Y, out var newY, 300, 1500, 0.1f))
@@ -948,7 +934,7 @@ public sealed class SettingsTab : ITab<TabType>
         }
 
         Im.Line.Same();
-        if (ImGuiUtil.DrawDisabledButton("Reset##resetMinSize", new Vector2(buttonWidth / 2 - Im.Style.ItemSpacing.X * 2, 0),
+        if (ImEx.Button("Reset##resetMinSize"u8, new Vector2(buttonWidth / 2 - Im.Style.ItemSpacing.X * 2, 0),
                 $"Reset minimum dimensions to ({Configuration.Constants.MinimumSizeX}, {Configuration.Constants.MinimumSizeY}).",
                 _config.MinimumSize is { X: Configuration.Constants.MinimumSizeX, Y: Configuration.Constants.MinimumSizeY }))
         {
@@ -956,8 +942,8 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        ImGuiUtil.LabeledHelpMarker("Minimum Window Dimensions",
-            "Set the minimum dimensions for resizing this window. Reducing these dimensions may cause the window to look bad or more confusing and is not recommended.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Minimum Window Dimensions"u8,
+            "Set the minimum dimensions for resizing this window. Reducing these dimensions may cause the window to look bad or more confusing and is not recommended."u8);
 
         if (warning.Length > 0)
             ImEx.TextFramed(warning, UiHelpers.InputTextWidth, Colors.PressEnterWarningBg);
@@ -967,18 +953,18 @@ public sealed class SettingsTab : ITab<TabType>
 
     private void DrawHdrRenderTargets()
     {
-        Im.Item.SetNextWidth(ImUtf8.CalcTextSize("M"u8).X * 5.0f + Im.Style.FrameHeight);
-        using (var combo = ImUtf8.Combo("##hdrRenderTarget"u8, _config.HdrRenderTargets ? "HDR"u8 : "SDR"u8))
+        Im.Item.SetNextWidth(Im.Font.CalculateSize("M"u8).X * 5.0f + Im.Style.FrameHeight);
+        using (var combo = Im.Combo.Begin("##hdrRenderTarget"u8, _config.HdrRenderTargets ? "HDR"u8 : "SDR"u8))
         {
             if (combo)
             {
-                if (ImUtf8.Selectable("HDR"u8, _config.HdrRenderTargets) && !_config.HdrRenderTargets)
+                if (Im.Selectable("HDR"u8, _config.HdrRenderTargets) && !_config.HdrRenderTargets)
                 {
                     _config.HdrRenderTargets = true;
                     _config.Save();
                 }
 
-                if (ImUtf8.Selectable("SDR"u8, !_config.HdrRenderTargets) && _config.HdrRenderTargets)
+                if (Im.Selectable("SDR"u8, !_config.HdrRenderTargets) && _config.HdrRenderTargets)
                 {
                     _config.HdrRenderTargets = false;
                     _config.Save();
@@ -986,8 +972,7 @@ public sealed class SettingsTab : ITab<TabType>
             }
         }
 
-        Im.Line.Same();
-        ImUtf8.LabeledHelpMarker("Diffuse Dynamic Range"u8,
+        LunaStyle.DrawAlignedHelpMarkerLabel("Diffuse Dynamic Range"u8,
             "Set the dynamic range that can be used for diffuse colors in materials without causing visual artifacts.\n"u8
           + "Changing this setting requires a game restart. It also only works if Wait for Plugins on Startup is enabled."u8);
     }
@@ -1007,9 +992,8 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        Im.Line.Same();
-        ImGuiUtil.LabeledHelpMarker("Enable HTTP API",
-            "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Enable HTTP API"u8,
+            "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws."u8);
     }
 
     /// <summary> Draw a checkbox to toggle Debug mode. </summary>
@@ -1022,16 +1006,15 @@ public sealed class SettingsTab : ITab<TabType>
             _config.Save();
         }
 
-        Im.Line.Same();
-        ImGuiUtil.LabeledHelpMarker("Enable Debug Mode",
-            "[DEBUG] Enable the Debug Tab and Resource Manager Tab as well as some additional data collection. Also open the config window on plugin load.");
+        LunaStyle.DrawAlignedHelpMarkerLabel("Enable Debug Mode"u8,
+            "[DEBUG] Enable the Debug Tab and Resource Manager Tab as well as some additional data collection. Also open the config window on plugin load."u8);
     }
 
     /// <summary> Draw a button that reloads resident resources. </summary>
     private void DrawReloadResourceButton()
     {
-        if (ImGuiUtil.DrawDisabledButton("Reload Resident Resources", Vector2.Zero,
-                "Reload some specific files that the game keeps in memory at all times.\nYou usually should not need to do this.",
+        if (ImEx.Button("Reload Resident Resources"u8, Vector2.Zero,
+                "Reload some specific files that the game keeps in memory at all times.\nYou usually should not need to do this."u8,
                 !_characterUtility.Ready))
             _residentResources.Reload();
     }
@@ -1039,7 +1022,7 @@ public sealed class SettingsTab : ITab<TabType>
     /// <summary> Draw a button that reloads fonts. </summary>
     private void DrawReloadFontsButton()
     {
-        if (ImGuiUtil.DrawDisabledButton("Reload Fonts", Vector2.Zero, "Force the game to reload its font files.", !_fontReloader.Valid))
+        if (ImEx.Button("Reload Fonts"u8, Vector2.Zero, "Force the game to reload its font files."u8, !_fontReloader.Valid))
             _fontReloader.Reload();
     }
 
@@ -1048,10 +1031,10 @@ public sealed class SettingsTab : ITab<TabType>
         var enabled = _config.DeleteModModifier.IsActive();
         if (_cleanupService.Progress is not 0.0 and not 1.0)
         {
-            ImUtf8.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * Im.Style.GlobalScale, Im.Style.FrameHeight),
+            Im.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * Im.Style.GlobalScale, Im.Style.FrameHeight),
                 $"{_cleanupService.Progress * 100}%");
             Im.Line.Same();
-            if (ImUtf8.Button("Cancel##FileCleanup"u8))
+            if (Im.Button("Cancel##FileCleanup"u8))
                 _cleanupService.Cancel();
         }
         else
@@ -1059,22 +1042,22 @@ public sealed class SettingsTab : ITab<TabType>
             Im.Line.New();
         }
 
-        if (ImUtf8.ButtonEx("Clear Unused Local Mod Data Files"u8,
-                "Delete all local mod data files that do not correspond to currently installed mods."u8, default,
+        if (ImEx.Button("Clear Unused Local Mod Data Files"u8, default,
+                "Delete all local mod data files that do not correspond to currently installed mods."u8,
                 !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanUnusedLocalData();
         if (!enabled)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
 
-        if (ImUtf8.ButtonEx("Clear Backup Files"u8,
+        if (ImEx.Button("Clear Backup Files"u8, default,
                 "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory."u8,
-                default, !enabled || _cleanupService.IsRunning))
+                !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanBackupFiles();
         if (!enabled)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
 
-        if (ImUtf8.ButtonEx("Clear All Unused Settings"u8,
-                "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8, default,
+        if (ImEx.Button("Clear All Unused Settings"u8, default,
+                "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8, 
                 !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanupAllUnusedSettings();
         if (!enabled)
@@ -1087,15 +1070,15 @@ public sealed class SettingsTab : ITab<TabType>
         if (!_dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool value))
         {
             using var disabled = Im.Disabled();
-            Checkbox("Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)", string.Empty, false, _ => { });
+            Checkbox("Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)"u8, StringU8.Empty, false, _ => { });
         }
         else
         {
-            Checkbox("Wait for Plugins on Startup",
-                "Some mods need to change files that are loaded once when the game starts and never afterwards.\n"
-              + "This can cause issues with Penumbra loading after the files are already loaded.\n"
-              + "This setting causes the game to wait until certain plugins have finished loading, making those mods work (in the base collection).\n\n"
-              + "This changes a setting in the Dalamud Configuration found at /xlsettings -> General.",
+            Checkbox("Wait for Plugins on Startup"u8,
+                "Some mods need to change files that are loaded once when the game starts and never afterwards.\n"u8
+              + "This can cause issues with Penumbra loading after the files are already loaded.\n"u8
+              + "This setting causes the game to wait until certain plugins have finished loading, making those mods work (in the base collection).\n\n"u8
+              + "This changes a setting in the Dalamud Configuration found at /xlsettings -> General."u8,
                 value,
                 v => _dalamudConfig.SetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup"));
         }
@@ -1109,7 +1092,7 @@ public sealed class SettingsTab : ITab<TabType>
         var width = Im.Font.CalculateSize(UiHelpers.SupportInfoButtonText).X + Im.Style.FramePadding.X * 2;
         var xPos  = Im.Window.Width - width;
         // Respect the scroll bar width.
-        if (Im.Scroll.MaximumY> 0)
+        if (Im.Scroll.MaximumY > 0)
             xPos -= Im.Style.ScrollbarSize + Im.Style.FramePadding.X;
 
         Im.Cursor.Position = new Vector2(xPos, Im.Style.FrameHeightWithSpacing);
@@ -1141,8 +1124,8 @@ public sealed class SettingsTab : ITab<TabType>
         if (!Im.Tree.Header("Tags"u8))
             return;
 
-        var tagIdx = _sharedTags.Draw("Predefined Tags: ",
-            "Predefined tags that can be added or removed from mods with a single click.", _predefinedTagManager,
+        var tagIdx = Luna.TagButtons.Draw("Predefined Tags: "u8,
+            "Predefined tags that can be added or removed from mods with a single click."u8, _predefinedTagManager,
             out var editedTag);
 
         if (tagIdx >= 0)

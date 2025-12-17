@@ -1,11 +1,18 @@
-using OtterGui.Widgets;
+using ImSharp;
 using Penumbra.GameData.Files.AtchStructs;
+using Penumbra.UI.AdvancedWindow.Meta;
 
 namespace Penumbra.UI.Combos;
 
-internal sealed class AtchPointCombo(Func<IReadOnlyList<AtchType>> generator)
-    : FilterComboCache<AtchType>(generator, MouseWheelType.Control, Penumbra.Log)
+internal sealed class AtchPointCombo(AtchMetaDrawer parent)
+    : SimpleFilterCombo<AtchType>(SimpleFilterType.Text)
 {
-    protected override string ToString(AtchType obj)
-        => obj.ToName();
+    public override StringU8 DisplayString(in AtchType value)
+        => new(value.ToNameU8());
+
+    public override string FilterString(in AtchType value)
+        => value.ToString();
+
+    public override IEnumerable<AtchType> GetBaseItems()
+        => parent.GetPoints();
 }

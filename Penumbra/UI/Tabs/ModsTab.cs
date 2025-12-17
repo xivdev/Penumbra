@@ -1,7 +1,5 @@
 using Dalamud.Game.ClientState.Objects;
-using OtterGui;
 using Penumbra.UI.Classes;
-using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using ImSharp;
 using Luna;

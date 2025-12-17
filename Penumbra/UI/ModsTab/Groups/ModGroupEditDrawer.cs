@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
-using OtterGui.Raii;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
@@ -68,7 +67,7 @@ public sealed class ModGroupEditDrawer(
     private void DrawGroup(IModGroup group, int idx)
     {
         using var id    = Im.Id.Push(idx);
-        using var frame = ImRaii.FramedGroup($"Group #{idx + 1}");
+        using var frame = ImEx.FramedGroup($"Group #{idx + 1}");
         DrawGroupNameRow(group, idx);
         group.EditDrawer(this).Draw();
     }

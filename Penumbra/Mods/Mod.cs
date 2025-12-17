@@ -71,6 +71,8 @@ public sealed class Mod : IMod, IFileSystemValue<Mod>
     // Local Data
     public DataPath              Path                  { get; }               = new();
     public long                  ImportDate            { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
+    public long                  LastConfigEdit        { get; internal set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
+    public bool                  IgnoreLastConfig      { get; internal set; } = false;
     public IReadOnlyList<string> LocalTags             { get; internal set; } = [];
     public string                Note                  { get; internal set; } = string.Empty;
     public HashSet<CustomItemId> PreferredChangedItems { get; internal set; } = [];

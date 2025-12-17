@@ -3,6 +3,7 @@ using Penumbra.Api.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 
 namespace Penumbra.Communication;
@@ -15,6 +16,9 @@ public sealed class ModSettingChanged(Logger log)
     {
         /// <seealso cref="ModSettingsApi.OnModSettingChange"/>
         Api = int.MinValue,
+
+        /// <seealso cref="Mods.Manager.ModConfigUpdater.OnModSettingChanged"/>
+        ModConfigUpdater = -10,
 
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModSettingChange"/>
         CollectionCacheManager = 0,

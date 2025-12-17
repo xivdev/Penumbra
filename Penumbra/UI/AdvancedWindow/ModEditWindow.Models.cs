@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using ImSharp;
 using Lumina.Data.Parsing;
 using Luna;
-using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
@@ -10,6 +9,7 @@ using Penumbra.Import.Models;
 using Penumbra.Import.Models.Import;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
+using TagButtons = Luna.TagButtons;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -29,7 +29,6 @@ public partial class ModEditWindow
     private class LoadedData
     {
         public          MdlFile          LastFile             = null!;
-        public readonly List<TagButtons> SubMeshAttributeTags = [];
         public          long[]           LodTriCount          = [];
     }
 
@@ -49,15 +48,6 @@ public partial class ModEditWindow
             return data;
 
         data.LastFile = file;
-        var subMeshTotal = file.Meshes.Aggregate(0, (count, mesh) => count + mesh.SubMeshCount);
-        if (data.SubMeshAttributeTags.Count != subMeshTotal)
-        {
-            data.SubMeshAttributeTags.Clear();
-            data.SubMeshAttributeTags.AddRange(
-                Enumerable.Range(0, subMeshTotal).Select(_ => new TagButtons())
-            );
-        }
-
         data.LodTriCount = Enumerable.Range(0, file.Lods.Length).Select(l => GetTriangleCountForLod(file, l)).ToArray();
         return data;
     }
@@ -122,7 +112,8 @@ public partial class ModEditWindow
                 return true;
             });
 
-        using (ImRaii.FramedGroup("Import", size, headerPreIcon: FontAwesomeIcon.FileImport))
+        using (ImEx.FramedGroup("Import"u8, LunaStyle.ImportIcon, default, StringU8.Empty, ColorParameter.Default, ColorParameter.Default,
+                   size))
         {
             Im.Checkbox("Keep current materials"u8,  ref tab.ImportKeepMaterials);
             Im.Checkbox("Keep current attributes"u8, ref tab.ImportKeepAttributes);
@@ -144,8 +135,9 @@ public partial class ModEditWindow
 
     private void DrawExport(MdlTab tab, Vector2 size, bool _)
     {
-        using var id    = Im.Id.Push("export"u8);
-        using var frame = ImRaii.FramedGroup("Export", size, headerPreIcon: FontAwesomeIcon.FileExport);
+        using var id = Im.Id.Push("export"u8);
+        using var frame = ImEx.FramedGroup("Export"u8, LunaStyle.FileExportIcon, default, StringU8.Empty, ColorParameter.Default,
+            ColorParameter.Default, size);
 
         if (tab.GamePaths is null)
         {
@@ -190,8 +182,8 @@ public partial class ModEditWindow
             return;
 
         var size = Im.ContentRegion.Available with { Y = 0 };
-        using var frame = ImRaii.FramedGroup("Exceptions", size, headerPreIcon: FontAwesomeIcon.TimesCircle,
-            borderColor: new Rgba32(Colors.RegexWarningBorder).Color);
+        using var frame = ImEx.FramedGroup("Exceptions"u8, LunaStyle.ErrorIcon, default, StringU8.Empty, ColorParameter.Default,
+            LunaStyle.ErrorBorderColor, size);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, exception) in tab.IoExceptions.Index())
@@ -216,8 +208,9 @@ public partial class ModEditWindow
         if (tab.IoWarnings.Count is 0)
             return;
 
-        var       size  = Im.ContentRegion.Available with { Y = 0 };
-        using var frame = ImRaii.FramedGroup("Warnings", size, headerPreIcon: FontAwesomeIcon.ExclamationCircle, borderColor: 0xFF40FFFF);
+        var size = Im.ContentRegion.Available with { Y = 0 };
+        using var frame = ImEx.FramedGroup("Warnings"u8, LunaStyle.WarningIcon, default, StringU8.Empty, ColorParameter.Default,
+            LunaStyle.WarningBorderColor, size);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
         foreach (var (index, warning) in tab.IoWarnings.Index())
@@ -294,7 +287,7 @@ public partial class ModEditWindow
         Im.Tooltip.OnHover("Right-Click to copy to clipboard."u8, HoveredFlags.AllowWhenDisabled);
     }
 
-    private void DrawDocumentationLink(string address)
+    private static void DrawDocumentationLink(string address)
     {
         var text  = "Documentation →"u8;
         var width = Im.Font.CalculateButtonSize(text).X;
@@ -427,7 +420,7 @@ public partial class ModEditWindow
           + "and must end in \".mtrl\"."u8);
     }
 
-    private bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    private static bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
     {
         using var lodNode = Im.Tree.Node($"Level of Detail #{lodIndex + 1}", TreeNodeFlags.DefaultOpen);
         if (!lodNode)
@@ -442,7 +435,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawModelMeshDetails(MdlTab tab, int meshIndex, bool disabled)
+    private static bool DrawModelMeshDetails(MdlTab tab, int meshIndex, bool disabled)
     {
         using var meshNode = Im.Tree.Node($"Mesh #{meshIndex + 1}", TreeNodeFlags.DefaultOpen);
         if (!meshNode)
@@ -530,7 +523,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawSubMeshAttributes(in Im.TableDisposable table, MdlTab tab, int meshIndex, int subMeshOffset, bool disabled)
+    private static bool DrawSubMeshAttributes(in Im.TableDisposable table, MdlTab tab, int meshIndex, int subMeshOffset, bool disabled)
     {
         using var _ = Im.Id.Push(subMeshOffset);
 
@@ -540,8 +533,6 @@ public partial class ModEditWindow
         table.DrawFrameColumn($"Attributes #{subMeshOffset + 1}");
 
         table.NextColumn();
-        var data       = disabled ? _preview : _main;
-        var widget     = data.SubMeshAttributeTags[subMeshIndex];
         var attributes = tab.GetSubMeshAttributes(subMeshIndex);
 
         if (attributes is null)
@@ -550,8 +541,7 @@ public partial class ModEditWindow
             disabled   = true;
         }
 
-        var tagIndex = widget.Draw(string.Empty, string.Empty, attributes,
-            out var editedAttribute, !disabled);
+        var tagIndex = TagButtons.Draw(StringU8.Empty, StringU8.Empty, attributes, out var editedAttribute, !disabled);
         if (tagIndex < 0)
             return false;
 

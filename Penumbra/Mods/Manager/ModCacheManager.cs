@@ -1,3 +1,4 @@
+using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.Mods.Manager.OptionEditor;
@@ -6,25 +7,29 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable, Luna.IRequiredService
+public class ModCacheManager : IDisposable, IRequiredService
 {
     private readonly Configuration        _config;
     private readonly CommunicatorService  _communicator;
     private readonly ObjectIdentification _identifier;
     private readonly ModStorage           _modManager;
+    private readonly SaveService          _saveService;
     private          bool                 _updatingItems;
 
-    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config)
+    public ModCacheManager(CommunicatorService communicator, ObjectIdentification identifier, ModStorage modStorage, Configuration config,
+        SaveService saveService)
     {
         _communicator = communicator;
         _identifier   = identifier;
         _modManager   = modStorage;
         _config       = config;
+        _saveService  = saveService;
 
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ModCacheManager);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
+        
         identifier.Awaiter.ContinueWith(_ => OnIdentifierCreation(), TaskScheduler.Default);
         OnModDiscoveryFinished();
     }
@@ -48,9 +53,7 @@ public class ModCacheManager : IDisposable, Luna.IRequiredService
                 UpdateChangedItems(arguments.Mod);
                 UpdateCounts(arguments.Mod);
                 break;
-            case ModOptionChangeType.GroupTypeChanged:
-                UpdateHasOptions(arguments.Mod);
-                break;
+            case ModOptionChangeType.GroupTypeChanged: UpdateHasOptions(arguments.Mod); break;
             case ModOptionChangeType.OptionFilesChanged:
             case ModOptionChangeType.OptionFilesAdded:
                 UpdateChangedItems(arguments.Mod);

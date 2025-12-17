@@ -110,9 +110,8 @@ public sealed class ModSearchStringSplitter : SearchStringSplitter<ModSearchType
             ModSearchType.Tag         => leaf.Value.AllTagsLower.AsSpan().Contains(entry.Needle, StringComparison.Ordinal),
             ModSearchType.Name        => leaf.Value.Name.AsSpan().Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
             ModSearchType.Author      => leaf.Value.Author.AsSpan().Contains(entry.Needle, StringComparison.OrdinalIgnoreCase),
-            ModSearchType.Category => leaf.Value.ChangedItems.Any(p
-                => ((p.Value?.Icon.ToFlag() ?? ChangedItemIconFlag.Unknown) & entry.IconFlagFilter) != 0),
-            _ => true,
+            ModSearchType.Category    => leaf.Value.ChangedItems.Any(p => (p.Value.Icon.ToFlag() & entry.IconFlagFilter) is not 0),
+            _                         => true,
         };
 
     protected override bool MatchesNone(ModSearchType type, bool negated, ModFileSystem.Leaf haystack)

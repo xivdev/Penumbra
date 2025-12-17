@@ -24,6 +24,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
             { nameof(Mod.Note), JToken.FromObject(mod.Note) },
             { nameof(Mod.Favorite), JToken.FromObject(mod.Favorite) },
             { nameof(Mod.PreferredChangedItems), JToken.FromObject(mod.PreferredChangedItems) },
+            { nameof(Mod.LastConfigEdit), JToken.FromObject(mod.LastConfigEdit) },
         };
 
         if (mod.Path.Folder.Length > 0)
@@ -40,12 +41,14 @@ public readonly struct ModLocalData(Mod mod) : ISavable
     {
         var dataFile = editor.SaveService.FileNames.LocalDataFile(mod);
 
-        var     importDate       = 0L;
+        var     now              = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var     importDate       = now;
         var     localTags        = Enumerable.Empty<string>();
         var     favorite         = false;
         var     note             = string.Empty;
         var     fileSystemFolder = string.Empty;
         string? sortOrderName    = null;
+        var     lastConfigEdit   = now;
 
         HashSet<CustomItemId> preferredChangedItems = [];
 
@@ -56,10 +59,11 @@ public readonly struct ModLocalData(Mod mod) : ISavable
                 var text = File.ReadAllText(dataFile);
                 var json = JObject.Parse(text);
 
-                importDate = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
-                favorite   = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
-                note       = json[nameof(Mod.Note)]?.Value<string>() ?? note;
-                localTags  = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
+                importDate     = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
+                lastConfigEdit = json[nameof(Mod.LastConfigEdit)]?.Value<long>() ?? lastConfigEdit;
+                favorite       = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
+                note           = json[nameof(Mod.Note)]?.Value<string>() ?? note;
+                localTags      = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
                 preferredChangedItems =
                     (json[nameof(Mod.PreferredChangedItems)] as JArray)?.Values<ulong>().Select(i => (CustomItemId)i).ToHashSet()
                  ?? mod.DefaultPreferredItems;
@@ -82,6 +86,12 @@ public readonly struct ModLocalData(Mod mod) : ISavable
         {
             mod.ImportDate =  importDate;
             changes        |= ModDataChangeType.ImportDate;
+        }
+
+        if (mod.LastConfigEdit != lastConfigEdit)
+        {
+            mod.LastConfigEdit =  lastConfigEdit;
+            changes            |= ModDataChangeType.LastConfigEdit;
         }
 
         changes |= UpdateTags(mod, null, localTags);
@@ -124,11 +134,11 @@ public readonly struct ModLocalData(Mod mod) : ISavable
 
     internal static ModDataChangeType UpdateTags(Mod mod, IEnumerable<string>? newModTags, IEnumerable<string>? newLocalTags)
     {
-        if (newModTags == null && newLocalTags == null)
+        if (newModTags is null && newLocalTags is null)
             return 0;
 
         ModDataChangeType type = 0;
-        if (newModTags != null)
+        if (newModTags is not null)
         {
             var modTags = newModTags.Where(t => t.Length > 0).Distinct().ToArray();
             if (!modTags.SequenceEqual(mod.ModTags))
@@ -139,7 +149,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
             }
         }
 
-        if (newLocalTags != null)
+        if (newLocalTags is not null)
         {
             var localTags = newLocalTags!.Where(t => t.Length > 0 && !mod.ModTags.Contains(t)).Distinct().ToArray();
             if (!localTags.SequenceEqual(mod.LocalTags))

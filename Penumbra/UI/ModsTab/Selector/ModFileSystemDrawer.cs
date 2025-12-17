@@ -12,7 +12,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly Configuration     Config;
 
     public ModFileSystemDrawer(ModFileSystem2 fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config)
-        : base(fileSystem, null)
+        : base(fileSystem, new ModFilter(modManager, collectionManager.Active))
     {
         ModManager        = modManager;
         CollectionManager = collectionManager;
@@ -28,9 +28,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         FolderContext.AddButton(new SetDefaultImportFolderButton(this),      -100);
 
         DataContext.AddButton(new ToggleFavoriteButton(this), 10);
-
         Footer.Buttons.AddButton(new AddNewModButton(this), 1000);
-
     }
 
     public override ReadOnlySpan<byte> Id

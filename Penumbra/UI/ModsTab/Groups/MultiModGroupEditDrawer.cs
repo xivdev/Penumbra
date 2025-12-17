@@ -1,7 +1,5 @@
-using Dalamud.Interface;
 using ImSharp;
-using OtterGui.Raii;
-using OtterGui.Text;
+using Luna;
 using Penumbra.Mods.Groups;
 
 namespace Penumbra.UI.ModsTab.Groups;
@@ -12,7 +10,7 @@ public readonly struct MultiModGroupEditDrawer(ModGroupEditDrawer editor, MultiM
     {
         foreach (var (optionIdx, option) in group.OptionData.Index())
         {
-            using var id = ImRaii.PushId(optionIdx);
+            using var id = Im.Id.Push(optionIdx);
             editor.DrawOptionPosition(group, option, optionIdx);
 
             Im.Line.SameInner();
@@ -39,7 +37,7 @@ public readonly struct MultiModGroupEditDrawer(ModGroupEditDrawer editor, MultiM
     {
         var g = group;
         var e = editor.ModManager.OptionEditor.MultiEditor;
-        if (ImUtf8.Button("Convert to Single Group"u8, editor.AvailableWidth))
+        if (Im.Button("Convert to Single Group"u8, editor.AvailableWidth))
             editor.ActionQueue.Enqueue(() => e.ChangeToSingle(g));
     }
 
@@ -52,9 +50,9 @@ public readonly struct MultiModGroupEditDrawer(ModGroupEditDrawer editor, MultiM
         var name = editor.DrawNewOptionBase(group, count);
 
         var validName = name.Length > 0;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, validName
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, validName
                 ? "Add a new option to this group."u8
-                : "Please enter a name for the new option."u8, default, !validName))
+                : "Please enter a name for the new option."u8, !validName))
         {
             editor.ModManager.OptionEditor.MultiEditor.AddOption(group, name);
             editor.NewOptionName = null;

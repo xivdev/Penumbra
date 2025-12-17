@@ -27,7 +27,8 @@ public enum ModDataChangeType : uint
     PreferredChangedItems = 0x004000,
     RequiredFeatures      = 0x008000,
     FileSystemFolder      = 0x010000,
-    FileSystemSortOrder = 0x020000,
+    FileSystemSortOrder   = 0x020000,
+    LastConfigEdit              = 0x040000,
 }
 
 public class ModDataEditor(SaveService saveService, CommunicatorService communicatorService, ItemData itemData) : Luna.IService

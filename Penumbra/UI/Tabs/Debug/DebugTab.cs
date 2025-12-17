@@ -1,5 +1,4 @@
 using Dalamud.Interface;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -11,8 +10,6 @@ using Dalamud.Interface.Colors;
 using ImSharp;
 using Luna;
 using Microsoft.Extensions.DependencyInjection;
-using OtterGui;
-using OtterGui.Text;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
@@ -57,10 +54,10 @@ public class Diagnostics(ServiceManager provider) : IUiService
                      .Where(t => t is { IsAbstract: false, IsInterface: false } && t.IsAssignableTo(typeof(IAsyncDataContainer))))
         {
             var container = (IAsyncDataContainer)provider.Provider!.GetRequiredService(type);
-            ImGuiUtil.DrawTableColumn(container.Name);
-            ImGuiUtil.DrawTableColumn(container.Time.ToString());
-            ImGuiUtil.DrawTableColumn(Functions.HumanReadableSize(container.Memory));
-            ImGuiUtil.DrawTableColumn(container.TotalCount.ToString());
+            table.DrawColumn(container.Name);
+            table.DrawColumn($"{container.Time}");
+            table.DrawColumn(FormattingFunctions.HumanReadableSize(container.Memory));
+            table.DrawColumn($"{container.TotalCount}");
         }
     }
 }
@@ -207,7 +204,8 @@ public sealed class DebugTab : Window, ITab<TabType>
         _globalVariablesDrawer.Draw();
         DrawCloudApi();
         DrawDebugTabIpc();
-        _dragDropManager.DrawDebugInfo();
+        if(Im.Tree.Header("Drag & Drop Manager"u8))
+            _dragDropManager.DrawDebugInfo();
     }
 
 
@@ -228,7 +226,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                     continue;
 
                 color.Pop();
-                using (var inheritanceNode = ImUtf8.TreeNode("Inheritance"u8))
+                using (var inheritanceNode = Im.Tree.Node("Inheritance"u8))
                 {
                     if (inheritanceNode)
                     {
@@ -243,17 +241,17 @@ public sealed class DebugTab : Window, ITab<TabType>
                             {
                                 table.NextColumn();
                                 if (i < collection.Inheritance.DirectlyInheritsFrom.Count)
-                                    ImUtf8.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
+                                    Im.Text(collection.Inheritance.DirectlyInheritsFrom[i].Identity.Name);
                                 else
                                     Im.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                                 table.NextColumn();
                                 if (i < collection.Inheritance.DirectlyInheritedBy.Count)
-                                    ImUtf8.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
+                                    Im.Text(collection.Inheritance.DirectlyInheritedBy[i].Identity.Name);
                                 else
                                     Im.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                                 table.NextColumn();
                                 if (i < collection.Inheritance.FlatHierarchy.Count)
-                                    ImUtf8.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
+                                    Im.Text(collection.Inheritance.FlatHierarchy[i].Identity.Name);
                                 else
                                     Im.Dummy(new Vector2(200 * Im.Style.GlobalScale, Im.Style.TextHeight));
                             }
@@ -261,14 +259,14 @@ public sealed class DebugTab : Window, ITab<TabType>
                     }
                 }
 
-                using (var resourceNode = ImUtf8.TreeNode("Custom Resources"u8))
+                using (var resourceNode = Im.Tree.Node("Custom Resources"u8))
                 {
                     if (resourceNode)
                         foreach (var (path, resource) in collection.Cache!.CustomResources)
                             Im.Tree.Leaf($"{path} -> 0x{(ulong)resource.ResourceHandle:X}");
                 }
 
-                using var modNode = ImUtf8.TreeNode("Enabled Mods"u8);
+                using var modNode = Im.Tree.Node("Enabled Mods"u8);
                 if (modNode)
                     foreach (var (mod, paths, manips) in collection.Cache!.ModData.Data.OrderBy(t => t.Item1.Name))
                     {
@@ -468,7 +466,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                 }
 
                 Im.Line.Same();
-                using (ImUtf8.Group())
+                using (Im.Group())
                 {
                     Im.Text($"{PenumbraStringMemory.CurrentStrings}");
                     Im.Text($"{PenumbraStringMemory.AllocatedStrings}");
@@ -485,7 +483,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private void DrawPerformanceTab()
     {
-        if (!Im.Tree.Node("Performance"u8))
+        if (!Im.Tree.Header("Performance"u8))
             return;
 
         using (var start = Im.Tree.Node("Startup Performance"u8, TreeNodeFlags.DefaultOpen))
@@ -497,7 +495,7 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private unsafe void DrawActorsDebug()
     {
-        if (!Im.Tree.Node("Actors"u8))
+        if (!Im.Tree.Header("Actors"u8))
             return;
 
         using (var objectTree = Im.Tree.Node("Object Manager"u8))
@@ -570,7 +568,7 @@ public sealed class DebugTab : Window, ITab<TabType>
     /// </summary>
     private unsafe void DrawPathResolverDebug()
     {
-        if (!Im.Tree.Node("Path Resolver"u8))
+        if (!Im.Tree.Header("Path Resolver"u8))
             return;
 
         Im.Text(
@@ -712,22 +710,22 @@ public sealed class DebugTab : Window, ITab<TabType>
             if (bannerTree)
             {
                 var agent = &AgentBannerParty.Instance()->AgentBannerInterface;
-                if (agent->Data == null)
+                if (agent->Data is null)
                     agent = &AgentBannerMIP.Instance()->AgentBannerInterface;
 
                 Im.Text("Agent: "u8);
                 Im.Line.NoSpacing();
                 Penumbra.Dynamis.DrawPointer((nint)agent);
-                if (agent->Data != null)
+                if (agent->Data is not null)
                 {
                     using var table = Im.Table.Begin("###PBannerTable"u8, 2, TableFlags.SizingFixedFit);
                     if (table)
                         for (var i = 0; i < 8; ++i)
                         {
                             ref var c = ref agent->Data->Characters[i];
-                            ImGuiUtil.DrawTableColumn($"Character {i}");
+                            table.DrawColumn($"Character {i}");
                             var name = c.Name1.ToString();
-                            ImGuiUtil.DrawTableColumn(name.Length == 0 ? "NULL" : $"{name} ({c.WorldId})");
+                            table.DrawColumn(name.Length is 0 ? "NULL" : $"{name} ({c.WorldId})");
                         }
                 }
                 else
@@ -744,17 +742,14 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using var table = Im.Table.Begin("###TmbTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
                     foreach (var (id, name) in _schedulerService.ListedTmbs.OrderBy(kvp => kvp.Key))
-                    {
-                        ImUtf8.DrawTableColumn($"{id:D6}");
-                        ImUtf8.DrawTableColumn(name.Span);
-                    }
+                        table.DrawDataPair($"{id:D6}", name.Span);
             }
         }
     }
 
     private void DrawData()
     {
-        if (!Im.Tree.Node("Game Data"u8))
+        if (!Im.Tree.Header("Game Data"u8))
             return;
 
         DrawEmotes();
@@ -800,7 +795,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (!node)
             return;
 
-        if (ImUtf8.InputText("##ChangedItemTest"u8, ref _changedItemPath, "Changed Item File Path..."u8))
+        if (Im.Input.Text("##ChangedItemTest"u8, ref _changedItemPath, "Changed Item File Path..."u8))
         {
             _changedItems.Clear();
             _objectIdentification.Identify(_changedItems, _changedItemPath);
@@ -809,13 +804,13 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (_changedItems.Count == 0)
             return;
 
-        using var list = ImUtf8.ListBox("##ChangedItemList"u8,
-            new Vector2(Im.ContentRegion.Available.X, 8 * Im.Style.TextHeightWithSpacing));
+        using var list = Im.ListBox.Begin("##ChangedItemList"u8,
+            Im.ContentRegion.Available with { Y = 8 * Im.Style.TextHeightWithSpacing });
         if (!list)
             return;
 
         foreach (var item in _changedItems)
-            ImUtf8.Selectable(item.Key);
+            Im.Selectable(item.Key);
     }
 
 
@@ -839,7 +834,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (_atchFile == null)
             return;
 
-        using var mainTree = ImUtf8.TreeNode("Atch File C0101"u8);
+        using var mainTree = Im.Tree.Node("Atch File C0101"u8);
         if (!mainTree)
             return;
 
@@ -893,8 +888,8 @@ public sealed class DebugTab : Window, ITab<TabType>
             kvp => kvp.Key.Contains(_tmbKeyFilterU8),
             p =>
             {
-                ImUtf8.DrawTableColumn($"{p.Value}");
-                ImUtf8.DrawTableColumn(p.Key.Span);
+                Im.Table.DrawColumn($"{p.Value}");
+                Im.Table.DrawColumn(p.Key.Span);
             });
         ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
     }
@@ -946,7 +941,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                 foreach (var list in data.Scalars)
                 {
                     var scalar = list[i];
-                    ImGuiUtil.DrawTableColumn($"{scalar:F6}");
+                    table.DrawColumn($"{scalar:F6}");
                 }
             }
         }
@@ -1034,12 +1029,12 @@ public sealed class DebugTab : Window, ITab<TabType>
         {
             if (t1)
             {
-                ImGuiUtil.DrawTableColumn("Flags");
-                ImGuiUtil.DrawTableColumn($"{model.AsCharacterBase->StateFlags}");
-                ImGuiUtil.DrawTableColumn("Has Model In Slot Loaded");
-                ImGuiUtil.DrawTableColumn($"{model.AsCharacterBase->HasModelInSlotLoaded:X8}");
-                ImGuiUtil.DrawTableColumn("Has Model Files In Slot Loaded");
-                ImGuiUtil.DrawTableColumn($"{model.AsCharacterBase->HasModelFilesInSlotLoaded:X8}");
+                t1.DrawColumn("Flags"u8);
+                t1.DrawColumn($"{model.AsCharacterBase->StateFlags}");
+                t1.DrawColumn("Has Model In Slot Loaded"u8);
+                t1.DrawColumn($"{model.AsCharacterBase->HasModelInSlotLoaded:X8}");
+                t1.DrawColumn("Has Model Files In Slot Loaded"u8);
+                t1.DrawColumn($"{model.AsCharacterBase->HasModelFilesInSlotLoaded:X8}");
             }
         }
 
@@ -1091,7 +1086,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (Im.Input.Text("##crcInput"u8, ref _crcInput, "Input path for CRC..."u8))
             _crcPath = new FullPath(_crcInput);
 
-        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
+        using var font = Im.Font.PushMono();
         Im.Text($"   CRC32: {_crcPath.InternalName.CiCrc32:X8}");
         Im.Text($"CI CRC32: {_crcPath.InternalName.Crc32:X8}");
         Im.Text($"   CRC64: {_crcPath.Crc64:X16}");
@@ -1113,12 +1108,12 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private unsafe void DrawResourceLoader()
     {
-        if (!ImUtf8.CollapsingHeader("Resource Loader"u8))
+        if (!Im.Tree.Header("Resource Loader"u8))
             return;
 
         var ongoingLoads     = _resourceLoader.OngoingLoads;
         var ongoingLoadCount = ongoingLoads.Count;
-        ImUtf8.Text($"Ongoing Loads: {ongoingLoadCount}");
+        Im.Text($"Ongoing Loads: {ongoingLoadCount}");
 
         if (ongoingLoadCount == 0)
             return;
@@ -1134,9 +1129,9 @@ public sealed class DebugTab : Window, ITab<TabType>
 
         foreach (var (handle, original) in ongoingLoads)
         {
-            ImUtf8.DrawTableColumn($"0x{handle:X}");
-            ImUtf8.DrawTableColumn(((ResourceHandle*)handle)->CsHandle.FileName);
-            ImUtf8.DrawTableColumn(original.Path.Span);
+            table.DrawColumn($"0x{handle:X}");
+            table.DrawColumn(((ResourceHandle*)handle)->CsHandle.FileName.AsSpan());
+            table.DrawColumn(original.Path.Span);
         }
     }
 
@@ -1173,10 +1168,9 @@ public sealed class DebugTab : Window, ITab<TabType>
 
     private void DrawCloudApi()
     {
-        if (!ImUtf8.CollapsingHeader("Cloud API"u8))
+        using var header = Im.Tree.HeaderId("Cloud API"u8);
+        if (!header)
             return;
-
-        using var id = ImRaii.PushId("CloudApiTester"u8);
 
         if (Im.Input.Text("Path"u8, ref _cloudTesterPath, flags: InputTextFlags.EnterReturnsTrue))
             try
@@ -1191,7 +1185,7 @@ public sealed class DebugTab : Window, ITab<TabType>
             }
 
         if (_cloudTesterReturn.HasValue)
-            ImUtf8.Text($"Is Cloud Synced? {_cloudTesterReturn}");
+            Im.Text($"Is Cloud Synced? {_cloudTesterReturn}");
 
         if (_cloudTesterError is not null)
             Im.Text($"{_cloudTesterError}", ImGuiColors.DalamudRed);
@@ -1201,10 +1195,10 @@ public sealed class DebugTab : Window, ITab<TabType>
     /// <summary> Draw information about IPC options and availability. </summary>
     private void DrawDebugTabIpc()
     {
-        if (!ImUtf8.CollapsingHeader("IPC"u8))
+        if (!Im.Tree.Header("IPC"u8))
             return;
 
-        using (var tree = ImUtf8.TreeNode("Dynamis"u8))
+        using (var tree = Im.Tree.Node("Dynamis"u8))
         {
             if (tree)
                 Penumbra.Dynamis.DrawDebugInfo();
@@ -1217,7 +1211,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         => DrawContent();
 
     public override bool DrawConditions()
-        => _config.DebugMode && _config.Ephemeral.DebugSeparateWindow;
+        => _config is { DebugMode: true, Ephemeral.DebugSeparateWindow: true };
 
     public override void OnClose()
     {
@@ -1229,6 +1223,6 @@ public sealed class DebugTab : Window, ITab<TabType>
     {
         Penumbra.Dynamis.DrawPointer(address);
         Im.Line.SameInner();
-        ImUtf8.Text(label);
+        Im.Text(label);
     }
 }

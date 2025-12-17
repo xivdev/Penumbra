@@ -17,13 +17,14 @@ public sealed class ModTab : TwoPanelLayout, ITab<TabType>
     public override ReadOnlySpan<byte> Label
         => "Mods2"u8;
 
-    public ModTab(ModFileSystemDrawer drawer, ModPanel panel, CollectionSelectHeader collectionHeader)
+    public ModTab(ModFileSystemDrawer drawer, ModPanel panel, CollectionSelectHeader collectionHeader, RedrawFooter redrawFooter)
     {
         LeftHeader  = drawer.Header;
         LeftFooter  = drawer.Footer;
         LeftPanel   = drawer;
         RightPanel  = panel;
         RightHeader = collectionHeader;
+        RightFooter = redrawFooter;
     }
 
     public void DrawContent()

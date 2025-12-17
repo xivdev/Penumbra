@@ -2,7 +2,6 @@ using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
 using OtterGui;
-using OtterGui.Text;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -58,7 +57,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     public abstract int                NumColumns { get; }
 
     public virtual float ColumnHeight
-        => ImUtf8.FrameHeightSpacing;
+        => Im.Style.FrameHeightWithSpacing;
 
     protected abstract void DrawNew();
     protected abstract void Initialize();
@@ -78,7 +77,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         int tmp = currentId;
         Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
         using var style = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, border);
-        if (ImUtf8.InputScalar(label, ref tmp))
+        if (Im.Input.Scalar(label, ref tmp))
             tmp = Math.Clamp(tmp, minId, maxId);
 
         newId = (ushort)tmp;

@@ -1,6 +1,5 @@
 using ImSharp;
 using Luna;
-using OtterGui.Widgets;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
 
@@ -13,8 +12,6 @@ public class ModPanelDescriptionTab(
     PredefinedTagManager predefinedTagsConfig)
     : ITab<ModPanelTab>
 {
-    private readonly TagButtons _localTags = new();
-    private readonly TagButtons _modTags   = new();
 
     public ReadOnlySpan<byte> Label
         => "Description"u8;
@@ -33,9 +30,9 @@ public class ModPanelDescriptionTab(
         var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
             ? (true, Im.Style.FrameHeight + Im.Style.WindowPadding.X + (Im.Scroll.MaximumY > 0 ? Im.Style.ScrollbarSize : 0))
             : (false, 0);
-        var tagIdx = _localTags.Draw("Local Tags: ",
-            "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
-          + "If the mod already contains a local tag in its own tags, the local tag will be ignored.", selector.Selected!.LocalTags,
+        var tagIdx = TagButtons.Draw("Local Tags: "u8,
+            "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"u8
+          + "If the mod already contains a local tag in its own tags, the local tag will be ignored."u8, selector.Selected!.LocalTags,
             out var editedTag, rightEndOffset: predefinedTagButtonOffset);
         tutorial.OpenTutorial(BasicTutorialSteps.Tags);
         if (tagIdx >= 0)
@@ -46,7 +43,7 @@ public class ModPanelDescriptionTab(
                 selector.Selected!);
 
         if (selector.Selected!.ModTags.Count > 0)
-            _modTags.Draw("Mod Tags: ", "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod.",
+            TagButtons.Draw("Mod Tags: "u8, "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod."u8,
                 selector.Selected!.ModTags, out _, false,
                 Im.Font.CalculateSize("Local "u8).X - Im.Font.CalculateSize("Mod "u8).X);
 
