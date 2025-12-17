@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using OtterGui.Raii;
 using OtterGui.Services;
 using OtterGui.Widgets;

@@ -7,6 +7,7 @@ using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Plugin;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Plugin.Services;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Extensions;
@@ -17,7 +18,6 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods.Manager;
-using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 

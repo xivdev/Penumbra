@@ -27,7 +27,6 @@ public class ModsTab(
     TutorialService tutorial,
     RedrawService redrawService,
     Configuration config,
-    IClientState clientState,
     CollectionSelectHeader collectionHeader,
     ITargetManager targets,
     ObjectManager objects)
@@ -113,7 +112,7 @@ public class ModsTab(
             ImGui.SetTooltip($"The supported modifiers for '/penumbra redraw' are:\n{TutorialService.SupportedRedrawModifiers}");
 
         using var id       = ImRaii.PushId("Redraw");
-        using var disabled = ImRaii.Disabled(clientState.LocalPlayer == null);
+        using var disabled = ImRaii.Disabled(objects.Objects.LocalPlayer is null);
         ImGui.SameLine();
         var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 5 };
         var tt = !objects[0].Valid

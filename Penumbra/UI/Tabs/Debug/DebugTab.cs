@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface.Colors;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
@@ -1033,7 +1034,7 @@ public class DebugTab : Window, ITab, IUiService
     /// <summary> Draw information about the models, materials and resources currently loaded by the local player. </summary>
     private unsafe void DrawPlayerModelInfo()
     {
-        var player = _clientState.LocalPlayer;
+        var player = _objects.Objects.LocalPlayer;
         var name   = player?.Name.ToString() ?? "NULL";
         if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || player == null)
             return;
