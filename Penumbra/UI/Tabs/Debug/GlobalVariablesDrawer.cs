@@ -9,6 +9,7 @@ using OtterGui.Text;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
+using Penumbra.Util;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -178,10 +179,10 @@ public unsafe class GlobalVariablesDrawer(
             if (_schedulerFilterMap.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterMapU8.Span) >= 0)
             {
                 ImUtf8.DrawTableColumn($"[{total:D4}]");
-                ImUtf8.DrawTableColumn($"{resource->Name.Unk1}");
+                ImUtf8.DrawTableColumn($"{resource->Name.GetField<ushort, SchedulerResource.ResourceName>(16)}"); // Unk1
                 ImUtf8.DrawTableColumn(new CiByteString(resource->Name.Buffer, MetaDataComputation.None).Span);
                 ImUtf8.DrawTableColumn($"{resource->Consumers}");
-                ImUtf8.DrawTableColumn($"{resource->Unk1}"); // key
+                ImUtf8.DrawTableColumn($"{PointerExtensions.GetField<uint, SchedulerResource>(resource, 120)}"); // key, Unk1
                 ImGui.TableNextColumn();
                 Penumbra.Dynamis.DrawPointer(resource);
                 ImGui.TableNextColumn();
@@ -227,10 +228,10 @@ public unsafe class GlobalVariablesDrawer(
             if (_schedulerFilterList.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterListU8.Span) >= 0)
             {
                 ImUtf8.DrawTableColumn($"[{total:D4}]");
-                ImUtf8.DrawTableColumn($"{resource->Name.Unk1}");
+                ImUtf8.DrawTableColumn($"{resource->Name.GetField<ushort, SchedulerResource.ResourceName>(16)}"); // Unk1
                 ImUtf8.DrawTableColumn(new CiByteString(resource->Name.Buffer, MetaDataComputation.None).Span);
                 ImUtf8.DrawTableColumn($"{resource->Consumers}");
-                ImUtf8.DrawTableColumn($"{resource->Unk1}"); // key
+                ImUtf8.DrawTableColumn($"{PointerExtensions.GetField<uint, SchedulerResource>(resource, 120)}"); // key, Unk1
                 ImGui.TableNextColumn();
                 Penumbra.Dynamis.DrawPointer(resource);
                 ImGui.TableNextColumn();
