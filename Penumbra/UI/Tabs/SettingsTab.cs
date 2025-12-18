@@ -20,6 +20,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
+using Penumbra.UI.Integration;
 using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Tabs;
@@ -55,6 +56,7 @@ public class SettingsTab : ITab, IUiService
     private readonly CleanupService              _cleanupService;
     private readonly AttributeHook               _attributeHook;
     private readonly PcpService                  _pcpService;
+    private readonly IntegrationSettingsRegistry _integrationSettings;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
@@ -71,7 +73,7 @@ public class SettingsTab : ITab, IUiService
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
-        AttributeHook attributeHook, PcpService pcpService)
+        AttributeHook attributeHook, PcpService pcpService, IntegrationSettingsRegistry integrationSettings)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -99,6 +101,7 @@ public class SettingsTab : ITab, IUiService
         _cleanupService       = cleanupService;
         _attributeHook        = attributeHook;
         _pcpService           = pcpService;
+        _integrationSettings  = integrationSettings;
     }
 
     public void DrawHeader()
@@ -129,6 +132,7 @@ public class SettingsTab : ITab, IUiService
         DrawColorSettings();
         DrawPredefinedTagsSection();
         DrawAdvancedSettings();
+        _integrationSettings.Draw();
         DrawSupportButtons();
     }
 
@@ -1133,7 +1137,7 @@ public class SettingsTab : ITab, IUiService
     }
 
     #endregion
-
+    
     /// <summary> Draw the support button group on the right-hand side of the window. </summary>
     private void DrawSupportButtons()
     {

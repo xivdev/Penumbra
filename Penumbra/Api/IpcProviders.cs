@@ -133,6 +133,8 @@ public sealed class IpcProviders : IDisposable, IApiService
             IpcSubscribers.PostSettingsDraw.Provider(pi, api.Ui),
             IpcSubscribers.OpenMainWindow.Provider(pi, api.Ui),
             IpcSubscribers.CloseMainWindow.Provider(pi, api.Ui),
+            IpcSubscribers.RegisterSettingsSection.Provider(pi, api.Ui),
+            IpcSubscribers.UnregisterSettingsSection.Provider(pi, api.Ui),
         ];
         if (_characterUtility.Ready)
             _initializedProvider.Invoke();
