@@ -73,6 +73,27 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
         return (ret.Item1, (ret.Item2.Value.Item1, ret.Item2.Value.Item2, ret.Item2.Value.Item3, ret.Item2.Value.Item4));
     }
 
+    public PenumbraApiEc GetSettingsInAllCollections(string modDirectory, string modName,
+        out Dictionary<Guid, (bool, int, Dictionary<string, List<string>>, bool, bool)> settings,
+        bool ignoreTemporaryCollections = false)
+    {
+        settings = [];
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
+            return PenumbraApiEc.ModMissing;
+
+        var collections = ignoreTemporaryCollections
+            ? _collectionManager.Storage.Where(c => c != ModCollection.Empty)
+            : _collectionManager.Storage.Where(c => c != ModCollection.Empty).Concat(_collectionManager.Temp.Values);
+        settings = [];
+        foreach (var collection in collections)
+        {
+            if (GetCurrentSettings(collection, mod, false, false, 0) is { } s)
+                settings.Add(collection.Identity.Id, s);
+        }
+
+        return PenumbraApiEc.Success;
+    }
+
     public (PenumbraApiEc, (bool, int, Dictionary<string, List<string>>, bool, bool)?) GetCurrentModSettingsWithTemp(Guid collectionId,
         string modDirectory, string modName, bool ignoreInheritance, bool ignoreTemporary, int key)
     {

@@ -81,6 +81,12 @@ public class UiApi : IPenumbraApiUi, IApiService, IDisposable
     public void CloseMainWindow()
         => _configWindow.IsOpen = false;
 
+    public PenumbraApiEc RegisterSettingsSection(Action draw)
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc UnregisterSettingsSection(Action draw)
+        => throw new NotImplementedException();
+
     private void OnChangedItemClick(MouseButton button, IIdentifiedObjectData data)
     {
         if (ChangedItemClicked == null)

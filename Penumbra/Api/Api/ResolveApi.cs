@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using OtterGui.Services;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.PathResolving;
@@ -41,6 +42,19 @@ public class ResolveApi(
         return ret.Select(r => r.ToString()).ToArray();
     }
 
+    public PenumbraApiEc ResolvePath(Guid collectionId, string gamePath, out string resolvedPath)
+    {
+        resolvedPath = gamePath;
+        if (!collectionManager.Storage.ById(collectionId, out var collection))
+            return PenumbraApiEc.CollectionMissing;
+
+        if (!collection.HasCache)
+            return PenumbraApiEc.CollectionInactive;
+
+        resolvedPath = ResolvePath(gamePath, modManager, collection);
+        return PenumbraApiEc.Success;
+    }
+
     public string[] ReverseResolvePlayerPath(string moddedPath)
     {
         if (!config.EnableMods)
@@ -62,6 +76,26 @@ public class ResolveApi(
         var resolved         = forward.Select(p => ResolvePath(p, modManager, playerCollection)).ToArray();
         var reverseResolved  = playerCollection.ReverseResolvePaths(reverse);
         return (resolved, reverseResolved.Select(a => a.Select(p => p.ToString()).ToArray()).ToArray());
+    }
+
+    public PenumbraApiEc ResolvePaths(Guid collectionId, string[] forward, string[] reverse, out string[] resolvedForward,
+        out string[][] resolvedReverse)
+    {
+        resolvedForward = forward;
+        resolvedReverse = [];
+        if (!config.EnableMods)
+            return PenumbraApiEc.Success;
+
+        if (!collectionManager.Storage.ById(collectionId, out var collection))
+            return PenumbraApiEc.CollectionMissing;
+
+        if (!collection.HasCache)
+            return PenumbraApiEc.CollectionInactive;
+
+        resolvedForward        = forward.Select(p => ResolvePath(p, modManager, collection)).ToArray();
+        var reverseResolved = collection.ReverseResolvePaths(reverse);
+        resolvedReverse = reverseResolved.Select(a => a.Select(p => p.ToString()).ToArray()).ToArray();
+        return PenumbraApiEc.Success;
     }
 
     public async Task<(string[], string[][])> ResolvePlayerPathsAsync(string[] forward, string[] reverse)
