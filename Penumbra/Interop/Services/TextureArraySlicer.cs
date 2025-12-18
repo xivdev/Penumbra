@@ -48,7 +48,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
                     break;
                 case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE1DARRAY:
                     description.Texture1DArray.FirstArraySlice = sliceIndex;
-                    description.Texture2DArray.ArraySize       = 1;
+                    description.Texture1DArray.ArraySize       = 1;
                     break;
                 case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE2DARRAY:
                     description.Texture2DArray.FirstArraySlice = sliceIndex;
