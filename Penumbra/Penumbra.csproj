@@ -1,4 +1,4 @@
-<Project Sdk="Dalamud.NET.Sdk/14.0.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
     <PropertyGroup>
         <AssemblyTitle>Penumbra</AssemblyTitle>
         <Company>absolute gangstas</Company>
