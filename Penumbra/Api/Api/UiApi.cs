@@ -1,24 +1,28 @@
-using FFXIVClientStructs.FFXIV.Common.Lua;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.MainWindow;
+using Penumbra.UI.Integration;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra.Api.Api;
 
 public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
 {
-    private readonly CommunicatorService _communicator;
-    private readonly MainWindow        _mainWindow;
-    private readonly ModManager          _modManager;
+    private readonly CommunicatorService         _communicator;
+    private readonly MainWindow                  _mainWindow;
+    private readonly ModManager                  _modManager;
+	private readonly IntegrationSettingsRegistry _integrationSettings;
 
-    public UiApi(CommunicatorService communicator, MainWindow mainWindow, ModManager modManager)
+    public UiApi(CommunicatorService communicator, MainWindow mainWindow, ModManager modManager, IntegrationSettingsRegistry integrationSettings)
     {
-        _communicator = communicator;
-        _mainWindow = mainWindow;
-        _modManager   = modManager;
+        _communicator        = communicator;
+        _mainWindow          = mainWindow;
+        _modManager          = modManager;
+		_integrationSettings = integrationSettings;
+		
         _communicator.ChangedItemHover.Subscribe(OnChangedItemHover, ChangedItemHover.Priority.Default);
         _communicator.ChangedItemClick.Subscribe(OnChangedItemClick, ChangedItemClick.Priority.Default);
         _communicator.PreSettingsTabBarDraw.Subscribe(OnPreSettingsTabBarDraw, Communication.PreSettingsTabBarDraw.Priority.Default);
@@ -103,4 +107,12 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
         var (type, id) = arguments.Data.ToApiObject();
         ChangedItemTooltip.Invoke(type, id);
     }
+
+    public PenumbraApiEc RegisterSettingsSection(Action draw)
+        => _integrationSettings.RegisterSection(draw);
+
+    public PenumbraApiEc UnregisterSettingsSection(Action draw)
+        => _integrationSettings.UnregisterSection(draw)
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.NothingChanged;
 }

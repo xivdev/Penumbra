@@ -6,6 +6,7 @@ using ImSharp;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
+using Penumbra.Util;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.UI.Tabs.Debug;
@@ -169,10 +170,10 @@ public unsafe class GlobalVariablesDrawer(
             if (_schedulerFilterMap.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterMap.Span) >= 0)
             {
                 table.DrawColumn($"[{total:D4}]");
-                table.DrawColumn($"{resource->Name.Unk1}");
+                table.DrawColumn($"{resource->Name.GetField<ushort, SchedulerResource.ResourceName>(16)}"); // Unk1
                 table.DrawColumn(new CiByteString(resource->Name.Buffer).Span);
                 table.DrawColumn($"{resource->Consumers}");
-                table.DrawColumn($"{resource->Unk1}"); // key
+                table.DrawColumn($"{PointerExtensions.GetField<uint, SchedulerResource>(resource, 120)}"); // key, Unk1
                 table.NextColumn();
                 Penumbra.Dynamis.DrawPointer(resource);
                 table.NextColumn();
@@ -215,10 +216,10 @@ public unsafe class GlobalVariablesDrawer(
             if (_schedulerFilterList.Length is 0 || resource->Name.Buffer.IndexOf(_schedulerFilterList.Span) >= 0)
             {
                 table.DrawColumn($"[{total:D4}]");
-                table.DrawColumn($"{resource->Name.Unk1}");
+                table.DrawColumn($"{resource->Name.GetField<ushort, SchedulerResource.ResourceName>(16)}"); // Unk1
                 table.DrawColumn(new CiByteString(resource->Name.Buffer).Span);
                 table.DrawColumn($"{resource->Consumers}");
-                table.DrawColumn($"{resource->Unk1}"); // key
+                table.DrawColumn($"{PointerExtensions.GetField<uint, SchedulerResource>(resource, 120)}"); // key, Unk1
                 table.NextColumn();
                 Penumbra.Dynamis.DrawPointer(resource);
                 table.NextColumn();

@@ -1,7 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using ImSharp;
-using SharpDX.Direct3D;
-using SharpDX.Direct3D11;
+using TerraFX.Interop.DirectX;
 
 namespace Penumbra.Interop.Services;
 
@@ -21,46 +20,78 @@ public sealed unsafe class TextureArraySlicer : Luna.IUiService, IDisposable
         if (texture == null)
             throw new ArgumentNullException(nameof(texture));
         if (sliceIndex >= texture->ArraySize)
-            throw new ArgumentOutOfRangeException(nameof(sliceIndex), $"Slice index ({sliceIndex}) is greater than or equal to the texture array size ({texture->ArraySize})");
+            throw new ArgumentOutOfRangeException(nameof(sliceIndex),
+                $"Slice index ({sliceIndex}) is greater than or equal to the texture array size ({texture->ArraySize})");
+
         if (_activeSlices.TryGetValue(((nint)texture, sliceIndex), out var state))
         {
             state.Refresh();
             return new ImTextureId((nint)state.ShaderResourceView);
         }
-        var srv = (ShaderResourceView)(nint)texture->D3D11ShaderResourceView;
-        var description = srv.Description;
-        switch (description.Dimension)
+
+        ref var srv = ref *(ID3D11ShaderResourceView*)(nint)texture->D3D11ShaderResourceView;
+        srv.AddRef();
+        try
         {
-            case ShaderResourceViewDimension.Texture1D:
-            case ShaderResourceViewDimension.Texture2D:
-            case ShaderResourceViewDimension.Texture2DMultisampled:
-            case ShaderResourceViewDimension.Texture3D:
-            case ShaderResourceViewDimension.TextureCube:
-                // This function treats these as single-slice arrays.
-                // As per the range check above, the only valid slice (i. e. 0) has been requested, therefore there is nothing to do.
-                break;
-            case ShaderResourceViewDimension.Texture1DArray:
-                description.Texture1DArray.FirstArraySlice = sliceIndex;
-                description.Texture2DArray.ArraySize = 1;
-                break;
-            case ShaderResourceViewDimension.Texture2DArray:
-                description.Texture2DArray.FirstArraySlice = sliceIndex;
-                description.Texture2DArray.ArraySize = 1;
-                break;
-            case ShaderResourceViewDimension.Texture2DMultisampledArray:
-                description.Texture2DMSArray.FirstArraySlice = sliceIndex;
-                description.Texture2DMSArray.ArraySize = 1;
-                break;
-            case ShaderResourceViewDimension.TextureCubeArray:
-                description.TextureCubeArray.First2DArrayFace = sliceIndex * 6;
-                description.TextureCubeArray.CubeCount = 1;
-                break;
-            default:
-                throw new NotSupportedException($"{nameof(TextureArraySlicer)} does not support dimension {description.Dimension}");
+            D3D11_SHADER_RESOURCE_VIEW_DESC description;
+            srv.GetDesc(&description);
+            switch (description.ViewDimension)
+            {
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE1D:
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE2D:
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE2DMS:
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE3D:
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURECUBE:
+                    // This function treats these as single-slice arrays.
+                    // As per the range check above, the only valid slice (i. e. 0) has been requested, therefore there is nothing to do.
+                    break;
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE1DARRAY:
+                    description.Texture1DArray.FirstArraySlice = sliceIndex;
+                    description.Texture1DArray.ArraySize       = 1;
+                    break;
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE2DARRAY:
+                    description.Texture2DArray.FirstArraySlice = sliceIndex;
+                    description.Texture2DArray.ArraySize       = 1;
+                    break;
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY:
+                    description.Texture2DMSArray.FirstArraySlice = sliceIndex;
+                    description.Texture2DMSArray.ArraySize       = 1;
+                    break;
+                case D3D_SRV_DIMENSION.D3D11_SRV_DIMENSION_TEXTURECUBEARRAY:
+                    description.TextureCubeArray.First2DArrayFace = sliceIndex * 6u;
+                    description.TextureCubeArray.NumCubes         = 1;
+                    break;
+                default:
+                    throw new NotSupportedException($"{nameof(TextureArraySlicer)} does not support dimension {description.ViewDimension}");
+            }
+
+            ID3D11Device* device = null;
+            srv.GetDevice(&device);
+            ID3D11Resource* resource = null;
+            srv.GetResource(&resource);
+            try
+            {
+                ID3D11ShaderResourceView* slicedSrv = null;
+                Marshal.ThrowExceptionForHR(device->CreateShaderResourceView(resource, &description, &slicedSrv));
+                resource->Release();
+                device->Release();
+
+                state = new SliceState(slicedSrv);
+                _activeSlices.Add(((nint)texture, sliceIndex), state);
+                return new ImTextureId((nint)state.ShaderResourceView);
+            }
+            finally
+            {
+                if (resource is not null)
+                    resource->Release();
+                if (device is not null)
+                    device->Release();
+            }
         }
-        state = new SliceState(new ShaderResourceView(srv.Device, srv.Resource, description));
-        _activeSlices.Add(((nint)texture, sliceIndex), state);
-        return new ImTextureId((nint)state.ShaderResourceView);
+        finally
+        {
+            srv.Release();
+        }
     }
 
     public void Tick()
@@ -72,10 +103,9 @@ public sealed unsafe class TextureArraySlicer : Luna.IUiService, IDisposable
                 if (!slice.Tick())
                     _expiredKeys.Add(key);
             }
+
             foreach (var key in _expiredKeys)
-            {
                 _activeSlices.Remove(key);
-            }
         }
         finally
         {
@@ -86,14 +116,12 @@ public sealed unsafe class TextureArraySlicer : Luna.IUiService, IDisposable
     public void Dispose()
     {
         foreach (var slice in _activeSlices.Values)
-        {
             slice.Dispose();
-        }
     }
 
-    private sealed class SliceState(ShaderResourceView shaderResourceView) : IDisposable
+    private sealed class SliceState(ID3D11ShaderResourceView* shaderResourceView) : IDisposable
     {
-        public readonly ShaderResourceView ShaderResourceView = shaderResourceView;
+        public readonly ID3D11ShaderResourceView* ShaderResourceView = shaderResourceView;
 
         private uint _timeToLive = InitialTimeToLive;
 
@@ -107,13 +135,15 @@ public sealed unsafe class TextureArraySlicer : Luna.IUiService, IDisposable
             if (unchecked(_timeToLive--) > 0)
                 return true;
 
-            ShaderResourceView.Dispose();
+            if (ShaderResourceView is not null)
+                ShaderResourceView->Release();
             return false;
         }
 
         public void Dispose()
         {
-            ShaderResourceView.Dispose();
+            if (ShaderResourceView is not null)
+                ShaderResourceView->Release();
         }
     }
 }

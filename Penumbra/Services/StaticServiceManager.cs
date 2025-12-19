@@ -52,6 +52,7 @@ public static class StaticServiceManager
             .AddDalamudService<ICommandManager>(pi)
             .AddDalamudService<IDataManager>(pi)
             .AddDalamudService<IClientState>(pi)
+            .AddDalamudService<IPlayerState>(pi)
             .AddDalamudService<IChatGui>(pi)
             .AddDalamudService<IFramework>(pi)
             .AddDalamudService<ICondition>(pi)

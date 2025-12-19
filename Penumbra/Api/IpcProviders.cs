@@ -89,6 +89,7 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.RedrawObject.Provider(pi, api.Redraw),
             IpcSubscribers.RedrawAll.Provider(pi, api.Redraw),
             IpcSubscribers.GameObjectRedrawn.Provider(pi, api.Redraw),
+            IpcSubscribers.RedrawCollectionMembers.Provider(pi, api.Redraw),
 
             IpcSubscribers.ResolveDefaultPath.Provider(pi, api.Resolve),
             IpcSubscribers.ResolveInterfacePath.Provider(pi, api.Resolve),
@@ -132,6 +133,8 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.PostSettingsDraw.Provider(pi, api.Ui),
             IpcSubscribers.OpenMainWindow.Provider(pi, api.Ui),
             IpcSubscribers.CloseMainWindow.Provider(pi, api.Ui),
+            IpcSubscribers.RegisterSettingsSection.Provider(pi, api.Ui),
+            IpcSubscribers.UnregisterSettingsSection.Provider(pi, api.Ui),
         ];
         if (_characterUtility.Ready)
             _initializedProvider.Invoke();
