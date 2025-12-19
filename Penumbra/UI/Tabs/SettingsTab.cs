@@ -789,8 +789,8 @@ public sealed class SettingsTab : ITab<TabType>
             "Edit the raw matrix components of tile UV transforms, instead of having them decomposed into scale, rotation and shear."u8,
             _config.EditRawTileTransforms, v => _config.EditRawTileTransforms = v);
 
-        Checkbox("Advanced Editing: Always Highlight Color Row Pair when Hovering Selection Button",
-            "Make the whole color row pair selection button highlight the pair in game, instead of just the crosshair, even without holding Control.",
+        Checkbox("Advanced Editing: Always Highlight Color Row Pair when Hovering Selection Button"u8,
+            "Make the whole color row pair selection button highlight the pair in game, instead of just the crosshair, even without holding Control."u8,
             _config.WholePairSelectorAlwaysHighlights, v => _config.WholePairSelectorAlwaysHighlights = v);
     }
 

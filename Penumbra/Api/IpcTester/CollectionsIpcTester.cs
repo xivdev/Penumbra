@@ -151,9 +151,9 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
                 Im.Popup.Open("Changed Item List"u8);
             }
         }
-        IpcTester.DrawIntro(RedrawCollectionMembers.Label, "Redraw Collection Members");
-        if (ImGui.Button("Redraw##ObjectCollection"))
-             new RedrawCollectionMembers(pi).Invoke(collectionList[0].Id, RedrawType.Redraw);
+        IpcTester.DrawIntro(RedrawCollectionMembers.LabelU8, "Redraw Collection Members"u8);
+        if (Im.Button("Redraw##ObjectCollection"u8))
+             new RedrawCollectionMembers(pi).Invoke(_collectionId.GetValueOrDefault(Guid.Empty), RedrawType.Redraw);
             
     }
 
