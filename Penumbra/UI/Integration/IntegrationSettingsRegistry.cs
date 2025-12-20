@@ -1,6 +1,6 @@
 using Dalamud.Plugin;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
 
 namespace Penumbra.UI.Integration;
@@ -8,24 +8,21 @@ namespace Penumbra.UI.Integration;
 public sealed class IntegrationSettingsRegistry : IService, IDisposable
 {
     private readonly IDalamudPluginInterface _pluginInterface;
-    
-    private readonly List<(string InternalName, string Name, Action Draw)> _sections = [];
 
-    private bool _disposed = false;
+    private record struct Section(string InternalName, string Name, Action Draw);
+    private readonly List<Section> _sections = [];
+    private bool _disposed;
 
     public IntegrationSettingsRegistry(IDalamudPluginInterface pluginInterface)
     {
         _pluginInterface = pluginInterface;
-        
         _pluginInterface.ActivePluginsChanged += OnActivePluginsChanged;
     }
 
     public void Dispose()
     {
         _disposed = true;
-        
         _pluginInterface.ActivePluginsChanged -= OnActivePluginsChanged;
-        
         _sections.Clear();
     }
 
@@ -33,10 +30,10 @@ public sealed class IntegrationSettingsRegistry : IService, IDisposable
     {
         foreach (var (internalName, name, draw) in _sections)
         {
-            if (!ImUtf8.CollapsingHeader($"Integration with {name}###IntegrationSettingsHeader.{internalName}"))
+            if (!Im.Tree.Header($"Integration with {name}###ISH.{internalName}"))
                 continue;
 
-            using var id = ImUtf8.PushId($"IntegrationSettings.{internalName}");
+            using var id = Im.Id.Push($"IS.{internalName}");
             try
             {
                 draw();
@@ -52,22 +49,26 @@ public sealed class IntegrationSettingsRegistry : IService, IDisposable
     {
         if (_disposed)
             return PenumbraApiEc.SystemDisposed;
-        
+
         var plugin = GetPlugin(draw);
         if (plugin is null)
             return PenumbraApiEc.InvalidArgument;
 
-        var section = (plugin.InternalName, plugin.Name, draw);
-        
+        var section = new Section(plugin.InternalName, plugin.Name, draw);
+
         var index = FindSectionIndex(plugin.InternalName);
         if (index >= 0)
         {
             if (_sections[index] == section)
                 return PenumbraApiEc.NothingChanged;
+
             _sections[index] = section;
         }
         else
+        {
             _sections.Add(section);
+        }
+
         _sections.Sort((lhs, rhs) => string.Compare(lhs.Name, rhs.Name, StringComparison.CurrentCultureIgnoreCase));
 
         return PenumbraApiEc.Success;
@@ -78,7 +79,7 @@ public sealed class IntegrationSettingsRegistry : IService, IDisposable
         var index = FindSectionIndex(draw);
         if (index < 0)
             return false;
-        
+
         _sections.RemoveAt(index);
         return true;
     }
