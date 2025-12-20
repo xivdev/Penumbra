@@ -1,42 +1,34 @@
 using ImSharp;
-using OtterGui;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.UI.Combos;
+namespace Penumbra.UI;
 
 public static class Combos
 {
-    // Different combos to use with enums.
-    public static bool Race(string label, ModelRace current, out ModelRace race, float unscaledWidth = 100)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out race, ModelRaceExtensions.ToName, 1);
+    public static readonly EnumCombo<ModelRace> ModelRace = new(ModelRaceExtensions.ToNameU8, ModelRaceExtensions.ToName);
+    public static readonly EnumCombo<ModelRace> TailedRace = new(ModelRaceExtensions.ToNameU8, ModelRaceExtensions.ToName, null, [GameData.Enums.ModelRace.Miqote, GameData.Enums.ModelRace.AuRa, GameData.Enums.ModelRace.Hrothgar]);
+    public static readonly EnumCombo<Gender>    Gender    = new(GenderExtensions.ToNameU8, GenderExtensions.ToName);
 
-    public static bool Gender(string label, Gender current, out Gender gender, float unscaledWidth = 120)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth, current, out gender, GenderExtensions.ToName, 1);
+    public static readonly EnumCombo<EquipSlot> EqdpEquipSlot = new(EquipSlotExtensions.ToNameU8, EquipSlotExtensions.ToName, null,
+        EquipSlotExtensions.EqdpSlots);
 
-    public static bool EqdpEquipSlot(string label, EquipSlot current, out EquipSlot slot, float unscaledWidth = 100)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out slot, EquipSlotExtensions.EqdpSlots,
-            EquipSlotExtensions.ToName);
+    public static readonly EnumCombo<EquipSlot> EqpEquipSlot = new(EquipSlotExtensions.ToNameU8, EquipSlotExtensions.ToName, null,
+        EquipSlotExtensions.EquipmentSlots);
 
-    public static bool EqpEquipSlot(string label, EquipSlot current, out EquipSlot slot, float unscaledWidth = 100)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out slot, EquipSlotExtensions.EquipmentSlots,
-            EquipSlotExtensions.ToName);
+    public static readonly EnumCombo<EquipSlot> AccessorySlot = new(EquipSlotExtensions.ToNameU8, EquipSlotExtensions.ToName, null,
+        EquipSlotExtensions.AccessorySlots);
 
-    public static bool AccessorySlot(string label, EquipSlot current, out EquipSlot slot, float unscaledWidth = 100)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out slot, EquipSlotExtensions.AccessorySlots,
-            EquipSlotExtensions.ToName);
+    public static readonly EnumCombo<SubRace>      Clan    = new(SubRaceExtensions.ToNameU8, SubRaceExtensions.ToName);
+    public static readonly EnumCombo<RspAttribute> RspType = new(RspAttributeExtensions.ToNameU8, RspAttributeExtensions.ToName);
+    public static readonly EnumCombo<EstType>      EstSlot = new(EstTypeExtensions.ToNameU8, EstTypeExtensions.ToName);
 
-    public static bool SubRace(string label, SubRace current, out SubRace subRace, float unscaledWidth = 150)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out subRace, SubRaceExtensions.ToName, 1);
+    public static readonly EnumCombo<ObjectType> ImcType = new(ObjectTypeExtensions.ToNameU8, ObjectTypeExtensions.ToName, null,
+        ObjectTypeExtensions.ValidImcTypes);
 
-    public static bool RspAttribute(string label, RspAttribute current, out RspAttribute attribute, float unscaledWidth = 200)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out attribute,
-            RspAttributeExtensions.ToName, 0, 1);
-
-    public static bool EstSlot(string label, EstType current, out EstType attribute, float unscaledWidth = 200)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out attribute);
-
-    public static bool ImcType(string label, ObjectType current, out ObjectType type, float unscaledWidth = 110)
-        => ImGuiUtil.GenericEnumCombo(label, unscaledWidth * Im.Style.GlobalScale, current, out type, ObjectTypeExtensions.ValidImcTypes,
-            ObjectTypeExtensions.ToName);
+    public static readonly EnumCombo<ApiCollectionType> ApiCollectionType = new();
+    public static readonly EnumCombo<TextureType>       TextureType       = new();
+    public static readonly EnumCombo<ResourceType>      ResourceType      = new();
+    public static readonly EnumCombo<TabType>           TabType           = new();
 }

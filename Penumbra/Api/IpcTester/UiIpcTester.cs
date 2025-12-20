@@ -3,6 +3,7 @@ using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
+using Penumbra.UI;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
 
 namespace Penumbra.Api.IpcTester;
@@ -61,7 +62,7 @@ public class UiIpcTester : Luna.IUiService, IDisposable
             return;
 
         Im.Input.Text("##openMod"u8, ref _modName, "Mod to Open at..."u8);
-        EnumCombo<TabType>.Instance.Draw("Tab to Open at"u8, ref _selectTab, default, Im.Item.CalculateWidth());
+        Combos.TabType.Draw("Tab to Open at"u8, ref _selectTab, default, Im.Item.CalculateWidth());
         using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;

@@ -6,7 +6,7 @@ using OtterGui.Log;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI;
 
 public class FilterComboColors : FilterComboCache<KeyValuePair<byte, (string Name, uint Color, bool Gloss)>>
 {

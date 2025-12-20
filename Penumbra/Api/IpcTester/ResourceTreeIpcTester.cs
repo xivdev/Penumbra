@@ -8,6 +8,7 @@ using Penumbra.Api.IpcSubscribers;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
+using Penumbra.UI;
 
 namespace Penumbra.Api.IpcTester;
 
@@ -34,7 +35,7 @@ public class ResourceTreeIpcTester(IDalamudPluginInterface pi, ObjectManager obj
             return;
 
         Im.Input.Text("GameObject indices"u8, ref _gameObjectIndices);
-        EnumCombo<ResourceType>.Instance.Draw("Resource type"u8, ref _type, default, Im.Item.CalculateWidth());
+        Combos.ResourceType.Draw("Resource type"u8, ref _type, default, Im.Item.CalculateWidth());
         Im.Checkbox("Also get names and icons"u8, ref _withUiData);
 
         using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);

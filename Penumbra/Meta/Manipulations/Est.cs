@@ -122,7 +122,7 @@ public readonly record struct EstEntry(ushort Value)
     }
 }
 
-public static partial class EstTypeExtension
+public static partial class EstTypeExtensions
 {
     public static string ToSuffix(this EstType type)
         => type switch

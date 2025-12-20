@@ -2,6 +2,7 @@ using Dalamud.Plugin;
 using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
+using Penumbra.UI;
 
 namespace Penumbra.Api.IpcTester;
 
@@ -28,7 +29,7 @@ public class EditingIpcTester(IDalamudPluginInterface pi) : Luna.IUiService
         Im.Input.Text("##outputPath"u8,  ref _outputPath,  "Output Texture Path..."u8);
         Im.Input.Text("##inputPath2"u8,  ref _inputPath2,  "Input Texture Path 2..."u8);
         Im.Input.Text("##outputPath2"u8, ref _outputPath2, "Output Texture Path 2..."u8);
-        EnumCombo<TextureType>.Instance.Draw("Convert To"u8, ref _typeSelector, StringU8.Empty, 200 * Im.Style.GlobalScale);
+        Combos.TextureType.Draw("Convert To"u8, ref _typeSelector, StringU8.Empty, 200 * Im.Style.GlobalScale);
         Im.Checkbox("Add MipMaps"u8, ref _mipMaps);
 
         using var table = Im.Table.Begin("..."u8, 3, TableFlags.SizingFixedFit);

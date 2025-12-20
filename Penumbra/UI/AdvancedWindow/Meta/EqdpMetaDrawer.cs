@@ -135,8 +135,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     public static bool DrawRace(ref EqdpIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Combos.Race("##eqdpRace", identifier.Race, out var race, unscaledWidth);
-        Im.Tooltip.OnHover("Model Race"u8);
+        var ret = Combos.ModelRace.Draw("##eqdpRace"u8, identifier.Race, "Model Race"u8, unscaledWidth * Im.Style.GlobalScale, out var race);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
         return ret;
@@ -144,8 +143,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     public static bool DrawGender(ref EqdpIdentifier identifier, float unscaledWidth = 120)
     {
-        var ret = Combos.Combos.Gender("##eqdpGender", identifier.Gender, out var gender, unscaledWidth);
-        Im.Tooltip.OnHover("Gender"u8);
+        var ret = Combos.Gender.Draw("##eqdpGender"u8, identifier.Gender, "Gender"u8, unscaledWidth * Im.Style.GlobalScale, out var gender);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(gender, identifier.Race) };
         return ret;
@@ -153,8 +151,7 @@ public sealed class EqdpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFil
 
     public static bool DrawEquipSlot(ref EqdpIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Combos.EqdpEquipSlot("##eqdpSlot", identifier.Slot, out var slot, unscaledWidth);
-        Im.Tooltip.OnHover("Equip Slot"u8);
+        var ret = Combos.EqdpEquipSlot.Draw("##eqdpSlot"u8, identifier.Slot, "Equip Slot"u8, unscaledWidth, out var slot);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;

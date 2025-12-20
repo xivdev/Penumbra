@@ -2,7 +2,6 @@ using Dalamud.Interface;
 using ImSharp;
 using Lumina.Data.Parsing;
 using Luna;
-using OtterGui.Widgets;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
@@ -646,7 +645,7 @@ public partial class ModEditWindow
         {
             using var t = Im.Tree.Node($"Additional Data (Size: {data.LastFile.RemainingData.Length})###AdditionalData");
             if (t)
-                Widget.DrawHexViewer(data.LastFile.RemainingData);
+                ImEx.HexViewer(data.LastFile.RemainingData);
         }
 
         return ret;

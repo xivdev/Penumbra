@@ -1,7 +1,6 @@
 using ImSharp;
 using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -40,17 +39,10 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         using var id = Im.Id.Push((int)Identifier.Type);
         DrawNew();
 
-        var height = ColumnHeight;
-        var skips  = ImGuiClip.GetNecessarySkipsAtPos(height, Im.Cursor.Y, Count);
-        if (skips < Count)
-        {
-            var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
-            if (remainder > 0)
-                ImGuiClip.DrawEndDummy(remainder, height);
-        }
-
-        void DrawLine((TIdentifier Identifier, TEntry Value) pair)
-            => DrawEntry(pair.Identifier, pair.Value);
+        var       height  = ColumnHeight;
+        using var clipper = new Im.ListClipper(Count, height);
+        foreach (var (identifier, value) in clipper.Iterate(Enumerate()))
+            DrawEntry(identifier, value);
     }
 
     public abstract ReadOnlySpan<byte> Label      { get; }
@@ -152,7 +144,7 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, tooltip))
             return;
 
-        var text = Functions.ToCompressedBase64(manipulations.Value, 0);
+        var text = CompressionFunctions.ToCompressedBase64(manipulations.Value, 0);
         if (text.Length > 0)
             Im.Clipboard.Set(text);
     }

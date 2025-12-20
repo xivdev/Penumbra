@@ -150,8 +150,7 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawObjectType(ref ImcIdentifier identifier, float width = 110)
     {
-        var ret = Combos.Combos.ImcType("##imcType", identifier.ObjectType, out var type, width);
-        Im.Tooltip.OnHover("Object Type"u8);
+        var ret = Combos.ImcType.Draw("##imcType"u8, identifier.ObjectType, "Object Type"u8, width * Im.Style.GlobalScale, out var type);
 
         if (ret)
         {
@@ -211,13 +210,12 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         {
             case ObjectType.Equipment:
             case ObjectType.DemiHuman:
-                ret = Combos.Combos.EqpEquipSlot("##slot", identifier.EquipSlot, out slot, unscaledWidth);
+                ret = Combos.EqpEquipSlot.Draw("##slot"u8, identifier.EquipSlot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out slot);
                 break;
-            case ObjectType.Accessory: ret = Combos.Combos.AccessorySlot("##slot", identifier.EquipSlot, out slot, unscaledWidth); break;
+            case ObjectType.Accessory: ret = Combos.AccessorySlot.Draw("##slot"u8, identifier.EquipSlot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out slot); break;
             default:                   return false;
         }
 
-        Im.Tooltip.OnHover("Equip Slot"u8);
         if (ret)
             identifier = identifier with { EquipSlot = slot };
         return ret;

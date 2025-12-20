@@ -125,8 +125,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawRace(ref EstIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Combos.Race("##estRace", identifier.Race, out var race, unscaledWidth);
-        Im.Tooltip.OnHover("Model Race"u8);
+        var ret = Combos.ModelRace.Draw("##estRace"u8, identifier.Race, "Model Race"u8, unscaledWidth * Im.Style.GlobalScale, out var race);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
         return ret;
@@ -134,8 +133,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawGender(ref EstIdentifier identifier, float unscaledWidth = 120)
     {
-        var ret = Combos.Combos.Gender("##estGender", identifier.Gender, out var gender, unscaledWidth);
-        Im.Tooltip.OnHover("Gender"u8);
+        var ret = Combos.Gender.Draw("##estGender"u8, identifier.Gender, "Gender"u8, unscaledWidth * Im.Style.GlobalScale, out var gender);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(gender, identifier.Race) };
         return ret;
@@ -143,8 +141,7 @@ public sealed class EstMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawSlot(ref EstIdentifier identifier, float unscaledWidth = 200)
     {
-        var ret = Combos.Combos.EstSlot("##estSlot", identifier.Slot, out var slot, unscaledWidth);
-        Im.Tooltip.OnHover("Extra Skeleton Type"u8);
+        var ret = Combos.EstSlot.Draw("##estSlot"u8, identifier.Slot, "Extra Skeleton Type"u8, unscaledWidth * Im.Style.GlobalScale, out var slot);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;

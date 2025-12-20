@@ -8,7 +8,7 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.AdvancedWindow.Materials;
-using FilterComboColors = Penumbra.UI.Classes.FilterComboColors;
+using FilterComboColors = Penumbra.UI.FilterComboColors;
 using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.Services;

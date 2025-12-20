@@ -1,10 +1,8 @@
 using System.Collections.Frozen;
-using Dalamud.Interface.Components;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
-using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -24,7 +22,6 @@ using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
-using Penumbra.UI.Combos;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;

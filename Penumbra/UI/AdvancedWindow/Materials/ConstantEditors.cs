@@ -1,5 +1,5 @@
 using System.Collections.Frozen;
-using OtterGui.Text.Widget.Editors;
+using Luna;
 using Penumbra.GameData.Files.ShaderStructs;
 
 namespace Penumbra.UI.AdvancedWindow.Materials;
@@ -20,7 +20,8 @@ public static class ConstantEditors
 
     static ConstantEditors()
     {
-        IReadOnlyList<Name> knownIntConstants = [
+        IReadOnlyList<Name> knownIntConstants =
+        [
             "g_ToonIndex",
             "g_ToonSpecIndex",
         ];
@@ -30,11 +31,11 @@ public static class ConstantEditors
 
     public static IEditor<byte> DefaultFor(Name name, MaterialTemplatePickers? materialTemplatePickers = null)
     {
-        if (materialTemplatePickers != null)
+        if (materialTemplatePickers is not null)
         {
             if (name == Names.SphereMapIndexConstantName)
                 return materialTemplatePickers.SphereMapIndexPicker;
-            else if (name == Names.TileIndexConstantName)
+            if (name == Names.TileIndexConstantName)
                 return materialTemplatePickers.TileIndexPicker;
         }
 
@@ -60,11 +61,16 @@ public static class ConstantEditors
         where T : unmanaged, IPowerFunctions<T>, IComparisonOperators<T, T, bool>
         => exponent == T.MultiplicativeIdentity
             ? inner
-            : inner.Converting(value => value < T.Zero ? -T.Pow(-value, T.MultiplicativeIdentity / exponent) : T.Pow(value, T.MultiplicativeIdentity / exponent), value => value < T.Zero ? -T.Pow(-value, exponent) : T.Pow(value, exponent));
+            : inner.Converting(
+                value => value < T.Zero
+                    ? -T.Pow(-value, T.MultiplicativeIdentity / exponent)
+                    : T.Pow(value, T.MultiplicativeIdentity / exponent),
+                value => value < T.Zero ? -T.Pow(-value, exponent) : T.Pow(value, exponent));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static IEditor<T> WithFactorAndBias<T>(this IEditor<T> inner, T factor, T bias)
-        where T : unmanaged, IMultiplicativeIdentity<T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>, IAdditionOperators<T, T, T>, ISubtractionOperators<T, T, T>, IDivisionOperators<T, T, T>, IEqualityOperators<T, T, bool>
+        where T : unmanaged, IMultiplicativeIdentity<T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>, IAdditionOperators<T, T, T>,
+        ISubtractionOperators<T, T, T>, IDivisionOperators<T, T, T>, IEqualityOperators<T, T, bool>
         => factor == T.MultiplicativeIdentity && bias == T.AdditiveIdentity
             ? inner
             : inner.Converting(value => (value - bias) / factor, value => value * factor + bias);

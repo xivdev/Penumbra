@@ -1,6 +1,7 @@
+using ImSharp;
 using JetBrains.Annotations;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Text.Widget.Editors;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
@@ -228,7 +229,7 @@ public partial class MtrlTab
 
         private EnumEditor<T> CreateEnumEditor<T>(Func<double, T> convertValue)
             where T : unmanaged, IUtf8SpanFormattable, IEqualityOperators<T, T, bool>
-            => new(Array.ConvertAll(Values, value => (ToUtf8(value.Label), convertValue(value.Value), ToUtf8(value.Description))));
+            => new(Array.ConvertAll(Values, value => (new StringU8(value.Label), convertValue(value.Value), new StringU8(value.Description))));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static T ToInteger<T>(float value) where T : struct, INumberBase<T>
@@ -245,8 +246,5 @@ public partial class MtrlTab
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static T? ToFloat<T>(float? value) where T : struct, INumberBase<T>
             => value.HasValue ? T.CreateSaturating(value.Value) : null;
-
-        private static ReadOnlyMemory<byte> ToUtf8(string value)
-            => Encoding.UTF8.GetBytes(value);
     }
 }

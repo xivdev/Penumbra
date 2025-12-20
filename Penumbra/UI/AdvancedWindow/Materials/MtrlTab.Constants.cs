@@ -1,6 +1,5 @@
 using ImSharp;
 using Luna;
-using OtterGui.Text.Widget.Editors;
 using Penumbra.GameData.Files.ShaderStructs;
 using static Penumbra.GameData.Files.ShpkFile;
 
@@ -16,19 +15,6 @@ public partial class MtrlTab
 
     private void UpdateConstants()
     {
-        static List<T> FindOrAddGroup<T>(List<(string, List<T>)> groups, string name)
-        {
-            foreach (var (groupName, group) in groups)
-            {
-                if (string.Equals(name, groupName, StringComparison.Ordinal))
-                    return group;
-            }
-
-            var newGroup = new List<T>(16);
-            groups.Add((name, newGroup));
-            return newGroup;
-        }
-
         Constants.Clear();
         string mpPrefix;
         if (_associatedShpk == null)
@@ -136,6 +122,21 @@ public partial class MtrlTab
             group.Sort((x, y) => string.CompareOrdinal(
                 x.MonoFont ? x.Label.Replace("].w", "].{").Replace(mpPrefix, "}_MaterialParameter") : x.Label,
                 y.MonoFont ? y.Label.Replace("].w", "].{").Replace(mpPrefix, "}_MaterialParameter") : y.Label));
+        }
+
+        return;
+
+        static List<T> FindOrAddGroup<T>(List<(string, List<T>)> groups, string name)
+        {
+            foreach (var (groupName, group) in groups)
+            {
+                if (string.Equals(name, groupName, StringComparison.Ordinal))
+                    return group;
+            }
+
+            var newGroup = new List<T>(16);
+            groups.Add((name, newGroup));
+            return newGroup;
         }
     }
 

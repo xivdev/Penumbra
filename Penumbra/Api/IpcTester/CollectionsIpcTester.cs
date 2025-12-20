@@ -4,6 +4,7 @@ using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.IpcSubscribers;
 using Penumbra.GameData.Data;
+using Penumbra.UI;
 
 namespace Penumbra.Api.IpcTester;
 
@@ -26,7 +27,7 @@ public class CollectionsIpcTester(IDalamudPluginInterface pi) : IUiService
         if (!_)
             return;
 
-        EnumCombo<ApiCollectionType>.Instance.Draw("Collection Type"u8, ref _type, default, 200 * Im.Style.GlobalScale);
+        Combos.ApiCollectionType.Draw("Collection Type"u8, ref _type, default, 200 * Im.Style.GlobalScale);
         Im.Input.Scalar("Object Index##Collections"u8, ref _objectIdx);
         if (_collectionId.HasValue)
         {

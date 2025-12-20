@@ -2,7 +2,6 @@ using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Luna.Generators;
-using OtterGui;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
@@ -711,11 +710,11 @@ public class ItemSwapTab : IDisposable, ITab
         table.DrawFrameColumn(text);
 
         table.NextColumn();
-        _dirty |= Combos.Combos.Gender("##Gender", _currentGender, out _currentGender);
+        _dirty |= Combos.Gender.Draw("##Gender"u8, ref _currentGender, StringU8.Empty, 120 * Im.Style.GlobalScale);
         if (drawRace is 1)
         {
             Im.Line.Same();
-            _dirty |= Combos.Combos.Race("##Race", _currentRace, out _currentRace, InputWidth);
+            _dirty |= Combos.ModelRace.Draw("##Race"u8, ref _currentRace, StringU8.Empty, InputWidth);
         }
         else if (drawRace is 2)
         {
@@ -723,12 +722,7 @@ public class ItemSwapTab : IDisposable, ITab
             if (_currentRace is not ModelRace.Miqote and not ModelRace.AuRa and not ModelRace.Hrothgar)
                 _currentRace = ModelRace.Miqote;
 
-            _dirty |= ImGuiUtil.GenericEnumCombo("##Race", InputWidth, _currentRace, out _currentRace, [
-                    ModelRace.Miqote,
-                    ModelRace.AuRa,
-                    ModelRace.Hrothgar,
-                ],
-                ModelRaceExtensions.ToName);
+            _dirty |= Combos.TailedRace.Draw("##Race"u8, ref _currentRace, StringU8.Empty, InputWidth);
         }
     }
 

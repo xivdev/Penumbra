@@ -2,7 +2,7 @@ using ImSharp;
 using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.UI.AdvancedWindow.Meta;
 
-namespace Penumbra.UI.Combos;
+namespace Penumbra.UI;
 
 internal sealed class AtchPointCombo(AtchMetaDrawer parent)
     : SimpleFilterCombo<AtchType>(SimpleFilterType.Text)

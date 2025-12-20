@@ -11,7 +11,6 @@ using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.UI.Combos;
 using Notification = Luna.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
@@ -237,7 +236,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 
     private static bool DrawRace(ref AtchIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Combos.Race("##atchRace", identifier.Race, out var race, unscaledWidth);
+        var ret = Combos.ModelRace.Draw("##atchRace"u8, identifier.Race, StringU8.Empty, unscaledWidth * Im.Style.GlobalScale, out var race);
         Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };

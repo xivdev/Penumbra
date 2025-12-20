@@ -98,8 +98,7 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawSubRace(ref RspIdentifier identifier, float unscaledWidth = 150)
     {
-        var ret = Combos.Combos.SubRace("##rspSubRace", identifier.SubRace, out var subRace, unscaledWidth);
-        Im.Tooltip.OnHover("Racial Clan"u8);
+        var ret = Combos.Clan.Draw("##rspSubRace"u8, identifier.SubRace, "Racial Clan"u8, unscaledWidth * Im.Style.GlobalScale, out var subRace);
         if (ret)
             identifier = identifier with { SubRace = subRace };
         return ret;
@@ -107,8 +106,7 @@ public sealed class RspMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawAttribute(ref RspIdentifier identifier, float unscaledWidth = 200)
     {
-        var ret = Combos.Combos.RspAttribute("##rspAttribute", identifier.Attribute, out var attribute, unscaledWidth);
-        Im.Tooltip.OnHover("Scaling Attribute"u8);
+        var ret = Combos.RspType.Draw("##rspAttribute"u8, identifier.Attribute, "Scaling Attribute"u8, unscaledWidth, out var attribute);
         if (ret)
             identifier = identifier with { Attribute = attribute };
         return ret;

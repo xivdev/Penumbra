@@ -4,7 +4,7 @@ using Penumbra.Mods.SubMods;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.Combos;
+namespace Penumbra.UI;
 
 public sealed class OptionSelectCombo : FilterComboBase<OptionSelectCombo.Option>
 {

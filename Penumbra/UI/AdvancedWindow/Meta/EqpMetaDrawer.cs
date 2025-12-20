@@ -128,8 +128,7 @@ public sealed class EqpMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
 
     public static bool DrawEquipSlot(ref EqpIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Combos.EqpEquipSlot("##eqpSlot", identifier.Slot, out var slot, unscaledWidth);
-        Im.Tooltip.OnHover("Equip Slot"u8);
+        var ret = Combos.EqpEquipSlot.Draw("##eqpSlot"u8, identifier.Slot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out var slot);
         if (ret)
             identifier = identifier with { Slot = slot };
         return ret;
