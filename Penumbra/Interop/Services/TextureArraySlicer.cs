@@ -18,7 +18,7 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
     /// <remarks> Caching this across frames will cause a crash to desktop. </remarks>
     public ImTextureID GetImGuiHandle(Texture* texture, byte sliceIndex)
     {
-        if (texture == null)
+        if (texture is null)
             throw new ArgumentNullException(nameof(texture));
         if (sliceIndex >= texture->ArraySize)
             throw new ArgumentOutOfRangeException(nameof(sliceIndex),
@@ -74,9 +74,6 @@ public sealed unsafe class TextureArraySlicer : IUiService, IDisposable
             {
                 ID3D11ShaderResourceView* slicedSrv = null;
                 Marshal.ThrowExceptionForHR(device->CreateShaderResourceView(resource, &description, &slicedSrv));
-                resource->Release();
-                device->Release();
-
                 state = new SliceState(slicedSrv);
                 _activeSlices.Add(((nint)texture, sliceIndex), state);
                 return new ImTextureID((nint)state.ShaderResourceView);
