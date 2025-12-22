@@ -1,6 +1,7 @@
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using Iced.Intel;
+using static Iced.Intel.AssemblerRegisters;
 using OtterGui.Extensions;
 using Penumbra.String.Classes;
 using Swan;
@@ -46,36 +47,32 @@ public sealed class PapRewriter(PeSigScanner sigScanner, PapRewriter.PapResource
                 stackAccesses.RemoveAll(instr => instr.IP == hp.IP);
 
             var detourPointer  = Marshal.GetFunctionPointerForDelegate(papResourceHandler);
-            var targetRegister = hookPoint.Op0Register.ToString().ToLower();
+            var targetRegister = GetRegister64(hookPoint.Op0Register);
             var hookAddress    = new IntPtr((long)detourPoint.IP);
 
             var caveAllocation = NativeAllocCave(16);
-            var hook = new AsmHook(
-                hookAddress,
-                [
-                    "use64",
-                    $"mov {targetRegister}, 0x{stringAllocation:x8}", // Move our char *path into the relevant register (rdx)
+            var assembler = new Assembler(64);
+            assembler.mov(targetRegister, stringAllocation); // Move our char *path into the relevant register (rdx)
 
-                    // After this asm stub, we have a call to Crc32(); since r9 is a volatile, unused register, we can use it ourselves
-                    // We're essentially storing the original 2 arguments ('this', 'path'), in case they get mangled in our call
-                    // We technically don't need to save rdx ('path'), since it'll be stringLoc, but eh
-                    $"mov r9, 0x{caveAllocation:x8}",
-                    "mov [r9], rcx",
-                    "mov [r9+0x8], rdx",
+            // After this asm stub, we have a call to Crc32(); since r9 is a volatile, unused register, we can use it ourselves
+            // We're essentially storing the original 2 arguments ('this', 'path'), in case they get mangled in our call
+            // We technically don't need to save rdx ('path'), since it'll be stringLoc, but eh
+            assembler.mov(r9, caveAllocation);
+            assembler.mov(__qword_ptr[r9], rcx);
+            assembler.mov(__qword_ptr[r9 + 8], rdx);
 
-                    // We can use 'rax' here too since it's also volatile, and it'll be overwritten by Crc32()'s return anyway
-                    $"mov rax, 0x{detourPointer:x8}", // Get a pointer to our detour in place
-                    "call rax",                       // Call detour
+            // We can use 'rax' here too since it's also volatile, and it'll be overwritten by Crc32()'s return anyway
+            assembler.mov(rax, detourPointer);
+            assembler.call(rax);
 
-                    // Do the reverse process and retrieve the stored stuff
-                    $"mov r9, 0x{caveAllocation:x8}",
-                    "mov rcx, [r9]",
-                    "mov rdx, [r9+0x8]",
+            // Do the reverse process and retrieve the stored stuff
+            assembler.mov(r9, caveAllocation);
+            assembler.mov(rcx, __qword_ptr[r9]);
+            assembler.mov(rdx, __qword_ptr[r9 + 8]);
 
-                    // Plop 'rax' (our return value, the path size) into r8, so it's the third argument for the subsequent Crc32() call
-                    "mov r8, rax",
-                ], $"{name}.PapRedirection"
-            );
+            // Plop 'rax' (our return value, the path size) into r8, so it's the third argument for the subsequent Crc32() call
+            assembler.mov(r8, rax);
+            var hook = new AsmHook(hookAddress, AssembleToBytes(assembler), $"{name}.PapRedirection");
 
             _hooks.Add(hookAddress, hook);
             hook.Enable();
@@ -95,18 +92,44 @@ public sealed class PapRewriter(PeSigScanner sigScanner, PapRewriter.PapResource
             if (_hooks.ContainsKey(hookAddress))
                 continue;
 
-            var targetRegister = stackAccess.Op0Register.ToString().ToLower();
-            var hook = new AsmHook(
-                hookAddress,
-                [
-                    "use64",
-                    $"mov {targetRegister}, 0x{stringAllocation:x8}",
-                ], $"{name}.PapStackAccess[{index}]"
-            );
+            var targetRegister = GetRegister64(stackAccess.Op0Register);
+            var assembler = new Assembler(64);
+            assembler.mov(targetRegister, stringAllocation);
+            var hook = new AsmHook(hookAddress, AssembleToBytes(assembler), $"{name}.PapStackAccess[{index}]");
 
             _hooks.Add(hookAddress, hook);
             hook.Enable();
         }
+    }
+    
+    private static AssemblerRegister64 GetRegister64(Register reg)
+        => reg switch
+        {
+            Register.RAX => rax,
+            Register.RCX => rcx,
+            Register.RDX => rdx,
+            Register.RBX => rbx,
+            Register.RSP => rsp,
+            Register.RBP => rbp,
+            Register.RSI => rsi,
+            Register.RDI => rdi,
+            Register.R8  => r8,
+            Register.R9  => r9,
+            Register.R10 => r10,
+            Register.R11 => r11,
+            Register.R12 => r12,
+            Register.R13 => r13,
+            Register.R14 => r14,
+            Register.R15 => r15,
+            _ => throw new ArgumentOutOfRangeException(nameof(reg), reg, "Unsupported register."),
+        };
+    
+    private static byte[] AssembleToBytes(Assembler assembler)
+    {
+        using var stream = new MemoryStream();
+        var writer = new StreamCodeWriter(stream);
+        assembler.Assemble(writer, 0);
+        return stream.ToArray();
     }
 
     private static IEnumerable<Instruction> ScanStackAccesses(IEnumerable<Instruction> instructions, Instruction hookPoint)
