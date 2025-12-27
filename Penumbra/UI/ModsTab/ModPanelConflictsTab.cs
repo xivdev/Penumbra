@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using ImSharp;
 using Luna;
-using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;

@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
 using Penumbra.GameData.Files.MaterialStructs;
@@ -177,13 +176,13 @@ public partial class MtrlTab
         ret |= CtTileTransformMatrix(row.TileTransform, floatSize, false,
             m => table[rowIdx].TileTransform = m);
 
-        if (dyeTable != null)
+        if (dyeTable is not null)
         {
             Im.Table.NextColumn();
-            if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
-                  + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ImGuiComboFlags.NoArrowButton))
+            if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate"u8, dye.Template, 0, StringU8.Empty, out var newSelection,
+                    intSize + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ComboFlags.NoArrowButton))
             {
-                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection.UShort;
+                dyeTable[rowIdx].Template = (ushort)newSelection;
                 ret                       = true;
             }
 
@@ -294,11 +293,10 @@ public partial class MtrlTab
             ret |= CtDragScalar("##DyeChannel"u8, "Dye Channel"u8, dye.Channel + 1, "%hhd"u8, 1, StainService.ChannelCount, 0.25f,
                 value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
             Im.Line.SameInner();
-            _stainService.LegacyTemplateCombo.CurrentDyeChannel = dye.Channel;
-            if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
-                  + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ImGuiComboFlags.NoArrowButton))
+            if (_stainService.LegacyTemplateCombo.Draw("##dyeTemplate"u8, dye.Template, dye.Channel, StringU8.Empty, out var newSelection,
+                    intSize + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ComboFlags.NoArrowButton))
             {
-                dyeTable[rowIdx].Template = _stainService.LegacyTemplateCombo.CurrentSelection.UShort;
+                dyeTable[rowIdx].Template = (ushort)newSelection;
                 ret                       = true;
             }
 
@@ -313,8 +311,8 @@ public partial class MtrlTab
 
     private bool DrawLegacyDyePreview(int rowIdx, bool disabled, LegacyColorDyeTableRow dye, float floatSize)
     {
-        var stain = _stainService.StainCombo1.CurrentSelection.Key;
-        if (stain == 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))
+        var stain = _stainService.StainCombo1.CurrentSelection.Id;
+        if (stain is 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))
             return false;
 
         using var style = ImStyleDouble.ItemSpacing.Push(Im.Style.ItemSpacing / 2);
@@ -331,8 +329,8 @@ public partial class MtrlTab
 
     private bool DrawLegacyDyePreview(int rowIdx, bool disabled, ColorDyeTableRow dye, float floatSize)
     {
-        var stain = _stainService.GetStainCombo(dye.Channel).CurrentSelection.Key;
-        if (stain == 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))
+        var stain = _stainService.GetStainCombo(dye.Channel).CurrentSelection.Id;
+        if (stain is 0 || !_stainService.LegacyStmFile.TryGetValue(dye.Template, stain, out var values))
             return false;
 
         using var style = ImStyleDouble.ItemSpacing.Push(Im.Style.ItemSpacing / 2);
@@ -341,8 +339,8 @@ public partial class MtrlTab
 
         ret = ret
          && Mtrl.ApplyDyeToRow(_stainService.LegacyStmFile, [
-                _stainService.StainCombo1.CurrentSelection.Key,
-                _stainService.StainCombo2.CurrentSelection.Key,
+                _stainService.StainCombo1.CurrentSelection.Id,
+                _stainService.StainCombo2.CurrentSelection.Id,
             ], rowIdx);
 
         Im.Line.Same();

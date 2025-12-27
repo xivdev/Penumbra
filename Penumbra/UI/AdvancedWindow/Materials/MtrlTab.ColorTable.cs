@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using ImSharp;
 using Luna;
 using Penumbra.GameData.Files.MaterialStructs;
@@ -87,8 +86,8 @@ public partial class MtrlTab
         var rowBIdx     = rowAIdx | 1;
         var dyeA        = dyeTable?[_colorTableSelectedPair << 1] ?? default;
         var dyeB        = dyeTable?[(_colorTableSelectedPair << 1) | 1] ?? default;
-        var previewDyeA = _stainService.GetStainCombo(dyeA.Channel).CurrentSelection.Key;
-        var previewDyeB = _stainService.GetStainCombo(dyeB.Channel).CurrentSelection.Key;
+        var previewDyeA = _stainService.GetStainCombo(dyeA.Channel).CurrentSelection.Id;
+        var previewDyeB = _stainService.GetStainCombo(dyeB.Channel).CurrentSelection.Id;
         var dyePackA    = _stainService.GudStmFile.GetValueOrNull(dyeA.Template, previewDyeA);
         var dyePackB    = _stainService.GudStmFile.GetValueOrNull(dyeB.Template, previewDyeB);
         using (var columns = Im.Columns(2, "ColorTable"u8))
@@ -599,11 +598,10 @@ public partial class MtrlTab
             value => dyeTable[rowIdx].Channel = (byte)(Math.Clamp(value, 1, StainService.ChannelCount) - 1));
         Im.Line.Same(subColWidth);
         Im.Item.SetNextWidth(scalarSize);
-        _stainService.GudTemplateCombo.CurrentDyeChannel = dye.Channel;
-        if (_stainService.GudTemplateCombo.Draw("##dyeTemplate", dye.Template.ToString(), string.Empty,
-                scalarSize + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ImGuiComboFlags.NoArrowButton))
+        if (_stainService.GudTemplateCombo.Draw("##dyeTemplate"u8, dye.Template, dye.Channel, StringU8.Empty, out var newSelection,
+                scalarSize + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ComboFlags.NoArrowButton))
         {
-            dye.Template = _stainService.GudTemplateCombo.CurrentSelection.UShort;
+            dye.Template = (ushort) newSelection;
             ret          = true;
         }
 
@@ -613,8 +611,8 @@ public partial class MtrlTab
         using var dis = Im.Disabled(!dyePack.HasValue);
         if (Im.Button("Apply Preview Dye"u8))
             ret |= Mtrl.ApplyDyeToRow(_stainService.GudStmFile, [
-                _stainService.StainCombo1.CurrentSelection.Key,
-                _stainService.StainCombo2.CurrentSelection.Key,
+                _stainService.StainCombo1.CurrentSelection.Id,
+                _stainService.StainCombo2.CurrentSelection.Id,
             ], rowIdx);
 
         return ret;

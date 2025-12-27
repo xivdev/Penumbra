@@ -226,7 +226,7 @@ public partial class MtrlTab
             };
             if (dyeRow.Channel < StainService.ChannelCount)
             {
-                StainId stainId = _stainService.GetStainCombo(dyeRow.Channel).CurrentSelection.Key;
+                StainId stainId = _stainService.GetStainCombo(dyeRow.Channel).CurrentSelection.Id;
                 if (_stainService.LegacyStmFile.TryGetValue(dyeRow.Template, stainId, out var legacyDyes))
                     row.ApplyDye(dyeRow, legacyDyes);
                 if (_stainService.GudStmFile.TryGetValue(dyeRow.Template, stainId, out var gudDyes))
@@ -260,8 +260,8 @@ public partial class MtrlTab
         {
             ReadOnlySpan<StainId> stainIds =
             [
-                _stainService.StainCombo1.CurrentSelection.Key,
-                _stainService.StainCombo2.CurrentSelection.Key,
+                _stainService.StainCombo1.CurrentSelection.Id,
+                _stainService.StainCombo2.CurrentSelection.Id,
             ];
             rows.ApplyDye(_stainService.LegacyStmFile, stainIds, dyeRows);
             rows.ApplyDye(_stainService.GudStmFile,    stainIds, dyeRows);

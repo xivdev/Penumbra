@@ -1,5 +1,4 @@
 using ImSharp;
-using OtterGui;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
@@ -61,17 +60,19 @@ public partial class ModEditWindow
         }
     }
 
+    private sealed class BoneCache(PbdData pbdData) : BasicFilterCache<string>(pbdData.BoneFilter)
+    {
+        protected override IEnumerable<string> GetItems()
+            => pbdData.SelectedDeformer is null || pbdData.SelectedDeformer.IsEmpty ? [] : pbdData.SelectedDeformer.DeformMatrices.Keys;
+    }
+
     private void DrawBoneSelector()
     {
+        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Get((int)_pbdData.SelectedRaceCode), () => new BoneCache(_pbdData));
         using var group = Im.Group();
         var       width = 200 * Im.Style.GlobalScale;
-        using (ImStyleSingle.FrameRounding.Push(0)
-                   .Push(ImStyleDouble.ItemSpacing, Vector2.Zero))
-        {
-            Im.Item.SetNextWidth(width);
-            Im.Input.Text("##boneFilter"u8, ref _pbdData.BoneFilter, "Filter..."u8);
-        }
-
+        _pbdData.BoneFilter.DrawFilter("Filter..."u8, new Vector2(width, Im.Style.FrameHeight));
+        Im.Cursor.Y -= Im.Style.ItemSpacing.Y;
         using var child = Im.Child.Begin("Bone"u8,
             new Vector2(width, Im.ContentRegion.Maximum.Y - Im.Style.FrameHeight - Im.Style.WindowPadding.Y), true);
         if (!child)
@@ -80,23 +81,14 @@ public partial class ModEditWindow
         if (_pbdData.SelectedDeformer is null)
             return;
 
-        if (_pbdData.SelectedDeformer.IsEmpty)
-        {
+        if (cache.AllItems.Count is 0)
             Im.Text("<Empty>"u8);
-        }
         else
-        {
-            var height = Im.Style.TextHeightWithSpacing;
-            var skips  = ImGuiClip.GetNecessarySkips(height);
-            var remainder = ImGuiClip.FilteredClippedDraw(_pbdData.SelectedDeformer.DeformMatrices.Keys, skips,
-                b => b.Contains(_pbdData.BoneFilter), bone
-                    =>
-                {
-                    if (Im.Selectable(bone, bone == _pbdData.SelectedBone))
-                        _pbdData.SelectedBone = bone;
-                });
-            ImGuiClip.DrawEndDummy(remainder, height);
-        }
+            foreach (var item in cache)
+            {
+                if (Im.Selectable(item, item == _pbdData.SelectedBone))
+                    _pbdData.SelectedBone = item;
+            }
     }
 
     private bool DrawBoneData(PbdTab tab, bool disabled)
@@ -324,8 +316,8 @@ public partial class ModEditWindow
         public GenderRace      SelectedRaceCode = GenderRace.Unknown;
         public RacialDeformer? SelectedDeformer;
         public string?         SelectedBone;
+        public TextFilter      BoneFilter     = new();
         public string          NewBoneName    = string.Empty;
-        public string          BoneFilter     = string.Empty;
         public string          RaceCodeFilter = string.Empty;
 
         public TransformMatrix? CopiedMatrix;

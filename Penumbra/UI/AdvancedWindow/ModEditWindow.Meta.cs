@@ -107,7 +107,7 @@ public partial class ModEditWindow
     private void DrawEditHeader(MetaManipulationType type)
     {
         var drawer = _metaDrawers.Get(type);
-        if (drawer == null)
+        if (drawer is null)
             return;
 
         var oldPos = Im.Cursor.Y;

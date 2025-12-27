@@ -83,8 +83,8 @@ public partial class MtrlTab
 
     private bool DrawPreviewDye(bool disabled)
     {
-        var (dyeId1, (name1, dyeColor1, gloss1)) = _stainService.StainCombo1.CurrentSelection;
-        var (dyeId2, (name2, dyeColor2, gloss2)) = _stainService.StainCombo2.CurrentSelection;
+        var (name1, _, dyeId1, _) = _stainService.StainCombo1.CurrentSelection;
+        var (name2, _, dyeId2, _) = _stainService.StainCombo2.CurrentSelection;
         var tt = dyeId1 is 0 && dyeId2 is 0
             ? "Select a preview dye first."u8
             : "Apply all preview values corresponding to the dye template and chosen dye where dyeing is enabled."u8;
@@ -103,12 +103,10 @@ public partial class MtrlTab
         }
 
         Im.Line.Same();
-        var label = dyeId1 is 0 ? "Preview Dye 1###previewDye1" : $"{name1} (Preview 1)###previewDye1";
-        if (_stainService.StainCombo1.Draw(label, dyeColor1, string.Empty, true, gloss1))
+        if (_stainService.StainCombo1.Draw(dyeId1 is 0 ? "Preview Dye 1###pd1" : $"{name1} (Preview 1)###pd1"))
             UpdateColorTablePreview();
         Im.Line.Same();
-        label = dyeId2 is 0 ? "Preview Dye 2###previewDye2" : $"{name2} (Preview 2)###previewDye2";
-        if (_stainService.StainCombo2.Draw(label, dyeColor2, string.Empty, true, gloss2))
+        if (_stainService.StainCombo2.Draw(dyeId2 is 0 ? "Preview Dye 2###pd2" : $"{name2} (Preview 2)###pd2"))
             UpdateColorTablePreview();
         return false;
     }

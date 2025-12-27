@@ -89,17 +89,17 @@ public sealed partial class MtrlTab : IWritable, IDisposable
         }
 
         DrawMaterialLivePreviewRebind(disabled);
-
+        
         Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
         var ret = DrawBackFaceAndTransparency(disabled);
-
+        
         Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
         ret |= DrawShaderSection(disabled);
-
+        
         ret |= DrawTextureSection(disabled);
         ret |= DrawColorTableSection(disabled);
         ret |= DrawConstantsSection(disabled);
-
+        
         Im.Dummy(new Vector2(Im.Style.TextHeight / 2));
         DrawOtherMaterialDetails(disabled);
 

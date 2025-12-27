@@ -1,4 +1,3 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using OtterGui.Widgets;
@@ -8,121 +7,181 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.AdvancedWindow.Materials;
-using FilterComboColors = Penumbra.UI.FilterComboColors;
-using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.Services;
 
-//public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile) : SimpleFilterCombo<StmKeyType>(SimpleFilterType.Text)
-//    where TDyePack : unmanaged, IDyePack
-//{
-//    public override StringU8 DisplayString(in StmKeyType value)
-//        => new($"{value,4}");
-//
-//    public override string FilterString(in StmKeyType value)
-//        => $"{value,4}";
-//
-//    public override IEnumerable<StmKeyType> GetBaseItems()
-//        => throw new NotImplementedException();
-//
-//    protected override bool DrawFilter(float width, FilterComboBaseCache<SimpleCacheItem<StmKeyType>> cache)
-//    {
-//        using var font = Im.Font.PushDefault();
-//        return base.DrawFilter(width, cache);
-//    }
-//
-//    public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<HintStringHandlerBuffer> preview, Utf8StringHandler<TextStringHandlerBuffer> tooltip, ref int currentSelection, float previewWidth, float itemHeight,
-//        ComboFlags flags = ComboFlags.None)
-//    {
-//        using var font = Im.Font.PushMono();
-//        using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(1, 0.5f))
-//            .PushX(ImStyleDouble.ItemSpacing, Im.Style.ItemInnerSpacing.X);
-//        var spaceSize = Im.Font.Mono.GetCharacterAdvance(' ');
-//        var spaces    = (int)(previewWidth / spaceSize) - 1;
-//        return base.Draw(label, preview.PadLeft(spaces), tooltip, ref currentSelection, previewWidth, itemHeight, flags);
-//    }
-//
-//    protected override bool DrawSelectable(int globalIdx, bool selected)
-//    {
-//        var ret       = base.DrawSelectable(globalIdx, selected);
-//        var selection = stainCombos[CurrentDyeChannel].CurrentSelection.Key;
-//        if (selection == 0 || !stmFile.TryGetValue(Items[globalIdx], selection, out var colors))
-//            return ret;
-//
-//        Im.Line.Same();
-//
-//        var frame = new Vector2(Im.Style.TextHeight);
-//        Im.Color.Button("D"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.DiffuseColor), 1), 0, frame);
-//        Im.Line.Same();
-//        Im.Color.Button("S"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.SpecularColor), 1), 0, frame);
-//        Im.Line.Same();
-//        Im.Color.Button("E"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.EmissiveColor), 1), 0, frame);
-//        return ret;
-//    }
-//}
-
-public class StainService : Luna.IService
+public sealed record StainTemplate(StringPair Id, Vector4 Diffuse, Vector4 Specular, Vector4 Emissive, int Key, bool Found)
 {
-    public sealed class StainTemplateCombo<TDyePack>(FilterComboColors[] stainCombos, StmFile<TDyePack> stmFile)
-        : FilterComboCache<StmKeyType>(stmFile.Entries.Keys.Prepend(0), MouseWheelType.None, Penumbra.Log)
-        where TDyePack : unmanaged, IDyePack
+    public Vector4 Diffuse  { get; set; } = Diffuse;
+    public Vector4 Specular { get; set; } = Specular;
+    public Vector4 Emissive { get; set; } = Emissive;
+    public bool    Found    { get; set; } = Found;
+}
+
+public sealed class TemplateFilter : TextFilterBase<StainTemplate>
+{
+    protected override string ToFilterString(in StainTemplate item, int globalIndex)
+        => item.Id;
+}
+
+public sealed class StainTemplateCombo<TDyePack> : ImSharp.FilterComboBase<StainTemplate>
+    where TDyePack : unmanaged, IDyePack
+{
+    private readonly StainService.StainCombo[] _stainCombos;
+    private readonly StmFile<TDyePack>         _stmFile;
+
+    private int    _currentDyeChannel;
+    private ushort _currentSelection;
+
+    public StainTemplateCombo(StainService.StainCombo[] stainCombos, StmFile<TDyePack> stmFile)
+        : base(new TemplateFilter())
     {
-        // FIXME There might be a better way to handle that.
-        public int CurrentDyeChannel = 0;
+        PreviewAlignment = new Vector2(0.90f, 0.5f);
+        _stainCombos     = stainCombos;
+        _stmFile         = stmFile;
+        ComputeWidth     = true;
+    }
 
-        protected override float GetFilterWidth()
+    protected override FilterComboBaseCache<StainTemplate> CreateCache()
+        => new Cache(this);
+
+    private sealed class Cache : FilterComboBaseCache<StainTemplate>
+    {
+        private readonly StainTemplateCombo<TDyePack> _parent;
+        private          int                          _dyeChannel;
+
+        public Cache(StainTemplateCombo<TDyePack> parent)
+            : base(parent)
         {
-            var baseSize = Im.Font.CalculateSize("0000"u8).X + Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X;
-            if (stainCombos[CurrentDyeChannel].CurrentSelection.Key == 0)
-                return baseSize;
-
-            return baseSize + Im.Style.TextHeight * 3 + Im.Style.ItemInnerSpacing.X * 3;
+            _parent = parent;
+            foreach (var combo in _parent._stainCombos)
+                combo.SelectionChanged += OnSelectionChanged;
+            _dyeChannel = _parent._currentDyeChannel;
         }
 
-        protected override string ToString(StmKeyType obj)
-            => $"{obj,4}";
-
-        protected override void DrawFilter(int currentSelected, float width)
+        public override void Update()
         {
-            using var font = Im.Font.PushDefault();
-            base.DrawFilter(currentSelected, width);
+            base.Update();
+            if (_dyeChannel != _parent._currentDyeChannel)
+            {
+                UpdateItems();
+                ComputeWidth();
+                _dyeChannel = _parent._currentDyeChannel;
+            }
         }
 
-        public override bool Draw(string label, string preview, string tooltip, ref int currentSelection, float previewWidth, float itemHeight,
-            ImGuiComboFlags flags = ImGuiComboFlags.None)
+        private void OnSelectionChanged(Luna.FilterComboColors.Item obj)
         {
-            using var font = Im.Font.PushMono();
-            using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(1, 0.5f))
-                .PushX(ImStyleDouble.ItemSpacing, Im.Style.ItemInnerSpacing.X);
-            var spaceSize = Im.Font.Mono.GetCharacterAdvance(' ');
-            var spaces    = (int)(previewWidth / spaceSize) - 1;
-            return base.Draw(label, preview.PadLeft(spaces), tooltip, ref currentSelection, previewWidth, itemHeight, flags);
+            UpdateItems();
+            ComputeWidth();
         }
 
-        protected override bool DrawSelectable(int globalIdx, bool selected)
+        private void UpdateItems()
         {
-            var ret       = base.DrawSelectable(globalIdx, selected);
-            var selection = stainCombos[CurrentDyeChannel].CurrentSelection.Key;
-            if (selection == 0 || !stmFile.TryGetValue(Items[globalIdx], selection, out var colors))
-                return ret;
+            foreach (var item in UnfilteredItems)
+            {
+                var dye = _parent._stainCombos[_parent._currentDyeChannel].CurrentSelection.Id;
+                if (dye > 0 && _parent._stmFile.TryGetValue(item.Key, dye, out var dyes))
+                {
+                    item.Found    = true;
+                    item.Diffuse  = new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.DiffuseColor),  1);
+                    item.Specular = new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.SpecularColor), 1);
+                    item.Emissive = new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.EmissiveColor), 1);
+                }
+                else
+                {
+                    item.Found = false;
+                }
+            }
+        }
 
-            Im.Line.Same();
-            
-            var frame = new Vector2(Im.Style.TextHeight);
-            Im.Color.Button("D"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.DiffuseColor), 1), 0, frame);
-            Im.Line.Same();
-            Im.Color.Button("S"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.SpecularColor), 1), 0, frame);
-            Im.Line.Same();
-            Im.Color.Button("E"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)colors.EmissiveColor), 1), 0, frame);
-            return ret;
+
+        protected override void ComputeWidth()
+        {
+            ComboWidth = Im.Font.Mono.CalculateTextSize("0000"u8).X + Im.Style.ScrollbarSize + Im.Style.ItemInnerSpacing.X;
+            if (_parent._stainCombos[_parent._currentDyeChannel].CurrentSelection.Id is 0)
+                return;
+
+            ComboWidth += Im.Style.TextHeight * 3 + Im.Style.ItemInnerSpacing.X * 3;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            foreach (var combo in _parent._stainCombos)
+                combo.SelectionChanged -= OnSelectionChanged;
         }
     }
 
+    public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, ushort currentSelection, int currentDyeChannel,
+        Utf8StringHandler<TextStringHandlerBuffer> tooltip, out int newSelection, float previewWidth, float itemHeight,
+        ComboFlags flags = ComboFlags.None)
+    {
+        Flags              = flags;
+        _currentDyeChannel = currentDyeChannel;
+        _currentSelection  = currentSelection;
+        using var font = Im.Font.PushMono();
+        if (!base.Draw(label, $"{_currentSelection,4}", tooltip, previewWidth, out var selection))
+        {
+            newSelection = 0;
+            return false;
+        }
+
+        newSelection = selection.Key;
+        return true;
+    }
+
+    protected override IEnumerable<StainTemplate> GetItems()
+    {
+        var dye = _stainCombos[_currentDyeChannel].CurrentSelection.Id;
+        foreach (var key in _stmFile.Entries.Keys.Prepend(0))
+        {
+            if (dye > 0 && _stmFile.TryGetValue(key, dye, out var dyes))
+                yield return new StainTemplate(new StringPair($"{key,4}"),
+                    new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.DiffuseColor),  1),
+                    new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.SpecularColor), 1),
+                    new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.EmissiveColor), 1), key.Int, true);
+            else
+                yield return new StainTemplate(new StringPair($"{key,4}"), Vector4.Zero, Vector4.Zero, Vector4.Zero, key.Int, false);
+        }
+    }
+
+    protected override float ItemHeight
+        => Im.Style.TextHeightWithSpacing;
+
+    protected override bool DrawItem(in StainTemplate item, int globalIndex, bool selected)
+    {
+        var ret = Im.Selectable(item.Id.Utf8, selected);
+        if (item.Found)
+        {
+            Im.Line.SameInner();
+            var frame = new Vector2(Im.Style.TextHeight);
+            Im.Color.Button("D"u8, item.Diffuse, 0, frame);
+            Im.Line.SameInner();
+            Im.Color.Button("S"u8, item.Specular, 0, frame);
+            Im.Line.SameInner();
+            Im.Color.Button("E"u8, item.Emissive, 0, frame);
+        }
+
+        return ret;
+    }
+
+    protected override bool IsSelected(StainTemplate item, int globalIndex)
+        => item.Key == _currentSelection;
+
+    protected override bool DrawFilter(float width, FilterComboBaseCache<StainTemplate> cache)
+    {
+        using var font = Im.Font.PushDefault();
+        return base.DrawFilter(width, cache);
+    }
+}
+
+public class StainService : Luna.IService
+{
     public const int ChannelCount = 2;
 
-    public readonly DictStain                         StainData;
-    public readonly FilterComboColors                 StainCombo1;
-    public readonly FilterComboColors                 StainCombo2; // FIXME is there a better way to handle this?
+    public readonly StainCombo                        StainCombo1;
+    public readonly StainCombo                        StainCombo2; // FIXME is there a better way to handle this?
     public readonly StmFile<LegacyDyePack>            LegacyStmFile;
     public readonly StmFile<DyePack>                  GudStmFile;
     public readonly StainTemplateCombo<LegacyDyePack> LegacyTemplateCombo;
@@ -130,9 +189,8 @@ public class StainService : Luna.IService
 
     public unsafe StainService(IDataManager dataManager, CharacterUtility characterUtility, DictStain stainData)
     {
-        StainData   = stainData;
-        StainCombo1 = CreateStainCombo();
-        StainCombo2 = CreateStainCombo();
+        StainCombo1 = new StainCombo(stainData);
+        StainCombo2 = new StainCombo(stainData);
 
         if (characterUtility.Address == null)
         {
@@ -146,14 +204,14 @@ public class StainService : Luna.IService
         }
 
 
-        FilterComboColors[] stainCombos = [StainCombo1, StainCombo2];
+        StainCombo[] stainCombos = [StainCombo1, StainCombo2];
 
         LegacyTemplateCombo = new StainTemplateCombo<LegacyDyePack>(stainCombos, LegacyStmFile);
         GudTemplateCombo    = new StainTemplateCombo<DyePack>(stainCombos, GudStmFile);
     }
 
     /// <summary> Retrieves the <see cref="FilterComboColors"/> instance for the given channel. Indexing is zero-based. </summary>
-    public FilterComboColors GetStainCombo(int channel)
+    public StainCombo GetStainCombo(int channel)
         => channel switch
         {
             0 => StainCombo1,
@@ -180,8 +238,9 @@ public class StainService : Luna.IService
         return new StmFile<TDyePack>(dataManager);
     }
 
-    private FilterComboColors CreateStainCombo()
-        => new(140, MouseWheelType.None,
-            () => StainData.Value.Prepend(new KeyValuePair<byte, (string Name, uint Dye, bool Gloss)>(0, ("None", 0, false))).ToList(),
-            Penumbra.Log);
+    public sealed class StainCombo(DictStain stainData) : Luna.FilterComboColors
+    {
+        protected override IEnumerable<Item> GetItems()
+            => stainData.Value.Select(t => new Item(new StringPair(t.Value.Name), t.Value.Dye, t.Key, t.Value.Gloss)).Prepend(None);
+    }
 }

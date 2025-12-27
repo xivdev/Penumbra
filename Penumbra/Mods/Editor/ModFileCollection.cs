@@ -1,3 +1,4 @@
+using ImSharp.Containers;
 using Luna;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
@@ -6,13 +7,13 @@ namespace Penumbra.Mods.Editor;
 
 public class ModFileCollection : IDisposable
 {
-    private readonly List<FileRegistry> _available = [];
-    private readonly List<FileRegistry> _mtrl      = [];
-    private readonly List<FileRegistry> _mdl       = [];
-    private readonly List<FileRegistry> _tex       = [];
-    private readonly List<FileRegistry> _shpk      = [];
-    private readonly List<FileRegistry> _pbd       = [];
-    private readonly List<FileRegistry> _atch       = [];
+    private readonly ObservableList<FileRegistry> _available = [];
+    private readonly ObservableList<FileRegistry> _mtrl      = [];
+    private readonly ObservableList<FileRegistry> _mdl       = [];
+    private readonly ObservableList<FileRegistry> _tex       = [];
+    private readonly ObservableList<FileRegistry> _shpk      = [];
+    private readonly ObservableList<FileRegistry> _pbd       = [];
+    private readonly ObservableList<FileRegistry> _atch      = [];
 
     private readonly SortedSet<FullPath>   _missing   = [];
     private readonly HashSet<Utf8GamePath> _usedPaths = [];
@@ -23,25 +24,25 @@ public class ModFileCollection : IDisposable
     public IReadOnlySet<Utf8GamePath> UsedPaths
         => Ready ? _usedPaths : [];
 
-    public IReadOnlyList<FileRegistry> Available
+    public IObservableList<FileRegistry> Available
         => Ready ? _available : [];
 
-    public IReadOnlyList<FileRegistry> Mtrl
+    public IObservableList<FileRegistry> Mtrl
         => Ready ? _mtrl : [];
 
-    public IReadOnlyList<FileRegistry> Mdl
+    public IObservableList<FileRegistry> Mdl
         => Ready ? _mdl : [];
 
-    public IReadOnlyList<FileRegistry> Tex
+    public IObservableList<FileRegistry> Tex
         => Ready ? _tex : [];
 
-    public IReadOnlyList<FileRegistry> Shpk
+    public IObservableList<FileRegistry> Shpk
         => Ready ? _shpk : [];
 
-    public IReadOnlyList<FileRegistry> Pbd
+    public IObservableList<FileRegistry> Pbd
         => Ready ? _pbd : [];
 
-    public IReadOnlyList<FileRegistry> Atch
+    public IObservableList<FileRegistry> Atch
         => Ready ? _atch : [];
 
     public bool Ready { get; private set; } = true;
@@ -123,24 +124,12 @@ public class ModFileCollection : IDisposable
             _available.Add(registry);
             switch (Path.GetExtension(registry.File.FullName).ToLowerInvariant())
             {
-                case ".mtrl":
-                    _mtrl.Add(registry);
-                    break;
-                case ".mdl":
-                    _mdl.Add(registry);
-                    break;
-                case ".tex":
-                    _tex.Add(registry);
-                    break;
-                case ".shpk":
-                    _shpk.Add(registry);
-                    break;
-                case ".pbd":
-                    _pbd.Add(registry);
-                    break;
-                case ".atch":
-                    _atch.Add(registry);
-                    break;
+                case ".mtrl": _mtrl.Add(registry); break;
+                case ".mdl":  _mdl.Add(registry); break;
+                case ".tex":  _tex.Add(registry); break;
+                case ".shpk": _shpk.Add(registry); break;
+                case ".pbd":  _pbd.Add(registry); break;
+                case ".atch": _atch.Add(registry); break;
             }
         }
     }

@@ -46,7 +46,8 @@ public class CollectionSelectHeader(
         tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
 
         if (!_activeCollections.CurrentCollectionInUse)
-            ImEx.TextFramed("The currently selected collection is not used in any way."u8, -Vector2.UnitX, Colors.PressEnterWarningBg);
+            ImEx.TextFramed("The currently selected collection is not used in any way."u8, Im.ContentRegion.Available with { Y = 0 },
+                Colors.PressEnterWarningBg);
     }
 
     private void DrawTemporaryCheckbox()
@@ -185,6 +186,7 @@ public class CollectionSelectHeader(
         tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
 
         if (!_activeCollections.CurrentCollectionInUse)
-            ImEx.TextFramed("The currently selected collection is not used in any way."u8, -Vector2.UnitX, Colors.PressEnterWarningBg);
+            ImEx.TextFramed("The currently selected collection is not used in any way."u8, Im.ContentRegion.Available with { Y = 0 },
+                Colors.PressEnterWarningBg);
     }
 }

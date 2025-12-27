@@ -120,7 +120,15 @@ public sealed class ModFileSystemCache(ModFileSystemDrawer parent)
     }
 
     public override void Update()
-    { }
+    {
+        if (ColorsDirty)
+        {
+            CollapsedFolderColor =  ColorId.FolderCollapsed.Value().ToVector();
+            ExpandedFolderColor  =  ColorId.FolderExpanded.Value().ToVector();
+            LineColor            =  ColorId.FolderLine.Value().ToVector();
+            Dirty                &= ~IManagedCache.DirtyFlags.Colors;
+        }
+    }
 
     protected override ModData ConvertNode(in IFileSystemNode node)
         => new((IFileSystemData<Mod>)node);

@@ -1,151 +1,42 @@
-using Dalamud.Plugin.Services;
-using Dalamud.Plugin;
 using ImSharp;
 using Luna;
 using Penumbra.Api.Enums;
-using Penumbra.Collections.Manager;
-using Penumbra.GameData.Actors;
-using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
-public sealed class CollectionsTab : ITab<TabType>, IDisposable
+public sealed class CollectionsTab : TwoPanelLayout, ITab<TabType>
 {
-    private readonly EphemeralConfig    _config;
-    private readonly CollectionSelector _selector;
-    private readonly CollectionPanel    _panel;
-    private readonly TutorialService    _tutorial;
-    private readonly IncognitoService   _incognito;
-
-    public enum PanelMode
-    {
-        SimpleAssignment,
-        IndividualAssignment,
-        GroupAssignment,
-        Details,
-    };
-
-    public PanelMode Mode
-    {
-        get => _config.CollectionPanel;
-        set
-        {
-            _config.CollectionPanel = value;
-            _config.Save();
-        }
-    }
+    private readonly TutorialService _tutorial;
 
     public TabType Identifier
         => TabType.Collections;
 
-    public CollectionsTab(IDalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator, IncognitoService incognito,
-        CollectionManager collectionManager, ModStorage modStorage, ActorManager actors, ITargetManager targets, TutorialService tutorial, SaveService saveService)
+    public CollectionsTab(TutorialService tutorial, CollectionButtonFooter leftFooter, CollectionSelector leftPanel, CollectionFilter filter,
+        CollectionModeHeader rightHeader, CollectionPanel rightPanel)
     {
-        _config    = configuration.Ephemeral;
-        _tutorial  = tutorial;
-        _incognito = incognito;
-        _selector  = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial, incognito);
-        _panel     = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage, saveService, incognito);
+        LeftHeader  = new FilterHeader<CollectionSelector.Entry>(filter, new StringU8("Filter..."u8));
+        LeftPanel   = leftPanel;
+        LeftFooter  = leftFooter;
+        RightHeader = rightHeader;
+        RightPanel  = rightPanel;
+        RightFooter = NopHeaderFooter.Instance;
+        _tutorial   = tutorial;
     }
 
-    public void Dispose()
-    {
-        _selector.Dispose();
-        _panel.Dispose();
-    }
-
-    public ReadOnlySpan<byte> Label
+    public override ReadOnlySpan<byte> Label
         => "Collections"u8;
 
-    public void DrawContent()
+    protected override void DrawLeftGroup()
     {
-        var width = Im.Font.CalculateSize("nnnnnnnnnnnnnnnnnnnnnnnnnn"u8).X;
-        using (Im.Group())
-        {
-            _selector.Draw(width);
-        }
-
+        base.DrawLeftGroup();
         _tutorial.OpenTutorial(BasicTutorialSteps.EditingCollections);
-
-        Im.Line.Same();
-        using (Im.Group())
-        {
-            DrawHeaderLine();
-            DrawPanel();
-        }
     }
 
-    public void DrawHeader()
-    {
-        _tutorial.OpenTutorial(BasicTutorialSteps.Collections);
-    }
+    public void DrawContent()
+        => Draw();
 
-    private void DrawHeaderLine()
-    {
-        var       withSpacing = Im.Style.FrameHeightWithSpacing;
-        using var style       = ImStyleSingle.FrameRounding.Push(0).Push(ImStyleDouble.ItemSpacing, Vector2.Zero);
-        var       buttonSize  = new Vector2((Im.ContentRegion.Available.X - withSpacing) / 4f, Im.Style.FrameHeight);
-
-        using var _                = Im.Group();
-        var       tabSelectedColor = Im.Style[ImGuiColor.TabSelected];
-        using var color            = ImGuiColor.Button.Push(tabSelectedColor, Mode is PanelMode.SimpleAssignment);
-        if (Im.Button("Simple Assignments"u8, buttonSize))
-            Mode = PanelMode.SimpleAssignment;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.SimpleAssignments);
-        Im.Line.Same();
-
-        color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.IndividualAssignment);
-        if (Im.Button("Individual Assignments"u8, buttonSize))
-            Mode = PanelMode.IndividualAssignment;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.IndividualAssignments);
-        Im.Line.Same();
-
-        color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.GroupAssignment);
-        if (Im.Button("Group Assignments"u8, buttonSize))
-            Mode = PanelMode.GroupAssignment;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.GroupAssignments);
-        Im.Line.Same();
-
-        color.Push(ImGuiColor.Button, tabSelectedColor, Mode is PanelMode.Details);
-        if (Im.Button("Collection Details"u8, buttonSize))
-            Mode = PanelMode.Details;
-        color.Pop();
-        _tutorial.OpenTutorial(BasicTutorialSteps.CollectionDetails);
-        Im.Line.Same();
-
-        _incognito.DrawToggle(withSpacing);
-    }
-
-    private void DrawPanel()
-    {
-        using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
-        using var child = Im.Child.Begin("##CollectionSettings"U8, Im.ContentRegion.Available with { Y = 0 }, true);
-        if (!child)
-            return;
-
-        style.Pop();
-        switch (Mode)
-        {
-            case PanelMode.SimpleAssignment:
-                _panel.DrawSimple();
-                break;
-            case PanelMode.IndividualAssignment:
-                _panel.DrawIndividualPanel();
-                break;
-            case PanelMode.GroupAssignment:
-                _panel.DrawGroupPanel();
-                break;
-            case PanelMode.Details:
-                _panel.DrawDetailsPanel();
-                break;
-        }
-
-        style.Push(ImStyleDouble.ItemSpacing, Vector2.Zero);
-    }
+    public void PostTabButton()
+        => _tutorial.OpenTutorial(BasicTutorialSteps.Collections);
 }

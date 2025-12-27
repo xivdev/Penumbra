@@ -2,7 +2,6 @@ using Dalamud.Interface.ImGuiNotification;
 using ImSharp;
 using Luna;
 using Luna.Generators;
-using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -12,7 +11,6 @@ using Penumbra.GameData.Structs;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods;
-using Penumbra.Mods.Editor;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Mods.Manager;
@@ -22,8 +20,6 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
-using ITab = OtterGui.Widgets.ITab;
-using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -152,44 +148,6 @@ public class ItemSwapTab : IDisposable, ITab
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
     }
 
-
-
-    private class ItemSelector(ActiveCollections collections, ItemData data, ModFileSystemSelector? selector, FullEquipType type)
-        : FilterComboCache<(EquipItem Item, bool InMod, SingleArray<IMod> InCollection)>(() =>
-        {
-            var list = data.ByType[type];
-            var enumerable = selector?.Selected is { } mod && mod.ChangedItems.Values.Any(o => o is IdentifiedItem i && i.Item.Type == type)
-                ? list.Select(i => (i, mod.ChangedItems.ContainsKey(i.Name),
-                        collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
-                    .OrderByDescending(p => p.Item2).ThenByDescending(p => p.Item3.Count)
-                : selector is null
-                    ? list.Select(i => (i, false,
-                            collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
-                        .OrderBy(p => p.Item3.Count)
-                    : list.Select(i => (i, false,
-                            collections.Current.ChangedItems.TryGetValue(i.Name, out var m) ? m.Item1 : new SingleArray<IMod>()))
-                        .OrderByDescending(p => p.Item3.Count);
-            return enumerable.ToList();
-        }, MouseWheelType.None, Penumbra.Log)
-    {
-        protected override bool DrawSelectable(int globalIdx, bool selected)
-        {
-            var (_, inMod, inCollection) = Items[globalIdx];
-            using var color = inMod
-                ? ImGuiColor.Text.Push(ColorId.ResTreeLocalPlayer.Value())
-                : inCollection.Count > 0
-                    ? ImGuiColor.Text.Push(ColorId.ResTreeNonNetworked.Value())
-                    : null;
-            var ret = base.DrawSelectable(globalIdx, selected);
-            if (inCollection.Count > 0)
-                Im.Tooltip.OnHover(string.Join('\n', inCollection.Select(m => m.Name)));
-            return ret;
-        }
-
-        protected override string ToString((EquipItem Item, bool InMod, SingleArray<IMod> InCollection) obj)
-            => obj.Item.Name;
-    }
-
     private readonly Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, StringU8 TextFrom, StringU8 TextTo)> _selectors;
     private readonly ItemSwapContainer                                                                                    _swapData;
 
@@ -241,17 +199,17 @@ public class ItemSwapTab : IDisposable, ITab
                 case SwapType.Ring:
                 case SwapType.Glasses:
                     var values = _selectors[_lastTab];
-                    if (values.Source.CurrentSelection.Item.Type != FullEquipType.Unknown
-                     && values.Target.CurrentSelection.Item.Type != FullEquipType.Unknown)
-                        _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection.Item, values.Source.CurrentSelection.Item,
+                    if (values.Source.CurrentSelection.Type is not FullEquipType.Unknown
+                     && values.Target.CurrentSelection.Type is not FullEquipType.Unknown)
+                        _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection, values.Source.CurrentSelection,
                             _useCurrentCollection ? _collectionManager.Active.Current : null, _useRightRing, _useLeftRing);
                     break;
                 case SwapType.BetweenSlots:
                     var (_, _, selectorFrom) = GetAccessorySelector(_slotFrom, true);
                     var (_, _, selectorTo)   = GetAccessorySelector(_slotTo,   false);
-                    if (selectorFrom.CurrentSelection.Item.Valid && selectorTo.CurrentSelection.Item.Valid)
-                        _affectedItems = _swapData.LoadTypeSwap(ToEquipSlot(_slotTo), selectorTo.CurrentSelection.Item, ToEquipSlot(_slotFrom),
-                            selectorFrom.CurrentSelection.Item,
+                    if (selectorFrom.CurrentSelection.Valid && selectorTo.CurrentSelection.Valid)
+                        _affectedItems = _swapData.LoadTypeSwap(ToEquipSlot(_slotTo), selectorTo.CurrentSelection, ToEquipSlot(_slotFrom),
+                            selectorFrom.CurrentSelection,
                             _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
@@ -315,10 +273,10 @@ public class ItemSwapTab : IDisposable, ITab
                     $"Created by swapping {_lastTab} {_sourceId} onto {_lastTab} {_targetId} for {_currentRace.ToName()} {_currentGender.ToName()}s in {_mod!.Name}{OriginalAuthor()}";
             case SwapType.BetweenSlots:
                 return
-                    $"Created by swapping {GetAccessorySelector(_slotFrom, true).Item3.CurrentSelection.Item.Name} onto {GetAccessorySelector(_slotTo, false).Item3.CurrentSelection.Item.Name} in {_mod!.Name}{OriginalAuthor()}";
+                    $"Created by swapping {GetAccessorySelector(_slotFrom, true).Item3.CurrentSelection.Name} onto {GetAccessorySelector(_slotTo, false).Item3.CurrentSelection.Name} in {_mod!.Name}{OriginalAuthor()}";
             default:
                 return
-                    $"Created by swapping {_selectors[_lastTab].Source.CurrentSelection.Item.Name} onto {_selectors[_lastTab].Target.CurrentSelection.Item.Name} in {_mod!.Name}{OriginalAuthor()}";
+                    $"Created by swapping {_selectors[_lastTab].Source.CurrentSelection.Name} onto {_selectors[_lastTab].Target.CurrentSelection.Name} in {_mod!.Name}{OriginalAuthor()}";
         }
     }
 
@@ -543,9 +501,7 @@ public class ItemSwapTab : IDisposable, ITab
         }
 
         table.NextColumn();
-        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Item.Name, string.Empty,
-            InputWidth * 2 * Im.Style.GlobalScale,
-            Im.Style.TextHeightWithSpacing);
+        _dirty |= selector.Draw("##itemSource"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
 
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
         table.DrawFrameColumn($"and put {article2} on {article1}");
@@ -566,8 +522,7 @@ public class ItemSwapTab : IDisposable, ITab
         }
 
         table.NextColumn();
-        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Item.Name, string.Empty, InputWidth * 2 * Im.Style.GlobalScale,
-            Im.Style.TextHeightWithSpacing);
+        _dirty |= selector.Draw("##itemTarget"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
         if (_affectedItems is not { Count: > 1 })
             return;
 
@@ -576,7 +531,7 @@ public class ItemSwapTab : IDisposable, ITab
         if (Im.Item.Hovered())
         {
             using var tt = Im.Tooltip.Begin();
-            foreach (var item in _affectedItems.Where(i => !ReferenceEquals(i.Name, selector.CurrentSelection.Item.Name)))
+            foreach (var item in _affectedItems.Where(i => !ReferenceEquals(i.Name, selector.CurrentSelection.Name)))
                 Im.Text(item.Name);
         }
     }
@@ -610,8 +565,7 @@ public class ItemSwapTab : IDisposable, ITab
             return;
         table.DrawFrameColumn(text1);
         table.NextColumn();
-        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Item.Name, string.Empty,
-            InputWidth * 2 * Im.Style.GlobalScale, Im.Style.TextHeightWithSpacing);
+        _dirty |= sourceSelector.Draw("##itemSource"u8, sourceSelector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
 
         if (type is SwapType.Ring)
         {
@@ -621,9 +575,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         table.DrawFrameColumn(text2);
         table.NextColumn();
-        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Item.Name, string.Empty,
-            InputWidth * 2 * Im.Style.GlobalScale,
-            Im.Style.TextHeightWithSpacing);
+        _dirty |= targetSelector.Draw("##itemTarget"u8, targetSelector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
         if (type is SwapType.Ring)
         {
             Im.Line.Same();
@@ -638,7 +590,7 @@ public class ItemSwapTab : IDisposable, ITab
         if (Im.Item.Hovered())
         {
             using var tt = Im.Tooltip.Begin();
-            foreach (var item in _affectedItems.Where(i => !ReferenceEquals(i.Name, targetSelector.CurrentSelection.Item.Name)))
+            foreach (var item in _affectedItems.Where(i => !ReferenceEquals(i.Name, targetSelector.CurrentSelection.Name)))
                 Im.Text(item.Name);
         }
     }

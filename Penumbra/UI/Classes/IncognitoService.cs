@@ -24,7 +24,7 @@ public class IncognitoService(TutorialService tutorial, Configuration config) : 
         }
 
         if (!hold)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.");
+            Im.Tooltip.OnHover($"\nHold {config.IncognitoModifier} while clicking to toggle.", HoveredFlags.AllowWhenDisabled, true);
 
         tutorial.OpenTutorial(BasicTutorialSteps.Incognito);
     }

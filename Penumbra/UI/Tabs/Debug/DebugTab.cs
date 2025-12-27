@@ -1,12 +1,10 @@
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Interface.Colors;
 using ImSharp;
 using Luna;
@@ -15,7 +13,6 @@ using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
-using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Interop;
 using Penumbra.Import.Structs;
@@ -28,7 +25,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.UI.Classes;
-using ImGuiClip = OtterGui.ImGuiClip;
 using Penumbra.Api.IpcTester;
 using Penumbra.GameData.Data;
 using Penumbra.Interop.Hooks.PostProcessing;
@@ -65,54 +61,54 @@ public class Diagnostics(ServiceManager provider) : IUiService
 
 public sealed class DebugTab : Window, ITab<TabType>
 {
-    private readonly Configuration                      _config;
-    private readonly CollectionManager                  _collectionManager;
-    private readonly ModManager                         _modManager;
-    private readonly ValidityChecker                    _validityChecker;
-    private readonly HttpApi                            _httpApi;
-    private readonly ActorManager                       _actors;
-    private readonly StainService                       _stains;
-    private readonly GlobalVariablesDrawer              _globalVariablesDrawer;
-    private readonly ResourceManagerService             _resourceManager;
-    private readonly ResourceLoader                     _resourceLoader;
-    private readonly CollectionResolver                 _collectionResolver;
-    private readonly DrawObjectState                    _drawObjectState;
-    private readonly PathState                          _pathState;
-    private readonly SubfileHelper                      _subfileHelper;
-    private readonly IdentifiedCollectionCache          _identifiedCollectionCache;
-    private readonly CutsceneService                    _cutsceneService;
-    private readonly ModImportManager                   _modImporter;
-    private readonly ImportPopup                        _importPopup;
-    private readonly FrameworkManager                   _framework;
-    private readonly TextureManager                     _textureManager;
-    private readonly ShaderReplacementFixer             _shaderReplacementFixer;
-    private readonly RedrawService                      _redraws;
-    private readonly DictEmote                          _emotes;
-    private readonly Diagnostics                        _diagnostics;
-    private readonly ObjectManager                      _objects;
-    private readonly IDataManager                       _dataManager;
-    private readonly IpcTester                          _ipcTester;
-    private readonly CrashHandlerPanel                  _crashHandlerPanel;
-    private readonly TexHeaderDrawer                    _texHeaderDrawer;
-    private readonly HookOverrideDrawer                 _hookOverrides;
-    private readonly RsfService                         _rsfService;
-    private readonly SchedulerResourceManagementService _schedulerService;
-    private readonly ObjectIdentification               _objectIdentification;
-    private readonly RenderTargetDrawer                 _renderTargetDrawer;
-    private readonly ModMigratorDebug                   _modMigratorDebug;
-    private readonly ShapeInspector                     _shapeInspector;
-    private readonly FileWatcher.FileWatcherDrawer      _fileWatcherDrawer;
-    private readonly DragDropManager                    _dragDropManager;
+    private readonly Configuration                 _config;
+    private readonly CollectionManager             _collectionManager;
+    private readonly ModManager                    _modManager;
+    private readonly ValidityChecker               _validityChecker;
+    private readonly HttpApi                       _httpApi;
+    private readonly ActorManager                  _actors;
+    private readonly StainService                  _stains;
+    private readonly GlobalVariablesDrawer         _globalVariablesDrawer;
+    private readonly ResourceManagerService        _resourceManager;
+    private readonly ResourceLoader                _resourceLoader;
+    private readonly CollectionResolver            _collectionResolver;
+    private readonly DrawObjectState               _drawObjectState;
+    private readonly PathState                     _pathState;
+    private readonly SubfileHelper                 _subfileHelper;
+    private readonly IdentifiedCollectionCache     _identifiedCollectionCache;
+    private readonly CutsceneService               _cutsceneService;
+    private readonly ModImportManager              _modImporter;
+    private readonly ImportPopup                   _importPopup;
+    private readonly FrameworkManager              _framework;
+    private readonly TextureManager                _textureManager;
+    private readonly ShaderReplacementFixer        _shaderReplacementFixer;
+    private readonly RedrawService                 _redraws;
+    private readonly EmoteListDrawer               _emotes;
+    private readonly Diagnostics                   _diagnostics;
+    private readonly ObjectManager                 _objects;
+    private readonly IDataManager                  _dataManager;
+    private readonly IpcTester                     _ipcTester;
+    private readonly CrashHandlerPanel             _crashHandlerPanel;
+    private readonly TexHeaderDrawer               _texHeaderDrawer;
+    private readonly HookOverrideDrawer            _hookOverrides;
+    private readonly RsfService                    _rsfService;
+    private readonly ActionTmbListDrawer           _actionTmbs;
+    private readonly ObjectIdentification          _objectIdentification;
+    private readonly RenderTargetDrawer            _renderTargetDrawer;
+    private readonly ModMigratorDebug              _modMigratorDebug;
+    private readonly ShapeInspector                _shapeInspector;
+    private readonly FileWatcher.FileWatcherDrawer _fileWatcherDrawer;
+    private readonly DragDropManager               _dragDropManager;
 
     public DebugTab(Configuration config, CollectionManager collectionManager, ObjectManager objects, IDataManager dataManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorManager actors, StainService stains,
         ResourceManagerService resourceManager, ResourceLoader resourceLoader, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, DictEmote emotes,
+        TextureManager textureManager, ShaderReplacementFixer shaderReplacementFixer, RedrawService redraws, EmoteListDrawer emotes,
         Diagnostics diagnostics, IpcTester ipcTester, CrashHandlerPanel crashHandlerPanel, TexHeaderDrawer texHeaderDrawer,
         HookOverrideDrawer hookOverrides, RsfService rsfService, GlobalVariablesDrawer globalVariablesDrawer,
-        SchedulerResourceManagementService schedulerService, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
+        ActionTmbListDrawer actionTmbs, ObjectIdentification objectIdentification, RenderTargetDrawer renderTargetDrawer,
         ModMigratorDebug modMigratorDebug, ShapeInspector shapeInspector, FileWatcher.FileWatcherDrawer fileWatcherDrawer,
         DragDropManager dragDropManager)
         : base("Penumbra Debug Window", WindowFlags.NoCollapse)
@@ -152,7 +148,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _hookOverrides             = hookOverrides;
         _rsfService                = rsfService;
         _globalVariablesDrawer     = globalVariablesDrawer;
-        _schedulerService          = schedulerService;
+        _actionTmbs                = actionTmbs;
         _objectIdentification      = objectIdentification;
         _renderTargetDrawer        = renderTargetDrawer;
         _modMigratorDebug          = modMigratorDebug;
@@ -205,7 +201,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _globalVariablesDrawer.Draw();
         DrawCloudApi();
         DrawDebugTabIpc();
-        if(Im.Tree.Header("Drag & Drop Manager"u8))
+        if (Im.Tree.Header("Drag & Drop Manager"u8))
             _dragDropManager.DrawDebugInfo();
     }
 
@@ -742,7 +738,7 @@ public sealed class DebugTab : Window, ITab<TabType>
             {
                 using var table = Im.Table.Begin("###TmbTable"u8, 2, TableFlags.SizingFixedFit);
                 if (table)
-                    foreach (var (id, name) in _schedulerService.ListedTmbs.OrderBy(kvp => kvp.Key))
+                    foreach (var (id, name) in _actionTmbs.Service.ListedTmbs.OrderBy(kvp => kvp.Key))
                         table.DrawDataPair($"{id:D6}", name.Span);
             }
         }
@@ -814,11 +810,6 @@ public sealed class DebugTab : Window, ITab<TabType>
             Im.Selectable(item.Key);
     }
 
-
-    private string _emoteSearchFile = string.Empty;
-    private string _emoteSearchName = string.Empty;
-
-
     private AtchFile? _atchFile;
 
     private void DrawAtch()
@@ -842,57 +833,19 @@ public sealed class DebugTab : Window, ITab<TabType>
         AtchDrawer.Draw(_atchFile);
     }
 
+
     private void DrawEmotes()
     {
         using var mainTree = Im.Tree.Node("Emotes"u8);
-        if (!mainTree)
-            return;
-
-        Im.Input.Text("File Name"u8,  ref _emoteSearchFile);
-        Im.Input.Text("Emote Name"u8, ref _emoteSearchName);
-        using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
-            new Vector2(-1, 12 * Im.Style.TextHeightWithSpacing));
-        if (!table)
-            return;
-
-        var skips = ImGuiClip.GetNecessarySkips(Im.Style.TextHeightWithSpacing);
-        var dummy = ImGuiClip.FilteredClippedDraw(_emotes, skips,
-            p => p.Key.Contains(_emoteSearchFile, StringComparison.OrdinalIgnoreCase)
-             && (_emoteSearchName.Length == 0
-                 || p.Value.Any(s => s.Name.ToDalamudString().TextValue.Contains(_emoteSearchName, StringComparison.OrdinalIgnoreCase))),
-            p =>
-            {
-                Im.Table.DrawColumn(p.Key);
-                Im.Table.DrawColumn(StringU8.Join(", "u8, p.Value.Select(v => v.Name.ToDalamudString().TextValue)));
-            });
-        ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
+        if (mainTree)
+            _emotes.Draw();
     }
-
-    private string       _tmbKeyFilter   = string.Empty;
-    private CiByteString _tmbKeyFilterU8 = CiByteString.Empty;
 
     private void DrawActionTmbs()
     {
         using var mainTree = Im.Tree.Node("Action TMBs"u8);
-        if (!mainTree)
-            return;
-
-        if (Im.Input.Text("Key"u8, ref _tmbKeyFilter))
-            _tmbKeyFilterU8 = CiByteString.FromString(_tmbKeyFilter, out var r, MetaDataComputation.All) ? r : CiByteString.Empty;
-        using var table = Im.Table.Begin("##table"u8, 2, TableFlags.RowBackground | TableFlags.ScrollY | TableFlags.SizingFixedFit,
-            new Vector2(-1, 12 * Im.Style.TextHeightWithSpacing));
-        if (!table)
-            return;
-
-        var skips = ImGuiClip.GetNecessarySkips(Im.Style.TextHeightWithSpacing);
-        var dummy = ImGuiClip.FilteredClippedDraw(_schedulerService.ActionTmbs.OrderBy(r => r.Value), skips,
-            kvp => kvp.Key.Contains(_tmbKeyFilterU8),
-            p =>
-            {
-                Im.Table.DrawColumn($"{p.Value}");
-                Im.Table.DrawColumn(p.Key.Span);
-            });
-        ImGuiClip.DrawEndDummy(dummy, Im.Style.TextHeightWithSpacing);
+        if (mainTree)
+            _actionTmbs.Draw();
     }
 
     private void DrawStainTemplates()

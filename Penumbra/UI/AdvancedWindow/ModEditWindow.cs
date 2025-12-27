@@ -621,6 +621,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _fileDialog        = fileDialog;
         _framework         = framework;
         _metaDrawers       = metaDrawers;
+        _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
         _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,

@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using ImSharp;
 using Luna;
-using OtterGui;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
@@ -20,10 +19,7 @@ public partial class ModEditWindow
     private          int                   _pathIdx       = -1;
     private          int                   _folderSkip;
     private          bool                  _overviewMode;
-
-    private string _fileOverviewFilter1 = string.Empty;
-    private string _fileOverviewFilter2 = string.Empty;
-    private string _fileOverviewFilter3 = string.Empty;
+    private readonly OverviewTable         _overviewTable;
 
     private bool CheckFilter(FileRegistry registry)
         => _fileFilter.Length is 0 || registry.File.FullName.Contains(_fileFilter, StringComparison.OrdinalIgnoreCase);
@@ -40,9 +36,7 @@ public partial class ModEditWindow
         DrawOptionSelectHeader();
         DrawButtonHeader();
 
-        if (_overviewMode)
-            DrawFileManagementOverview();
-        else
+        if (!_overviewMode)
             DrawFileManagementNormal();
 
         using var child = Im.Child.Begin("##files"u8, Im.ContentRegion.Available, true);
@@ -50,65 +44,11 @@ public partial class ModEditWindow
             return;
 
         if (_overviewMode)
-            DrawFilesOverviewMode();
+            _overviewTable.Draw();
         else
             DrawFilesNormalMode();
     }
 
-    private void DrawFilesOverviewMode()
-    {
-        var height = Im.Style.TextHeightWithSpacing + 2 * Im.Style.CellPadding.Y;
-        var skips  = ImGuiClip.GetNecessarySkips(height);
-
-        using var table = Im.Table.Begin("##table"u8, 3, TableFlags.RowBackground | TableFlags.BordersInnerVertical, Im.ContentRegion.Available);
-
-        if (!table)
-            return;
-
-        var width = Im.ContentRegion.Available.X / 8;
-
-        table.SetupColumn("##file"u8,   TableColumnFlags.WidthFixed, width * 3);
-        table.SetupColumn("##path"u8,   TableColumnFlags.WidthFixed, width * 3 + Im.Style.FrameBorderThickness);
-        table.SetupColumn("##option"u8, TableColumnFlags.WidthFixed, width * 2);
-
-        var idx = 0;
-
-        var files = _editor.Files.Available.SelectMany(f =>
-        {
-            var file = f.RelPath.ToString();
-            return f.SubModUsage.Count == 0
-                ? Enumerable.Repeat((file, "Unused", string.Empty, 0x40000080u), 1)
-                : f.SubModUsage.Select(s => (file, s.Item2.ToString(), s.Item1.GetFullName(),
-                    _editor.Option! == s.Item1 && Mod!.HasOptions ? 0x40008000u : 0u));
-        });
-
-        void DrawLine((string, string, string, uint) data)
-        {
-            using var id = Im.Id.Push(idx++);
-            if (data.Item4 is not 0)
-                Im.Table.SetBackgroundColor(TableBackgroundTarget.Cell, data.Item4);
-
-            ImEx.CopyOnClickSelectable(data.Item1);
-            Im.Table.NextColumn();
-            if (data.Item4 is not 0)
-                Im.Table.SetBackgroundColor(TableBackgroundTarget.Cell, data.Item4);
-
-            ImEx.CopyOnClickSelectable(data.Item2);
-            Im.Table.NextColumn();
-            if (data.Item4 is not 0)
-                Im.Table.SetBackgroundColor(TableBackgroundTarget.Cell, data.Item4);
-
-            ImEx.CopyOnClickSelectable(data.Item3);
-        }
-
-        bool Filter((string, string, string, uint) data)
-            => data.Item1.Contains(_fileOverviewFilter1, StringComparison.OrdinalIgnoreCase)
-             && data.Item2.Contains(_fileOverviewFilter2, StringComparison.OrdinalIgnoreCase)
-             && data.Item3.Contains(_fileOverviewFilter3, StringComparison.OrdinalIgnoreCase);
-
-        var end = ImGuiClip.FilteredClippedDraw(files, skips, Filter, DrawLine);
-        ImGuiClip.DrawEndDummy(end, height);
-    }
 
     private void DrawFilesNormalMode()
     {
@@ -154,7 +94,7 @@ public partial class ModEditWindow
         {
             using var tt = Im.Tooltip.Begin();
             using var c  = ImGuiColor.Text.PushDefault();
-            Im.Text(StringU8.Join((byte) '\n', text));
+            Im.Text(StringU8.Join((byte)'\n', text));
         }
 
 
@@ -255,7 +195,7 @@ public partial class ModEditWindow
         var tmp = _fileIdx == i && _pathIdx == j ? _gamePathEdit : gamePath.ToString();
         var pos = Im.Cursor.X - Im.Style.FrameHeight;
         Im.Item.SetNextWidth(-1);
-        if (Im.Input.Text(StringU8.Empty, ref tmp, maxLength:Utf8GamePath.MaxGamePathLength))
+        if (Im.Input.Text(StringU8.Empty, ref tmp, maxLength: Utf8GamePath.MaxGamePathLength))
         {
             _fileIdx      = i;
             _pathIdx      = j;
@@ -341,7 +281,8 @@ public partial class ModEditWindow
         if (Im.Button("Add Paths"u8))
             _editor.FileEditor.AddPathsToSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains), _folderSkip);
 
-        Im.Tooltip.OnHover("Add the file path converted to a game path to all selected files for the current option, optionally skipping the first N folders."u8);
+        Im.Tooltip.OnHover(
+            "Add the file path converted to a game path to all selected files for the current option, optionally skipping the first N folders."u8);
 
 
         Im.Line.Same();
@@ -365,7 +306,7 @@ public partial class ModEditWindow
 
         Im.Line.Same();
         var changes = _editor.FileEditor.Changes;
-        var tt2 = changes ? "Apply the current file setup to the currently selected option."u8 : "No changes made."u8;
+        var tt2     = changes ? "Apply the current file setup to the currently selected option."u8 : "No changes made."u8;
         if (ImEx.Button("Apply Changes"u8, Vector2.Zero, tt2, !changes))
         {
             var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
@@ -411,23 +352,5 @@ public partial class ModEditWindow
         Im.Line.Same();
 
         ImEx.TextRightAligned($"{_selectedFiles.Count} / {_editor.Files.Available.Count} Files Selected");
-    }
-
-    private void DrawFileManagementOverview()
-    {
-        using var style = ImStyleSingle.FrameRounding.Push(0)
-            .Push(ImStyleDouble.ItemSpacing,          Vector2.Zero)
-            .Push(ImStyleSingle.FrameBorderThickness, Im.Style.ChildBorderThickness);
-
-        var width = Im.ContentRegion.Available.X / 8;
-
-        Im.Item.SetNextWidth(width * 3);
-        Im.Input.Text("##fileFilter"u8, ref _fileOverviewFilter1, "Filter file..."u8);
-        Im.Line.Same();
-        Im.Item.SetNextWidth(width * 3);
-        Im.Input.Text("##pathFilter"u8, ref _fileOverviewFilter2, "Filter path..."u8);
-        Im.Line.Same();
-        Im.Item.SetNextWidth(width * 2);
-        Im.Input.Text("##optionFilter"u8, ref _fileOverviewFilter3, "Filter option..."u8);
     }
 }

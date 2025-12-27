@@ -39,8 +39,8 @@ public sealed class CollectionChange(Logger log)
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnCollectionChange" />
         ItemSwapTab = 0,
 
-        /// <seealso cref="UI.CollectionTab.CollectionSelector.OnCollectionChange" />
-        CollectionSelector = 0,
+        /// <seealso cref="UI.CollectionTab.CollectionSelector.Cache.OnCollectionChange" />
+        CollectionSelectorCache = 0,
 
         /// <seealso cref="UI.CollectionTab.IndividualAssignmentUi.UpdateIdentifiers"/>
         IndividualAssignmentUi = 0,

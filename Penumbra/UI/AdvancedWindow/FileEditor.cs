@@ -2,8 +2,6 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using ImSharp;
 using Luna;
-using OtterGui.Classes;
-using OtterGui.Widgets;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -11,7 +9,6 @@ using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
-using MouseWheelType = OtterGui.Widgets.MouseWheelType;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -24,7 +21,7 @@ public class FileEditor<T>(
     FileDialogService fileDialog,
     string tabName,
     string fileType,
-    Func<IReadOnlyList<FileRegistry>> getFiles,
+    Func<IEnumerable<FileRegistry>> getFiles,
     Func<T, bool, bool> drawEdit,
     Func<string> getInitialPath,
     Func<byte[], string, bool, T?> parseFile)
@@ -74,10 +71,15 @@ public class FileEditor<T>(
         _defaultFile = null;
     }
 
-    private FileRegistry? _currentPath;
-    private T?            _currentFile;
-    private Exception?    _currentException;
-    private bool          _changed;
+    private FileRegistry? CurrentPath
+    {
+        get => _combo.Selected;
+        set => _combo.Selected = value;
+    }
+
+    private T?         _currentFile;
+    private Exception? _currentException;
+    private bool       _changed;
 
     private string       _defaultPath = typeof(T) == typeof(ModEditWindow.PbdTab) ? GamePaths.Pbd.Path : string.Empty;
     private bool         _inInput;
@@ -163,7 +165,7 @@ public class FileEditor<T>(
     public void Reset()
     {
         _currentException = null;
-        _currentPath      = null;
+        CurrentPath       = null;
         (_currentFile as IDisposable)?.Dispose();
         _currentFile = null;
         _changed     = false;
@@ -171,26 +173,32 @@ public class FileEditor<T>(
 
     private void DrawFileSelectCombo()
     {
-        if (_combo.Draw("##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {fileType} File...", string.Empty,
-                Im.ContentRegion.Available.X, Im.Style.TextHeight)
-         && _combo.CurrentSelection != null)
-            UpdateCurrentFile(_combo.CurrentSelection);
+        if (CurrentPath is not null)
+        {
+            if (_combo.Draw("##select"u8, CurrentPath.RelPath.Path.Span, StringU8.Empty, Im.ContentRegion.Available.X, out var newSelection))
+                UpdateCurrentFile(newSelection);
+        }
+        else
+        {
+            if (_combo.Draw("##select"u8, $"Select {fileType} File...", StringU8.Empty, Im.ContentRegion.Available.X, out var newSelection))
+                UpdateCurrentFile(newSelection);
+        }
     }
 
     private void UpdateCurrentFile(FileRegistry path)
     {
-        if (ReferenceEquals(_currentPath, path))
+        if (ReferenceEquals(CurrentPath, path))
             return;
 
         _changed          = false;
-        _currentPath      = path;
+        CurrentPath       = path;
         _currentException = null;
         try
         {
-            var bytes = File.ReadAllBytes(_currentPath.File.FullName);
+            var bytes = File.ReadAllBytes(CurrentPath.File.FullName);
             (_currentFile as IDisposable)?.Dispose();
             _currentFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
-            _currentFile = parseFile(bytes, _currentPath.File.FullName, true);
+            _currentFile = parseFile(bytes, CurrentPath.File.FullName, true);
         }
         catch (Exception e)
         {
@@ -210,9 +218,9 @@ public class FileEditor<T>(
 
     public void SaveFile()
     {
-        compactor.WriteAllBytes(_currentPath!.File.FullName, _currentFile!.Write());
+        compactor.WriteAllBytes(CurrentPath!.File.FullName, _currentFile!.Write());
         if (owner.Mod is not null)
-            communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, _currentPath));
+            communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, CurrentPath));
         _changed = false;
     }
 
@@ -221,8 +229,8 @@ public class FileEditor<T>(
         if (ImEx.Button("Reset Changes"u8, Vector2.Zero,
                 $"Reset all changes made to the {fileType} file.", !_changed))
         {
-            var tmp = _currentPath;
-            _currentPath = null;
+            var tmp = CurrentPath;
+            CurrentPath = null;
             UpdateCurrentFile(tmp!);
         }
     }
@@ -233,7 +241,7 @@ public class FileEditor<T>(
         if (!child)
             return;
 
-        if (_currentPath is not null)
+        if (CurrentPath is not null)
         {
             if (_currentFile is null)
             {
@@ -253,7 +261,7 @@ public class FileEditor<T>(
 
         if (!_inInput && _defaultPath.Length > 0)
         {
-            if (_currentPath is not null)
+            if (CurrentPath is not null)
             {
                 Im.Line.New();
                 Im.Line.New();
@@ -278,47 +286,70 @@ public class FileEditor<T>(
         }
     }
 
-    private class Combo(Func<IReadOnlyList<FileRegistry>> generator)
-        : FilterComboCache<FileRegistry>(generator, MouseWheelType.None, Penumbra.Log)
+    private sealed class Combo : FilterComboBase<FileRegistry>
     {
-        protected override bool DrawSelectable(int globalIdx, bool selected)
+        private sealed class FileFilter : RegexFilterBase<FileRegistry>
         {
-            var  file = Items[globalIdx];
+            // TODO: Avoid ToString.
+            public override bool WouldBeVisible(in FileRegistry item, int globalIndex)
+                => WouldBeVisible(item.File.FullName) || item.SubModUsage.Any(f => WouldBeVisible(f.Item2.ToString()));
+
+            /// <summary> Unused. </summary>
+            protected override string ToFilterString(in FileRegistry item, int globalIndex)
+                => string.Empty;
+        }
+
+        private readonly Func<IEnumerable<FileRegistry>> _getFiles;
+
+        public FileRegistry? Selected;
+
+        public Combo(Func<IEnumerable<FileRegistry>> getFiles)
+        {
+            _getFiles = getFiles;
+            Filter    = new FileFilter();
+        }
+
+        protected override IEnumerable<FileRegistry> GetItems()
+            => _getFiles();
+
+        protected override float ItemHeight
+            => Im.Style.TextHeightWithSpacing;
+
+        protected override bool DrawItem(in FileRegistry item, int globalIndex, bool selected)
+        {
             bool ret;
-            using (ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(), file.IsOnPlayer))
+            using (ImGuiColor.Text.Push(ColorId.HandledConflictMod.Value(), item.IsOnPlayer))
             {
-                ret = Im.Selectable(file.RelPath.ToString(), selected);
+                ret = Im.Selectable(item.RelPath.Path.Span, selected);
             }
 
             if (Im.Item.Hovered())
             {
-                using var tt = Im.Tooltip.Begin();
+                using var style = Im.Style.PushDefault(ImStyleDouble.WindowPadding);
+                using var tt    = Im.Tooltip.Begin();
                 Im.Text("All Game Paths"u8);
                 Im.Separator();
                 using var t = Im.Table.Begin("##Tooltip"u8, 2, TableFlags.SizingFixedFit);
                 if (t)
-                {
-                    foreach (var (option, gamePath) in file.SubModUsage)
+                    foreach (var (option, gamePath) in item.SubModUsage)
                     {
                         t.DrawColumn(gamePath.Path.Span);
                         using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
                         t.DrawColumn(option.GetFullName());
                     }
-                }
             }
 
-            if (file.SubModUsage.Count > 0)
+            if (item.SubModUsage.Count > 0)
             {
                 Im.Line.Same();
                 using var color = ImGuiColor.Text.Push(ColorId.ItemId.Value());
-                ImEx.TextRightAligned($"{file.SubModUsage[0].Item2.Path}");
+                ImEx.TextRightAligned($"{item.SubModUsage[0].Item2.Path}");
             }
 
             return ret;
         }
 
-        protected override bool IsVisible(int globalIndex, LowerString filter)
-            => filter.IsContained(Items[globalIndex].File.FullName)
-             || Items[globalIndex].SubModUsage.Any(f => filter.IsContained(f.Item2.ToString()));
+        protected override bool IsSelected(FileRegistry item, int globalIndex)
+            => item.Equals(Selected);
     }
 }

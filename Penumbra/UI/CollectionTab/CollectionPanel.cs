@@ -1,4 +1,3 @@
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.ImGuiNotification;
@@ -14,6 +13,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra.UI.CollectionTab;
 
@@ -26,8 +26,9 @@ public sealed class CollectionPanel(
     ITargetManager targets,
     ModStorage mods,
     SaveService saveService,
-    IncognitoService incognito)
-    : IDisposable
+    IncognitoService incognito,
+    Configuration config)
+    : IDisposable, IPanel
 {
     private readonly CollectionStorage _collections = manager.Storage;
     private readonly ActiveCollections _active = manager.Active;
@@ -223,13 +224,8 @@ public sealed class CollectionPanel(
             {
                 using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0, 0.5f));
                 Im.Item.SetNextWidth(width);
-                if (ImEx.InputOnDeactivation.Text("##name"u8, collection.Identity.Name, out string newName)
-                 && newName != collection.Identity.Name)
-                {
-                    collection.Identity.Name = newName;
-                    saveService.QueueSave(new ModCollectionSave(mods, collection));
-                    selector.RestoreCollections();
-                }
+                if (ImEx.InputOnDeactivation.Text("##name"u8, collection.Identity.Name, out string newName))
+                    _collections.RenameCollection(collection, newName);
             }
 
             if (_collections.DefaultNamed == collection)
@@ -768,6 +764,20 @@ public sealed class CollectionPanel(
         {
             var (name, border) = Buttons[type];
             ret.Add((type, localPre, post, name, border));
+        }
+    }
+
+    public ReadOnlySpan<byte> Id
+        => "cp"u8;
+
+    public void Draw()
+    {
+        switch (config.Ephemeral.CollectionPanel)
+        {
+            case CollectionPanelMode.SimpleAssignment:     DrawSimple(); break;
+            case CollectionPanelMode.IndividualAssignment: DrawIndividualPanel(); break;
+            case CollectionPanelMode.GroupAssignment:      DrawGroupPanel(); break;
+            case CollectionPanelMode.Details:              DrawDetailsPanel(); break;
         }
     }
 }

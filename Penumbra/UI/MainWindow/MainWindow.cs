@@ -3,7 +3,6 @@ using ImSharp;
 using Luna;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using Penumbra.UI.Tabs;
 using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra.UI.MainWindow;

@@ -152,8 +152,25 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
         var newCollection = Create(name, _collections.Count, duplicate);
         _collections.Add(newCollection);
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
-        Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.Identity.AnonymizedName}.", NotificationType.Success, false);
+        Penumbra.Messager.NotificationMessage($"Created new collection {newCollection.Identity.AnonymizedName}.", NotificationType.Success,
+            false);
         _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Inactive, null, newCollection, string.Empty));
+        return true;
+    }
+
+    /// <summary> Rename a collection. </summary>
+    /// <param name="collection"> The collection to rename. </param>
+    /// <param name="newName"> The new name for the collection. </param>
+    /// <returns> True if a change has taken place. </returns>
+    public bool RenameCollection(ModCollection collection, string newName)
+    {
+        var oldName = collection.Identity.Name;
+        if (newName == oldName)
+            return false;
+
+        collection.Identity.Name = newName;
+        _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+        _communicator.CollectionRename.Invoke(new CollectionRename.Arguments(collection, oldName, newName));
         return true;
     }
 
@@ -355,7 +372,9 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
 
         foreach (var collection in this)
         {
-            if (collection.GetOwnSettings(arguments.Mod.Index)?.HandleChanges(arguments.Type, arguments.Mod, arguments.Group, arguments.Option, arguments.DeletedIndex) ?? false)
+            if (collection.GetOwnSettings(arguments.Mod.Index)
+                    ?.HandleChanges(arguments.Type, arguments.Mod, arguments.Group, arguments.Option, arguments.DeletedIndex)
+             ?? false)
                 _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
             collection.Settings.SetTemporary(arguments.Mod.Index, null);
         }

@@ -41,8 +41,12 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
 
         var       height  = ColumnHeight;
         using var clipper = new Im.ListClipper(Count, height);
-        foreach (var (identifier, value) in clipper.Iterate(Enumerate()))
+        foreach (var (index, (identifier, value)) in clipper.Iterate(Enumerate().Index()))
+        {
+            id.Push(index);
             DrawEntry(identifier, value);
+            id.Pop();
+        }
     }
 
     public abstract ReadOnlySpan<byte> Label      { get; }

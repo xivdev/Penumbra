@@ -5,6 +5,9 @@ namespace Penumbra.Services;
 
 public class CommunicatorService(ServiceManager services) : IService
 {
+    /// <inheritdoc cref="Communication.CollectionRename"/>
+    public readonly CollectionRename CollectionRename = services.GetService<CollectionRename>();
+
     /// <inheritdoc cref="Communication.CollectionChange"/>
     public readonly CollectionChange CollectionChange = services.GetService<CollectionChange>();
 
