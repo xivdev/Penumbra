@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using OtterGui.Services;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -85,7 +86,7 @@ public class DalamudSubstitutionProvider : IDisposable, IApiService
         ResetSubstitutions(enumerable);
     }
 
-    private void OnResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath key, FullPath _1, FullPath _2,
+    private void OnResolvedFileChange(ModCollection collection, ResolvedFileChange type, Utf8GamePath key, FullPath _1, FullPath _2,
         IMod? _3)
     {
         if (_activeCollectionData.Interface != collection)
@@ -93,13 +94,13 @@ public class DalamudSubstitutionProvider : IDisposable, IApiService
 
         switch (type)
         {
-            case ResolvedFileChanged.Type.Added:
-            case ResolvedFileChanged.Type.Removed:
-            case ResolvedFileChanged.Type.Replaced:
+            case ResolvedFileChange.Added:
+            case ResolvedFileChange.Removed:
+            case ResolvedFileChange.Replaced:
                 ResetSubstitutions([key]);
                 break;
-            case ResolvedFileChanged.Type.FullRecomputeStart:
-            case ResolvedFileChanged.Type.FullRecomputeFinished:
+            case ResolvedFileChange.FullRecomputeStart:
+            case ResolvedFileChange.FullRecomputeFinished:
                 ResetSubstitutions(collection.ResolvedFiles.Keys);
                 break;
         }
