@@ -71,9 +71,7 @@ public class CollectionsIpcTester : IUiService, IDisposable
         IpcTester.DrawIntro("Last Return Code", _returnCode.ToString());
 
         IpcTester.DrawIntro(ResolvedFileChanged.Label, "Last Resolved File Change");
-        ImGui.TextUnformatted(_lastResolvedFileChangeMod.Length > 0
-            ? $"{_lastResolvedFileChangeType} of {_lastResolvedFileChangeMod} in {_lastResolvedFileChangeCollection} for game path {_lastResolvedFileChangeGamePath} from {_lastResolvedFileChangeOldFilePath} to {_lastResolvedFileChangeNewFilePath}"
-            : "None");
+        DrawLastResolvedFileChange();
 
         if (_oldCollection != null)
             ImGui.TextUnformatted(!_oldCollection.HasValue ? "Created" : _oldCollection.ToString());
@@ -247,6 +245,41 @@ public class CollectionsIpcTester : IUiService, IDisposable
         using (ImRaii.PushFont(UiBuilder.MonoFont))
         {
             ImGuiUtil.CopyOnClickSelectable(collection.Value.Id.ToString());
+        }
+    }
+
+    private void DrawLastResolvedFileChange()
+    {
+        if (string.IsNullOrEmpty(_lastResolvedFileChangeMod))
+        {
+            ImGui.TextUnformatted("<No Change>");
+            ImGui.TableNextColumn();
+            return;
+        }
+
+        ImGui.TextUnformatted(_lastResolvedFileChangeType.ToString());
+        ImGui.TableNextColumn();
+        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
+        ImGui.Selectable("View Details");
+        if (ImGui.IsItemHovered())
+        {
+            using var tt = ImRaii.Tooltip();
+            using (var t = ImRaii.Table("resolveddetails", 2, ImGuiTableFlags.SizingFixedFit))
+            {
+                if (t)
+                {
+                    ImGuiUtil.DrawTableColumn("Collection");
+                    ImGuiUtil.DrawTableColumn(_lastResolvedFileChangeCollection.ToString());
+                    ImGuiUtil.DrawTableColumn("Mod");
+                    ImGuiUtil.DrawTableColumn(_lastResolvedFileChangeMod);
+                    ImGuiUtil.DrawTableColumn("Game Path");
+                    ImGuiUtil.DrawTableColumn(_lastResolvedFileChangeGamePath);
+                    ImGuiUtil.DrawTableColumn("Old Path");
+                    ImGuiUtil.DrawTableColumn(_lastResolvedFileChangeOldFilePath);
+                    ImGuiUtil.DrawTableColumn("New Path");
+                    ImGuiUtil.DrawTableColumn(_lastResolvedFileChangeNewFilePath);
+                }
+            }
         }
     }
 
