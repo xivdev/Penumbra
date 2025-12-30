@@ -219,8 +219,5 @@ public class CollectionApi : IPenumbraApiCollection, IApiService, IDisposable
     }
 
     private void OnResolvedFileChange(ModCollection collection, ResolvedFileChange type, Utf8GamePath gamePath, FullPath newPath, FullPath oldPath, IMod? mod)
-    {
-        // Penumbra.Log.Debug($"[API]{{{collection.Identity.Name}}} | {{{mod}}} | {type} Redirect of [ {gamePath} ] ([ {oldPath} ] -> [ {newPath} ])");
-        ResolvedFileChanged?.Invoke(type, collection.Identity.Id, mod?.Name ?? string.Empty, gamePath.ToString(), oldPath.ToString(), newPath.ToString());
-    }
+        => ResolvedFileChanged?.Invoke(type, collection.Identity.Id, mod?.Name ?? string.Empty, gamePath.ToString(), oldPath.ToString(), newPath.ToString());
 }
