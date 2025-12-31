@@ -15,7 +15,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class ChangedItemsTab(
+public class PreviewItemsTab(
     CollectionManager collectionManager,
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
