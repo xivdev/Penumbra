@@ -5,8 +5,8 @@
     "Punchline": "Runtime mod loader and manager.",
     "Description": "Runtime mod loader and manager.",
     "InternalName": "PenumbraPreview",
-    "AssemblyVersion": "0.1.1",
-    "TestingAssemblyVersion": "0.1.1",
+    "AssemblyVersion": "0.1.2",
+    "TestingAssemblyVersion": "0.1.2",
     "RepoUrl": "https://github.com/ffbewhatah-maker/PenumbraPreview",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 14,
@@ -18,9 +18,9 @@
     "LoadPriority": 69420,
     "LoadRequiredState": 2,
     "LoadSync": true,
-    "DownloadLinkInstall": "https://github.com/ffbewhatah-maker/PenumbraPreviewer/archive/refs/tags/main.zip",
-    "DownloadLinkTesting": "https://github.com/ffbewhatah-maker/PenumbraPreviewer/archive/refs/tags/main.zip",
-    "DownloadLinkUpdate": "https://github.com/ffbewhatah-maker/PenumbraPreviewer/archive/refs/tags/main.zip",
-    "IconUrl": "https://github.com/ffbewhatah-maker/PenumbraPreviewer/archive/refs/tags/main.zip"
+    "DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/0.1.2/Penumbra.zip",
+    "DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/0.1.2/Penumbra.zip",
+    "DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/0.1.2/Penumbra.zip",
+    "IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"
   }
 ]
