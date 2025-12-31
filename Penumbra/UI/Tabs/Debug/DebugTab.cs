@@ -186,7 +186,7 @@ public class DebugTab : Window, ITab, IUiService
 
     public void DrawContent()
     {
-        using var child = Child("##DebugTab", -Vector2.One);
+        using var child = ImUtf8.Child("##DebugTab"u8, -Vector2.One);
         if (!child)
             return;
 
