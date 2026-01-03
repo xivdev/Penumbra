@@ -1,6 +1,6 @@
 using Dalamud.Plugin.Services;
 using ImSharp;
-using OtterGui.Widgets;
+using Luna;
 using Penumbra.GameData.DataContainers;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.StainMapStructs;
@@ -24,7 +24,7 @@ public sealed class TemplateFilter : TextFilterBase<StainTemplate>
         => item.Id;
 }
 
-public sealed class StainTemplateCombo<TDyePack> : ImSharp.FilterComboBase<StainTemplate>
+public sealed class StainTemplateCombo<TDyePack> : FilterComboBase<StainTemplate>
     where TDyePack : unmanaged, IDyePack
 {
     private readonly StainService.StainCombo[] _stainCombos;
@@ -70,7 +70,7 @@ public sealed class StainTemplateCombo<TDyePack> : ImSharp.FilterComboBase<Stain
             }
         }
 
-        private void OnSelectionChanged(Luna.FilterComboColors.Item obj)
+        private void OnSelectionChanged(FilterComboColors.Item obj)
         {
             UpdateItems();
             ComputeWidth();
@@ -176,7 +176,7 @@ public sealed class StainTemplateCombo<TDyePack> : ImSharp.FilterComboBase<Stain
     }
 }
 
-public class StainService : Luna.IService
+public class StainService : IService
 {
     public const int ChannelCount = 2;
 
@@ -238,7 +238,7 @@ public class StainService : Luna.IService
         return new StmFile<TDyePack>(dataManager);
     }
 
-    public sealed class StainCombo(DictStain stainData) : Luna.FilterComboColors
+    public sealed class StainCombo(DictStain stainData) : FilterComboColors
     {
         protected override IEnumerable<Item> GetItems()
             => stainData.Value.Select(t => new Item(new StringPair(t.Value.Name), t.Value.Dye, t.Key, t.Value.Gloss)).Prepend(None);

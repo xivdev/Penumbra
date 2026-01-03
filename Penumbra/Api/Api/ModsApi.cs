@@ -122,13 +122,12 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
     public (PenumbraApiEc, string, bool, bool) GetModPath(string modDirectory, string modName)
     {
-        if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_modFileSystem.TryGetValue(mod, out var leaf))
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod) || mod.Node is not { } node)
             return (PenumbraApiEc.ModMissing, string.Empty, false, false);
 
-        var fullPath      = leaf.FullName();
-        var isDefault     = ModFileSystem.ModHasDefaultPath(mod, fullPath);
-        var isNameDefault = isDefault || ModFileSystem.ModHasDefaultPath(mod, leaf.Name);
+        var fullPath      = node.FullPath;
+        var isDefault     = mod.Path.IsDefault;
+        var isNameDefault = mod.Path.SortName is null;
         return (PenumbraApiEc.Success, fullPath, !isDefault, !isNameDefault);
     }
 
@@ -137,13 +136,12 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         if (newPath.Length == 0)
             return PenumbraApiEc.InvalidArgument;
 
-        if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_modFileSystem.TryGetValue(mod, out var leaf))
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod) || mod.Node is not { } node)
             return PenumbraApiEc.ModMissing;
 
         try
         {
-            _modFileSystem.RenameAndMove(leaf, newPath);
+            _modFileSystem.RenameAndMove(node, newPath);
             return PenumbraApiEc.Success;
         }
         catch

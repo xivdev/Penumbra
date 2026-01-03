@@ -27,22 +27,18 @@ public partial class MtrlTab
         var frameHeight      = Im.Style.FrameHeight;
         var highlighterSize  = ImEx.Icon.CalculateSize(LunaStyle.OnHoverIcon) + framePadding * 2.0f;
 
-        using var font      = Im.Font.PushMono();
         using var alignment = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0, 0.5f));
 
-        // This depends on the font being pushed for "proper" alignment of the pair indices in the buttons.
-        var spaceWidth   = Im.Font.Mono.GetCharacterAdvance(' ');
-        var spacePadding = (int)MathF.Ceiling((highlighterSize.X + framePadding.X + itemInnerSpacing) / spaceWidth);
-
+        var buttonSize = new Vector2(buttonWidth, Im.Style.FrameHeightWithSpacing + frameHeight);
         for (var i = 0; i < ColorTable.NumRows >> 1; i += 8)
         {
             for (var j = 0; j < 8; ++j)
             {
-                var pairIndex = i + j;
+                var       pairIndex = i + j;
+                using var id        = Im.Id.Push(pairIndex);
                 using (ImGuiColor.Button.Push(Im.Style[ImGuiColor.ButtonActive], pairIndex == _colorTableSelectedPair))
                 {
-                    if (Im.Button($"#{pairIndex + 1}".PadLeft(3 + spacePadding),
-                            new Vector2(buttonWidth, Im.Style.FrameHeightWithSpacing + frameHeight)))
+                    if (Im.Button(StringU8.Empty, buttonSize))
                         _colorTableSelectedPair = pairIndex;
                 }
 
@@ -68,11 +64,13 @@ public partial class MtrlTab
                 if (j < 7)
                     Im.Line.Same();
 
-                var cursor = Im.Cursor.ScreenPosition;
-                Im.Cursor.ScreenPosition = rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 0.5f) - highlighterSize.Y * 0.5f };
-                font.Pop();
+                var cursor    = Im.Cursor.ScreenPosition;
+                var buttonPos = rcMin with { Y = float.Lerp(rcMin.Y, rcMax.Y, 0.5f) - highlighterSize.Y * 0.5f };
+                Im.Cursor.ScreenPosition = buttonPos;
                 ColorTablePairHighlightButton(pairIndex, disabled);
-                font.Push(Im.Font.Mono);
+                Im.Cursor.ScreenPosition = buttonPos + new Vector2(Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X, Im.Style.FramePadding.Y);
+                using var font = Im.Font.PushMono();
+                Im.Text($"#{pairIndex + 1:D2}");
                 Im.Cursor.ScreenPosition = cursor;
             }
         }

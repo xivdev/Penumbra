@@ -1,15 +1,79 @@
 using ImSharp;
 using Luna;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Selector;
 
-public sealed class ModFileSystemCache(ModFileSystemDrawer parent)
-    : FileSystemCache<ModFileSystemCache.ModData>(parent), IService
+public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModData>, IService
 {
+    private new ModFileSystemDrawer Parent
+        => (ModFileSystemDrawer)base.Parent;
+
+    public ModFileSystemCache(ModFileSystemDrawer parent)
+        : base(parent)
+    {
+        Parent.Communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModFileSystemCache);
+        Parent.Communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange,
+            CollectionInheritanceChanged.Priority.ModFileSystemCache);
+        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModFileSystemCache);
+        Parent.Communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystemCache);
+    }
+
+    private void OnModDataChange(in ModDataChanged.Arguments arguments)
+    {
+        const ModDataChangeType relevantFlags =
+            ModDataChangeType.Name
+          | ModDataChangeType.Author
+          | ModDataChangeType.ModTags
+          | ModDataChangeType.LocalTags
+          | ModDataChangeType.Favorite
+          | ModDataChangeType.ImportDate;
+        if ((arguments.Type & relevantFlags) is not 0 && !Filter.IsEmpty)
+            VisibleDirty = true;
+
+        if (arguments.Mod.Node is { } node && AllNodes.TryGetValue(node, out var cache))
+            cache.Dirty = true;
+    }
+
+    private void OnSettingChange(in ModSettingChanged.Arguments arguments)
+    {
+        if (!Filter.IsEmpty)
+            VisibleDirty = true;
+
+        if (arguments.Mod?.Node is { } node && AllNodes.TryGetValue(node, out var cache))
+            cache.Dirty = true;
+    }
+
+    private void OnInheritanceChange(in CollectionInheritanceChanged.Arguments arguments)
+    {
+        if (arguments.Collection == Parent.CollectionManager.Active.Current)
+        {
+            if (!Filter.IsEmpty)
+                VisibleDirty = true;
+
+            foreach (var node in AllNodes.Values)
+                node.Dirty = true;
+        }
+    }
+
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
+    {
+        if (arguments.Type is CollectionType.Current && arguments.OldCollection != arguments.NewCollection)
+        {
+            if (!Filter.IsEmpty)
+                VisibleDirty = true;
+
+            foreach (var node in AllNodes.Values)
+                node.Dirty = true;
+        }
+    }
+
     public sealed class ModData(IFileSystemData<Mod> node) : BaseFileSystemNodeCache<ModData>
     {
         public readonly IFileSystemData<Mod> Node = node;
@@ -128,6 +192,15 @@ public sealed class ModFileSystemCache(ModFileSystemDrawer parent)
             LineColor            =  ColorId.FolderLine.Value().ToVector();
             Dirty                &= ~IManagedCache.DirtyFlags.Colors;
         }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        Parent.Communicator.CollectionChange.Unsubscribe(OnCollectionChange);
+        Parent.Communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
+        Parent.Communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
+        Parent.Communicator.ModDataChanged.Unsubscribe(OnModDataChange);
     }
 
     protected override ModData ConvertNode(in IFileSystemNode node)

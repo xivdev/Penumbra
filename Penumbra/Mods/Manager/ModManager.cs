@@ -332,9 +332,16 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
             var queue = new ConcurrentQueue<Mod>();
             Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
             {
-                var mod = Creator.LoadMod(dir, false, false);
-                if (mod != null)
-                    queue.Enqueue(mod);
+                try
+                {
+                    var mod = Creator.LoadMod(dir, false, false);
+                    if (mod != null)
+                        queue.Enqueue(mod);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Warning($"Failed to load mod at {dir}:\n{ex}");
+                }
             });
 
             foreach (var mod in queue)

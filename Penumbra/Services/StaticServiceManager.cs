@@ -1,11 +1,8 @@
-using Dalamud.Game;
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Luna;
 using Microsoft.Extensions.DependencyInjection;
-using OtterGui;
 using Penumbra.Api.Api;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Structs;
@@ -26,12 +23,8 @@ public static class StaticServiceManager
             .AddDalamudServices(pi)
             .AddExistingService(log)
             .AddExistingService(penumbra);
-        // TODO Remove this when migration done
-        services.AddExistingService(Penumbra.Log);
         services.AddIServices(typeof(EquipItem).Assembly);
         services.AddIServices(typeof(Penumbra).Assembly);
-        services.AddIServices<OtterGui.Services.IService>(typeof(Penumbra).Assembly);
-        services.AddIServices<OtterGui.Services.IService>(typeof(ImGuiUtil).Assembly);
         services.AddIServices(typeof(IService).Assembly);
 
         services.AddSingleton(p =>

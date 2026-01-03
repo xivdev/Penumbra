@@ -155,7 +155,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             var       inDefault = defaultMask.HasValue && (defaultMask & flag) is not 0;
             using (Im.Disabled(defaultMask is not null && !cache.CanChange(i)))
             {
-                if (inDefault ? NegativeCheckbox.Instance.Draw(""u8, ref value) : Im.Checkbox(""u8, ref value))
+                if (inDefault ? ImEx.XCheckbox(""u8, ref value) : Im.Checkbox(""u8, ref value))
                 {
                     if (data is ImcModGroup g)
                         editor.ChangeDefaultAttribute(g, cache, i, value);
@@ -168,22 +168,5 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
             if (i != 9)
                 Im.Line.SameInner();
         }
-    }
-
-    private sealed class NegativeCheckbox : OtterGui.Text.Widget.MultiStateCheckbox<bool>
-    {
-        public static readonly NegativeCheckbox Instance = new();
-
-        protected override void RenderSymbol(bool value, Vector2 position, float size)
-        {
-            if (value)
-                Im.Render.Cross(Im.Window.DrawList, position, ImGuiColor.CheckMark.Get(), size);
-        }
-
-        protected override bool NextValue(bool value)
-            => !value;
-
-        protected override bool PreviousValue(bool value)
-            => !value;
     }
 }

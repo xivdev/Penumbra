@@ -1,18 +1,18 @@
 using ImSharp;
 using Luna;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelDescriptionTab(
-    ModFileSystemSelector selector,
+    ModSelection selection,
     TutorialService tutorial,
     ModManager modManager,
     PredefinedTagManager predefinedTagsConfig)
     : ITab<ModPanelTab>
 {
-
     public ReadOnlySpan<byte> Label
         => "Description"u8;
 
@@ -32,24 +32,22 @@ public class ModPanelDescriptionTab(
             : (false, 0);
         var tagIdx = TagButtons.Draw("Local Tags: "u8,
             "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"u8
-          + "If the mod already contains a local tag in its own tags, the local tag will be ignored."u8, selector.Selected!.LocalTags,
+          + "If the mod already contains a local tag in its own tags, the local tag will be ignored."u8, selection.Mod!.LocalTags,
             out var editedTag, rightEndOffset: predefinedTagButtonOffset);
         tutorial.OpenTutorial(BasicTutorialSteps.Tags);
         if (tagIdx >= 0)
-            modManager.DataEditor.ChangeLocalTag(selector.Selected!, tagIdx, editedTag);
+            modManager.DataEditor.ChangeLocalTag(selection.Mod!, tagIdx, editedTag);
 
         if (predefinedTagsEnabled)
-            predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, true,
-                selector.Selected!);
+            predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selection.Mod!.LocalTags, selection.Mod!.ModTags, true, selection.Mod!);
 
-        if (selector.Selected!.ModTags.Count > 0)
+        if (selection.Mod!.ModTags.Count > 0)
             TagButtons.Draw("Mod Tags: "u8, "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod."u8,
-                selector.Selected!.ModTags, out _, false,
-                Im.Font.CalculateSize("Local "u8).X - Im.Font.CalculateSize("Mod "u8).X);
+                selection.Mod!.ModTags, out _, false, Im.Font.CalculateSize("Local "u8).X - Im.Font.CalculateSize("Mod "u8).X);
 
         Im.ScaledDummy(2, 2);
         Im.Separator();
 
-        Im.TextWrapped(selector.Selected!.Description);
+        Im.TextWrapped(selection.Mod!.Description);
     }
 }

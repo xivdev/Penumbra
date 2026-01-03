@@ -74,8 +74,9 @@ public class GameState : Luna.IService
 
     #region Subfiles
 
-    public readonly ThreadLocal<ResolveData> MtrlData = new(() => ResolveData.Invalid);
-    public readonly ThreadLocal<ResolveData> AvfxData = new(() => ResolveData.Invalid);
+    public readonly ThreadLocal<ResolveData> MtrlData            = new(() => ResolveData.Invalid);
+    public readonly ThreadLocal<ResolveData> AvfxData            = new(() => ResolveData.Invalid);
+    public          ResolveData              ApricotDocumentAvfx = ResolveData.Invalid;
 
     public readonly ConcurrentDictionary<nint, ResolveData> SubFileCollection = new();
 

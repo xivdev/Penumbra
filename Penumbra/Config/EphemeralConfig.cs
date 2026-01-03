@@ -1,9 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Newtonsoft.Json;
-using Penumbra.Communication;
 using Penumbra.Enums;
-using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
@@ -14,17 +12,10 @@ using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra;
 
-public class EphemeralConfig : ISavable, IDisposable, IService
+public class EphemeralConfig : ISavable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;
-
-    [JsonIgnore]
-    private readonly ModPathChanged _modPathChanged;
-
-    public float CurrentModSelectorWidth { get; set; } = 200f;
-    public float ModSelectorMinimumScale { get; set; } = 0.1f;
-    public float ModSelectorMaximumScale { get; set; } = 0.5f;
 
     public int                  Version                           { get; set; } = Configuration.Constants.CurrentVersion;
     public int                  LastSeenVersion                   { get; set; } = PenumbraChangelog.LastChangelogVersion;
@@ -41,7 +32,6 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     public TabType              SelectedTab                       { get; set; } = TabType.Settings;
     public ChangedItemIconFlag  ChangedItemFilter                 { get; set; } = ChangedItemFlagExtensions.DefaultFlags;
     public bool                 FixMainWindow                     { get; set; } = false;
-    public string               LastModPath                       { get; set; } = string.Empty;
     public HashSet<string>      AdvancedEditingOpenForModPaths    { get; set; } = [];
     public bool                 ForceRedrawOnFileChange           { get; set; } = false;
     public bool                 IncognitoMode                     { get; set; } = false;
@@ -50,16 +40,11 @@ public class EphemeralConfig : ISavable, IDisposable, IService
     /// Load the current configuration.
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
-    public EphemeralConfig(SaveService saveService, ModPathChanged modPathChanged)
+    public EphemeralConfig(SaveService saveService)
     {
         _saveService    = saveService;
-        _modPathChanged = modPathChanged;
         Load();
-        _modPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.EphemeralConfig);
     }
-
-    public void Dispose()
-        => _modPathChanged.Unsubscribe(OnModPathChanged);
 
     private void Load()
     {
@@ -103,16 +88,5 @@ public class EphemeralConfig : ISavable, IDisposable, IService
         jWriter.Formatting = Formatting.Indented;
         var serializer = new JsonSerializer { Formatting = Formatting.Indented };
         serializer.Serialize(jWriter, this);
-    }
-
-    /// <summary> Overwrite the last saved mod path if it changes. </summary>
-    private void OnModPathChanged(in ModPathChanged.Arguments arguments)
-    {
-        if (arguments.Type is not ModPathChangeType.Moved
-         || !string.Equals(arguments.OldDirectory?.Name, LastModPath, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        LastModPath = arguments.Mod.Identifier;
-        Save();
     }
 }

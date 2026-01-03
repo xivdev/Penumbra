@@ -13,6 +13,7 @@
     <PropertyGroup>
         <DefineConstants>PROFILING;</DefineConstants>
         <Use_DalamudPackager>false</Use_DalamudPackager>
+        <Use_Dalamud_ImGui >false</Use_Dalamud_ImGui>
     </PropertyGroup>
 
     <ItemGroup>
@@ -58,7 +59,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
         <ProjectReference Include="..\Penumbra.CrashHandler\Penumbra.CrashHandler.csproj" />
         <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
         <ProjectReference Include="..\Penumbra.Api\Penumbra.Api.csproj" />

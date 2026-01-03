@@ -1,7 +1,5 @@
 using ImSharp;
 using Luna;
-using OtterGui;
-using OtterGui.Services;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -9,20 +7,18 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.String;
 using Penumbra.UI.Classes;
+using ImGuiId = ImSharp.ImGuiId;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelChangedItemsTab(
-    ModFileSystemSelector selector,
+    ModFileSystem fileSystem,
     ChangedItemDrawer drawer,
-    ImGuiCacheService cacheService,
     Configuration config,
     ModDataEditor dataEditor)
     : ITab<ModPanelTab>
 {
-    private readonly ImGuiCacheService.CacheId _cacheId = cacheService.GetNewId();
-
-    private class ChangedItemsCache
+    private class ChangedItemsCache : BasicCache
     {
         private         Mod?                _lastSelected;
         private         ushort              _lastUpdate;
@@ -199,6 +195,10 @@ public class ModPanelChangedItemsTab(
                 }
             }
         }
+
+        /// <summary> Handled differently. </summary>
+        public override void Update()
+        { }
     }
 
     public ReadOnlySpan<byte> Label
@@ -208,19 +208,22 @@ public class ModPanelChangedItemsTab(
         => ModPanelTab.ChangedItems;
 
     public bool IsVisible
-        => selector.Selected!.ChangedItems.Count > 0;
+        => fileSystem.Selection.Selection?.GetValue<Mod>()?.ChangedItems.Count > 0;
+
+    private Mod _mod = null!;
 
     private Vector2 _buttonSize;
     private Rgba32  _starColor;
+    private ImGuiId _id;
 
     public void DrawContent()
     {
-        if (cacheService.Cache(_cacheId, () => (new ChangedItemsCache(), "ModPanelChangedItemsCache")) is not { } cache)
-            return;
-
+        _id  = Im.Id.Current;
+        _mod = fileSystem.Selection.Selection!.GetValue<Mod>()!;
+        var cache = CacheManager.Instance.GetOrCreateCache(_id, () => new ChangedItemsCache());
         drawer.DrawTypeFilter();
 
-        cache.Update(selector.Selected, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
+        cache.Update(_mod, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
         Im.Separator();
         _buttonSize = new Vector2(Im.Style.ItemSpacing.Y + Im.Style.FrameHeight);
         using var style = ImStyleDouble.CellPadding.Push(Vector2.Zero)
@@ -232,7 +235,7 @@ public class ModPanelChangedItemsTab(
             .Push(ImGuiColor.ButtonHovered, Rgba32.Transparent);
 
         using var table = Im.Table.Begin("##changedItems"u8, cache.AnyExpandable ? 2 : 1, TableFlags.RowBackground | TableFlags.ScrollY,
-            new Vector2(Im.ContentRegion.Available.X, -1));
+            Im.ContentRegion.Available);
         if (!table)
             return;
 
@@ -241,11 +244,11 @@ public class ModPanelChangedItemsTab(
         {
             table.SetupColumn("##exp"u8,  TableColumnFlags.WidthFixed, _buttonSize.Y);
             table.SetupColumn("##text"u8, TableColumnFlags.WidthStretch);
-            ImGuiClip.ClippedDraw(cache.Data, DrawContainerExpandable, _buttonSize.Y);
+            Im.ListClipper.Draw(cache.Data, DrawContainerExpandable, _buttonSize.Y);
         }
         else
         {
-            ImGuiClip.ClippedDraw(cache.Data, DrawContainer, _buttonSize.Y);
+            Im.ListClipper.Draw(cache.Data, DrawContainer, _buttonSize.Y);
         }
     }
 
@@ -262,7 +265,7 @@ public class ModPanelChangedItemsTab(
                     _buttonSize))
             {
                 Im.State.Storage.SetBool(obj.Id, !obj.Expanded);
-                if (cacheService.TryGetCache<ChangedItemsCache>(_cacheId, out var cache))
+                if (CacheManager.Instance.TryGetCache<ChangedItemsCache>(_id, out var cache))
                     cache.Reset();
             }
         }
@@ -293,12 +296,12 @@ public class ModPanelChangedItemsTab(
         if (ImEx.Icon.Button(LunaStyle.FavoriteIcon,
                 "Prefer displaying this item instead of the current primary item.\n\nRight-click for more options."u8,
                 textColor: textColor, size: _buttonSize))
-            dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, false, true);
+            dataEditor.AddPreferredItem(_mod, item.Item.Id, false, true);
         using var context = Im.Popup.BeginContextItem("StarContext"u8);
         if (!context)
             return;
 
-        if (cacheService.TryGetCache<ChangedItemsCache>(_cacheId, out var cache))
+        if (CacheManager.Instance.TryGetCache<ChangedItemsCache>(_id, out var cache))
             for (--idx; idx >= 0; --idx)
             {
                 if (!cache.Data[idx].Expanded)
@@ -306,34 +309,34 @@ public class ModPanelChangedItemsTab(
 
                 if (cache.Data[idx].Data is IdentifiedItem it)
                 {
-                    if (selector.Selected!.PreferredChangedItems.Contains(it.Item.Id)
+                    if (_mod.PreferredChangedItems.Contains(it.Item.Id)
                      && Im.Menu.Item("Remove Parent from Local Preferred Items"u8))
-                        dataEditor.RemovePreferredItem(selector.Selected!, it.Item.Id, false);
-                    if (selector.Selected!.DefaultPreferredItems.Contains(it.Item.Id)
+                        dataEditor.RemovePreferredItem(_mod, it.Item.Id, false);
+                    if (_mod.DefaultPreferredItems.Contains(it.Item.Id)
                      && Im.Menu.Item("Remove Parent from Default Preferred Items"u8))
-                        dataEditor.RemovePreferredItem(selector.Selected!, it.Item.Id, true);
+                        dataEditor.RemovePreferredItem(_mod, it.Item.Id, true);
                 }
 
                 break;
             }
 
-        var enabled = !selector.Selected!.DefaultPreferredItems.Contains(item.Item.Id);
+        var enabled = !_mod.DefaultPreferredItems.Contains(item.Item.Id);
         if (enabled)
         {
             if (Im.Menu.Item("Add to Local and Default Preferred Changed Items"u8))
-                dataEditor.AddPreferredItem(selector.Selected!, item.Item.Id, true, true);
+                dataEditor.AddPreferredItem(_mod, item.Item.Id, true, true);
         }
         else
         {
             if (Im.Menu.Item("Remove from Default Preferred Changed Items"u8))
-                dataEditor.RemovePreferredItem(selector.Selected!, item.Item.Id, true);
+                dataEditor.RemovePreferredItem(_mod, item.Item.Id, true);
         }
 
         if (Im.Menu.Item("Reset Local Preferred Items to Default"u8))
-            dataEditor.ResetPreferredItems(selector.Selected!);
+            dataEditor.ResetPreferredItems(_mod);
 
         if (Im.Menu.Item("Clear Local and Default Preferred Items not Changed by the Mod"u8))
-            dataEditor.ClearInvalidPreferredItems(selector.Selected!);
+            dataEditor.ClearInvalidPreferredItems(_mod);
     }
 
 

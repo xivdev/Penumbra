@@ -6,11 +6,10 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
-using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public sealed class ItemSelector(ActiveCollections collections, ItemData data, ModFileSystemSelector? selector, FullEquipType type)
+public sealed class ItemSelector(ActiveCollections collections, ItemData data, ModSelection? selection, FullEquipType type)
     : FilterComboBase<ItemSelector.CacheItem>(new ItemFilter())
 {
     public EquipItem CurrentSelection = new(string.Empty, default, default, default, default, default, FullEquipType.Unknown, default, default,
@@ -59,11 +58,11 @@ public sealed class ItemSelector(ActiveCollections collections, ItemData data, M
     protected override IEnumerable<CacheItem> GetItems()
     {
         var list = data.ByType[type];
-        if (selector?.Selected is { } currentMod && currentMod.ChangedItems.Values.Any(c => c is IdentifiedItem i && i.Item.Type == type))
+        if (selection?.Mod is { } currentMod && currentMod.ChangedItems.Values.Any(c => c is IdentifiedItem i && i.Item.Type == type))
             return list.Select(item => new CacheItem(item, currentMod, collections.Current)).OrderByDescending(i => i.InCurrentMod)
                 .ThenByDescending(i => i.CollectionMods.Length);
 
-        if (selector is null)
+        if (selection is null)
             return list.Select(item => new CacheItem(item, collections.Current)).OrderBy(i => i.CollectionMods.Length);
 
         return list.Select(item => new CacheItem(item, collections.Current)).OrderByDescending(i => i.CollectionMods.Length);

@@ -6,24 +6,25 @@ using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
 
-public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor, PredefinedTagManager tagManager) : IUiService
+public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, PredefinedTagManager tagManager) : IUiService
 {
     public void Draw()
     {
-        if (selector.SelectedPaths.Count == 0)
+        if (fileSystem.Selection.OrderedNodes.Count is 0)
             return;
 
         Im.Line.New();
         var treeNodePos = Im.Cursor.Position;
-        var numLeaves   = DrawModList();
-        DrawCounts(treeNodePos, numLeaves);
+        DrawModList();
+        DrawCounts(treeNodePos);
         DrawMultiTagger();
     }
 
-    private void DrawCounts(Vector2 treeNodePos, int numLeaves)
+    private void DrawCounts(Vector2 treeNodePos)
     {
         var startPos   = Im.Cursor.Position;
-        var numFolders = selector.SelectedPaths.Count - numLeaves;
+        var numLeaves  = fileSystem.Selection.DataNodes.Count;
+        var numFolders = fileSystem.Selection.Folders.Count;
         Utf8StringHandler<TextStringHandlerBuffer> text = (numLeaves, numFolders) switch
         {
             (0, 0)   => StringU8.Empty, // should not happen
@@ -36,52 +37,46 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
         Im.Cursor.Position = startPos;
     }
 
-    private int DrawModList()
+    private void DrawModList()
     {
         using var tree = Im.Tree.Node("Currently Selected Objects###Selected"u8,
             TreeNodeFlags.DefaultOpen | TreeNodeFlags.NoTreePushOnOpen);
         Im.Separator();
 
-
         if (!tree)
-            return selector.SelectedPaths.Count(l => l is ModFileSystem.Leaf);
+            return;
 
         var sizeType             = new Vector2(Im.Style.FrameHeight);
         var availableSizePercent = (Im.ContentRegion.Available.X - sizeType.X - 4 * Im.Style.CellPadding.X) / 100;
         var sizeMods             = availableSizePercent * 35;
         var sizeFolders          = availableSizePercent * 65;
 
-        var leaves = 0;
         using (var table = Im.Table.Begin("mods"u8, 3, TableFlags.RowBackground))
         {
             if (!table)
-                return selector.SelectedPaths.Count(l => l is ModFileSystem.Leaf);
+                return;
 
             table.SetupColumn("type"u8, TableColumnFlags.WidthFixed, sizeType.X);
             table.SetupColumn("mod"u8,  TableColumnFlags.WidthFixed, sizeMods);
             table.SetupColumn("path"u8, TableColumnFlags.WidthFixed, sizeFolders);
 
             var i = 0;
-            foreach (var (fullName, path) in selector.SelectedPaths.Select(p => (p.FullName(), p))
-                         .OrderBy(p => p.Item1, StringComparer.OrdinalIgnoreCase))
+            foreach (var node in fileSystem.Selection.OrderedNodes.OrderBy(p => p.FullPath, StringComparer.OrdinalIgnoreCase))
             {
                 using var id = Im.Id.Push(i++);
-                var (icon, text) = path is ModFileSystem.Leaf l
+                var (icon, text) = node is IFileSystemData<Mod> l
                     ? (FontAwesomeIcon.FileCircleMinus.Icon(), l.Value.Name)
                     : (FontAwesomeIcon.FolderMinus.Icon(), string.Empty);
                 table.NextColumn();
                 if (ImEx.Icon.Button(icon, "Remove from selection."u8, false, sizeType))
-                    selector.RemovePathFromMultiSelection(path);
+                    fileSystem.Selection.RemoveFromSelection(node);
 
                 table.DrawFrameColumn(text);
-                table.DrawFrameColumn(fullName);
-                if (path is ModFileSystem.Leaf)
-                    ++leaves;
+                table.DrawFrameColumn(node.FullPath);
             }
         }
 
         Im.Separator();
-        return leaves;
     }
 
     private          string           _tag        = string.Empty;
@@ -127,12 +122,12 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
         if (ImEx.Button(label, width, tooltip, _removeMods.Count is 0))
             foreach (var (mod, index) in _removeMods)
                 editor.ChangeLocalTag(mod, index, string.Empty);
-        
+
         if (predefinedTagsEnabled)
         {
             Im.Line.SameInner();
             tagManager.DrawToggleButton();
-            tagManager.DrawListMulti(selector.SelectedPaths.OfType<ModFileSystem.Leaf>().Select(l => l.Value));
+            tagManager.DrawListMulti(fileSystem.Selection.DataNodes.Select(l => (Mod)l.Value));
         }
 
         Im.Separator();
@@ -142,16 +137,17 @@ public class MultiModPanel(ModFileSystemSelector selector, ModDataEditor editor,
     {
         _addMods.Clear();
         _removeMods.Clear();
-        if (_tag.Length == 0)
+        if (_tag.Length is 0)
             return;
 
-        foreach (var leaf in selector.SelectedPaths.OfType<ModFileSystem.Leaf>())
+        foreach (var leaf in fileSystem.Selection.DataNodes)
         {
-            var index = leaf.Value.LocalTags.IndexOf(_tag);
+            var mod   = (Mod)leaf.Value;
+            var index = mod.LocalTags.IndexOf(_tag);
             if (index >= 0)
-                _removeMods.Add((leaf.Value, index));
-            else if (!leaf.Value.ModTags.Contains(_tag))
-                _addMods.Add(leaf.Value);
+                _removeMods.Add((mod, index));
+            else if (!mod.ModTags.Contains(_tag))
+                _addMods.Add(mod);
         }
     }
 }

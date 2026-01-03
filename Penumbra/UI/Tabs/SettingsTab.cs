@@ -36,7 +36,6 @@ public sealed class SettingsTab : ITab<TabType>
     private readonly ModManager                  _modManager;
     private readonly FileWatcher                 _fileWatcher;
     private readonly ModExportManager            _modExportManager;
-    private readonly ModFileSystemSelector       _selector;
     private readonly CharacterUtility            _characterUtility;
     private readonly ResidentResourceManager     _residentResources;
     private readonly HttpApi                     _httpApi;
@@ -53,18 +52,20 @@ public sealed class SettingsTab : ITab<TabType>
     private readonly AttributeHook               _attributeHook;
     private readonly PcpService                  _pcpService;
     private readonly IntegrationSettingsRegistry _integrationSettings;
+    private readonly ModFileSystemDrawer         _modFileSystemDrawer;
 
     private string _lastCloudSyncTestedPath = string.Empty;
     private bool   _lastCloudSyncTestResult;
 
     public SettingsTab(IDalamudPluginInterface pluginInterface, Configuration config, FontReloader fontReloader, TutorialService tutorial,
-        Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector,
-        CharacterUtility characterUtility, ResidentResourceManager residentResources, ModExportManager modExportManager,
+        Penumbra penumbra, FileDialogService fileDialog, ModManager modManager, CharacterUtility characterUtility,
+        ResidentResourceManager residentResources, ModExportManager modExportManager,
         FileWatcher fileWatcher, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
         MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
-        AttributeHook attributeHook, PcpService pcpService, IntegrationSettingsRegistry integrationSettings)
+        AttributeHook attributeHook, PcpService pcpService, IntegrationSettingsRegistry integrationSettings,
+        ModFileSystemDrawer modFileSystemDrawer)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -73,7 +74,6 @@ public sealed class SettingsTab : ITab<TabType>
         _penumbra                    = penumbra;
         _fileDialog                  = fileDialog;
         _modManager                  = modManager;
-        _selector                    = selector;
         _characterUtility            = characterUtility;
         _residentResources           = residentResources;
         _modExportManager            = modExportManager;
@@ -93,6 +93,7 @@ public sealed class SettingsTab : ITab<TabType>
         _attributeHook        = attributeHook;
         _pcpService           = pcpService;
         _integrationSettings  = integrationSettings;
+        _modFileSystemDrawer  = modFileSystemDrawer;
     }
 
     public void PostTabButton()
@@ -164,9 +165,8 @@ public sealed class SettingsTab : ITab<TabType>
     private bool DrawPressEnterWarning(string newName, string old, float width, bool saved, bool selected)
     {
         using var color = ImGuiColor.Button.Push(Colors.PressEnterWarningBg);
-        var       w     = new Vector2(width, 0);
         var (text, valid) = CheckRootDirectoryPath(newName, old, selected);
-
+        var w = new Vector2(Math.Max(width, Im.Font.CalculateButtonSize(text).X), 0);
         return (Im.Button(text, w) || saved) && valid;
     }
 
@@ -279,6 +279,7 @@ public sealed class SettingsTab : ITab<TabType>
               + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"u8
               + "Definitely do not place it in your Dalamud directory or any sub-directory thereof."u8;
 
+            Im.Line.SameInner();
             LunaStyle.DrawAlignedHelpMarker(tt);
             _tutorial.OpenTutorial(BasicTutorialSteps.GeneralTooltips);
             Im.Line.SameInner();
@@ -389,7 +390,7 @@ public sealed class SettingsTab : ITab<TabType>
     private void DrawHidingSettings()
     {
         Checkbox("Open Config Window at Game Start"u8, "Whether the Penumbra main window should be open or closed after launching the game."u8,
-            _config.OpenWindowAtStart,               v => _config.OpenWindowAtStart = v);
+            _config.OpenWindowAtStart,                 v => _config.OpenWindowAtStart = v);
 
         Checkbox("Hide Config Window when UI is Hidden"u8,
             "Hide the Penumbra main window when you manually hide the in-game user interface."u8, _config.HideUiWhenUiHidden,
@@ -424,9 +425,9 @@ public sealed class SettingsTab : ITab<TabType>
             "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here."u8,
             _config.PrintSuccessfulCommandsToChat, v => _config.PrintSuccessfulCommandsToChat = v);
         Checkbox("Hide Redraw Bar in Mod Panel"u8, "Hides the lower redraw buttons in the mod panel in your Mods tab."u8,
-            _config.HideRedrawBar,               v => _config.HideRedrawBar = v);
+            _config.HideRedrawBar,                 v => _config.HideRedrawBar = v);
         Checkbox("Hide Changed Item Filters"u8, "Hides the category filter line in the Changed Items tab and the Changed Items mod panel."u8,
-            _config.HideChangedItemFilters,   v =>
+            _config.HideChangedItemFilters,     v =>
             {
                 _config.HideChangedItemFilters = v;
                 if (v)
@@ -477,7 +478,8 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Use Assigned Collections in Try-On Window"u8,
             "Use the individual collection for your character's name in your try-on, dye preview or glamour plate window, if it is set."u8,
             _config.UseCharacterCollectionInTryOn, v => _config.UseCharacterCollectionInTryOn = v);
-        Checkbox("Use No Mods in Inspect Windows"u8, "Use the empty collection for characters you are inspecting, regardless of the character.\n"u8
+        Checkbox("Use No Mods in Inspect Windows"u8,
+            "Use the empty collection for characters you are inspecting, regardless of the character.\n"u8
           + "Takes precedence before the next option."u8, _config.UseNoModsInInspect, v => _config.UseNoModsInInspect = v);
         Checkbox("Use Assigned Collections in Inspect Windows"u8,
             "Use the appropriate individual collection for the character you are currently inspecting, based on their name."u8,
@@ -499,8 +501,8 @@ public sealed class SettingsTab : ITab<TabType>
                 {
                     if (Im.Selectable(val.Name, val.Equals(sortMode)) && !val.Equals(sortMode))
                     {
-                        _config.SortMode = val;
-                        _selector.SetFilterDirty();
+                        _config.SortMode              = val;
+                        _modFileSystemDrawer.SortMode = val;
                         _config.Save();
                     }
 
@@ -522,14 +524,17 @@ public sealed class SettingsTab : ITab<TabType>
                     if (Im.Selectable(value.ToNameU8(), _config.ShowRename == value))
                     {
                         _config.ShowRename = value;
-                        _selector.SetRenameSearchPath(value);
+                        // TODO
+                        // _selector.SetRenameSearchPath(value);
                         _config.Save();
                     }
+
                     Im.Tooltip.OnHover(value.Tooltip());
                 }
         }
 
-        LunaStyle.DrawAlignedHelpMarkerLabel("Rename Fields in Mod Context Menu"u8, "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector."u8);
+        LunaStyle.DrawAlignedHelpMarkerLabel("Rename Fields in Mod Context Menu"u8,
+            "Select which of the two renaming input fields are visible when opening the right-click context menu of a mod in the mod selector."u8);
     }
 
     /// <summary> Draw all settings pertaining to the mod selector. </summary>
@@ -538,10 +543,11 @@ public sealed class SettingsTab : ITab<TabType>
         DrawFolderSortType();
         DrawRenameSettings();
         Checkbox("Open Folders by Default"u8, "Whether to start with all folders collapsed or expanded in the mod selector."u8,
-            _config.OpenFoldersByDefault,   v =>
+            _config.OpenFoldersByDefault,     v =>
             {
                 _config.OpenFoldersByDefault = v;
-                _selector.SetFilterDirty();
+                // TODO
+                // SetFilterDirty
             });
 
         KeySelector.DoubleModifier("Mod Deletion Modifier"u8,
@@ -587,7 +593,8 @@ public sealed class SettingsTab : ITab<TabType>
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
 
         Im.Line.Same();
-        if (ImEx.Button("Delete all PCP Collections"u8, default, "Deletes all collections whose name starts with 'PCP/' from the collection list."u8, !active))
+        if (ImEx.Button("Delete all PCP Collections"u8, default,
+                "Deletes all collections whose name starts with 'PCP/' from the collection list."u8, !active))
             _pcpService.CleanPcpCollections();
         if (!active)
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking.");
@@ -757,7 +764,6 @@ public sealed class SettingsTab : ITab<TabType>
 
         LunaStyle.DrawAlignedHelpMarkerLabel("Default PCP Organizational Folder"u8,
             "The folder any penumbra character packs are moved to on import.\nLeave blank to import into Root."u8);
-
     }
 
     private void DrawPcpExtension()
@@ -1061,7 +1067,7 @@ public sealed class SettingsTab : ITab<TabType>
             Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
 
         if (ImEx.Button("Clear All Unused Settings"u8, default,
-                "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8, 
+                "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8,
                 !enabled || _cleanupService.IsRunning))
             _cleanupService.CleanupAllUnusedSettings();
         if (!enabled)
@@ -1089,7 +1095,7 @@ public sealed class SettingsTab : ITab<TabType>
     }
 
     #endregion
-    
+
     /// <summary> Draw the support button group on the right-hand side of the window. </summary>
     private void DrawSupportButtons()
     {
@@ -1128,7 +1134,7 @@ public sealed class SettingsTab : ITab<TabType>
         if (!Im.Tree.Header("Tags"u8))
             return;
 
-        var tagIdx = Luna.TagButtons.Draw("Predefined Tags: "u8,
+        var tagIdx = TagButtons.Draw("Predefined Tags: "u8,
             "Predefined tags that can be added or removed from mods with a single click."u8, _predefinedTagManager,
             out var editedTag);
 

@@ -1,4 +1,3 @@
-using Dalamud.Interface;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
@@ -1049,8 +1048,8 @@ public sealed class DebugTab : Window, ITab<TabType>
         if (!table)
             return;
 
-        table.SetupColumn("Hash"u8, TableColumnFlags.WidthFixed, 18 * UiBuilder.MonoFont.GetCharAdvance('0'));
-        table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, 5 * UiBuilder.MonoFont.GetCharAdvance('0'));
+        table.SetupColumn("Hash"u8, TableColumnFlags.WidthFixed, 18 * Im.Font.Mono.GetCharacterAdvance('0'));
+        table.SetupColumn("Type"u8, TableColumnFlags.WidthFixed, 5 * Im.Font.Mono.GetCharacterAdvance('0'));
         table.HeaderRow();
 
         foreach (var (hash, type) in _rsfService.CustomCache)
@@ -1173,7 +1172,7 @@ public sealed class DebugTab : Window, ITab<TabType>
         _config.Ephemeral.Save();
     }
 
-    public static unsafe void DrawCopyableAddress(ReadOnlySpan<byte> label, nint address)
+    public static void DrawCopyableAddress(ReadOnlySpan<byte> label, nint address)
     {
         Penumbra.Dynamis.DrawPointer(address);
         Im.Line.SameInner();

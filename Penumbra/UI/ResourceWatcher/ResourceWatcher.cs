@@ -336,12 +336,9 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 
     private void Enqueue(Record record)
     {
-        lock (_newRecords)
-        {
-            // Discard entries that exceed the number of records.
-            while (_newRecords.Count >= _config.MaxResourceWatcherRecords)
-                _newRecords.TryDequeue(out _);
-            _newRecords.Enqueue(record);
-        }
+        // Discard entries that exceed the number of records.
+        while (_newRecords.Count >= _config.MaxResourceWatcherRecords)
+            _newRecords.TryDequeue(out _);
+        _newRecords.Enqueue(record);
     }
 }

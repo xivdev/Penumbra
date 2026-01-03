@@ -31,8 +31,8 @@ namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
-    public static readonly OtterGui.Log.Logger Log = new();
-    public static          MessageService      Messager { get; private set; } = null!;
+    public static readonly Logger         Log = new("Penumbra");
+    public static          MessageService Messager { get; private set; } = null!;
     public static          DynamisIpc     Dynamis  { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
@@ -56,14 +56,13 @@ public class Penumbra : IDalamudPlugin
         try
         {
             HookOverrides.Instance = HookOverrides.LoadFile(pluginInterface);
-            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, new Logger("Penumbra"));
+            _services              = StaticServiceManager.CreateProvider(this, pluginInterface, Log);
             // Invoke the IPC Penumbra.Launching method before any hooks or other services are created.
             _services.GetService<IpcLaunchingProvider>();
             Messager         = _services.GetService<MessageService>();
             Dynamis          = _services.GetService<DynamisIpc>();
             _validityChecker = _services.GetService<ValidityChecker>();
             _services.EnsureRequiredServices();
-            _services.EnsureRequiredServices<OtterGui.Services.IRequiredService>();
 
             var startup = _services.GetService<DalamudConfigService>()
                 .GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool s)

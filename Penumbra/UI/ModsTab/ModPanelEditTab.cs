@@ -12,7 +12,6 @@ namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab(
     ModManager modManager,
-    ModFileSystemSelector selector,
     ModFileSystem fileSystem,
     Services.MessageService messager,
     FilenameService filenames,
@@ -24,8 +23,8 @@ public class ModPanelEditTab(
     AddGroupDrawer addGroupDrawer)
     : ITab<ModPanelTab>
 {
-    private ModFileSystem.Leaf _leaf = null!;
-    private Mod                _mod  = null!;
+    private IFileSystemData<Mod> _leaf = null!;
+    private Mod                  _mod  = null!;
 
     public ReadOnlySpan<byte> Label
         => "Edit Mod"u8;
@@ -39,8 +38,8 @@ public class ModPanelEditTab(
         if (!child)
             return;
 
-        _leaf = selector.SelectedLeaf!;
-        _mod  = selector.Selected!;
+        _leaf = (IFileSystemData<Mod>)fileSystem.Selection.Selection!;
+        _mod  = _leaf.Value;
 
         EditButtons();
         EditRegularMeta();
@@ -48,7 +47,7 @@ public class ModPanelEditTab(
         EditLocalData();
         UiHelpers.DefaultLineSpace();
 
-        if (Input.Text("Mod Path"u8, Input.Path, Input.None, _leaf.FullName(), out var newPath, UiHelpers.InputTextWidth.X))
+        if (Input.Text("Mod Path"u8, Input.Path, Input.None, _leaf.FullPath, out var newPath, UiHelpers.InputTextWidth.X))
             try
             {
                 fileSystem.RenameAndMove(_leaf, newPath);
@@ -71,8 +70,7 @@ public class ModPanelEditTab(
             modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
 
         if (sharedTagsEnabled)
-            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, false,
-                selector.Selected!);
+            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(_mod.LocalTags, _mod.ModTags, false, _mod);
 
 
         UiHelpers.DefaultLineSpace();

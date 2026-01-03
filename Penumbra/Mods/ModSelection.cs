@@ -18,7 +18,6 @@ namespace Penumbra.Mods;
 public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Priority>
 {
     private readonly ActiveCollections   _collections;
-    private readonly EphemeralConfig     _config;
     private readonly CommunicatorService _communicator;
 
     public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config)
@@ -26,10 +25,6 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     {
         _communicator = communicator;
         _collections  = collections;
-        _config       = config;
-        if (_config.LastModPath.Length > 0 && mods.TryGetMod(config.LastModPath, out var mod))
-            SelectMod(mod);
-
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModSelection);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
@@ -50,8 +45,6 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         Mod = mod;
         OnCollectionChange(new CollectionChange.Arguments(CollectionType.Current, null, _collections.Current, string.Empty));
         Invoke(new Arguments(oldMod, Mod));
-        _config.LastModPath = mod?.ModPath.Name ?? string.Empty;
-        _config.Save();
     }
 
     protected override void Dispose(bool _)

@@ -44,8 +44,8 @@ public static class TexFileParser
             if (offset == 0)
                 return i;
 
-            var Size = width * height * bits / 8;
-            if (offset + Size > data.Length)
+            var size = width * height * bits / 8;
+            if (offset + size > data.Length)
                 return i;
 
             var diff = offset - lastOffset;
@@ -55,7 +55,7 @@ public static class TexFileParser
             width      = Math.Max(width / 2,  minSize);
             height     = Math.Max(height / 2, minSize);
             lastOffset = offset;
-            lastSize   = Size;
+            lastSize   = size;
         }
 
         return 13;

@@ -118,11 +118,7 @@ public class FileDialogService : IDisposable, IUiService
     /// <summary> Set up the file selector with the right flags and custom side bar items. </summary>
     private static FileDialogManager SetupFileManager(string modDirectory)
     {
-        var fileManager = new FileDialogManager
-        {
-            AddedWindowFlags = (WindowFlags.NoCollapse | WindowFlags.NoDocking).ToDalamudWindowFlags(),
-        };
-
+        var fileManager = DalamudExtensions.CreateFileDialog(WindowFlags.NoCollapse | WindowFlags.NoDocking);
         if (WindowsFunctions.GetDownloadsFolder(out var downloadsFolder))
             fileManager.CustomSideBarItems.Add(("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1));
 

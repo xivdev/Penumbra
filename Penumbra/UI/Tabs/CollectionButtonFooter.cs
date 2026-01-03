@@ -16,6 +16,9 @@ public sealed class CollectionButtonFooter : ButtonFooter
         Buttons.AddButton(new DeleteButton(collectionManager.Storage, collectionManager.Active, configuration), 0);
     }
 
+    public int Count
+        => Buttons.Count;
+
     public sealed class AddButton(CollectionStorage collections) : BaseIconButton<AwesomeIcon>
     {
         public override AwesomeIcon Icon

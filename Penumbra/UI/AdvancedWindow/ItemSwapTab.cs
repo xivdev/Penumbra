@@ -19,7 +19,6 @@ using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -69,7 +68,7 @@ public class ItemSwapTab : IDisposable, ITab
     private readonly MetaFileManager     _metaFileManager;
 
     public ItemSwapTab(CommunicatorService communicator, ItemData itemService, CollectionManager collectionManager,
-        ModManager modManager, ModFileSystemSelector selector, ObjectIdentification identifier, MetaFileManager metaFileManager,
+        ModManager modManager, ModSelection selection, ObjectIdentification identifier, MetaFileManager metaFileManager,
         Configuration config)
     {
         _communicator      = communicator;
@@ -83,16 +82,16 @@ public class ItemSwapTab : IDisposable, ITab
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, StringU8 TextFrom, StringU8 TextTo)>
         {
             // @formatter:off
-            [SwapType.Hat]      = (new ItemSelector(a, itemService, selector, FullEquipType.Head),    new ItemSelector(a, itemService, null, FullEquipType.Head),    new StringU8("Take this Hat"u8),        new StringU8("and put it on this one"u8) ),
-            [SwapType.Top]      = (new ItemSelector(a, itemService, selector, FullEquipType.Body),    new ItemSelector(a, itemService, null, FullEquipType.Body),    new StringU8("Take this Top"u8),        new StringU8("and put it on this one"u8) ),
-            [SwapType.Gloves]   = (new ItemSelector(a, itemService, selector, FullEquipType.Hands),   new ItemSelector(a, itemService, null, FullEquipType.Hands),   new StringU8("Take these Gloves"u8),    new StringU8("and put them on these"u8) ),
-            [SwapType.Pants]    = (new ItemSelector(a, itemService, selector, FullEquipType.Legs),    new ItemSelector(a, itemService, null, FullEquipType.Legs),    new StringU8("Take these Pants"u8),     new StringU8("and put them on these"u8) ),
-            [SwapType.Shoes]    = (new ItemSelector(a, itemService, selector, FullEquipType.Feet),    new ItemSelector(a, itemService, null, FullEquipType.Feet),    new StringU8("Take these Shoes"u8),     new StringU8("and put them on these"u8) ),
-            [SwapType.Earrings] = (new ItemSelector(a, itemService, selector, FullEquipType.Ears),    new ItemSelector(a, itemService, null, FullEquipType.Ears),    new StringU8("Take these Earrings"u8),  new StringU8("and put them on these"u8) ),
-            [SwapType.Necklace] = (new ItemSelector(a, itemService, selector, FullEquipType.Neck),    new ItemSelector(a, itemService, null, FullEquipType.Neck),    new StringU8("Take this Necklace"u8),   new StringU8("and put it on this one"u8) ),
-            [SwapType.Bracelet] = (new ItemSelector(a, itemService, selector, FullEquipType.Wrists),  new ItemSelector(a, itemService, null, FullEquipType.Wrists),  new StringU8("Take these Bracelets"u8), new StringU8("and put them on these"u8) ),
-            [SwapType.Ring]     = (new ItemSelector(a, itemService, selector, FullEquipType.Finger),  new ItemSelector(a, itemService, null, FullEquipType.Finger),  new StringU8("Take this Ring"u8),       new StringU8("and put it on this one"u8) ),
-            [SwapType.Glasses]  = (new ItemSelector(a, itemService, selector, FullEquipType.Glasses), new ItemSelector(a, itemService, null, FullEquipType.Glasses), new StringU8("Take these Glasses"u8),   new StringU8("and put them on these"u8) ),
+            [SwapType.Hat]      = (new ItemSelector(a, itemService, selection, FullEquipType.Head),    new ItemSelector(a, itemService, null, FullEquipType.Head),    new StringU8("Take this Hat"u8),        new StringU8("and put it on this one"u8) ),
+            [SwapType.Top]      = (new ItemSelector(a, itemService, selection, FullEquipType.Body),    new ItemSelector(a, itemService, null, FullEquipType.Body),    new StringU8("Take this Top"u8),        new StringU8("and put it on this one"u8) ),
+            [SwapType.Gloves]   = (new ItemSelector(a, itemService, selection, FullEquipType.Hands),   new ItemSelector(a, itemService, null, FullEquipType.Hands),   new StringU8("Take these Gloves"u8),    new StringU8("and put them on these"u8) ),
+            [SwapType.Pants]    = (new ItemSelector(a, itemService, selection, FullEquipType.Legs),    new ItemSelector(a, itemService, null, FullEquipType.Legs),    new StringU8("Take these Pants"u8),     new StringU8("and put them on these"u8) ),
+            [SwapType.Shoes]    = (new ItemSelector(a, itemService, selection, FullEquipType.Feet),    new ItemSelector(a, itemService, null, FullEquipType.Feet),    new StringU8("Take these Shoes"u8),     new StringU8("and put them on these"u8) ),
+            [SwapType.Earrings] = (new ItemSelector(a, itemService, selection, FullEquipType.Ears),    new ItemSelector(a, itemService, null, FullEquipType.Ears),    new StringU8("Take these Earrings"u8),  new StringU8("and put them on these"u8) ),
+            [SwapType.Necklace] = (new ItemSelector(a, itemService, selection, FullEquipType.Neck),    new ItemSelector(a, itemService, null, FullEquipType.Neck),    new StringU8("Take this Necklace"u8),   new StringU8("and put it on this one"u8) ),
+            [SwapType.Bracelet] = (new ItemSelector(a, itemService, selection, FullEquipType.Wrists),  new ItemSelector(a, itemService, null, FullEquipType.Wrists),  new StringU8("Take these Bracelets"u8), new StringU8("and put them on these"u8) ),
+            [SwapType.Ring]     = (new ItemSelector(a, itemService, selection, FullEquipType.Finger),  new ItemSelector(a, itemService, null, FullEquipType.Finger),  new StringU8("Take this Ring"u8),       new StringU8("and put it on this one"u8) ),
+            [SwapType.Glasses]  = (new ItemSelector(a, itemService, selection, FullEquipType.Glasses), new ItemSelector(a, itemService, null, FullEquipType.Glasses), new StringU8("Take these Glasses"u8),   new StringU8("and put them on these"u8) ),
             // @formatter:on
         };
 

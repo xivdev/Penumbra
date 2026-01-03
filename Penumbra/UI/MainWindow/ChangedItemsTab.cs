@@ -74,6 +74,11 @@ public sealed class ChangedItemsTab(
             uiState.ChangedItemTabCategoryFilter = ChangedItemFlagExtensions.DefaultFlags;
             FilterChanged?.Invoke();
         }
+
+        public bool IsEmpty
+            => uiState.ChangedItemTabModFilter.Length is 0
+             && uiState.ChangedItemTabNameFilter.Length is 0
+             && uiState.ChangedItemTabCategoryFilter is ChangedItemFlagExtensions.DefaultFlags;
     }
 
     private readonly record struct Item(string Label, IIdentifiedObjectData Data, SingleArray<IMod> Mods)
@@ -102,7 +107,6 @@ public sealed class ChangedItemsTab(
             _collectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ChangedItemsTabCache);
         }
 
-        
 
         private void OnCollectionChange(in CollectionChange.Arguments arguments)
             => FilterDirty = true;

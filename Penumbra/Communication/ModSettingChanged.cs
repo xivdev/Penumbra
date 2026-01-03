@@ -27,7 +27,7 @@ public sealed class ModSettingChanged(Logger log)
         ItemSwapTab = 0,
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnSettingChange"/>
-        ModFileSystemSelector = 0,
+        ModFileSystemCache = 0,
 
         /// <seealso cref="Mods.ModSelection.OnSettingChange"/>
         ModSelection = 10,

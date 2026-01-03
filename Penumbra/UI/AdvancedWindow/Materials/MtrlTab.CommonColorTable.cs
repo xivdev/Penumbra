@@ -316,7 +316,7 @@ public partial class MtrlTab
                 topColor, topColor, bottomColor, bottomColor);
             drawList.RectangleFilled(
                 rcMin with { Y = MathF.Ceiling(float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3)) }, rcMax,
-                bottomColor, frameRounding, ImDrawFlagsRectangle.RoundCornersTop);
+                bottomColor, frameRounding, ImDrawFlagsRectangle.RoundCornersBottom);
         }
 
         drawList.Rectangle(rcMin, rcMax, borderColor.Color, frameRounding, default, frameThickness);

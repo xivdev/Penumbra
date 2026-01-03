@@ -22,7 +22,7 @@ public sealed class CollectionInheritanceChanged(Logger log)
         ItemSwapTab = 0,
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnInheritanceChange"/>
-        ModFileSystemSelector = 0,
+        ModFileSystemCache = 0,
 
         /// <seealso cref="Mods.ModSelection.OnInheritanceChange"/>
         ModSelection = 10,

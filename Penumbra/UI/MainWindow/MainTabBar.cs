@@ -3,6 +3,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 using Penumbra.UI.Tabs.Debug;
 using Watcher = Penumbra.UI.ResourceWatcher.ResourceWatcher;
@@ -11,14 +12,13 @@ namespace Penumbra.UI.MainWindow;
 
 public sealed class MainTabBar : TabBar<TabType>, IDisposable
 {
-    public readonly  Tabs.ModsTab    Mods;
+    private readonly ModFileSystem   _modFileSystem;
     private readonly EphemeralConfig _config;
     private readonly SelectTab       _selectTab;
 
     public MainTabBar(Logger log,
         SettingsTab settings,
-        Tabs.ModsTab mods,
-        ModTab mods2,
+        ModTab mods,
         CollectionsTab collections,
         ChangedItemsTab changedItems,
         EffectiveTab effectiveChanges,
@@ -26,13 +26,13 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
         ResourceTab resources,
         Watcher watcher,
         OnScreenTab onScreen,
-        MessagesTab messages, EphemeralConfig config, CommunicatorService communicator)
-        : base(nameof(MainTabBar), log, settings, collections, mods, mods2, changedItems, effectiveChanges, onScreen,
+        MessagesTab messages, EphemeralConfig config, CommunicatorService communicator, ModFileSystem modFileSystem)
+        : base(nameof(MainTabBar), log, settings, collections, mods, changedItems, effectiveChanges, onScreen,
             resources, watcher, debug, messages)
     {
-        Mods       = mods;
-        _config    = config;
-        _selectTab = communicator.SelectTab;
+        _config        = config;
+        _modFileSystem = modFileSystem;
+        _selectTab     = communicator.SelectTab;
 
         _selectTab.Subscribe(OnSelectTab, SelectTab.Priority.MainTabBar);
         TabSelected.Subscribe(OnTabSelected, 0);
@@ -41,8 +41,8 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
     private void OnSelectTab(in SelectTab.Arguments arguments)
     {
         NextTab = arguments.Tab;
-        if (arguments.Mod is not null)
-            Mods.SelectMod = arguments.Mod;
+        if (arguments.Mod?.Node is { } node)
+            _modFileSystem.Selection.Select(node);
     }
 
     public void Dispose()
@@ -52,6 +52,9 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
 
     private void OnTabSelected(in TabType type)
     {
+        if (_config.SelectedTab == type)
+            return;
+
         _config.SelectedTab = type;
         _config.Save();
     }

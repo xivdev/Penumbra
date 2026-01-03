@@ -7,7 +7,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSelector selector) : ITab<ModPanelTab>
+public class ModPanelCollectionsTab(CollectionManager manager, ModSelection selection) : ITab<ModPanelTab>
 {
     private enum ModState
     {
@@ -26,7 +26,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
 
     public void DrawContent()
     {
-        var (direct, inherited) = CountUsage(selector.Selected!);
+        var (direct, inherited) = CountUsage(selection.Mod!);
         Im.Line.New();
         switch (direct)
         {
@@ -70,8 +70,8 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                         if (Im.Menu.Item("Enable"u8))
                         {
                             if (parent != collection)
-                                manager.Editor.SetModInheritance(collection, selector.Selected!, false);
-                            manager.Editor.SetModState(collection, selector.Selected!, true);
+                                manager.Editor.SetModInheritance(collection, selection.Mod!, false);
+                            manager.Editor.SetModState(collection, selection.Mod!, true);
                         }
                     }
 
@@ -80,15 +80,15 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModFileSystemSele
                         if (Im.Menu.Item("Disable"u8))
                         {
                             if (parent != collection)
-                                manager.Editor.SetModInheritance(collection, selector.Selected!, false);
-                            manager.Editor.SetModState(collection, selector.Selected!, false);
+                                manager.Editor.SetModInheritance(collection, selection.Mod!, false);
+                            manager.Editor.SetModState(collection, selection.Mod!, false);
                         }
                     }
 
                     using (Im.Disabled(parent != collection))
                     {
                         if (Im.Menu.Item("Inherit"u8))
-                            manager.Editor.SetModInheritance(collection, selector.Selected!, true);
+                            manager.Editor.SetModInheritance(collection, selection.Mod!, true);
                     }
                 }
             }

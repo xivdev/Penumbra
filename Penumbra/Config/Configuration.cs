@@ -1,6 +1,5 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.ImGuiNotification;
-using ImSharp;
 using Luna;
 using Newtonsoft.Json;
 using Penumbra.Import.Structs;
@@ -14,16 +13,6 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
-public record PcpSettings
-{
-    public bool   CreateCollection { get; set; } = true;
-    public bool   AssignCollection { get; set; } = true;
-    public bool   AllowIpc         { get; set; } = true;
-    public bool   DisableHandling  { get; set; } = false;
-    public string FolderName       { get; set; } = "PCP";
-    public string PcpExtension     { get; set; } = ".pcp";
-}
-
 [Serializable]
 public class Configuration : IPluginConfiguration, ISavable, IService
 {
@@ -32,6 +21,9 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 
     [JsonIgnore]
     public readonly EphemeralConfig Ephemeral;
+
+    [JsonIgnore]
+    public readonly UiConfig Ui;
 
     public int Version { get; set; } = Constants.CurrentVersion;
 
@@ -120,7 +112,7 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public bool EditRawTileTransforms             { get; set; } = false;
     public bool WholePairSelectorAlwaysHighlights { get; set; } = false;
 
-    public bool   HdrRenderTargets        { get; set; } = true;
+    public bool HdrRenderTargets { get; set; } = true;
 
     public Dictionary<ColorId, uint> Colors { get; set; }
         = Enum.GetValues<ColorId>().ToDictionary(c => c, c => c.Data().DefaultColor);
@@ -129,10 +121,12 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     /// Load the current configuration.
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
-    public Configuration(CharacterUtility utility, ConfigMigrationService migrator, SaveService saveService, EphemeralConfig ephemeral)
+    public Configuration(CharacterUtility utility, ConfigMigrationService migrator, SaveService saveService, EphemeralConfig ephemeral,
+        UiConfig ui)
     {
         _saveService = saveService;
         Ephemeral    = ephemeral;
+        Ui           = ui;
         Load(utility, migrator);
     }
 

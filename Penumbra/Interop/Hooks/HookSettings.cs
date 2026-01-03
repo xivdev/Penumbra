@@ -31,6 +31,7 @@ public class HookOverrides
     public struct AnimationHooks
     {
         public bool ApricotListenerSoundPlayCaller;
+        public bool CreateApricotDocument;
         public bool CharacterBaseLoadAnimation;
         public bool Dismount;
         public bool LoadAreaVfx;

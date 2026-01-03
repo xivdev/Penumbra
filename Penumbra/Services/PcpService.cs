@@ -135,12 +135,12 @@ public class PcpService : IApiService, IDisposable
             }
 
             // Move to folder.
-            if (_fileSystem.TryGetValue(arguments.Mod, out var leaf))
+            if (arguments.Mod.Node is {} node)
             {
                 try
                 {
                     var folder = _fileSystem.FindOrCreateAllFolders(_config.PcpSettings.FolderName);
-                    _fileSystem.Move(leaf, folder);
+                    _fileSystem.Move(node, folder);
                 }
                 catch
                 {

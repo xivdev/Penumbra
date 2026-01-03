@@ -46,7 +46,7 @@ public sealed class CollectionChange(Logger log)
         IndividualAssignmentUi = 0,
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnCollectionChange"/>
-        ModFileSystemSelector = 0,
+        ModFileSystemCache = 0,
 
         /// <seealso cref="Mods.ModSelection.OnCollectionChange"/>
         ModSelection = 10,

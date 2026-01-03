@@ -10,7 +10,7 @@ public sealed class ModDataChanged(Logger log) : EventBase<ModDataChanged.Argume
     public enum Priority
     {
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnModDataChange"/>
-        ModFileSystemSelector = -10,
+        ModFileSystemCache = -10,
 
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModDataChange"/>
         ModCacheManager = 0,

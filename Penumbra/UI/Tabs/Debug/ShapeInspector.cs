@@ -1,4 +1,3 @@
-using Dalamud.Interface;
 using ImSharp;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Enums;
@@ -176,9 +175,9 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
         table.SetupColumn("#"u8,       TableColumnFlags.WidthFixed, 25 * Im.Style.GlobalScale);
         table.SetupColumn("Slot"u8,    TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
-        table.SetupColumn("Address"u8, TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
-        table.SetupColumn("Mask"u8,    TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
-        table.SetupColumn("ID"u8,      TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
+        table.SetupColumn("Address"u8, TableColumnFlags.WidthFixed, Im.Font.Mono.GetCharacterAdvance('0') * 14);
+        table.SetupColumn("Mask"u8,    TableColumnFlags.WidthFixed, Im.Font.Mono.GetCharacterAdvance('0') * 8);
+        table.SetupColumn("ID"u8,      TableColumnFlags.WidthFixed, Im.Font.Mono.GetCharacterAdvance('0') * 4);
         table.SetupColumn("Count"u8,   TableColumnFlags.WidthFixed, 30 * Im.Style.GlobalScale);
         table.SetupColumn("Shapes"u8,  TableColumnFlags.WidthStretch);
         table.HeaderRow();
@@ -232,9 +231,9 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
 
         table.SetupColumn("#"u8,          TableColumnFlags.WidthFixed, 25 * Im.Style.GlobalScale);
         table.SetupColumn("Slot"u8,       TableColumnFlags.WidthFixed, 150 * Im.Style.GlobalScale);
-        table.SetupColumn("Address"u8,    TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 14);
-        table.SetupColumn("Mask"u8,       TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 8);
-        table.SetupColumn("ID"u8,         TableColumnFlags.WidthFixed, UiBuilder.MonoFont.GetCharAdvance('0') * 4);
+        table.SetupColumn("Address"u8,    TableColumnFlags.WidthFixed, Im.Font.Mono.GetCharacterAdvance('0') * 14);
+        table.SetupColumn("Mask"u8,       TableColumnFlags.WidthFixed, Im.Font.Mono.GetCharacterAdvance('0') * 8);
+        table.SetupColumn("ID"u8,         TableColumnFlags.WidthFixed, Im.Font.Mono.GetCharacterAdvance('0') * 4);
         table.SetupColumn("Count"u8,      TableColumnFlags.WidthFixed, 30 * Im.Style.GlobalScale);
         table.SetupColumn("Attributes"u8, TableColumnFlags.WidthStretch);
         table.HeaderRow();

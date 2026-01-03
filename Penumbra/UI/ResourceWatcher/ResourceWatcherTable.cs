@@ -76,11 +76,13 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 {
     private readonly IReadOnlyList<Record> _records;
 
-    public bool WouldBeVisible(Record record)
+    internal interface ICheckRecord
     {
-        var cached = new CachedRecord(record);
-        return Columns.All(c => c.WouldBeVisible(cached, -1));
+        public bool WouldBeVisible(in Record record);
     }
+
+    public bool WouldBeVisible(Record record)
+        => Columns.OfType<ICheckRecord>().All(column => column.WouldBeVisible(record));
 
     public ResourceWatcherTable(ResourceWatcherConfig config, IReadOnlyList<Record> records)
         : base(new StringU8("##records"u8),
@@ -145,7 +147,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
     }
 
 
-    private sealed class PathColumn : TextColumn<CachedRecord>
+    private sealed class PathColumn : TextColumn<CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -173,9 +175,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => item.Record.Path;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.Text.Length is 0 || Filter.WouldBeVisible(record.Path.ToString());
     }
 
-    private sealed class RecordTypeColumn : FlagColumn<RecordType, CachedRecord>
+    private sealed class RecordTypeColumn : FlagColumn<RecordType, CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -201,6 +206,9 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override RecordType GetValue(in CachedRecord item, int globalIndex)
             => item.Record.RecordType;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.FilterValue.HasFlag(record.RecordType);
     }
 
     private sealed class DateColumn : BasicColumn<CachedRecord>
@@ -215,7 +223,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             => Im.Text(item.Time);
     }
 
-    private sealed class Crc64Column : TextColumn<CachedRecord>
+    private sealed class Crc64Column : TextColumn<CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -250,10 +258,13 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => item.Crc64;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.Text.Length is 0 || Filter.WouldBeVisible(record.Crc64.ToString("X16"));
     }
 
 
-    private sealed class CollectionColumn : TextColumn<CachedRecord>
+    private sealed class CollectionColumn : TextColumn<CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -276,9 +287,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => item.Collection;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.WouldBeVisible(record.Collection?.Identity.Name ?? string.Empty);
     }
 
-    private sealed class ObjectColumn : TextColumn<CachedRecord>
+    private sealed class ObjectColumn : TextColumn<CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -301,9 +315,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => item.AssociatedGameObject;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.WouldBeVisible(record.AssociatedGameObject);
     }
 
-    private sealed class OriginalPathColumn : TextColumn<CachedRecord>
+    private sealed class OriginalPathColumn : TextColumn<CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -331,9 +348,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => item.Record.OriginalPath;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.Text.Length is 0 || Filter.WouldBeVisible(record.OriginalPath.ToString());
     }
 
-    private sealed class ResourceCategoryColumn : FlagColumn<ResourceCategoryFlag, CachedRecord>
+    private sealed class ResourceCategoryColumn : FlagColumn<ResourceCategoryFlag, CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -359,9 +379,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override ResourceCategoryFlag GetValue(in CachedRecord item, int globalIndex)
             => item.Record.Category;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.FilterValue.HasFlag(record.Category);
     }
 
-    private sealed class ResourceTypeColumn : FlagColumn<ResourceTypeFlag, CachedRecord>
+    private sealed class ResourceTypeColumn : FlagColumn<ResourceTypeFlag, CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -387,9 +410,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override ResourceTypeFlag GetValue(in CachedRecord item, int globalIndex)
             => item.Record.ResourceType;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.FilterValue.HasFlag(record.ResourceType);
     }
 
-    private sealed class LoadStateColumn : FlagColumn<LoadStateFlag, CachedRecord>
+    private sealed class LoadStateColumn : FlagColumn<LoadStateFlag, CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -447,18 +473,25 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             ];
 
         protected override LoadStateFlag GetValue(in CachedRecord item, int globalIndex)
-            => item.Record.LoadState switch
-            {
-                LoadState.None              => LoadStateFlag.None,
-                LoadState.Success           => LoadStateFlag.Success,
-                LoadState.FailedSubResource => LoadStateFlag.FailedSub,
-                <= LoadState.Constructed    => LoadStateFlag.Unknown,
-                < LoadState.Success         => LoadStateFlag.Async,
-                > LoadState.Success         => LoadStateFlag.Failed,
-            };
+            => GetValue(item.Record.LoadState);
+            
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.FilterValue.HasFlag(GetValue(record.LoadState));
+
+        private static LoadStateFlag GetValue(LoadState value)
+        => value switch
+        {
+            LoadState.None              => LoadStateFlag.None,
+            LoadState.Success           => LoadStateFlag.Success,
+            LoadState.FailedSubResource => LoadStateFlag.FailedSub,
+            <= LoadState.Constructed    => LoadStateFlag.Unknown,
+            < LoadState.Success         => LoadStateFlag.Async,
+            > LoadState.Success         => LoadStateFlag.Failed,
+        };
     }
 
-    private sealed class HandleColumn : TextColumn<CachedRecord>
+    private sealed class HandleColumn : TextColumn<CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -489,6 +522,9 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override StringU8 DisplayText(in CachedRecord item, int globalIndex)
             => StringU8.Empty;
+
+        public unsafe bool WouldBeVisible(in Record record)
+            => Filter.Text.Length is 0 || Filter.WouldBeVisible($"0x{(nint)record.Handle:X}");
     }
 
 
@@ -531,7 +567,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             };
     }
 
-    private sealed class CustomLoadColumn : OptBoolColumn
+    private sealed class CustomLoadColumn : OptBoolColumn, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -551,9 +587,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override BoolEnum GetValue(in CachedRecord item, int globalIndex)
             => ToValue(item.Record.CustomLoad);
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.FilterValue.HasFlag(ToValue(record.CustomLoad));
     }
 
-    private sealed class SynchronousLoadColumn : OptBoolColumn
+    private sealed class SynchronousLoadColumn : OptBoolColumn, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -573,12 +612,15 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override BoolEnum GetValue(in CachedRecord item, int globalIndex)
             => ToValue(item.Record.Synchronously);
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.FilterValue.HasFlag(ToValue(record.Synchronously));
     }
 
-    private sealed class RefCountColumn : NumberColumn<uint, CachedRecord>
+    private sealed class RefCountColumn : NumberColumn<uint, CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
-
+        
         public RefCountColumn(ResourceWatcherConfig config)
         {
             _config       = config;
@@ -601,9 +643,12 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)
             => item.RefCount;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.WouldBeVisible(record.RefCount);
     }
 
-    private sealed class OsThreadColumn : NumberColumn<uint, CachedRecord>
+    private sealed class OsThreadColumn : NumberColumn<uint, CachedRecord>, ICheckRecord
     {
         private readonly ResourceWatcherConfig _config;
 
@@ -629,6 +674,9 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)
             => item.Thread;
+
+        public bool WouldBeVisible(in Record record)
+            => Filter.WouldBeVisible(record.OsThreadId);
     }
 
     public override IEnumerable<CachedRecord> GetItems()
