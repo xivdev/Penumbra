@@ -1,6 +1,7 @@
 using ImSharp;
 using Luna;
 using Penumbra.Import.Structs;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI;
@@ -11,12 +12,13 @@ public sealed class ImportPopup : Window, IUiService
     public const string WindowLabel = "Penumbra Import Status";
 
     private readonly        ModImportManager _modImportManager;
+    private readonly        ModSelection     _modSelection;
     private static readonly Vector2          OneHalf = Vector2.One / 2;
 
     public bool WasDrawn      { get; private set; }
     public bool PopupWasDrawn { get; private set; }
 
-    public ImportPopup(ModImportManager modImportManager)
+    public ImportPopup(ModImportManager modImportManager, ModSelection modSelection)
         : base(WindowLabel,
             WindowFlags.NoCollapse
           | WindowFlags.NoDecoration
@@ -30,6 +32,7 @@ public sealed class ImportPopup : Window, IUiService
           | WindowFlags.NoTitleBar, true)
     {
         _modImportManager   = modImportManager;
+        _modSelection       = modSelection;
         DisableWindowSounds = true;
         IsOpen              = true;
         RespectCloseHotkey  = false;
@@ -47,6 +50,9 @@ public sealed class ImportPopup : Window, IUiService
         PopupWasDrawn = false;
         _modImportManager.TryUnpacking();
         IsOpen = true;
+
+        while (_modImportManager.AddUnpackedMod(out var mod))
+            _modSelection.SelectMod(mod);
     }
 
     public override void Draw()
