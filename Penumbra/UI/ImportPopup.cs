@@ -6,7 +6,7 @@ using Penumbra.Mods.Manager;
 namespace Penumbra.UI;
 
 /// <summary> Draw the progress information for import. </summary>
-public sealed class ImportPopup : Window, IUiService
+public sealed class ImportPopup : Window
 {
     public const string WindowLabel = "Penumbra Import Status";
 
@@ -47,6 +47,9 @@ public sealed class ImportPopup : Window, IUiService
         PopupWasDrawn = false;
         _modImportManager.TryUnpacking();
         IsOpen = true;
+
+        while (_modImportManager.AddUnpackedMod(out _))
+            ;
     }
 
     public override void Draw()

@@ -82,20 +82,21 @@ public sealed class ModManager : ModStorage, IDisposable, Luna.IService
     }
 
     /// <summary> Load a new mod and add it to the manager if successful. </summary>
-    public void AddMod(DirectoryInfo modFolder, bool deleteDefaultMeta)
+    public Mod? AddMod(DirectoryInfo modFolder, bool deleteDefaultMeta)
     {
         if (this.Any(m => m.ModPath.Name == modFolder.Name))
-            return;
+            return null;
 
         Creator.SplitMultiGroups(modFolder);
         var mod = Creator.LoadMod(modFolder, true, deleteDefaultMeta);
-        if (mod == null)
-            return;
+        if (mod is null)
+            return null;
 
         mod.Index = Count;
         Mods.Add(mod);
         _communicator.ModPathChanged.Invoke(new ModPathChanged.Arguments(ModPathChangeType.Added, mod, null, mod.ModPath));
         Penumbra.Log.Debug($"Added new mod {mod.Name} from {modFolder.FullName}.");
+        return mod;
     }
 
     /// <summary>

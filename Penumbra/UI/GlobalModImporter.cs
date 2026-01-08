@@ -25,6 +25,20 @@ public sealed class GlobalModImporter : IRequiredService, IDisposable
         dragDropManager.AddTarget(DragDropId, ImportFiles);
     }
 
+    public void DrawItemTarget()
+    {
+        using var target = Im.DragDrop.Target();
+        if (target.IsDropping("ModDragDrop"u8))
+            ImportFiles(_dragDropManager.DalamudManager.Files, []);
+    }
+
+    public void DrawWindowTarget()
+    {
+        using var target = Im.DragDrop.TargetWindow();
+        if (target.IsDropping("ModDragDrop"u8))
+            ImportFiles(_dragDropManager.DalamudManager.Files, []);
+    }
+
     public void Dispose()
     {
         _dragDropManager.RemoveSource(DragDropId);
@@ -39,7 +53,9 @@ public sealed class GlobalModImporter : IRequiredService, IDisposable
 
     private static bool DragTooltip(IDragDropManager manager)
     {
-        Im.Text($"Dragging mods for import:\n\t{StringU8.Join("\n\t"u8, manager.Files.Select(Path.GetFileName))}");
+        Im.Text(manager.Files.Count > 1 ? "Dragging mods for import:"u8 : "Dragging mod for import:"u8);
+        foreach (var file in manager.Files.Select(Path.GetFileName))
+            Im.BulletText(file!);
         return true;
     }
 }

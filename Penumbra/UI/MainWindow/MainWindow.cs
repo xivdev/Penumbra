@@ -12,17 +12,19 @@ public sealed class MainWindow : Window
     private readonly IDalamudPluginInterface _pluginInterface;
     private readonly Configuration           _config;
     private readonly ValidityChecker         _validityChecker;
+    private readonly GlobalModImporter       _globalModImporter;
     private          Penumbra?               _penumbra;
     private          MainTabBar              _configTabs = null!;
     private          string?                 _lastException;
 
     public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
-        TutorialService tutorial)
+        TutorialService tutorial, GlobalModImporter globalModImporter)
         : base(GetLabel(checker))
     {
-        _pluginInterface = pi;
-        _config          = config;
-        _validityChecker = checker;
+        _pluginInterface   = pi;
+        _config            = config;
+        _validityChecker   = checker;
+        _globalModImporter = globalModImporter;
 
         RespectCloseHotkey = true;
         tutorial.UpdateTutorialStep();
@@ -61,6 +63,7 @@ public sealed class MainWindow : Window
     public override void Draw()
     {
         UiHelpers.SetupCommonSizes();
+        _globalModImporter.DrawWindowTarget();
         try
         {
             if (_validityChecker.ImcExceptions.Count > 0)

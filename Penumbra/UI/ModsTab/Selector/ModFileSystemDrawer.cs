@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
@@ -16,9 +17,11 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly FileDialogService   FileService;
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
+    public readonly GlobalModImporter   GlobalModImporter;
 
     public ModFileSystemDrawer(ModFileSystem fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config,
-        ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator)
+        ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator,
+        GlobalModImporter globalModImporter)
         : base(fileSystem, new ModFilter(modManager, collectionManager.Active))
     {
         ModManager        = modManager;
@@ -27,27 +30,29 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         ModImport         = modImport;
         FileService       = fileService;
         Tutorial          = tutorial;
-        Communicator = communicator;
+        Communicator      = communicator;
+        GlobalModImporter = globalModImporter;
+        SortMode          = Config.SortMode;
 
         MainContext.AddButton(new ClearTemporarySettingsButton(this),   105);
         MainContext.AddButton(new ClearDefaultImportFolderButton(this), -10);
-        MainContext.AddButton(new ClearQuickMoveFoldersButtons(this), -20);
+        MainContext.AddButton(new ClearQuickMoveFoldersButtons(this),   -20);
 
         FolderContext.AddButton(new SetDescendantsButton(this, true),        11);
         FolderContext.AddButton(new SetDescendantsButton(this, false),       10);
         FolderContext.AddButton(new SetDescendantsButton(this, true,  true), 6);
         FolderContext.AddButton(new SetDescendantsButton(this, false, true), 5);
         FolderContext.AddButton(new SetDefaultImportFolderButton(this),      -50);
-        FolderContext.AddButton(new SetQuickMoveFoldersButtons(this), -70);
+        FolderContext.AddButton(new SetQuickMoveFoldersButtons(this),        -70);
 
-        DataContext.AddButton(new ToggleFavoriteButton(this), 10);
-        DataContext.AddButton(new TemporaryButtons(this), 20);
+        DataContext.AddButton(new ToggleFavoriteButton(this),          10);
+        DataContext.AddButton(new TemporaryButtons(this),              20);
         DataContext.AddButton(new MoveToQuickMoveFoldersButtons(this), -100);
 
-        Footer.Buttons.AddButton(new AddNewModButton(this),          1000);
-        Footer.Buttons.AddButton(new ImportModButton(this),          900);
-        Footer.Buttons.AddButton(new HelpButton(this),               500);
-        Footer.Buttons.AddButton(new DeleteSelectionButton(this),    -100);
+        Footer.Buttons.AddButton(new AddNewModButton(this),       1000);
+        Footer.Buttons.AddButton(new ImportModButton(this),       900);
+        Footer.Buttons.AddButton(new HelpButton(this),            500);
+        Footer.Buttons.AddButton(new DeleteSelectionButton(this), -100);
     }
 
     public override ReadOnlySpan<byte> Id

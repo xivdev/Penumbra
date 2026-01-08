@@ -84,9 +84,8 @@ public class ModImportManager(
             return false;
         }
 
-        modManager.AddMod(directory, true);
-        mod = modManager.LastOrDefault();
-        return mod != null && mod.ModPath == directory;
+        mod = modManager.AddMod(directory, true);
+        return mod is not null && mod.ModPath == directory;
     }
 
     public void Dispose()

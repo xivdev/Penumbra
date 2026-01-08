@@ -68,7 +68,8 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
                             NotificationType.Warning);
                     }
 
-                CreateDuplicateDataNode(parent, arguments.Mod.Name, arguments.Mod);
+                var (data, _) = CreateDuplicateDataNode(parent, arguments.Mod.Name, arguments.Mod);
+                Selection.Select(data);
                 break;
             case ModPathChangeType.Deleted:
                 if (arguments.Mod.Node is not null)
