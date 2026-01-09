@@ -28,6 +28,7 @@ public readonly struct ModFilterToken() : IFilterToken<ModFilterTokenType, ModFi
             'n' or 'N' => ModFilterTokenType.Name,
             'a' or 'A' => ModFilterTokenType.Author,
             's' or 'S' => ModFilterTokenType.Category,
+            'f' or 'F' => ModFilterTokenType.FullContext,
             _          => ModFilterTokenType.Default,
         };
         return type is not ModFilterTokenType.Default;

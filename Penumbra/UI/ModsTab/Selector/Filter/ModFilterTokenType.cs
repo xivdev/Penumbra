@@ -8,4 +8,5 @@ public enum ModFilterTokenType
     Name,
     Author,
     Category,
+    FullContext,
 }

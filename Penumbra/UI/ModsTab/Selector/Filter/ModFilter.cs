@@ -34,6 +34,10 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
         ImEx.TextMultiColored("Enter "u8).Then("s:[string]"u8, highlightColor).Then(
                 $" to filter for mods by the categories of the items they change (use 1-{ChangedItemFlagExtensions.NumCategories + 1} or a partial category name).")
             .End();
+        ImEx.TextMultiColored("Enter "u8).Then("f:[string]"u8, highlightColor)
+            .Then(
+                " to filter for mods containing the text in name, path, description, tags, changed items, or group- or option names or descriptions."u8)
+            .End();
         Line.New();
         ImEx.TextMultiColored("Use "u8).Then("None"u8, highlightColor).Then(" as a placeholder value that only matches empty lists or names."u8)
             .End();
@@ -118,6 +122,7 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
             ModFilterTokenType.Name        => cacheItem.Node.Value.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
             ModFilterTokenType.Author      => cacheItem.Node.Value.Author.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
             ModFilterTokenType.Category    => CheckCategory(token.IconFlagFilter, cacheItem),
+            ModFilterTokenType.FullContext => CheckFullContext(token.Needle, cacheItem),
             _                              => true,
         };
 
@@ -290,5 +295,45 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
         }
 
         return General.Count is 0;
+    }
+
+    private static bool CheckFullContext(string needle, in ModFileSystemCache.ModData cacheItem)
+    {
+        if (needle.Length is 0)
+            return true;
+
+        if (cacheItem.Node.FullPath.Contains(needle, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var mod = cacheItem.Node.Value;
+        if (mod.Name.Contains(needle, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (mod.Description.Contains(needle, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (mod.AllTagsLower.Contains(needle, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (mod.ChangedItems.Keys.Any(k => k.Contains(needle, StringComparison.OrdinalIgnoreCase)))
+            return true;
+
+        foreach (var group in mod.Groups)
+        {
+            if (group.Name.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (group.Description.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            foreach (var option in group.Options)
+            {
+                if (option.Name.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (option.Description.Contains(needle, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }
