@@ -72,8 +72,17 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
                 Selection.Select(data);
                 break;
             case ModPathChangeType.Deleted:
-                if (arguments.Mod.Node is not null)
-                    Delete(arguments.Mod.Node);
+                if (arguments.Mod.Node is { } node)
+                {
+                    // Unselect all because of event spaghetti.
+                    // If two nodes are selected and one is deleted, the remaining one
+                    // will try to fetch settings down the line and possibly break.
+                    // Untangling the events is hard.
+                    if (node.Selected)
+                        Selection.UnselectAll();
+                    Delete(node);
+                }
+
                 break;
             case ModPathChangeType.Reloaded:
                 // Nothing
