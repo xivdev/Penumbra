@@ -20,13 +20,19 @@ public sealed class ResourceTab(Configuration config, ResourceManagerService res
     public bool IsVisible
         => config.DebugMode;
 
-    public readonly TextFilter Filter = new();
+    public readonly ResourceFilter Filter = new();
+
+    public sealed class ResourceFilter : Utf8FilterBase<ResourceHandle>
+    {
+        protected override ReadOnlySpan<byte> ToFilterString(in ResourceHandle item, int globalIndex)
+            => item.FileName.AsSpan();
+    }
 
     /// <summary> Draw a tab to iterate over the main resource maps and see what resources are currently loaded. </summary>
     public unsafe void DrawContent()
     {
         // Filter for resources containing the input string.
-        Filter.DrawFilter("##ResourceFilter"u8, Im.ContentRegion.Available);
+        Filter.DrawFilter("Filter..."u8, Im.ContentRegion.Available);
         using var child = Im.Child.Begin("##ResourceManagerTab"u8, Im.ContentRegion.Available);
         if (!child)
             return;
@@ -75,7 +81,7 @@ public sealed class ResourceTab(Configuration config, ResourceManagerService res
         resourceManager.IterateResourceMap(map, (hash, r) =>
         {
             // Filter unwanted names.
-            if (Filter.Text.Length > 0 && Filter.WouldBeVisible(r->FileName.ToString(), -1))
+            if (!Filter.WouldBeVisible(in *r, -1))
                 return;
 
             Im.Table.DrawColumn($"0x{hash:X8}");

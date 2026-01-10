@@ -265,9 +265,10 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
         {
             if (token.Type switch
                 {
-                    ModFilterTokenType.Name    => folder.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
-                    ModFilterTokenType.Default => folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
-                    _                          => true,
+                    ModFilterTokenType.Name        => !folder.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    ModFilterTokenType.Default     => !folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    ModFilterTokenType.FullContext => !folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    _                              => true,
                 })
                 return false;
         }
@@ -276,9 +277,10 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
         {
             if (token.Type switch
                 {
-                    ModFilterTokenType.Name    => folder.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
-                    ModFilterTokenType.Default => folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
-                    _                          => false,
+                    ModFilterTokenType.Name        => folder.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    ModFilterTokenType.Default     => folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    ModFilterTokenType.FullContext => folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    _                              => false,
                 })
                 return false;
         }
@@ -287,9 +289,10 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
         {
             if (token.Type switch
                 {
-                    ModFilterTokenType.Name    => folder.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
-                    ModFilterTokenType.Default => folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
-                    _                          => false,
+                    ModFilterTokenType.Name        => folder.Name.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    ModFilterTokenType.Default     => folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    ModFilterTokenType.FullContext => !folder.FullPath.Contains(token.Needle, StringComparison.OrdinalIgnoreCase),
+                    _                              => false,
                 })
                 return true;
         }
