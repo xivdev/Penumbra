@@ -9,11 +9,25 @@ using static ImSharp.Im;
 
 namespace Penumbra.UI.ModsTab.Selector;
 
-public sealed class ModFilter(ModManager modManager, ActiveCollections collections)
-    : TokenizedFilter<ModFilterTokenType, ModFileSystemCache.ModData, ModFilterToken>,
-        IFileSystemFilter<ModFileSystemCache.ModData>
+public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSystemCache.ModData, ModFilterToken>,
+    IFileSystemFilter<ModFileSystemCache.ModData>
 {
-    private ModTypeFilter _stateFilter = ModTypeFilterExtensions.UnfilteredStateMods;
+    private          ModTypeFilter     _stateFilter;
+    private readonly ModManager        _modManager;
+    private readonly ActiveCollections _collections;
+
+    public ModFilter(ModManager modManager, ActiveCollections collections, FilterConfig filterConfig)
+    {
+        _modManager  = modManager;
+        _collections = collections;
+        _stateFilter  = filterConfig.ModTypeFilter;
+        Set(filterConfig.ModFilter);
+        FilterChanged += () =>
+        {
+            filterConfig.ModFilter     = Text;
+            filterConfig.ModTypeFilter = StateFilter;
+        };
+    }
 
     public ModTypeFilter StateFilter
         => _stateFilter;
@@ -156,8 +170,8 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
 
     private bool CheckStateFilters(Mod mod)
     {
-        var (settings, collection) = collections.Current.GetActualSettings(mod.Index);
-        var isNew = modManager.IsNew(mod);
+        var (settings, collection) = _collections.Current.GetActualSettings(mod.Index);
+        var isNew = _modManager.IsNew(mod);
         // Handle mod details.
         if (CheckFlags(mod.TotalFileCount,     ModTypeFilter.HasNoFiles,             ModTypeFilter.HasFiles)
          || CheckFlags(mod.TotalSwapCount,     ModTypeFilter.HasNoFileSwaps,         ModTypeFilter.HasFileSwaps)
@@ -182,7 +196,7 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
         }
 
         // Handle Inheritance
-        if (collection == collections.Current)
+        if (collection == _collections.Current)
         {
             if (!_stateFilter.HasFlag(ModTypeFilter.Uninherited))
                 return false;
@@ -213,7 +227,7 @@ public sealed class ModFilter(ModManager modManager, ActiveCollections collectio
                 return false;
 
             // Conflicts can only be relevant if the mod is enabled.
-            var conflicts = collections.Current.Conflicts(mod);
+            var conflicts = _collections.Current.Conflicts(mod);
             if (conflicts.Count > 0)
             {
                 if (conflicts.Any(c => !c.Solved))

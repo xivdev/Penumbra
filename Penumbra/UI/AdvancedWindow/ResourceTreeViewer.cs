@@ -39,11 +39,9 @@ public class ResourceTreeViewer(
     private readonly Dictionary<nint, NodeVisibility> _filterCache   = [];
     private readonly Dictionary<FullPath, IWritable?> _writableCache = [];
 
-    private TreeCategory        _categoryFilter = AllCategories;
-    private ChangedItemIconFlag _typeFilter     = ChangedItemFlagExtensions.AllFlags;
-    private string              _nameFilter     = string.Empty;
-    private string              _nodeFilter     = string.Empty;
-    private string              _note           = string.Empty;
+    private TreeCategory _categoryFilter = AllCategories;
+
+    private string _note = string.Empty;
 
     private Task<ResourceTree[]>? _task;
 
@@ -73,7 +71,7 @@ public class ResourceTreeViewer(
             foreach (var (index, tree) in _task.Result.Index())
             {
                 var category = Classify(tree);
-                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase))
+                if (!_categoryFilter.HasFlag(category) || !tree.Name.Contains(config.Filters.OnScreenCharacterFilter, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 using (ImGuiColor.Text.Push(CategoryColor(category).Value()))
@@ -198,15 +196,31 @@ public class ResourceTreeViewer(
         Im.Cursor.Y -= yOffset;
         using (Im.Child.Begin("##typeFilter"u8, new Vector2(Im.ContentRegion.Available.X, ChangedItemDrawer.TypeFilterIconSize.Y)))
         {
-            filterChanged |= changedItemDrawer.DrawTypeFilter(ref _typeFilter);
+            if (changedItemDrawer.DrawTypeFilter(config.Filters.OnScreenTypeFilter, out var newTypeFilter))
+            {
+                filterChanged                     = true;
+                config.Filters.OnScreenTypeFilter = newTypeFilter;
+            }
         }
 
         var fieldWidth = (Im.ContentRegion.Available.X - checkSpacing * 2.0f - Im.Style.FrameHeightWithSpacing) / 2.0f;
         Im.Item.SetNextWidth(fieldWidth);
-        filterChanged |= Im.Input.Text("##TreeNameFilter"u8, ref _nameFilter, "Filter by Character/Entity Name..."u8);
+        var filter = config.Filters.OnScreenCharacterFilter;
+        if (Im.Input.Text("##TreeNameFilter"u8, ref filter, "Filter by Character/Entity Name..."u8))
+        {
+            filterChanged                          = true;
+            config.Filters.OnScreenCharacterFilter = filter;
+        }
+
         Im.Line.Same(0, checkSpacing);
         Im.Item.SetNextWidth(fieldWidth);
-        filterChanged |= Im.Input.Text("##NodeFilter"u8, ref _nodeFilter, "Filter by Item/Part Name or Path..."u8);
+        filter = config.Filters.OnScreenItemFilter;
+        if (Im.Input.Text("##NodeFilter"u8, ref filter, "Filter by Item/Part Name or Path..."u8))
+        {
+            filterChanged                     = true;
+            config.Filters.OnScreenItemFilter = filter;
+        }
+
         Im.Line.Same(0, checkSpacing);
         incognito.DrawToggle(Im.Style.FrameHeightWithSpacing);
 
@@ -353,7 +367,9 @@ public class ResourceTreeViewer(
                 if (hasMod && Im.Item.RightClicked() && Im.Io.KeyControl)
                     communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
 
-                Im.Tooltip.OnHover(default, $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}", true);
+                Im.Tooltip.OnHover(default,
+                    $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}",
+                    true);
             }
             else
             {
@@ -411,16 +427,17 @@ public class ResourceTreeViewer(
 
         bool MatchesFilter(ResourceNode node, ChangedItemIconFlag filterIcon)
         {
-            if (!_typeFilter.HasFlag(filterIcon))
+            if (!config.Filters.OnScreenTypeFilter.HasFlag(filterIcon))
                 return false;
 
-            if (_nodeFilter.Length == 0)
+            if (config.Filters.OnScreenItemFilter.Length == 0)
                 return true;
 
-            return node.Name != null && node.Name.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-             || node.FullPath.FullName.Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-             || node.FullPath.InternalName.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase)
-             || Array.Exists(node.PossibleGamePaths, path => path.Path.ToString().Contains(_nodeFilter, StringComparison.OrdinalIgnoreCase));
+            return node.Name != null && node.Name.Contains(config.Filters.OnScreenItemFilter, StringComparison.OrdinalIgnoreCase)
+             || node.FullPath.FullName.Contains(config.Filters.OnScreenItemFilter, StringComparison.OrdinalIgnoreCase)
+             || node.FullPath.InternalName.ToString().Contains(config.Filters.OnScreenItemFilter, StringComparison.OrdinalIgnoreCase)
+             || Array.Exists(node.PossibleGamePaths,
+                    path => path.Path.ToString().Contains(config.Filters.OnScreenItemFilter, StringComparison.OrdinalIgnoreCase));
         }
 
         void DrawActions(ResourceNode resourceNode, Vector2 buttonSize)
@@ -489,7 +506,9 @@ public class ResourceTreeViewer(
 
     private static void HeaderInteraction(ResourceTree tree)
     {
-        Im.Tooltip.OnHover(default, $"Object Index:        {tree.GameObjectIndex}\nObject Address:      0x{tree.GameObjectAddress:X16}\nDraw Object Address: 0x{tree.DrawObjectAddress:X16}", true, Im.Font.Mono);
+        Im.Tooltip.OnHover(default,
+            $"Object Index:        {tree.GameObjectIndex}\nObject Address:      0x{tree.GameObjectAddress:X16}\nDraw Object Address: 0x{tree.DrawObjectAddress:X16}",
+            true, Im.Font.Mono);
         if (tree.GameObjectAddress == nint.Zero)
             return;
 
@@ -513,7 +532,8 @@ public class ResourceTreeViewer(
 
     private static void ResourceInteraction(ResourceNode node)
     {
-        Im.Tooltip.OnHover(default, $"Resource Type:   {node.Type}\nObject Address:  0x{node.ObjectAddress:X16}\nResource Handle: 0x{node.ResourceHandle:X16}\nLength:          0x{node.Length:X16}",
+        Im.Tooltip.OnHover(default,
+            $"Resource Type:   {node.Type}\nObject Address:  0x{node.ObjectAddress:X16}\nResource Handle: 0x{node.ResourceHandle:X16}\nLength:          0x{node.Length:X16}",
             true, Im.Font.Mono);
 
         if (node.ResourceHandle == nint.Zero)

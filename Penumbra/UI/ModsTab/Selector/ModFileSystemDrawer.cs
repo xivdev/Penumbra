@@ -17,12 +17,10 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly FileDialogService   FileService;
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
-    public readonly GlobalModImporter   GlobalModImporter;
 
     public ModFileSystemDrawer(ModFileSystem fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config,
-        ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator,
-        GlobalModImporter globalModImporter)
-        : base(fileSystem, new ModFilter(modManager, collectionManager.Active))
+        ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator)
+        : base(fileSystem, new ModFilter(modManager, collectionManager.Active, config.Filters))
     {
         ModManager        = modManager;
         CollectionManager = collectionManager;
@@ -31,7 +29,6 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         FileService       = fileService;
         Tutorial          = tutorial;
         Communicator      = communicator;
-        GlobalModImporter = globalModImporter;
         SortMode          = Config.SortMode;
 
         MainContext.AddButton(new ClearTemporarySettingsButton(this),   105);

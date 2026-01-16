@@ -8,7 +8,6 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
@@ -126,8 +125,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
             _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Ephemeral.ResourceWatcherRecordTypes;
         _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionPanelMode>() ?? _config.Ephemeral.CollectionPanel;
         _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
-        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
-         ?? _config.Ephemeral.ChangedItemFilter;
+        _config.Filters.ChangedItemTypeFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
+         ?? _config.Filters.ChangedItemTypeFilter;
         _config.Ephemeral.FixMainWindow = _data["FixMainWindow"]?.ToObject<bool>() ?? _config.Ephemeral.FixMainWindow;
         _config.Ephemeral.Save();
     }

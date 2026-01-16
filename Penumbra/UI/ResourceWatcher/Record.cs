@@ -30,6 +30,15 @@ public enum RecordType : byte
     ResourceComplete = 0x10,
 }
 
+public static partial class RecordTypeExtensions
+{
+    public const RecordType All = RecordType.Request
+      | RecordType.ResourceLoad
+      | RecordType.FileLoad
+      | RecordType.Destruction
+      | RecordType.ResourceComplete;
+}
+
 internal unsafe struct Record()
 {
     public DateTime             Time;

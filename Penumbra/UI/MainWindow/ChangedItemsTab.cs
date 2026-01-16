@@ -11,24 +11,12 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.MainWindow;
 
-public class UiState : ISavable, IService
-{
-    public string              ChangedItemTabNameFilter     = string.Empty;
-    public string              ChangedItemTabModFilter      = string.Empty;
-    public ChangedItemIconFlag ChangedItemTabCategoryFilter = ChangedItemFlagExtensions.DefaultFlags;
-
-    public string ToFilePath(FilenameService fileNames)
-        => "uiState";
-
-    public void Save(StreamWriter writer)
-    { }
-}
-
 public sealed class ChangedItemsTab(
     CollectionManager collectionManager,
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
-    CommunicatorService communicator)
+    CommunicatorService communicator,
+    FilterConfig filterConfig)
     : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
@@ -39,14 +27,14 @@ public sealed class ChangedItemsTab(
 
     private Vector2 _buttonSize;
 
-    private readonly ChangedItemFilter _filter = new(drawer, new UiState());
+    private readonly ChangedItemFilter _filter = new(drawer, filterConfig);
 
-    private sealed class ChangedItemFilter(ChangedItemDrawer drawer, UiState uiState) : IFilter<Item>
+    private sealed class ChangedItemFilter(ChangedItemDrawer drawer, FilterConfig filterConfig) : IFilter<Item>
     {
         public bool WouldBeVisible(in Item item, int globalIndex)
-            => drawer.FilterChangedItem(item.Name, item.Data, uiState.ChangedItemTabNameFilter)
-             && (uiState.ChangedItemTabModFilter.Length is 0
-                 || item.Mods.Any(m => m.Name.Contains(uiState.ChangedItemTabModFilter, StringComparison.OrdinalIgnoreCase)));
+            => drawer.FilterChangedItemGlobal(item.Name, item.Data, filterConfig.ChangedItemItemFilter)
+             && (filterConfig.ChangedItemModFilter.Length is 0
+                 || item.Mods.Any(m => m.Name.Contains(filterConfig.ChangedItemModFilter, StringComparison.OrdinalIgnoreCase)));
 
         public event Action? FilterChanged;
 
@@ -56,29 +44,36 @@ public sealed class ChangedItemsTab(
               - 450 * Im.Style.GlobalScale
               - Im.Style.ItemSpacing.X;
             Im.Item.SetNextWidth(450 * Im.Style.GlobalScale);
-            var ret = Im.Input.Text("##changedItemsFilter"u8, ref uiState.ChangedItemTabNameFilter, "Filter Item..."u8);
+            var filter = filterConfig.ChangedItemItemFilter;
+            var ret    = Im.Input.Text("##changedItemsFilter"u8, ref filter, "Filter Item..."u8);
+            if (ret)
+                filterConfig.ChangedItemItemFilter = filter;
             Im.Line.Same();
             Im.Item.SetNextWidth(varWidth);
-            ret |= Im.Input.Text("##changedItemsModFilter"u8, ref uiState.ChangedItemTabModFilter, "Filter Mods..."u8);
-            if (!ret)
-                return false;
+            filter = filterConfig.ChangedItemModFilter;
+            if (Im.Input.Text("##changedItemsModFilter"u8, ref filter, "Filter Mods..."u8))
+            {
+                ret                               = true;
+                filterConfig.ChangedItemModFilter = filter;
+            }
 
-            FilterChanged?.Invoke();
-            return true;
+            if (ret)
+                FilterChanged?.Invoke();
+            return ret;
         }
 
         public void Clear()
         {
-            uiState.ChangedItemTabModFilter      = string.Empty;
-            uiState.ChangedItemTabNameFilter     = string.Empty;
-            uiState.ChangedItemTabCategoryFilter = ChangedItemFlagExtensions.DefaultFlags;
+            filterConfig.ChangedItemModFilter  = string.Empty;
+            filterConfig.ChangedItemItemFilter = string.Empty;
+            filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
             FilterChanged?.Invoke();
         }
 
         public bool IsEmpty
-            => uiState.ChangedItemTabModFilter.Length is 0
-             && uiState.ChangedItemTabNameFilter.Length is 0
-             && uiState.ChangedItemTabCategoryFilter is ChangedItemFlagExtensions.DefaultFlags;
+            => filterConfig.ChangedItemModFilter.Length is 0
+             && filterConfig.ChangedItemItemFilter.Length is 0
+             && filterConfig.ChangedItemTypeFilter is ChangedItemFlagExtensions.DefaultFlags;
     }
 
     private readonly record struct Item(string Label, IIdentifiedObjectData Data, SingleArray<IMod> Mods)
@@ -124,7 +119,7 @@ public sealed class ChangedItemsTab(
     public void DrawContent()
     {
         collectionHeader.Draw(true);
-        drawer.DrawTypeFilter();
+        drawer.DrawTypeFilter(true);
         _filter.DrawFilter("##Filter"u8, Im.ContentRegion.Available);
         using var child = Im.Child.Begin("##changedItemsChild"u8, Im.ContentRegion.Available);
         if (!child)

@@ -50,7 +50,7 @@ public static class ChangedItemFlagExtensions
 
     public const           ChangedItemIconFlag AllFlags      = (ChangedItemIconFlag)0x01FFFF;
     public static readonly int                 NumCategories = Order.Count;
-    public const           ChangedItemIconFlag DefaultFlags  = AllFlags & ~ChangedItemIconFlag.Offhand;
+    public const           ChangedItemIconFlag DefaultFlags  = AllFlags;
 
     public static ReadOnlySpan<byte> ToDescription(this ChangedItemIconFlag iconFlag)
         => iconFlag switch

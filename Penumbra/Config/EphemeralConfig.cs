@@ -30,7 +30,6 @@ public class EphemeralConfig : ISavable, IService
     public RecordType           ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
     public CollectionPanelMode  CollectionPanel                   { get; set; } = CollectionPanelMode.SimpleAssignment;
     public TabType              SelectedTab                       { get; set; } = TabType.Settings;
-    public ChangedItemIconFlag  ChangedItemFilter                 { get; set; } = ChangedItemFlagExtensions.DefaultFlags;
     public bool                 FixMainWindow                     { get; set; } = false;
     public HashSet<string>      AdvancedEditingOpenForModPaths    { get; set; } = [];
     public bool                 ForceRedrawOnFileChange           { get; set; } = false;

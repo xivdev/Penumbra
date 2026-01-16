@@ -432,7 +432,8 @@ public sealed class SettingsTab : ITab<TabType>
                 _config.HideChangedItemFilters = v;
                 if (v)
                 {
-                    _config.Ephemeral.ChangedItemFilter = ChangedItemFlagExtensions.AllFlags;
+                    _config.Filters.ModChangedItemTypeFilter = ChangedItemFlagExtensions.AllFlags;
+                    _config.Filters.ChangedItemTypeFilter = ChangedItemFlagExtensions.AllFlags;
                     _config.Ephemeral.Save();
                 }
             });

@@ -15,7 +15,8 @@ namespace Penumbra.UI.Classes;
 
 public class ChangedItemDrawer : IDisposable, IUiService
 {
-    private static readonly string[] LowerNames = ChangedItemFlagExtensions.Order.Select(f => f.ToDescription().ToString().ToLowerInvariant()).ToArray();
+    private static readonly string[] LowerNames =
+        ChangedItemFlagExtensions.Order.Select(f => f.ToDescription().ToString().ToLowerInvariant()).ToArray();
 
     public static bool TryParseIndex(ReadOnlySpan<char> input, out ChangedItemIconFlag slot)
     {
@@ -83,9 +84,15 @@ public class ChangedItemDrawer : IDisposable, IUiService
     }
 
     /// <summary> Check if a changed item should be drawn based on its category. </summary>
-    public bool FilterChangedItem(string name, IIdentifiedObjectData data, string filter)
-        => (_config.Ephemeral.ChangedItemFilter == ChangedItemFlagExtensions.AllFlags
-             || _config.Ephemeral.ChangedItemFilter.HasFlag(data.GetIcon().ToFlag()))
+    public bool FilterChangedItemGlobal(string name, IIdentifiedObjectData data, string filter)
+        => (_config.Filters.ChangedItemTypeFilter == ChangedItemFlagExtensions.AllFlags
+             || _config.Filters.ChangedItemTypeFilter.HasFlag(data.GetIcon().ToFlag()))
+         && (filter.Length is 0 || !data.IsFilteredOut(name, filter));
+
+    /// <summary> Check if a changed item should be drawn based on its category. </summary>
+    public bool FilterChangedItemMod(string name, IIdentifiedObjectData data, string filter)
+        => (_config.Filters.ModChangedItemTypeFilter == ChangedItemFlagExtensions.AllFlags
+             || _config.Filters.ModChangedItemTypeFilter.HasFlag(data.GetIcon().ToFlag()))
          && (filter.Length is 0 || !data.IsFilteredOut(name, filter));
 
     /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
@@ -160,31 +167,33 @@ public class ChangedItemDrawer : IDisposable, IUiService
     }
 
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
-    public void DrawTypeFilter()
+    public void DrawTypeFilter(bool global)
     {
         if (_config.HideChangedItemFilters)
             return;
 
-        var typeFilter = _config.Ephemeral.ChangedItemFilter;
-        if (DrawTypeFilter(ref typeFilter))
+        var typeFilter = global ? _config.Filters.ChangedItemTypeFilter : _config.Filters.ModChangedItemTypeFilter;
+        if (DrawTypeFilter(typeFilter, out typeFilter))
         {
-            _config.Ephemeral.ChangedItemFilter = typeFilter;
-            _config.Ephemeral.Save();
+            if (global)
+                _config.Filters.ChangedItemTypeFilter = typeFilter;
+            else
+                _config.Filters.ModChangedItemTypeFilter = typeFilter;
         }
     }
 
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
-    public bool DrawTypeFilter(ref ChangedItemIconFlag typeFilter)
+    public bool DrawTypeFilter(ChangedItemIconFlag typeFilter, out ChangedItemIconFlag newTypeFilter)
     {
         var       ret   = false;
         using var _     = Im.Id.Push("ChangedItemIconFilter"u8);
         var       size  = TypeFilterIconSize;
         using var style = ImStyleDouble.ItemSpacing.Push(Vector2.Zero);
-
+        newTypeFilter = typeFilter;
 
         foreach (var iconType in ChangedItemFlagExtensions.Order)
         {
-            ret |= DrawIcon(iconType, ref typeFilter);
+            ret |= DrawIcon(iconType, ref newTypeFilter);
             Im.Line.Same();
         }
 
@@ -198,30 +207,30 @@ public class ChangedItemDrawer : IDisposable, IUiService
             });
         if (Im.Item.Clicked())
         {
-            typeFilter = typeFilter is ChangedItemFlagExtensions.AllFlags ? 0 : ChangedItemFlagExtensions.AllFlags;
-            ret        = true;
+            newTypeFilter = typeFilter is ChangedItemFlagExtensions.AllFlags ? 0 : ChangedItemFlagExtensions.AllFlags;
+            ret           = true;
         }
 
         return ret;
 
-        bool DrawIcon(ChangedItemIconFlag type, ref ChangedItemIconFlag typeFilter)
+        bool DrawIcon(ChangedItemIconFlag type, ref ChangedItemIconFlag filter)
         {
             var localRet = false;
             var icon     = _icons[type];
-            var flag     = typeFilter.HasFlag(type);
+            var flag     = filter.HasFlag(type);
             Im.Image.Draw(icon.Id(), size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
             if (Im.Item.Clicked())
             {
-                typeFilter = flag ? typeFilter & ~type : typeFilter | type;
-                localRet   = true;
+                filter   = flag ? filter & ~type : filter | type;
+                localRet = true;
             }
 
             using var popup = Im.Popup.BeginContextItem($"{type}");
             if (popup)
                 if (Im.Menu.Item("Enable Only This"u8))
                 {
-                    typeFilter = type;
-                    localRet   = true;
+                    filter   = type;
+                    localRet = true;
                     Im.Popup.CloseCurrent();
                 }
 

@@ -23,6 +23,9 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     public readonly EphemeralConfig Ephemeral;
 
     [JsonIgnore]
+    public readonly FilterConfig Filters;
+
+    [JsonIgnore]
     public readonly UiConfig Ui;
 
     public int Version { get; set; } = Constants.CurrentVersion;
@@ -122,11 +125,12 @@ public class Configuration : IPluginConfiguration, ISavable, IService
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
     public Configuration(CharacterUtility utility, ConfigMigrationService migrator, SaveService saveService, EphemeralConfig ephemeral,
-        UiConfig ui)
+        UiConfig ui, FilterConfig filters)
     {
         _saveService = saveService;
         Ephemeral    = ephemeral;
         Ui           = ui;
+        Filters      = filters;
         Load(utility, migrator);
     }
 

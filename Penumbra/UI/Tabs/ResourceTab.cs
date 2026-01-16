@@ -20,10 +20,16 @@ public sealed class ResourceTab(Configuration config, ResourceManagerService res
     public bool IsVisible
         => config.DebugMode;
 
-    public readonly ResourceFilter Filter = new();
+    public readonly ResourceFilter Filter = new(config.Filters);
 
     public sealed class ResourceFilter : Utf8FilterBase<ResourceHandle>
     {
+        public ResourceFilter(FilterConfig filterConfig)
+        {
+            Set(new StringU8(filterConfig.ResourceManagerFilter));
+            FilterChanged += () => filterConfig.ResourceManagerFilter = Text.ToString();
+        }
+
         protected override ReadOnlySpan<byte> ToFilterString(in ResourceHandle item, int globalIndex)
             => item.FileName.AsSpan();
     }

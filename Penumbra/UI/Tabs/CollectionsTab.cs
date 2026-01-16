@@ -43,10 +43,10 @@ public sealed class CollectionsTab : TwoPanelLayout, ITab<TabType>
     }
 
     public void DrawContent()
-        => Draw(_config.CollectionTabScale);
+        => Draw(_config.CollectionsTabScale);
 
     protected override void SetWidth(float width, ScalingMode mode)
-        => _config.CollectionTabScale = new TwoPanelWidth(width, mode);
+        => _config.CollectionsTabScale = new TwoPanelWidth(width, mode);
 
     public void PostTabButton()
         => _tutorial.OpenTutorial(BasicTutorialSteps.Collections);

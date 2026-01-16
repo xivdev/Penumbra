@@ -9,39 +9,17 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
-public class ResourceWatcherConfig
-{
-    public int                  Version            = 1;
-    public bool                 Enabled            = false;
-    public int                  MaxEntries         = 500;
-    public bool                 StoreOnlyMatching  = true;
-    public bool                 WriteToLog         = false;
-    public string               LogFilter          = string.Empty;
-    public string               PathFilter         = string.Empty;
-    public string               CollectionFilter   = string.Empty;
-    public string               ObjectFilter       = string.Empty;
-    public string               OriginalPathFilter = string.Empty;
-    public string               ResourceFilter     = string.Empty;
-    public string               CrcFilter          = string.Empty;
-    public string               RefFilter          = string.Empty;
-    public string               ThreadFilter       = string.Empty;
-    public RecordType           RecordFilter       = Enum.GetValues<RecordType>().Or();
-    public BoolEnum             CustomFilter       = BoolEnum.True | BoolEnum.False | BoolEnum.Unknown;
-    public BoolEnum             SyncFilter         = BoolEnum.True | BoolEnum.False | BoolEnum.Unknown;
-    public ResourceCategoryFlag CategoryFilter     = ResourceExtensions.AllResourceCategories;
-    public ResourceTypeFlag     TypeFilter         = ResourceExtensions.AllResourceTypes;
-    public LoadStateFlag        LoadStateFilter    = Enum.GetValues<LoadStateFlag>().Or();
-
-    public void Save()
-    { }
-}
-
 [Flags]
 public enum BoolEnum : byte
 {
     True    = 0x01,
     False   = 0x02,
     Unknown = 0x04,
+}
+
+public static class BoolEnumExtensions
+{
+    public const BoolEnum All = BoolEnum.True | BoolEnum.False | BoolEnum.Unknown;
 }
 
 [Flags]
@@ -53,6 +31,16 @@ public enum LoadStateFlag : byte
     FailedSub = 0x08,
     Unknown   = 0x10,
     None      = 0xFF,
+}
+
+public static class LoadStateExtensions
+{
+    public const LoadStateFlag All = LoadStateFlag.Success
+      | LoadStateFlag.Async
+      | LoadStateFlag.Failed
+      | LoadStateFlag.FailedSub
+      | LoadStateFlag.Unknown
+      | LoadStateFlag.None;
 }
 
 internal sealed unsafe class CachedRecord(Record record)
@@ -84,23 +72,23 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
     public bool WouldBeVisible(Record record)
         => Columns.OfType<ICheckRecord>().All(column => column.WouldBeVisible(record));
 
-    public ResourceWatcherTable(ResourceWatcherConfig config, IReadOnlyList<Record> records)
+    public ResourceWatcherTable(FilterConfig filterConfig, IReadOnlyList<Record> records)
         : base(new StringU8("##records"u8),
-            new PathColumn(config) { Label             = new StringU8("Path"u8) },
-            new RecordTypeColumn(config) { Label       = new StringU8("Record"u8) },
-            new CollectionColumn(config) { Label       = new StringU8("Collection"u8) },
-            new ObjectColumn(config) { Label           = new StringU8("Game Object"u8) },
-            new CustomLoadColumn(config) { Label       = new StringU8("Custom"u8) },
-            new SynchronousLoadColumn(config) { Label  = new StringU8("Sync"u8) },
-            new OriginalPathColumn(config) { Label     = new StringU8("Original Path"u8) },
-            new ResourceCategoryColumn(config) { Label = new StringU8("Category"u8) },
-            new ResourceTypeColumn(config) { Label     = new StringU8("Type"u8) },
-            new HandleColumn(config) { Label           = new StringU8("Resource"u8) },
-            new LoadStateColumn(config) { Label        = new StringU8("State"u8) },
-            new RefCountColumn(config) { Label         = new StringU8("#Ref"u8) },
-            new DateColumn { Label                     = new StringU8("Time"u8) },
-            new Crc64Column(config) { Label            = new StringU8("Crc64"u8) },
-            new OsThreadColumn(config) { Label         = new StringU8("TID"u8) }
+            new PathColumn(filterConfig) { Label             = new StringU8("Path"u8) },
+            new RecordTypeColumn(filterConfig) { Label       = new StringU8("Record"u8) },
+            new CollectionColumn(filterConfig) { Label       = new StringU8("Collection"u8) },
+            new ObjectColumn(filterConfig) { Label           = new StringU8("Game Object"u8) },
+            new CustomLoadColumn(filterConfig) { Label       = new StringU8("Custom"u8) },
+            new SynchronousLoadColumn(filterConfig) { Label  = new StringU8("Sync"u8) },
+            new OriginalPathColumn(filterConfig) { Label     = new StringU8("Original Path"u8) },
+            new ResourceCategoryColumn(filterConfig) { Label = new StringU8("Category"u8) },
+            new ResourceTypeColumn(filterConfig) { Label     = new StringU8("Type"u8) },
+            new HandleColumn(filterConfig) { Label           = new StringU8("Resource"u8) },
+            new LoadStateColumn(filterConfig) { Label        = new StringU8("State"u8) },
+            new RefCountColumn(filterConfig) { Label         = new StringU8("#Ref"u8) },
+            new DateColumn { Label                           = new StringU8("Time"u8) },
+            new Crc64Column(filterConfig) { Label            = new StringU8("Crc64"u8) },
+            new OsThreadColumn(filterConfig) { Label         = new StringU8("TID"u8) }
         )
     {
         _records = records;
@@ -149,26 +137,15 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class PathColumn : TextColumn<CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public PathColumn(ResourceWatcherConfig config)
+        public PathColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 300;
-            Filter.Set(config.PathFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.PathFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerPathFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerPathFilter = Filter.Text;
         }
 
         public override void DrawColumn(in CachedRecord item, int globalIndex)
-        {
-            DrawByteString(item.Record.Path, 290 * Im.Style.GlobalScale);
-        }
+            => DrawByteString(item.Record.Path, 290 * Im.Style.GlobalScale);
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)
             => item.PathU16;
@@ -182,20 +159,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class RecordTypeColumn : FlagColumn<RecordType, CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public RecordTypeColumn(ResourceWatcherConfig config)
+        public RecordTypeColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 80;
-            Filter.LoadValue(config.RecordFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.RecordFilter = Filter.FilterValue;
-            _config.Save();
+            Filter.LoadValue(config.ResourceLoggerRecordFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerRecordFilter = Filter.FilterValue;
         }
 
         protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
@@ -225,20 +193,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class Crc64Column : TextColumn<CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public Crc64Column(ResourceWatcherConfig config)
+        public Crc64Column(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 17 * 8;
-            Filter.Set(config.CrcFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.CrcFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerCrcFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerCrcFilter = Filter.Text;
         }
 
         public override int Compare(in CachedRecord lhs, int lhsGlobalIndex, in CachedRecord rhs, int rhsGlobalIndex)
@@ -266,20 +225,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class CollectionColumn : TextColumn<CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public CollectionColumn(ResourceWatcherConfig config)
+        public CollectionColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 80;
-            Filter.Set(config.CollectionFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.CollectionFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerCollectionFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerCollectionFilter = Filter.Text;
         }
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)
@@ -294,20 +244,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class ObjectColumn : TextColumn<CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public ObjectColumn(ResourceWatcherConfig config)
+        public ObjectColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 150;
-            Filter.Set(config.ObjectFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.ObjectFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerObjectFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerObjectFilter = Filter.Text;
         }
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)
@@ -322,20 +263,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class OriginalPathColumn : TextColumn<CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public OriginalPathColumn(ResourceWatcherConfig config)
+        public OriginalPathColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 200;
-            Filter.Set(config.OriginalPathFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.OriginalPathFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerOriginalPathFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerOriginalPathFilter = Filter.Text;
         }
 
         public override void DrawColumn(in CachedRecord item, int globalIndex)
@@ -355,20 +287,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class ResourceCategoryColumn : FlagColumn<ResourceCategoryFlag, CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public ResourceCategoryColumn(ResourceWatcherConfig config)
+        public ResourceCategoryColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 80;
-            Filter.LoadValue(config.CategoryFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.CategoryFilter = Filter.FilterValue;
-            _config.Save();
+            Filter.LoadValue(config.ResourceLoggerCategoryFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerCategoryFilter = Filter.FilterValue;
         }
 
         protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
@@ -386,20 +309,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class ResourceTypeColumn : FlagColumn<ResourceTypeFlag, CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public ResourceTypeColumn(ResourceWatcherConfig config)
+        public ResourceTypeColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 50;
-            Filter.LoadValue(config.TypeFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.TypeFilter = Filter.FilterValue;
-            _config.Save();
+            Filter.LoadValue(config.ResourceLoggerTypeFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerTypeFilter = Filter.FilterValue;
         }
 
         protected override IReadOnlyList<(ResourceTypeFlag Value, StringU8 Name)> EnumData { get; } =
@@ -417,20 +331,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class LoadStateColumn : FlagColumn<LoadStateFlag, CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public LoadStateColumn(ResourceWatcherConfig config)
+        public LoadStateColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 50;
-            Filter.LoadValue(config.LoadStateFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.LoadStateFilter = Filter.FilterValue;
-            _config.Save();
+            Filter.LoadValue(config.ResourceLoggerLoadStateFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerLoadStateFilter = Filter.FilterValue;
         }
 
         public override void DrawColumn(in CachedRecord item, int globalIndex)
@@ -474,39 +379,30 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
         protected override LoadStateFlag GetValue(in CachedRecord item, int globalIndex)
             => GetValue(item.Record.LoadState);
-            
+
 
         public bool WouldBeVisible(in Record record)
             => Filter.FilterValue.HasFlag(GetValue(record.LoadState));
 
         private static LoadStateFlag GetValue(LoadState value)
-        => value switch
-        {
-            LoadState.None              => LoadStateFlag.None,
-            LoadState.Success           => LoadStateFlag.Success,
-            LoadState.FailedSubResource => LoadStateFlag.FailedSub,
-            <= LoadState.Constructed    => LoadStateFlag.Unknown,
-            < LoadState.Success         => LoadStateFlag.Async,
-            > LoadState.Success         => LoadStateFlag.Failed,
-        };
+            => value switch
+            {
+                LoadState.None              => LoadStateFlag.None,
+                LoadState.Success           => LoadStateFlag.Success,
+                LoadState.FailedSubResource => LoadStateFlag.FailedSub,
+                <= LoadState.Constructed    => LoadStateFlag.Unknown,
+                < LoadState.Success         => LoadStateFlag.Async,
+                > LoadState.Success         => LoadStateFlag.Failed,
+            };
     }
 
     private sealed class HandleColumn : TextColumn<CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public HandleColumn(ResourceWatcherConfig config)
+        public HandleColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 120;
-            Filter.Set(config.ResourceFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.ResourceFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerResourceFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerResourceFilter = Filter.Text;
         }
 
         public override unsafe void DrawColumn(in CachedRecord item, int globalIndex)
@@ -569,20 +465,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class CustomLoadColumn : OptBoolColumn, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public CustomLoadColumn(ResourceWatcherConfig config)
+        public CustomLoadColumn(FilterConfig config)
             : base(60f)
         {
-            _config = config;
-            Filter.LoadValue(config.CustomFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.CustomFilter = Filter.FilterValue;
-            _config.Save();
+            Filter.LoadValue(config.ResourceLoggerCustomFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerCustomFilter = Filter.FilterValue;
         }
 
         protected override BoolEnum GetValue(in CachedRecord item, int globalIndex)
@@ -594,20 +481,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class SynchronousLoadColumn : OptBoolColumn, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public SynchronousLoadColumn(ResourceWatcherConfig config)
+        public SynchronousLoadColumn(FilterConfig config)
             : base(45)
         {
-            _config = config;
-            Filter.LoadValue(config.SyncFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.SyncFilter = Filter.FilterValue;
-            _config.Save();
+            Filter.LoadValue(config.ResourceLoggerSyncFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerSyncFilter = Filter.FilterValue;
         }
 
         protected override BoolEnum GetValue(in CachedRecord item, int globalIndex)
@@ -619,20 +497,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class RefCountColumn : NumberColumn<uint, CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-        
-        public RefCountColumn(ResourceWatcherConfig config)
+        public RefCountColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 60;
-            Filter.Set(config.RefFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.RefFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerRefFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerRefFilter = Filter.Text;
         }
 
         public override uint ToValue(in CachedRecord item, int globalIndex)
@@ -650,20 +519,11 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
 
     private sealed class OsThreadColumn : NumberColumn<uint, CachedRecord>, ICheckRecord
     {
-        private readonly ResourceWatcherConfig _config;
-
-        public OsThreadColumn(ResourceWatcherConfig config)
+        public OsThreadColumn(FilterConfig config)
         {
-            _config       = config;
             UnscaledWidth = 60;
-            Filter.Set(config.ThreadFilter);
-            Filter.FilterChanged += OnFilterChanged;
-        }
-
-        private void OnFilterChanged()
-        {
-            _config.ThreadFilter = Filter.Text;
-            _config.Save();
+            Filter.Set(config.ResourceLoggerThreadFilter);
+            Filter.FilterChanged += () => config.ResourceLoggerThreadFilter = Filter.Text;
         }
 
         public override uint ToValue(in CachedRecord item, int globalIndex)

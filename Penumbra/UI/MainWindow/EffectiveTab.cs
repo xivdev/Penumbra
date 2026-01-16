@@ -15,7 +15,8 @@ namespace Penumbra.UI.MainWindow;
 public sealed class EffectiveTab(
     CollectionManager collectionManager,
     CollectionSelectHeader collectionHeader,
-    CommunicatorService communicatorService)
+    CommunicatorService communicatorService,
+    FilterConfig filterConfig)
     : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
@@ -31,7 +32,7 @@ public sealed class EffectiveTab(
     public TabType Identifier
         => TabType.EffectiveChanges;
 
-    private readonly PairFilter<Item> _filter = new(new GamePathFilter(), new FullPathFilter());
+    private readonly PairFilter<Item> _filter = new(new GamePathFilter(filterConfig), new FullPathFilter(filterConfig));
 
     private sealed class Cache : BasicFilterCache<Item>, IPanel
     {
@@ -111,7 +112,6 @@ public sealed class EffectiveTab(
             Filter.Filter1.DrawFilter("Filter game path..."u8, new Vector2(_gamePathSize + Im.Style.CellPadding.X, Im.Style.FrameHeight));
             Im.Line.Same(0, _arrowSize + 2 * Im.Style.CellPadding.X);
             Filter.Filter2.DrawFilter("Filter file path..."u8, Im.ContentRegion.Available with { Y = Im.Style.FrameHeight });
-
         }
 
         private void DrawTable()
@@ -143,12 +143,24 @@ public sealed class EffectiveTab(
 
     private sealed class GamePathFilter : RegexFilterBase<Item>
     {
+        public GamePathFilter(FilterConfig config)
+        {
+            Set(config.EffectiveChangesGamePathFilter);
+            FilterChanged += () => config.EffectiveChangesGamePathFilter = Text;
+        }
+
         protected override string ToFilterString(in Item item, int globalIndex)
             => item.GamePath.Utf16;
     }
 
     private sealed class FullPathFilter : RegexFilterBase<Item>
     {
+        public FullPathFilter(FilterConfig config)
+        {
+            Set(config.EffectiveChangesFilePathFilter);
+            FilterChanged += () => config.EffectiveChangesFilePathFilter = Text;
+        }
+
         protected override string ToFilterString(in Item item, int globalIndex)
             => item.FilePath.FullName;
     }

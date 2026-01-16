@@ -1,73 +1,27 @@
-using Dalamud.Interface.ImGuiNotification;
 using Luna;
+using Luna.Generators;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Services;
 
 namespace Penumbra;
 
-public class UiConfig : ISavable, IService
+public sealed partial class UiConfig : ConfigurationFile
 {
-    public const int CurrentVersion = 1;
-
-    [JsonIgnore]
-    private readonly SaveService _saveService;
-
     public UiConfig(SaveService saveService)
+        : base(saveService, TimeSpan.FromMinutes(5))
     {
-        _saveService = saveService;
         Load();
     }
 
-    private TwoPanelWidth _collectionsTabScale = new(0.25f, ScalingMode.Percentage);
-
-    public TwoPanelWidth CollectionTabScale
+    protected override void AddData(JsonTextWriter j)
     {
-        get => _collectionsTabScale;
-        set
-        {
-            if (value == _collectionsTabScale)
-                return;
-
-            _collectionsTabScale = value;
-            Save();
-        }
-    }
-
-    private TwoPanelWidth _modTabScale = new(0.3f, ScalingMode.Percentage);
-
-    public TwoPanelWidth ModTabScale
-    {
-        get => _modTabScale;
-        set
-        {
-            if (value == _modTabScale)
-                return;
-
-            _modTabScale = value;
-            Save();
-        }
-    }
-
-    public string ToFilePath(FilenameService fileNames)
-        => fileNames.UiConfigFile;
-
-    public void Save()
-        => _saveService.DelaySave(this);
-
-    public void Save(StreamWriter writer)
-    {
-        using var j = new JsonTextWriter(writer);
-        j.Formatting = Formatting.Indented;
-        j.WriteStartObject();
-        j.WritePropertyName("Version");
-        j.WriteValue(CurrentVersion);
         j.WritePropertyName("CollectionsTab");
         j.WriteStartObject();
         j.WritePropertyName("Mode");
-        j.WriteValue(CollectionTabScale.Mode.ToString());
+        j.WriteValue(CollectionsTabScale.Mode.ToString());
         j.WritePropertyName("Width");
-        j.WriteValue(CollectionTabScale.Width);
+        j.WriteValue(CollectionsTabScale.Width);
         j.WriteEndObject();
         j.WritePropertyName("ModsTab");
         j.WriteStartObject();
@@ -76,33 +30,27 @@ public class UiConfig : ISavable, IService
         j.WritePropertyName("Width");
         j.WriteValue(ModTabScale.Width);
         j.WriteEndObject();
-        j.WriteEndObject();
     }
 
-    private void Load()
+    protected override void LoadData(JObject j)
     {
-        if (!File.Exists(_saveService.FileNames.UiConfigFile))
-            return;
+        if (j["CollectionsTab"] is JObject collections)
+            _collectionsTabScale = new TwoPanelWidth(collections["Width"].ValueOr(float.NaN),
+                collections["Mode"].TextEnum(ScalingMode.Percentage));
 
-        try
-        {
-            var text = File.ReadAllText(_saveService.FileNames.UiConfigFile);
-            var jObj = JObject.Parse(text);
-            if (jObj["Version"]?.Value<int>() is not CurrentVersion)
-                throw new Exception("Unsupported version.");
-
-            if (jObj["CollectionsTab"] is JObject collections)
-                _collectionsTabScale = new TwoPanelWidth(collections["Width"].ValueOr(float.NaN),
-                    collections["Mode"].TextEnum(ScalingMode.Percentage));
-
-            if (jObj["ModsTab"] is JObject mods)
-                _modTabScale = new TwoPanelWidth(mods["Width"].ValueOr(float.NaN), mods["Mode"].TextEnum(ScalingMode.Percentage));
-        }
-        catch (Exception ex)
-        {
-            Penumbra.Messager.NotificationMessage(ex,
-                "Error reading UI Configuration, reverting to default.",
-                "Error reading UI Configuration", NotificationType.Error);
-        }
+        if (j["ModsTab"] is JObject mods)
+            _modTabScale = new TwoPanelWidth(mods["Width"].ValueOr(float.NaN), mods["Mode"].TextEnum(ScalingMode.Percentage));
     }
+
+    public override int CurrentVersion
+        => 1;
+
+    public override string ToFilePath(FilenameService fileNames)
+        => fileNames.UiConfigFile;
+
+    [ConfigProperty]
+    private TwoPanelWidth _collectionsTabScale = new(0.25f, ScalingMode.Percentage);
+
+    [ConfigProperty]
+    private TwoPanelWidth _modTabScale = new(0.3f, ScalingMode.Percentage);
 }

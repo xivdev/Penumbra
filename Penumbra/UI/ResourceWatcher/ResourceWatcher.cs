@@ -43,7 +43,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         _resources                   =  resources;
         _destructor                  =  destructor;
         _loader                      =  loader;
-        _table                       =  new ResourceWatcherTable(new ResourceWatcherConfig(), _records);
+        _table                       =  new ResourceWatcherTable(config.Filters, _records);
         _resources.ResourceRequested += OnResourceRequested;
         _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
         _loader.ResourceLoaded   += OnResourceLoaded;

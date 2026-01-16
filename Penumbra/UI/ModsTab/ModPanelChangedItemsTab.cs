@@ -110,7 +110,7 @@ public class ModPanelChangedItemsTab(
             {
                 foreach (var (s, i) in _lastSelected.ChangedItems)
                 {
-                    if (drawer.FilterChangedItem(s, i, string.Empty))
+                    if (drawer.FilterChangedItemMod(s, i, string.Empty))
                         Data.Add(Container.Single(s, i));
                 }
 
@@ -124,7 +124,7 @@ public class ModPanelChangedItemsTab(
                 if (i is not IdentifiedItem item)
                     continue;
 
-                if (!drawer.FilterChangedItem(s, item, string.Empty))
+                if (!drawer.FilterChangedItemMod(s, item, string.Empty))
                     continue;
 
                 if (tmp.TryGetValue((item.Item.PrimaryId, item.Item.Type), out var p))
@@ -160,7 +160,7 @@ public class ModPanelChangedItemsTab(
                 if (i is IdentifiedItem)
                     continue;
 
-                if (!drawer.FilterChangedItem(s, i, string.Empty))
+                if (!drawer.FilterChangedItemMod(s, i, string.Empty))
                     continue;
 
                 while (sortedTmpIdx < sortedTmp.Length
@@ -221,9 +221,9 @@ public class ModPanelChangedItemsTab(
         _id  = Im.Id.Current;
         _mod = fileSystem.Selection.Selection!.GetValue<Mod>()!;
         var cache = CacheManager.Instance.GetOrCreateCache(_id, () => new ChangedItemsCache());
-        drawer.DrawTypeFilter();
+        drawer.DrawTypeFilter(false);
 
-        cache.Update(_mod, drawer, config.Ephemeral.ChangedItemFilter, config.ChangedItemDisplay);
+        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
         Im.Separator();
         _buttonSize = new Vector2(Im.Style.ItemSpacing.Y + Im.Style.FrameHeight);
         using var style = ImStyleDouble.CellPadding.Push(Vector2.Zero)
