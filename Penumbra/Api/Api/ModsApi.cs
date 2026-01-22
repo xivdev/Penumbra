@@ -7,7 +7,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public sealed partial class ModsApi : IPenumbraApiMods, IApiService, IDisposable
+public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
