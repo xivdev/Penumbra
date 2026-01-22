@@ -16,16 +16,20 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
     private readonly ModManager        _modManager;
     private readonly ActiveCollections _collections;
 
-    public ModFilter(ModManager modManager, ActiveCollections collections, FilterConfig filterConfig)
+    public ModFilter(ModManager modManager, ActiveCollections collections, Configuration config)
     {
         _modManager  = modManager;
         _collections = collections;
-        _stateFilter  = filterConfig.ModTypeFilter;
-        Set(filterConfig.ModFilter);
+        if (config.RememberModFilters)
+        {
+            _stateFilter = config.Filters.ModTypeFilter;
+            Set(config.Filters.ModFilter);
+        }
+
         FilterChanged += () =>
         {
-            filterConfig.ModFilter     = Text;
-            filterConfig.ModTypeFilter = StateFilter;
+            config.Filters.ModFilter     = Text;
+            config.Filters.ModTypeFilter = StateFilter;
         };
     }
 

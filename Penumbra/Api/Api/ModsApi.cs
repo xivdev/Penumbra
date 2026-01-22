@@ -7,7 +7,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
+public sealed partial class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
@@ -15,10 +15,11 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     private readonly Configuration       _config;
     private readonly ModFileSystem       _modFileSystem;
     private readonly MigrationManager    _migrationManager;
+    private readonly ModConfigUpdater    _modConfigUpdater;
     private readonly Logger              _log;
 
     public ModsApi(ModManager modManager, ModImportManager modImportManager, Configuration config, ModFileSystem modFileSystem,
-        CommunicatorService communicator, MigrationManager migrationManager, Logger log)
+        CommunicatorService communicator, MigrationManager migrationManager, Logger log, ModConfigUpdater modConfigUpdater)
     {
         _modManager       = modManager;
         _modImportManager = modImportManager;
@@ -27,6 +28,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         _communicator     = communicator;
         _migrationManager = migrationManager;
         _log              = log;
+        _modConfigUpdater = modConfigUpdater;
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiMods);
         _communicator.PcpCreation.Subscribe(OnPcpCreation, PcpCreation.Priority.ApiMods);
         _communicator.PcpParsing.Subscribe(OnPcpParsing, PcpParsing.Priority.ApiMods);
@@ -119,6 +121,12 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public event Action<string, string>?          ModMoved;
     public event Action<JObject, ushort, string>? CreatingPcp;
     public event Action<JObject, string, Guid>?   ParsingPcp;
+
+    public event Action<string, string, Dictionary<Assembly, (bool MarkUsed, string Note)>>? ModUsageQueried
+    {
+        add => _modConfigUpdater.ModUsageQueried += value;
+        remove => _modConfigUpdater.ModUsageQueried -= value;
+    }
 
     public (PenumbraApiEc, string, bool, bool) GetModPath(string modDirectory, string modName)
     {

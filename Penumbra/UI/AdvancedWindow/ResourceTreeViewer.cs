@@ -203,22 +203,25 @@ public class ResourceTreeViewer(
             }
         }
 
-        var fieldWidth = (Im.ContentRegion.Available.X - checkSpacing * 2.0f - Im.Style.FrameHeightWithSpacing) / 2.0f;
-        Im.Item.SetNextWidth(fieldWidth);
-        var filter = config.Filters.OnScreenCharacterFilter;
-        if (Im.Input.Text("##TreeNameFilter"u8, ref filter, "Filter by Character/Entity Name..."u8))
+        using (ImStyleSingle.FrameRounding.Push(0))
         {
-            filterChanged                          = true;
-            config.Filters.OnScreenCharacterFilter = filter;
-        }
+            var fieldWidth = (Im.ContentRegion.Available.X - checkSpacing * 2.0f - Im.Style.FrameHeightWithSpacing) / 2.0f;
+            Im.Item.SetNextWidth(fieldWidth);
+            var filter = config.Filters.OnScreenCharacterFilter;
+            if (Im.Input.Text("##TreeNameFilter"u8, ref filter, "Filter by Character/Entity Name..."u8))
+            {
+                filterChanged                          = true;
+                config.Filters.OnScreenCharacterFilter = filter;
+            }
 
-        Im.Line.Same(0, checkSpacing);
-        Im.Item.SetNextWidth(fieldWidth);
-        filter = config.Filters.OnScreenItemFilter;
-        if (Im.Input.Text("##NodeFilter"u8, ref filter, "Filter by Item/Part Name or Path..."u8))
-        {
-            filterChanged                     = true;
-            config.Filters.OnScreenItemFilter = filter;
+            Im.Line.Same(0, checkSpacing);
+            Im.Item.SetNextWidth(fieldWidth);
+            filter = config.Filters.OnScreenItemFilter;
+            if (Im.Input.Text("##NodeFilter"u8, ref filter, "Filter by Item/Part Name or Path..."u8))
+            {
+                filterChanged                     = true;
+                config.Filters.OnScreenItemFilter = filter;
+            }
         }
 
         Im.Line.Same(0, checkSpacing);
@@ -412,7 +415,7 @@ public class ResourceTreeViewer(
             if (node.Internal && !debugMode)
                 return NodeVisibility.Hidden;
 
-            var filterIcon = node.IconFlag != 0 ? node.IconFlag : parentFilterIcon;
+            var filterIcon = node.IconFlag is not 0 ? node.IconFlag : parentFilterIcon;
             if (MatchesFilter(node, filterIcon))
                 return NodeVisibility.Visible;
 
@@ -430,7 +433,7 @@ public class ResourceTreeViewer(
             if (!config.Filters.OnScreenTypeFilter.HasFlag(filterIcon))
                 return false;
 
-            if (config.Filters.OnScreenItemFilter.Length == 0)
+            if (config.Filters.OnScreenItemFilter.Length is 0)
                 return true;
 
             return node.Name != null && node.Name.Contains(config.Filters.OnScreenItemFilter, StringComparison.OrdinalIgnoreCase)

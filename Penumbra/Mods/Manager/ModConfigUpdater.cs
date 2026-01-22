@@ -23,9 +23,12 @@ public class ModConfigUpdater : IDisposable, IRequiredService
         _communicator.ModSettingChanged.Subscribe(OnModSettingChanged, ModSettingChanged.Priority.ModConfigUpdater);
     }
 
-    public IEnumerable<Mod> ListUnusedMods(TimeSpan age)
+    public event Action<string, string, Dictionary<Assembly, (bool MarkUsed, string Note)>>? ModUsageQueried;
+
+    public IEnumerable<(Mod, (string Plugin, string Notes)[])> ListUnusedMods(TimeSpan age)
     {
-        var cutoff = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (int)age.TotalMilliseconds;
+        var cutoff         = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (int)age.TotalMilliseconds;
+        var noteDictionary = new Dictionary<Assembly, (bool InUse, string Notes)>();
         foreach (var mod in _mods)
         {
             // Skip actively ignored mods.
@@ -40,7 +43,17 @@ public class ModConfigUpdater : IDisposable, IRequiredService
             if (_collections.Any(c => c.GetOwnSettings(mod.Index)?.Enabled is true || c.GetTempSettings(mod.Index) is not null))
                 continue;
 
-            yield return mod;
+            // Check whether other plugins mark this mod as in use.
+            noteDictionary.Clear();
+            ModUsageQueried?.Invoke(mod.Name, mod.Identifier, noteDictionary);
+            if (noteDictionary.Values.Any(n => n.InUse))
+                continue;
+
+            // Collect other plugin's notes for this mod.
+            var notes = noteDictionary.Where(t => !string.IsNullOrWhiteSpace(t.Value.Notes))
+                .Select(t => (t.Key.GetName().Name ?? "Unknown Plugin", t.Value.Notes)).ToArray();
+
+            yield return (mod, notes);
         }
     }
 

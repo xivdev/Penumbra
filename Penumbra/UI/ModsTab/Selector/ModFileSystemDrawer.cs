@@ -1,4 +1,3 @@
-using ImSharp;
 using Luna;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
@@ -8,7 +7,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab.Selector;
 
-public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.ModData>
+public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.ModData>, IDisposable
 {
     public readonly ModManager          ModManager;
     public readonly CollectionManager   CollectionManager;
@@ -20,7 +19,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
 
     public ModFileSystemDrawer(ModFileSystem fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config,
         ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator)
-        : base(fileSystem, new ModFilter(modManager, collectionManager.Active, config.Filters))
+        : base(fileSystem, new ModFilter(modManager, collectionManager.Active, config))
     {
         ModManager        = modManager;
         CollectionManager = collectionManager;
@@ -30,6 +29,8 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         Tutorial          = tutorial;
         Communicator      = communicator;
         SortMode          = Config.SortMode;
+
+        Config.ShowRenameChanged += SetRenameFields;
 
         MainContext.AddButton(new ClearTemporarySettingsButton(this),   105);
         MainContext.AddButton(new ClearDefaultImportFolderButton(this), -10);
@@ -45,6 +46,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         DataContext.AddButton(new ToggleFavoriteButton(this),          10);
         DataContext.AddButton(new TemporaryButtons(this),              20);
         DataContext.AddButton(new MoveToQuickMoveFoldersButtons(this), -100);
+        SetRenameFields(Config.ShowRename, default);
 
         Footer.Buttons.AddButton(new AddNewModButton(this),       1000);
         Footer.Buttons.AddButton(new ImportModButton(this),       900);
@@ -71,5 +73,27 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
             CollectionManager.Editor.SetMultipleModInheritances(CollectionManager.Active.Current, mods, enabled);
         else
             CollectionManager.Editor.SetMultipleModStates(CollectionManager.Active.Current, mods, enabled);
+    }
+
+    public void Dispose()
+        => Config.ShowRenameChanged -= SetRenameFields;
+
+    private void SetRenameFields(RenameField newField, RenameField _)
+    {
+        DataContext.RemoveButtons<MoveModInput>();
+        DataContext.RemoveButtons<RenameModInput>();
+        switch (newField)
+        {
+            case RenameField.RenameSearchPath: DataContext.AddButton(new RenameModInput(this), -1000); break;
+            case RenameField.RenameData:       DataContext.AddButton(new MoveModInput(this),   -1000); break;
+            case RenameField.BothSearchPathPrio:
+                DataContext.AddButton(new RenameModInput(this), -1000);
+                DataContext.AddButton(new MoveModInput(this),   -1001);
+                break;
+            case RenameField.BothDataPrio:
+                DataContext.AddButton(new RenameModInput(this), -1001);
+                DataContext.AddButton(new MoveModInput(this),   -1000);
+                break;
+        }
     }
 }

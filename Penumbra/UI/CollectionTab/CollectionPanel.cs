@@ -69,7 +69,7 @@ public sealed class CollectionPanel(
         DrawSimpleCollectionButton(CollectionType.MaleNonPlayerCharacter,   buttonWidth);
         DrawSimpleCollectionButton(CollectionType.FemaleNonPlayerCharacter, buttonWidth);
 
-        ImEx.TextMultiColored("Individual"u8, ColorId.NewMod.Value())
+        ImEx.TextMultiColored("Individual "u8, ColorId.NewMod.Value())
             .Then("Assignments take precedence before anything else and only apply to one specific character or monster."u8)
             .End();
         Im.Dummy(1);

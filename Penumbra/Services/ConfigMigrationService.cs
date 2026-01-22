@@ -109,20 +109,20 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         _config.Version           = 8;
         _config.Ephemeral.Version = 8;
 
-        _config.Ephemeral.LastSeenVersion       = _data["LastSeenVersion"]?.ToObject<int>() ?? _config.Ephemeral.LastSeenVersion;
-        _config.Ephemeral.DebugSeparateWindow   = _data["DebugSeparateWindow"]?.ToObject<bool>() ?? _config.Ephemeral.DebugSeparateWindow;
-        _config.Ephemeral.TutorialStep          = _data["TutorialStep"]?.ToObject<int>() ?? _config.Ephemeral.TutorialStep;
-        _config.Ephemeral.EnableResourceLogging = _data["EnableResourceLogging"]?.ToObject<bool>() ?? _config.Ephemeral.EnableResourceLogging;
-        _config.Ephemeral.ResourceLoggingFilter = _data["ResourceLoggingFilter"]?.ToObject<string>() ?? _config.Ephemeral.ResourceLoggingFilter;
-        _config.Ephemeral.EnableResourceWatcher = _data["EnableResourceWatcher"]?.ToObject<bool>() ?? _config.Ephemeral.EnableResourceWatcher;
-        _config.Ephemeral.OnlyAddMatchingResources =
-            _data["OnlyAddMatchingResources"]?.ToObject<bool>() ?? _config.Ephemeral.OnlyAddMatchingResources;
-        _config.Ephemeral.ResourceWatcherResourceTypes = _data["ResourceWatcherResourceTypes"]?.ToObject<ResourceTypeFlag>()
-         ?? _config.Ephemeral.ResourceWatcherResourceTypes;
-        _config.Ephemeral.ResourceWatcherResourceCategories = _data["ResourceWatcherResourceCategories"]?.ToObject<ResourceCategoryFlag>()
-         ?? _config.Ephemeral.ResourceWatcherResourceCategories;
-        _config.Ephemeral.ResourceWatcherRecordTypes =
-            _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Ephemeral.ResourceWatcherRecordTypes;
+        _config.Ephemeral.LastSeenVersion = _data["LastSeenVersion"]?.ToObject<int>() ?? _config.Ephemeral.LastSeenVersion;
+        _config.Ephemeral.DebugSeparateWindow = _data["DebugSeparateWindow"]?.ToObject<bool>() ?? _config.Ephemeral.DebugSeparateWindow;
+        _config.Ephemeral.TutorialStep = _data["TutorialStep"]?.ToObject<int>() ?? _config.Ephemeral.TutorialStep;
+        _config.Filters.ResourceLoggerWriteToLog = _data["EnableResourceLogging"]?.ToObject<bool>() ?? _config.Filters.ResourceLoggerWriteToLog;
+        _config.Filters.ResourceLoggerLogFilter = _data["ResourceLoggingFilter"]?.ToObject<string>() ?? _config.Filters.ResourceLoggerLogFilter;
+        _config.Filters.ResourceLoggerEnabled = _data["EnableResourceWatcher"]?.ToObject<bool>() ?? _config.Filters.ResourceLoggerEnabled;
+        _config.Filters.ResourceLoggerStoreOnlyMatching =
+            _data["OnlyAddMatchingResources"]?.ToObject<bool>() ?? _config.Filters.ResourceLoggerStoreOnlyMatching;
+        _config.Filters.ResourceLoggerTypeFilter = _data["ResourceWatcherResourceTypes"]?.ToObject<ResourceTypeFlag>()
+         ?? _config.Filters.ResourceLoggerTypeFilter;
+        _config.Filters.ResourceLoggerCategoryFilter = _data["ResourceWatcherResourceCategories"]?.ToObject<ResourceCategoryFlag>()
+         ?? _config.Filters.ResourceLoggerCategoryFilter;
+        _config.Filters.ResourceLoggerRecordFilter =
+            _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Filters.ResourceLoggerRecordFilter;
         _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionPanelMode>() ?? _config.Ephemeral.CollectionPanel;
         _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
         _config.Filters.ChangedItemTypeFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()

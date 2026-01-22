@@ -12,17 +12,14 @@ using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ResourceWatcher;
 
 public sealed class ResourceWatcher : IDisposable, ITab<TabType>
 {
-    public const int        DefaultMaxEntries = 1024;
-    public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
+    public const int DefaultMaxEntries = 500;
 
-    private readonly Configuration            _config;
-    private readonly EphemeralConfig          _ephemeral;
+    private readonly FilterConfig             _config;
     private readonly ResourceService          _resources;
     private readonly ResourceLoader           _loader;
     private readonly ResourceHandleDestructor _destructor;
@@ -30,48 +27,52 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     private readonly ObservableList<Record>   _records    = [];
     private readonly ConcurrentQueue<Record>  _newRecords = [];
     private readonly ResourceWatcherTable     _table;
-    private          string                   _logFilter = string.Empty;
-    private          Regex?                   _logRegex;
-    private          int                      _newMaxEntries;
+    private readonly RegexFilter              _filter = new();
 
-    public unsafe ResourceWatcher(ActorManager actors, Configuration config, ResourceService resources, ResourceLoader loader,
+    public unsafe ResourceWatcher(ActorManager actors, FilterConfig config, ResourceService resources, ResourceLoader loader,
         ResourceHandleDestructor destructor)
     {
-        _actors                      =  actors;
         _config                      =  config;
-        _ephemeral                   =  config.Ephemeral;
+        _actors                      =  actors;
         _resources                   =  resources;
         _destructor                  =  destructor;
         _loader                      =  loader;
-        _table                       =  new ResourceWatcherTable(config.Filters, _records);
+        _table                       =  new ResourceWatcherTable(_config, _records);
         _resources.ResourceRequested += OnResourceRequested;
         _destructor.Subscribe(OnResourceDestroyed, ResourceHandleDestructor.Priority.ResourceWatcher);
         _loader.ResourceLoaded   += OnResourceLoaded;
         _loader.ResourceComplete += OnResourceComplete;
         _loader.FileLoaded       += OnFileLoaded;
         _loader.PapRequested     += OnPapRequested;
-        UpdateFilter(_ephemeral.ResourceLoggingFilter, false);
-        _newMaxEntries = _config.MaxResourceWatcherRecords;
+        _filter.Set(_config.ResourceLoggerLogFilter);
+        _filter.FilterChanged += () => _config.ResourceLoggerLogFilter = _filter.Text;
     }
 
     private void OnPapRequested(Utf8GamePath original, FullPath? _1, ResolveData _2)
     {
-        if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
+        if (_config.ResourceLoggerWriteToLog && Filter(original.Path, out var path))
         {
-            Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested asynchronously.");
+            Penumbra.Log.Information($"[ResourceLoader] [REQ] {path} was requested asynchronously.");
             if (_1.HasValue)
                 Penumbra.Log.Information(
-                    $"[ResourceLoader] [LOAD] Resolved {_1.Value.FullName} for {match} from collection {_2.ModCollection} for object 0x{_2.AssociatedGameObject:X}.");
+                    $"[ResourceLoader] [LOAD] Resolved {_1.Value.FullName} for {path} from collection {_2.ModCollection} for object 0x{_2.AssociatedGameObject:X}.");
         }
 
-        if (!_ephemeral.EnableResourceWatcher)
+        if (!_config.ResourceLoggerEnabled)
             return;
 
         var record = _1.HasValue
             ? Record.CreateRequest(original.Path, false, _1.Value, _2)
             : Record.CreateRequest(original.Path, false);
-        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_config.ResourceLoggerStoreOnlyMatching || _table.WouldBeVisible(record))
             Enqueue(record);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool Filter(CiByteString path, out string ret)
+    {
+        ret = path.ToString();
+        return _filter.WouldBeVisible(ret);
     }
 
     public unsafe void Dispose()
@@ -103,12 +104,8 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         UpdateRecords();
 
         Im.Cursor.Y += Im.Style.TextHeightWithSpacing / 2;
-        var isEnabled = _ephemeral.EnableResourceWatcher;
-        if (Im.Checkbox("Enable"u8, ref isEnabled))
-        {
-            _ephemeral.EnableResourceWatcher = isEnabled;
-            _ephemeral.Save();
-        }
+        if (Im.Checkbox("Enable"u8, _config.ResourceLoggerEnabled))
+            _config.ResourceLoggerEnabled ^= true;
 
         Im.Line.Same();
         DrawMaxEntries();
@@ -117,20 +114,12 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
             Clear();
 
         Im.Line.Same();
-        var onlyMatching = _ephemeral.OnlyAddMatchingResources;
-        if (Im.Checkbox("Store Only Matching"u8, ref onlyMatching))
-        {
-            _ephemeral.OnlyAddMatchingResources = onlyMatching;
-            _ephemeral.Save();
-        }
+        if (Im.Checkbox("Store Only Matching"u8, _config.ResourceLoggerStoreOnlyMatching))
+            _config.ResourceLoggerStoreOnlyMatching ^= true;
 
         Im.Line.Same();
-        var writeToLog = _ephemeral.EnableResourceLogging;
-        if (Im.Checkbox("Write to Log"u8, ref writeToLog))
-        {
-            _ephemeral.EnableResourceLogging = writeToLog;
-            _ephemeral.Save();
-        }
+        if (Im.Checkbox("Write to Log"u8, _config.ResourceLoggerWriteToLog))
+            _config.ResourceLoggerWriteToLog ^= true;
 
         Im.Line.Same();
         DrawFilterInput();
@@ -141,70 +130,22 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     }
 
     private void DrawFilterInput()
-    {
-        Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
-        var       tmp          = _logFilter;
-        var       invalidRegex = _logRegex is null && _logFilter.Length > 0;
-        using var color        = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, invalidRegex);
-        if (Im.Input.Text("##logFilter"u8, ref tmp, "If path matches this Regex..."u8))
-            UpdateFilter(tmp, true);
-    }
-
-    private void UpdateFilter(string newString, bool config)
-    {
-        if (newString == _logFilter)
-            return;
-
-        _logFilter = newString;
-        try
-        {
-            _logRegex = new Regex(_logFilter, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-        }
-        catch
-        {
-            _logRegex = null;
-        }
-
-        if (config)
-        {
-            _ephemeral.ResourceLoggingFilter = newString;
-            _ephemeral.Save();
-        }
-    }
-
-    private bool FilterMatch(CiByteString path, out string match)
-    {
-        match = path.ToString();
-        return _logFilter.Length == 0 || (_logRegex?.IsMatch(match) ?? false) || match.Contains(_logFilter, StringComparison.OrdinalIgnoreCase);
-    }
-
+        => _filter.DrawFilter("If path matches this Regex..."u8, Im.ContentRegion.Available);
 
     private void DrawMaxEntries()
     {
         Im.Item.SetNextWidthScaled(80);
-        Im.Input.Scalar("Max. Entries"u8, ref _newMaxEntries);
-        var change = Im.Item.DeactivatedAfterEdit;
+        if (ImEx.InputOnDeactivation.Scalar("Max. Entries"u8, _config.ResourceLoggerMaxEntries, out var newValue))
+            _config.ResourceLoggerMaxEntries = Math.Max(16, newValue);
+
         if (Im.Item.RightClicked() && Im.Io.KeyControl)
-        {
-            change         = true;
-            _newMaxEntries = DefaultMaxEntries;
-        }
+            _config.ResourceLoggerMaxEntries = DefaultMaxEntries;
 
-        var maxEntries = _config.MaxResourceWatcherRecords;
-        if (maxEntries != DefaultMaxEntries && Im.Item.Hovered())
-            Im.Tooltip.Set($"CTRL + Right-Click to reset to default {DefaultMaxEntries}.");
+        if (_config.ResourceLoggerMaxEntries is not DefaultMaxEntries && Im.Item.Hovered())
+            Im.Tooltip.Set("Control + Right-Click to reset to default 500."u8);
 
-        if (!change)
-            return;
-
-        _newMaxEntries = Math.Max(16, _newMaxEntries);
-        if (_newMaxEntries == maxEntries)
-            return;
-
-        _config.MaxResourceWatcherRecords = _newMaxEntries;
-        _config.Save();
-        if (_newMaxEntries > _records.Count)
-            _records.RemoveRange(0, _records.Count - _newMaxEntries);
+        if (_records.Count > _config.ResourceLoggerMaxEntries)
+            _records.RemoveRange(0, _records.Count - _config.ResourceLoggerMaxEntries);
     }
 
     private void UpdateRecords()
@@ -216,49 +157,49 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         while (_newRecords.TryDequeue(out var rec) && count-- > 0)
             _records.Add(rec);
 
-        if (_records.Count > _config.MaxResourceWatcherRecords)
-            _records.RemoveRange(0, _records.Count - _config.MaxResourceWatcherRecords);
+        if (_records.Count > _config.ResourceLoggerMaxEntries)
+            _records.RemoveRange(0, _records.Count - _config.ResourceLoggerMaxEntries);
     }
 
 
     private unsafe void OnResourceRequested(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
         Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
-        if (_ephemeral.EnableResourceLogging && FilterMatch(original.Path, out var match))
+        if (_config.ResourceLoggerWriteToLog && Filter(original.Path, out var match))
             Penumbra.Log.Information($"[ResourceLoader] [REQ] {match} was requested {(sync ? "synchronously." : "asynchronously.")}");
 
-        if (!_ephemeral.EnableResourceWatcher)
+        if (!_config.ResourceLoggerEnabled)
             return;
 
         var record = Record.CreateRequest(original.Path, sync);
-        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_config.ResourceLoggerStoreOnlyMatching || _table.WouldBeVisible(record))
             Enqueue(record);
     }
 
     private unsafe void OnResourceLoaded(ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData data)
     {
-        if (_ephemeral.EnableResourceLogging)
+        if (_config.ResourceLoggerWriteToLog)
         {
-            var log   = FilterMatch(path.Path, out var name);
+            var log   = Filter(path.Path, out var name);
             var name2 = string.Empty;
-            if (manipulatedPath != null)
-                log |= FilterMatch(manipulatedPath.Value.InternalName, out name2);
+            if (manipulatedPath is not null)
+                log |= Filter(manipulatedPath.Value.InternalName, out name2);
 
             if (log)
             {
-                var pathString = manipulatedPath != null ? $"custom file {name2} instead of {name}" : name;
+                var pathString = manipulatedPath is not null ? $"custom file {name2} instead of {name}" : name;
                 Penumbra.Log.Information(
                     $"[ResourceLoader] [LOAD] [{handle->FileType}] Loaded {pathString} to 0x{(ulong)handle:X} using collection {data.ModCollection.Identity.AnonymizedName} for {Name(data, "no associated object.")} (Refcount {handle->RefCount}) ");
             }
         }
 
-        if (!_ephemeral.EnableResourceWatcher)
+        if (!_config.ResourceLoggerEnabled)
             return;
 
         var record = manipulatedPath == null
             ? Record.CreateDefaultLoad(path.Path, handle, data.ModCollection, Name(data))
             : Record.CreateLoad(manipulatedPath.Value, path.Path, handle, data.ModCollection, Name(data));
-        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_config.ResourceLoggerStoreOnlyMatching || _table.WouldBeVisible(record))
             Enqueue(record);
     }
 
@@ -268,43 +209,43 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
         if (!isAsync)
             return;
 
-        if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
+        if (_config.ResourceLoggerWriteToLog && Filter(path, out var match))
             Penumbra.Log.Information(
                 $"[ResourceLoader] [DONE] [{resource->FileType}] Finished loading {match} into 0x{(ulong)resource:X}, state {resource->LoadState}.");
 
-        if (!_ephemeral.EnableResourceWatcher)
+        if (!_config.ResourceLoggerEnabled)
             return;
 
         var record = Record.CreateResourceComplete(path, resource, original, additionalData);
-        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_config.ResourceLoggerStoreOnlyMatching || _table.WouldBeVisible(record))
             Enqueue(record);
     }
 
     private unsafe void OnFileLoaded(ResourceHandle* resource, CiByteString path, bool success, bool custom, ReadOnlySpan<byte> _)
     {
-        if (_ephemeral.EnableResourceLogging && FilterMatch(path, out var match))
+        if (_config.ResourceLoggerWriteToLog && Filter(path, out var match))
             Penumbra.Log.Information(
                 $"[ResourceLoader] [FILE] [{resource->FileType}] Loading {match} from {(custom ? "local files" : "SqPack")} into 0x{(ulong)resource:X} returned {success}.");
 
-        if (!_ephemeral.EnableResourceWatcher)
+        if (!_config.ResourceLoggerEnabled)
             return;
 
         var record = Record.CreateFileLoad(path, resource, success, custom);
-        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_config.ResourceLoggerStoreOnlyMatching || _table.WouldBeVisible(record))
             Enqueue(record);
     }
 
     private unsafe void OnResourceDestroyed(in ResourceHandleDestructor.Arguments arguments)
     {
-        if (_ephemeral.EnableResourceLogging && FilterMatch(arguments.ResourceHandle->FileName(), out var match))
+        if (_config.ResourceLoggerWriteToLog && Filter(arguments.ResourceHandle->FileName(), out var match))
             Penumbra.Log.Information(
                 $"[ResourceLoader] [DEST] [{arguments.ResourceHandle->FileType}] Destroyed {match} at 0x{(ulong)arguments.ResourceHandle:X}.");
 
-        if (!_ephemeral.EnableResourceWatcher)
+        if (!_config.ResourceLoggerEnabled)
             return;
 
         var record = Record.CreateDestruction(arguments.ResourceHandle);
-        if (!_ephemeral.OnlyAddMatchingResources || _table.WouldBeVisible(record))
+        if (!_config.ResourceLoggerStoreOnlyMatching || _table.WouldBeVisible(record))
             Enqueue(record);
     }
 
@@ -337,7 +278,7 @@ public sealed class ResourceWatcher : IDisposable, ITab<TabType>
     private void Enqueue(Record record)
     {
         // Discard entries that exceed the number of records.
-        while (_newRecords.Count >= _config.MaxResourceWatcherRecords)
+        while (_newRecords.Count >= _config.ResourceLoggerMaxEntries)
             _newRecords.TryDequeue(out _);
         _newRecords.Enqueue(record);
     }

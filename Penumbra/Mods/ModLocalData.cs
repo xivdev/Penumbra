@@ -60,7 +60,7 @@ public readonly struct ModLocalData(Mod mod) : ISavable
                 var json = JObject.Parse(text);
 
                 importDate     = json[nameof(Mod.ImportDate)]?.Value<long>() ?? importDate;
-                lastConfigEdit = json[nameof(Mod.LastConfigEdit)]?.Value<long>() ?? lastConfigEdit;
+                lastConfigEdit = json[nameof(Mod.LastConfigEdit)]?.Value<long>() ?? now;
                 favorite       = json[nameof(Mod.Favorite)]?.Value<bool>() ?? favorite;
                 note           = json[nameof(Mod.Note)]?.Value<string>() ?? note;
                 localTags      = (json[nameof(Mod.LocalTags)] as JArray)?.Values<string>().OfType<string>() ?? localTags;
@@ -80,6 +80,9 @@ public readonly struct ModLocalData(Mod mod) : ISavable
 
         if (importDate == 0)
             importDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        if (lastConfigEdit == now)
+            save = true;
 
         ModDataChangeType changes = 0;
         if (mod.ImportDate != importDate)

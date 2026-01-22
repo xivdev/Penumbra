@@ -29,7 +29,7 @@ public class ModPanelTabBar : TabBar<ModPanelTab>
 
     public ModPanelTabBar(ModEditWindowFactory modEditWindowFactory, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
         ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
-        TutorialService tutorial, ModPanelCollectionsTab collections, Logger log)
+        TutorialService tutorial, ModPanelCollectionsTab collections, Logger log, EphemeralConfig config)
         : base(nameof(ModPanelTabBar), log, settings, description, conflicts, changedItems, collections, edit)
     {
         Flags       = TabBarFlags.NoTooltip | TabBarFlags.FittingPolicyScroll;
@@ -37,7 +37,9 @@ public class ModPanelTabBar : TabBar<ModPanelTab>
         Edit        = edit;
         _modManager = modManager;
         _tutorial   = tutorial;
+        NextTab     = config.SelectedModPanelTab;
         Buttons.AddButton(new AdvancedEditingButton(this, modEditWindowFactory), 0);
+        TabSelected.Subscribe((in v) => config.SelectedModPanelTab = v, 0);
     }
 
     private sealed class AdvancedEditingButton(ModPanelTabBar parent, ModEditWindowFactory editFactory) : BaseButton

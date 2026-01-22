@@ -26,9 +26,13 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
         ResourceTab resources,
         Watcher watcher,
         OnScreenTab onScreen,
-        MessagesTab messages, EphemeralConfig config, CommunicatorService communicator, ModFileSystem modFileSystem)
+        MessagesTab messages, 
+        ManagementTab.ManagementTab management,
+        EphemeralConfig config, 
+        CommunicatorService communicator, 
+        ModFileSystem modFileSystem)
         : base(nameof(MainTabBar), log, settings, collections, mods, changedItems, effectiveChanges, onScreen,
-            resources, watcher, debug, messages)
+            resources, watcher, debug, messages, management)
     {
         _config        = config;
         _modFileSystem = modFileSystem;

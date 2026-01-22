@@ -5,10 +5,11 @@ namespace Penumbra.UI.CollectionTab;
 
 public sealed class CollectionFilter : TextFilterBase<CollectionSelector.Entry>, IUiService
 {
-    public CollectionFilter(FilterConfig filterConfig)
+    public CollectionFilter(Configuration config)
     {
-        Set(filterConfig.CollectionFilter);
-        FilterChanged += () => filterConfig.CollectionFilter = Text;
+        if (config.RememberCollectionFilters)
+            Set(config.Filters.CollectionFilter);
+        FilterChanged += () => config.Filters.CollectionFilter = Text;
     }
 
     public override bool WouldBeVisible(in CollectionSelector.Entry item, int globalIndex)

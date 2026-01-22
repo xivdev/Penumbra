@@ -252,7 +252,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append(
             $"> **`Synchronous Load (Dalamud):  `** {(_services.GetService<DalamudConfigService>().GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")} (first Start: {hdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"})\n");
         sb.Append(
-            $"> **`Logging:                     `** Log: {_config.Ephemeral.EnableResourceLogging}, Watcher: {_config.Ephemeral.EnableResourceWatcher} ({_config.MaxResourceWatcherRecords})\n");
+            $"> **`Logging:                     `** Log: {_config.Filters.ResourceLoggerWriteToLog}, Watcher: {_config.Filters.ResourceLoggerEnabled} ({_config.Filters.ResourceLoggerMaxEntries})\n");
         sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
         GatherRelevantPlugins(sb);
         sb.AppendLine("**Mods**");

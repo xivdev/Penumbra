@@ -13,7 +13,7 @@
     <PropertyGroup>
         <DefineConstants>PROFILING;</DefineConstants>
         <Use_DalamudPackager>false</Use_DalamudPackager>
-        <Use_Dalamud_ImGui >false</Use_Dalamud_ImGui>
+        <Use_Dalamud_ImGui>false</Use_Dalamud_ImGui>
     </PropertyGroup>
 
     <ItemGroup>

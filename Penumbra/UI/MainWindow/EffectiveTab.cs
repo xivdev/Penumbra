@@ -16,7 +16,7 @@ public sealed class EffectiveTab(
     CollectionManager collectionManager,
     CollectionSelectHeader collectionHeader,
     CommunicatorService communicatorService,
-    FilterConfig filterConfig)
+    Configuration config)
     : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
@@ -32,7 +32,7 @@ public sealed class EffectiveTab(
     public TabType Identifier
         => TabType.EffectiveChanges;
 
-    private readonly PairFilter<Item> _filter = new(new GamePathFilter(filterConfig), new FullPathFilter(filterConfig));
+    private readonly PairFilter<Item> _filter = new(new GamePathFilter(config), new FullPathFilter(config));
 
     private sealed class Cache : BasicFilterCache<Item>, IPanel
     {
@@ -143,10 +143,11 @@ public sealed class EffectiveTab(
 
     private sealed class GamePathFilter : RegexFilterBase<Item>
     {
-        public GamePathFilter(FilterConfig config)
+        public GamePathFilter(Configuration config)
         {
-            Set(config.EffectiveChangesGamePathFilter);
-            FilterChanged += () => config.EffectiveChangesGamePathFilter = Text;
+            if (config.RememberEffectiveChangesFilters)
+                Set(config.Filters.EffectiveChangesGamePathFilter);
+            FilterChanged += () => config.Filters.EffectiveChangesGamePathFilter = Text;
         }
 
         protected override string ToFilterString(in Item item, int globalIndex)
@@ -155,10 +156,11 @@ public sealed class EffectiveTab(
 
     private sealed class FullPathFilter : RegexFilterBase<Item>
     {
-        public FullPathFilter(FilterConfig config)
+        public FullPathFilter(Configuration config)
         {
-            Set(config.EffectiveChangesFilePathFilter);
-            FilterChanged += () => config.EffectiveChangesFilePathFilter = Text;
+            if (config.RememberEffectiveChangesFilters)
+                Set(config.Filters.EffectiveChangesFilePathFilter);
+            FilterChanged += () => config.Filters.EffectiveChangesFilePathFilter = Text;
         }
 
         protected override string ToFilterString(in Item item, int globalIndex)

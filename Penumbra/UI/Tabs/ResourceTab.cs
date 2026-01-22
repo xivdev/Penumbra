@@ -20,14 +20,15 @@ public sealed class ResourceTab(Configuration config, ResourceManagerService res
     public bool IsVisible
         => config.DebugMode;
 
-    public readonly ResourceFilter Filter = new(config.Filters);
+    public readonly ResourceFilter Filter = new(config);
 
     public sealed class ResourceFilter : Utf8FilterBase<ResourceHandle>
     {
-        public ResourceFilter(FilterConfig filterConfig)
+        public ResourceFilter(Configuration config)
         {
-            Set(new StringU8(filterConfig.ResourceManagerFilter));
-            FilterChanged += () => filterConfig.ResourceManagerFilter = Text.ToString();
+            if (config.RememberResourceManagerFilters)
+                Set(new StringU8(config.Filters.ResourceManagerFilter));
+            FilterChanged += () => config.Filters.ResourceManagerFilter = Text.ToString();
         }
 
         protected override ReadOnlySpan<byte> ToFilterString(in ResourceHandle item, int globalIndex)
@@ -58,9 +59,9 @@ public sealed class ResourceTab(Configuration config, ResourceManagerService res
         Penumbra.Dynamis.DrawPointer(resourceManager.ResourceManager);
     }
 
-    private float  _hashColumnWidth;
-    private float  _pathColumnWidth;
-    private float  _refsColumnWidth;
+    private float _hashColumnWidth;
+    private float _pathColumnWidth;
+    private float _refsColumnWidth;
 
     /// <summary> Draw a single resource map. </summary>
     private unsafe void DrawResourceMap(ResourceCategory category, uint ext,
@@ -91,19 +92,23 @@ public sealed class ResourceTab(Configuration config, ResourceManagerService res
                 return;
 
             Im.Table.DrawColumn($"0x{hash:X8}");
+            if (Im.Item.Clicked())
+                Im.Clipboard.Set($"0x{hash:X8}");
             Im.Table.NextColumn();
             Penumbra.Dynamis.DrawPointer(r);
             var resource = (Interop.Structs.ResourceHandle*)r;
             Im.Table.DrawColumn(resource->FileName().Span);
             if (Im.Item.Clicked())
+            {
                 Im.Clipboard.Set(resource->FileName().Span);
+            }
             else if (Im.Item.RightClicked())
             {
                 var data = resource->CsHandle.GetData();
                 if (data != null)
                 {
                     var length = (int)resource->CsHandle.GetLength();
-                    Im.Clipboard.Set(StringU8.Join((byte) ' ',
+                    Im.Clipboard.Set(StringU8.Join((byte)' ',
                         new ReadOnlySpan<byte>(data, length).ToArray().Select(b => b.ToString("X2"))));
                 }
             }

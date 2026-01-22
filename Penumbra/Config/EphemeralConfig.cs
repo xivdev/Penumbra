@@ -1,39 +1,39 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
+using Luna.Generators;
 using Newtonsoft.Json;
-using Penumbra.Enums;
 using Penumbra.Services;
 using Penumbra.UI;
-using Penumbra.UI.Classes;
-using Penumbra.UI.ResourceWatcher;
+using Penumbra.UI.ManagementTab;
+using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra;
 
-public class EphemeralConfig : ISavable, IService
+public sealed partial class EphemeralConfig : ISavable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;
 
-    public int                  Version                           { get; set; } = Configuration.Constants.CurrentVersion;
-    public int                  LastSeenVersion                   { get; set; } = PenumbraChangelog.LastChangelogVersion;
-    public bool                 DebugSeparateWindow               { get; set; } = false;
-    public int                  TutorialStep                      { get; set; } = 0;
-    public bool                 EnableResourceLogging             { get; set; } = false;
-    public string               ResourceLoggingFilter             { get; set; } = string.Empty;
-    public bool                 EnableResourceWatcher             { get; set; } = false;
-    public bool                 OnlyAddMatchingResources          { get; set; } = true;
-    public ResourceTypeFlag     ResourceWatcherResourceTypes      { get; set; } = ResourceExtensions.AllResourceTypes;
-    public ResourceCategoryFlag ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
-    public RecordType           ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
-    public CollectionPanelMode  CollectionPanel                   { get; set; } = CollectionPanelMode.SimpleAssignment;
-    public TabType              SelectedTab                       { get; set; } = TabType.Settings;
-    public bool                 FixMainWindow                     { get; set; } = false;
-    public HashSet<string>      AdvancedEditingOpenForModPaths    { get; set; } = [];
-    public bool                 ForceRedrawOnFileChange           { get; set; } = false;
-    public bool                 IncognitoMode                     { get; set; } = false;
+    public int                 Version             { get; set; } = Configuration.Constants.CurrentVersion;
+    public int                 LastSeenVersion     { get; set; } = PenumbraChangelog.LastChangelogVersion;
+    public bool                DebugSeparateWindow { get; set; } = false;
+    public int                 TutorialStep        { get; set; } = 0;
+    public CollectionPanelMode CollectionPanel     { get; set; } = CollectionPanelMode.SimpleAssignment;
+    public TabType             SelectedTab         { get; set; } = TabType.Settings;
+
+    [ConfigProperty]
+    private ManagementTabType _selectedManagementTab = ManagementTabType.UnusedMods;
+
+    [ConfigProperty]
+    private ModPanelTab _selectedModPanelTab = ModPanelTab.Settings;
+
+    public bool            FixMainWindow                  { get; set; } = false;
+    public HashSet<string> AdvancedEditingOpenForModPaths { get; set; } = [];
+    public bool            ForceRedrawOnFileChange        { get; set; } = false;
+    public bool            IncognitoMode                  { get; set; } = false;
 
     /// <summary>
     /// Load the current configuration.
@@ -41,7 +41,7 @@ public class EphemeralConfig : ISavable, IService
     /// </summary>
     public EphemeralConfig(SaveService saveService)
     {
-        _saveService    = saveService;
+        _saveService = saveService;
         Load();
     }
 

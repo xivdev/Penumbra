@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -20,6 +21,19 @@ public class PathResolver : IDisposable, Luna.IService
     private readonly GameState                 _gameState;
     private readonly CollectionResolver        _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
+
+    public static FrozenSet<uint> ForbiddenFiles = ((uint[])
+    [
+        0x90E4EE2F, // common/graphics/texture/dummy.tex
+        0x84815A1A, // chara/common/texture/white.tex
+        0x749091FB, // chara/common/texture/black.tex
+        0x5CB9681A, // chara/common/texture/id_16.tex
+        0x7E78D000, // chara/common/texture/red.tex
+        0xBDC0BFD3, // chara/common/texture/green.tex
+        0xC410E850, // chara/common/texture/blue.tex
+        0xD5CFA221, // chara/common/texture/null_normal.tex
+        0xBE48CA67, // chara/common/texture/skin_mask.tex
+    ]).ToFrozenSet();
 
     public PathResolver(Configuration config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,

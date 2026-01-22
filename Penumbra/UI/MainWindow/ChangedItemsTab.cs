@@ -16,7 +16,7 @@ public sealed class ChangedItemsTab(
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
     CommunicatorService communicator,
-    FilterConfig filterConfig)
+    Configuration config)
     : ITab<TabType>
 {
     public ReadOnlySpan<byte> Label
@@ -27,34 +27,46 @@ public sealed class ChangedItemsTab(
 
     private Vector2 _buttonSize;
 
-    private readonly ChangedItemFilter _filter = new(drawer, filterConfig);
+    private readonly ChangedItemFilter _filter = new(drawer, config);
 
-    private sealed class ChangedItemFilter(ChangedItemDrawer drawer, FilterConfig filterConfig) : IFilter<Item>
+    private sealed class ChangedItemFilter : IFilter<Item>
     {
+        private readonly ChangedItemDrawer _drawer;
+        private readonly FilterConfig      _filterConfig;
+
+        public ChangedItemFilter(ChangedItemDrawer drawer, Configuration config)
+        {
+            _drawer       = drawer;
+            _filterConfig = config.Filters;
+            if (!config.RememberChangedItemFilters)
+                Clear();
+        }
+
         public bool WouldBeVisible(in Item item, int globalIndex)
-            => drawer.FilterChangedItemGlobal(item.Name, item.Data, filterConfig.ChangedItemItemFilter)
-             && (filterConfig.ChangedItemModFilter.Length is 0
-                 || item.Mods.Any(m => m.Name.Contains(filterConfig.ChangedItemModFilter, StringComparison.OrdinalIgnoreCase)));
+            => _drawer.FilterChangedItemGlobal(item.Name, item.Data, _filterConfig.ChangedItemItemFilter)
+             && (_filterConfig.ChangedItemModFilter.Length is 0
+                 || item.Mods.Any(m => m.Name.Contains(_filterConfig.ChangedItemModFilter, StringComparison.OrdinalIgnoreCase)));
 
         public event Action? FilterChanged;
 
         public bool DrawFilter(ReadOnlySpan<byte> label, Vector2 availableRegion)
         {
+            using var style = ImStyleSingle.FrameRounding.Push(0);
             var varWidth = Im.ContentRegion.Available.X
               - 450 * Im.Style.GlobalScale
               - Im.Style.ItemSpacing.X;
             Im.Item.SetNextWidth(450 * Im.Style.GlobalScale);
-            var filter = filterConfig.ChangedItemItemFilter;
+            var filter = _filterConfig.ChangedItemItemFilter;
             var ret    = Im.Input.Text("##changedItemsFilter"u8, ref filter, "Filter Item..."u8);
             if (ret)
-                filterConfig.ChangedItemItemFilter = filter;
+                _filterConfig.ChangedItemItemFilter = filter;
             Im.Line.Same();
             Im.Item.SetNextWidth(varWidth);
-            filter = filterConfig.ChangedItemModFilter;
+            filter = _filterConfig.ChangedItemModFilter;
             if (Im.Input.Text("##changedItemsModFilter"u8, ref filter, "Filter Mods..."u8))
             {
-                ret                               = true;
-                filterConfig.ChangedItemModFilter = filter;
+                ret                                = true;
+                _filterConfig.ChangedItemModFilter = filter;
             }
 
             if (ret)
@@ -64,16 +76,16 @@ public sealed class ChangedItemsTab(
 
         public void Clear()
         {
-            filterConfig.ChangedItemModFilter  = string.Empty;
-            filterConfig.ChangedItemItemFilter = string.Empty;
-            filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
+            _filterConfig.ChangedItemModFilter  = string.Empty;
+            _filterConfig.ChangedItemItemFilter = string.Empty;
+            _filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
             FilterChanged?.Invoke();
         }
 
         public bool IsEmpty
-            => filterConfig.ChangedItemModFilter.Length is 0
-             && filterConfig.ChangedItemItemFilter.Length is 0
-             && filterConfig.ChangedItemTypeFilter is ChangedItemFlagExtensions.DefaultFlags;
+            => _filterConfig.ChangedItemModFilter.Length is 0
+             && _filterConfig.ChangedItemItemFilter.Length is 0
+             && _filterConfig.ChangedItemTypeFilter is ChangedItemFlagExtensions.DefaultFlags;
     }
 
     private readonly record struct Item(string Label, IIdentifiedObjectData Data, SingleArray<IMod> Mods)

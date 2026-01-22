@@ -240,6 +240,13 @@ public sealed partial class FilterConfig : ConfigurationFile
     [ConfigProperty]
     private ChangedItemIconFlag _onScreenTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
 
+    public void ClearOnScreenFilters()
+    {
+        _onScreenCharacterFilter = string.Empty;
+        _onScreenItemFilter      = string.Empty;
+        _onScreenTypeFilter      = ChangedItemFlagExtensions.DefaultFlags;
+    }
+
     private void WriteOnScreenTab(JsonTextWriter j)
     {
         if (OnScreenCharacterFilter.Length is 0

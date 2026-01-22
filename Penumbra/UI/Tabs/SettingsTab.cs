@@ -413,6 +413,27 @@ public sealed class SettingsTab : ITab<TabType>
                 _config.HideUiInGPose                         = v;
                 _pluginInterface.UiBuilder.DisableGposeUiHide = !v;
             });
+
+        Im.Separator();
+        Checkbox("Remember Mod Filters Across Sessions"u8,
+            "Whether filters in the Mods tab should remember their input and start with their respective lists filtered identically to the last session."u8,
+            _config.RememberModFilters, v => _config.RememberModFilters = v);
+        Checkbox("Remember Collection Filters Across Sessions"u8,
+            "Whether filters in the Collections tab should remember their input and start with their respective lists filtered identically to the last session."u8,
+            _config.RememberCollectionFilters, v => _config.RememberCollectionFilters = v);
+        Checkbox("Remember Changed Items Filters Across Sessions"u8,
+            "Whether filters in the Changed Items tab should remember their input and start with their respective lists filtered identically to the last session."u8,
+            _config.RememberChangedItemFilters, v => _config.RememberChangedItemFilters= v);
+        Checkbox("Remember Effective Changes Filters Across Sessions"u8,
+            "Whether filters in the Effective Changes tab should remember their input and start with their respective lists filtered identically to the last session."u8,
+            _config.RememberEffectiveChangesFilters, v => _config.RememberEffectiveChangesFilters = v);
+        Checkbox("Remember On-Screen Filters Across Sessions"u8,
+            "Whether filters in the On-Screen tab should remember their input and start with their respective lists filtered identically to the last session."u8,
+            _config.RememberOnScreenFilters, v => _config.RememberOnScreenFilters = v);
+        Checkbox("Remember Resource Manager Filters Across Sessions"u8,
+            "Whether filters in the Resource Manager tab should remember their input and start with their respective lists filtered identically to the last session."u8,
+            _config.RememberResourceManagerFilters, v => _config.RememberResourceManagerFilters = v);
+
     }
 
     /// <summary> Draw all settings that do not fit into other categories. </summary>
@@ -433,7 +454,7 @@ public sealed class SettingsTab : ITab<TabType>
                 if (v)
                 {
                     _config.Filters.ModChangedItemTypeFilter = ChangedItemFlagExtensions.AllFlags;
-                    _config.Filters.ChangedItemTypeFilter = ChangedItemFlagExtensions.AllFlags;
+                    _config.Filters.ChangedItemTypeFilter    = ChangedItemFlagExtensions.AllFlags;
                     _config.Ephemeral.Save();
                 }
             });
@@ -520,15 +541,10 @@ public sealed class SettingsTab : ITab<TabType>
         using (var combo = Im.Combo.Begin("##renameSettings"u8, _config.ShowRename.ToNameU8()))
         {
             if (combo)
-                foreach (var value in Enum.GetValues<RenameField>())
+                foreach (var value in RenameField.Values)
                 {
                     if (Im.Selectable(value.ToNameU8(), _config.ShowRename == value))
-                    {
                         _config.ShowRename = value;
-                        // TODO
-                        // _selector.SetRenameSearchPath(value);
-                        _config.Save();
-                    }
 
                     Im.Tooltip.OnHover(value.Tooltip());
                 }

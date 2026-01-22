@@ -1,6 +1,7 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
+using Luna.Generators;
 using Newtonsoft.Json;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
@@ -8,13 +9,12 @@ using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.ModsTab.Selector;
-using Penumbra.UI.ResourceWatcher;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
 [Serializable]
-public class Configuration : IPluginConfiguration, ISavable, IService
+public partial class Configuration : IPluginConfiguration, ISavable, IService
 {
     [JsonIgnore]
     private readonly SaveService _saveService;
@@ -56,24 +56,45 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 
     public bool AutoSelectCollection { get; set; } = false;
 
-    public bool            ShowModsInLobby                      { get; set; } = true;
-    public bool            UseCharacterCollectionInMainWindow   { get; set; } = true;
-    public bool            UseCharacterCollectionsInCards       { get; set; } = true;
-    public bool            UseCharacterCollectionInInspect      { get; set; } = true;
-    public bool            UseCharacterCollectionInTryOn        { get; set; } = true;
-    public bool            UseOwnerNameForCharacterCollection   { get; set; } = true;
-    public bool            UseNoModsInInspect                   { get; set; } = false;
-    public bool            HideChangedItemFilters               { get; set; } = false;
-    public bool            ReplaceNonAsciiOnImport              { get; set; } = false;
-    public bool            HidePrioritiesInSelector             { get; set; } = false;
-    public bool            HideRedrawBar                        { get; set; } = false;
-    public bool            HideMachinistOffhandFromChangedItems { get; set; } = true;
-    public bool            DefaultTemporaryMode                 { get; set; } = false;
-    public bool            EnableDirectoryWatch                 { get; set; } = false;
-    public bool            EnableAutomaticModImport             { get; set; } = false;
-    public bool            EnableCustomShapes                   { get; set; } = true;
-    public PcpSettings     PcpSettings = new();
-    public RenameField     ShowRename                { get; set; } = RenameField.BothDataPrio;
+    public bool        ShowModsInLobby                      { get; set; } = true;
+    public bool        UseCharacterCollectionInMainWindow   { get; set; } = true;
+    public bool        UseCharacterCollectionsInCards       { get; set; } = true;
+    public bool        UseCharacterCollectionInInspect      { get; set; } = true;
+    public bool        UseCharacterCollectionInTryOn        { get; set; } = true;
+    public bool        UseOwnerNameForCharacterCollection   { get; set; } = true;
+    public bool        UseNoModsInInspect                   { get; set; } = false;
+    public bool        HideChangedItemFilters               { get; set; } = false;
+    public bool        ReplaceNonAsciiOnImport              { get; set; } = false;
+    public bool        HidePrioritiesInSelector             { get; set; } = false;
+    public bool        HideRedrawBar                        { get; set; } = false;
+    public bool        HideMachinistOffhandFromChangedItems { get; set; } = true;
+    public bool        DefaultTemporaryMode                 { get; set; } = false;
+    public bool        EnableDirectoryWatch                 { get; set; } = false;
+    public bool        EnableAutomaticModImport             { get; set; } = false;
+    public bool        EnableCustomShapes                   { get; set; } = true;
+    public PcpSettings PcpSettings = new();
+
+    [ConfigProperty]
+    private bool _rememberModFilters = true;
+
+    [ConfigProperty]
+    private bool _rememberCollectionFilters = true;
+
+    [ConfigProperty]
+    private bool _rememberOnScreenFilters = true;
+
+    [ConfigProperty]
+    private bool _rememberChangedItemFilters = true;
+
+    [ConfigProperty]
+    private bool _rememberEffectiveChangesFilters = true;
+
+    [ConfigProperty]
+    private bool _rememberResourceManagerFilters = true;
+
+    [ConfigProperty(EventName = "ShowRenameChanged")]
+    private RenameField _showRename = RenameField.BothDataPrio;
+
     public ChangedItemMode ChangedItemDisplay        { get; set; } = ChangedItemMode.GroupedCollapsed;
     public int             OptionGroupCollapsibleMin { get; set; } = 5;
 
@@ -84,7 +105,6 @@ public class Configuration : IPluginConfiguration, ISavable, IService
 #else
     public bool DebugMode { get; set; } = false;
 #endif
-    public int MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
 
     [JsonConverter(typeof(SortModeConverter))]
     [JsonProperty(Order = int.MaxValue)]
