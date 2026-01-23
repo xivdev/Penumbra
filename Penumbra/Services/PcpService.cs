@@ -17,6 +17,7 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Services;
 
@@ -135,7 +136,7 @@ public class PcpService : IApiService, IDisposable
             }
 
             // Move to folder.
-            if (arguments.Mod.Node is {} node)
+            if (arguments.Mod.Node is { } node)
             {
                 try
                 {
@@ -204,7 +205,7 @@ public class PcpService : IApiService, IDisposable
             path = directory.FullName + extension;
         else if (Path.GetExtension(path.AsSpan()).IsEmpty)
             path += extension;
-        ZipFile.CreateFromDirectory(directory.FullName, path, CompressionLevel.Optimal, false);
+        ArchiveUtility.CreateFromDirectory(directory.FullName, path);
         directory.Delete(true);
         return path;
     }

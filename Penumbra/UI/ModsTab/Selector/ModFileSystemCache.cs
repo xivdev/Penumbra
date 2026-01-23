@@ -74,7 +74,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         }
     }
 
-    public sealed class ModData(IFileSystemData<Mod> node) : BaseFileSystemNodeCache<ModData>
+    public sealed class ModData(IFileSystemData<Mod> node) : BaseFileSystemNodeCache<ModData>, IDisposable
     {
         public readonly IFileSystemData<Mod> Node = node;
         public          Vector4              TextColor;
@@ -82,6 +82,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         public          SizedString          PriorityText = SizedString.Empty;
         public          ModSettings?         Settings;
         public          ModCollection        Collection = ModCollection.Empty;
+        public          StringU8             Name       = new(node.Value.Name);
 
         public override void Update(FileSystemCache cache, IFileSystemNode node)
         {
@@ -92,7 +93,8 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             var priority = Settings?.Priority ?? ModPriority.Default;
             if (priority != Priority)
             {
-                Priority     = priority;
+                Priority = priority;
+                PriorityText.Dispose();
                 PriorityText = priority.IsDefault ? SizedString.Empty : new SizedString($"[{priority}]");
             }
         }
@@ -120,8 +122,10 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         {
             using var color = ImGuiColor.Text.Push(TextColor)
                 .Push(ImGuiColor.HeaderHovered, 0x4000FFFF, Node.Value.Favorite);
-            using var id = Im.Id.Push(Node.Value.Index);
-            base.DrawInternal(cache, node);
+            using var           id        = Im.Id.Push(Node.Value.Index);
+            const TreeNodeFlags baseFlags = TreeNodeFlags.NoTreePushOnOpen;
+            var                 flags     = node.Selected ? baseFlags | TreeNodeFlags.Selected : baseFlags;
+            Im.Tree.Leaf(Name, flags);
             if (Im.Item.MiddleClicked())
                 OnMiddleClick(cache);
             DrawPriority(cache);
@@ -181,6 +185,9 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             if (offset > Im.Style.ItemSpacing.X)
                 Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, PriorityText.Text);
         }
+
+        public void Dispose()
+            => PriorityText.Dispose();
     }
 
     public override void Update()

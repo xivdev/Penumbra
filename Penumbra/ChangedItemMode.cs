@@ -8,13 +8,11 @@ namespace Penumbra;
 public enum ChangedItemMode
 {
     [Name("Grouped (Collapsed)")]
-    [Tooltip(
-        "Display items as groups by their model and slot. Collapse those groups to a single item by default. Prefers items with more changes affecting them or configured items as the main item.")]
+    [Tooltip("Display items as groups by their model and slot. Collapse those groups to a single item by default. Prefers items with more changes affecting them or configured items as the main item.")]
     GroupedCollapsed,
 
     [Name("Grouped (Expanded)")]
-    [Tooltip(
-        "Display items as groups by their model and slot. Expand those groups showing all items by default. Prefers items with more changes affecting them or configured items as the main item.")]
+    [Tooltip("Display items as groups by their model and slot. Expand those groups showing all items by default. Prefers items with more changes affecting them or configured items as the main item.")]
     GroupedExpanded,
 
     [Name("Alphabetical")]

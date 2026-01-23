@@ -872,8 +872,6 @@ public sealed class SettingsTab : ITab<TabType>
         Im.Separator();
         DrawReloadResourceButton();
         DrawReloadFontsButton();
-        Im.Separator();
-        DrawCleanupButtons();
         Im.Line.New();
     }
 
@@ -1053,43 +1051,6 @@ public sealed class SettingsTab : ITab<TabType>
             _fontReloader.Reload();
     }
 
-    private void DrawCleanupButtons()
-    {
-        var enabled = _config.DeleteModModifier.IsActive();
-        if (_cleanupService.Progress is not 0.0 and not 1.0)
-        {
-            Im.ProgressBar((float)_cleanupService.Progress, new Vector2(200 * Im.Style.GlobalScale, Im.Style.FrameHeight),
-                $"{_cleanupService.Progress * 100}%");
-            Im.Line.Same();
-            if (Im.Button("Cancel##FileCleanup"u8))
-                _cleanupService.Cancel();
-        }
-        else
-        {
-            Im.Line.New();
-        }
-
-        if (ImEx.Button("Clear Unused Local Mod Data Files"u8, default,
-                "Delete all local mod data files that do not correspond to currently installed mods."u8,
-                !enabled || _cleanupService.IsRunning))
-            _cleanupService.CleanUnusedLocalData();
-        if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
-
-        if (ImEx.Button("Clear Backup Files"u8, default,
-                "Delete all backups of .json configuration files in your configuration folder and all backups of mod group files in your mod directory."u8,
-                !enabled || _cleanupService.IsRunning))
-            _cleanupService.CleanBackupFiles();
-        if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to delete files.");
-
-        if (ImEx.Button("Clear All Unused Settings"u8, default,
-                "Remove all mod settings in all of your collections that do not correspond to currently installed mods."u8,
-                !enabled || _cleanupService.IsRunning))
-            _cleanupService.CleanupAllUnusedSettings();
-        if (!enabled)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"Hold {_config.DeleteModModifier} while clicking to remove settings.");
-    }
 
     /// <summary> Draw a checkbox that toggles the dalamud setting to wait for plugins on open. </summary>
     private void DrawWaitForPluginsReflection()

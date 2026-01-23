@@ -1,4 +1,5 @@
 using Penumbra.Mods.Manager;
+using Penumbra.Util;
 
 namespace Penumbra.Mods.Editor;
 
@@ -70,7 +71,7 @@ public class ModBackup
     }
 
     /// <summary> Create a backup zip without blocking the main thread. </summary>
-    public async void CreateAsync()
+    public async Task CreateAsync()
     {
         if (CreatingBackup)
             return;
@@ -86,7 +87,7 @@ public class ModBackup
         try
         {
             Delete();
-            ZipFile.CreateFromDirectory(_mod.ModPath.FullName, Name, CompressionLevel.Optimal, false);
+            ArchiveUtility.CreateFromDirectory(_mod.ModPath.FullName, Name);
             Penumbra.Log.Debug($"Created export file {Name} from {_mod.ModPath.FullName}.");
         }
         catch (Exception e)
@@ -126,7 +127,8 @@ public class ModBackup
                 Penumbra.Log.Debug($"Deleted mod folder {_mod.ModPath.FullName}.");
             }
 
-            ZipFile.ExtractToDirectory(Name, _mod.ModPath.FullName);
+
+            ArchiveUtility.ExtractToDirectory(Name, _mod.ModPath.FullName);
             Penumbra.Log.Debug($"Extracted exported file {Name} to {_mod.ModPath.FullName}.");
             modManager.ReloadMod(_mod);
         }

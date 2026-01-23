@@ -117,7 +117,7 @@ public class ModPanelEditTab(
                 : backup.Exists
                     ? $"Overwrite current exported mod \"{backup.Name}\" with current mod."
                     : $"Create exported archive of current mod at \"{backup.Name}\".", ModBackup.CreatingBackup))
-            backup.CreateAsync();
+            _ = backup.CreateAsync();
 
         if (Im.Item.RightClicked())
             Im.Popup.Open("context"u8);

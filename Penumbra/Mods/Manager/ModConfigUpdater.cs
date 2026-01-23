@@ -27,7 +27,7 @@ public class ModConfigUpdater : IDisposable, IRequiredService
 
     public IEnumerable<(Mod, (string Plugin, string Notes)[])> ListUnusedMods(TimeSpan age)
     {
-        var cutoff         = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (int)age.TotalMilliseconds;
+        var cutoff         = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - (long)age.TotalMilliseconds;
         var noteDictionary = new Dictionary<Assembly, (bool InUse, string Notes)>();
         foreach (var mod in _mods)
         {
@@ -44,8 +44,7 @@ public class ModConfigUpdater : IDisposable, IRequiredService
                 continue;
 
             // Check whether other plugins mark this mod as in use.
-            noteDictionary.Clear();
-            ModUsageQueried?.Invoke(mod.Name, mod.Identifier, noteDictionary);
+            QueryUsage(mod, noteDictionary);
             if (noteDictionary.Values.Any(n => n.InUse))
                 continue;
 
@@ -55,6 +54,19 @@ public class ModConfigUpdater : IDisposable, IRequiredService
 
             yield return (mod, notes);
         }
+    }
+
+    public Dictionary<Assembly, (bool InUse, string Notes)> QueryUsage(Mod mod)
+    {
+        var noteDictionary = new Dictionary<Assembly, (bool InUse, string Notes)>();
+        ModUsageQueried?.Invoke(mod.Name, mod.Identifier, noteDictionary);
+        return noteDictionary;
+    }
+
+    public void QueryUsage(Mod mod, Dictionary<Assembly, (bool InUse, string Notes)> noteDictionary)
+    {
+        noteDictionary.Clear();
+        ModUsageQueried?.Invoke(mod.Name, mod.Identifier, noteDictionary);
     }
 
     private void OnModSettingChanged(in ModSettingChanged.Arguments arguments)

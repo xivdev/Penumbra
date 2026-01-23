@@ -43,7 +43,7 @@ public static class LoadStateExtensions
       | LoadStateFlag.None;
 }
 
-internal sealed unsafe class CachedRecord(Record record)
+internal sealed unsafe class CachedRecord(Record record) : IDisposable
 {
     public readonly Record          Record = record;
     public readonly string          PathU16 = record.Path.ToString();
@@ -58,6 +58,12 @@ internal sealed unsafe class CachedRecord(Record record)
     public readonly string          HandleU16 = $"0x{(nint)record.Handle:X}";
     public readonly SizedStringPair Thread = new($"{record.OsThreadId}");
     public readonly SizedStringPair RefCount = new($"{record.RefCount}");
+
+    public void Dispose()
+    {
+        Thread.Dispose();
+        RefCount.Dispose();
+    }
 }
 
 internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<CachedRecord>>

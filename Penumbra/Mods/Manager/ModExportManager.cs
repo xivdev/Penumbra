@@ -28,6 +28,12 @@ public class ModExportManager : IDisposable, Luna.IService
     public void UpdateExportDirectory(string newDirectory)
         => UpdateExportDirectory(newDirectory, true);
 
+    public Task CreateAsync(Mod mod)
+    {
+        var backup = new ModBackup(this, mod);
+        return backup.CreateAsync();
+    }
+
     /// <summary>
     /// Update the export directory to a new directory. Can also reset it to null with empty input.
     /// If the directory is changed, all existing backups will be moved to the new one.
