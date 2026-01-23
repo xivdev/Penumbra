@@ -63,9 +63,47 @@ public class PenumbraChangelog : IUiService
         Add1_4_0_0(Changelog);
         Add1_5_0_0(Changelog);
         Add1_5_1_0(Changelog);
+        Add1_6_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add1_6_0_0(Changelog log)
+        => log.NextVersion("Version 1.6.0.0"u8)
+            .RegisterImportant(
+                "The entire UI backend was changed with this update - this is what I was working on for the past months.\nHopefully, this should not cause many noticeable differences for users, but since every single line concerning ImGui has been changed, new or old bugs may crop up."u8)
+            .RegisterEntry("Penumbra should now remember the full selection of mods and which folders are expanded and which are not."u8, 1)
+            .RegisterEntry(
+                "Penumbra can now remember most filter states you enter - this can also be disabled in the settings if you prefer filters to reset."u8,
+                1)
+            .RegisterEntry(
+                "Dragging mods into the game to install them should no longer need to drop them into the mod selector, or having the Penumbra window open. Dragging into the game window should be enough."u8,
+                1)
+            .RegisterEntry("Many UI widgets should be more precise and consistent."u8, 1)
+            .RegisterHighlight("A new 'Management' tab was added."u8)
+            .RegisterEntry("The management tab is supposed to help users get rid of unused mods."u8, 1)
+            .RegisterEntry(
+                "The Unused Mods panel can filter for mods not enabled in any collection and sort them by their last config changes (which are now tracked, but have not been tracked before)."u8,
+                1)
+            .RegisterEntry(
+                "New IPC was added so that other plugins can register to add notes when inactive mods are queried or mark them as active."u8, 1)
+            .RegisterEntry("The Duplicate Mods panel checks for multiple mods with the same name."u8,                                         1)
+            .RegisterEntry("Cleanup functions have been moved from Advanced Settings to the General Cleanup panel."u8,                        1)
+            .RegisterHighlight("Add support for other block compression types in the texture compression IPC (1.5.1.12)."u8)
+            .RegisterHighlight(
+                "Added IPC to provide Penumbra-related settings of other plugins in the Penumbra Settings tab (Thanks Ny!) (1.5.1.9)."u8)
+            .RegisterEntry("Fixed multiple issues in the advanced editing tab for materials (Thanks Ny!) (1.5.1.9)."u8)
+            .RegisterEntry("Added IPC to redraw members of a specific collection (Thanks Karou!) (1.5.1.8)."u8)
+            .RegisterEntry("Fixed an issue when other plugins set a cutscene index through API (1.5.1.7)."u8)
+            .RegisterHighlight("Made it possible to have multiple Advanced Editing windows open at once (Thanks Ny!) (1.5.1.7)."u8)
+            .RegisterHighlight(
+                "Added a file watcher that automatically tries to install mods when saved into a configured directory (Thanks Stoia!) (1.5.1.7)."u8)
+            .RegisterEntry(
+                "The default-named collection is now prevented from being renamed or deleted and sorted at the top of the selector (1.5.1.3)."u8)
+            .RegisterEntry("Stopped redacting external paths in On-Screen tabs (1.5.1.2)."u8)
+            .RegisterEntry("Added checks for cloud synced directories (1.5.1.2)."u8)
+            .RegisterEntry("Added more options when saving PCP files (1.5.1.1)."u8)
+            .RegisterEntry("Added warnings for file redirections if the extensions do not match (1.5.1.1)."u8);
 
     private static void Add1_5_1_0(Changelog log)
         => log.NextVersion("Version 1.5.1.0"u8)
