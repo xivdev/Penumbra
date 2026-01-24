@@ -110,11 +110,11 @@ public class ChangedItemDrawer : IDisposable, IUiService
             return;
         }
 
-        Im.Image.Draw(icon.Id(), new Vector2(height));
+        Im.Image.Draw(icon.Id, new Vector2(height));
         if (Im.Item.Hovered())
         {
             using var tt = Im.Tooltip.Begin();
-            Im.Image.Draw(icon.Id(), new Vector2(_smallestIconWidth));
+            Im.Image.Draw(icon.Id, new Vector2(_smallestIconWidth));
             Im.Line.Same();
             ImEx.TextFramed(iconFlagType.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
         }
@@ -198,7 +198,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
         }
 
         Im.Cursor.X = Im.ContentRegion.Maximum.X - size.X;
-        Im.Image.Draw(_icons[ChangedItemFlagExtensions.AllFlags].Id(), size, Vector2.Zero, Vector2.One,
+        Im.Image.Draw(_icons[ChangedItemFlagExtensions.AllFlags].Id, size, Vector2.Zero, Vector2.One,
             typeFilter switch
             {
                 0                                  => new Vector4(0.6f,  0.3f,  0.3f,  1f),
@@ -218,7 +218,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             var localRet = false;
             var icon     = _icons[type];
             var flag     = filter.HasFlag(type);
-            Im.Image.Draw(icon.Id(), size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
+            Im.Image.Draw(icon.Id, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
             if (Im.Item.Clicked())
             {
                 filter   = flag ? filter & ~type : filter | type;
@@ -237,7 +237,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             if (Im.Item.Hovered())
             {
                 using var tt = Im.Tooltip.Begin();
-                Im.Image.Draw(icon.Id(), new Vector2(_smallestIconWidth));
+                Im.Image.Draw(icon.Id, new Vector2(_smallestIconWidth));
                 Im.Line.Same();
                 ImEx.TextFramed(type.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
             }

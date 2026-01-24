@@ -2,9 +2,7 @@ using ImSharp;
 using Lumina.Data.Files;
 using Luna;
 using OtterTex;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
-using VectorExtensions = Luna.VectorExtensions;
 
 namespace Penumbra.Import.Textures;
 
@@ -14,9 +12,9 @@ public static class TextureDrawer
     {
         if (texture.TextureWrap != null)
         {
-            size = VectorExtensions.Contain(texture.TextureWrap.Size, size);
+            size = texture.TextureWrap.Size.Contain(size);
 
-            Im.Image.Draw(texture.TextureWrap.Id(), size);
+            Im.Image.Draw(texture.TextureWrap.Id, size);
             DrawData(texture);
         }
         else if (texture.LoadError != null)
