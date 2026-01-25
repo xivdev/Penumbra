@@ -190,7 +190,9 @@ public class PcpService : IApiService, IDisposable
             var modDirectory = CreateMod(identifier, note, time);
             await CreateDefaultMod(modDirectory, meta, tree, cancel);
             await CreateCollectionInfo(modDirectory, objectIndex, identifier, note, time, cancel);
-            var file = ZipUp(modDirectory, modPath, Extension);
+            var file = GetFullZipPath(modDirectory, modPath, Extension);
+            _modExport.IgnoreExportedFile(file);
+            ZipUp(modDirectory, file);
             return (true, file);
         }
         catch (Exception ex)
@@ -199,15 +201,19 @@ public class PcpService : IApiService, IDisposable
         }
     }
 
-    private static string ZipUp(DirectoryInfo directory, string? path, string extension)
+    private static string GetFullZipPath(DirectoryInfo directory, string? path, string extension)
     {
         if (path is null)
             path = directory.FullName + extension;
         else if (Path.GetExtension(path.AsSpan()).IsEmpty)
             path += extension;
+        return path;
+    }
+
+    private static void ZipUp(DirectoryInfo directory, string path)
+    {
         ArchiveUtility.CreateFromDirectory(directory.FullName, path);
         directory.Delete(true);
-        return path;
     }
 
     private async Task CreateCollectionInfo(DirectoryInfo directory, ObjectIndex index, ActorIdentifier actor, string note, DateTime time,
