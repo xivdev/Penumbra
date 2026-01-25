@@ -9,17 +9,19 @@ public class ModExportManager : IDisposable, Luna.IService
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
+    private readonly FileWatcher         _fileWatcher;
 
     private DirectoryInfo? _exportDirectory;
 
     public DirectoryInfo ExportDirectory
         => _exportDirectory ?? _modManager.BasePath;
 
-    public ModExportManager(Configuration config, CommunicatorService communicator, ModManager modManager)
+    public ModExportManager(Configuration config, CommunicatorService communicator, ModManager modManager, FileWatcher fileWatcher)
     {
         _config       = config;
         _communicator = communicator;
         _modManager   = modManager;
+        _fileWatcher  = fileWatcher;
         UpdateExportDirectory(_config.ExportDirectory, false);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModExportManager);
     }
@@ -32,6 +34,12 @@ public class ModExportManager : IDisposable, Luna.IService
     {
         var backup = new ModBackup(this, mod);
         return backup.CreateAsync();
+    }
+
+    public void IgnoreExportedFile(string fullPath)
+    {
+        if (_config.PreventExportLoopback)
+            _fileWatcher.IgnoreFile(fullPath);
     }
 
     /// <summary>

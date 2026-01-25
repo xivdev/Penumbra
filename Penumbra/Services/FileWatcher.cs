@@ -6,15 +6,19 @@ namespace Penumbra.Services;
 
 public sealed class FileWatcher : IDisposable, IService
 {
-    private readonly ConcurrentSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ModImportManager      _modImportManager;
-    private readonly MessageService        _messageService;
-    private readonly Configuration         _config;
+    private readonly ConcurrentSet<string>              _pending = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, long> _ignored = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ModImportManager                   _modImportManager;
+    private readonly MessageService                     _messageService;
+    private readonly Configuration                      _config;
 
     private bool                     _pausedConsumer;
     private FileSystemWatcher?       _fsw;
     private CancellationTokenSource? _cts = new();
     private Task?                    _consumer;
+
+    /// <summary> The time-to-live of ignore entries, in the same unit as <see cref="Environment.TickCount64"/>, namely milliseconds. </summary>
+    private const long IgnoreTimeToLive = 60000L;
 
     public FileWatcher(ModImportManager modImportManager, MessageService messageService, Configuration config)
     {
@@ -46,6 +50,12 @@ public sealed class FileWatcher : IDisposable, IService
             EndFileWatcher();
             EndConsumerTask();
         }
+    }
+
+    public void IgnoreFile(string fullPath)
+    {
+        if (_config.EnableDirectoryWatch)
+            _ignored[fullPath] = Environment.TickCount64 + IgnoreTimeToLive;
     }
 
     private void EndFileWatcher()
@@ -123,12 +133,16 @@ public sealed class FileWatcher : IDisposable, IService
     }
 
     private void OnPath(object? sender, FileSystemEventArgs e)
-        => _pending.TryAdd(e.FullPath);
+    {
+        if (!_ignored.TryRemove(e.FullPath, out var expiresAtTickCount) || expiresAtTickCount <= Environment.TickCount64)
+            _pending.TryAdd(e.FullPath);
+    }
 
     private async Task ConsumerLoopAsync(CancellationToken token)
     {
         while (true)
         {
+            GarbageCollectIgnored();
             var path = _pending.FirstOrDefault<string>();
             if (path is null || _pausedConsumer)
             {
@@ -152,6 +166,15 @@ public sealed class FileWatcher : IDisposable, IService
             {
                 _pending.TryRemove(path);
             }
+        }
+    }
+
+    private void GarbageCollectIgnored()
+    {
+        foreach (var entry in _ignored)
+        {
+            if (Environment.TickCount64 >= entry.Value)
+                _ignored.TryRemove(entry);
         }
     }
 
@@ -245,6 +268,15 @@ public sealed class FileWatcher : IDisposable, IService
 
             table.DrawColumn("Pending Files"u8);
             table.DrawColumn(StringU8.Join('\n', fileWatcher._pending));
+
+            table.DrawColumn("Ignored Files"u8);
+            // FIXME .ToList() forces the use of an IReadOnlyCollection overload because, at the time of writing, IEnumerable ones don't handle empty enumerables correctly.
+            table.DrawColumn(StringU8.Join((byte)'\n', fileWatcher._ignored.Select(entry =>
+                (entry.Value - Environment.TickCount64) switch
+                {
+                    <= 0    => $"<EXPIRED> {entry.Key}",
+                    var ttl => $"<{ttl}ms> {entry.Key}",
+                }).ToList()));
         }
     }
 }

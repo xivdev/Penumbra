@@ -1,4 +1,5 @@
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.Util;
 
 namespace Penumbra.Mods.Editor;
@@ -11,15 +12,17 @@ public class ModBackup
 
     public static bool CreatingBackup { get; private set; }
 
-    private readonly Mod    _mod;
-    public readonly  string Name;
-    public readonly  bool   Exists;
+    private readonly ModExportManager _modExport;
+    private readonly Mod              _mod;
+    public readonly  string           Name;
+    public readonly  bool             Exists;
 
     public ModBackup(ModExportManager modExportManager, Mod mod)
     {
-        _mod   = mod;
-        Name   = Path.Combine(modExportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
-        Exists = File.Exists(Name);
+        _modExport = modExportManager;
+        _mod       = mod;
+        Name       = Path.Combine(modExportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
+        Exists     = File.Exists(Name);
     }
 
     /// <summary> Migrate file extensions. </summary>
@@ -87,6 +90,7 @@ public class ModBackup
         try
         {
             Delete();
+            _modExport.IgnoreExportedFile(Name);
             ArchiveUtility.CreateFromDirectory(_mod.ModPath.FullName, Name);
             Penumbra.Log.Debug($"Created export file {Name} from {_mod.ModPath.FullName}.");
         }

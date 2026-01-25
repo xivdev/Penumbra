@@ -639,6 +639,9 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Enable Fully Automatic Import"u8,
             "Uses the File Watcher in order to skip the query popup and automatically import any new mods."u8,
             _config.EnableAutomaticModImport, v => _config.EnableAutomaticModImport = v);
+        Checkbox("Prevent Exported Mods From Being Automatically Reimported"u8,
+            "If your Automatic Import Directory is the same as your Default Mod Export Directory, prevents mods and character packs you export from being reimported or showing a query popup."u8,
+            _config.PreventExportLoopback, v => _config.PreventExportLoopback = v);
         DrawFileWatcherPath();
     }
 
@@ -738,7 +741,7 @@ public sealed class SettingsTab : ITab<TabType>
         }
 
         style.Pop();
-        LunaStyle.DrawAlignedHelpMarkerLabel("Automatic Import Director"u8,
+        LunaStyle.DrawAlignedHelpMarkerLabel("Automatic Import Directory"u8,
             "Choose the Directory the File Watcher listens to."u8);
     }
 
