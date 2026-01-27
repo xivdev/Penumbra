@@ -72,6 +72,7 @@ public class IpcTester(
             return;
 
         Penumbra.Log.Debug("[IPCTester] Subscribed to IPC events for IPC tester.");
+        collectionsIpcTester.ResolveFileChange.Enable();
         gameStateIpcTester.GameObjectResourcePathResolved.Enable();
         gameStateIpcTester.CharacterBaseCreated.Enable();
         gameStateIpcTester.CharacterBaseCreating.Enable();
@@ -111,6 +112,7 @@ public class IpcTester(
 
         Penumbra.Log.Debug("[IPCTester] Unsubscribed from IPC events for IPC tester.");
         _subscribed = false;
+        collectionsIpcTester.ResolveFileChange.Disable();
         gameStateIpcTester.GameObjectResourcePathResolved.Disable();
         gameStateIpcTester.CharacterBaseCreated.Disable();
         gameStateIpcTester.CharacterBaseCreating.Disable();
