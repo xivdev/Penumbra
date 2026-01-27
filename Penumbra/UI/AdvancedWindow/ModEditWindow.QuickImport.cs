@@ -159,7 +159,7 @@ public partial class ModEditWindow
                 Directory.CreateDirectory(directory);
             _editor.Compactor.WriteAllBytes(_targetPath!, _file!.Write());
             _editor.FileEditor.Revert(_editor.Mod!, _editor.Option!);
-            var fileRegistry = _editor.Files.Available.First(file => file.File.FullName == _targetPath);
+            var fileRegistry = _editor.Files.Available.First(file => file.File.FullName.Equals(_targetPath, StringComparison.OrdinalIgnoreCase));
             _editor.FileEditor.AddPathsToSelected(_editor.Option!, [fileRegistry], _subDirs);
             _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
 
