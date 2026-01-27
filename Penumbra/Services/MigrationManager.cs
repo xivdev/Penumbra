@@ -4,6 +4,7 @@ using Lumina.Extensions;
 using Luna;
 using Penumbra.GameData.Files.Utility;
 using Penumbra.Import.Textures;
+using Penumbra.Util;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using MdlFile = Penumbra.GameData.Files.MdlFile;
@@ -238,11 +239,11 @@ public class MigrationManager(Configuration config) : IService
     }
 
     /// <summary> Writes or migrates a .mdl file during extraction from a regular archive. </summary>
-    public void MigrateMdlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
+    public void MigrateMdlDuringExtraction(ArchiveUtility.ReaderShim reader, string directory)
     {
         if (!config.MigrateImportedModelsToV6)
         {
-            reader.WriteEntryToDirectory(directory, options);
+            reader.WriteEntryToDirectory(directory);
             return;
         }
 
@@ -270,11 +271,11 @@ public class MigrationManager(Configuration config) : IService
         }
     }
 
-    public void MigrateMtrlDuringExtraction(IReader reader, string directory, ExtractionOptions options)
+    public void MigrateMtrlDuringExtraction(ArchiveUtility.ReaderShim reader, string directory)
     {
         if (!config.MigrateImportedMaterialsToLegacy || true) // TODO change when this is working
         {
-            reader.WriteEntryToDirectory(directory, options);
+            reader.WriteEntryToDirectory(directory);
             return;
         }
 
@@ -299,7 +300,7 @@ public class MigrationManager(Configuration config) : IService
         }
     }
 
-    public void FixMipMaps(IReader reader, string directory, ExtractionOptions options)
+    public void FixMipMaps(ArchiveUtility.ReaderShim reader, string directory)
     {
         var       path = Path.Combine(directory, reader.Entry.Key!);
         using var s    = new MemoryStream();

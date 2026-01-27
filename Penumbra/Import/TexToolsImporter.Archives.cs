@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
+using Penumbra.Util;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -55,16 +56,14 @@ public partial class TexToolsImporter
 
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
-        var reader = archive.ExtractAllEntries();
-
-        while (reader.MoveToNextEntry())
+        ArchiveUtility.ForEachEntry(archive, reader =>
         {
             _token.ThrowIfCancellationRequested();
 
             if (reader.Entry.IsDirectory)
             {
                 --_currentNumFiles;
-                continue;
+                return;
             }
 
             Penumbra.Log.Information($"        -> Extracting {reader.Entry.Key}");
@@ -92,7 +91,7 @@ public partial class TexToolsImporter
             }
 
             ++_currentFileIdx;
-        }
+        });
 
         _token.ThrowIfCancellationRequested();
         var oldName = _currentModDirectory.FullName;
@@ -136,21 +135,21 @@ public partial class TexToolsImporter
     }
 
 
-    private void HandleFileMigrationsAndWrite(IReader reader)
+    private void HandleFileMigrationsAndWrite(ArchiveUtility.ReaderShim reader)
     {
         switch (Path.GetExtension(reader.Entry.Key))
         {
             case ".mdl":
-                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName, ExtractionOptions);
+                _migrationManager.MigrateMdlDuringExtraction(reader, _currentModDirectory!.FullName);
                 break;
             case ".mtrl":
-                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName, ExtractionOptions);
+                _migrationManager.MigrateMtrlDuringExtraction(reader, _currentModDirectory!.FullName);
                 break;
             case ".tex":
-                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName, ExtractionOptions);
+                _migrationManager.FixMipMaps(reader, _currentModDirectory!.FullName);
                 break;
             default:
-                reader.WriteEntryToDirectory(_currentModDirectory!.FullName, ExtractionOptions);
+                reader.WriteEntryToDirectory(_currentModDirectory!.FullName);
                 break;
         }
     }
