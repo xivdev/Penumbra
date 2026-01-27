@@ -19,6 +19,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
     private static readonly Vector2          OneHalf = Vector2.One / 2;
 
     private IActiveNotification? _notification;
+    private string               _notificationTitle      = string.Empty;
     private string               _notificationMessage    = string.Empty;
     private float                _notificationProgress   = 1.0f;
     private bool                 _notificationEnded      = true;
@@ -74,11 +75,13 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         if (!_modImportManager.IsImporting(out var import))
             return;
 
-        (_notificationMessage, _notificationProgress, _notificationEnded, _notificationSuccessful) = import.ComputeNotificationData();
+        (_notificationTitle, _notificationMessage, _notificationProgress, _notificationEnded, _notificationSuccessful) =
+            import.ComputeNotificationData();
 
-        _notification?.Title           = NotificationTitle;
+        _notification?.Title           = _notificationTitle;
         _notification?.Type            = NotificationType;
         _notification?.Content         = _notificationMessage;
+        _notification?.MinimizedText   = NotificationMinimizedText;
         _notification?.Progress        = _notificationProgress;
         _notification?.UserDismissable = _notificationEnded;
 
@@ -137,13 +140,8 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
             (true, false) => NotificationType.Error,
         };
 
-    private string NotificationTitle
-        => (_notificationEnded, _notificationSuccessful) switch
-        {
-            (false, _)    => "Importing mods",
-            (true, true)  => "Successfully imported mods",
-            (true, false) => "Failed to import some mods",
-        };
+    private string NotificationMinimizedText
+        => _notificationEnded ? _notificationMessage : _notificationTitle;
 
     NotificationType IMessage.NotificationType
         => NotificationType;
@@ -155,7 +153,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         => TimeSpan.MaxValue;
 
     string IMessage.NotificationTitle
-        => NotificationTitle;
+        => _notificationTitle;
 
     string IMessage.LogMessage
         => string.Empty;
@@ -201,6 +199,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         var previousNotification = _notification;
         _notification = notification;
         previousNotification?.DismissNow();
+        notification.MinimizedText   =  NotificationMinimizedText;
         notification.Progress        =  _notificationProgress;
         notification.UserDismissable =  _notificationEnded;
         notification.Dismiss         += OnNotificationDismissed;
