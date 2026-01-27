@@ -350,10 +350,11 @@ public sealed class DebugTab : Window, ITab<TabType>
                 if (table)
                 {
                     var importing = _modImporter.IsImporting(out var importer);
-                    table.DrawDataPair("Is Importing"u8,            importing.ToString());
-                    table.DrawDataPair("Importer State"u8,          (importer?.State ?? ImporterState.None).ToString());
-                    table.DrawDataPair("Import Window Was Drawn"u8, _importPopup.WasDrawn.ToString());
-                    table.DrawDataPair("Import Popup Was Drawn"u8,  _importPopup.PopupWasDrawn.ToString());
+                    table.DrawDataPair("Is Importing"u8,               importing.ToString());
+                    table.DrawDataPair("Importer State"u8,             (importer?.State ?? ImporterState.None).ToString());
+                    table.DrawDataPair("Import Notification Exists"u8, _importPopup.HasNotification.ToString());
+                    table.DrawDataPair("Import Window Was Drawn"u8,    _importPopup.WasDrawn.ToString());
+                    table.DrawDataPair("Import Popup Was Drawn"u8,     _importPopup.PopupWasDrawn.ToString());
                     table.DrawColumn("Import Batches"u8);
                     table.NextColumn();
                     foreach (var (index, batch) in _modImporter.ModBatches.Index())

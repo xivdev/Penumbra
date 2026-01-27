@@ -18,6 +18,24 @@ public partial class TexToolsImporter
     private string _currentOptionName = string.Empty;
     private string _currentFileName   = string.Empty;
 
+    public (string Text, float Progress, bool Ended, bool Successful) ComputeNotificationData()
+    {
+        if (_modPackCount is 0)
+            return ("Nothing to extract.", 1.0f, true, true);
+
+        if (_modPackCount == _currentModPackIdx)
+        {
+            var success = ExtractedMods.Count(t => t.Error == null);
+
+            return ($"Successfully extracted {success} / {ExtractedMods.Count} files.", 1.0f, true, success == ExtractedMods.Count);
+        }
+
+        if (State is ImporterState.DeduplicatingFiles)
+            return ($"Deduplicating {_currentModName}...", 1.0f, false, true);
+
+        return ($"Extracting {_currentModName}...", _currentNumFiles > 0 ? _currentFileIdx / (float)_currentNumFiles : 0.0f, false, true);
+    }
+
     public bool DrawProgressInfo(Vector2 size)
     {
         if (_modPackCount is 0)
