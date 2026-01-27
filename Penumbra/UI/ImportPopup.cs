@@ -1,22 +1,37 @@
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.ImGuiNotification.EventArgs;
 using ImSharp;
 using Luna;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
+using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra.UI;
 
 /// <summary> Draw the progress information for import. </summary>
-public sealed class ImportPopup : Window
+public sealed class ImportPopup : Window, INotificationAwareMessage
 {
     public const string WindowLabel = "Penumbra Import Status";
 
     private readonly        ModImportManager _modImportManager;
+    private readonly        MessageService   _messageService;
     private static readonly Vector2          OneHalf = Vector2.One / 2;
+
+    private IActiveNotification? _notification;
+    private string               _notificationMessage    = string.Empty;
+    private float                _notificationProgress   = 1.0f;
+    private bool                 _notificationEnded      = true;
+    private bool                 _notificationSuccessful = true;
+    private bool                 _openPopup              = false;
+
+    public bool HasNotification
+        => _notification is not null;
 
     public bool WasDrawn      { get; private set; }
     public bool PopupWasDrawn { get; private set; }
 
-    public ImportPopup(ModImportManager modImportManager)
+    public ImportPopup(ModImportManager modImportManager, MessageService messageService)
         : base(WindowLabel,
             WindowFlags.NoCollapse
           | WindowFlags.NoDecoration
@@ -30,6 +45,7 @@ public sealed class ImportPopup : Window
           | WindowFlags.NoTitleBar, true)
     {
         _modImportManager   = modImportManager;
+        _messageService     = messageService;
         DisableWindowSounds = true;
         IsOpen              = true;
         RespectCloseHotkey  = false;
@@ -58,8 +74,26 @@ public sealed class ImportPopup : Window
         if (!_modImportManager.IsImporting(out var import))
             return;
 
-        if (!Im.Popup.IsOpen("##PenumbraImportPopup"u8))
+        (_notificationMessage, _notificationProgress, _notificationEnded, _notificationSuccessful) = import.ComputeNotificationData();
+
+        _notification?.Title           = NotificationTitle;
+        _notification?.Type            = NotificationType;
+        _notification?.Content         = _notificationMessage;
+        _notification?.Progress        = _notificationProgress;
+        _notification?.UserDismissable = _notificationEnded;
+
+        if (_openPopup)
+        {
             Im.Popup.Open("##PenumbraImportPopup"u8);
+            _openPopup = false;
+        }
+
+        if (!Im.Popup.IsOpen("##PenumbraImportPopup"u8))
+        {
+            if (_notification is null)
+                _messageService.AddMessage(this, false, true, false);
+            return;
+        }
 
         var display = Im.Io.DisplaySize;
         var height  = Math.Max(display.Y / 4, 15 * Im.Style.FrameHeightWithSpacing);
@@ -78,10 +112,109 @@ public sealed class ImportPopup : Window
                     terminate = true;
         }
 
+        if (import.State != ImporterState.Done)
+        {
+            if (Im.Button("Continue in the Background"u8,
+                    new Vector2((Im.ContentRegion.Available.X - Im.GetStyle().ItemSpacing.X) * 0.5f, 0.0f)))
+                Im.Popup.CloseCurrent();
+            Im.Line.Same();
+        }
+
         terminate |= import.State == ImporterState.Done
             ? Im.Button("Close"u8, -Vector2.UnitX)
             : import.DrawCancelButton(-Vector2.UnitX);
         if (terminate)
             _modImportManager.ClearImport();
     }
+
+    #region Luna Message implementation
+
+    private NotificationType NotificationType
+        => (_notificationEnded, _notificationSuccessful) switch
+        {
+            (false, _)    => NotificationType.Info,
+            (true, true)  => NotificationType.Success,
+            (true, false) => NotificationType.Error,
+        };
+
+    private string NotificationTitle
+        => (_notificationEnded, _notificationSuccessful) switch
+        {
+            (false, _)    => "Importing mods",
+            (true, true)  => "Successfully imported mods",
+            (true, false) => "Failed to import some mods",
+        };
+
+    NotificationType IMessage.NotificationType
+        => NotificationType;
+
+    string IMessage.NotificationMessage
+        => _notificationMessage;
+
+    TimeSpan IMessage.NotificationDuration
+        => TimeSpan.MaxValue;
+
+    string IMessage.NotificationTitle
+        => NotificationTitle;
+
+    string IMessage.LogMessage
+        => string.Empty;
+
+    SeString IMessage.ChatMessage
+        => SeString.Empty;
+
+    StringU8 IMessage.StoredMessage
+        => StringU8.Empty;
+
+    StringU8 IMessage.StoredTooltip
+        => StringU8.Empty;
+
+    void IMessage.OnNotificationActions(INotificationDrawArgs args)
+    {
+        if (_notificationEnded)
+        {
+            if (Im.Button("Open Report"u8, -Vector2.UnitX))
+            {
+                _openPopup = true;
+                _notification?.DismissNow();
+            }
+        }
+        else
+        {
+            if (Im.Button("Show Details"u8, new Vector2((Im.ContentRegion.Available.X - Im.GetStyle().ItemSpacing.X) * 0.5f, 0.0f)))
+            {
+                _openPopup = true;
+                _notification?.DismissNow();
+            }
+
+            Im.Line.Same();
+            if (_modImportManager.IsImporting(out var import) && import.DrawCancelButton(-Vector2.UnitX))
+            {
+                _modImportManager.ClearImport();
+                _notification?.DismissNow();
+            }
+        }
+    }
+
+    void INotificationAwareMessage.OnNotificationCreated(IActiveNotification notification)
+    {
+        var previousNotification = _notification;
+        _notification = notification;
+        previousNotification?.DismissNow();
+        notification.Progress        =  _notificationProgress;
+        notification.UserDismissable =  _notificationEnded;
+        notification.Dismiss         += OnNotificationDismissed;
+    }
+
+    private void OnNotificationDismissed(INotificationDismissArgs args)
+    {
+        if (args.Notification != _notification)
+            return;
+
+        _notification = null;
+        if (!_openPopup && !PopupWasDrawn)
+            _modImportManager.ClearImport();
+    }
+
+    #endregion
 }

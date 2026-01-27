@@ -1,6 +1,7 @@
 using Dalamud.Interface.ImGuiNotification;
 using Luna;
 using Penumbra.Import;
+using Penumbra.Import.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 
@@ -31,7 +32,7 @@ public class ModImportManager(
 
     public void TryUnpacking()
     {
-        if (Importing || !_modsToUnpack.TryDequeue(out var newMods))
+        if (Importing && _import!.State is not ImporterState.Done || !_modsToUnpack.TryDequeue(out var newMods))
             return;
 
         var files = newMods.Where(s =>
@@ -49,7 +50,7 @@ public class ModImportManager(
             return;
 
         _import = new TexToolsImporter(files.Length, files, AddNewMod, config, duplicates, modNormalizer, modManager, compactor,
-            migrationManager);
+            migrationManager, _import);
     }
 
     public bool Importing
