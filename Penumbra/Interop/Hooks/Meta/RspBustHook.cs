@@ -68,6 +68,9 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         return ret;
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Set;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

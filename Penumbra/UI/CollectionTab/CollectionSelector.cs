@@ -9,7 +9,13 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.CollectionTab;
 
-public sealed class CollectionSelector(ActiveCollections active, TutorialService tutorial, IncognitoService incognito) : IPanel
+public sealed class CollectionSelector(
+    CollectionFilter filter,
+    CollectionStorage collections,
+    CommunicatorService communicator,
+    ActiveCollections active,
+    TutorialService tutorial,
+    IncognitoService incognito) : IPanel
 {
     public ReadOnlySpan<byte> Id
         => "##cs"u8;
@@ -38,7 +44,7 @@ public sealed class CollectionSelector(ActiveCollections active, TutorialService
     public void Draw()
     {
         Im.Cursor.Y += Im.Style.FramePadding.Y;
-        var       cache = CacheManager.Instance.GetOrCreateCache<Cache>(Im.Id.Current);
+        var       cache = CacheManager.Instance.GetOrCreateCache(Im.Id.Current, () => new Cache(filter, collections, communicator));
         using var color = ImGuiColor.Header.Push(ColorId.SelectedCollection.Value());
         foreach (var item in cache)
         {

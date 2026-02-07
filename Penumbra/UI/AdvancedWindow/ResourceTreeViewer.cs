@@ -181,10 +181,11 @@ public class ResourceTreeViewer(
 
         using (Im.Id.Push("TreeCategoryFilter"u8))
         {
-            foreach (var category in Enum.GetValues<TreeCategory>())
+            foreach (var category in TreeCategory.Values)
             {
-                using var c = ImGuiColor.CheckMark.Push(CategoryColor(category).Value());
-                Im.Checkbox($"##{category}", ref _categoryFilter, category);
+                using var id = Im.Id.Push((int)category);
+                using var c  = ImGuiColor.CheckMark.Push(CategoryColor(category).Value());
+                Im.Checkbox(StringU8.Empty, ref _categoryFilter, category);
                 Im.Tooltip.OnHover(CategoryFilterDescription(category));
                 Im.Line.Same(0.0f, checkSpacing);
             }

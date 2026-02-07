@@ -20,7 +20,7 @@ public sealed class RaceCodeTab : IKnowledgeTab
                 return;
 
             DrawHeaders(table);
-            foreach (var gr in Enum.GetValues<GenderRace>())
+            foreach (var gr in GenderRace.Values)
             {
                 var (gender, race) = gr.Split();
                 if (gender is not Gender.Male and not Gender.Female || race is ModelRace.Unknown)

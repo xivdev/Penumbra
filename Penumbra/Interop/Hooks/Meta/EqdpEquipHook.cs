@@ -31,6 +31,9 @@ public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>, IDisposabl
             $"[GetEqdpEquipEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Set;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

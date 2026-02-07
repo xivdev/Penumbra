@@ -90,7 +90,7 @@ public sealed class GlobalEqpMetaDrawer(ModMetaEditor editor, MetaFileManager me
             return false;
 
         var ret = false;
-        foreach (var type in Enum.GetValues<GlobalEqpType>())
+        foreach (var type in GlobalEqpType.Values)
         {
             if (Im.Selectable(type.ToNameU8(), type == identifier.Type))
             {

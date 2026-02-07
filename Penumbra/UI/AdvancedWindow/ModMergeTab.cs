@@ -258,6 +258,6 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
         Im.Separator();
         Im.Dummy(Vector2.One);
         using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
-        Im.TextWrapped(modMerger.Error.ToString());
+        Im.TextWrapped($"{modMerger.Error}");
     }
 }

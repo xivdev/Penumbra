@@ -84,7 +84,7 @@ public sealed class CollectionPanel(
 
         Button(CollectionType.NonPlayerChild);
         Button(CollectionType.NonPlayerElderly);
-        foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+        foreach (var race in SubRace.Values.Skip(1))
         {
             Button(CollectionTypeExtensions.FromParts(race, Gender.Male,   false));
             Button(CollectionTypeExtensions.FromParts(race, Gender.Female, false));
@@ -691,9 +691,9 @@ public sealed class CollectionPanel(
     /// <summary> Create names and border colors for special assignments. </summary>
     private static IReadOnlyDictionary<CollectionType, (StringU8 Name, Vector4 Border)> CreateButtons()
     {
-        var ret = Enum.GetValues<CollectionType>().ToDictionary(t => t, t => (new StringU8(t.ToName()), Vector4.Zero));
+        var ret = CollectionType.Values.ToDictionary(t => t, t => (new StringU8(t.ToName()), Vector4.Zero));
 
-        foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+        foreach (var race in SubRace.Values.Skip(1))
         {
             Rgba32 color = race switch
             {
@@ -749,7 +749,7 @@ public sealed class CollectionPanel(
         Add(CollectionType.MaleNonPlayerCharacter,   true,  true);
         Add(CollectionType.FemaleNonPlayerCharacter, true,  true);
         var pre = true;
-        foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+        foreach (var race in SubRace.Values.Skip(1))
         {
             Add(CollectionTypeExtensions.FromParts(race, Gender.Male,   false), pre, !pre);
             Add(CollectionTypeExtensions.FromParts(race, Gender.Female, false), pre, !pre);

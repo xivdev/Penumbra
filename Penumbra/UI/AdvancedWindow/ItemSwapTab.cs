@@ -498,7 +498,7 @@ public class ItemSwapTab : IDisposable, ITab
         using (var combo = Im.Combo.Begin("##fromType"u8, _slotFrom.ToNameU8()))
         {
             if (combo)
-                foreach (var slot in Enum.GetValues<BetweenSlotTypes>())
+                foreach (var slot in BetweenSlotTypes.Values)
                 {
                     if (!Im.Selectable(slot.ToNameU8(), slot == _slotFrom) || slot == _slotFrom)
                         continue;
@@ -778,5 +778,5 @@ public class ItemSwapTab : IDisposable, ITab
         };
 
     private static readonly IReadOnlyList<BetweenSlotTypes> AvailableToTypes =
-        Enum.GetValues<BetweenSlotTypes>().Where(s => s is not BetweenSlotTypes.Hat).ToArray();
+        BetweenSlotTypes.Values.Where(s => s is not BetweenSlotTypes.Hat).ToArray();
 }

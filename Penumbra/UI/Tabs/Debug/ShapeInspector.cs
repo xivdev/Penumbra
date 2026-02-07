@@ -73,7 +73,7 @@ public class ShapeInspector(ObjectManager objects, CollectionResolver resolver) 
         table.SetupColumn("State"u8,     TableColumnFlags.WidthStretch);
         table.HeaderRow();
 
-        foreach (var condition in Enum.GetValues<ShapeConnectorCondition>())
+        foreach (var condition in ShapeConnectorCondition.Values)
         {
             foreach (var (shape, set) in data.ModCollection.MetaCache!.Shp.State(condition).OrderBy(shp => shp.Key))
             {

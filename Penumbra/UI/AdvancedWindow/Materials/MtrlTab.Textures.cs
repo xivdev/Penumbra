@@ -178,7 +178,7 @@ public partial class MtrlTab
             return false;
 
         var ret = false;
-        foreach (var mode in Enum.GetValues<TextureAddressMode>())
+        foreach (var mode in TextureAddressMode.Values)
         {
             if (Im.Selectable(mode.ToNameU8(), mode == value))
             {

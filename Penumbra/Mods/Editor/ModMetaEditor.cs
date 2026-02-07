@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using ImSharp;
 using Luna;
 using Penumbra.Collections.Cache;
 using Penumbra.Meta;
@@ -34,7 +35,7 @@ public class ModMetaEditor(
     }
 
     public readonly FrozenDictionary<MetaManipulationType, OtherOptionData> OtherData =
-        Enum.GetValues<MetaManipulationType>().ToFrozenDictionary(t => t, _ => new OtherOptionData());
+        MetaManipulationType.Values.ToFrozenDictionary(t => t, _ => new OtherOptionData());
 
     public bool Changes { get; set; }
 
@@ -46,7 +47,7 @@ public class ModMetaEditor(
 
     public void Load(Mod mod, IModDataContainer currentOption)
     {
-        foreach (var type in Enum.GetValues<MetaManipulationType>())
+        foreach (var type in MetaManipulationType.Values)
             OtherData[type].Clear();
 
         foreach (var option in mod.AllDataContainers)

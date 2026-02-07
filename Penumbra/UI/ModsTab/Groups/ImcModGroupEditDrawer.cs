@@ -24,7 +24,7 @@ public readonly struct ImcModGroupEditDrawer(ModGroupEditDrawer editor, ImcModGr
           - Im.Font.CalculateSize("All Variants"u8).X
           - Im.Font.CalculateSize("Only Attributes"u8).X
           - 2 * Im.Style.FrameHeight;
-        ImEx.TextFramed(identifier.ToString(), new Vector2(width, 0), Rgba32.Transparent);
+        ImEx.TextFramed($"{identifier}", new Vector2(width, 0), Rgba32.Transparent);
 
         Im.Line.SameInner();
         var allVariants = group.AllVariants;

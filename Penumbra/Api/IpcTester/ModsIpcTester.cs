@@ -128,7 +128,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
             if (Im.SmallButton("Delete"u8))
                 _lastDeleteEc = new DeleteMod(_pi).Invoke(_modDirectory, _modName);
             Im.Line.Same();
-            Im.Text(_lastDeleteEc.ToString());
+            Im.Text($"{_lastDeleteEc}");
         }
 
         using (IpcTester.DrawIntro(GetChangedItems.LabelU8, "Get Changed Items"u8))

@@ -48,7 +48,6 @@ public sealed class SettingsTab : ITab<TabType>
     private readonly CrashHandlerService         _crashService;
     private readonly MigrationSectionDrawer      _migrationDrawer;
     private readonly CollectionAutoSelector      _autoSelector;
-    private readonly CleanupService              _cleanupService;
     private readonly AttributeHook               _attributeHook;
     private readonly PcpService                  _pcpService;
     private readonly IntegrationSettingsRegistry _integrationSettings;
@@ -63,9 +62,8 @@ public sealed class SettingsTab : ITab<TabType>
         FileWatcher fileWatcher, HttpApi httpApi,
         DalamudSubstitutionProvider dalamudSubstitutionProvider, FileCompactor compactor, DalamudConfigService dalamudConfig,
         IDataManager gameData, PredefinedTagManager predefinedTagConfig, CrashHandlerService crashService,
-        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, CleanupService cleanupService,
-        AttributeHook attributeHook, PcpService pcpService, IntegrationSettingsRegistry integrationSettings,
-        ModFileSystemDrawer modFileSystemDrawer)
+        MigrationSectionDrawer migrationDrawer, CollectionAutoSelector autoSelector, AttributeHook attributeHook, PcpService pcpService,
+        IntegrationSettingsRegistry integrationSettings, ModFileSystemDrawer modFileSystemDrawer)
     {
         _pluginInterface             = pluginInterface;
         _config                      = config;
@@ -89,7 +87,6 @@ public sealed class SettingsTab : ITab<TabType>
         _crashService         = crashService;
         _migrationDrawer      = migrationDrawer;
         _autoSelector         = autoSelector;
-        _cleanupService       = cleanupService;
         _attributeHook        = attributeHook;
         _pcpService           = pcpService;
         _integrationSettings  = integrationSettings;
@@ -423,7 +420,7 @@ public sealed class SettingsTab : ITab<TabType>
             _config.RememberCollectionFilters, v => _config.RememberCollectionFilters = v);
         Checkbox("Remember Changed Items Filters Across Sessions"u8,
             "Whether filters in the Changed Items tab should remember their input and start with their respective lists filtered identically to the last session."u8,
-            _config.RememberChangedItemFilters, v => _config.RememberChangedItemFilters= v);
+            _config.RememberChangedItemFilters, v => _config.RememberChangedItemFilters = v);
         Checkbox("Remember Effective Changes Filters Across Sessions"u8,
             "Whether filters in the Effective Changes tab should remember their input and start with their respective lists filtered identically to the last session."u8,
             _config.RememberEffectiveChangesFilters, v => _config.RememberEffectiveChangesFilters = v);
@@ -433,7 +430,6 @@ public sealed class SettingsTab : ITab<TabType>
         Checkbox("Remember Resource Manager Filters Across Sessions"u8,
             "Whether filters in the Resource Manager tab should remember their input and start with their respective lists filtered identically to the last session."u8,
             _config.RememberResourceManagerFilters, v => _config.RememberResourceManagerFilters = v);
-
     }
 
     /// <summary> Draw all settings that do not fit into other categories. </summary>
@@ -828,7 +824,7 @@ public sealed class SettingsTab : ITab<TabType>
         if (!Im.Tree.Header("Colors"u8))
             return;
 
-        foreach (var color in Enum.GetValues<ColorId>())
+        foreach (var color in ColorId.Values)
         {
             var (defaultColor, name, description) = color.Data();
             var currentColor = _config.Colors.GetValueOrDefault(color, defaultColor);

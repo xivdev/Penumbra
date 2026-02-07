@@ -226,7 +226,7 @@ public partial class CombinedTexture
 
     private sealed class CombineOperationCombo() : SimpleFilterCombo<CombineOp>(SimpleFilterType.None)
     {
-        private static readonly CombineOp[] UserValues = Enum.GetValues<CombineOp>().Where(c => (int)c >= 0).ToArray();
+        private static readonly CombineOp[] UserValues = CombineOp.Values.Where(c => (int)c >= 0).ToArray();
 
         public override StringU8 DisplayString(in CombineOp value)
             => new(value.ToLabelU8());
@@ -243,7 +243,7 @@ public partial class CombinedTexture
 
     private sealed class ResizeOperationCombo() : SimpleFilterCombo<ResizeOp>(SimpleFilterType.None)
     {
-        private static readonly ResizeOp[] UserValues = Enum.GetValues<ResizeOp>().Where(c => (int)c >= 0).ToArray();
+        private static readonly ResizeOp[] UserValues = ResizeOp.Values.Where(c => (int)c >= 0).ToArray();
 
         public override StringU8 DisplayString(in ResizeOp value)
             => new(value.ToLabelU8());
@@ -282,11 +282,11 @@ public partial class CombinedTexture
         using (Im.Disabled(_combineOp != CombineOp.CopyChannels))
         {
             Im.Text("Copy"u8);
-            foreach (var channel in Enum.GetValues<Channels>())
+            foreach (var channel in Channels.Values)
             {
                 Im.Line.Same();
-                var copy = (_copyChannels & channel) != 0;
-                if (Im.Checkbox(channel.ToString(), ref copy))
+                var copy = (_copyChannels & channel) is not 0;
+                if (Im.Checkbox($"{channel}", ref copy))
                 {
                     _copyChannels = copy ? _copyChannels | channel : _copyChannels & ~channel;
                     ret           = true;

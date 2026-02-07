@@ -25,7 +25,9 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
 
     private void Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel)
     {
-        var collection = playerModel.Valid ? _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true) : _collectionResolver.DefaultCollection;
+        var collection = playerModel.Valid
+            ? _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true)
+            : _collectionResolver.DefaultCollection;
         _metaState.AtchCollection.Push(collection);
         Task.Result.Original(data, slot, unk, playerModel);
         _metaState.AtchCollection.Pop();
@@ -33,6 +35,9 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
             $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Set;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

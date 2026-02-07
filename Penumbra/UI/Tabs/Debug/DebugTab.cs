@@ -403,7 +403,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                 using var table = Im.Table.Begin("##Tasks"u8, 2, TableFlags.RowBackground);
                 if (table)
                     foreach (var task in _textureManager.Tasks)
-                        table.DrawDataPair(task.Key.ToString()!, $"{task.Value.Item1.Status}");
+                        table.DrawDataPair($"{task.Key}", $"{task.Value.Item1.Status}");
             }
         }
 

@@ -58,6 +58,9 @@ public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
         return new EstIdentifier(i, 0, gr);
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Set;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

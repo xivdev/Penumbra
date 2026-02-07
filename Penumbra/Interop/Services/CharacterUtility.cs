@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
+using ImSharp;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
@@ -41,8 +42,7 @@ public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
     /// The relevant indices depend on which meta manipulations we allow for.
     /// The defines are set in the project configuration.
     /// </summary>
-    public static readonly MetaIndex[]
-        RelevantIndices = Enum.GetValues<MetaIndex>();
+    public static readonly MetaIndex[] RelevantIndices = MetaIndex.Values.ToArray();
 
     public static readonly InternalIndex[] ReverseIndices
         = Enumerable.Range(0, CharacterUtilityData.TotalNumResources)

@@ -241,6 +241,6 @@ public class StainService : IService
     public sealed class StainCombo(DictStain stainData) : FilterComboColors
     {
         protected override IEnumerable<Item> GetItems()
-            => stainData.Value.Select(t => new Item(new StringPair(t.Value.Name), t.Value.Dye, t.Key, t.Value.Gloss)).Prepend(None);
+            => stainData.Value.Select(t => new Item(new StringPair(StringU8.CreateUnchecked(t.Value.Name)), t.Value.Dye, t.Key, t.Value.Gloss)).Prepend(None);
     }
 }

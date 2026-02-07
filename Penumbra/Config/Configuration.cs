@@ -1,5 +1,6 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.ImGuiNotification;
+using ImSharp;
 using Luna;
 using Luna.Generators;
 using Newtonsoft.Json;
@@ -143,7 +144,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool HdrRenderTargets { get; set; } = true;
 
     public Dictionary<ColorId, uint> Colors { get; set; }
-        = Enum.GetValues<ColorId>().ToDictionary(c => c, c => c.Data().DefaultColor);
+        = ColorId.Values.ToDictionary(c => c, c => c.Data().DefaultColor);
 
     /// <summary>
     /// Load the current configuration.

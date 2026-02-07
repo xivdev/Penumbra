@@ -111,7 +111,7 @@ public static class CollectionTypeExtensions
     public static bool CanBeRemoved(this CollectionType collectionType)
         => collectionType.IsSpecial() || collectionType is CollectionType.Individual;
 
-    public static readonly (CollectionType, StringU8, StringU8)[] Special = Enum.GetValues<CollectionType>()
+    public static readonly (CollectionType, StringU8, StringU8)[] Special = CollectionType.Values
         .Where(IsSpecial)
         .Select(s => (s, new StringU8(s.ToName()), new StringU8(s.ToDescription())))
         .ToArray();
@@ -331,7 +331,7 @@ public static class CollectionTypeExtensions
             return true;
         }
 
-        foreach (var t in Enum.GetValues<CollectionType>())
+        foreach (var t in CollectionType.Values)
         {
             if (t is CollectionType.Inactive or CollectionType.Temporary)
                 continue;

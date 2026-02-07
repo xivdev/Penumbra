@@ -117,7 +117,7 @@ public class TutorialService(EphemeralConfig config) : Luna.IUiService
             "You can now toggle mods as favorites using this button. You can filter for favorited mods in the mod selector. Favorites are stored locally, not within the mod, but independently of collections."u8)
         .Register("Tags"u8,
             "Mods can now have two types of tags:\n\n- Local Tags are those that you can set for yourself. They are stored locally and are not saved in any way in the mod directory itself.\n- Mod Tags are stored in the mod metadata, are set by the mod creator and are exported together with the mod, they can only be edited in the Edit Mod tab.\n\nIf a mod has a tag in its Mod Tags, this overwrites any identical Local Tags.\n\nYou can filter for tags in the mod selector via 't:text'."u8)
-        .EnsureSize(Enum.GetValues<BasicTutorialSteps>().Length);
+        .EnsureSize(BasicTutorialSteps.Values.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void OpenTutorial(BasicTutorialSteps step)

@@ -72,6 +72,9 @@ public class RspTailHook : FastHook<RspTailHook.Delegate>, IDisposable
         return scale;
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Set;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

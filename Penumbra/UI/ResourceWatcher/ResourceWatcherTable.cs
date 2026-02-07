@@ -176,7 +176,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             => item.TypeName;
 
         protected override IReadOnlyList<(RecordType Value, StringU8 Name)> EnumData
-            => Enum.GetValues<RecordType>().Select(t => (t, new StringU8(t.ToNameU8()))).ToArray();
+            => RecordType.Values.Select(t => (t, new StringU8(t.ToNameU8()))).ToArray();
 
         protected override RecordType GetValue(in CachedRecord item, int globalIndex)
             => item.Record.RecordType;
@@ -304,7 +304,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             => item.ResourceCategory;
 
         protected override IReadOnlyList<(ResourceCategoryFlag Value, StringU8 Name)> EnumData { get; } =
-            Enum.GetValues<ResourceCategoryFlag>().Select(r => (r, new StringU8($"{r}"))).ToArray();
+            ResourceCategoryFlag.Values.Select(r => (r, new StringU8($"{r}"))).ToArray();
 
         protected override ResourceCategoryFlag GetValue(in CachedRecord item, int globalIndex)
             => item.Record.Category;
@@ -323,7 +323,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
         }
 
         protected override IReadOnlyList<(ResourceTypeFlag Value, StringU8 Name)> EnumData { get; } =
-            Enum.GetValues<ResourceTypeFlag>().Select(r => (r, new StringU8(r.ToString().ToLowerInvariant()))).ToArray();
+            ResourceTypeFlag.Values.Select(r => (r, new StringU8(r.ToString().ToLowerInvariant()))).ToArray();
 
         protected override StringU8 DisplayString(in CachedRecord item, int globalIndex)
             => item.ResourceType;

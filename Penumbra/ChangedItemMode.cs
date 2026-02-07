@@ -36,7 +36,7 @@ public static partial class ChangedItemModeExtensions
             => new(value.Tooltip());
 
         public override IEnumerable<ChangedItemMode> GetBaseItems()
-            => Enum.GetValues<ChangedItemMode>();
+            => ChangedItemMode.Values;
     }
 
     public static bool DrawCombo(ReadOnlySpan<byte> label, ChangedItemMode value, float width, Action<ChangedItemMode> setter)

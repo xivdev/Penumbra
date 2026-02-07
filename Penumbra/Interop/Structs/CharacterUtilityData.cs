@@ -1,3 +1,4 @@
+using ImSharp;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.Interop.Structs;
@@ -18,7 +19,7 @@ public unsafe struct CharacterUtilityData
     public const int IndexSphereDArrayTex        = 96;
 
     public static readonly MetaIndex[] EqdpIndices = Enum.GetNames<MetaIndex>()
-        .Zip(Enum.GetValues<MetaIndex>())
+        .Zip(MetaIndex.Values)
         .Where(n => n.First.StartsWith("Eqdp"))
         .Select(n => n.Second).ToArray();
 

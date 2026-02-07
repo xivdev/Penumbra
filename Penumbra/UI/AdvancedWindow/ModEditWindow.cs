@@ -230,7 +230,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         DrawMaterialReassignmentTab();
     }
 
-    private static readonly FrozenDictionary<GenderRace, StringU8> RaceCodeNames = Enum.GetValues<GenderRace>().ToFrozenDictionary(v => v, v =>
+    private static readonly FrozenDictionary<GenderRace, StringU8> RaceCodeNames = GenderRace.Values.ToFrozenDictionary(v => v, v =>
     {
         if (v is GenderRace.Unknown)
             return new StringU8("All Races and Genders");

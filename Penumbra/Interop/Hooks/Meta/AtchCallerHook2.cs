@@ -33,6 +33,9 @@ public unsafe class AtchCallerHook2 : FastHook<AtchCallerHook2.Delegate>, IDispo
             $"[AtchCaller2] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, {unk2}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Set;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

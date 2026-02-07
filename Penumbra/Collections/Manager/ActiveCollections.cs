@@ -1,4 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
+using ImSharp;
 using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,7 +17,7 @@ public class ActiveCollectionData : IService
     public ModCollection Default   { get; internal set; } = ModCollection.Empty;
     public ModCollection Interface { get; internal set; } = ModCollection.Empty;
 
-    public readonly ModCollection?[] SpecialCollections = new ModCollection?[Enum.GetValues<Api.Enums.ApiCollectionType>().Length - 3];
+    public readonly ModCollection?[] SpecialCollections = new ModCollection?[Api.Enums.ApiCollectionType.Values.Count - 3];
 }
 
 public class ActiveCollections : ISavable, IDisposable, IService
@@ -528,7 +529,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     return string.Empty;
 
                 var racial = false;
-                foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+                foreach (var race in SubRace.Values.Skip(1))
                 {
                     var m = ByType(CollectionTypeExtensions.FromParts(race, Gender.Male, false));
                     if (m != null && m != yourself)
