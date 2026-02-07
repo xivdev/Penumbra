@@ -72,12 +72,16 @@ public class ModPanelEditTab(
         if (sharedTagsEnabled)
             predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(_mod.LocalTags, _mod.ModTags, false, _mod);
 
-
         UiHelpers.DefaultLineSpace();
-        addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
-        UiHelpers.DefaultLineSpace();
+        if (Im.Tree.Header("Group Editing"u8))
+        {
+            UiHelpers.DefaultLineSpace();
+            addGroupDrawer.Draw(_mod, UiHelpers.InputTextWidth.X);
+            UiHelpers.DefaultLineSpace();
 
-        groupEditDrawer.Draw(_mod);
+            groupEditDrawer.Draw(_mod);
+        }
+
         descriptionPopup.Draw();
     }
 

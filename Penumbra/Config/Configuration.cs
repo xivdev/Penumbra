@@ -73,6 +73,10 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool        EnableAutomaticModImport             { get; set; } = false;
     public bool        PreventExportLoopback                { get; set; } = true;
     public bool        EnableCustomShapes                   { get; set; } = true;
+
+    [ConfigProperty]
+    private bool _includeShpkInSwap = false;
+
     public PcpSettings PcpSettings = new();
 
     [ConfigProperty]

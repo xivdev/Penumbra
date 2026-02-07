@@ -26,7 +26,7 @@ public sealed class ModGroupDrawer(Configuration config, CollectionManager colle
         _blockGroupCache.Clear();
         _settings     = settings;
         _tempSettings = tempSettings;
-        _temporary    = tempSettings != null;
+        _temporary    = tempSettings is not null;
         _locked       = (tempSettings?.Lock ?? 0) > 0;
         var useDummy = true;
         foreach (var (idx, group) in mod.Groups.Index())

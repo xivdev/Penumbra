@@ -2,11 +2,8 @@ using Dalamud.Interface.ImGuiNotification;
 using Lumina.Data.Files;
 using Lumina.Extensions;
 using Luna;
-using Penumbra.GameData.Files.Utility;
 using Penumbra.Import.Textures;
 using Penumbra.Util;
-using SharpCompress.Common;
-using SharpCompress.Readers;
 using MdlFile = Penumbra.GameData.Files.MdlFile;
 using MtrlFile = Penumbra.GameData.Files.MtrlFile;
 

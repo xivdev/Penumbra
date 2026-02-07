@@ -79,7 +79,10 @@ public class PenumbraChangelog : IUiService
             .RegisterEntry(
                 "Dragging mods into the game to install them should no longer need to drop them into the mod selector, or having the Penumbra window open. Dragging into the game window should be enough."u8,
                 1)
+            .RegisterEntry("The mod import popup has been relegated to a Dalamud notification. The popup itself only opens when further details are requested on the notification (Thanks Ny!)."u8)
+            .RegisterEntry("The notification should also gather multiple import activities without creating multiple popups."u8, 1)
             .RegisterEntry("Many UI widgets should be more precise and consistent."u8, 1)
+            .RegisterHighlight("Made it possible to have multiple Advanced Editing windows open at once (Thanks Ny!)."u8)
             .RegisterHighlight("A new 'Management' tab was added."u8)
             .RegisterEntry("The management tab is supposed to help users get rid of unused mods."u8, 1)
             .RegisterEntry(
@@ -89,13 +92,13 @@ public class PenumbraChangelog : IUiService
                 "New IPC was added so that other plugins can register to add notes when inactive mods are queried or mark them as active."u8, 1)
             .RegisterEntry("The Duplicate Mods panel checks for multiple mods with the same name."u8,                                         1)
             .RegisterEntry("Cleanup functions have been moved from Advanced Settings to the General Cleanup panel."u8,                        1)
+            .RegisterEntry("The attachment points BLD and BL2 have been identified as Twinblades."u8)
             .RegisterHighlight("Add support for other block compression types in the texture compression IPC (1.5.1.12)."u8)
             .RegisterHighlight(
                 "Added IPC to provide Penumbra-related settings of other plugins in the Penumbra Settings tab (Thanks Ny!) (1.5.1.9)."u8)
             .RegisterEntry("Fixed multiple issues in the advanced editing tab for materials (Thanks Ny!) (1.5.1.9)."u8)
             .RegisterEntry("Added IPC to redraw members of a specific collection (Thanks Karou!) (1.5.1.8)."u8)
             .RegisterEntry("Fixed an issue when other plugins set a cutscene index through API (1.5.1.7)."u8)
-            .RegisterHighlight("Made it possible to have multiple Advanced Editing windows open at once (Thanks Ny!) (1.5.1.7)."u8)
             .RegisterHighlight(
                 "Added a file watcher that automatically tries to install mods when saved into a configured directory (Thanks Stoia!) (1.5.1.7)."u8)
             .RegisterEntry(

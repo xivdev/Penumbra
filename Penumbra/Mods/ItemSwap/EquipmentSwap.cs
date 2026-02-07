@@ -460,8 +460,11 @@ public static class EquipmentSwap
         }
 
         var mtrl = FileSwap.CreateSwap(manager, ResourceType.Mtrl, redirections, pathFrom, pathTo);
-        var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
-        mtrl.ChildSwaps.Add(shpk);
+        if (manager.Config.IncludeShpkInSwap)
+        {
+            var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
+            mtrl.ChildSwaps.Add(shpk);
+        }
 
         foreach (ref var texture in mtrl.AsMtrl()!.Textures.AsSpan())
         {

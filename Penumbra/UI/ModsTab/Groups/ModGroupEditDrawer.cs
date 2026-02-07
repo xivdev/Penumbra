@@ -44,9 +44,9 @@ public sealed class ModGroupEditDrawer(
     private float   _spacing;
     private bool    _deleteEnabled;
 
-    private string?      _currentGroupName;
-    private IModGroup?   _currentGroupEdited;
-    private bool         _isGroupNameValid = true;
+    private string?    _currentGroupName;
+    private IModGroup? _currentGroupEdited;
+    private bool       _isGroupNameValid = true;
 
     private IModGroup?  _dragDropGroup;
     private IModOption? _dragDropOption;

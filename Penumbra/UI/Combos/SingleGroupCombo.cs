@@ -24,9 +24,10 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.Test>, I
 
     public void Draw(ModGroupDrawer parent, SingleModGroup group, int groupIndex, Setting currentOption)
     {
+        using var id = Im.Id.Push(groupIndex);
         _currentOption = currentOption;
         _group.SetTarget(group);
-        if (base.Draw(group.Name, group.OptionData[currentOption.AsIndex].Name, StringU8.Empty, UiHelpers.InputTextWidth.X * 3 / 4,
+        if (base.Draw(StringU8.Empty, group.OptionData[currentOption.AsIndex].Name, StringU8.Empty, UiHelpers.InputTextWidth.X * 3 / 4,
                 out var newOption))
             parent.SetModSetting(group, groupIndex, Setting.Single(newOption.OptionIndex));
     }
@@ -43,7 +44,11 @@ public sealed class SingleGroupCombo : FilterComboBase<SingleGroupCombo.Test>, I
     {
         var ret = Im.Selectable(item.Name, selected);
         if (item.Description.Length > 0)
+        {
+            Im.Line.SameInner();
             LunaStyle.DrawHelpMarker(item.Description, treatAsHovered: Im.Item.Hovered());
+        }
+
         return ret;
     }
 

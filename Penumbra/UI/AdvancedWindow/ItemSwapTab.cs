@@ -34,6 +34,7 @@ public enum SwapType
     Necklace,
     Bracelet,
     Ring,
+
     [Name("Between Slots")]
     BetweenSlots,
     Hair,
@@ -44,7 +45,6 @@ public enum SwapType
     Glasses,
 }
 
-
 [NamedEnum(Utf16: false)]
 public enum BetweenSlotTypes
 {
@@ -52,8 +52,10 @@ public enum BetweenSlotTypes
     Earrings,
     Necklace,
     Bracelets,
+
     [Name("Right Ring")]
     RightRing,
+
     [Name("Left Ring")]
     LeftRing,
     Glasses,
@@ -403,8 +405,7 @@ public class ItemSwapTab : IDisposable, ITab
         if (ImEx.Button("Create New Mod"u8, new Vector2(width / 2, 0), tt, !newModAvailable || _newModName.Length is 0))
             CreateMod();
 
-        Im.Line.Same();
-        Im.Cursor.X += 20 * Im.Style.GlobalScale;
+        Im.Line.Same(0, 20 * Im.Style.GlobalScale + Im.Style.ItemSpacing.X);
         Im.Checkbox("Use File Swaps"u8, ref _useFileSwaps);
         Im.Tooltip.OnHover("Instead of writing every single non-default file to the newly created mod or option,\n"u8
           + "even those available from game files, use File Swaps to default game files where possible."u8);
@@ -427,11 +428,21 @@ public class ItemSwapTab : IDisposable, ITab
         if (ImEx.Button("Create New Option"u8, new Vector2(width / 2, 0), tt, !newModAvailable || !_subModValid))
             CreateOption();
 
-        Im.Line.Same();
-        Im.Cursor.X += 20 * Im.Style.GlobalScale;
+        Im.Line.Same(0, 20 * Im.Style.GlobalScale + Im.Style.ItemSpacing.X);
         _dirty |= Im.Checkbox("Use Entire Collection"u8, ref _useCurrentCollection);
-        Im.Tooltip.OnHover("Use all applied mods from the Selected Collection with their current settings and respecting the enabled state of mods and inheritance,\n"u8
+        Im.Tooltip.OnHover(
+            "Use all applied mods from the Selected Collection with their current settings and respecting the enabled state of mods and inheritance,\n"u8
           + "instead of using only the selected mod with its current settings in the Selected collection or the default settings, ignoring the enabled state and inheritance."u8);
+
+        Im.Line.Same(0, 20 * Im.Style.GlobalScale);
+        if (Im.Checkbox("Include Shader Packs"u8, _config.IncludeShpkInSwap))
+        {
+            _config.IncludeShpkInSwap ^= true;
+            _dirty                    =  true;
+        }
+
+        Im.Tooltip.OnHover(
+            "Generally you do not want to include shader packs (*.shpk) files in your item swap since they are a much more global object than a single item.\n\nOnly enable this if you are really sure about what you are doing."u8);
     }
 
     private void DrawSwapBar()
@@ -544,7 +555,7 @@ public class ItemSwapTab : IDisposable, ITab
             BetweenSlotTypes.Necklace  => RefTuple.Create(SwapType.Necklace, "this"u8,  "it"u8),
             BetweenSlotTypes.Bracelets => RefTuple.Create(SwapType.Bracelet, "these"u8, "them"u8),
             BetweenSlotTypes.RightRing => RefTuple.Create(SwapType.Ring,     "this"u8,  "it"u8),
-            BetweenSlotTypes.LeftRing  => RefTuple.Create(SwapType.Ring,     "this"u8, "it"u8),
+            BetweenSlotTypes.LeftRing  => RefTuple.Create(SwapType.Ring,     "this"u8,  "it"u8),
             BetweenSlotTypes.Glasses   => RefTuple.Create(SwapType.Glasses,  "these"u8, "them"u8),
             _                          => RefTuple.Create(SwapType.Ring,     "this"u8,  "it"u8),
         };
@@ -562,9 +573,11 @@ public class ItemSwapTab : IDisposable, ITab
         using var table = Im.Table.Begin("##settings"u8, 2, TableFlags.SizingFixedFit);
         if (!table)
             return;
+
         table.DrawFrameColumn(text1);
         table.NextColumn();
-        _dirty |= sourceSelector.Draw("##itemSource"u8, sourceSelector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
+        _dirty |= sourceSelector.Draw("##itemSource"u8, sourceSelector.CurrentSelection.Name, StringU8.Empty,
+            InputWidth * 2 * Im.Style.GlobalScale, out _);
 
         if (type is SwapType.Ring)
         {
@@ -574,7 +587,8 @@ public class ItemSwapTab : IDisposable, ITab
 
         table.DrawFrameColumn(text2);
         table.NextColumn();
-        _dirty |= targetSelector.Draw("##itemTarget"u8, targetSelector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
+        _dirty |= targetSelector.Draw("##itemTarget"u8, targetSelector.CurrentSelection.Name, StringU8.Empty,
+            InputWidth * 2 * Im.Style.GlobalScale, out _);
         if (type is SwapType.Ring)
         {
             Im.Line.Same();

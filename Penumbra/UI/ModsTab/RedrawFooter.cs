@@ -55,7 +55,7 @@ public sealed class RedrawFooter(
 
     public void Draw(Vector2 size)
     {
-        using var style = Im.Style.PushDefault(ImStyleDouble.FramePadding);
+        using var style = Im.Style.PushDefault(ImStyleDouble.WindowPadding);
         DrawInfo(size with { X = 0 });
         DrawTooltip();
 
