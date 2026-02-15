@@ -5,7 +5,6 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
 using Penumbra.UI.Classes;
-using static ImSharp.Im;
 
 namespace Penumbra.UI.ModsTab.Selector;
 
@@ -38,10 +37,10 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
 
     protected override void DrawTooltip()
     {
-        if (!Item.Hovered())
+        if (!Im.Item.Hovered())
             return;
 
-        using var tt             = Tooltip.Begin();
+        using var tt             = Im.Tooltip.Begin();
         var       highlightColor = ColorId.NewMod.Value().ToVector();
         Im.Text("Filter mods for those where their full paths or names contain the given strings, split by spaces."u8);
         ImEx.TextMultiColored("Enter "u8).Then("c:[string]"u8, highlightColor).Then(" to filter for mods changing specific items."u8).End();
@@ -56,7 +55,7 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
             .Then(
                 " to filter for mods containing the text in name, path, description, tags, changed items, or group- or option names or descriptions."u8)
             .End();
-        Line.New();
+        Im.Line.New();
         ImEx.TextMultiColored("Use "u8).Then("None"u8, highlightColor).Then(" as a placeholder value that only matches empty lists or names."u8)
             .End();
         Im.Text("Regularly, a mod has to match all supplied criteria separately."u8);
@@ -66,19 +65,19 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
             .Then(" in front of a search token to search for mods matching at least one of the '?'-criteria."u8).End();
         ImEx.TextMultiColored("Wrap spaces in "u8).Then("\"[string with space]\""u8, highlightColor)
             .Then(" to match this exact combination of words."u8).End();
-        Line.New();
+        Im.Line.New();
         Im.Text("Example: 't:Tag1 t:\"Tag 2\" -t:Tag3 -a:None s:Body -c:Hempen ?c:Camise ?n:Top' will match any mod that"u8);
-        BulletText("contains the tags 'tag1' and 'tag2',"u8);
-        BulletText("does not contain the tag 'tag3',"u8);
-        BulletText("has any author set (negating None means Any),"u8);
-        BulletText("changes an item of the 'Body' category,"u8);
-        BulletText("and either contains a changed item with 'camise' in it's name, or has 'top' in the mod's name."u8);
+        Im.BulletText("contains the tags 'tag1' and 'tag2',"u8);
+        Im.BulletText("does not contain the tag 'tag3',"u8);
+        Im.BulletText("has any author set (negating None means Any),"u8);
+        Im.BulletText("changes an item of the 'Body' category,"u8);
+        Im.BulletText("and either contains a changed item with 'camise' in it's name, or has 'top' in the mod's name."u8);
     }
 
     public override bool DrawFilter(ReadOnlySpan<byte> label, Vector2 availableRegion)
     {
-        var ret = base.DrawFilter(label, availableRegion with { X = availableRegion.X - Style.FrameHeight });
-        Line.NoSpacing();
+        var ret = base.DrawFilter(label, availableRegion with { X = availableRegion.X - Im.Style.FrameHeight });
+        Im.Line.NoSpacing();
         ret |= DrawFilterCombo();
         return ret;
     }
@@ -87,32 +86,32 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
     {
         var       everything = _stateFilter is not ModTypeFilterExtensions.UnfilteredStateMods;
         using var color      = ImGuiColor.Button.Push(Colors.FilterActive, everything);
-        using var combo = Combo.Begin("##combo"u8, StringU8.Empty,
+        using var combo = Im.Combo.Begin("##combo"u8, StringU8.Empty,
             ComboFlags.NoPreview | ComboFlags.HeightLargest | ComboFlags.PopupAlignLeft);
 
-        if (Item.RightClicked())
+        if (Im.Item.RightClicked())
         {
             // Ensure that a right-click clears the text filter if it is currently being edited.
-            Id.ClearActive();
+            Im.Id.ClearActive();
             Clear();
         }
 
-        Tooltip.OnHover("Filter mods for their activation status.\nRight-Click to clear all filters, including the text-filter."u8);
+        Im.Tooltip.OnHover("Filter mods for their activation status.\nRight-Click to clear all filters, including the text-filter."u8);
 
         var changes = false;
         if (combo)
         {
-            using var style = ImStyleDouble.ItemSpacing.PushY(3 * Style.GlobalScale);
-            changes |= Checkbox("Everything"u8, ref _stateFilter, ModTypeFilterExtensions.UnfilteredStateMods);
-            Dummy(new Vector2(0, 5 * Style.GlobalScale));
+            using var style = ImStyleDouble.ItemSpacing.PushY(3 * Im.Style.GlobalScale);
+            changes |= Im.Checkbox("Everything"u8, ref _stateFilter, ModTypeFilterExtensions.UnfilteredStateMods);
+            Im.Dummy(new Vector2(0, 5 * Im.Style.GlobalScale));
             foreach (var (onFlag, offFlag, name) in ModTypeFilterExtensions.TriStatePairs)
                 changes |= ImEx.TriStateCheckbox(name, ref _stateFilter, onFlag, offFlag);
 
             foreach (var group in ModTypeFilterExtensions.Groups)
             {
-                Separator();
+                Im.Separator();
                 foreach (var (flag, name) in group)
-                    changes |= Checkbox(name, ref _stateFilter, flag);
+                    changes |= Im.Checkbox(name, ref _stateFilter, flag);
             }
         }
 
