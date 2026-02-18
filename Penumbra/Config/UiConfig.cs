@@ -17,30 +17,14 @@ public sealed partial class UiConfig : ConfigurationFile<FilenameService>
 
     protected override void AddData(JsonTextWriter j)
     {
-        j.WritePropertyName("CollectionsTab");
-        j.WriteStartObject();
-        j.WritePropertyName("Mode");
-        j.WriteValue(CollectionsTabScale.Mode.ToString());
-        j.WritePropertyName("Width");
-        j.WriteValue(CollectionsTabScale.Width);
-        j.WriteEndObject();
-        j.WritePropertyName("ModsTab");
-        j.WriteStartObject();
-        j.WritePropertyName("Mode");
-        j.WriteValue(ModTabScale.Mode.ToString());
-        j.WritePropertyName("Width");
-        j.WriteValue(ModTabScale.Width);
-        j.WriteEndObject();
+        CollectionsTabScale.WriteJson(j, "CollectionsTab");
+        ModTabScale.WriteJson(j, "ModsTab");
     }
 
     protected override void LoadData(JObject j)
     {
-        if (j["CollectionsTab"] is JObject collections)
-            _collectionsTabScale = new TwoPanelWidth(collections["Width"].ValueOr(float.NaN),
-                collections["Mode"].TextEnum(ScalingMode.Percentage));
-
-        if (j["ModsTab"] is JObject mods)
-            _modTabScale = new TwoPanelWidth(mods["Width"].ValueOr(float.NaN), mods["Mode"].TextEnum(ScalingMode.Percentage));
+        _collectionsTabScale = TwoPanelWidth.ReadJson(j, "CollectionsTab", new TwoPanelWidth(0.25f, ScalingMode.Percentage));
+        _modTabScale         = TwoPanelWidth.ReadJson(j, "ModsTab",        new TwoPanelWidth(0.3f,  ScalingMode.Percentage));
     }
 
     public override int CurrentVersion
