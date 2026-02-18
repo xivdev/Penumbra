@@ -43,27 +43,21 @@ public static class LoadStateExtensions
       | LoadStateFlag.None;
 }
 
-internal sealed unsafe class CachedRecord(Record record) : IDisposable
+internal sealed unsafe class CachedRecord(Record record)
 {
-    public readonly Record          Record = record;
-    public readonly string          PathU16 = record.Path.ToString();
-    public readonly StringU8        TypeName = new(record.RecordType.ToNameU8());
-    public readonly StringU8        Time = new($"{record.Time.ToLongTimeString()}.{record.Time.Millisecond:D4}");
-    public readonly StringPair      Crc64 = new($"{record.Crc64:X16}");
-    public readonly StringU8        Collection = record.Collection is null ? StringU8.Empty : new StringU8(record.Collection.Identity.Name);
-    public readonly StringU8        AssociatedGameObject = new(record.AssociatedGameObject);
-    public readonly string          OriginalPath = record.OriginalPath.ToString();
-    public readonly StringU8        ResourceCategory = new($"{record.Category}");
-    public readonly StringU8        ResourceType = new(record.ResourceType.ToString().ToLowerInvariant());
-    public readonly string          HandleU16 = $"0x{(nint)record.Handle:X}";
-    public readonly SizedStringPair Thread = new($"{record.OsThreadId}");
-    public readonly SizedStringPair RefCount = new($"{record.RefCount}");
-
-    public void Dispose()
-    {
-        Thread.Dispose();
-        RefCount.Dispose();
-    }
+    public readonly Record     Record = record;
+    public readonly string     PathU16 = record.Path.ToString();
+    public readonly StringU8   TypeName = new(record.RecordType.ToNameU8());
+    public readonly StringU8   Time = new($"{record.Time.ToLongTimeString()}.{record.Time.Millisecond:D4}");
+    public readonly StringPair Crc64 = new($"{record.Crc64:X16}");
+    public readonly StringU8   Collection = record.Collection is null ? StringU8.Empty : new StringU8(record.Collection.Identity.Name);
+    public readonly StringU8   AssociatedGameObject = new(record.AssociatedGameObject);
+    public readonly string     OriginalPath = record.OriginalPath.ToString();
+    public readonly StringU8   ResourceCategory = new($"{record.Category}");
+    public readonly StringU8   ResourceType = new(record.ResourceType.ToString().ToLowerInvariant());
+    public readonly string     HandleU16 = $"0x{(nint)record.Handle:X}";
+    public readonly StringPair Thread = new($"{record.OsThreadId}");
+    public readonly StringPair RefCount = new($"{record.RefCount}");
 }
 
 internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<CachedRecord>>
@@ -96,9 +90,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
             new Crc64Column(filterConfig) { Label            = new StringU8("Crc64"u8) },
             new OsThreadColumn(filterConfig) { Label         = new StringU8("TID"u8) }
         )
-    {
-        _records = records;
-    }
+        => _records = records;
 
     private static void DrawByteString(StringU8 path, float length)
     {
@@ -513,7 +505,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
         public override uint ToValue(in CachedRecord item, int globalIndex)
             => item.Record.RefCount;
 
-        protected override SizedString DisplayNumber(in CachedRecord item, int globalIndex)
+        protected override StringU8 DisplayNumber(in CachedRecord item, int globalIndex)
             => item.RefCount;
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)
@@ -535,7 +527,7 @@ internal sealed class ResourceWatcherTable : TableBase<CachedRecord, TableCache<
         public override uint ToValue(in CachedRecord item, int globalIndex)
             => item.Record.OsThreadId;
 
-        protected override SizedString DisplayNumber(in CachedRecord item, int globalIndex)
+        protected override StringU8 DisplayNumber(in CachedRecord item, int globalIndex)
             => item.Thread;
 
         protected override string ComparisonText(in CachedRecord item, int globalIndex)

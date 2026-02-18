@@ -74,12 +74,12 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         }
     }
 
-    public sealed class ModData(IFileSystemData<Mod> node) : BaseFileSystemNodeCache<ModData>, IDisposable
+    public sealed class ModData(IFileSystemData<Mod> node) : BaseFileSystemNodeCache<ModData>
     {
         public readonly IFileSystemData<Mod> Node = node;
         public          Vector4              TextColor;
         public          ModPriority          Priority;
-        public          SizedString          PriorityText = SizedString.Empty;
+        public          StringU8             PriorityText = StringU8.Empty;
         public          ModSettings?         Settings;
         public          ModCollection        Collection = ModCollection.Empty;
         public          StringU8             Name       = new(node.Value.Name);
@@ -94,8 +94,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             if (priority != Priority)
             {
                 Priority = priority;
-                PriorityText.Dispose();
-                PriorityText = priority.IsDefault ? SizedString.Empty : new SizedString($"[{priority}]");
+                PriorityText = priority.IsDefault ? StringU8.Empty : new StringU8($"[{priority}]");
             }
         }
 
@@ -178,16 +177,13 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             var itemPos        = Im.Item.LowerRightCorner.X;
             var maxWidth       = Im.Window.Position.X + Im.Window.MaximumContentRegion.X;
             var remainingSpace = maxWidth - itemPos;
-            var offset         = remainingSpace - PriorityText.Size.X;
+            var offset         = remainingSpace - PriorityText.CalculateSize().X;
             if (Im.Scroll.MaximumY is 0)
                 offset -= Im.Style.ItemInnerSpacing.X;
 
             if (offset > Im.Style.ItemSpacing.X)
-                Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, PriorityText.Text);
+                Im.Window.DrawList.Text(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value().Color, PriorityText);
         }
-
-        public void Dispose()
-            => PriorityText.Dispose();
     }
 
     public override void Update()

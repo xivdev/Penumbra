@@ -38,10 +38,10 @@ public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager 
         table.SetupColumn(""u8, TableColumnFlags.WidthFixed, Im.Style.FrameHeight * 2 + Im.Style.ItemInnerSpacing.X);
         table.SetupColumn("Mod Name"u8, TableColumnFlags.WidthStretch, 0.25f);
         table.SetupColumn("Mod Directory"u8, TableColumnFlags.WidthStretch, 0.25f);
-        table.SetupColumn("Active"u8, TableColumnFlags.WidthFixed, cache.Active.Size.X);
-        table.SetupColumn("Import Date"u8, TableColumnFlags.WidthFixed, cache.Date.Size.X);
+        table.SetupColumn("Active"u8, TableColumnFlags.WidthFixed, cache.Active.CalculateSize().X);
+        table.SetupColumn("Import Date"u8, TableColumnFlags.WidthFixed, cache.Date.CalculateSize().X);
         table.SetupColumn("Path"u8, TableColumnFlags.WidthStretch, 0.5f);
-        table.SetupColumn("Notes"u8, TableColumnFlags.WidthFixed, cache.Notes.Size.X + Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X);
+        table.SetupColumn("Notes"u8, TableColumnFlags.WidthFixed, cache.Notes.CalculateSize().X + Im.Style.FrameHeight + Im.Style.ItemInnerSpacing.X);
         table.HeaderRow();
 
         var       lastDrawnName = StringU8.Empty;
@@ -113,9 +113,9 @@ public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager 
 
         public List<CacheItem> Items = [];
 
-        public readonly SizedString Active = new("Active"u8);
-        public readonly SizedString Date   = new("00/00/0000 00:00"u8);
-        public readonly SizedString Notes  = new("Notes"u8);
+        public readonly StringU8 Active = new("Active"u8);
+        public readonly StringU8 Date   = new("00/00/0000 00:00"u8);
+        public readonly StringU8 Notes  = new("Notes"u8);
 
         public override void Update()
         {
@@ -145,14 +145,6 @@ public sealed class DuplicateModsTab(ModConfigUpdater configUpdater, ModManager 
                 .ThenByDescending(i => i.Notes.Length).ThenBy(i => i.Mod.ImportDate)
                 .ThenBy(i => i.Directory).ToList();
             Dirty = IManagedCache.DirtyFlags.Clean;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            Active.Dispose();
-            Date.Dispose();
-            Notes.Dispose();
         }
     }
 }

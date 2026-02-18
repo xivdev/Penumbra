@@ -380,7 +380,7 @@ public sealed class UnusedModsTab(
         public override long ToValue(in CacheItem item, int globalIndex)
             => item.Mod.LastConfigEdit;
 
-        protected override SizedString DisplayNumber(in CacheItem item, int globalIndex)
+        protected override StringU8 DisplayNumber(in CacheItem item, int globalIndex)
             => item.Duration;
 
         protected override string ComparisonText(in CacheItem item, int globalIndex)
@@ -409,7 +409,7 @@ public sealed class UnusedModsTab(
         public override long ToValue(in CacheItem item, int globalIndex)
             => item.ModSize;
 
-        protected override SizedString DisplayNumber(in CacheItem item, int globalIndex)
+        protected override StringU8 DisplayNumber(in CacheItem item, int globalIndex)
             => item.ModSizeString;
 
         protected override string ComparisonText(in CacheItem item, int globalIndex)
@@ -486,36 +486,29 @@ public sealed class UnusedModsTab(
         StringU8 ModPath,
         StringU8 DirectoryName,
         long ModSize,
-        SizedStringPair ModSizeString,
-        SizedStringPair Duration,
-        (StringPair, StringPair)[] Notes) : IDisposable
+        StringPair ModSizeString,
+        StringPair Duration,
+        (StringPair, StringPair)[] Notes)
     {
         public long ModSize
         {
             get => field < 0 ? field = WindowsFunctions.GetDirectorySize(Mod.ModPath.FullName) : field;
         } = ModSize;
 
-        private SizedStringPair _modSizeString = ModSizeString;
+        private StringPair _modSizeString = ModSizeString;
 
-        public SizedStringPair ModSizeString
+        public StringPair ModSizeString
         {
             get => _modSizeString.IsEmpty
-                ? _modSizeString = new SizedStringPair(FormattingFunctions.HumanReadableSize(ModSize))
+                ? _modSizeString = new StringPair(FormattingFunctions.HumanReadableSize(ModSize))
                 : _modSizeString;
         }
 
         public CacheItem(Mod mod, (string, string)[] notes, DateTime now)
             : this(mod, new StringU8(mod.Name), new StringU8(mod.Path.CurrentPath), new StringU8($"Directory Name: {mod.Identifier}"),
-                -1, SizedStringPair.Empty, new SizedStringPair(FormattingFunctions.DurationString(mod.LastConfigEdit, now)),
+                -1, StringPair.Empty, new StringPair(FormattingFunctions.DurationString(mod.LastConfigEdit, now)),
                 notes.Select(n => (new StringPair(n.Item1), new StringPair(n.Item2))).ToArray())
         { }
-
-        public void Dispose()
-        {
-            if (!_modSizeString.IsEmpty)
-                _modSizeString.Dispose();
-            Duration.Dispose();
-        }
     }
 
     public static void DrawNotes((StringPair, StringPair)[] notes)
