@@ -3,13 +3,14 @@ using Luna.Generators;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Services;
+using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra;
 
-public sealed partial class UiConfig : ConfigurationFile
+public sealed partial class UiConfig : ConfigurationFile<FilenameService>
 {
-    public UiConfig(SaveService saveService)
-        : base(saveService, TimeSpan.FromMinutes(5))
+    public UiConfig(SaveService saveService, MessageService messager)
+        : base(saveService, messager, TimeSpan.FromMinutes(5))
     {
         Load();
     }

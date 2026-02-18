@@ -1,3 +1,4 @@
+using Luna;
 using Luna.Generators;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -6,16 +7,17 @@ using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab.Selector;
 using Penumbra.UI.ResourceWatcher;
+using MessageService = Penumbra.Services.MessageService;
 
 namespace Penumbra;
 
-public sealed partial class FilterConfig : ConfigurationFile
+public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
 {
     public override int CurrentVersion
         => 1;
 
-    public FilterConfig(SaveService saveService)
-        : base(saveService)
+    public FilterConfig(SaveService saveService, MessageService messager)
+        : base(saveService, messager)
     {
         Load();
     }
@@ -323,7 +325,7 @@ public sealed partial class FilterConfig : ConfigurationFile
     #region
 
     [ConfigProperty]
-    private bool _resourceLoggerEnabled = false;
+    private bool _resourceLoggerEnabled;
 
     [ConfigProperty]
     private int _resourceLoggerMaxEntries = 500;
@@ -332,7 +334,7 @@ public sealed partial class FilterConfig : ConfigurationFile
     private bool _resourceLoggerStoreOnlyMatching = true;
 
     [ConfigProperty]
-    private bool _resourceLoggerWriteToLog = false;
+    private bool _resourceLoggerWriteToLog;
 
     [ConfigProperty]
     private string _resourceLoggerLogFilter = string.Empty;

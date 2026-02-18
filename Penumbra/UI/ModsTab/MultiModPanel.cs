@@ -65,8 +65,8 @@ public class MultiModPanel(ModFileSystem fileSystem, ModDataEditor editor, Prede
             {
                 using var id = Im.Id.Push(i++);
                 var (icon, text) = node is IFileSystemData<Mod> l
-                    ? (FontAwesomeIcon.FileCircleMinus.Icon(), l.Value.Name)
-                    : (FontAwesomeIcon.FolderMinus.Icon(), string.Empty);
+                    ? (LunaStyle.RemoveFileIcon, l.Value.Name)
+                    : (LunaStyle.RemoveFolderIcon, string.Empty);
                 table.NextColumn();
                 if (ImEx.Icon.Button(icon, "Remove from selection."u8, false, sizeType))
                     fileSystem.Selection.RemoveFromSelection(node);
