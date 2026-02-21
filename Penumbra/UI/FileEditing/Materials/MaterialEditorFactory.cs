@@ -4,11 +4,12 @@ using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
+using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public sealed class MtrlTabFactory(
+public sealed class MaterialEditorFactory(
     IDataManager gameData,
     IFramework framework,
     ObjectManager objects,
@@ -19,7 +20,7 @@ public sealed class MtrlTabFactory(
     MaterialTemplatePickers materialTemplatePickers,
     Configuration config) : Luna.IUiService
 {
-    public MtrlTab Create(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
+    public MaterialEditor Create(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
         => new(gameData, framework, objects, characterBaseDestructor, stainService, resourceTreeFactory, fileDialog,
             materialTemplatePickers, config, edit, file, filePath, writable);
 }

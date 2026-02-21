@@ -5,9 +5,9 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Structs;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     private static readonly float HalfMinValue = (float)Half.MinValue;
     private static readonly float HalfMaxValue = (float)Half.MaxValue;

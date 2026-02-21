@@ -10,9 +10,9 @@ using Penumbra.Interop.Processing;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     // strings path/to/the.exe | grep --fixed-strings '.shpk' | sort -u | sed -e 's#^shader/sm5/shpk/##'
     // Apricot shader packages are unlisted because

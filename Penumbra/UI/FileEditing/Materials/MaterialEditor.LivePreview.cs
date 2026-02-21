@@ -6,9 +6,9 @@ using Penumbra.Interop.MaterialPreview;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     private readonly List<LiveMaterialPreviewer>   _materialPreviewers        = new(4);
     private readonly List<LiveColorTablePreviewer> _colorTablePreviewers      = new(4);

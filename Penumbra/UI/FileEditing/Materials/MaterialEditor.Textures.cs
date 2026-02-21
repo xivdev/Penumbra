@@ -6,9 +6,9 @@ using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.MaterialStructs.SamplerFlags;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     public readonly List<(string Label, int TextureIndex, int SamplerIndex, string Description, bool MonoFont)> Textures = new(4);
 

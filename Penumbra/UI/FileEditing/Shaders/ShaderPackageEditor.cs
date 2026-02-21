@@ -5,8 +5,8 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
-using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.Classes;
+using Penumbra.UI.FileEditing.Materials;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -197,7 +197,7 @@ public partial class ModEditWindow
                 if (iEnd >= numParameters)
                 {
                     MalformedParameters.Add(
-                        $"{MtrlTab.MaterialParamRangeName(materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2)} ({TryResolveName(param.Id)}, 0x{param.Id:X8})");
+                        $"{MaterialEditor.MaterialParamRangeName(materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2)} ({TryResolveName(param.Id)}, 0x{param.Id:X8})");
                     continue;
                 }
 
@@ -208,7 +208,7 @@ public partial class ModEditWindow
                     {
                         var component = (i << 2) | j;
                         var tt =
-                            $"{MtrlTab.MaterialParamRangeName(materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2).Item1} ({TryResolveName(param.Id)}, 0x{param.Id:X8})";
+                            $"{MaterialEditor.MaterialParamRangeName(materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2).Item1} ({TryResolveName(param.Id)}, 0x{param.Id:X8})";
                         if (component < defaultFloats.Length)
                             tt +=
                                 $"\n\nDefault value: {defaultFloats[component]} ({defaults[component << 2]:X2} {defaults[(component << 2) | 1]:X2} {defaults[(component << 2) | 2]:X2} {defaults[(component << 2) | 3]:X2})";
@@ -270,7 +270,7 @@ public partial class ModEditWindow
                     if (oldStart == linear)
                         newMaterialParamStart = (short)Orphans.Count;
 
-                    Orphans.Add(($"{materialParams?.Name ?? ShpkFile.MaterialParamsConstantName}{MtrlTab.MaterialParamName(false, linear)}",
+                    Orphans.Add(($"{materialParams?.Name ?? ShpkFile.MaterialParamsConstantName}{MaterialEditor.MaterialParamName(false, linear)}",
                         linear));
                 }
             }

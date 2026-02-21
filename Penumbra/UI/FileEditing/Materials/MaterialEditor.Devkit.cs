@@ -5,9 +5,9 @@ using Newtonsoft.Json.Linq;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     private JObject? TryLoadShpkDevkit(string shpkBaseName, out string devkitPathName)
     {

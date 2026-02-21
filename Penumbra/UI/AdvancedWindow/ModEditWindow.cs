@@ -19,9 +19,9 @@ using Penumbra.Mods.SubMods;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
+using Penumbra.UI.FileEditing.Materials;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -43,10 +43,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly OptionSelectCombo   _optionSelect;
 
 
-    private readonly FileEditor<MdlTab>  _modelTab;
-    private readonly FileEditor<MtrlTab> _materialTab;
-    private readonly FileEditor<ShpkTab> _shaderPackageTab;
-    private readonly FileEditor<PbdTab>  _pbdTab;
+    private readonly FileEditor<MdlTab>         _modelTab;
+    private readonly FileEditor<MaterialEditor> _materialTab;
+    private readonly FileEditor<ShpkTab>        _shaderPackageTab;
+    private readonly FileEditor<PbdTab>         _pbdTab;
 
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
@@ -610,7 +610,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
         MetaDrawers metaDrawers,
-        MtrlTabFactory mtrlTabFactory, int index)
+        MaterialEditorFactory materialEditorFactory, int index)
         : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
@@ -629,9 +629,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
-        _materialTab = new FileEditor<MtrlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
+        _materialTab = new FileEditor<MaterialEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, writable) => mtrlTabFactory.Create(this, new MtrlFile(bytes), path, writable));
+            (bytes, path, writable) => materialEditorFactory.Create(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
             () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new MdlTab(this, bytes, path));

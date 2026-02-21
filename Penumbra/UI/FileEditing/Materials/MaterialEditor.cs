@@ -8,11 +8,12 @@ using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
 using Penumbra.String;
+using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public sealed partial class MtrlTab : IWritable, IDisposable
+public sealed partial class MaterialEditor : IWritable, IDisposable
 {
     private const int ShpkPrefixLength = 16;
 
@@ -35,7 +36,7 @@ public sealed partial class MtrlTab : IWritable, IDisposable
 
     private bool _updateOnNextFrame;
 
-    public MtrlTab(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
+    public MaterialEditor(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
         StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog,
         MaterialTemplatePickers materialTemplatePickers,
         Configuration config, ModEditWindow edit, MtrlFile file, string filePath, bool writable)

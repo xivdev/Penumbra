@@ -3,9 +3,9 @@ using Luna;
 using Penumbra.GameData.Files.ShaderStructs;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     private const float MaterialConstantSize = 250.0f;
 

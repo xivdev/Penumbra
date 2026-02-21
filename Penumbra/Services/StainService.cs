@@ -6,7 +6,7 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
-using Penumbra.UI.AdvancedWindow.Materials;
+using Penumbra.UI.FileEditing.Materials;
 
 namespace Penumbra.Services;
 
@@ -84,9 +84,9 @@ public sealed class StainTemplateCombo<TDyePack> : FilterComboBase<StainTemplate
                 if (dye > 0 && _parent._stmFile.TryGetValue(item.Key, dye, out var dyes))
                 {
                     item.Found    = true;
-                    item.Diffuse  = new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.DiffuseColor),  1);
-                    item.Specular = new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.SpecularColor), 1);
-                    item.Emissive = new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.EmissiveColor), 1);
+                    item.Diffuse  = new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)dyes.DiffuseColor),  1);
+                    item.Specular = new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)dyes.SpecularColor), 1);
+                    item.Emissive = new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)dyes.EmissiveColor), 1);
                 }
                 else
                 {
@@ -138,9 +138,9 @@ public sealed class StainTemplateCombo<TDyePack> : FilterComboBase<StainTemplate
         {
             if (dye > 0 && _stmFile.TryGetValue(key, dye, out var dyes))
                 yield return new StainTemplate(new StringPair($"{key,4}"),
-                    new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.DiffuseColor),  1),
-                    new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.SpecularColor), 1),
-                    new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)dyes.EmissiveColor), 1), key.Int, true);
+                    new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)dyes.DiffuseColor),  1),
+                    new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)dyes.SpecularColor), 1),
+                    new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)dyes.EmissiveColor), 1), key.Int, true);
             else
                 yield return new StainTemplate(new StringPair($"{key,4}"), Vector4.Zero, Vector4.Zero, Vector4.Zero, key.Int, false);
         }

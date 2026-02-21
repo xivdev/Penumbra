@@ -31,7 +31,7 @@ using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Interop;
 using Penumbra.String.Classes;
-using Penumbra.UI.AdvancedWindow.Materials;
+using Penumbra.UI.FileEditing.Materials;
 
 namespace Penumbra.UI.Tabs.Debug;
 
@@ -887,7 +887,7 @@ public sealed class DebugTab : Window, ITab<TabType>
                     var color = list[i];
                     table.NextColumn();
                     var frame = new Vector2(Im.Style.TextHeight);
-                    Im.Color.Button("###color"u8, new Vector4(MtrlTab.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
+                    Im.Color.Button("###color"u8, new Vector4(MaterialEditor.PseudoSqrtRgb((Vector3)color), 1), 0, frame);
                     Im.Line.Same();
                     Im.Text($"{color.Red:F6} | {color.Green:F6} | {color.Blue:F6}");
                 }
