@@ -4,14 +4,9 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.UI.FileEditing;
 
-public abstract class BaseFileEditorFactory : IFileEditorFactory
+public abstract class BaseFileEditorFactory(IDataManager gameData) : IFileEditorFactory
 {
-    protected readonly IDataManager GameData;
-
-    protected BaseFileEditorFactory(IDataManager gameData)
-    {
-        GameData = gameData;
-    }
+    protected readonly IDataManager GameData = gameData;
 
     public virtual bool SupportsFile(string path)
         => SupportsPath(path) && File.Exists(path);
