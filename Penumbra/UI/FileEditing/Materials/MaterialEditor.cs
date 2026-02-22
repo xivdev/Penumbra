@@ -36,9 +36,6 @@ public sealed partial class MaterialEditor : IFileEditor
 
     private bool _updateOnNextFrame;
 
-    bool IFileEditor.Writable
-        => Writable;
-
     public event Action? SaveRequested;
 
     public MaterialEditor(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,

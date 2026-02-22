@@ -1,18 +1,22 @@
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Mods.SubMods;
 using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.FileEditing;
 
-public sealed class FileEditingContext(ActiveCollections activeCollections, Mod? mod)
+public sealed class FileEditingContext(ActiveCollections activeCollections, Mod? mod, IModDataContainer? option)
 {
     public ModCollection? Collection
         => activeCollections.Current;
 
     public Mod? Mod
         => mod;
+
+    public IModDataContainer? Option
+        => option;
 
     /// <summary>
     /// Find the best matching associated file for a given path.

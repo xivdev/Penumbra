@@ -21,6 +21,7 @@ using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.UI.FileEditing;
 using Penumbra.UI.FileEditing.Materials;
+using Penumbra.UI.FileEditing.Models;
 using Penumbra.UI.FileEditing.Shaders;
 using Penumbra.UI.FileEditing.Skeletons;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
@@ -44,7 +45,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly OptionSelectCombo   _optionSelect;
 
 
-    private readonly FileEditor<MdlTab>      _modelTab;
+    private readonly FileEditor<IFileEditor> _modelTab;
     private readonly FileEditor<IFileEditor> _materialTab;
     private readonly FileEditor<IFileEditor> _shaderPackageTab;
     private readonly FileEditor<IFileEditor> _pbdTab;
@@ -562,10 +563,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
+        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
-        MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ShaderPackageEditorFactory shaderPackageEditorFactory,
-        DeformerEditorFactory deformerEditorFactory, int index)
+        MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
+        ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory, int index)
         : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
@@ -578,7 +579,6 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
         _textures          = textures;
-        _models            = models;
         _fileDialog        = fileDialog;
         _framework         = framework;
         _metaDrawers       = metaDrawers;
@@ -587,9 +587,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _materialTab = new FileEditor<IFileEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawPanelShim, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => materialEditorFactory.CreateForData(bytes, path, writable, CreateFileEditingContext()));
-        _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
-            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, _) => new MdlTab(this, bytes, path));
+        _modelTab = new FileEditor<IFileEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
+            () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawPanelShim, () => Mod?.ModPath.FullName ?? string.Empty,
+            (bytes, path, writable) => modelEditorFactory.CreateForData(bytes, path, writable, CreateFileEditingContext()));
         _shaderPackageTab = new FileEditor<IFileEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawPanelShim,
             () => Mod?.ModPath.FullName ?? string.Empty,
@@ -636,7 +636,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     }
 
     private FileEditingContext CreateFileEditingContext()
-        => new(_activeCollections, Mod);
+        => new(_activeCollections, Mod, _editor.Option);
 
     private static bool DrawPanelShim(IFileEditor editor, bool disabled)
     {

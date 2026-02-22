@@ -5,15 +5,11 @@ using Penumbra.GameData.Files;
 
 namespace Penumbra.UI.FileEditing.Skeletons;
 
-public partial class DeformerEditor(Configuration configuration, PbdFile file, string filePath, bool writable) : IFileEditor
+public partial class DeformerEditor(Configuration configuration, PbdFile file, string filePath) : IFileEditor
 {
     public readonly string FilePath = filePath;
-    public readonly bool   Writable = writable;
 
     public readonly PbdFile File = file;
-    
-    bool IFileEditor.Writable
-        => Writable;
 
     event Action? IFileEditor.SaveRequested
     {

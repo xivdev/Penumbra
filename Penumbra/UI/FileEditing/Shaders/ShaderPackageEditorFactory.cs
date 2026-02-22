@@ -15,7 +15,7 @@ public class ShaderPackageEditorFactory(
         => CreateForData((ReadOnlySpan<byte>)data, path, writable, context);
 
     public override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, FileEditingContext? context)
-        => new ShaderPackageEditor(fileDialog, Parse(data), path, writable);
+        => new ShaderPackageEditor(fileDialog, Parse(data), path);
 
     private static ShpkFile Parse(ReadOnlySpan<byte> data)
     {

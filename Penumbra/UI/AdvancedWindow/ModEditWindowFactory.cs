@@ -2,7 +2,6 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using Luna;
 using Penumbra.Collections.Manager;
-using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
@@ -12,6 +11,7 @@ using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.UI.FileEditing.Materials;
+using Penumbra.UI.FileEditing.Models;
 using Penumbra.UI.FileEditing.Shaders;
 using Penumbra.UI.FileEditing.Skeletons;
 
@@ -29,13 +29,13 @@ public class ModEditWindowFactory(
     ModMergeTab modMergeTab,
     CommunicatorService communicator,
     TextureManager textures,
-    ModelManager models,
     IDragDropManager dragDropManager,
     ResourceTreeViewerFactory resourceTreeViewerFactory,
     IFramework framework,
     WindowSystem windowSystem,
     Logger log,
     MaterialEditorFactory materialEditorFactory,
+    ModelEditorFactory modelEditorFactory,
     ShaderPackageEditorFactory shaderPackageEditorFactory,
     DeformerEditorFactory deformerEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
 {
@@ -43,8 +43,9 @@ public class ModEditWindowFactory(
     {
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
-            activeCollections, modMergeTab, communicator, textures, models, dragDropManager, resourceTreeViewerFactory, framework,
-            CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, shaderPackageEditorFactory, deformerEditorFactory, index);
+            activeCollections, modMergeTab, communicator, textures, dragDropManager, resourceTreeViewerFactory, framework,
+            CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, modelEditorFactory, shaderPackageEditorFactory, deformerEditorFactory,
+            index);
     }
 
     private MetaDrawers CreateMetaDrawers(ModMetaEditor metaEditor)

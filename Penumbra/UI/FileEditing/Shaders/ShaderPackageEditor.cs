@@ -14,7 +14,6 @@ public partial class ShaderPackageEditor : IFileEditor
 {
     public readonly ShpkFile Shpk;
     public readonly string   FilePath;
-    public readonly bool     Writable;
 
     public Name  NewMaterialParamName = string.Empty;
     public short NewMaterialParamStart;
@@ -34,21 +33,17 @@ public partial class ShaderPackageEditor : IFileEditor
     public readonly string Header;
     public readonly string Extension;
 
-    bool IFileEditor.Writable
-        => Writable;
-
     event Action? IFileEditor.SaveRequested
     {
         add { }
         remove { }
     }
 
-    public ShaderPackageEditor(FileDialogService fileDialog, ShpkFile shpk, string filePath, bool writable)
+    public ShaderPackageEditor(FileDialogService fileDialog, ShpkFile shpk, string filePath)
     {
         FileDialog = fileDialog;
         Shpk       = shpk;
         FilePath   = filePath;
-        Writable   = writable;
 
         Header = $"Shader Package for DirectX {(int)Shpk.DirectXVersion}";
         Extension = Shpk.DirectXVersion switch
