@@ -22,6 +22,7 @@ using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.UI.FileEditing;
 using Penumbra.UI.FileEditing.Materials;
+using Penumbra.UI.FileEditing.Shaders;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -43,10 +44,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly OptionSelectCombo   _optionSelect;
 
 
-    private readonly FileEditor<MdlTab>         _modelTab;
-    private readonly FileEditor<MaterialEditor> _materialTab;
-    private readonly FileEditor<ShpkTab>        _shaderPackageTab;
-    private readonly FileEditor<PbdTab>         _pbdTab;
+    private readonly FileEditor<MdlTab>      _modelTab;
+    private readonly FileEditor<IFileEditor> _materialTab;
+    private readonly FileEditor<IFileEditor> _shaderPackageTab;
+    private readonly FileEditor<PbdTab>      _pbdTab;
 
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
@@ -564,7 +565,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
         MetaDrawers metaDrawers,
-        MaterialEditorFactory materialEditorFactory, int index)
+        MaterialEditorFactory materialEditorFactory, ShaderPackageEditorFactory shaderPackageEditorFactory, int index)
         : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
@@ -583,16 +584,16 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
-        _materialTab = new FileEditor<MaterialEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
+        _materialTab = new FileEditor<IFileEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
             () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawPanelShim, () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, writable) => materialEditorFactory.Create(new MtrlFile(bytes), path, writable, CreateFileEditingContext()));
+            (bytes, path, writable) => materialEditorFactory.CreateForData(bytes, path, writable, CreateFileEditingContext()));
         _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
             () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new MdlTab(this, bytes, path));
-        _shaderPackageTab = new FileEditor<ShpkTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
-            () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawShaderPackagePanel,
+        _shaderPackageTab = new FileEditor<IFileEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Shaders", ".shpk",
+            () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawPanelShim,
             () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, _) => new ShpkTab(_fileDialog, bytes, path));
+            (bytes, path, writable) => shaderPackageEditorFactory.CreateForData(bytes, path, writable, CreateFileEditingContext()));
         _pbdTab = new FileEditor<PbdTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Deformers", ".pbd",
             () => _editor.Files.Pbd, DrawDeformerPanel,
             () => Mod?.ModPath.FullName ?? string.Empty,

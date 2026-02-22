@@ -12,6 +12,7 @@ using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
 using Penumbra.UI.FileEditing.Materials;
+using Penumbra.UI.FileEditing.Shaders;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -33,14 +34,15 @@ public class ModEditWindowFactory(
     IFramework framework,
     WindowSystem windowSystem,
     Logger log,
-    MaterialEditorFactory materialEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
+    MaterialEditorFactory materialEditorFactory,
+    ShaderPackageEditorFactory shaderPackageEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
 {
     protected override ModEditWindow CreateWindow(int index)
     {
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
             activeCollections, modMergeTab, communicator, textures, models, dragDropManager, resourceTreeViewerFactory, framework,
-            CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, index);
+            CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, shaderPackageEditorFactory, index);
     }
 
     private MetaDrawers CreateMetaDrawers(ModMetaEditor metaEditor)

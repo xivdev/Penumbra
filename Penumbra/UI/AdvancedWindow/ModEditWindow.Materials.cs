@@ -1,6 +1,6 @@
 using ImSharp;
 using Luna;
-using Penumbra.UI.FileEditing.Materials;
+using Penumbra.UI.FileEditing;
 
 namespace Penumbra.UI.AdvancedWindow;
 

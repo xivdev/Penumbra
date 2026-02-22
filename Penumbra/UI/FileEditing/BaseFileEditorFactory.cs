@@ -50,10 +50,10 @@ public abstract class BaseFileEditorFactory : IFileEditorFactory
         return CreateForData(data, pathStr, false, context);
     }
 
-    protected abstract bool SupportsPath(string path);
+    public abstract bool SupportsPath(string path);
 
-    protected abstract IFileEditor CreateForData(byte[] data, string path, bool writable, FileEditingContext? context);
+    public abstract IFileEditor CreateForData(byte[] data, string path, bool writable, FileEditingContext? context);
 
-    protected virtual IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, FileEditingContext? context)
+    public virtual IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, FileEditingContext? context)
         => CreateForData(data.ToArray(), path, writable, context);
 }
