@@ -831,6 +831,7 @@ public sealed class SettingsTab : ITab<TabType>
             if (ImEx.ColorPicker(name, description, currentColor, out var newColor, defaultColor))
             {
                 _config.Colors[color] = newColor.Color;
+                CacheManager.Instance.SetColorsDirty();
                 _config.Save();
             }
         }

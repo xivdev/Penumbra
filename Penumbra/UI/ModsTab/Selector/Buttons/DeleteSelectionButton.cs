@@ -4,8 +4,6 @@ using Penumbra.Mods;
 
 namespace Penumbra.UI.ModsTab.Selector;
 
-/// <summary> The button to import a mod. </summary>
-/// <param name="drawer"> The file system drawer. </param>
 public sealed class DeleteSelectionButton(ModFileSystemDrawer drawer) : BaseIconButton<AwesomeIcon>
 {
     /// <inheritdoc/>
@@ -39,15 +37,5 @@ public sealed class DeleteSelectionButton(ModFileSystemDrawer drawer) : BaseIcon
             if (node.GetValue<Mod>() is { } mod)
                 drawer.ModManager.DeleteMod(mod);
         }
-    }
-
-    /// <inheritdoc/>
-    protected override void PostDraw()
-    {
-        if (!InputPopup.OpenName("Create New Mod"u8, out var newModName))
-            return;
-
-        if (drawer.ModManager.Creator.CreateEmptyMod(drawer.ModManager.BasePath, newModName) is { } directory)
-            drawer.ModManager.AddMod(directory, false);
     }
 }

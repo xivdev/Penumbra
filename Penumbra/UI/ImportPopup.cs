@@ -171,11 +171,14 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
     {
         if (_notificationEnded)
         {
-            if (Im.Button("Open Report"u8, -Vector2.UnitX))
+            if (Im.Button("Open Report"u8, Im.ContentRegion.Available with { Y = 0 }))
             {
                 _openPopup = true;
                 _notification?.DismissNow();
             }
+
+            if (Im.Window.Hovered() && Im.Mouse.IsClicked(MouseButton.Middle))
+                _notification?.DismissNow();
         }
         else
         {
