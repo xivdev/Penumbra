@@ -13,7 +13,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Materials;
 
-public sealed partial class MaterialEditor : IWritable, IDisposable
+public sealed partial class MaterialEditor : IFileEditor
 {
     private const int ShpkPrefixLength = 16;
 
@@ -29,17 +29,22 @@ public sealed partial class MaterialEditor : IWritable, IDisposable
     private readonly MaterialTemplatePickers _materialTemplatePickers;
     private readonly Configuration           _config;
 
-    private readonly ModEditWindow _edit;
-    public readonly  MtrlFile      Mtrl;
-    public readonly  string        FilePath;
-    public readonly  bool          Writable;
+    private readonly FileEditingContext? _context;
+    public readonly  MtrlFile            Mtrl;
+    public readonly  string              FilePath;
+    public readonly  bool                Writable;
 
     private bool _updateOnNextFrame;
+
+    bool IFileEditor.Writable
+        => Writable;
+
+    public event Action? SaveRequested;
 
     public MaterialEditor(IDataManager gameData, IFramework framework, ObjectManager objects, CharacterBaseDestructor characterBaseDestructor,
         StainService stainService, ResourceTreeFactory resourceTreeFactory, FileDialogService fileDialog,
         MaterialTemplatePickers materialTemplatePickers,
-        Configuration config, ModEditWindow edit, MtrlFile file, string filePath, bool writable)
+        Configuration config, FileEditingContext? context, MtrlFile file, string filePath, bool writable)
     {
         _gameData                = gameData;
         _framework               = framework;
@@ -51,7 +56,7 @@ public sealed partial class MaterialEditor : IWritable, IDisposable
         _materialTemplatePickers = materialTemplatePickers;
         _config                  = config;
 
-        _edit                 = edit;
+        _context              = context;
         Mtrl                  = file;
         FilePath              = filePath;
         Writable              = writable;
@@ -66,7 +71,15 @@ public sealed partial class MaterialEditor : IWritable, IDisposable
         }
     }
 
-    public bool DrawVersionUpdate(bool disabled)
+    public bool DrawToolbar(bool disabled)
+    {
+        if (DrawVersionUpdate(disabled))
+            SaveRequested?.Invoke();
+
+        return false;
+    }
+
+    private bool DrawVersionUpdate(bool disabled)
     {
         if (disabled || Mtrl.IsDawntrail)
             return false;

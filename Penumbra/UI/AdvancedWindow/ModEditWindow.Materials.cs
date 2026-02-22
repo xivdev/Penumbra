@@ -6,14 +6,6 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private bool DrawMaterialPanel(MaterialEditor tab, bool disabled)
-    {
-        if (tab.DrawVersionUpdate(disabled))
-            _materialTab.SaveFile();
-
-        return tab.DrawPanel(disabled);
-    }
-
     private void DrawMaterialReassignmentTab()
     {
         if (_editor.Files.Mdl.Count is 0)

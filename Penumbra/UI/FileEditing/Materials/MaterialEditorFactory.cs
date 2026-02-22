@@ -4,7 +4,6 @@ using Penumbra.GameData.Interop;
 using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
-using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Materials;
@@ -18,9 +17,18 @@ public sealed class MaterialEditorFactory(
     ResourceTreeFactory resourceTreeFactory,
     FileDialogService fileDialog,
     MaterialTemplatePickers materialTemplatePickers,
-    Configuration config) : Luna.IUiService
+    Configuration config) : BaseFileEditorFactory(gameData), Luna.IUiService
 {
-    public MaterialEditor Create(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
-        => new(gameData, framework, objects, characterBaseDestructor, stainService, resourceTreeFactory, fileDialog,
-            materialTemplatePickers, config, edit, file, filePath, writable);
+    public MaterialEditor Create(MtrlFile file, string filePath, bool writable, FileEditingContext? context)
+        => new(GameData, framework, objects, characterBaseDestructor, stainService, resourceTreeFactory, fileDialog,
+            materialTemplatePickers, config, context, file, filePath, writable);
+
+    protected override bool SupportsPath(string path)
+        => path.EndsWith(".mtrl", StringComparison.OrdinalIgnoreCase);
+
+    protected override IFileEditor CreateForData(byte[] data, string path, bool writable, FileEditingContext? context)
+        => Create(new MtrlFile(data), path, writable, context);
+
+    protected override IFileEditor CreateForData(ReadOnlySpan<byte> data, string path, bool writable, FileEditingContext? context)
+        => Create(new MtrlFile(data), path, writable, context);
 }

@@ -111,7 +111,8 @@ public partial class MaterialEditor
             return _shpkNames;
 
         var names = new HashSet<string>(StandardShaderPackages);
-        names.UnionWith(_edit.FindPathsStartingWith(ShpkPrefix).Select(path => path.ToString()[ShpkPrefixLength..]));
+        if (_context is not null)
+            names.UnionWith(_context.FindPathsStartingWith(ShpkPrefix).Select(path => path.ToString()[ShpkPrefixLength..]));
 
         _shpkNames = names.ToArray();
         Array.Sort(_shpkNames);
@@ -125,7 +126,10 @@ public partial class MaterialEditor
         if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath))
             return FullPath.Empty;
 
-        var path = _edit.FindBestMatch(defaultGamePath);
+        if (_context is null)
+            return new FullPath(defaultPath);
+
+        var path = _context.FindBestMatch(defaultGamePath);
         if (!path.IsRooted || ShpkPathPreProcessor.SanityCheck(path.FullName) == ShpkPathPreProcessor.SanityCheckResult.Success)
             return path;
 
@@ -429,7 +433,7 @@ public partial class MaterialEditor
             {
                 if (success)
                     LoadShpk(new FullPath(name[0]));
-            }, 1, _edit.Mod!.ModPath.FullName, false);
+            }, 1, _context?.Mod?.ModPath.FullName, false);
 
         var moddedPath = FindAssociatedShpk(out var defaultPath, out var gamePath);
         Im.Line.Same();

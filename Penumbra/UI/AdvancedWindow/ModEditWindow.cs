@@ -17,10 +17,10 @@ using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
+using Penumbra.UI.FileEditing;
 using Penumbra.UI.FileEditing.Materials;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
@@ -558,52 +558,6 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         Im.Input.Text("##swapValue"u8, ref _newSwapKey, "... instead of this file."u8, maxLength: Utf8GamePath.MaxGamePathLength);
     }
 
-    /// <summary>
-    /// Find the best matching associated file for a given path.
-    /// </summary>
-    /// <remarks>
-    /// Tries to resolve from the current collection first and chooses the currently resolved file if any exists.
-    /// If none exists, goes through all options in the currently selected mod (if any) in order of priority and resolves in them. 
-    /// If no redirection is found in either of those options, returns the original path.
-    /// </remarks>
-    internal FullPath FindBestMatch(Utf8GamePath path)
-    {
-        var currentFile = _activeCollections.Current.ResolvePath(path);
-        if (currentFile is not null)
-            return currentFile.Value;
-
-        if (Mod is not null)
-        {
-            foreach (var option in Mod.Groups.OrderByDescending(g => g.Priority))
-            {
-                if (option.FindBestMatch(path) is { } fullPath)
-                    return fullPath;
-            }
-
-            if (Mod.Default.Files.TryGetValue(path, out var value) || Mod.Default.FileSwaps.TryGetValue(path, out value))
-                return value;
-        }
-
-        return new FullPath(path);
-    }
-
-    internal HashSet<Utf8GamePath> FindPathsStartingWith(CiByteString prefix)
-    {
-        var ret = new HashSet<Utf8GamePath>();
-        foreach (var path in _activeCollections.Current.ResolvedFiles.Keys)
-        {
-            if (path.Path.StartsWith(prefix))
-                ret.Add(path);
-        }
-
-        if (Mod is not null)
-            foreach (var option in Mod.AllDataContainers)
-                foreach (var path in option.Files.Keys.Where(path => path.Path.StartsWith(prefix)))
-                    ret.Add(path);
-
-        return ret;
-    }
-
     public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
@@ -630,8 +584,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
         _materialTab = new FileEditor<MaterialEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Materials", ".mtrl",
-            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawMaterialPanel, () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, writable) => materialEditorFactory.Create(this, new MtrlFile(bytes), path, writable));
+            () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl), DrawPanelShim, () => Mod?.ModPath.FullName ?? string.Empty,
+            (bytes, path, writable) => materialEditorFactory.Create(new MtrlFile(bytes), path, writable, CreateFileEditingContext()));
         _modelTab = new FileEditor<MdlTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Models", ".mdl",
             () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), DrawModelPanel, () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, _) => new MdlTab(this, bytes, path));
@@ -678,5 +632,16 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
                 Dispose();
                 break;
         }
+    }
+
+    private FileEditingContext CreateFileEditingContext()
+        => new(_activeCollections, Mod);
+
+    private static bool DrawPanelShim(IFileEditor editor, bool disabled)
+    {
+        var changed = editor.DrawToolbar(disabled);
+        changed |= editor.DrawPanel(disabled);
+        
+        return changed;
     }
 }

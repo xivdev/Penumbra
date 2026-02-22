@@ -11,12 +11,18 @@ public partial class MaterialEditor
 {
     private JObject? TryLoadShpkDevkit(string shpkBaseName, out string devkitPathName)
     {
+        if (_context is null)
+        {
+            devkitPathName = string.Empty;
+            return null;
+        }
+
         try
         {
             if (!Utf8GamePath.FromString("penumbra/shpk_devkit/" + shpkBaseName + ".json", out var devkitPath))
                 throw new Exception("Could not assemble ShPk dev-kit path.");
 
-            var devkitFullPath = _edit.FindBestMatch(devkitPath);
+            var devkitFullPath = _context.FindBestMatch(devkitPath);
             if (!devkitFullPath.IsRooted)
                 throw new Exception("Could not resolve ShPk dev-kit path.");
 
