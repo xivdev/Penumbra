@@ -7,7 +7,6 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
@@ -23,6 +22,7 @@ using Penumbra.UI.Classes;
 using Penumbra.UI.FileEditing;
 using Penumbra.UI.FileEditing.Materials;
 using Penumbra.UI.FileEditing.Shaders;
+using Penumbra.UI.FileEditing.Skeletons;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -47,7 +47,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly FileEditor<MdlTab>      _modelTab;
     private readonly FileEditor<IFileEditor> _materialTab;
     private readonly FileEditor<IFileEditor> _shaderPackageTab;
-    private readonly FileEditor<PbdTab>      _pbdTab;
+    private readonly FileEditor<IFileEditor> _pbdTab;
 
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
@@ -564,8 +564,8 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures, ModelManager models, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
-        MetaDrawers metaDrawers,
-        MaterialEditorFactory materialEditorFactory, ShaderPackageEditorFactory shaderPackageEditorFactory, int index)
+        MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ShaderPackageEditorFactory shaderPackageEditorFactory,
+        DeformerEditorFactory deformerEditorFactory, int index)
         : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
@@ -594,10 +594,10 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk), DrawPanelShim,
             () => Mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => shaderPackageEditorFactory.CreateForData(bytes, path, writable, CreateFileEditingContext()));
-        _pbdTab = new FileEditor<PbdTab>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Deformers", ".pbd",
-            () => _editor.Files.Pbd, DrawDeformerPanel,
+        _pbdTab = new FileEditor<IFileEditor>(this, _communicator, gameData, config, _editor.Compactor, _fileDialog, "Deformers", ".pbd",
+            () => _editor.Files.Pbd, DrawPanelShim,
             () => Mod?.ModPath.FullName ?? string.Empty,
-            (bytes, path, _) => new PbdTab(bytes, path));
+            (bytes, path, writable) => deformerEditorFactory.CreateForData(bytes, path, writable, CreateFileEditingContext()));
         _center              = new CombinedTexture(_left, _right);
         _textureSelectCombo  = new TextureSelectCombo(resourceTreeFactory, editor, gameData);
         _resourceTreeFactory = resourceTreeFactory;

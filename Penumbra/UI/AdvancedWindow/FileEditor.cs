@@ -9,6 +9,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
+using Penumbra.UI.FileEditing.Skeletons;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -81,7 +82,7 @@ public class FileEditor<T>(
     private Exception? _currentException;
     private bool       _changed;
 
-    private string       _defaultPath = typeof(T) == typeof(ModEditWindow.PbdTab) ? GamePaths.Pbd.Path : string.Empty;
+    private string       _defaultPath = typeof(T) == typeof(DeformerEditor) ? GamePaths.Pbd.Path : string.Empty; // TODO Change condition logic according to the new architecture where T is always IFileEditor
     private bool         _inInput;
     private Utf8GamePath _defaultPathUtf8;
     private bool         _isDefaultPathUtf8Valid;
