@@ -1,26 +1,17 @@
 using ImSharp;
 using Luna;
 using OtterTex;
+using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Import.Textures;
-using Penumbra.Mods;
+using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
+using TextureType = Penumbra.Import.Textures.TextureType;
 
-namespace Penumbra.UI.AdvancedWindow;
+namespace Penumbra.UI.FileEditing.Textures;
 
-public partial class ModEditWindow
+public partial class CombiningTextureEditor
 {
-    private readonly TextureManager _textures;
-
-    private readonly Texture            _left  = new();
-    private readonly Texture            _right = new();
-    private readonly CombinedTexture    _center;
-    private readonly TextureSelectCombo _textureSelectCombo;
-
-    private bool _overlayCollapsed = true;
-    private bool _addMipMaps       = true;
-    private int  _currentSaveAs;
-
     private static readonly (string, string)[] SaveAsStrings =
     {
         ("As Is", "Save the current texture with its own format without additional conversion or compression, if possible."),
@@ -38,6 +29,58 @@ public partial class ModEditWindow
             "Save the current texture compressed via BC7 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while.\n\nGeneric format that can be used for most textures."),
     };
 
+    private bool _overlayCollapsed = true;
+
+    bool IFileEditor.DrawToolbar(bool disabled)
+        => false;
+
+    public bool DrawPanel(bool disabled)
+    {
+        try
+        {
+            _dragDropManager.CreateImGuiSource("TextureDragDrop",
+                m => m.Extensions.Any(e => ValidTextureExtensions.Contains(e.ToLowerInvariant())), m =>
+                {
+                    if (!GetFirstTexture(m.Files, out var file))
+                        return false;
+
+                    Im.Text($"Dragging texture for editing: {Path.GetFileName(file)}");
+                    return true;
+                });
+            var childWidth = GetChildWidth();
+            var imageSize  = new Vector2(childWidth.X - Im.Style.FramePadding.X * 2);
+            DrawInputChild("Input Texture"u8, _left, childWidth, imageSize);
+            Im.Line.Same();
+            DrawOutputChild(childWidth, imageSize);
+            if (!_overlayCollapsed)
+            {
+                Im.Line.Same();
+                DrawInputChild("Overlay Texture"u8, _right, childWidth, imageSize);
+            }
+
+            Im.Line.Same();
+            DrawOverlayCollapseButton();
+        }
+        catch (Exception e)
+        {
+            Penumbra.Log.Error($"Unknown Error while drawing textures:\n{e}");
+        }
+
+        return false;
+    }
+    
+    private Vector2 GetChildWidth()
+    {
+        var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - Im.Style.TextHeight;
+        if (_overlayCollapsed)
+        {
+            var width = windowWidth - Im.Style.FramePadding.X * 3;
+            return new Vector2(width / 2, -1);
+        }
+
+        return new Vector2((windowWidth - Im.Style.FramePadding.X * 5) / 3, -1);
+    }
+
     private void DrawInputChild(ReadOnlySpan<byte> label, Texture tex, Vector2 size, Vector2 imageSize)
     {
         using (var child = Im.Child.Begin(label, size, true))
@@ -51,13 +94,18 @@ public partial class ModEditWindow
 
             using (Im.Disabled(!_center.SaveTask.IsCompleted))
             {
-                TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input"u8, "Import Image..."u8,
-                    "Can import game paths as well as your own files."u8, Mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
-                if (_textureSelectCombo.Draw("##combo"u8,
-                        "Select the textures included in this mod on your drive or the ones they replace from the game files."u8, tex.Path,
-                        Mod.ModPath.FullName.Length + 1, out var newPath)
-                 && newPath != tex.Path)
-                    tex.Load(_textures, newPath);
+                if (tex != _left || _inModEditWindow)
+                {
+                    TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input"u8, "Import Image..."u8,
+                        "Can import game paths as well as your own files."u8, _context?.Mod?.ModPath.FullName, _fileDialog,
+                        _config.DefaultModImportPath);
+                    if (_textureSelectCombo is not null
+                     && _textureSelectCombo.Draw("##combo"u8,
+                            "Select the textures included in this mod on your drive or the ones they replace from the game files."u8, tex.Path,
+                            (_context?.Mod?.ModPath.FullName.Length + 1) ?? 0, out var newPath)
+                     && newPath != tex.Path)
+                        tex.Load(_textures, newPath);
+                }
 
                 if (tex == _left)
                     _center.DrawMatrixInputLeft(size.X);
@@ -74,6 +122,7 @@ public partial class ModEditWindow
         if (_dragDropManager.CreateImGuiTarget("TextureDragDrop", out var files, out _) && GetFirstTexture(files, out var file))
             tex.Load(_textures, file);
     }
+
 
     private void SaveAsCombo()
     {
@@ -127,24 +176,28 @@ public partial class ModEditWindow
             Im.Line.Same();
             MipMapInput();
 
-            var canSaveInPlace = Path.IsPathRooted(_left.Path) && _left.Type is TextureType.Tex or TextureType.Dds or TextureType.Png;
-            var isActive       = _config.DeleteModModifier.IsActive();
+            var canSaveInPlace = Path.IsPathRooted(_left.Path)
+             && _left.Type is TextureType.Tex or TextureType.Dds or TextureType.Png
+             && _writable;
+            var isActive    = _config.DeleteModModifier.IsActive();
             var buttonSize2 = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) / 2,     0);
             var buttonSize3 = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X * 2) / 3, 0);
-            if (ImEx.Button("Save in place"u8, buttonSize2,
-                    isActive
-                        ? "This saves the texture in place. This is not revertible."u8
-                        : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.", 
-                    !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs is (int)CombinedTexture.TextureSaveType.AsIs))
-            {
-                _center.SaveAs(_left.Type, _textures, _left.Path, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                AddChangeTask(_left.Path);
-                AddReloadTask(_left.Path, false);
-            }
 
-            Im.Line.Same();
-            if (Im.Button("Save as TEX"u8, buttonSize2))
-                OpenSaveAsDialog(".tex");
+            if (_inModEditWindow)
+            {
+                if (ImEx.Button("Save in place"u8, buttonSize2,
+                        isActive
+                            ? "This saves the texture in place. This is not revertible."u8
+                            : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.",
+                        !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs is (int)CombinedTexture.TextureSaveType.AsIs))
+                {
+                    SaveRequested?.Invoke();
+                }
+
+                Im.Line.Same();
+                if (Im.Button("Save as TEX"u8, buttonSize2))
+                    OpenSaveAsDialog(".tex");
+            }
 
             if (Im.Button("Export as TGA"u8, buttonSize3))
                 OpenSaveAsDialog(".tga");
@@ -156,15 +209,15 @@ public partial class ModEditWindow
                 OpenSaveAsDialog(".dds");
             Im.Line.New();
 
-            var canConvertInPlace = canSaveInPlace && _left.Type is TextureType.Tex && _center.IsLeftCopy;
+            var canConvertInPlace = canSaveInPlace && _left.Type is TextureType.Tex or TextureType.Dds && _center.IsLeftCopy;
 
             if (ImEx.Button("Convert to BC7"u8, buttonSize3,
                     "This converts the texture to BC7 format in place. This is not revertible."u8,
                     !canConvertInPlace || _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
             {
-                _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
-                AddChangeTask(_left.Path);
-                AddReloadTask(_left.Path, false);
+                _nextSaveAs     = CombinedTexture.TextureSaveType.BC7;
+                _nextAddMipMaps = _left.MipMaps > 1;
+                SaveRequested?.Invoke();
             }
 
             Im.Line.Same();
@@ -172,9 +225,9 @@ public partial class ModEditWindow
                     "This converts the texture to BC3 format in place. This is not revertible."u8,
                     !canConvertInPlace || _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
             {
-                _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
-                AddChangeTask(_left.Path);
-                AddReloadTask(_left.Path, false);
+                _nextSaveAs     = CombinedTexture.TextureSaveType.BC3;
+                _nextAddMipMaps = _left.MipMaps > 1;
+                SaveRequested?.Invoke();
             }
 
             Im.Line.Same();
@@ -183,9 +236,9 @@ public partial class ModEditWindow
                     !canConvertInPlace
                  || _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
             {
-                _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
-                AddChangeTask(_left.Path);
-                AddReloadTask(_left.Path, false);
+                _nextSaveAs     = CombinedTexture.TextureSaveType.Bitmap;
+                _nextAddMipMaps = _left.MipMaps > 1;
+                SaveRequested?.Invoke();
             }
         }
 
@@ -214,18 +267,6 @@ public partial class ModEditWindow
             _center.Draw(_textures, imageSize);
     }
 
-    private void InvokeChange(Mod? mod, string path)
-    {
-        if (mod == null)
-            return;
-
-        if (!_editor.Files.Tex.FindFirst(r => string.Equals(r.File.FullName, path, StringComparison.OrdinalIgnoreCase),
-                out var registry))
-            return;
-
-        _communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(mod, registry));
-    }
-
     private void OpenSaveAsDialog(string defaultExtension)
     {
         var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
@@ -236,90 +277,40 @@ public partial class ModEditWindow
                 if (a)
                 {
                     _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                    AddChangeTask(b);
-                    if (b == _left.Path)
-                        AddReloadTask(_left.Path, false);
-                    else if (b == _right.Path)
-                        AddReloadTask(_right.Path, true);
+                    AddPostSaveTask(b);
                 }
-            }, Mod!.ModPath.FullName, _forceTextureStartPath);
+            }, _context?.Mod?.ModPath.FullName, _forceTextureStartPath);
         _forceTextureStartPath = false;
     }
 
-    private void AddChangeTask(string path)
+    private void AddPostSaveTask(string path)
     {
         _center.SaveTask.ContinueWith(t =>
         {
             if (!t.IsCompletedSuccessfully)
                 return;
 
-            _framework.RunOnFrameworkThread(() => InvokeChange(Mod, path));
+            if (_context?.Mod is not null
+             || _left.Path.Equals(path, StringComparison.OrdinalIgnoreCase)
+             || _right.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                _framework.RunOnFrameworkThread(() =>
+                {
+                    InvokeChange(path);
+                    if (_left.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                        _left.Reload(_textures);
+                    if (_right.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                        _right.Reload(_textures);
+                });
         }, TaskScheduler.Default);
     }
 
-    private void AddReloadTask(string path, bool right)
+    private void InvokeChange(string path)
     {
-        _center.SaveTask.ContinueWith(t =>
-        {
-            if (!t.IsCompletedSuccessfully)
-                return;
-
-            var tex = right ? _right : _left;
-
-            if (tex.Path != path)
-                return;
-
-            _framework.RunOnFrameworkThread(() => tex.Reload(_textures));
-        }, TaskScheduler.Default);
-    }
-
-    private Vector2 GetChildWidth()
-    {
-        var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - Im.Style.TextHeight;
-        if (_overlayCollapsed)
-        {
-            var width = windowWidth - Im.Style.FramePadding.X * 3;
-            return new Vector2(width / 2, -1);
-        }
-
-        return new Vector2((windowWidth - Im.Style.FramePadding.X * 5) / 3, -1);
-    }
-
-    private void DrawTextureTab()
-    {
-        using var tab = Im.TabBar.BeginItem("Textures"u8);
-        if (!tab)
+        if (!_modManager.TryIdentifyPath(path, out var mod, out var relPathStr) || !Utf8RelPath.FromString(relPathStr, out var relPath))
             return;
 
-        try
-        {
-            _dragDropManager.CreateImGuiSource("TextureDragDrop",
-                m => m.Extensions.Any(e => ValidTextureExtensions.Contains(e.ToLowerInvariant())), m =>
-                {
-                    if (!GetFirstTexture(m.Files, out var file))
-                        return false;
-
-                    Im.Text($"Dragging texture for editing: {Path.GetFileName(file)}");
-                    return true;
-                });
-            var childWidth = GetChildWidth();
-            var imageSize  = new Vector2(childWidth.X - Im.Style.FramePadding.X * 2);
-            DrawInputChild("Input Texture"u8, _left, childWidth, imageSize);
-            Im.Line.Same();
-            DrawOutputChild(childWidth, imageSize);
-            if (!_overlayCollapsed)
-            {
-                Im.Line.Same();
-                DrawInputChild("Overlay Texture"u8, _right, childWidth, imageSize);
-            }
-
-            Im.Line.Same();
-            DrawOverlayCollapseButton();
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Unknown Error while drawing textures:\n{e}");
-        }
+        _communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(mod, relPath,
+            _context?.TryFindFileRegistry(ResourceType.Tex, mod, relPath)));
     }
 
     private void DrawOverlayCollapseButton()

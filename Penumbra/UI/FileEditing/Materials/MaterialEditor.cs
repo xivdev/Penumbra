@@ -8,7 +8,6 @@ using Penumbra.Interop.Hooks.Objects;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Services;
 using Penumbra.String;
-using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Materials;
@@ -229,4 +228,7 @@ public sealed partial class MaterialEditor : IFileEditor
 
         return output.Write();
     }
+
+    public Task<byte[]> WriteAsync()
+        => Task.FromResult(Write());
 }

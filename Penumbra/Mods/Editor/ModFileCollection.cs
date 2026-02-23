@@ -1,5 +1,6 @@
 using ImSharp.Containers;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
 
@@ -46,6 +47,21 @@ public class ModFileCollection : IDisposable
         => Ready ? _atch : [];
 
     public bool Ready { get; private set; } = true;
+
+    public IObservableList<FileRegistry> GetByType(ResourceType type)
+        => Ready
+            ? type switch
+            {
+                ResourceType.Unknown => _available,
+                ResourceType.Mtrl    => _mtrl,
+                ResourceType.Mdl     => _mdl,
+                ResourceType.Tex     => _tex,
+                ResourceType.Shpk    => _shpk,
+                ResourceType.Pbd     => _pbd,
+                ResourceType.Atch    => _atch,
+                _                    => [],
+            }
+            : [];
 
     public void UpdateAll(Mod mod, IModDataContainer option)
     {

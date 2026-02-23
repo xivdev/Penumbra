@@ -24,7 +24,7 @@ public class FileEditor(
     Func<IEnumerable<FileRegistry>> getFiles,
     Func<string> getInitialPath,
     IFileEditorFactory editorFactory,
-    Func<FileEditingContext?> getFileEditingContext)
+    FileEditingContext fileEditingContext)
     : IDisposable
 {
     public void Draw()
@@ -117,7 +117,7 @@ public class FileEditor(
             ClearDefaultFile(); // Avoid double disposal if an exception occurs during the parsing of the new file.
             try
             {
-                _defaultFile = editorFactory.CreateForGameFile(_defaultPath, getFileEditingContext());
+                _defaultFile = editorFactory.CreateForGameFile(_defaultPath, fileEditingContext);
             }
             catch (Exception e)
             {
@@ -128,14 +128,16 @@ public class FileEditor(
         Im.Line.Same();
         if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Export this file."u8, _defaultFile is null))
             fileDialog.OpenSavePicker($"Export {_defaultPath} to...", fileType, Path.GetFileNameWithoutExtension(_defaultPath), fileType,
-                (success, name) =>
+                async void (success, name) =>
                 {
                     if (!success)
                         return;
 
                     try
                     {
-                        compactor.WriteAllBytes(name, _defaultFile?.Write() ?? throw new Exception("File invalid."));
+                        if (_defaultFile is null)
+                            throw new Exception("File invalid.");
+                        await compactor.WriteAllBytesAsync(name, await _defaultFile.WriteAsync());
                     }
                     catch (Exception e)
                     {
@@ -194,7 +196,7 @@ public class FileEditor(
         ClearCurrentFile(); // Avoid double disposal if an exception occurs during the parsing of the new file.
         try
         {
-            _currentFile = editorFactory.CreateForFile(CurrentPath.File.FullName, true, getFileEditingContext());
+            _currentFile = editorFactory.CreateForFile(CurrentPath.File.FullName, true, fileEditingContext);
         }
         catch (Exception e)
         {
@@ -214,7 +216,16 @@ public class FileEditor(
 
     public void SaveFile()
     {
-        compactor.WriteAllBytes(CurrentPath!.File.FullName, _currentFile!.Write());
+        SaveFileAsync().ContinueWith(t => t.Exception!.Handle(e =>
+        {
+            Penumbra.Messager.NotificationMessage(e, $"Could not save {CurrentPath?.File.FullName}.", NotificationType.Error);
+            return true;
+        }), TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    public async Task SaveFileAsync()
+    {
+        await compactor.WriteAllBytesAsync(CurrentPath!.File.FullName, await _currentFile!.WriteAsync());
         if (owner.Mod is not null)
             communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, CurrentPath));
         _changed = false;

@@ -14,6 +14,7 @@ using Penumbra.UI.FileEditing.Materials;
 using Penumbra.UI.FileEditing.Models;
 using Penumbra.UI.FileEditing.Shaders;
 using Penumbra.UI.FileEditing.Skeletons;
+using Penumbra.UI.FileEditing.Textures;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -28,7 +29,6 @@ public class ModEditWindowFactory(
     ActiveCollections activeCollections,
     ModMergeTab modMergeTab,
     CommunicatorService communicator,
-    TextureManager textures,
     IDragDropManager dragDropManager,
     ResourceTreeViewerFactory resourceTreeViewerFactory,
     IFramework framework,
@@ -37,15 +37,16 @@ public class ModEditWindowFactory(
     MaterialEditorFactory materialEditorFactory,
     ModelEditorFactory modelEditorFactory,
     ShaderPackageEditorFactory shaderPackageEditorFactory,
-    DeformerEditorFactory deformerEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
+    DeformerEditorFactory deformerEditorFactory,
+    CombiningTextureEditorFactory textureEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
 {
     protected override ModEditWindow CreateWindow(int index)
     {
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
-            activeCollections, modMergeTab, communicator, textures, dragDropManager, resourceTreeViewerFactory, framework,
+            activeCollections, modMergeTab, communicator, dragDropManager, resourceTreeViewerFactory, framework,
             CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, modelEditorFactory, shaderPackageEditorFactory, deformerEditorFactory,
-            index);
+            textureEditorFactory, index);
     }
 
     private MetaDrawers CreateMetaDrawers(ModMetaEditor metaEditor)

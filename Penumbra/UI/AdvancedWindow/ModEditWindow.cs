@@ -23,6 +23,7 @@ using Penumbra.UI.FileEditing.Materials;
 using Penumbra.UI.FileEditing.Models;
 using Penumbra.UI.FileEditing.Shaders;
 using Penumbra.UI.FileEditing.Skeletons;
+using Penumbra.UI.FileEditing.Textures;
 using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -46,11 +47,12 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly FileEditor _materialTab;
     private readonly FileEditor _shaderPackageTab;
     private readonly FileEditor _pbdTab;
+    private readonly FileEditor _newTextureTab;
+
+    private readonly CombiningTextureEditor _textureEditor;
 
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
-
-    private FileEditingContext? _fileEditingContext;
 
     public Mod? Mod { get; private set; }
 
@@ -90,8 +92,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         AppendTask(() =>
         {
             _editor.LoadMod(mod, -1, 0).Wait();
-            Mod                 = mod;
-            _fileEditingContext = null;
+            Mod = mod;
 
             SizeConstraints = new WindowSizeConstraints
             {
@@ -105,7 +106,6 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             _pbdTab.Reset();
             _itemSwapTab.UpdateMod(mod, _activeCollections.Current.GetInheritedSettings(mod.Index).Settings);
             UpdateModels();
-            _forceTextureStartPath = true;
         });
     }
 
@@ -115,7 +115,6 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         {
             var (groupIdx, dataIdx) = subMod?.GetDataIndices() ?? (-1, 0);
             _editor.LoadOption(groupIdx, dataIdx).Wait();
-            _fileEditingContext = null;
         });
     }
 
@@ -189,11 +188,12 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             _config.Ephemeral.Save();
         AppendTask(() =>
         {
-            _left.Dispose();
-            _right.Dispose();
+            _textureEditor.Dispose();
             _materialTab.Reset();
             _modelTab.Reset();
             _shaderPackageTab.Reset();
+            _pbdTab.Reset();
+            _newTextureTab.Reset();
         });
     }
 
@@ -226,7 +226,12 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         DrawQuickImportTab();
         _modelTab.Draw();
         _materialTab.Draw();
-        DrawTextureTab();
+        using (var tab = tabBar.Item("Textures"u8))
+        {
+            if (tab)
+                _textureEditor.DrawPanel(false);
+        }
+        _newTextureTab.Draw();
         _shaderPackageTab.Draw();
         using (var tab = tabBar.Item("Item Swap"u8))
         {
@@ -454,24 +459,21 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
                 _editor.Option is DefaultSubMod))
         {
             _editor.LoadOption(-1, 0).Wait();
-            _fileEditingContext = null;
-            ret                 = true;
+            ret = true;
         }
 
         Im.Line.Same();
         if (ImEx.Button("Refresh Data"u8, width, "Refresh data for the current option.\nThis resets unsaved changes."u8))
         {
             _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.DataIdx).Wait();
-            _fileEditingContext = null;
-            ret                 = true;
+            ret = true;
         }
 
         Im.Line.Same();
         if (_optionSelect.Draw("##option"u8, _editor.Option?.GetFullName() ?? string.Empty, default, width.X, out var option))
         {
             _editor.LoadOption(option.GroupIndex, option.DataIndex).Wait();
-            _fileEditingContext = null;
-            ret                 = true;
+            ret = true;
         }
 
         return ret;
@@ -568,10 +570,11 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager,
+        CommunicatorService communicator, IDragDropManager dragDropManager,
         ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
         MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
-        ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory, int index)
+        ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory,
+        CombiningTextureEditorFactory textureEditorFactory, int index)
         : base(WindowBaseLabel, index)
     {
         _itemSwapTab       = itemSwapTab;
@@ -582,32 +585,33 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _modMergeTab       = modMergeTab;
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
-        _textures          = textures;
         _fileDialog        = fileDialog;
         _framework         = framework;
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
 
-        _materialTab = CreateFileEditor("Materials", ".mtrl", () => PopulateIsOnPlayer(_editor.Files.Mtrl, ResourceType.Mtrl),
-            materialEditorFactory);
-        _modelTab = CreateFileEditor("Models", ".mdl", () => PopulateIsOnPlayer(_editor.Files.Mdl, ResourceType.Mdl), modelEditorFactory);
-        _shaderPackageTab = CreateFileEditor("Shaders", ".shpk", () => PopulateIsOnPlayer(_editor.Files.Shpk, ResourceType.Shpk),
-            shaderPackageEditorFactory);
-        _pbdTab = CreateFileEditor("Deformers", ".pbd", () => _editor.Files.Pbd, deformerEditorFactory);
+        var fileEditingContext = new ModEditFileEditingContext(activeCollections, editor);
 
-        _center              = new CombinedTexture(_left, _right);
-        _textureSelectCombo  = new TextureSelectCombo(resourceTreeFactory, editor, gameData);
+        _materialTab      = CreateFileEditor("Materials",    ".mtrl", ResourceType.Mtrl, materialEditorFactory);
+        _modelTab         = CreateFileEditor("Models",       ".mdl",  ResourceType.Mdl,  modelEditorFactory);
+        _shaderPackageTab = CreateFileEditor("Shaders",      ".shpk", ResourceType.Shpk, shaderPackageEditorFactory);
+        _pbdTab           = CreateFileEditor("Deformers",    ".pbd",  ResourceType.Pbd,  deformerEditorFactory);
+        _newTextureTab    = CreateFileEditor("Textures (2)", ".tex",  ResourceType.Tex,  textureEditorFactory);
+
+        _textureEditor = textureEditorFactory.CreateForModEditWindow(fileEditingContext);
+
         _resourceTreeFactory = resourceTreeFactory;
         _quickImportViewer   = resourceTreeViewerFactory.Create(1, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModEditWindow);
 
         return;
 
-        FileEditor CreateFileEditor(string tabName, string fileType, Func<IEnumerable<FileRegistry>> getFiles, IFileEditorFactory editorFactory)
+        FileEditor CreateFileEditor(string tabName, string fileType, ResourceType type, IFileEditorFactory editorFactory)
         {
-            return new FileEditor(this, communicator, config, editor.Compactor, fileDialog, tabName, fileType, getFiles,
-                () => Mod?.ModPath.FullName ?? string.Empty, editorFactory, GetFileEditingContext);
+            return new FileEditor(this, communicator, config, editor.Compactor, fileDialog, tabName, fileType,
+                () => PopulateIsOnPlayer(_editor.Files.GetByType(type), type), () => Mod?.ModPath.FullName ?? string.Empty, editorFactory,
+                fileEditingContext);
         }
     }
 
@@ -618,9 +622,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _materialTab.Dispose();
         _modelTab.Dispose();
         _shaderPackageTab.Dispose();
-        _left.Dispose();
-        _right.Dispose();
-        _center.Dispose();
+        _textureEditor.Dispose();
     }
 
     private void OnModPathChange(in ModPathChanged.Arguments arguments)
@@ -631,8 +633,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         switch (arguments.Type)
         {
             case ModPathChangeType.Reloaded or ModPathChangeType.Moved:
-                Mod                 = null;
-                _fileEditingContext = null;
+                Mod = null;
                 ChangeMod(arguments.Mod);
                 break;
             case ModPathChangeType.Deleted:
@@ -641,7 +642,4 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
                 break;
         }
     }
-
-    private FileEditingContext GetFileEditingContext()
-        => _fileEditingContext ??= new(_activeCollections, Mod, _editor.Option);
 }

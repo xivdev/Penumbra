@@ -26,6 +26,9 @@ public partial class DeformerEditor(Configuration configuration, PbdFile file, s
 
     public byte[] Write()
         => File.Write();
+
+    public Task<byte[]> WriteAsync()
+        => Task.FromResult(File.Write());
     
     public GenderRace      SelectedRaceCode = GenderRace.Unknown;
     public RacialDeformer? SelectedDeformer;

@@ -74,6 +74,9 @@ public partial class ModelEditor : IFileEditor
     public byte[] Write()
         => Mdl.Write();
 
+    public Task<byte[]> WriteAsync()
+        => Task.FromResult(Mdl.Write());
+
     public bool Dirty
     {
         get

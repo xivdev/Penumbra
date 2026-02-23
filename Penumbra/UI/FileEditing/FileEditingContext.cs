@@ -1,22 +1,22 @@
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.SubMods;
 using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.FileEditing;
 
-public sealed class FileEditingContext(ActiveCollections activeCollections, Mod? mod, IModDataContainer? option)
+public abstract class FileEditingContext
 {
-    public ModCollection? Collection
-        => activeCollections.Current;
+    protected abstract ModCollection? Collection { get; }
 
-    public Mod? Mod
-        => mod;
+    public abstract ModEditor? Editor { get; }
 
-    public IModDataContainer? Option
-        => option;
+    public abstract Mod? Mod { get; }
+
+    public abstract IModDataContainer? Option { get; }
 
     /// <summary>
     /// Find the best matching associated file for a given path.
@@ -35,7 +35,7 @@ public sealed class FileEditingContext(ActiveCollections activeCollections, Mod?
                 return currentFile.Value;
         }
 
-        if (mod is not null)
+        if (Mod is { } mod)
         {
             foreach (var option in mod.Groups.OrderByDescending(g => g.Priority))
             {
@@ -60,11 +60,13 @@ public sealed class FileEditingContext(ActiveCollections activeCollections, Mod?
                     ret.Add(path);
             }
 
-        if (mod is not null)
+        if (Mod is { } mod)
             foreach (var option in mod.AllDataContainers)
                 foreach (var path in option.Files.Keys.Where(path => path.Path.StartsWith(prefix)))
                     ret.Add(path);
 
         return ret;
     }
+
+    public abstract FileRegistry? TryFindFileRegistry(ResourceType type, Mod mod, Utf8RelPath relPath);
 }

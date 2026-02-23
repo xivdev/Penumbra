@@ -442,4 +442,7 @@ public partial class ShaderPackageEditor : IFileEditor
 
     public byte[] Write()
         => Shpk.Write();
+
+    public Task<byte[]> WriteAsync()
+        => Task.FromResult(Shpk.Write());
 }

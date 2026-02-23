@@ -383,7 +383,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable, ISer
     /// <summary> Update change counters when changing files. </summary>
     private void OnModFileChanged(in ModFileChanged.Arguments arguments)
     {
-        if (arguments.File.CurrentUsage == 0)
+        if (arguments.File is { CurrentUsage: 0 })
             return;
 
         foreach (var collection in this)

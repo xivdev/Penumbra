@@ -314,7 +314,7 @@ public class ModSettingsApi : IPenumbraApiModSettings, IApiService, IDisposable
 
     private void OnModFileChanged(in ModFileChanged.Arguments arguments)
     {
-        if (arguments.File.CurrentUsage == 0)
+        if (arguments.File is { CurrentUsage: 0 })
             return;
 
         TriggerSettingEdited(arguments.Mod);
