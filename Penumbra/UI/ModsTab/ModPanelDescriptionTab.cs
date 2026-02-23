@@ -39,7 +39,7 @@ public class ModPanelDescriptionTab(
             modManager.DataEditor.ChangeLocalTag(selection.Mod!, tagIdx, editedTag);
 
         if (predefinedTagsEnabled)
-            predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selection.Mod!.LocalTags, selection.Mod!.ModTags, true, selection.Mod!);
+            predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selection.Mod, true);
 
         if (selection.Mod!.ModTags.Count > 0)
             TagButtons.Draw("Mod Tags: "u8, "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod."u8,

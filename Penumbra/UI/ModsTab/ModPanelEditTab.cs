@@ -70,7 +70,7 @@ public class ModPanelEditTab(
             modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
 
         if (sharedTagsEnabled)
-            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(_mod.LocalTags, _mod.ModTags, false, _mod);
+            predefinedTagManager.DrawAddFromSharedTagsAndUpdateTags(_mod, false);
 
         UiHelpers.DefaultLineSpace();
         if (Im.Tree.Header("Group Editing"u8))
