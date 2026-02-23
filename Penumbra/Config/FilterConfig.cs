@@ -17,7 +17,7 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
         => 1;
 
     public FilterConfig(SaveService saveService, MessageService messager)
-        : base(saveService, messager)
+        : base(saveService, messager, TimeSpan.FromMinutes(5))
     {
         Load();
     }

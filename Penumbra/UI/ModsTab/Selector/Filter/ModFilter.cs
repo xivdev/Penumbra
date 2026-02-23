@@ -89,14 +89,14 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
         using var combo = Im.Combo.Begin("##combo"u8, StringU8.Empty,
             ComboFlags.NoPreview | ComboFlags.HeightLargest | ComboFlags.PopupAlignLeft);
 
-        if (Im.Item.RightClicked())
+        if (Im.Item.MiddleClicked())
         {
             // Ensure that a right-click clears the text filter if it is currently being edited.
             Im.Id.ClearActive();
             Clear();
         }
 
-        Im.Tooltip.OnHover("Filter mods for their activation status.\nRight-Click to clear all filters, including the text-filter."u8);
+        Im.Tooltip.OnHover("Filter mods for their activation status.\nMiddle-Click to clear all filters, including the text-filter."u8);
 
         var changes = false;
         if (combo)
@@ -125,6 +125,7 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
     {
         var changes = _stateFilter is not ModTypeFilterExtensions.UnfilteredStateMods;
         _stateFilter = ModTypeFilterExtensions.UnfilteredStateMods;
+        Im.Id.ClearActive();
         if (!Set(string.Empty) && changes)
             InvokeEvent();
     }
