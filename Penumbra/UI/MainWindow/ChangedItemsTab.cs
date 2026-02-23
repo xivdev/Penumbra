@@ -74,12 +74,18 @@ public sealed class ChangedItemsTab(
             return ret;
         }
 
-        public void Clear()
+        public bool Clear()
         {
+            Im.Id.ClearActive();
+            var changes = !IsEmpty;
+            if (!changes)
+                return false;
+
             _filterConfig.ChangedItemModFilter  = string.Empty;
             _filterConfig.ChangedItemItemFilter = string.Empty;
             _filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
             FilterChanged?.Invoke();
+            return true;
         }
 
         public bool IsEmpty

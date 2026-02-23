@@ -121,13 +121,16 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
         return changes;
     }
 
-    public override void Clear()
+    public override bool Clear()
     {
         var changes = _stateFilter is not ModTypeFilterExtensions.UnfilteredStateMods;
         _stateFilter = ModTypeFilterExtensions.UnfilteredStateMods;
         Im.Id.ClearActive();
-        if (!Set(string.Empty) && changes)
-            InvokeEvent();
+        if (!SetInternal(string.Empty) && !changes)
+            return false;
+
+        InvokeEvent();
+        return true;
     }
 
     protected override bool Matches(in ModFilterToken token, in ModFileSystemCache.ModData cacheItem)
