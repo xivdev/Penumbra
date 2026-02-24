@@ -31,7 +31,6 @@ public class ModEditWindowFactory(
     CommunicatorService communicator,
     IDragDropManager dragDropManager,
     ResourceTreeViewerFactory resourceTreeViewerFactory,
-    IFramework framework,
     WindowSystem windowSystem,
     Logger log,
     MaterialEditorFactory materialEditorFactory,
@@ -44,7 +43,7 @@ public class ModEditWindowFactory(
     {
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
-            activeCollections, modMergeTab, communicator, dragDropManager, resourceTreeViewerFactory, framework,
+            activeCollections, modMergeTab, communicator, dragDropManager, resourceTreeViewerFactory,
             CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, modelEditorFactory, shaderPackageEditorFactory, deformerEditorFactory,
             textureEditorFactory, index);
     }

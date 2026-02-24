@@ -7,7 +7,6 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Enums;
-using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
@@ -40,14 +39,15 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly ModMergeTab         _modMergeTab;
     private readonly CommunicatorService _communicator;
     private readonly IDragDropManager    _dragDropManager;
-    private readonly IFramework          _framework;
     private readonly OptionSelectCombo   _optionSelect;
 
     private readonly FileEditor _modelTab;
     private readonly FileEditor _materialTab;
     private readonly FileEditor _shaderPackageTab;
     private readonly FileEditor _pbdTab;
+    #if DEBUG
     private readonly FileEditor _newTextureTab;
+    #endif
 
     private readonly CombiningTextureEditor _textureEditor;
 
@@ -193,7 +193,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             _modelTab.Reset();
             _shaderPackageTab.Reset();
             _pbdTab.Reset();
+            #if DEBUG
             _newTextureTab.Reset();
+            #endif
         });
     }
 
@@ -231,7 +233,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             if (tab)
                 _textureEditor.DrawPanel(false);
         }
+        #if DEBUG
         _newTextureTab.Draw();
+        #endif
         _shaderPackageTab.Draw();
         using (var tab = tabBar.Item("Item Swap"u8))
         {
@@ -571,7 +575,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, IDragDropManager dragDropManager,
-        ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
+        ResourceTreeViewerFactory resourceTreeViewerFactory,
         MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
         ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory,
         CombiningTextureEditorFactory textureEditorFactory, int index)
@@ -586,18 +590,19 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _communicator      = communicator;
         _dragDropManager   = dragDropManager;
         _fileDialog        = fileDialog;
-        _framework         = framework;
         _metaDrawers       = metaDrawers;
         _overviewTable     = new OverviewTable(_editor);
         _optionSelect      = new OptionSelectCombo(editor, this);
 
         var fileEditingContext = new ModEditFileEditingContext(activeCollections, editor);
 
-        _materialTab      = CreateFileEditor("Materials",    ".mtrl", ResourceType.Mtrl, materialEditorFactory);
-        _modelTab         = CreateFileEditor("Models",       ".mdl",  ResourceType.Mdl,  modelEditorFactory);
-        _shaderPackageTab = CreateFileEditor("Shaders",      ".shpk", ResourceType.Shpk, shaderPackageEditorFactory);
-        _pbdTab           = CreateFileEditor("Deformers",    ".pbd",  ResourceType.Pbd,  deformerEditorFactory);
-        _newTextureTab    = CreateFileEditor("Textures (2)", ".tex",  ResourceType.Tex,  textureEditorFactory);
+        _materialTab      = CreateFileEditor("Materials", ".mtrl", ResourceType.Mtrl, materialEditorFactory);
+        _modelTab         = CreateFileEditor("Models",    ".mdl",  ResourceType.Mdl,  modelEditorFactory);
+        _shaderPackageTab = CreateFileEditor("Shaders",   ".shpk", ResourceType.Shpk, shaderPackageEditorFactory);
+        _pbdTab           = CreateFileEditor("Deformers", ".pbd",  ResourceType.Pbd,  deformerEditorFactory);
+        #if DEBUG
+        _newTextureTab = CreateFileEditor("Textures (2)", ".tex", ResourceType.Tex, textureEditorFactory);
+        #endif
 
         _textureEditor = textureEditorFactory.CreateForModEditWindow(fileEditingContext);
 
