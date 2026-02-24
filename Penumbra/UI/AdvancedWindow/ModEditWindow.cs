@@ -575,7 +575,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         ActiveCollections activeCollections, ModMergeTab modMergeTab,
         CommunicatorService communicator, IDragDropManager dragDropManager,
-        ResourceTreeViewerFactory resourceTreeViewerFactory,
+        ResourceTreeViewerFactory resourceTreeViewerFactory, IFramework framework,
         MetaDrawers metaDrawers, MaterialEditorFactory materialEditorFactory, ModelEditorFactory modelEditorFactory,
         ShaderPackageEditorFactory shaderPackageEditorFactory, DeformerEditorFactory deformerEditorFactory,
         CombiningTextureEditorFactory textureEditorFactory, int index)
@@ -614,7 +614,7 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
 
         FileEditor CreateFileEditor(string tabName, string fileType, ResourceType type, IFileEditorFactory editorFactory)
         {
-            return new FileEditor(this, communicator, config, editor.Compactor, fileDialog, tabName, fileType,
+            return new FileEditor(this, communicator, config, editor.Compactor, fileDialog, framework, tabName, fileType,
                 () => PopulateIsOnPlayer(_editor.Files.GetByType(type), type), () => Mod?.ModPath.FullName ?? string.Empty, editorFactory,
                 fileEditingContext);
         }

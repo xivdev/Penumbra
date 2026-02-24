@@ -19,6 +19,7 @@ public class FileEditor(
     Configuration config,
     FileCompactor compactor,
     FileDialogService fileDialog,
+    IFramework framework,
     string tabName,
     string fileType,
     Func<IEnumerable<FileRegistry>> getFiles,
@@ -227,7 +228,7 @@ public class FileEditor(
     {
         await compactor.WriteAllBytesAsync(CurrentPath!.File.FullName, await _currentFile!.WriteAsync());
         if (owner.Mod is not null)
-            communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, CurrentPath));
+            await framework.Run(() => communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, CurrentPath)));
         _changed = false;
     }
 
