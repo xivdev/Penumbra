@@ -23,7 +23,7 @@ public sealed class ModEditFileEditingContext(ActiveCollections activeCollection
 
     public override IModDataContainer? Option
         => editor?.Option;
-    
+
     public override FileRegistry? TryFindFileRegistry(ResourceType type, Mod mod, Utf8RelPath relPath)
         => editor is not null
          && editor.Mod == mod
