@@ -13,8 +13,6 @@ public partial class ModEditWindow
 {
     private static readonly StringU8 DisassemblyLabel = new("##disassembly"u8);
 
-    private readonly FileEditor<ShpkTab> _shaderPackageTab;
-
     private static bool DrawShaderPackagePanel(ShpkTab file, bool disabled)
     {
         var dummyHeight = new Vector2(Im.Style.TextHeight / 2);

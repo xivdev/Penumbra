@@ -22,7 +22,6 @@ public partial class ModEditWindow
     private const string MdlExportDocumentation =
         @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-25968400-ebe5-4861-b610-cb1556db7ec4";
 
-    private readonly FileEditor<MdlTab> _modelTab;
     private readonly ModelManager       _models;
 
     private class LoadedData

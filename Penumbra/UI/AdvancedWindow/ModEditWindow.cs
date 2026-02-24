@@ -42,6 +42,12 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly IFramework          _framework;
     private readonly OptionSelectCombo   _optionSelect;
 
+
+    private readonly FileEditor<MdlTab>  _modelTab;
+    private readonly FileEditor<MtrlTab> _materialTab;
+    private readonly FileEditor<ShpkTab> _shaderPackageTab;
+    private readonly FileEditor<PbdTab>  _pbdTab;
+
     private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
 

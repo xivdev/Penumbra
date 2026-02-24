@@ -8,8 +8,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private readonly FileEditor<PbdTab> _pbdTab;
-    private readonly PbdData            _pbdData = new();
+    private readonly PbdData _pbdData = new();
 
     private bool DrawDeformerPanel(PbdTab tab, bool disabled)
     {
