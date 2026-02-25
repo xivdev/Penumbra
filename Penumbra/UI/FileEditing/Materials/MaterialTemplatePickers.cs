@@ -3,7 +3,7 @@ using Luna;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
 public sealed unsafe class MaterialTemplatePickers : IUiService
 {

@@ -4,100 +4,92 @@ using Lumina.Data.Parsing;
 using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
-using Penumbra.Import.Models;
 using Penumbra.Import.Models.Import;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
-using TagButtons = Luna.TagButtons;
 
-namespace Penumbra.UI.AdvancedWindow;
+namespace Penumbra.UI.FileEditing.Models;
 
-public partial class ModEditWindow
+public partial class ModelEditor
 {
     private const int MdlMaterialMaximum = ModelImporter.MaterialLimit;
 
     private const string MdlImportDocumentation =
-        @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-9b49d296-23ab-410a-845b-a3be769b71ea";
+        "https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-9b49d296-23ab-410a-845b-a3be769b71ea";
 
     private const string MdlExportDocumentation =
-        @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-25968400-ebe5-4861-b610-cb1556db7ec4";
-
-    private readonly FileEditor<MdlTab> _modelTab;
-    private readonly ModelManager       _models;
-
-    private class LoadedData
-    {
-        public          MdlFile          LastFile             = null!;
-        public          long[]           LodTriCount          = [];
-    }
+        "https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-25968400-ebe5-4861-b610-cb1556db7ec4";
 
     private string _modelNewMaterial = string.Empty;
-
-    private readonly LoadedData _main    = new();
-    private readonly LoadedData _preview = new();
 
     private string       _customPath     = string.Empty;
     private Utf8GamePath _customGamePath = Utf8GamePath.Empty;
 
+    private bool   _loadedData;
+    public  long[] LodTriCount = [];
 
-    private LoadedData UpdateFile(MdlFile file, bool force, bool disabled)
+    public bool DrawToolbar(bool disabled)
     {
-        var data = disabled ? _preview : _main;
-        if (file == data.LastFile && !force)
-            return data;
+        DrawVersionUpdate(disabled);
 
-        data.LastFile = file;
-        data.LodTriCount = Enumerable.Range(0, file.Lods.Length).Select(l => GetTriangleCountForLod(file, l)).ToArray();
-        return data;
+        return false;
     }
 
-    private bool DrawModelPanel(MdlTab tab, bool disabled)
+    private void UpdateFile(bool force)
     {
-        var ret  = tab.Dirty;
-        var data = UpdateFile(tab.Mdl, ret, disabled);
-        DrawVersionUpdate(tab, disabled);
-        DrawImportExport(tab, disabled);
+        if (_loadedData && !force)
+            return;
 
-        ret |= DrawModelMaterialDetails(tab, disabled);
+        _loadedData = true;
+        LodTriCount = Enumerable.Range(0, Mdl.Lods.Length).Select(l => GetTriangleCountForLod(Mdl, l)).ToArray();
+    }
 
-        if (Im.Tree.Header($"Meshes ({data.LastFile.Meshes.Length})###meshes"))
-            for (var i = 0; i < data.LastFile.LodCount; ++i)
-                ret |= DrawModelLodDetails(tab, i, disabled);
+    public bool DrawPanel(bool disabled)
+    {
+        var ret = Dirty;
+        UpdateFile(ret);
+        DrawImportExport(disabled);
 
-        ret |= DrawOtherModelDetails(data);
+        ret |= DrawModelMaterialDetails(disabled);
+
+        if (Im.Tree.Header($"Meshes ({Mdl.Meshes.Length})###meshes"))
+            for (var i = 0; i < Mdl.LodCount; ++i)
+                ret |= DrawModelLodDetails(i, disabled);
+
+        ret |= DrawOtherModelDetails();
 
         return !disabled && ret;
     }
 
-    private void DrawVersionUpdate(MdlTab tab, bool disabled)
+    private void DrawVersionUpdate(bool disabled)
     {
-        if (disabled || tab.Mdl.Version is not MdlFile.V5)
+        if (disabled || Mdl.Version is not MdlFile.V5)
             return;
 
         if (!ImEx.Button("Update MDL Version from V5 to V6"u8, Colors.PressEnterWarningBg, default, Im.ContentRegion.Available with { Y = 0 },
                 "Try using this if the bone weights of a pre-Dawntrail model seem wrong.\n\nThis is not revertible."u8))
             return;
 
-        tab.Mdl.ConvertV5ToV6();
-        _modelTab.SaveFile();
+        Mdl.ConvertV5ToV6();
+        SaveRequested?.Invoke();
     }
 
-    private void DrawImportExport(MdlTab tab, bool disabled)
+    private void DrawImportExport(bool disabled)
     {
         if (!Im.Tree.Header("Import / Export"u8))
             return;
 
         var childSize = new Vector2((Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X) / 2, 0);
 
-        DrawImport(tab, childSize, disabled);
+        DrawImport(childSize, disabled);
         Im.Line.Same();
-        DrawExport(tab, childSize, disabled);
+        DrawExport(childSize, disabled);
 
-        DrawIoExceptions(tab);
-        DrawIoWarnings(tab);
+        DrawIoExceptions();
+        DrawIoWarnings();
     }
 
-    private void DrawImport(MdlTab tab, Vector2 size, bool _1)
+    private void DrawImport(Vector2 size, bool _1)
     {
         using var id = Im.Id.Push("import"u8);
 
@@ -114,60 +106,60 @@ public partial class ModEditWindow
         using (ImEx.FramedGroup("Import"u8, LunaStyle.ImportIcon, default, StringU8.Empty, ColorParameter.Default, ColorParameter.Default,
                    size))
         {
-            Im.Checkbox("Keep current materials"u8,  ref tab.ImportKeepMaterials);
-            Im.Checkbox("Keep current attributes"u8, ref tab.ImportKeepAttributes);
+            Im.Checkbox("Keep current materials"u8,  ref ImportKeepMaterials);
+            Im.Checkbox("Keep current attributes"u8, ref ImportKeepAttributes);
 
-            if (ImEx.Button("Import from glTF"u8, Vector2.Zero, "Imports a glTF file, overriding the content of this mdl."u8, tab.PendingIo))
+            if (ImEx.Button("Import from glTF"u8, Vector2.Zero, "Imports a glTF file, overriding the content of this mdl."u8, PendingIo))
                 _fileDialog.OpenFilePicker("Load model from glTF.", "glTF{.gltf,.glb}", (success, paths) =>
                 {
                     if (success && paths.Count > 0)
-                        tab.Import(paths[0]);
-                }, 1, Mod!.ModPath.FullName, false);
+                        Import(paths[0]);
+                }, 1, _context?.Mod?.ModPath.FullName, false);
 
             Im.Line.Same();
             DrawDocumentationLink(MdlImportDocumentation);
         }
 
         if (_dragDropManager.CreateImGuiTarget("ModelDragDrop", out var files, out _) && GetFirstModel(files, out var importFile))
-            tab.Import(importFile);
+            Import(importFile);
     }
 
-    private void DrawExport(MdlTab tab, Vector2 size, bool _)
+    private void DrawExport(Vector2 size, bool _)
     {
         using var id = Im.Id.Push("export"u8);
         using var frame = ImEx.FramedGroup("Export"u8, LunaStyle.FileExportIcon, default, StringU8.Empty, ColorParameter.Default,
             ColorParameter.Default, size);
 
-        if (tab.GamePaths is null)
+        if (GamePaths is null)
         {
-            Im.Text(tab.IoExceptions.Count is 0 ? "Resolving model game paths."u8 : "Failed to resolve model game paths."u8);
+            Im.Text(IoExceptions.Count is 0 ? "Resolving model game paths."u8 : "Failed to resolve model game paths."u8);
 
             return;
         }
 
-        DrawGamePathCombo(tab);
+        DrawGamePathCombo();
 
-        Im.Checkbox("##exportGeneratedMissingBones"u8, ref tab.ExportConfig.GenerateMissingBones);
+        Im.Checkbox("##exportGeneratedMissingBones"u8, ref ExportConfig.GenerateMissingBones);
         LunaStyle.DrawAlignedHelpMarkerLabel("Generate Missing Bones"u8,
             "WARNING: Enabling this option can result in unusable exported meshes.\n"u8
           + "It is primarily intended to allow exporting models weighted to bones that do not exist.\n"u8
           + "Before enabling, ensure dependencies are enabled in the current collection, and EST metadata is correctly configured."u8);
 
-        var gamePath = tab.GamePathIndex >= 0 && tab.GamePathIndex < tab.GamePaths.Count
-            ? tab.GamePaths[tab.GamePathIndex]
+        var gamePath = GamePathIndex >= 0 && GamePathIndex < GamePaths.Count
+            ? GamePaths[GamePathIndex]
             : _customGamePath;
 
         if (ImEx.Button("Export to glTF"u8, Vector2.Zero, "Exports this mdl file to glTF, for use in 3D authoring applications."u8,
-                tab.PendingIo || gamePath.IsEmpty))
+                PendingIo || gamePath.IsEmpty))
             _fileDialog.OpenSavePicker("Save model as glTF.", ".glb", Path.GetFileNameWithoutExtension(gamePath.Filename().ToString()),
                 ".glb", (valid, path) =>
                 {
                     if (!valid)
                         return;
 
-                    tab.Export(path, gamePath);
+                    Export(path, gamePath);
                 },
-                Mod!.ModPath.FullName,
+                _context?.Mod?.ModPath.FullName,
                 false
             );
 
@@ -175,9 +167,9 @@ public partial class ModEditWindow
         DrawDocumentationLink(MdlExportDocumentation);
     }
 
-    private static void DrawIoExceptions(MdlTab tab)
+    private void DrawIoExceptions()
     {
-        if (tab.IoExceptions.Count is 0)
+        if (IoExceptions.Count is 0)
             return;
 
         var size = Im.ContentRegion.Available with { Y = 0 };
@@ -185,7 +177,7 @@ public partial class ModEditWindow
             LunaStyle.ErrorBorderColor, size);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
-        foreach (var (index, exception) in tab.IoExceptions.Index())
+        foreach (var (index, exception) in IoExceptions.Index())
         {
             using var id       = Im.Id.Push(index);
             var       message  = new StringU8($"{exception.GetType().Name}: {exception.Message}");
@@ -202,9 +194,9 @@ public partial class ModEditWindow
         }
     }
 
-    private static void DrawIoWarnings(MdlTab tab)
+    private void DrawIoWarnings()
     {
-        if (tab.IoWarnings.Count is 0)
+        if (IoWarnings.Count is 0)
             return;
 
         var size = Im.ContentRegion.Available with { Y = 0 };
@@ -212,7 +204,7 @@ public partial class ModEditWindow
             LunaStyle.WarningBorderColor, size);
 
         var spaceAvail = Im.ContentRegion.Available.X - Im.Style.ItemSpacing.X - 100;
-        foreach (var (index, warning) in tab.IoWarnings.Index())
+        foreach (var (index, warning) in IoWarnings.Index())
         {
             using var id       = Im.Id.Push(index);
             var       textSize = Im.Font.CalculateSize(warning).X;
@@ -234,11 +226,11 @@ public partial class ModEditWindow
         }
     }
 
-    private void DrawGamePathCombo(MdlTab tab)
+    private void DrawGamePathCombo()
     {
-        if (tab.GamePaths!.Count != 0)
+        if (GamePaths!.Count != 0)
         {
-            DrawComboButton(tab);
+            DrawComboButton();
             return;
         }
 
@@ -251,12 +243,12 @@ public partial class ModEditWindow
     }
 
     /// <summary> I disliked the combo with only one selection so turn it into a button in that case. </summary>
-    private static void DrawComboButton(MdlTab tab)
+    private void DrawComboButton()
     {
-        var preview     = tab.GamePaths![tab.GamePathIndex].Path.Span;
+        var preview     = GamePaths![GamePathIndex].Path.Span;
         var labelWidth  = Im.Font.CalculateSize("Game Path"u8).X + Im.Style.ItemInnerSpacing.X;
         var buttonWidth = Im.ContentRegion.Available.X - labelWidth - Im.Style.ItemSpacing.X;
-        if (tab.GamePaths!.Count == 1)
+        if (GamePaths!.Count == 1)
         {
             using var style = ImStyleDouble.ButtonTextAlign.Push(new Vector2(0, 0.5f));
             using var color = ImGuiColor.Button.Push(Im.Style[ImGuiColor.FrameBackground])
@@ -272,12 +264,12 @@ public partial class ModEditWindow
             Im.Item.SetNextWidth(buttonWidth);
             using var combo = Im.Combo.Begin("Game Path"u8, preview);
             if (combo.Success)
-                foreach (var (index, path) in tab.GamePaths.Index())
+                foreach (var (index, path) in GamePaths.Index())
                 {
-                    if (!Im.Selectable(path.Path.Span, index == tab.GamePathIndex))
+                    if (!Im.Selectable(path.Path.Span, index == GamePathIndex))
                         continue;
 
-                    tab.GamePathIndex = index;
+                    GamePathIndex = index;
                 }
         }
 
@@ -301,9 +293,9 @@ public partial class ModEditWindow
         Im.Window.DrawList.Shape.Line(lineStart, lineEnd, 0xFFFFFFFF);
     }
 
-    private bool DrawModelMaterialDetails(MdlTab tab, bool disabled)
+    private bool DrawModelMaterialDetails(bool disabled)
     {
-        var invalidMaterialCount = tab.Mdl.Materials.Count(material => !tab.ValidateMaterial(material));
+        var invalidMaterialCount = Mdl.Materials.Count(material => !ValidateMaterial(material));
 
         var oldPos = Im.Cursor.Y;
         var header = Im.Tree.Header("Materials"u8);
@@ -325,7 +317,7 @@ public partial class ModEditWindow
             return false;
 
         var ret       = false;
-        var materials = tab.Mdl.Materials;
+        var materials = Mdl.Materials;
 
         table.SetupColumn("index"u8, TableColumnFlags.WidthFixed,   80 * Im.Style.GlobalScale);
         table.SetupColumn("path"u8,  TableColumnFlags.WidthStretch, 1);
@@ -337,7 +329,7 @@ public partial class ModEditWindow
 
         var inputFlags = disabled ? InputTextFlags.ReadOnly : InputTextFlags.None;
         for (var materialIndex = 0; materialIndex < materials.Length; materialIndex++)
-            ret |= DrawMaterialRow(table, tab, disabled, materials, materialIndex, inputFlags);
+            ret |= DrawMaterialRow(table, disabled, materials, materialIndex, inputFlags);
 
         if (materials.Length >= MdlMaterialMaximum || disabled)
             return ret;
@@ -348,12 +340,12 @@ public partial class ModEditWindow
         Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
         Im.Input.Text("##newMaterial"u8, ref _modelNewMaterial, "Add new material..."u8, maxLength: Utf8GamePath.MaxGamePathLength,
             flags: inputFlags);
-        var validName = tab.ValidateMaterial(_modelNewMaterial);
+        var validName = ValidateMaterial(_modelNewMaterial);
         table.NextColumn();
         if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, StringU8.Empty, !validName))
         {
             ret               = true;
-            tab.Mdl.Materials = materials.AddItem(_modelNewMaterial);
+            Mdl.Materials     = materials.AddItem(_modelNewMaterial);
             _modelNewMaterial = string.Empty;
         }
 
@@ -364,7 +356,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private bool DrawMaterialRow(in Im.TableDisposable table, MdlTab tab, bool disabled, string[] materials, int materialIndex,
+    private bool DrawMaterialRow(in Im.TableDisposable table, bool disabled, string[] materials, int materialIndex,
         InputTextFlags inputFlags)
     {
         using var id  = Im.Id.Push(materialIndex);
@@ -394,7 +386,7 @@ public partial class ModEditWindow
             if (ImEx.Icon.Button(LunaStyle.DeleteIcon,
                     "Delete this material.\nAny meshes targeting this material will be updated to use material #1."u8, !modifierActive))
             {
-                tab.RemoveMaterial(materialIndex);
+                RemoveMaterial(materialIndex);
                 ret = true;
             }
 
@@ -404,7 +396,7 @@ public partial class ModEditWindow
 
         table.NextColumn();
         // Add markers to invalid materials.
-        if (!tab.ValidateMaterial(temp))
+        if (!ValidateMaterial(temp))
             DrawInvalidMaterialMarker();
 
         return ret;
@@ -419,22 +411,22 @@ public partial class ModEditWindow
           + "and must end in \".mtrl\"."u8);
     }
 
-    private static bool DrawModelLodDetails(MdlTab tab, int lodIndex, bool disabled)
+    private bool DrawModelLodDetails(int lodIndex, bool disabled)
     {
         using var lodNode = Im.Tree.Node($"Level of Detail #{lodIndex + 1}", TreeNodeFlags.DefaultOpen);
         if (!lodNode)
             return false;
 
-        var lod = tab.Mdl.Lods[lodIndex];
+        var lod = Mdl.Lods[lodIndex];
         var ret = false;
 
         for (var meshOffset = 0; meshOffset < lod.MeshCount; meshOffset++)
-            ret |= DrawModelMeshDetails(tab, lod.MeshIndex + meshOffset, disabled);
+            ret |= DrawModelMeshDetails(lod.MeshIndex + meshOffset, disabled);
 
         return ret;
     }
 
-    private static bool DrawModelMeshDetails(MdlTab tab, int meshIndex, bool disabled)
+    private bool DrawModelMeshDetails(int meshIndex, bool disabled)
     {
         using var meshNode = Im.Tree.Node($"Mesh #{meshIndex + 1}", TreeNodeFlags.DefaultOpen);
         if (!meshNode)
@@ -448,7 +440,7 @@ public partial class ModEditWindow
         table.SetupColumn("name"u8,  TableColumnFlags.WidthFixed,   100 * Im.Style.GlobalScale);
         table.SetupColumn("field"u8, TableColumnFlags.WidthStretch, 1);
 
-        var file = tab.Mdl;
+        var file = Mdl;
         var mesh = file.Meshes[meshIndex];
 
         // Vertex elements
@@ -461,11 +453,11 @@ public partial class ModEditWindow
         table.DrawFrameColumn("Material"u8);
 
         table.NextColumn();
-        var ret = DrawMaterialCombo(tab, meshIndex, disabled);
+        var ret = DrawMaterialCombo(meshIndex, disabled);
 
         // Sub meshes
         for (var subMeshOffset = 0; subMeshOffset < mesh.SubMeshCount; subMeshOffset++)
-            ret |= DrawSubMeshAttributes(table, tab, meshIndex, subMeshOffset, disabled);
+            ret |= DrawSubMeshAttributes(table, meshIndex, subMeshOffset, disabled);
 
         return ret;
     }
@@ -499,40 +491,40 @@ public partial class ModEditWindow
         }
     }
 
-    private static bool DrawMaterialCombo(MdlTab tab, int meshIndex, bool disabled)
+    private bool DrawMaterialCombo(int meshIndex, bool disabled)
     {
-        var       mesh = tab.Mdl.Meshes[meshIndex];
+        var       mesh = Mdl.Meshes[meshIndex];
         using var _    = Im.Disabled(disabled);
         Im.Item.SetNextWidth(Im.ContentRegion.Available.X);
-        using var materialCombo = Im.Combo.Begin("##material"u8, tab.Mdl.Materials[mesh.MaterialIndex]);
+        using var materialCombo = Im.Combo.Begin("##material"u8, Mdl.Materials[mesh.MaterialIndex]);
 
         if (!materialCombo)
             return false;
 
         var ret = false;
-        foreach (var (materialIndex, material) in tab.Mdl.Materials.Index())
+        foreach (var (materialIndex, material) in Mdl.Materials.Index())
         {
             if (!Im.Selectable(material, mesh.MaterialIndex == materialIndex))
                 continue;
 
-            tab.Mdl.Meshes[meshIndex].MaterialIndex = (ushort)materialIndex;
-            ret                                     = true;
+            Mdl.Meshes[meshIndex].MaterialIndex = (ushort)materialIndex;
+            ret                                 = true;
         }
 
         return ret;
     }
 
-    private static bool DrawSubMeshAttributes(in Im.TableDisposable table, MdlTab tab, int meshIndex, int subMeshOffset, bool disabled)
+    private bool DrawSubMeshAttributes(in Im.TableDisposable table, int meshIndex, int subMeshOffset, bool disabled)
     {
         using var _ = Im.Id.Push(subMeshOffset);
 
-        var mesh         = tab.Mdl.Meshes[meshIndex];
+        var mesh         = Mdl.Meshes[meshIndex];
         var subMeshIndex = mesh.SubMeshIndex + subMeshOffset;
 
         table.DrawFrameColumn($"Attributes #{subMeshOffset + 1}");
 
         table.NextColumn();
-        var attributes = tab.GetSubMeshAttributes(subMeshIndex);
+        var attributes = GetSubMeshAttributes(subMeshIndex);
 
         if (attributes is null)
         {
@@ -546,12 +538,12 @@ public partial class ModEditWindow
 
         var oldName = tagIndex < attributes.Count ? attributes[tagIndex] : null;
         var newName = editedAttribute.Length > 0 ? editedAttribute : null;
-        tab.UpdateSubMeshAttribute(subMeshIndex, oldName, newName);
+        UpdateSubMeshAttribute(subMeshIndex, oldName, newName);
 
         return true;
     }
 
-    private bool DrawOtherModelDetails(LoadedData data)
+    private bool DrawOtherModelDetails()
     {
         using var header = Im.Tree.HeaderId("Further Content"u8);
         if (!header)
@@ -562,26 +554,26 @@ public partial class ModEditWindow
         {
             if (table)
             {
-                table.DrawDataPair("Version"u8, $"0x{data.LastFile.Version:X}");
-                table.DrawDataPair("Radius"u8, data.LastFile.Radius.ToString(CultureInfo.InvariantCulture));
-                table.DrawDataPair("Model Clip Out Distance"u8, data.LastFile.ModelClipOutDistance.ToString(CultureInfo.InvariantCulture));
-                table.DrawDataPair("Shadow Clip Out Distance"u8, data.LastFile.ShadowClipOutDistance.ToString(CultureInfo.InvariantCulture));
-                table.DrawDataPair("LOD Count"u8, data.LastFile.LodCount);
-                table.DrawDataPair("Enable Index Buffer Streaming"u8, data.LastFile.EnableIndexBufferStreaming);
-                table.DrawDataPair("Enable Edge Geometry"u8, data.LastFile.EnableEdgeGeometry);
-                table.DrawDataPair("Flags 1"u8, data.LastFile.Flags1);
-                table.DrawDataPair("Flags 2"u8, data.LastFile.Flags2);
-                table.DrawDataPair("Vertex Declarations"u8, data.LastFile.VertexDeclarations.Length);
-                table.DrawDataPair("Bone Bounding Boxes"u8, data.LastFile.BoneBoundingBoxes.Length);
-                table.DrawDataPair("Bone Tables"u8, data.LastFile.BoneTables.Length);
-                table.DrawDataPair("Element IDs"u8, data.LastFile.ElementIds.Length);
-                table.DrawDataPair("Extra LoDs"u8, data.LastFile.ExtraLods.Length);
-                table.DrawDataPair("Meshes"u8, data.LastFile.Meshes.Length);
-                table.DrawDataPair("Shape Meshes"u8, data.LastFile.ShapeMeshes.Length);
-                table.DrawDataPair("LoDs"u8, data.LastFile.Lods.Length);
-                table.DrawDataPair("Vertex Declarations"u8, data.LastFile.VertexDeclarations.Length);
-                table.DrawDataPair("Stack Size"u8, data.LastFile.StackSize);
-                foreach (var (lod, triCount) in data.LodTriCount.Index())
+                table.DrawDataPair("Version"u8,                       $"0x{Mdl.Version:X}");
+                table.DrawDataPair("Radius"u8,                        Mdl.Radius.ToString(CultureInfo.InvariantCulture));
+                table.DrawDataPair("Model Clip Out Distance"u8,       Mdl.ModelClipOutDistance.ToString(CultureInfo.InvariantCulture));
+                table.DrawDataPair("Shadow Clip Out Distance"u8,      Mdl.ShadowClipOutDistance.ToString(CultureInfo.InvariantCulture));
+                table.DrawDataPair("LOD Count"u8,                     Mdl.LodCount);
+                table.DrawDataPair("Enable Index Buffer Streaming"u8, Mdl.EnableIndexBufferStreaming);
+                table.DrawDataPair("Enable Edge Geometry"u8,          Mdl.EnableEdgeGeometry);
+                table.DrawDataPair("Flags 1"u8,                       Mdl.Flags1);
+                table.DrawDataPair("Flags 2"u8,                       Mdl.Flags2);
+                table.DrawDataPair("Vertex Declarations"u8,           Mdl.VertexDeclarations.Length);
+                table.DrawDataPair("Bone Bounding Boxes"u8,           Mdl.BoneBoundingBoxes.Length);
+                table.DrawDataPair("Bone Tables"u8,                   Mdl.BoneTables.Length);
+                table.DrawDataPair("Element IDs"u8,                   Mdl.ElementIds.Length);
+                table.DrawDataPair("Extra LoDs"u8,                    Mdl.ExtraLods.Length);
+                table.DrawDataPair("Meshes"u8,                        Mdl.Meshes.Length);
+                table.DrawDataPair("Shape Meshes"u8,                  Mdl.ShapeMeshes.Length);
+                table.DrawDataPair("LoDs"u8,                          Mdl.Lods.Length);
+                table.DrawDataPair("Vertex Declarations"u8,           Mdl.VertexDeclarations.Length);
+                table.DrawDataPair("Stack Size"u8,                    Mdl.StackSize);
+                foreach (var (lod, triCount) in LodTriCount.Index())
                     table.DrawDataPair($"LOD #{lod + 1} Triangle Count", triCount);
             }
         }
@@ -589,17 +581,17 @@ public partial class ModEditWindow
         using (var materials = Im.Tree.Node("Materials"u8, TreeNodeFlags.DefaultOpen))
         {
             if (materials)
-                foreach (var material in data.LastFile.Materials)
+                foreach (var material in Mdl.Materials)
                     Im.Tree.Leaf(material);
         }
 
         using (var attributes = Im.Tree.Node("Attributes"u8, TreeNodeFlags.DefaultOpen))
         {
             if (attributes)
-                for (var i = 0; i < data.LastFile.Attributes.Length; ++i)
+                for (var i = 0; i < Mdl.Attributes.Length; ++i)
                 {
                     using var id        = Im.Id.Push(i);
-                    ref var   attribute = ref data.LastFile.Attributes[i];
+                    ref var   attribute = ref Mdl.Attributes[i];
                     var       name      = attribute;
                     if (Im.Input.Text("##attribute"u8, ref name, "Attribute Name..."u8) && name.Length > 0 && name != attribute)
                     {
@@ -612,10 +604,10 @@ public partial class ModEditWindow
         using (var bones = Im.Tree.Node("Bones"u8, TreeNodeFlags.DefaultOpen))
         {
             if (bones)
-                for (var i = 0; i < data.LastFile.Bones.Length; ++i)
+                for (var i = 0; i < Mdl.Bones.Length; ++i)
                 {
                     using var id   = Im.Id.Push(i);
-                    ref var   bone = ref data.LastFile.Bones[i];
+                    ref var   bone = ref Mdl.Bones[i];
                     var       name = bone;
                     if (Im.Input.Text("##bone"u8, ref name, "Bone Name..."u8) && name.Length > 0 && name != bone)
                     {
@@ -628,10 +620,10 @@ public partial class ModEditWindow
         using (var shapes = Im.Tree.Node("Shapes"u8, TreeNodeFlags.DefaultOpen))
         {
             if (shapes)
-                for (var i = 0; i < data.LastFile.Shapes.Length; ++i)
+                for (var i = 0; i < Mdl.Shapes.Length; ++i)
                 {
                     using var id    = Im.Id.Push(i);
-                    ref var   shape = ref data.LastFile.Shapes[i];
+                    ref var   shape = ref Mdl.Shapes[i];
                     var       name  = shape.ShapeName;
                     if (Im.Input.Text("##shape"u8, ref name, "Shape Name..."u8) && name.Length > 0 && name != shape.ShapeName)
                     {
@@ -641,11 +633,11 @@ public partial class ModEditWindow
                 }
         }
 
-        if (data.LastFile.RemainingData.Length > 0)
+        if (Mdl.RemainingData.Length > 0)
         {
-            using var t = Im.Tree.Node($"Additional Data (Size: {data.LastFile.RemainingData.Length})###AdditionalData");
+            using var t = Im.Tree.Node($"Additional Data (Size: {Mdl.RemainingData.Length})###AdditionalData");
             if (t)
-                ImEx.HexViewer(data.LastFile.RemainingData);
+                ImEx.HexViewer(Mdl.RemainingData);
         }
 
         return ret;

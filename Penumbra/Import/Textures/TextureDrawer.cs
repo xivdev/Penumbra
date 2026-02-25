@@ -37,7 +37,7 @@ public static class TextureDrawer
 
     public static void PathInputBox(TextureManager textures, Texture current, ref string? tmpPath, ReadOnlySpan<byte> label,
         ReadOnlySpan<byte> hint, ReadOnlySpan<byte> tooltip,
-        string startPath, FileDialogService fileDialog, string defaultModImportPath)
+        string? startPath, FileDialogService fileDialog, string defaultModImportPath)
     {
         tmpPath ??= current.Path;
         using var spacing = ImStyleDouble.ItemSpacing.PushX(Im.Style.GlobalScale * 3);

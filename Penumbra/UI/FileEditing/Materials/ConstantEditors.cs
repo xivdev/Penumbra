@@ -2,7 +2,7 @@ using System.Collections.Frozen;
 using Luna;
 using Penumbra.GameData.Files.ShaderStructs;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
 public static class ConstantEditors
 {

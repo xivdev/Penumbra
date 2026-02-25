@@ -5,9 +5,9 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Files.MaterialStructs;
 using Penumbra.GameData.Structs;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     private static readonly float HalfMinValue = (float)Half.MinValue;
     private static readonly float HalfMaxValue = (float)Half.MaxValue;
@@ -311,7 +311,7 @@ public partial class MtrlTab
                 rcMin, rcMax with { Y = MathF.Floor(float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3)) },
                 topColor, frameRounding, ImDrawFlagsRectangle.RoundCornersTop);
             drawList.RectangleMulticolor(
-                rcMin with { Y = MathF.Floor(float.Lerp(rcMin.Y, rcMax.Y, 1.0f / 3)) },
+                rcMin with { Y = MathF.Floor(float.Lerp(rcMin.Y,   rcMax.Y, 1.0f / 3)) },
                 rcMax with { Y = MathF.Ceiling(float.Lerp(rcMin.Y, rcMax.Y, 2.0f / 3)) },
                 topColor, topColor, bottomColor, bottomColor);
             drawList.RectangleFilled(

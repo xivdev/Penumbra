@@ -7,58 +7,59 @@ using Penumbra.GameData.Interop;
 using static Penumbra.GameData.Files.ShpkFile;
 using Penumbra.GameData.Structs;
 
-namespace Penumbra.UI.AdvancedWindow;
+namespace Penumbra.UI.FileEditing.Shaders;
 
-public partial class ModEditWindow
+public partial class ShaderPackageEditor
 {
     private static readonly StringU8 DisassemblyLabel = new("##disassembly"u8);
 
-    private readonly FileEditor<ShpkTab> _shaderPackageTab;
+    bool IFileEditor.DrawToolbar(bool disabled)
+        => false;
 
-    private static bool DrawShaderPackagePanel(ShpkTab file, bool disabled)
+    public bool DrawPanel(bool disabled)
     {
         var dummyHeight = new Vector2(Im.Style.TextHeight / 2);
-        DrawShaderPackageSummary(file);
+        DrawShaderPackageSummary();
 
         Im.Dummy(dummyHeight);
-        DrawShaderPackageFilterSection(file);
+        DrawShaderPackageFilterSection();
 
         var ret = false;
         Im.Dummy(dummyHeight);
-        ret |= DrawShaderPackageShaderArray(file, "Vertex Shader", file.Shpk.VertexShaders, disabled);
+        ret |= DrawShaderPackageShaderArray("Vertex Shader", Shpk.VertexShaders, disabled);
 
         Im.Dummy(dummyHeight);
-        ret |= DrawShaderPackageShaderArray(file, "Pixel Shader", file.Shpk.PixelShaders, disabled);
+        ret |= DrawShaderPackageShaderArray("Pixel Shader", Shpk.PixelShaders, disabled);
 
         Im.Dummy(dummyHeight);
-        ret |= DrawShaderPackageMaterialParamLayout(file, disabled);
+        ret |= DrawShaderPackageMaterialParamLayout(disabled);
 
         Im.Dummy(dummyHeight);
-        ret |= DrawShaderPackageResources(file, disabled);
+        ret |= DrawShaderPackageResources(disabled);
 
         Im.Dummy(dummyHeight);
-        DrawShaderPackageSelection(file);
+        DrawShaderPackageSelection();
 
         Im.Dummy(dummyHeight);
-        DrawOtherShaderPackageDetails(file);
+        DrawOtherShaderPackageDetails();
 
-        ret |= file.Shpk.IsChanged();
+        ret |= Shpk.IsChanged();
 
         return !disabled && ret;
     }
 
-    private static void DrawShaderPackageSummary(ShpkTab tab)
+    private void DrawShaderPackageSummary()
     {
-        if (tab.Shpk.IsLegacy)
+        if (Shpk.IsLegacy)
             Im.Text("This legacy shader package will not work in the current version of the game. Do not attempt to load it."u8,
                 ImGuiColor.Text.Get().HalfBlend(new Rgba32(0x80)));
-        Im.Text(tab.Header);
-        if (!tab.Shpk.Disassembled)
+        Im.Text(Header);
+        if (!Shpk.Disassembled)
             Im.Text("Your system doesn't support disassembling shaders. Some functionality will be missing."u8,
                 ImGuiColor.Text.Get().HalfBlend(new Rgba32(0x80))); // Half red
     }
 
-    private static void DrawShaderExportButton(ShpkTab tab, string objectName, Shader shader, int idx)
+    private void DrawShaderExportButton(string objectName, Shader shader, int idx)
     {
         if (!Im.Button($"Export Shader Program Blob ({shader.Blob.Length} bytes)"))
             return;
@@ -71,7 +72,7 @@ public partial class ModEditWindow
         };
 
         var blob = shader.Blob;
-        tab.FileDialog.OpenSavePicker($"Export {objectName} #{idx} Program Blob to...", tab.Extension, defaultName, tab.Extension,
+        FileDialog.OpenSavePicker($"Export {objectName} #{idx} Program Blob to...", Extension, defaultName, Extension,
             (success, name) =>
             {
                 if (!success)
@@ -83,23 +84,23 @@ public partial class ModEditWindow
                 }
                 catch (Exception e)
                 {
-                    Penumbra.Messager.NotificationMessage(e, $"Could not export {defaultName}{tab.Extension} to {name}.",
+                    Penumbra.Messager.NotificationMessage(e, $"Could not export {defaultName}{Extension} to {name}.",
                         NotificationType.Error, false);
                     return;
                 }
 
                 Penumbra.Messager.NotificationMessage(
-                    $"Shader Program Blob {defaultName}{tab.Extension} exported successfully to {Path.GetFileName(name)}.",
+                    $"Shader Program Blob {defaultName}{Extension} exported successfully to {Path.GetFileName(name)}.",
                     NotificationType.Success, false);
             }, null, false);
     }
 
-    private static void DrawShaderImportButton(ShpkTab tab, string objectName, Shader[] shaders, int idx)
+    private void DrawShaderImportButton(string objectName, Shader[] shaders, int idx)
     {
         if (!Im.Button("Replace Shader Program Blob"u8))
             return;
 
-        tab.FileDialog.OpenFilePicker($"Replace {objectName} #{idx} Program Blob...", "Shader Program Blobs{.o,.cso,.dxbc,.dxil}",
+        FileDialog.OpenFilePicker($"Replace {objectName} #{idx} Program Blob...", "Shader Program Blobs{.o,.cso,.dxbc,.dxil}",
             (success, name) =>
             {
                 if (!success)
@@ -117,19 +118,19 @@ public partial class ModEditWindow
 
                 try
                 {
-                    shaders[idx].UpdateResources(tab.Shpk);
-                    tab.Shpk.UpdateResources();
-                    tab.UpdateFilteredUsed();
+                    shaders[idx].UpdateResources(Shpk);
+                    Shpk.UpdateResources();
+                    UpdateFilteredUsed();
                 }
                 catch (Exception e)
                 {
-                    tab.Shpk.SetInvalid();
+                    Shpk.SetInvalid();
                     Penumbra.Messager.NotificationMessage(e, $"Failed to update resources after importing {name}.", NotificationType.Error,
                         false);
                     return;
                 }
 
-                tab.Shpk.SetChanged();
+                Shpk.SetChanged();
             }, 1, null, false);
     }
 
@@ -146,7 +147,7 @@ public partial class ModEditWindow
             InputTextFlags.ReadOnly);
     }
 
-    private static void DrawShaderUsage(ShpkTab tab, Shader shader)
+    private void DrawShaderUsage(Shader shader)
     {
         using (var node = Im.Tree.Node("Used with Shader Keys"u8))
         {
@@ -155,51 +156,50 @@ public partial class ModEditWindow
                 foreach (var (keyIdx, key) in shader.SystemValues!.Index())
                 {
                     Im.Tree.Leaf(
-                        $"Used with System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}");
+                        $"Used with System Key {TryResolveName(Shpk.SystemKeys[keyIdx].Id)} \u2208 {{ {NameSetToString(key)} }}");
                 }
 
                 foreach (var (keyIdx, key) in shader.SceneValues!.Index())
                 {
                     Im.Tree.Leaf(
-                        $"Used with Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}");
+                        $"Used with Scene Key {TryResolveName(Shpk.SceneKeys[keyIdx].Id)} \u2208 {{ {NameSetToString(key)} }}");
                 }
 
                 foreach (var (keyIdx, key) in shader.MaterialValues!.Index())
                 {
                     Im.Tree.Leaf(
-                        $"Used with Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} \u2208 {{ {tab.NameSetToString(key)} }}");
+                        $"Used with Material Key {TryResolveName(Shpk.MaterialKeys[keyIdx].Id)} \u2208 {{ {NameSetToString(key)} }}");
                 }
 
                 foreach (var (keyIdx, key) in shader.SubViewValues!.Index())
-                    Im.Tree.Leaf($"Used with Sub-View Key #{keyIdx} \u2208 {{ {tab.NameSetToString(key)} }}");
+                    Im.Tree.Leaf($"Used with Sub-View Key #{keyIdx} \u2208 {{ {NameSetToString(key)} }}");
             }
         }
 
-        Im.Tree.Leaf($"Used in Passes: {tab.NameSetToString(shader.Passes)}");
+        Im.Tree.Leaf($"Used in Passes: {NameSetToString(shader.Passes)}");
     }
 
-    private static void DrawShaderPackageFilterSection(ShpkTab tab)
+    private void DrawShaderPackageFilterSection()
     {
-        if (!Im.Tree.Header(tab.FilterPopCount == tab.FilterMaximumPopCount ? "Filters###Filters"u8 : "Filters (ACTIVE)###Filters"u8))
+        if (!Im.Tree.Header(FilterPopCount == FilterMaximumPopCount ? "Filters###Filters"u8 : "Filters (ACTIVE)###Filters"u8))
             return;
 
-        foreach (var (keyIdx, key) in tab.Shpk.SystemKeys.Index())
-            DrawShaderPackageFilterSet(tab, $"System Key {tab.TryResolveName(key.Id)}", ref tab.FilterSystemValues[keyIdx]);
+        foreach (var (keyIdx, key) in Shpk.SystemKeys.Index())
+            DrawShaderPackageFilterSet($"System Key {TryResolveName(key.Id)}", ref FilterSystemValues[keyIdx]);
 
-        foreach (var (keyIdx, key) in tab.Shpk.SceneKeys.Index())
-            DrawShaderPackageFilterSet(tab, $"Scene Key {tab.TryResolveName(key.Id)}", ref tab.FilterSceneValues[keyIdx]);
+        foreach (var (keyIdx, key) in Shpk.SceneKeys.Index())
+            DrawShaderPackageFilterSet($"Scene Key {TryResolveName(key.Id)}", ref FilterSceneValues[keyIdx]);
 
-        foreach (var (keyIdx, key) in tab.Shpk.MaterialKeys.Index())
-            DrawShaderPackageFilterSet(tab, $"Material Key {tab.TryResolveName(key.Id)}", ref tab.FilterMaterialValues[keyIdx]);
+        foreach (var (keyIdx, key) in Shpk.MaterialKeys.Index())
+            DrawShaderPackageFilterSet($"Material Key {TryResolveName(key.Id)}", ref FilterMaterialValues[keyIdx]);
 
-        foreach (var (keyIdx, _) in tab.Shpk.SubViewKeys.Index())
-            DrawShaderPackageFilterSet(tab, $"Sub-View Key #{keyIdx}", ref tab.FilterSubViewValues[keyIdx]);
+        foreach (var (keyIdx, _) in Shpk.SubViewKeys.Index())
+            DrawShaderPackageFilterSet($"Sub-View Key #{keyIdx}", ref FilterSubViewValues[keyIdx]);
 
-        DrawShaderPackageFilterSet(tab, "Passes"u8, ref tab.FilterPasses);
+        DrawShaderPackageFilterSet("Passes"u8, ref FilterPasses);
     }
 
-    private static void DrawShaderPackageFilterSet(ShpkTab tab, Utf8StringHandler<LabelStringHandlerBuffer> label,
-        ref SharedSet<uint, uint> values)
+    private void DrawShaderPackageFilterSet(Utf8StringHandler<LabelStringHandlerBuffer> label, ref SharedSet<uint, uint> values)
     {
         if (values.PossibleValues is null)
         {
@@ -214,29 +214,29 @@ public partial class ModEditWindow
         foreach (var value in values.PossibleValues)
         {
             var contains = values.Contains(value);
-            if (!Im.Checkbox($"{tab.TryResolveName(value)}", ref contains))
+            if (!Im.Checkbox($"{TryResolveName(value)}", ref contains))
                 continue;
 
             if (contains)
             {
                 if (values.AddExisting(value))
                 {
-                    ++tab.FilterPopCount;
-                    tab.UpdateFilteredUsed();
+                    ++FilterPopCount;
+                    UpdateFilteredUsed();
                 }
             }
             else
             {
                 if (values.Remove(value))
                 {
-                    --tab.FilterPopCount;
-                    tab.UpdateFilteredUsed();
+                    --FilterPopCount;
+                    UpdateFilteredUsed();
                 }
             }
         }
     }
 
-    private static bool DrawShaderPackageShaderArray(ShpkTab tab, string objectName, Shader[] shaders, bool disabled)
+    private bool DrawShaderPackageShaderArray(string objectName, Shader[] shaders, bool disabled)
     {
         if (shaders.Length is 0 || !Im.Tree.Header($"{objectName}s"))
             return false;
@@ -245,23 +245,23 @@ public partial class ModEditWindow
         for (var idx = 0; idx < shaders.Length; ++idx)
         {
             var shader = shaders[idx];
-            if (!tab.IsFilterMatch(shader))
+            if (!IsFilterMatch(shader))
                 continue;
 
             using var t = Im.Tree.Node($"{objectName} #{idx}");
             if (!t)
                 continue;
 
-            DrawShaderExportButton(tab, objectName, shader, idx);
-            if (!disabled && tab.Shpk.Disassembled)
+            DrawShaderExportButton(objectName, shader, idx);
+            if (!disabled && Shpk.Disassembled)
             {
                 Im.Line.Same();
-                DrawShaderImportButton(tab, objectName, shaders, idx);
+                DrawShaderImportButton(objectName, shaders, idx);
             }
 
             ret |= DrawShaderPackageResourceArray("Constant Buffers"u8, "slot", true,  shader.Constants, false, true);
             ret |= DrawShaderPackageResourceArray("Samplers"u8,         "slot", false, shader.Samplers,  false, true);
-            if (!tab.Shpk.IsLegacy)
+            if (!Shpk.IsLegacy)
                 ret |= DrawShaderPackageResourceArray("Textures"u8, "slot", false, shader.Textures, false, true);
             ret |= DrawShaderPackageResourceArray("Unordered Access Views"u8, "slot", true, shader.Uavs, false, true);
 
@@ -277,10 +277,10 @@ public partial class ModEditWindow
                     ImEx.HexViewer(shader.AdditionalHeader);
             }
 
-            if (tab.Shpk.Disassembled)
+            if (Shpk.Disassembled)
                 DrawRawDisassembly(shader);
 
-            DrawShaderUsage(tab, shader);
+            DrawShaderUsage(shader);
         }
 
         return ret;
@@ -372,9 +372,9 @@ public partial class ModEditWindow
         return false;
     }
 
-    private static bool DrawShaderPackageMaterialMatrix(ShpkTab tab, bool disabled)
+    private bool DrawShaderPackageMaterialMatrix(bool disabled)
     {
-        Im.Text(tab.Shpk.Disassembled
+        Im.Text(Shpk.Disassembled
             ? "Parameter positions (continuations are grayed out, globally unused values are red, unused values within filters are yellow):"u8
             : "Parameter positions (continuations are grayed out):"u8);
 
@@ -393,19 +393,19 @@ public partial class ModEditWindow
         var textColorStart = ImGuiColor.Text.Get();
 
         var ret = false;
-        for (var i = 0; i < tab.Matrix.GetLength(0); ++i)
+        for (var i = 0; i < Matrix.GetLength(0); ++i)
         {
             table.NextColumn();
             table.Header($"  [{i}]");
             for (var j = 0; j < 4; ++j)
             {
-                var (name, tooltip, idx, colorType) = tab.Matrix[i, j];
+                var (name, tooltip, idx, colorType) = Matrix[i, j];
                 var color = textColorStart;
-                if (!colorType.HasFlag(ShpkTab.ColorType.Used))
+                if (!colorType.HasFlag(ColorType.Used))
                     color = color.HalfBlend(new Rgba32(0x80)); // Half red
-                else if (!colorType.HasFlag(ShpkTab.ColorType.FilteredUsed))
+                else if (!colorType.HasFlag(ColorType.FilteredUsed))
                     color = color.HalfBlend(0x8080u); // Half yellow
-                if (colorType.HasFlag(ShpkTab.ColorType.Continuation))
+                if (colorType.HasFlag(ColorType.Continuation))
                     color = color.HalfTransparent(); // Half opacity
                 using var _         = Im.Id.Push(i * 4 + j);
                 var       deletable = !disabled && idx >= 0;
@@ -417,9 +417,9 @@ public partial class ModEditWindow
                         Im.Selectable(name);
                         if (deletable && Im.Item.RightClicked() && Im.Io.KeyControl)
                         {
-                            tab.Shpk.MaterialParams = tab.Shpk.MaterialParams.RemoveItems(idx);
-                            ret                     = true;
-                            tab.Update();
+                            Shpk.MaterialParams = Shpk.MaterialParams.RemoveItems(idx);
+                            ret                 = true;
+                            Update();
                         }
                     }
 
@@ -434,12 +434,12 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static void DrawShaderPackageMaterialDevkitExport(ShpkTab tab)
+    private void DrawShaderPackageMaterialDevkitExport()
     {
         if (!Im.Button("Export globally unused parameters as material dev-kit file"u8))
             return;
 
-        tab.FileDialog.OpenSavePicker("Export material dev-kit file", ".json", $"{Path.GetFileNameWithoutExtension(tab.FilePath)}.json",
+        FileDialog.OpenSavePicker("Export material dev-kit file", ".json", $"{Path.GetFileNameWithoutExtension(FilePath)}.json",
             ".json", DoSave, null, false);
         return;
 
@@ -450,44 +450,44 @@ public partial class ModEditWindow
 
             try
             {
-                File.WriteAllText(path, tab.ExportDevkit().ToString());
+                File.WriteAllText(path, ExportDevkit().ToString());
             }
             catch (Exception e)
             {
-                Penumbra.Messager.NotificationMessage(e, $"Could not export dev-kit for {Path.GetFileName(tab.FilePath)} to {path}.",
+                Penumbra.Messager.NotificationMessage(e, $"Could not export dev-kit for {Path.GetFileName(FilePath)} to {path}.",
                     NotificationType.Error, false);
                 return;
             }
 
             Penumbra.Messager.NotificationMessage(
-                $"Material dev-kit file for {Path.GetFileName(tab.FilePath)} exported successfully to {Path.GetFileName(path)}.",
+                $"Material dev-kit file for {Path.GetFileName(FilePath)} exported successfully to {Path.GetFileName(path)}.",
                 NotificationType.Success, false);
         }
     }
 
-    private static void DrawShaderPackageMisalignedParameters(ShpkTab tab)
+    private void DrawShaderPackageMisalignedParameters()
     {
         using var t = Im.Tree.Node("Misaligned / Overflowing Parameters"u8);
         if (!t)
             return;
 
         using var _ = Im.Font.PushMono();
-        foreach (var name in tab.MalformedParameters)
+        foreach (var name in MalformedParameters)
             Im.Tree.Leaf(name);
     }
 
-    private static void DrawShaderPackageStartCombo(ShpkTab tab)
+    private void DrawShaderPackageStartCombo()
     {
         using var s = ImStyleDouble.ItemSpacing.Push(Im.Style.ItemInnerSpacing);
         using (Im.Font.PushMono())
         {
             Im.Item.SetNextWidth(Im.Style.GlobalScale * 400);
-            using var c = Im.Combo.Begin("##Start"u8, tab.Orphans[tab.NewMaterialParamStart].Name);
+            using var c = Im.Combo.Begin("##Start"u8, Orphans[NewMaterialParamStart].Name);
             if (c)
-                foreach (var (idx, start) in tab.Orphans.Index())
+                foreach (var (idx, start) in Orphans.Index())
                 {
-                    if (Im.Selectable(start.Name, idx == tab.NewMaterialParamStart))
-                        tab.UpdateOrphanStart(idx);
+                    if (Im.Selectable(start.Name, idx == NewMaterialParamStart))
+                        UpdateOrphanStart(idx);
                 }
         }
 
@@ -495,24 +495,24 @@ public partial class ModEditWindow
         Im.Text("Start"u8);
     }
 
-    private static void DrawShaderPackageEndCombo(ShpkTab tab)
+    private void DrawShaderPackageEndCombo()
     {
         using var s = ImStyleDouble.ItemSpacing.Push(Im.Style.ItemInnerSpacing);
         using (Im.Font.PushMono())
         {
             Im.Item.SetNextWidth(Im.Style.GlobalScale * 400);
-            using var c = Im.Combo.Begin("##End"u8, tab.Orphans[tab.NewMaterialParamEnd].Name);
+            using var c = Im.Combo.Begin("##End"u8, Orphans[NewMaterialParamEnd].Name);
             if (c)
             {
-                var current = tab.Orphans[tab.NewMaterialParamStart].Index;
-                for (var i = tab.NewMaterialParamStart; i < tab.Orphans.Count; ++i)
+                var current = Orphans[NewMaterialParamStart].Index;
+                for (var i = NewMaterialParamStart; i < Orphans.Count; ++i)
                 {
-                    var next = tab.Orphans[i];
+                    var next = Orphans[i];
                     if (current++ != next.Index)
                         break;
 
-                    if (Im.Selectable(next.Name, i == tab.NewMaterialParamEnd))
-                        tab.NewMaterialParamEnd = i;
+                    if (Im.Selectable(next.Name, i == NewMaterialParamEnd))
+                        NewMaterialParamEnd = i;
                 }
             }
         }
@@ -521,79 +521,79 @@ public partial class ModEditWindow
         Im.Text("End"u8);
     }
 
-    private static bool DrawShaderPackageNewParameter(ShpkTab tab)
+    private bool DrawShaderPackageNewParameter()
     {
-        if (tab.Orphans.Count is 0)
+        if (Orphans.Count is 0)
             return false;
 
-        DrawShaderPackageStartCombo(tab);
-        DrawShaderPackageEndCombo(tab);
+        DrawShaderPackageStartCombo();
+        DrawShaderPackageEndCombo();
 
         Im.Item.SetNextWidth(Im.Style.GlobalScale * 400);
-        var newName = tab.NewMaterialParamName.Value!;
+        var newName = NewMaterialParamName.Value!;
         if (Im.Input.Text("Name"u8, ref newName))
-            tab.NewMaterialParamName = newName;
+            NewMaterialParamName = newName;
 
-        var tooltip = tab.UsedIds.Contains(tab.NewMaterialParamName.Crc32)
+        var tooltip = UsedIds.Contains(NewMaterialParamName.Crc32)
             ? "The ID is already in use. Please choose a different name."u8
             : ""u8;
-        if (!ImEx.Button($"Add {tab.NewMaterialParamName} (0x{tab.NewMaterialParamName.Crc32:X8})",
+        if (!ImEx.Button($"Add {NewMaterialParamName} (0x{NewMaterialParamName.Crc32:X8})",
                 new Vector2(400 * Im.Style.GlobalScale, Im.Style.FrameHeight),
                 tooltip, tooltip.Length > 0))
             return false;
 
-        tab.Shpk.MaterialParams = tab.Shpk.MaterialParams.AddItem(new MaterialParam
+        Shpk.MaterialParams = Shpk.MaterialParams.AddItem(new MaterialParam
         {
-            Id         = tab.NewMaterialParamName.Crc32,
-            ByteOffset = (ushort)(tab.Orphans[tab.NewMaterialParamStart].Index << 2),
-            ByteSize   = (ushort)((tab.NewMaterialParamEnd - tab.NewMaterialParamStart + 1) << 2),
+            Id         = NewMaterialParamName.Crc32,
+            ByteOffset = (ushort)(Orphans[NewMaterialParamStart].Index << 2),
+            ByteSize   = (ushort)((NewMaterialParamEnd - NewMaterialParamStart + 1) << 2),
         });
-        tab.AddNameToCache(tab.NewMaterialParamName);
-        tab.Update();
+        AddNameToCache(NewMaterialParamName);
+        Update();
         return true;
     }
 
-    private static bool DrawShaderPackageMaterialParamLayout(ShpkTab tab, bool disabled)
+    private bool DrawShaderPackageMaterialParamLayout(bool disabled)
     {
         var ret = false;
 
-        var materialParams = tab.Shpk.GetConstantById(MaterialParamsConstantId);
+        var materialParams = Shpk.GetConstantById(MaterialParamsConstantId);
         if (!DrawMaterialParamLayoutHeader(materialParams?.Name ?? "Material Parameter"))
             return false;
 
-        var sizeWellDefined = DrawMaterialParamLayoutBufferSize(tab.Shpk, materialParams);
+        var sizeWellDefined = DrawMaterialParamLayoutBufferSize(Shpk, materialParams);
 
-        ret |= DrawShaderPackageMaterialMatrix(tab, disabled);
+        ret |= DrawShaderPackageMaterialMatrix(disabled);
 
-        if (tab.MalformedParameters.Count > 0)
-            DrawShaderPackageMisalignedParameters(tab);
+        if (MalformedParameters.Count > 0)
+            DrawShaderPackageMisalignedParameters();
         else if (!disabled && sizeWellDefined)
-            ret |= DrawShaderPackageNewParameter(tab);
+            ret |= DrawShaderPackageNewParameter();
 
-        if (tab.Shpk.Disassembled)
-            DrawShaderPackageMaterialDevkitExport(tab);
+        if (Shpk.Disassembled)
+            DrawShaderPackageMaterialDevkitExport();
 
         return ret;
     }
 
-    private static bool DrawShaderPackageResources(ShpkTab tab, bool disabled)
+    private bool DrawShaderPackageResources(bool disabled)
     {
         var ret = false;
 
         if (!Im.Tree.Header("Shader Resources"u8))
             return false;
 
-        var hasFilters = tab.FilterPopCount != tab.FilterMaximumPopCount;
-        ret |= DrawShaderPackageResourceArray("Constant Buffers"u8, "type", true,  tab.Shpk.Constants, hasFilters, disabled);
-        ret |= DrawShaderPackageResourceArray("Samplers"u8,         "type", false, tab.Shpk.Samplers,  hasFilters, disabled);
-        if (!tab.Shpk.IsLegacy)
-            ret |= DrawShaderPackageResourceArray("Textures"u8, "type", false, tab.Shpk.Textures, hasFilters, disabled);
-        ret |= DrawShaderPackageResourceArray("Unordered Access Views"u8, "type", false, tab.Shpk.Uavs, hasFilters, disabled);
+        var hasFilters = FilterPopCount != FilterMaximumPopCount;
+        ret |= DrawShaderPackageResourceArray("Constant Buffers"u8, "type", true,  Shpk.Constants, hasFilters, disabled);
+        ret |= DrawShaderPackageResourceArray("Samplers"u8,         "type", false, Shpk.Samplers,  hasFilters, disabled);
+        if (!Shpk.IsLegacy)
+            ret |= DrawShaderPackageResourceArray("Textures"u8, "type", false, Shpk.Textures, hasFilters, disabled);
+        ret |= DrawShaderPackageResourceArray("Unordered Access Views"u8, "type", false, Shpk.Uavs, hasFilters, disabled);
 
         return ret;
     }
 
-    private static void DrawKeyArray(ShpkTab tab, ReadOnlySpan<byte> arrayName, bool withId, IReadOnlyCollection<ShpkFile.Key> keys)
+    private void DrawKeyArray(ReadOnlySpan<byte> arrayName, bool withId, IReadOnlyCollection<ShpkFile.Key> keys)
     {
         if (keys.Count is 0)
             return;
@@ -605,29 +605,29 @@ public partial class ModEditWindow
         using var font = Im.Font.PushMono();
         foreach (var (idx, key) in keys.Index())
         {
-            using var t2 = Im.Tree.Node(withId ? $"#{idx}: {tab.TryResolveName(key.Id)} (0x{key.Id:X8})" : $"#{idx}");
+            using var t2 = Im.Tree.Node(withId ? $"#{idx}: {TryResolveName(key.Id)} (0x{key.Id:X8})" : $"#{idx}");
             if (t2)
             {
-                Im.Tree.Leaf($"Default Value: {tab.TryResolveName(key.DefaultValue)} (0x{key.DefaultValue:X8})");
-                Im.Tree.Leaf($"Known Values: {tab.NameSetToString(key.Values, true)}");
+                Im.Tree.Leaf($"Default Value: {TryResolveName(key.DefaultValue)} (0x{key.DefaultValue:X8})");
+                Im.Tree.Leaf($"Known Values: {NameSetToString(key.Values, true)}");
             }
         }
     }
 
-    private static void DrawShaderPackageNodes(ShpkTab tab)
+    private void DrawShaderPackageNodes()
     {
-        if (tab.Shpk.Nodes.Length <= 0)
+        if (Shpk.Nodes.Length <= 0)
             return;
 
-        using var t = Im.Tree.Node($"Nodes ({tab.Shpk.Nodes.Length})###Nodes");
+        using var t = Im.Tree.Node($"Nodes ({Shpk.Nodes.Length})###Nodes");
         if (!t)
             return;
 
         using var font = Im.Font.PushMono();
 
-        foreach (var (idx, node) in tab.Shpk.Nodes.Index())
+        foreach (var (idx, node) in Shpk.Nodes.Index())
         {
-            if (!tab.IsFilterMatch(node))
+            if (!IsFilterMatch(node))
                 continue;
 
             using var t2 = Im.Tree.Node($"#{idx:D4}: Selector: 0x{node.Selector:X8}");
@@ -637,68 +637,68 @@ public partial class ModEditWindow
             foreach (var (keyIdx, key) in node.SystemKeys.Index())
             {
                 Im.Tree.Leaf(
-                    $"System Key {tab.TryResolveName(tab.Shpk.SystemKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SystemValues![keyIdx])} }}");
+                    $"System Key {TryResolveName(Shpk.SystemKeys[keyIdx].Id)} = {TryResolveName(key)} / \u2208 {{ {NameSetToString(node.SystemValues![keyIdx])} }}");
             }
 
             foreach (var (keyIdx, key) in node.SceneKeys.Index())
             {
                 Im.Tree.Leaf(
-                    $"Scene Key {tab.TryResolveName(tab.Shpk.SceneKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SceneValues![keyIdx])} }}");
+                    $"Scene Key {TryResolveName(Shpk.SceneKeys[keyIdx].Id)} = {TryResolveName(key)} / \u2208 {{ {NameSetToString(node.SceneValues![keyIdx])} }}");
             }
 
             foreach (var (keyIdx, key) in node.MaterialKeys.Index())
             {
                 Im.Tree.Leaf(
-                    $"Material Key {tab.TryResolveName(tab.Shpk.MaterialKeys[keyIdx].Id)} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.MaterialValues![keyIdx])} }}");
+                    $"Material Key {TryResolveName(Shpk.MaterialKeys[keyIdx].Id)} = {TryResolveName(key)} / \u2208 {{ {NameSetToString(node.MaterialValues![keyIdx])} }}");
             }
 
             foreach (var (keyIdx, key) in node.SubViewKeys.Index())
             {
                 Im.Tree.Leaf(
-                    $"Sub-View Key #{keyIdx} = {tab.TryResolveName(key)} / \u2208 {{ {tab.NameSetToString(node.SubViewValues![keyIdx])} }}");
+                    $"Sub-View Key #{keyIdx} = {TryResolveName(key)} / \u2208 {{ {NameSetToString(node.SubViewValues![keyIdx])} }}");
             }
 
             Im.Tree.Leaf($"Pass Indices: {string.Join(' ', node.PassIndices.Select(c => $"{c:X2}"))}");
             foreach (var (passIdx, pass) in node.Passes.Index())
             {
                 Im.Tree.Leaf(
-                    $"Pass #{passIdx}: ID: {tab.TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}");
+                    $"Pass #{passIdx}: ID: {TryResolveName(pass.Id)}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}");
             }
         }
     }
 
-    private static void DrawShaderPackageSelection(ShpkTab tab)
+    private void DrawShaderPackageSelection()
     {
         if (!Im.Tree.Header("Shader Selection"u8))
             return;
 
-        DrawKeyArray(tab, "System Keys"u8,   true,  tab.Shpk.SystemKeys);
-        DrawKeyArray(tab, "Scene Keys"u8,    true,  tab.Shpk.SceneKeys);
-        DrawKeyArray(tab, "Material Keys"u8, true,  tab.Shpk.MaterialKeys);
-        DrawKeyArray(tab, "Sub-View Keys"u8, false, tab.Shpk.SubViewKeys);
+        DrawKeyArray("System Keys"u8,   true,  Shpk.SystemKeys);
+        DrawKeyArray("Scene Keys"u8,    true,  Shpk.SceneKeys);
+        DrawKeyArray("Material Keys"u8, true,  Shpk.MaterialKeys);
+        DrawKeyArray("Sub-View Keys"u8, false, Shpk.SubViewKeys);
 
-        DrawShaderPackageNodes(tab);
-        using var t = Im.Tree.Node($"Node Selectors ({tab.Shpk.NodeSelectors.Count})###NodeSelectors");
+        DrawShaderPackageNodes();
+        using var t = Im.Tree.Node($"Node Selectors ({Shpk.NodeSelectors.Count})###NodeSelectors");
         if (t)
         {
             using var font = Im.Font.PushMono();
-            foreach (var selector in tab.Shpk.NodeSelectors)
+            foreach (var selector in Shpk.NodeSelectors)
                 Im.Tree.Leaf($"#{selector.Value:D4}: Selector: 0x{selector.Key:X8}");
         }
     }
 
-    private static void DrawOtherShaderPackageDetails(ShpkTab tab)
+    private void DrawOtherShaderPackageDetails()
     {
         if (!Im.Tree.Header("Further Content"u8))
             return;
 
-        Im.Tree.Leaf($"Version: 0x{tab.Shpk.Version:X8}");
+        Im.Tree.Leaf($"Version: 0x{Shpk.Version:X8}");
 
-        if (tab.Shpk.AdditionalData.Length > 0)
+        if (Shpk.AdditionalData.Length > 0)
         {
-            using var t = Im.Tree.Node($"Additional Data (Size: {tab.Shpk.AdditionalData.Length})###AdditionalData");
+            using var t = Im.Tree.Node($"Additional Data (Size: {Shpk.AdditionalData.Length})###AdditionalData");
             if (t)
-                ImEx.HexViewer(tab.Shpk.AdditionalData);
+                ImEx.HexViewer(Shpk.AdditionalData);
         }
     }
 

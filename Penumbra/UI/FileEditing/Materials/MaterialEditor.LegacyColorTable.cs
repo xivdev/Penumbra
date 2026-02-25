@@ -5,9 +5,9 @@ using Penumbra.GameData.Files.StainMapStructs;
 using Penumbra.Services;
 using TableFlags = ImSharp.TableFlags;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     private const float LegacyColorTableFloatSize      = 65.0f;
     private const float LegacyColorTablePercentageSize = 50.0f;

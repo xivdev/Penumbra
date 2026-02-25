@@ -10,9 +10,9 @@ using Penumbra.Interop.Processing;
 using Penumbra.String.Classes;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.AdvancedWindow.Materials;
+namespace Penumbra.UI.FileEditing.Materials;
 
-public partial class MtrlTab
+public partial class MaterialEditor
 {
     // strings path/to/the.exe | grep --fixed-strings '.shpk' | sort -u | sed -e 's#^shader/sm5/shpk/##'
     // Apricot shader packages are unlisted because
@@ -111,7 +111,8 @@ public partial class MtrlTab
             return _shpkNames;
 
         var names = new HashSet<string>(StandardShaderPackages);
-        names.UnionWith(_edit.FindPathsStartingWith(ShpkPrefix).Select(path => path.ToString()[ShpkPrefixLength..]));
+        if (_context is not null)
+            names.UnionWith(_context.FindPathsStartingWith(ShpkPrefix).Select(path => path.ToString()[ShpkPrefixLength..]));
 
         _shpkNames = names.ToArray();
         Array.Sort(_shpkNames);
@@ -125,7 +126,10 @@ public partial class MtrlTab
         if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath))
             return FullPath.Empty;
 
-        var path = _edit.FindBestMatch(defaultGamePath);
+        if (_context is null)
+            return new FullPath(defaultPath);
+
+        var path = _context.FindBestMatch(defaultGamePath);
         if (!path.IsRooted || ShpkPathPreProcessor.SanityCheck(path.FullName) == ShpkPathPreProcessor.SanityCheckResult.Success)
             return path;
 
@@ -429,7 +433,7 @@ public partial class MtrlTab
             {
                 if (success)
                     LoadShpk(new FullPath(name[0]));
-            }, 1, _edit.Mod!.ModPath.FullName, false);
+            }, 1, _context?.Mod?.ModPath.FullName, false);
 
         var moddedPath = FindAssociatedShpk(out var defaultPath, out var gamePath);
         Im.Line.Same();

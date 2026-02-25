@@ -1,21 +1,10 @@
 using ImSharp;
 using Luna;
-using Penumbra.UI.AdvancedWindow.Materials;
 
 namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private readonly FileEditor<MtrlTab> _materialTab;
-
-    private bool DrawMaterialPanel(MtrlTab tab, bool disabled)
-    {
-        if (tab.DrawVersionUpdate(disabled))
-            _materialTab.SaveFile();
-
-        return tab.DrawPanel(disabled);
-    }
-
     private void DrawMaterialReassignmentTab()
     {
         if (_editor.Files.Mdl.Count is 0)

@@ -4,29 +4,29 @@ using ImSharp;
 using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData.Data;
-using Penumbra.GameData.Files;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
+using Penumbra.UI.FileEditing;
+using Penumbra.UI.FileEditing.Skeletons;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class FileEditor<T>(
+public sealed class FileEditor(
     ModEditWindow owner,
     CommunicatorService communicator,
-    IDataManager gameData,
     Configuration config,
     FileCompactor compactor,
     FileDialogService fileDialog,
+    IFramework framework,
     string tabName,
     string fileType,
     Func<IEnumerable<FileRegistry>> getFiles,
-    Func<T, bool, bool> drawEdit,
     Func<string> getInitialPath,
-    Func<byte[], string, bool, T?> parseFile)
+    IFileEditorFactory editorFactory,
+    FileEditingContext fileEditingContext)
     : IDisposable
-    where T : class, IWritable
 {
     public void Draw()
     {
@@ -65,9 +65,20 @@ public class FileEditor<T>(
 
     public void Dispose()
     {
-        (_currentFile as IDisposable)?.Dispose();
+        ClearCurrentFile();
+        ClearDefaultFile();
+    }
+
+    private void ClearCurrentFile()
+    {
+        _currentFile?.SaveRequested -= SaveFile;
+        _currentFile?.Dispose();
         _currentFile = null;
-        (_defaultFile as IDisposable)?.Dispose();
+    }
+
+    private void ClearDefaultFile()
+    {
+        _defaultFile?.Dispose();
         _defaultFile = null;
     }
 
@@ -77,15 +88,15 @@ public class FileEditor<T>(
         set => _combo.Selected = value;
     }
 
-    private T?         _currentFile;
-    private Exception? _currentException;
-    private bool       _changed;
+    private IFileEditor? _currentFile;
+    private Exception?   _currentException;
+    private bool         _changed;
 
-    private string       _defaultPath = typeof(T) == typeof(ModEditWindow.PbdTab) ? GamePaths.Pbd.Path : string.Empty;
+    private string       _defaultPath = editorFactory is DeformerEditorFactory ? GamePaths.Pbd.Path : string.Empty;
     private bool         _inInput;
     private Utf8GamePath _defaultPathUtf8;
     private bool         _isDefaultPathUtf8Valid;
-    private T?           _defaultFile;
+    private IFileEditor? _defaultFile;
     private Exception?   _defaultException;
 
     private readonly Combo _combo = new(getFiles);
@@ -103,25 +114,14 @@ public class FileEditor<T>(
             _isDefaultPathUtf8Valid = Utf8GamePath.FromString(_defaultPath, out _defaultPathUtf8);
             _quickImport            = null;
             fileDialog.Reset();
+            _defaultException = null;
+            ClearDefaultFile(); // Avoid double disposal if an exception occurs during the parsing of the new file.
             try
             {
-                var file = gameData.GetFile(_defaultPath);
-                if (file is not null)
-                {
-                    _defaultException = null;
-                    (_defaultFile as IDisposable)?.Dispose();
-                    _defaultFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
-                    _defaultFile = parseFile(file.Data, _defaultPath, false);
-                }
-                else
-                {
-                    _defaultFile      = null;
-                    _defaultException = new Exception("File does not exist.");
-                }
+                _defaultFile = editorFactory.CreateForGameFile(_defaultPath, fileEditingContext);
             }
             catch (Exception e)
             {
-                _defaultFile      = null;
                 _defaultException = e;
             }
         }
@@ -129,14 +129,17 @@ public class FileEditor<T>(
         Im.Line.Same();
         if (ImEx.Icon.Button(LunaStyle.SaveIcon, "Export this file."u8, _defaultFile is null))
             fileDialog.OpenSavePicker($"Export {_defaultPath} to...", fileType, Path.GetFileNameWithoutExtension(_defaultPath), fileType,
-                (success, name) =>
+                async void (success, name) =>
                 {
                     if (!success)
                         return;
 
                     try
                     {
-                        compactor.WriteAllBytes(name, _defaultFile?.Write() ?? throw new Exception("File invalid."));
+                        if (_defaultFile is null)
+                            throw new Exception("File invalid.");
+
+                        await compactor.WriteAllBytesAsync(name, await _defaultFile.WriteAsync());
                     }
                     catch (Exception e)
                     {
@@ -166,9 +169,8 @@ public class FileEditor<T>(
     {
         _currentException = null;
         CurrentPath       = null;
-        (_currentFile as IDisposable)?.Dispose();
-        _currentFile = null;
-        _changed     = false;
+        ClearCurrentFile();
+        _changed = false;
     }
 
     private void DrawFileSelectCombo()
@@ -193,19 +195,17 @@ public class FileEditor<T>(
         _changed          = false;
         CurrentPath       = path;
         _currentException = null;
+        ClearCurrentFile(); // Avoid double disposal if an exception occurs during the parsing of the new file.
         try
         {
-            var bytes = File.ReadAllBytes(CurrentPath.File.FullName);
-            (_currentFile as IDisposable)?.Dispose();
-            _currentFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
-            _currentFile = parseFile(bytes, CurrentPath.File.FullName, true);
+            _currentFile = editorFactory.CreateForFile(CurrentPath.File.FullName, true, fileEditingContext);
         }
         catch (Exception e)
         {
-            (_currentFile as IDisposable)?.Dispose();
-            _currentFile      = null;
             _currentException = e;
         }
+
+        _currentFile?.SaveRequested += SaveFile;
     }
 
     private void SaveButton()
@@ -218,9 +218,18 @@ public class FileEditor<T>(
 
     public void SaveFile()
     {
-        compactor.WriteAllBytes(CurrentPath!.File.FullName, _currentFile!.Write());
+        SaveFileAsync().ContinueWith(t => t.Exception!.Handle(e =>
+        {
+            Penumbra.Messager.NotificationMessage(e, $"Could not save {CurrentPath?.File.FullName}.", NotificationType.Error);
+            return true;
+        }), TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    public async Task SaveFileAsync()
+    {
+        await compactor.WriteAllBytesAsync(CurrentPath!.File.FullName, await _currentFile!.WriteAsync());
         if (owner.Mod is not null)
-            communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, CurrentPath));
+            await framework.Run(() => communicator.ModFileChanged.Invoke(new ModFileChanged.Arguments(owner.Mod, CurrentPath)));
         _changed = false;
     }
 
@@ -255,7 +264,8 @@ public class FileEditor<T>(
             else
             {
                 using var id = Im.Id.Push(0);
-                _changed |= drawEdit(_currentFile, false);
+                _changed |= _currentFile.DrawToolbar(false);
+                _changed |= _currentFile.DrawPanel(false);
             }
         }
 
@@ -281,7 +291,8 @@ public class FileEditor<T>(
             else
             {
                 using var id = Im.Id.Push(1);
-                drawEdit(_defaultFile, true);
+                _defaultFile.DrawToolbar(true);
+                _defaultFile.DrawPanel(true);
             }
         }
     }

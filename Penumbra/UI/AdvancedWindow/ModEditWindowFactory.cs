@@ -2,20 +2,22 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using Luna;
 using Penumbra.Collections.Manager;
-using Penumbra.Import.Models;
-using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
-using Penumbra.UI.AdvancedWindow.Materials;
 using Penumbra.UI.AdvancedWindow.Meta;
 using Penumbra.UI.Classes;
+using Penumbra.UI.FileEditing.Materials;
+using Penumbra.UI.FileEditing.Models;
+using Penumbra.UI.FileEditing.Shaders;
+using Penumbra.UI.FileEditing.Skeletons;
+using Penumbra.UI.FileEditing.Textures;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ModEditWindowFactory(
+public sealed class ModEditWindowFactory(
     FileDialogService fileDialog,
     ItemSwapTabFactory itemSwapTabFactory,
     IDataManager gameData,
@@ -26,21 +28,24 @@ public class ModEditWindowFactory(
     ActiveCollections activeCollections,
     ModMergeTab modMergeTab,
     CommunicatorService communicator,
-    TextureManager textures,
-    ModelManager models,
     IDragDropManager dragDropManager,
     ResourceTreeViewerFactory resourceTreeViewerFactory,
     IFramework framework,
     WindowSystem windowSystem,
     Logger log,
-    MtrlTabFactory mtrlTabFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
+    MaterialEditorFactory materialEditorFactory,
+    ModelEditorFactory modelEditorFactory,
+    ShaderPackageEditorFactory shaderPackageEditorFactory,
+    DeformerEditorFactory deformerEditorFactory,
+    CombiningTextureEditorFactory textureEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
 {
     protected override ModEditWindow CreateWindow(int index)
     {
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
-            activeCollections, modMergeTab, communicator, textures, models, dragDropManager, resourceTreeViewerFactory, framework,
-            CreateMetaDrawers(editor.MetaEditor), mtrlTabFactory, index);
+            activeCollections, modMergeTab, communicator, dragDropManager, resourceTreeViewerFactory, framework,
+            CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, modelEditorFactory, shaderPackageEditorFactory, deformerEditorFactory,
+            textureEditorFactory, index);
     }
 
     private MetaDrawers CreateMetaDrawers(ModMetaEditor metaEditor)
