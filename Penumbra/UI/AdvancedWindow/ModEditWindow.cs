@@ -45,7 +45,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly FileEditor _materialTab;
     private readonly FileEditor _shaderPackageTab;
     private readonly FileEditor _pbdTab;
-#if DEBUG
+#if false
     private readonly FileEditor _newTextureTab;
 #endif
 
@@ -193,7 +193,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
             _modelTab.Reset();
             _shaderPackageTab.Reset();
             _pbdTab.Reset();
-#if DEBUG
+#if false
             _newTextureTab.Reset();
 #endif
         });
@@ -233,7 +233,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
             if (tab)
                 _textureEditor.DrawPanel(false);
         }
-#if DEBUG
+#if false
         _newTextureTab.Draw();
 #endif
         _shaderPackageTab.Draw();
@@ -600,7 +600,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         _modelTab         = CreateFileEditor("Models",    ".mdl",  ResourceType.Mdl,  modelEditorFactory);
         _shaderPackageTab = CreateFileEditor("Shaders",   ".shpk", ResourceType.Shpk, shaderPackageEditorFactory);
         _pbdTab           = CreateFileEditor("Deformers", ".pbd",  ResourceType.Pbd,  deformerEditorFactory);
-#if DEBUG
+#if false
         _newTextureTab = CreateFileEditor("Textures (2)", ".tex", ResourceType.Tex, textureEditorFactory);
 #endif
 
