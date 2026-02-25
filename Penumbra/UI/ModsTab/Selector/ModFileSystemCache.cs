@@ -90,6 +90,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             var currentCollection = ((ModFileSystemDrawer)cache.Parent).CollectionManager.Active.Current;
             (Settings, Collection) = currentCollection.GetActualSettings(Node.Value.Index);
             TextColor              = UpdateColor(cache, currentCollection);
+            Name                   = new StringU8(Node.Value.Name);
             var priority = Settings?.Priority ?? ModPriority.Default;
             if (priority != Priority)
             {
