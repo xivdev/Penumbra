@@ -1,12 +1,8 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Bindings.ImGui;
+using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Extensions;
-using OtterGui.Raii;
-using OtterGui.Services;
-using OtterGui.Text;
-using OtterGui.Widgets;
 using Penumbra.Collections.Cache;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -15,12 +11,11 @@ using Penumbra.GameData.Files.AtchStructs;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
-using Penumbra.UI.Classes;
-using Notification = OtterGui.Classes.Notification;
+using Notification = Luna.Notification;
 
 namespace Penumbra.UI.AdvancedWindow.Meta;
 
-public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, IService
+public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>
 {
     public override ReadOnlySpan<byte> Label
         => "Attachment Points (ATCH)###ATCH"u8;
@@ -29,25 +24,20 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
         => 10;
 
     public override float ColumnHeight
-        => 2 * ImUtf8.FrameHeightSpacing;
+        => 2 * Im.Style.FrameHeightWithSpacing;
 
     private          AtchFile?      _currentBaseAtchFile;
     private          AtchPoint?     _currentBaseAtchPoint;
     private readonly AtchPointCombo _combo;
-    private          string         _fileImport = string.Empty;
 
     public AtchMetaDrawer(ModMetaEditor editor, MetaFileManager metaFiles)
         : base(editor, metaFiles)
     {
-        _combo = new AtchPointCombo(() => _currentBaseAtchFile?.Points.Select(p => p.Type).ToList() ?? []);
+        _combo = new AtchPointCombo(this);
     }
 
-    private sealed class AtchPointCombo(Func<IReadOnlyList<AtchType>> generator)
-        : FilterComboCache<AtchType>(generator, MouseWheelType.Control, Penumbra.Log)
-    {
-        protected override string ToString(AtchType obj)
-            => obj.ToName();
-    }
+    public IEnumerable<AtchType> GetPoints()
+        => _currentBaseAtchFile?.Points.Select(p => p.Type) ?? [];
 
     private sealed class RaceCodeException(string filePath) : Exception($"Could not identify race code from path {filePath}.");
 
@@ -66,11 +56,11 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
             var file = new AtchFile(text);
             foreach (var point in file.Points)
             {
-                foreach (var (entry, index) in point.Entries.WithIndex())
+                foreach (var (index, entry) in point.Entries.Index())
                 {
                     var identifier   = new AtchIdentifier(point.Type, gr, (ushort)index);
                     var defaultValue = AtchCache.GetDefault(MetaFiles, identifier);
-                    if (defaultValue == null)
+                    if (defaultValue is null)
                         continue;
 
                     if (defaultValue.Value.Equals(entry))
@@ -83,8 +73,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
         catch (RaceCodeException ex)
         {
             Penumbra.Messager.AddMessage(new Notification(ex, "The imported .atch file does not contain a race code (cXXXX) in its name.",
-                "Could not import .atch file:",
-                NotificationType.Warning));
+                "Could not import .atch file:", NotificationType.Warning));
         }
         catch (Exception ex)
         {
@@ -96,14 +85,14 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
 
     protected override void DrawNew()
     {
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         CopyToClipboardButton("Copy all current ATCH manipulations to clipboard."u8,
             new Lazy<JToken?>(() => MetaDictionary.SerializeTo([], Editor.Atch)));
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         var canAdd = !Editor.Contains(Identifier);
         var tt     = canAdd ? "Stage this edit."u8 : "This entry is already edited."u8;
-        if (ImUtf8.IconButton(FontAwesomeIcon.Plus, tt, disabled: !canAdd))
+        if (ImEx.Icon.Button(LunaStyle.AddObjectIcon, tt, !canAdd))
             Editor.Changes |= Editor.TryAdd(Identifier, Entry);
 
         if (DrawIdentifierInput(ref Identifier))
@@ -146,20 +135,20 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
     private bool DrawIdentifierInput(ref AtchIdentifier identifier)
     {
         var changes = false;
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawRace(ref identifier);
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawGender(ref identifier, false);
         if (changes)
             UpdateFile();
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         if (DrawPointInput(ref identifier, _combo))
         {
             _currentBaseAtchPoint = _currentBaseAtchFile?.GetPoint(identifier.Type);
             changes               = true;
         }
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         changes |= DrawEntryIndexInput(ref identifier, _currentBaseAtchPoint!);
 
         return changes;
@@ -169,7 +158,7 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
     {
         _currentBaseAtchFile  = MetaFiles.AtchManager.AtchFileBase[Identifier.GenderRace];
         _currentBaseAtchPoint = _currentBaseAtchFile.GetPoint(Identifier.Type);
-        if (_currentBaseAtchPoint == null)
+        if (_currentBaseAtchPoint is null)
         {
             _currentBaseAtchPoint = _currentBaseAtchFile.Points.First();
             Identifier            = Identifier with { Type = _currentBaseAtchPoint.Type };
@@ -181,74 +170,74 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
 
     private static void DrawIdentifier(AtchIdentifier identifier)
     {
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Race.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Race.ToNameU8(), default, FrameColor);
+        Im.Tooltip.OnHover("Model Race"u8);
 
-        ImGui.TableNextColumn();
+        Im.Table.NextColumn();
         DrawGender(ref identifier, true);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.Type.ToName(), FrameColor);
-        ImUtf8.HoverTooltip("Attachment Point Type"u8);
+        Im.Table.NextColumn();
+        ImEx.TextFramed(identifier.Type.ToName(), default, FrameColor);
+        Im.Tooltip.OnHover("Attachment Point Type"u8);
 
-        ImGui.TableNextColumn();
-        ImUtf8.TextFramed(identifier.EntryIndex.ToString(), FrameColor);
-        ImUtf8.HoverTooltip("State Entry Index"u8);
+        Im.Table.NextColumn();
+        ImEx.TextFramed($"{identifier.EntryIndex}", default, FrameColor);
+        Im.Tooltip.OnHover("State Entry Index"u8);
     }
 
     private static bool DrawEntry(in AtchEntry defaultEntry, ref AtchEntry entry, bool disabled)
     {
         var       changes = false;
-        using var dis     = ImRaii.Disabled(disabled);
+        using var dis     = Im.Disabled(disabled);
         if (defaultEntry.Bone.Length == 0)
             return false;
 
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(200 * ImUtf8.GlobalScale);
-        if (ImUtf8.InputText("##BoneName"u8, entry.FullSpan, out TerminatedByteString newBone))
+        Im.Table.NextColumn();
+        Im.Item.SetNextWidthScaled(200);
+        if (Im.Input.Text("##BoneName"u8, entry.FullSpan, out StringU8 newBone))
         {
             entry.SetBoneName(newBone);
             changes = true;
         }
 
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Bone Name"u8);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Bone Name"u8);
 
-        ImGui.SetNextItemWidth(200 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchScale"u8, ref entry.Scale);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Scale"u8);
+        Im.Item.SetNextWidthScaled(200);
+        changes |= Im.Input.Scalar("##AtchScale"u8, ref entry.Scale);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Scale"u8);
 
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchOffsetX"u8, ref entry.OffsetX);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Offset X-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchRotationX"u8, ref entry.RotationX);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Rotation X-Axis"u8);
+        Im.Table.NextColumn();
+        Im.Item.SetNextWidthScaled(120);
+        changes |= Im.Input.Scalar("##AtchOffsetX"u8, ref entry.OffsetX);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Offset X-Coordinate"u8);
+        Im.Item.SetNextWidthScaled(120);
+        changes |= Im.Input.Scalar("##AtchRotationX"u8, ref entry.RotationX);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation X-Axis"u8);
 
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchOffsetY"u8, ref entry.OffsetY);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Offset Y-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchRotationY"u8, ref entry.RotationY);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Rotation Y-Axis"u8);
+        Im.Table.NextColumn();
+        Im.Item.SetNextWidthScaled(120);
+        changes |= Im.Input.Scalar("##AtchOffsetY"u8, ref entry.OffsetY);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Offset Y-Coordinate"u8);
+        Im.Item.SetNextWidthScaled(120);
+        changes |= Im.Input.Scalar("##AtchRotationY"u8, ref entry.RotationY);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation Y-Axis"u8);
 
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchOffsetZ"u8, ref entry.OffsetZ);
-        ImUtf8.HoverTooltip("Offset Z-Coordinate"u8);
-        ImGui.SetNextItemWidth(120 * ImUtf8.GlobalScale);
-        changes |= ImUtf8.InputScalar("##AtchRotationZ"u8, ref entry.RotationZ);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, "Rotation Z-Axis"u8);
+        Im.Table.NextColumn();
+        Im.Item.SetNextWidthScaled(120);
+        changes |= Im.Input.Scalar("##AtchOffsetZ"u8, ref entry.OffsetZ);
+        Im.Tooltip.OnHover("Offset Z-Coordinate"u8);
+        Im.Item.SetNextWidthScaled(120);
+        changes |= Im.Input.Scalar("##AtchRotationZ"u8, ref entry.RotationZ);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, "Rotation Z-Axis"u8);
 
         return changes;
     }
 
     private static bool DrawRace(ref AtchIdentifier identifier, float unscaledWidth = 100)
     {
-        var ret = Combos.Race("##atchRace", identifier.Race, out var race, unscaledWidth);
-        ImUtf8.HoverTooltip("Model Race"u8);
+        var ret = Combos.ModelRace.Draw("##atchRace"u8, identifier.Race, StringU8.Empty, unscaledWidth * Im.Style.GlobalScale, out var race);
+        Im.Tooltip.OnHover("Model Race"u8);
         if (ret)
             identifier = identifier with { GenderRace = Names.CombinedRace(identifier.Gender, race) };
 
@@ -259,7 +248,8 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
     {
         var isMale = identifier.Gender is Gender.Male;
 
-        if (!ImUtf8.IconButton(isMale ? FontAwesomeIcon.Mars : FontAwesomeIcon.Venus, "Gender"u8, buttonColor: disabled ? 0x000F0000u : 0)
+        if (!ImEx.Icon.Button(isMale ? FontAwesomeIcon.Mars.Icon() : FontAwesomeIcon.Venus.Icon(), "Gender"u8,
+                buttonColor: disabled ? 0x000F0000u : 0)
          || disabled)
             return false;
 
@@ -269,21 +259,20 @@ public sealed class AtchMetaDrawer : MetaDrawer<AtchIdentifier, AtchEntry>, ISer
 
     private static bool DrawPointInput(ref AtchIdentifier identifier, AtchPointCombo combo)
     {
-        if (!combo.Draw("##AtchPoint", identifier.Type.ToName(), "Attachment Point Type", 160 * ImUtf8.GlobalScale,
-                ImGui.GetTextLineHeightWithSpacing()))
+        if (!combo.Draw("##AtchPoint"u8, identifier.Type, "Attachment Point Type"u8, 160 * Im.Style.GlobalScale, out var newType))
             return false;
 
-        identifier = identifier with { Type = combo.CurrentSelection };
+        identifier = identifier with { Type = newType };
         return true;
     }
 
     private static bool DrawEntryIndexInput(ref AtchIdentifier identifier, AtchPoint currentAtchPoint)
     {
         var index = identifier.EntryIndex;
-        ImGui.SetNextItemWidth(40 * ImUtf8.GlobalScale);
-        var ret = ImUtf8.DragScalar("##AtchEntry"u8, ref index, 0, (ushort)(currentAtchPoint.Entries.Length - 1), 0.05f,
-            ImGuiSliderFlags.AlwaysClamp);
-        ImUtf8.HoverTooltip("State Entry Index"u8);
+        Im.Item.SetNextWidth(40 * Im.Style.GlobalScale);
+        var ret = Im.Drag("##AtchEntry"u8, ref index, 0, (ushort)(currentAtchPoint.Entries.Length - 1), 0.05f,
+            SliderFlags.AlwaysClamp);
+        Im.Tooltip.OnHover("State Entry Index"u8);
         if (!ret)
             return false;
 

@@ -1,59 +1,60 @@
+using Luna.Generators;
+
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture
 {
-    private enum CombineOp
+    [NamedEnum("ToLabel")]
+    [TooltipEnum]
+    public enum CombineOp
     {
-        LeftMultiply  = -4,
-        LeftCopy      = -3,
-        RightCopy     = -2,
-        Invalid       = -1,
-        Over          = 0,
-        Under         = 1,
+        LeftMultiply = -4,
+        LeftCopy     = -3,
+        RightCopy    = -2,
+        Invalid      = -1,
+
+        [Name("Overlay over Input")]
+        [Tooltip("Standard composition.\nApply the overlay over the input.")]
+        Over = 0,
+
+        [Name("Input over Overlay")]
+        [Tooltip("Standard composition, reversed.\nApply the input over the overlay ; can be used to fix some wrong imports.")]
+        Under = 1,
+
+        [Name("Replace Input")]
+        [Tooltip("Completely replace the input with the overlay.\nCan be used to select the destination file as input and the source file as overlay.")]
         RightMultiply = 2,
-        CopyChannels  = 3,
+
+        [Name("Copy Channels")]
+        [Tooltip("Replace some input channels with those from the overlay.\nUseful for Multi maps.")]
+        CopyChannels = 3,
     }
 
-    private enum ResizeOp
+    [NamedEnum("ToLabel")]
+    public enum ResizeOp
     {
         LeftOnly  = -2,
         RightOnly = -1,
-        None      = 0,
-        ToLeft    = 1,
-        ToRight   = 2,
+
+        [Name("No Resizing")]
+        None = 0,
+
+        [Name("Adjust Overlay to Input")]
+        ToLeft = 1,
+
+        [Name("Adjust Input to Overlay")]
+        ToRight = 2,
     }
 
     [Flags]
-    private enum Channels : byte
+    [NamedEnum]
+    public enum Channels : byte
     {
         Red   = 1,
         Green = 2,
         Blue  = 4,
         Alpha = 8,
     }
-
-    private static readonly IReadOnlyList<string> CombineOpLabels = new[]
-    {
-        "Overlay over Input",
-        "Input over Overlay",
-        "Replace Input",
-        "Copy Channels",
-    };
-
-    private static readonly IReadOnlyList<string> CombineOpTooltips = new[]
-    {
-        "Standard composition.\nApply the overlay over the input.",
-        "Standard composition, reversed.\nApply the input over the overlay ; can be used to fix some wrong imports.",
-        "Completely replace the input with the overlay.\nCan be used to select the destination file as input and the source file as overlay.",
-        "Replace some input channels with those from the overlay.\nUseful for Multi maps.",
-    };
-
-    private static readonly IReadOnlyList<string> ResizeOpLabels = new string[]
-    {
-        "No Resizing",
-        "Adjust Overlay to Input",
-        "Adjust Input to Overlay",
-    };
 
     private static ResizeOp GetActualResizeOp(ResizeOp resizeOp, CombineOp combineOp)
         => combineOp switch

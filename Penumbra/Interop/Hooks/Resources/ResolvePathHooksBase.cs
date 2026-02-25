@@ -1,13 +1,10 @@
 using System.Text.Unicode;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
 using Penumbra.Collections;
-using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Processing;
-using static FFXIVClientStructs.FFXIV.Client.Game.Character.ActionEffectHandler;
 
 namespace Penumbra.Interop.Hooks.Resources;
 
@@ -50,7 +47,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     private readonly PathState _parent;
 
-    public ResolvePathHooksBase(string name, HookManager hooks, PathState parent, nint* vTable, Type type)
+    public ResolvePathHooksBase(string name, Luna.HookManager hooks, PathState parent, nint* vTable, Type type)
     {
         _parent = parent;
         // @formatter:off
@@ -329,7 +326,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     [return: NotNullIfNotNull(nameof(other))]
-    private static Hook<T>? Create<T>(string name, HookManager hooks, nint address, Type type, T? other, T human) where T : Delegate
+    private static Hook<T>? Create<T>(string name, Luna.HookManager hooks, nint address, Type type, T? other, T human) where T : Delegate
     {
         var del = type switch
         {
@@ -343,7 +340,7 @@ public sealed unsafe class ResolvePathHooksBase : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Hook<T> Create<T>(string name, HookManager hooks, nint address, T del) where T : Delegate
+    private static Hook<T> Create<T>(string name, Luna.HookManager hooks, nint address, T del) where T : Delegate
         => hooks.CreateHook(name, address, del).Result;
 
 

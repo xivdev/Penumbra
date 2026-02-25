@@ -1,9 +1,6 @@
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Utility;
-using OtterGui;
-using OtterGui.Classes;
-using OtterGui.Extensions;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Groups;
@@ -61,9 +58,6 @@ public class ModMerger : IDisposable, IService
         _selection.Unsubscribe(OnSelectionChange);
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
     }
-
-    public IEnumerable<Mod> ModsWithoutCurrent
-        => _mods.Where(m => m != MergeFromMod);
 
     public bool CanMerge
         => MergeToMod != null && MergeToMod != MergeFromMod;
@@ -480,27 +474,27 @@ public class ModMerger : IDisposable, IService
         }
     }
 
-    private void OnSelectionChange(Mod? oldSelection, Mod? newSelection)
+    private void OnSelectionChange(in ModSelection.Arguments arguments)
     {
-        if (OptionGroupName == "Merges" && OptionName.Length == 0 || OptionName == oldSelection?.Name.Text)
-            OptionName = newSelection?.Name.Text ?? string.Empty;
+        if (OptionGroupName == "Merges" && OptionName.Length == 0 || OptionName == arguments.OldSelection?.Name)
+            OptionName = arguments.NewSelection?.Name ?? string.Empty;
 
-        if (MergeToMod == newSelection)
+        if (MergeToMod == arguments.NewSelection)
             MergeToMod = null;
 
         SelectedOptions.Clear();
     }
 
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ModPathChangeType.Deleted:
             {
-                if (mod == MergeFromMod)
+                if (arguments.Mod == MergeFromMod)
                     SelectedOptions.Clear();
 
-                if (mod == MergeToMod)
+                if (arguments.Mod == MergeToMod)
                     MergeToMod = null;
                 break;
             }

@@ -2,15 +2,14 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
+using ImSharp;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceManagerService : IRequiredService
+public unsafe class ResourceManagerService : Luna.IRequiredService
 {
     public ResourceManagerService(IGameInteropProvider interop)
         => interop.InitializeFromAttributes(this);
@@ -23,10 +22,10 @@ public unsafe class ResourceManagerService : IRequiredService
     public ResourceHandle* FindResource(ResourceCategory cat, ResourceType ext, uint crc32)
     {
         ref var manager = ref *ResourceManager;
-        var catIdx = (uint)cat >> 0x18;
+        var     catIdx  = (uint)cat >> 0x18;
         cat = (ResourceCategory)(ushort)cat;
         ref var category = ref manager.ResourceGraph->Containers[(int)cat];
-        var extMap = FindInMap(category.CategoryMaps[(int)catIdx].Value, (uint)ext);
+        var     extMap   = FindInMap(category.CategoryMaps[(int)catIdx].Value, (uint)ext);
         if (extMap == null)
             return null;
 
@@ -34,15 +33,17 @@ public unsafe class ResourceManagerService : IRequiredService
         return ret == null ? null : ret->Value;
     }
 
-    public delegate void ExtMapAction(ResourceCategory category, StdMap<uint, Pointer<StdMap<uint, Pointer<ResourceHandle>>>>* graph, int idx);
-    public delegate void ResourceMapAction(uint ext, StdMap<uint, Pointer<ResourceHandle>>* graph);
+    public delegate void ExtMapAction(ResourceCategory category,
+        StdMap<uint, FFXIVClientStructs.Interop.Pointer<StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>>>* graph, int idx);
+
+    public delegate void ResourceMapAction(uint ext, StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>* graph);
     public delegate void ResourceAction(uint crc32, ResourceHandle* graph);
 
     /// <summary>  Iterate through the entire graph calling an action on every ExtMap. </summary>
     public void IterateGraphs(ExtMapAction action)
     {
         ref var manager = ref *ResourceManager;
-        foreach (var resourceType in Enum.GetValues<ResourceCategory>().SkipLast(1))
+        foreach (var resourceType in ResourceCategory.Values.SkipLast(1))
         {
             ref var graph = ref manager.ResourceGraph->Containers[(int)resourceType];
             for (var i = 0; i < 20; ++i)
@@ -55,11 +56,13 @@ public unsafe class ResourceManagerService : IRequiredService
     }
 
     /// <summary> Iterate through a specific ExtMap calling an action on every resource map. </summary>
-    public void IterateExtMap(StdMap<uint, Pointer<StdMap<uint, Pointer<ResourceHandle>>>>* map, ResourceMapAction action)
+    public void IterateExtMap(
+        StdMap<uint, FFXIVClientStructs.Interop.Pointer<StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>>>* map,
+        ResourceMapAction action)
         => IterateMap(map, (ext, m) => action(ext, m.Value));
 
     /// <summary> Iterate through a specific resource map calling an action on every resource. </summary>
-    public void IterateResourceMap(StdMap<uint, Pointer<ResourceHandle>>* map, ResourceAction action)
+    public void IterateResourceMap(StdMap<uint, FFXIVClientStructs.Interop.Pointer<ResourceHandle>>* map, ResourceAction action)
         => IterateMap(map, (crc, r) => action(crc, r.Value));
 
     /// <summary> Iterate through the entire graph calling an action on every resource. </summary>

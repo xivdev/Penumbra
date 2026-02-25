@@ -1,8 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
-using OtterGui.Extensions;
-using OtterGui.Services;
-using OtterGui.Tasks;
+using Luna;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.SubMods;
@@ -38,7 +35,7 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
         Step                  = 0;
         TotalSteps            = mod.TotalFileCount + 5;
 
-        Worker = TrackedTask.Run(NormalizeSync);
+        Worker = Task.Run(NormalizeSync);
     }
 
     public void NormalizeUi(DirectoryInfo modDirectory)
@@ -265,13 +262,13 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
             }
 
             // Normalize all other options.
-            foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
+            foreach (var (groupIdx, group) in Mod.Groups.Index())
             {
                 var groupDir = ModCreator.CreateModFolder(directory, group.Name, config.ReplaceNonAsciiOnImport, true);
                 _redirections[groupIdx + 1].EnsureCapacity(group.DataContainers.Count);
                 for (var i = _redirections[groupIdx + 1].Count; i < group.DataContainers.Count; ++i)
                     _redirections[groupIdx + 1].Add([]);
-                foreach (var (data, dataIdx) in group.DataContainers.WithIndex())
+                foreach (var (dataIdx, data) in group.DataContainers.Index())
                     HandleSubMod(groupDir, data, _redirections[groupIdx + 1][dataIdx]);
             }
 
@@ -377,8 +374,8 @@ public class ModNormalizer(ModManager modManager, Configuration config, SaveServ
     private void ApplyRedirections()
     {
         modManager.OptionEditor.SetFiles(Mod.Default, _redirections[0][0]);
-        foreach (var (group, groupIdx) in Mod.Groups.WithIndex())
-            foreach (var (container, containerIdx) in group.DataContainers.WithIndex())
+        foreach (var (groupIdx, group) in Mod.Groups.Index())
+            foreach (var (containerIdx, container) in group.DataContainers.Index())
                 modManager.OptionEditor.SetFiles(container, _redirections[groupIdx + 1][containerIdx]);
 
         ++Step;

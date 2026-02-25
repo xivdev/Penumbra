@@ -1,7 +1,5 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
-using OtterGui.Extensions;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -84,7 +82,7 @@ public class InheritanceManager : IDisposable, IService
     {
         var parent = inheritor.Inheritance.RemoveInheritanceAt(inheritor, idx);
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
-        _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+        _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, false));
         RecurseInheritanceChanges(inheritor, true);
         Penumbra.Log.Debug($"Removed {parent.Identity.AnonymizedName} from {inheritor.Identity.AnonymizedName} inheritances.");
     }
@@ -96,7 +94,7 @@ public class InheritanceManager : IDisposable, IService
             return;
 
         _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
-        _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+        _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, false));
         RecurseInheritanceChanges(inheritor, true);
         Penumbra.Log.Debug($"Moved {inheritor.Identity.AnonymizedName}s inheritance {from} to {to}.");
     }
@@ -111,7 +109,7 @@ public class InheritanceManager : IDisposable, IService
         if (invokeEvent)
         {
             _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
-            _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+            _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, false));
         }
 
         RecurseInheritanceChanges(inheritor, invokeEvent);
@@ -169,18 +167,18 @@ public class InheritanceManager : IDisposable, IService
         }
     }
 
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? old, ModCollection? newCollection, string _3)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is not CollectionType.Inactive || old == null)
+        if (arguments.Type is not CollectionType.Inactive || arguments.OldCollection is null)
             return;
 
         foreach (var c in _storage)
         {
-            var inheritedIdx = c.Inheritance.DirectlyInheritsFrom.IndexOf(old);
+            var inheritedIdx = c.Inheritance.DirectlyInheritsFrom.IndexOf(arguments.OldCollection);
             if (inheritedIdx >= 0)
                 RemoveInheritance(c, inheritedIdx);
 
-            c.Inheritance.RemoveChild(old);
+            c.Inheritance.RemoveChild(arguments.OldCollection);
         }
     }
 
@@ -191,7 +189,7 @@ public class InheritanceManager : IDisposable, IService
             ModCollectionInheritance.UpdateFlattenedInheritance(inheritor);
             RecurseInheritanceChanges(inheritor, invokeEvent);
             if (invokeEvent)
-                _communicator.CollectionInheritanceChanged.Invoke(inheritor, true);
+                _communicator.CollectionInheritanceChanged.Invoke(new CollectionInheritanceChanged.Arguments(inheritor, true));
         }
     }
 }

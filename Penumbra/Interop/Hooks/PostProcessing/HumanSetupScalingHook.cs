@@ -1,5 +1,5 @@
 ﻿using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 
 namespace Penumbra.Interop.Hooks.PostProcessing;
 

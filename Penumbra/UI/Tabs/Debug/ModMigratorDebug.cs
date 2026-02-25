@@ -1,11 +1,9 @@
-using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class ModMigratorDebug(ModMigrator migrator) : IUiService
+public class ModMigratorDebug(ModMigrator migrator) : Luna.IUiService
 {
     private string _inputPath  = string.Empty;
     private string _outputPath = string.Empty;
@@ -14,14 +12,14 @@ public class ModMigratorDebug(ModMigrator migrator) : IUiService
 
     public void Draw()
     {
-        if (!ImUtf8.CollapsingHeaderId("Mod Migrator"u8))
+        if (!Im.Tree.HeaderId("Mod Migrator"u8))
             return;
 
-        ImUtf8.InputText("##input"u8,  ref _inputPath,  "Input Path..."u8);
-        ImUtf8.InputText("##output"u8, ref _outputPath, "Output Path..."u8);
+        Im.Input.Text("##input"u8,  ref _inputPath,  "Input Path..."u8);
+        Im.Input.Text("##output"u8, ref _outputPath, "Output Path..."u8);
 
-        if (ImUtf8.ButtonEx("Create Index Texture"u8, "Requires input to be a path to a normal texture."u8, default, _inputPath.Length == 0
-             || _outputPath.Length == 0
+        if (ImEx.Button("Create Index Texture"u8, default, "Requires input to be a path to a normal texture."u8, _inputPath.Length is 0
+             || _outputPath.Length is 0
              || _indexTask is
                 {
                     IsCompleted: false,
@@ -30,12 +28,12 @@ public class ModMigratorDebug(ModMigrator migrator) : IUiService
 
         if (_indexTask is not null)
         {
-            ImGui.SameLine();
-            ImUtf8.TextFrameAligned($"{_indexTask.Status}");
+            Im.Line.Same();
+            ImEx.TextFrameAligned($"{_indexTask.Status}");
         }
 
-        if (ImUtf8.ButtonEx("Update Model File"u8, "Requires input to be a path to a mdl."u8, default, _inputPath.Length == 0
-             || _outputPath.Length == 0
+        if (ImEx.Button("Update Model File"u8, default, "Requires input to be a path to a mdl."u8, _inputPath.Length is 0
+             || _outputPath.Length is 0
              || _mdlTask is
                 {
                     IsCompleted: false,
@@ -48,8 +46,8 @@ public class ModMigratorDebug(ModMigrator migrator) : IUiService
 
         if (_mdlTask is not null)
         {
-            ImGui.SameLine();
-            ImUtf8.TextFrameAligned($"{_mdlTask.Status}");
+            Im.Line.Same();
+            ImEx.TextFrameAligned($"{_mdlTask.Status}");
         }
     }
 }

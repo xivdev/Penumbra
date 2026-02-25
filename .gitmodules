@@ -1,7 +1,3 @@
-[submodule "OtterGui"]
-	path = OtterGui
-	url = https://github.com/Ottermandias/OtterGui.git
-	branch = main
 [submodule "Penumbra.Api"]
 	path = Penumbra.Api
 	url = https://github.com/Ottermandias/Penumbra.Api.git
@@ -13,4 +9,8 @@
 [submodule "Penumbra.GameData"]
 	path = Penumbra.GameData
 	url = https://github.com/Ottermandias/Penumbra.GameData.git
+	branch = main
+[submodule "Luna"]
+	path = Luna
+	url = git@github.com:Ottermandias/Luna.git
 	branch = main

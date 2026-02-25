@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Lumina.Data.Parsing;
-using OtterGui.Extensions;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
@@ -72,7 +71,7 @@ public class SubMeshImporter
     private SubMesh Create()
     {
         // Build all the data we'll need.
-        foreach (var (primitive, index) in _node.Mesh.Primitives.WithIndex())
+        foreach (var (index, primitive) in _node.Mesh.Primitives.Index())
             BuildPrimitive(primitive, index);
 
         ArgumentNullException.ThrowIfNull(_indices);
@@ -144,7 +143,7 @@ public class SubMeshImporter
         _indices.AddRange(primitive.Indices.Select(i => (ushort)(i + vertexOffset)));
 
         // Shape values
-        foreach (var (primitiveShapeValues, morphIndex) in primitive.ShapeValues.WithIndex())
+        foreach (var (morphIndex, primitiveShapeValues) in primitive.ShapeValues.Index())
         {
             // Per glTF spec, all primitives MUST have the same number of morph targets in the same order.
             // As such, this lookup should be safe - a failure here is a broken glTF file.

@@ -1,6 +1,6 @@
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.Objects;

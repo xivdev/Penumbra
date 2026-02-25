@@ -1,13 +1,10 @@
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Services;
+using ImSharp;
 using Penumbra.Api.Api;
 
 namespace Penumbra.Api.IpcTester;
 
 public class IpcTester(
-    IpcProviders ipcProviders,
     IPenumbraApi api,
     PluginStateIpcTester pluginStateIpcTester,
     UiIpcTester uiIpcTester,
@@ -21,11 +18,10 @@ public class IpcTester(
     EditingIpcTester editingIpcTester,
     TemporaryIpcTester temporaryIpcTester,
     ResourceTreeIpcTester resourceTreeIpcTester,
-    IFramework framework) : IUiService
+    IFramework framework) : Luna.IUiService
 {
-    private readonly IpcProviders _ipcProviders = ipcProviders;
-    private          DateTime     _lastUpdate;
-    private          bool         _subscribed = false;
+    private DateTime _lastUpdate;
+    private bool     _subscribed;
 
     public void Draw()
     {
@@ -34,7 +30,7 @@ public class IpcTester(
             _lastUpdate = framework.LastUpdateUTC.AddSeconds(1);
             Subscribe();
 
-            ImGui.TextUnformatted($"API Version: {api.ApiVersion.Breaking}.{api.ApiVersion.Feature:D4}");
+            Im.Text($"API Version: {api.ApiVersion.Breaking}.{api.ApiVersion.Feature:D4}");
             collectionsIpcTester.Draw();
             editingIpcTester.Draw();
             gameStateIpcTester.Draw();
@@ -56,14 +52,13 @@ public class IpcTester(
         }
     }
 
-    internal static void DrawIntro(string label, string info)
+    internal static Im.IdDisposable DrawIntro(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> info)
     {
-        ImGui.TableNextRow();
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted(label);
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted(info);
-        ImGui.TableNextColumn();
+        var id = Im.Id.Push(ref info);
+        Im.Table.NextRow();
+        Im.Table.DrawColumn(ref label);
+        Im.Table.DrawColumn(ref info);
+        return id;
     }
 
     private void Subscribe()

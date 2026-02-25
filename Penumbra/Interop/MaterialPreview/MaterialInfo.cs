@@ -1,11 +1,11 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using ImSharp;
 using Penumbra.GameData.Interop;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.PathResolving;
 using Penumbra.String;
-using static Penumbra.Interop.Structs.StructExtensions;
 using Model = Penumbra.GameData.Interop.Model;
 
 namespace Penumbra.Interop.MaterialPreview;
@@ -54,7 +54,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
             ? m
             : CiByteString.Empty;
 
-        var result = new List<MaterialInfo>(Enum.GetValues<DrawObjectType>().Length);
+        var result = new List<MaterialInfo>(DrawObjectType.Values.Count);
         foreach (var objectPtr in gameObjects)
         {
             var gameObject = (Character*)objectPtr;
@@ -63,7 +63,7 @@ public readonly record struct MaterialInfo(ObjectIndex ObjectIndex, DrawObjectTy
 
             var index = (ObjectIndex)gameObject->GameObject.ObjectIndex;
 
-            foreach (var type in Enum.GetValues<DrawObjectType>())
+            foreach (var type in DrawObjectType.Values)
             {
                 var drawObject = GetDrawObject(type, objectPtr);
                 if (!drawObject.Valid)

@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
 using Penumbra.Collections;
 using Penumbra.Communication;
 using Penumbra.CrashHandler;
@@ -16,7 +15,7 @@ using FileMode = System.IO.FileMode;
 
 namespace Penumbra.Services;
 
-public sealed class CrashHandlerService : IDisposable, IService
+public sealed class CrashHandlerService : IDisposable, Luna.IService
 {
     private readonly FilenameService     _files;
     private readonly CommunicatorService _communicator;
@@ -249,18 +248,18 @@ public sealed class CrashHandlerService : IDisposable, IService
         }
     }
 
-    private void OnCreatingCharacterBase(nint address, Guid collection, nint _1, nint _2, nint _3)
+    private void OnCreatingCharacterBase(in CreatingCharacterBase.Arguments arguments)
     {
-        if (_eventWriter == null)
+        if (_eventWriter is null)
             return;
 
         try
         {
-            var name = GetActorName(address);
+            var name = GetActorName(arguments.GameObject);
 
             lock (_eventWriter)
             {
-                _eventWriter?.CharacterBase.WriteLine(address, name.Span, collection);
+                _eventWriter?.CharacterBase.WriteLine(arguments.GameObject, name.Span, arguments.Collection.Identity.Id);
             }
         }
         catch (Exception ex)

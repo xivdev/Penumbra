@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
 
@@ -12,9 +12,9 @@ public sealed unsafe class PlayFootstep : FastHook<PlayFootstep.Delegate>
 
     public PlayFootstep(HookManager hooks, GameState state, CollectionResolver collectionResolver)
     {
-        _state              = state;
+        _state = state;
         _collectionResolver = collectionResolver;
-        Task                = hooks.CreateHook<Delegate>("Play Footstep", Sigs.FootStepSound, Detour, !HookOverrides.Instance.Animation.PlayFootstep);
+        Task = hooks.CreateHook<Delegate>("Play Footstep", Sigs.FootStepSound, Detour, !HookOverrides.Instance.Animation.PlayFootstep);
     }
 
     public delegate void Delegate(GameObject* gameObject, int id, int unk);

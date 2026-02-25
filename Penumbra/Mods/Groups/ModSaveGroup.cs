@@ -1,6 +1,5 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Penumbra.GameData.Files.ShaderStructs;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
@@ -67,7 +66,7 @@ public readonly struct ModSaveGroup : ISavable
         _groupIdx   = _group?.GetIndex() ?? -1;
     }
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.OptionGroupFile(_basePath.FullName, _groupIdx, _group?.Name ?? string.Empty, _onlyAscii);
 
     public void Save(StreamWriter writer)

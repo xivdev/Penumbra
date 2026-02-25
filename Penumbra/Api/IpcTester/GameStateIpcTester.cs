@@ -1,30 +1,28 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface;
 using Dalamud.Plugin;
-using OtterGui.Raii;
-using OtterGui.Services;
+using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
-using Penumbra.String;
+using Penumbra.GameData.Interop;
 
 namespace Penumbra.Api.IpcTester;
 
 public class GameStateIpcTester : IUiService, IDisposable
 {
-    private readonly IDalamudPluginInterface                        _pi;
+    private readonly IDalamudPluginInterface                       _pi;
     public readonly  EventSubscriber<nint, Guid, nint, nint, nint> CharacterBaseCreating;
     public readonly  EventSubscriber<nint, Guid, nint>             CharacterBaseCreated;
     public readonly  EventSubscriber<nint, string, string>         GameObjectResourcePathResolved;
 
-    private string         _lastCreatedGameObjectName = string.Empty;
+    private StringU8       _lastCreatedGameObjectName = StringU8.Empty;
     private nint           _lastCreatedDrawObject     = nint.Zero;
     private DateTimeOffset _lastCreatedGameObjectTime = DateTimeOffset.MaxValue;
     private string         _lastResolvedGamePath      = string.Empty;
     private string         _lastResolvedFullPath      = string.Empty;
-    private string         _lastResolvedObject        = string.Empty;
+    private StringU8       _lastResolvedObject        = StringU8.Empty;
     private DateTimeOffset _lastResolvedGamePathTime  = DateTimeOffset.MaxValue;
-    private string         _currentDrawObjectString   = string.Empty;
+    private StringU8       _currentDrawObjectString   = StringU8.Empty;
     private nint           _currentDrawObject         = nint.Zero;
     private int            _currentCutsceneActor;
     private int            _currentCutsceneParent;
@@ -33,8 +31,8 @@ public class GameStateIpcTester : IUiService, IDisposable
     public GameStateIpcTester(IDalamudPluginInterface pi)
     {
         _pi                            = pi;
-        CharacterBaseCreating          = IpcSubscribers.CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
-        CharacterBaseCreated           = IpcSubscribers.CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
+        CharacterBaseCreating          = CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
+        CharacterBaseCreated           = CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
         GameObjectResourcePathResolved = IpcSubscribers.GameObjectResourcePathResolved.Subscriber(pi, UpdateGameObjectResourcePath);
         CharacterBaseCreating.Disable();
         CharacterBaseCreated.Disable();
@@ -50,63 +48,71 @@ public class GameStateIpcTester : IUiService, IDisposable
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Game State");
+        using var _ = Im.Tree.Node("Game State"u8);
         if (!_)
             return;
 
-        if (ImGui.InputTextWithHint("##drawObject", "Draw Object Address..", ref _currentDrawObjectString, 16,
-                ImGuiInputTextFlags.CharsHexadecimal))
+        if (Im.Input.Text("##drawObject"u8, ref _currentDrawObjectString, "Draw Object Address.."u8, InputTextFlags.CharsHexadecimal))
             _currentDrawObject = nint.TryParse(_currentDrawObjectString, NumberStyles.HexNumber, CultureInfo.InvariantCulture,
                 out var tmp)
                 ? tmp
                 : nint.Zero;
 
-        ImGui.InputInt("Cutscene Actor",  ref _currentCutsceneActor,  0);
-        ImGui.InputInt("Cutscene Parent", ref _currentCutsceneParent, 0);
+        Im.Input.Scalar("Cutscene Actor"u8,  ref _currentCutsceneActor);
+        Im.Input.Scalar("Cutscene Parent"u8, ref _currentCutsceneParent);
         if (_cutsceneError is not PenumbraApiEc.Success)
         {
-            ImGui.SameLine();
-            ImGui.TextUnformatted("Invalid Argument on last Call");
+            Im.Line.Same();
+            Im.Text("Invalid Argument on last Call"u8);
         }
 
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro(GetDrawObjectInfo.Label, "Draw Object Info");
-        if (_currentDrawObject == nint.Zero)
+        using (IpcTester.DrawIntro(GetDrawObjectInfo.LabelU8, "Draw Object Info"u8))
         {
-            ImGui.TextUnformatted("Invalid");
-        }
-        else
-        {
-            var (ptr, (collectionId, collectionName)) = new GetDrawObjectInfo(_pi).Invoke(_currentDrawObject);
-            ImGui.TextUnformatted(ptr == nint.Zero ? $"No Actor Associated, {collectionName}" : $"{ptr:X}, {collectionName}");
-            ImGui.SameLine();
-            using (ImRaii.PushFont(UiBuilder.MonoFont))
+            table.NextColumn();
+            if (_currentDrawObject == nint.Zero)
             {
-                ImGui.TextUnformatted(collectionId.ToString());
+                Im.Text("Invalid"u8);
+            }
+            else
+            {
+                var (ptr, (collectionId, collectionName)) = new GetDrawObjectInfo(_pi).Invoke(_currentDrawObject);
+                Im.Text(ptr == nint.Zero ? $"No Actor Associated, {collectionName}" : $"{ptr:X}, {collectionName}");
+                Im.Line.Same();
+                LunaStyle.DrawGuid(collectionId);
             }
         }
 
-        IpcTester.DrawIntro(GetCutsceneParentIndex.Label, "Cutscene Parent");
-        ImGui.TextUnformatted(new GetCutsceneParentIndex(_pi).Invoke(_currentCutsceneActor).ToString());
+        using (IpcTester.DrawIntro(GetCutsceneParentIndex.LabelU8, "Cutscene Parent"u8))
+        {
+            table.DrawColumn($"{new GetCutsceneParentIndex(_pi).Invoke(_currentCutsceneActor)}");
+        }
 
-        IpcTester.DrawIntro(SetCutsceneParentIndex.Label, "Cutscene Parent");
-        if (ImGui.Button("Set Parent"))
-            _cutsceneError = new SetCutsceneParentIndex(_pi)
-                .Invoke(_currentCutsceneActor, _currentCutsceneParent);
+        using (IpcTester.DrawIntro(SetCutsceneParentIndex.LabelU8, "Cutscene Parent"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Set Parent"u8))
+                _cutsceneError = new SetCutsceneParentIndex(_pi)
+                    .Invoke(_currentCutsceneActor, _currentCutsceneParent);
+        }
 
-        IpcTester.DrawIntro(CreatingCharacterBase.Label, "Last Drawobject created");
-        if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
-            ImGui.TextUnformatted(_lastCreatedDrawObject != nint.Zero
-                ? $"0x{_lastCreatedDrawObject:X} for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}"
-                : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}");
+        using (IpcTester.DrawIntro(CreatingCharacterBase.LabelU8, "Last Drawobject created"u8))
+        {
+            if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
+                table.DrawColumn(_lastCreatedDrawObject != nint.Zero
+                    ? $"0x{_lastCreatedDrawObject:X} for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}"
+                    : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}");
+        }
 
-        IpcTester.DrawIntro(IpcSubscribers.GameObjectResourcePathResolved.Label, "Last GamePath resolved");
-        if (_lastResolvedGamePathTime < DateTimeOffset.Now)
-            ImGui.TextUnformatted(
-                $"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}");
+        using (IpcTester.DrawIntro(IpcSubscribers.GameObjectResourcePathResolved.LabelU8, "Last GamePath resolved"u8))
+        {
+            if (_lastResolvedGamePathTime < DateTimeOffset.Now)
+                table.DrawColumn(
+                    $"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}");
+        }
     }
 
     private void UpdateLastCreated(nint gameObject, Guid _, nint _2, nint _3, nint _4)
@@ -131,9 +137,6 @@ public class GameStateIpcTester : IUiService, IDisposable
         _lastResolvedGamePathTime = DateTimeOffset.Now;
     }
 
-    private static unsafe string GetObjectName(nint gameObject)
-    {
-        var obj  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)gameObject;
-        return obj != null && obj->Name[0] != 0 ? new ByteString(obj->Name).ToString() : "Unknown";
-    }
+    private static StringU8 GetObjectName(nint gameObject)
+        => new(((Actor)gameObject).StoredName());
 }

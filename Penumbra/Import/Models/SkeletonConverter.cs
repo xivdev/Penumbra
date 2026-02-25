@@ -1,5 +1,4 @@
 using System.Xml;
-using OtterGui.Extensions;
 using Penumbra.Import.Models.Export;
 
 namespace Penumbra.Import.Models;
@@ -122,7 +121,7 @@ public static class SkeletonConverter
         var size    = int.Parse(element.GetAttribute("size"));
         var array   = new T[size];
 
-        foreach (var (childNode, index) in element.ChildNodes.Cast<XmlElement>().WithIndex())
+        foreach (var (index, childNode) in element.ChildNodes.Cast<XmlElement>().Index())
             array[index] = convert(childNode);
 
         return array;

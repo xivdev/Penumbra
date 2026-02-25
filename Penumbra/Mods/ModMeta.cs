@@ -1,3 +1,4 @@
+using ImSharp;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Structs;
@@ -10,7 +11,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
 {
     public const uint FileVersion = 3;
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.ModMetaPath(mod);
 
     public void Save(StreamWriter writer)
@@ -31,7 +32,7 @@ public readonly struct ModMeta(Mod mod) : ISavable
         {
             var features = mod.RequiredFeatures;
             var array    = new JArray();
-            foreach (var flag in Enum.GetValues<FeatureFlags>())
+            foreach (var flag in FeatureFlags.Values)
             {
                 if ((features & flag) is not FeatureFlags.None)
                     array.Add(flag.ToString());

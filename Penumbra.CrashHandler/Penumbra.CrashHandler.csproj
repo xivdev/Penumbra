@@ -1,4 +1,4 @@
-﻿<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+﻿<Project Sdk="Dalamud.NET.Sdk/14.0.2">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
     </PropertyGroup>

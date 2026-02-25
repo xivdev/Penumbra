@@ -1,5 +1,3 @@
-using OtterGui.Log;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -13,7 +11,7 @@ public class ApiHelpers(
     CollectionManager collectionManager,
     ObjectManager objects,
     CollectionResolver collectionResolver,
-    ActorManager actors) : IApiService
+    ActorManager actors) : Luna.IApiService
 {
     /// <summary> Return the associated identifier for an object given by its index. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -46,7 +44,7 @@ public class ApiHelpers(
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    internal static PenumbraApiEc Return(PenumbraApiEc ec, LazyString args, [CallerMemberName] string name = "Unknown")
+    internal static PenumbraApiEc Return(PenumbraApiEc ec, Lazy<string> args, [CallerMemberName] string name = "Unknown")
     {
         if (ec is PenumbraApiEc.Success or PenumbraApiEc.NothingChanged)
             Penumbra.Log.Verbose($"[{name}] Called with {args}, returned {ec}.");
@@ -56,12 +54,12 @@ public class ApiHelpers(
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    internal static LazyString Args(params object[] arguments)
+    internal static Lazy<string> Args(params object[] arguments)
     {
         if (arguments.Length == 0)
-            return new LazyString(() => "no arguments");
+            return new Lazy<string>("no arguments");
 
-        return new LazyString(() =>
+        return new Lazy<string>(() =>
         {
             var sb = new StringBuilder();
             for (var i = 0; i < arguments.Length / 2; ++i)

@@ -1,6 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Collections;
 using Penumbra.CrashHandler.Buffers;
 using Penumbra.GameData;
@@ -16,13 +16,15 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
     private readonly GameState           _state;
     private readonly CollectionResolver  _collectionResolver;
     private readonly CrashHandlerService _crashHandler;
+    private readonly DrawObjectState     _drawObjectState;
 
     public ApricotListenerSoundPlayCaller(HookManager hooks, GameState state, CollectionResolver collectionResolver,
-        CrashHandlerService crashHandler)
+        CrashHandlerService crashHandler, DrawObjectState drawObjectState)
     {
         _state              = state;
         _collectionResolver = collectionResolver;
         _crashHandler       = crashHandler;
+        _drawObjectState    = drawObjectState;
         Task = hooks.CreateHook<Delegate>("Apricot Listener Sound Play Caller", Sigs.ApricotListenerSoundPlayCaller, Detour,
             !HookOverrides.Instance.Animation.ApricotListenerSoundPlayCaller);
     }
@@ -52,8 +54,10 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
             return Task.Result.Original(a1, unused, timeOffset);
 
         // In some cases we can obtain the associated caster via vfunc 1.
-        var newData    = ResolveData.Invalid;
-        var gameObject = (*(delegate* unmanaged<nint, GameObject*>**)apricotIInstanceListenner)[VolatileOffsets.ApricotListenerSoundPlayCaller.CasterVFunc](apricotIInstanceListenner);
+        var newData = ResolveData.Invalid;
+        var gameObject =
+            (*(delegate* unmanaged<nint, GameObject*>**)apricotIInstanceListenner)[VolatileOffsets.ApricotListenerSoundPlayCaller.CasterVFunc](
+                apricotIInstanceListenner);
         if (gameObject != null)
         {
             newData = _collectionResolver.IdentifyCollection(gameObject, true);
@@ -64,8 +68,10 @@ public sealed unsafe class ApricotListenerSoundPlayCaller : FastHook<ApricotList
             // if the object has different type, drawObject will contain other values or garbage,
             // but only be used in a dictionary pointer lookup, so this does not hurt.
             var drawObject = ((DrawObject**)apricotIInstanceListenner)[1];
-            if (drawObject != null)
-                newData = _collectionResolver.IdentifyCollection(drawObject, true);
+            if (_drawObjectState.TryGetValue(drawObject, out var actor))
+                newData = _collectionResolver.IdentifyCollection(actor.Item1.AsObject, true);
+            else if (_state.ApricotDocumentAvfx.Valid)
+                newData = _state.ApricotDocumentAvfx;
         }
 
         _crashHandler.LogAnimation(newData.AssociatedGameObject, newData.ModCollection, AnimationInvocationType.ApricotSoundPlay);

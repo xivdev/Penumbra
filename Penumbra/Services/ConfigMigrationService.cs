@@ -1,20 +1,18 @@
+using ImSharp;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
-using OtterGui.Services;
-using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Enums;
 using Penumbra.Interop.Services;
-using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
-using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.ResourceWatcher;
 using Penumbra.UI.Tabs;
+using TabType = Penumbra.Api.Enums.TabType;
 
 namespace Penumbra.Services;
 
@@ -40,7 +38,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     private static void AddColors(Configuration config, bool forceSave)
     {
         var save = false;
-        foreach (var color in Enum.GetValues<ColorId>())
+        foreach (var color in ColorId.Values)
             save |= config.Colors.TryAdd(color, color.Data().DefaultColor);
 
         if (save || forceSave)
@@ -56,13 +54,13 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         // because it stayed alive for a bunch of people for some reason.
         DeleteMetaTmp();
 
-        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(saveService.FileNames.ConfigFile))
+        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(saveService.FileNames.ConfigurationFile))
         {
             AddColors(config, false);
             return;
         }
 
-        _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigFile));
+        _data = JObject.Parse(File.ReadAllText(saveService.FileNames.ConfigurationFile));
         CreateBackup();
 
         Version0To1();
@@ -74,7 +72,20 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version6To7();
         Version7To8();
         Version8To9();
+        Version9To10();
         AddColors(config, true);
+    }
+
+    private void Version9To10()
+    {
+        if (_config.Version != 9)
+            return;
+
+        backupService.CreateMigrationBackup("pre_filesystem_update", saveService.FileNames.OldFilesystemFile);
+        _config.Version           = 10;
+        _config.Ephemeral.Version = 10;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     // Migrate to ephemeral config.
@@ -99,24 +110,24 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         _config.Version           = 8;
         _config.Ephemeral.Version = 8;
 
-        _config.Ephemeral.LastSeenVersion       = _data["LastSeenVersion"]?.ToObject<int>() ?? _config.Ephemeral.LastSeenVersion;
-        _config.Ephemeral.DebugSeparateWindow   = _data["DebugSeparateWindow"]?.ToObject<bool>() ?? _config.Ephemeral.DebugSeparateWindow;
-        _config.Ephemeral.TutorialStep          = _data["TutorialStep"]?.ToObject<int>() ?? _config.Ephemeral.TutorialStep;
-        _config.Ephemeral.EnableResourceLogging = _data["EnableResourceLogging"]?.ToObject<bool>() ?? _config.Ephemeral.EnableResourceLogging;
-        _config.Ephemeral.ResourceLoggingFilter = _data["ResourceLoggingFilter"]?.ToObject<string>() ?? _config.Ephemeral.ResourceLoggingFilter;
-        _config.Ephemeral.EnableResourceWatcher = _data["EnableResourceWatcher"]?.ToObject<bool>() ?? _config.Ephemeral.EnableResourceWatcher;
-        _config.Ephemeral.OnlyAddMatchingResources =
-            _data["OnlyAddMatchingResources"]?.ToObject<bool>() ?? _config.Ephemeral.OnlyAddMatchingResources;
-        _config.Ephemeral.ResourceWatcherResourceTypes = _data["ResourceWatcherResourceTypes"]?.ToObject<ResourceTypeFlag>()
-         ?? _config.Ephemeral.ResourceWatcherResourceTypes;
-        _config.Ephemeral.ResourceWatcherResourceCategories = _data["ResourceWatcherResourceCategories"]?.ToObject<ResourceCategoryFlag>()
-         ?? _config.Ephemeral.ResourceWatcherResourceCategories;
-        _config.Ephemeral.ResourceWatcherRecordTypes =
-            _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Ephemeral.ResourceWatcherRecordTypes;
-        _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionsTab.PanelMode>() ?? _config.Ephemeral.CollectionPanel;
+        _config.Ephemeral.LastSeenVersion = _data["LastSeenVersion"]?.ToObject<int>() ?? _config.Ephemeral.LastSeenVersion;
+        _config.Ephemeral.DebugSeparateWindow = _data["DebugSeparateWindow"]?.ToObject<bool>() ?? _config.Ephemeral.DebugSeparateWindow;
+        _config.Ephemeral.TutorialStep = _data["TutorialStep"]?.ToObject<int>() ?? _config.Ephemeral.TutorialStep;
+        _config.Filters.ResourceLoggerWriteToLog = _data["EnableResourceLogging"]?.ToObject<bool>() ?? _config.Filters.ResourceLoggerWriteToLog;
+        _config.Filters.ResourceLoggerLogFilter = _data["ResourceLoggingFilter"]?.ToObject<string>() ?? _config.Filters.ResourceLoggerLogFilter;
+        _config.Filters.ResourceLoggerEnabled = _data["EnableResourceWatcher"]?.ToObject<bool>() ?? _config.Filters.ResourceLoggerEnabled;
+        _config.Filters.ResourceLoggerStoreOnlyMatching =
+            _data["OnlyAddMatchingResources"]?.ToObject<bool>() ?? _config.Filters.ResourceLoggerStoreOnlyMatching;
+        _config.Filters.ResourceLoggerTypeFilter = _data["ResourceWatcherResourceTypes"]?.ToObject<ResourceTypeFlag>()
+         ?? _config.Filters.ResourceLoggerTypeFilter;
+        _config.Filters.ResourceLoggerCategoryFilter = _data["ResourceWatcherResourceCategories"]?.ToObject<ResourceCategoryFlag>()
+         ?? _config.Filters.ResourceLoggerCategoryFilter;
+        _config.Filters.ResourceLoggerRecordFilter =
+            _data["ResourceWatcherRecordTypes"]?.ToObject<RecordType>() ?? _config.Filters.ResourceLoggerRecordFilter;
+        _config.Ephemeral.CollectionPanel = _data["CollectionPanel"]?.ToObject<CollectionPanelMode>() ?? _config.Ephemeral.CollectionPanel;
         _config.Ephemeral.SelectedTab     = _data["SelectedTab"]?.ToObject<TabType>() ?? _config.Ephemeral.SelectedTab;
-        _config.Ephemeral.ChangedItemFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
-         ?? _config.Ephemeral.ChangedItemFilter;
+        _config.Filters.ChangedItemTypeFilter = _data["ChangedItemFilter"]?.ToObject<ChangedItemIconFlag>()
+         ?? _config.Filters.ChangedItemTypeFilter;
         _config.Ephemeral.FixMainWindow = _data["FixMainWindow"]?.ToObject<bool>() ?? _config.Ephemeral.FixMainWindow;
         _config.Ephemeral.Save();
     }
@@ -166,15 +177,15 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         SortMode = _data[nameof(SortMode)]?.ToObject<SortModeV3>() ?? SortMode;
         _config.SortMode = SortMode switch
         {
-            SortModeV3.FoldersFirst           => ISortMode<Mod>.FoldersFirst,
-            SortModeV3.Lexicographical        => ISortMode<Mod>.Lexicographical,
-            SortModeV3.InverseFoldersFirst    => ISortMode<Mod>.InverseFoldersFirst,
-            SortModeV3.InverseLexicographical => ISortMode<Mod>.InverseLexicographical,
-            SortModeV3.FoldersLast            => ISortMode<Mod>.FoldersLast,
-            SortModeV3.InverseFoldersLast     => ISortMode<Mod>.InverseFoldersLast,
-            SortModeV3.InternalOrder          => ISortMode<Mod>.InternalOrder,
-            SortModeV3.InternalOrderInverse   => ISortMode<Mod>.InverseInternalOrder,
-            _                                 => ISortMode<Mod>.FoldersFirst,
+            SortModeV3.FoldersFirst           => ISortMode.FoldersFirst,
+            SortModeV3.Lexicographical        => ISortMode.Lexicographical,
+            SortModeV3.InverseFoldersFirst    => ISortMode.InverseFoldersFirst,
+            SortModeV3.InverseLexicographical => ISortMode.InverseLexicographical,
+            SortModeV3.FoldersLast            => ISortMode.FoldersLast,
+            SortModeV3.InverseFoldersLast     => ISortMode.InverseFoldersLast,
+            SortModeV3.InternalOrder          => ISortMode.InternalOrder,
+            SortModeV3.InternalOrderInverse   => ISortMode.InverseInternalOrder,
+            _                                 => ISortMode.FoldersFirst,
         };
         _config.Version = 4;
     }
@@ -255,7 +266,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     private void ResettleSortOrder()
     {
         ModSortOrder = _data[nameof(ModSortOrder)]?.ToObject<Dictionary<string, string>>() ?? ModSortOrder;
-        var       file   = saveService.FileNames.FilesystemFile;
+        var       file   = saveService.FileNames.OldFilesystemFile;
         using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
         using var writer = new StreamWriter(stream);
         using var j      = new JsonTextWriter(writer);
@@ -365,7 +376,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
                 var settings = setting["Settings"]!.ToObject<Dictionary<string, Setting>>()
                  ?? setting["Conf"]!.ToObject<Dictionary<string, Setting>>();
 
-                dict[modName] = new ModSettings.SavedSettings()
+                dict[modName] = new ModSettings.SavedSettings
                 {
                     Enabled  = enabled,
                     Priority = priority,
@@ -380,7 +391,8 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
 
             var emptyStorage = new ModStorage();
             // Only used for saving and immediately discarded, so the local collection id here is irrelevant.
-            var collection   = ModCollection.CreateFromData(saveService, emptyStorage, ModCollectionIdentity.New(ModCollectionIdentity.DefaultCollectionName, LocalCollectionId.Zero, 1), 0, dict, []);
+            var collection = ModCollection.CreateFromData(saveService, emptyStorage,
+                ModCollectionIdentity.New(ModCollectionIdentity.DefaultCollectionName, LocalCollectionId.Zero, 1), 0, dict, []);
             saveService.ImmediateSaveSync(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)
@@ -393,7 +405,7 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
     // Create a backup of the configuration file specifically.
     private void CreateBackup()
     {
-        var name    = saveService.FileNames.ConfigFile;
+        var name    = saveService.FileNames.ConfigurationFile;
         var bakName = name + ".bak";
         try
         {

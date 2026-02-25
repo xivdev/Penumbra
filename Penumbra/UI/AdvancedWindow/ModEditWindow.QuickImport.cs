@@ -1,7 +1,5 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
-using Lumina.Data;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
@@ -9,6 +7,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.SubMods;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -17,9 +16,9 @@ public partial class ModEditWindow
     private readonly FileDialogService                                         _fileDialog;
     private readonly ResourceTreeFactory                                       _resourceTreeFactory;
     private readonly ResourceTreeViewer                                        _quickImportViewer;
-    private readonly Dictionary<(Utf8GamePath, IWritable?), QuickImportAction> _quickImportActions   = new();
+    private readonly Dictionary<(Utf8GamePath, IWritable?), QuickImportAction> _quickImportActions = new();
 
-    private HashSet<string> GetPlayerResourcesOfType(ResourceType type)
+    public HashSet<string> GetPlayerResourcesOfType(ResourceType type)
     {
         var resources = ResourceTreeApiHelper
             .GetResourcesOfType(_resourceTreeFactory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
@@ -41,7 +40,7 @@ public partial class ModEditWindow
 
     private void DrawQuickImportTab()
     {
-        using var tab = ImUtf8.TabItem("Import from Screen"u8);
+        using var tab = Im.TabBar.BeginItem("Import from Screen"u8);
         if (!tab)
         {
             _quickImportActions.Clear();
@@ -60,8 +59,8 @@ public partial class ModEditWindow
 
     private void DrawQuickImportActions(ResourceNode resourceNode, IWritable? writable, Vector2 buttonSize)
     {
-        ImGui.SameLine();
-        if (!_quickImportActions!.TryGetValue((resourceNode.GamePath, writable), out var quickImport))
+        Im.Line.Same();
+        if (!_quickImportActions.TryGetValue((resourceNode.GamePath, writable), out var quickImport))
         {
             quickImport = QuickImportAction.Prepare(this, resourceNode.GamePath, writable);
             _quickImportActions.Add((resourceNode.GamePath, writable), quickImport);
@@ -69,9 +68,8 @@ public partial class ModEditWindow
 
         var canQuickImport     = quickImport.CanExecute;
         var quickImportEnabled = canQuickImport && (!resourceNode.Protected || _config.DeleteModModifier.IsActive());
-        if (ImUtf8.IconButton(FontAwesomeIcon.FileImport,
+        if (ImEx.Icon.Button(LunaStyle.ImportIcon,
                 $"Add a copy of this file to {quickImport.OptionName}.{(canQuickImport && !quickImportEnabled ? $"\nHold {_config.DeleteModModifier} while clicking to add." : string.Empty)}",
-                buttonSize,
                 !quickImportEnabled))
         {
             quickImport.Execute();
@@ -161,11 +159,8 @@ public partial class ModEditWindow
                 Directory.CreateDirectory(directory);
             _editor.Compactor.WriteAllBytes(_targetPath!, _file!.Write());
             _editor.FileEditor.Revert(_editor.Mod!, _editor.Option!);
-            var fileRegistry = _editor.Files.Available.First(file => file.File.FullName == _targetPath);
-            _editor.FileEditor.AddPathsToSelected(_editor.Option!, new[]
-            {
-                fileRegistry,
-            }, _subDirs);
+            var fileRegistry = _editor.Files.Available.First(file => file.File.FullName.Equals(_targetPath, StringComparison.OrdinalIgnoreCase));
+            _editor.FileEditor.AddPathsToSelected(_editor.Option!, [fileRegistry], _subDirs);
             _editor.FileEditor.Apply(_editor.Mod!, _editor.Option!);
 
             return fileRegistry;

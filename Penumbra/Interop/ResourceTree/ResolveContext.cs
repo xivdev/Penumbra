@@ -2,8 +2,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
-using OtterGui.Extensions;
-using OtterGui.Text.HelperObjects;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Data;
@@ -15,8 +14,10 @@ using Penumbra.Meta;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI;
+using Penumbra.UI.Classes;
 using static Penumbra.Interop.Structs.StructExtensions;
 using CharaBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
+using SpanTextWriter = Luna.SpanTextWriter;
 
 namespace Penumbra.Interop.ResourceTree;
 

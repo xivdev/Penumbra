@@ -1,4 +1,4 @@
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
@@ -22,7 +22,7 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("GetRspBust", Sigs.GetRspBust, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.RspBustHook);
         if (!HookOverrides.Instance.Meta.RspBustHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private float* Detour(nint cmpResource, float* storage, SubRace clan, byte gender, byte bodyType, byte bustSize)
@@ -68,6 +68,9 @@ public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
         return ret;
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

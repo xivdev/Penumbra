@@ -1,19 +1,14 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Plugin;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
-using Penumbra.UI;
 
 namespace Penumbra.Api.IpcTester;
 
-public class ModSettingsIpcTester : IUiService, IDisposable
+public class ModSettingsIpcTester : Luna.IUiService, IDisposable
 {
-    private readonly IDalamudPluginInterface                                _pi;
+    private readonly IDalamudPluginInterface                               _pi;
     public readonly  EventSubscriber<ModSettingChange, Guid, string, bool> SettingChanged;
 
     private PenumbraApiEc    _lastSettingsError = PenumbraApiEc.Success;
@@ -46,170 +41,198 @@ public class ModSettingsIpcTester : IUiService, IDisposable
     }
 
     public void Dispose()
-    {
-        SettingChanged.Dispose();
-    }
+        => SettingChanged.Dispose();
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Mod Settings");
+        using var _ = Im.Tree.Node("Mod Settings"u8);
         if (!_)
             return;
 
-        ImGui.InputTextWithHint("##settingsDir",  "Mod Directory Name...", ref _settingsModDirectory, 100);
-        ImGui.InputTextWithHint("##settingsName", "Mod Name...",           ref _settingsModName,      100);
-        ImGuiUtil.GuidInput("##settingsCollection", "Collection...", string.Empty, ref _settingsCollection, ref _settingsCollectionName);
-        ImUtf8.Checkbox("Ignore Inheritance"u8, ref _settingsIgnoreInheritance);
-        ImUtf8.Checkbox("Ignore Temporary"u8, ref _settingsIgnoreTemporary);
-        ImUtf8.InputScalar("Key"u8, ref _settingsKey);
+        Im.Input.Text("##settingsDir"u8,  ref _settingsModDirectory, "Mod Directory Name..."u8);
+        Im.Input.Text("##settingsName"u8, ref _settingsModName,      "Mod Name..."u8);
+        ImEx.GuidInput("Collection ID##settingsCollection"u8, ref _settingsCollection);
+        Im.Checkbox("Ignore Inheritance"u8, ref _settingsIgnoreInheritance);
+        Im.Checkbox("Ignore Temporary"u8,   ref _settingsIgnoreTemporary);
+        Im.Input.Scalar("Key"u8, ref _settingsKey);
         var collection = _settingsCollection.GetValueOrDefault(Guid.Empty);
 
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        IpcTester.DrawIntro("Last Error", _lastSettingsError.ToString());
+        IpcTester.DrawIntro("Last Error"u8, $"{_lastSettingsError}").Dispose();
 
-        IpcTester.DrawIntro(ModSettingChanged.Label, "Last Mod Setting Changed");
-        ImGui.TextUnformatted(_lastSettingChangeMod.Length > 0
-            ? $"{_lastSettingChangeType} of {_lastSettingChangeMod} in {_lastSettingChangeCollection}{(_lastSettingChangeInherited ? " (Inherited)" : string.Empty)} at {_lastSettingChange}"
-            : "None");
-
-        IpcTester.DrawIntro(GetAvailableModSettings.Label, "Get Available Settings");
-        if (ImGui.Button("Get##Available"))
+        using (IpcTester.DrawIntro(ModSettingChanged.LabelU8, "Last Mod Setting Changed"u8))
         {
-            _availableSettings = new GetAvailableModSettings(_pi).Invoke(_settingsModDirectory, _settingsModName);
-            _lastSettingsError = _availableSettings == null ? PenumbraApiEc.ModMissing : PenumbraApiEc.Success;
+            table.DrawColumn(_lastSettingChangeMod.Length > 0
+                ? $"{_lastSettingChangeType} of {_lastSettingChangeMod} in {_lastSettingChangeCollection}{(_lastSettingChangeInherited ? " (Inherited)" : string.Empty)} at {_lastSettingChange}"
+                : "None"u8);
         }
 
-        IpcTester.DrawIntro(GetCurrentModSettings.Label, "Get Current Settings");
-        if (ImGui.Button("Get##Current"))
+        using (IpcTester.DrawIntro(GetAvailableModSettings.LabelU8, "Get Available Settings"u8))
         {
-            var ret = new GetCurrentModSettings(_pi)
-                .Invoke(collection, _settingsModDirectory, _settingsModName, _settingsIgnoreInheritance);
-            _lastSettingsError = ret.Item1;
-            if (ret.Item1 == PenumbraApiEc.Success)
+            table.NextColumn();
+            if (Im.SmallButton("Get##Available"u8))
             {
-                _settingsEnabled   = ret.Item2?.Item1 ?? false;
-                _settingsInherit   = ret.Item2?.Item4 ?? true;
-                _settingsTemporary = false;
-                _settingsPriority  = ret.Item2?.Item2 ?? 0;
-                _currentSettings   = ret.Item2?.Item3;
-            }
-            else
-            {
-                _currentSettings = null;
+                _availableSettings = new GetAvailableModSettings(_pi).Invoke(_settingsModDirectory, _settingsModName);
+                _lastSettingsError = _availableSettings == null ? PenumbraApiEc.ModMissing : PenumbraApiEc.Success;
             }
         }
 
-        IpcTester.DrawIntro(GetCurrentModSettingsWithTemp.Label, "Get Current Settings With Temp");
-        if (ImGui.Button("Get##CurrentTemp"))
+        using (IpcTester.DrawIntro(GetCurrentModSettings.LabelU8, "Get Current Settings"u8))
         {
-            var ret = new GetCurrentModSettingsWithTemp(_pi)
-                .Invoke(collection, _settingsModDirectory, _settingsModName, _settingsIgnoreInheritance, _settingsIgnoreTemporary, _settingsKey);
-            _lastSettingsError = ret.Item1;
-            if (ret.Item1 == PenumbraApiEc.Success)
+            table.NextColumn();
+            if (Im.SmallButton("Get##Current"u8))
             {
-                _settingsEnabled   = ret.Item2?.Item1 ?? false;
-                _settingsInherit   = ret.Item2?.Item4 ?? true;
-                _settingsTemporary = ret.Item2?.Item5 ?? false;
-                _settingsPriority  = ret.Item2?.Item2 ?? 0;
-                _currentSettings   = ret.Item2?.Item3;
-            }
-            else
-            {
-                _currentSettings = null;
+                var ret = new GetCurrentModSettings(_pi)
+                    .Invoke(collection, _settingsModDirectory, _settingsModName, _settingsIgnoreInheritance);
+                _lastSettingsError = ret.Item1;
+                if (ret.Item1 is PenumbraApiEc.Success)
+                {
+                    _settingsEnabled   = ret.Item2?.Item1 ?? false;
+                    _settingsInherit   = ret.Item2?.Item4 ?? true;
+                    _settingsTemporary = false;
+                    _settingsPriority  = ret.Item2?.Item2 ?? 0;
+                    _currentSettings   = ret.Item2?.Item3;
+                }
+                else
+                {
+                    _currentSettings = null;
+                }
             }
         }
-        
-        IpcTester.DrawIntro(GetAllModSettings.Label, "Get All Mod Settings");
-        if (ImGui.Button("Get##All"))
+
+        using (IpcTester.DrawIntro(GetCurrentModSettingsWithTemp.LabelU8, "Get Current Settings With Temp"u8))
         {
-            var ret = new GetAllModSettings(_pi).Invoke(collection, _settingsIgnoreInheritance, _settingsIgnoreTemporary, _settingsKey);
-            _lastSettingsError = ret.Item1;
-            _allSettings       = ret.Item2;
+            table.NextColumn();
+            if (Im.SmallButton("Get##CurrentTemp"u8))
+            {
+                var ret = new GetCurrentModSettingsWithTemp(_pi)
+                    .Invoke(collection, _settingsModDirectory, _settingsModName, _settingsIgnoreInheritance, _settingsIgnoreTemporary,
+                        _settingsKey);
+                _lastSettingsError = ret.Item1;
+                if (ret.Item1 is PenumbraApiEc.Success)
+                {
+                    _settingsEnabled   = ret.Item2?.Item1 ?? false;
+                    _settingsInherit   = ret.Item2?.Item4 ?? true;
+                    _settingsTemporary = ret.Item2?.Item5 ?? false;
+                    _settingsPriority  = ret.Item2?.Item2 ?? 0;
+                    _currentSettings   = ret.Item2?.Item3;
+                }
+                else
+                {
+                    _currentSettings = null;
+                }
+            }
         }
 
-        if (_allSettings != null)
+        using (IpcTester.DrawIntro(GetAllModSettings.LabelU8, "Get All Mod Settings"u8))
         {
-            ImGui.SameLine();
-            ImUtf8.Text($"{_allSettings.Count} Mods");
+            table.NextColumn();
+            if (Im.SmallButton("Get##All"u8))
+            {
+                var ret = new GetAllModSettings(_pi).Invoke(collection, _settingsIgnoreInheritance, _settingsIgnoreTemporary, _settingsKey);
+                _lastSettingsError = ret.Item1;
+                _allSettings       = ret.Item2;
+            }
+
+            if (_allSettings is not null)
+            {
+                Im.Line.Same();
+                Im.Text($"{_allSettings.Count} Mods");
+            }
         }
 
-        IpcTester.DrawIntro(TryInheritMod.Label, "Inherit Mod");
-        ImGui.Checkbox("##inherit", ref _settingsInherit);
-        ImGui.SameLine();
-        if (ImGui.Button("Set##Inherit"))
-            _lastSettingsError = new TryInheritMod(_pi)
-                .Invoke(collection, _settingsModDirectory, _settingsInherit, _settingsModName);
-
-        IpcTester.DrawIntro(TrySetMod.Label, "Set Enabled");
-        ImGui.Checkbox("##enabled", ref _settingsEnabled);
-        ImGui.SameLine();
-        if (ImGui.Button("Set##Enabled"))
-            _lastSettingsError = new TrySetMod(_pi)
-                .Invoke(collection, _settingsModDirectory, _settingsEnabled, _settingsModName);
-
-        IpcTester.DrawIntro(TrySetModPriority.Label, "Set Priority");
-        ImGui.SetNextItemWidth(200 * UiHelpers.Scale);
-        ImGui.DragInt("##Priority", ref _settingsPriority);
-        ImGui.SameLine();
-        if (ImGui.Button("Set##Priority"))
-            _lastSettingsError = new TrySetModPriority(_pi)
-                .Invoke(collection, _settingsModDirectory, _settingsPriority, _settingsModName);
-
-        IpcTester.DrawIntro(CopyModSettings.Label, "Copy Mod Settings");
-        if (ImGui.Button("Copy Settings"))
-            _lastSettingsError = new CopyModSettings(_pi)
-                .Invoke(_settingsCollection, _settingsModDirectory, _settingsModName);
-
-        ImGuiUtil.HoverTooltip("Copy settings from Mod Directory Name to Mod Name (as directory) in collection.");
-
-        IpcTester.DrawIntro(TrySetModSetting.Label, "Set Setting(s)");
-        if (_availableSettings == null)
-            return;
-
-        foreach (var (group, (list, type)) in _availableSettings)
+        using (IpcTester.DrawIntro(TryInheritMod.LabelU8, "Inherit Mod"u8))
         {
-            using var id      = ImRaii.PushId(group);
-            var       preview = list.Length > 0 ? list[0] : string.Empty;
-            if (_currentSettings != null && _currentSettings.TryGetValue(group, out var current) && current.Count > 0)
-            {
-                preview = current[0];
-            }
-            else
-            {
-                current = [];
-                if (_currentSettings != null)
-                    _currentSettings[group] = current;
-            }
+            table.NextColumn();
+            Im.Checkbox("##inherit"u8, ref _settingsInherit);
+            Im.Line.Same();
+            if (Im.SmallButton("Set##Inherit"u8))
+                _lastSettingsError = new TryInheritMod(_pi)
+                    .Invoke(collection, _settingsModDirectory, _settingsInherit, _settingsModName);
+        }
 
-            ImGui.SetNextItemWidth(200 * UiHelpers.Scale);
-            using (var c = ImRaii.Combo("##group", preview))
+        using (IpcTester.DrawIntro(TrySetMod.LabelU8, "Set Enabled"u8))
+        {
+            table.NextColumn();
+            Im.Checkbox("##enabled"u8, ref _settingsEnabled);
+            Im.Line.Same();
+            if (Im.SmallButton("Set##Enabled"u8))
+                _lastSettingsError = new TrySetMod(_pi)
+                    .Invoke(collection, _settingsModDirectory, _settingsEnabled, _settingsModName);
+        }
+
+        using (IpcTester.DrawIntro(TrySetModPriority.LabelU8, "Set Priority"u8))
+        {
+            table.NextColumn();
+            Im.Item.SetNextWidthScaled(200);
+            Im.Drag("##Priority"u8, ref _settingsPriority);
+            Im.Line.Same();
+            if (Im.SmallButton("Set##Priority"u8))
+                _lastSettingsError = new TrySetModPriority(_pi)
+                    .Invoke(collection, _settingsModDirectory, _settingsPriority, _settingsModName);
+        }
+
+        using (IpcTester.DrawIntro(CopyModSettings.LabelU8, "Copy Mod Settings"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Copy Settings"u8))
+                _lastSettingsError = new CopyModSettings(_pi)
+                    .Invoke(_settingsCollection, _settingsModDirectory, _settingsModName);
+            Im.Tooltip.OnHover("Copy settings from Mod Directory Name to Mod Name (as directory) in collection."u8);
+        }
+
+
+        using (IpcTester.DrawIntro(TrySetModSetting.LabelU8, "Set Setting(s)"u8))
+        {
+            if (_availableSettings == null)
+                return;
+
+            table.NextColumn();
+            foreach (var (group, (list, type)) in _availableSettings)
             {
-                if (c)
-                    foreach (var s in list)
-                    {
-                        var contained = current.Contains(s);
-                        if (ImGui.Checkbox(s, ref contained))
+                using var id      = Im.Id.Push(group);
+                var       preview = list.Length > 0 ? list[0] : string.Empty;
+                if (_currentSettings is not null && _currentSettings.TryGetValue(group, out var current) && current.Count > 0)
+                {
+                    preview = current[0];
+                }
+                else
+                {
+                    current                  = [];
+                    _currentSettings?[group] = current;
+                }
+
+                Im.Item.SetNextWidthScaled(200);
+                using (var c = Im.Combo.Begin("##group"u8, preview))
+                {
+                    if (c)
+                        foreach (var s in list)
                         {
-                            if (contained)
-                                current.Add(s);
-                            else
-                                current.Remove(s);
+                            var contained = current.Contains(s);
+                            if (Im.Checkbox(s, ref contained))
+                            {
+                                if (contained)
+                                    current.Add(s);
+                                else
+                                    current.Remove(s);
+                            }
                         }
-                    }
+                }
+
+                Im.Line.Same();
+                if (Im.SmallButton("Set##setting"u8))
+                    _lastSettingsError = type is GroupType.Single
+                        ? new TrySetModSetting(_pi).Invoke(collection, _settingsModDirectory, group,
+                            current.Count > 0 ? current[0] : string.Empty,
+                            _settingsModName)
+                        : new TrySetModSettings(_pi).Invoke(collection, _settingsModDirectory, group, current.ToArray(), _settingsModName);
+
+                Im.Line.Same();
+                Im.Text(group);
             }
-
-            ImGui.SameLine();
-            if (ImGui.Button("Set##setting"))
-                _lastSettingsError = type == GroupType.Single
-                    ? new TrySetModSetting(_pi).Invoke(collection, _settingsModDirectory, group, current.Count > 0 ? current[0] : string.Empty,
-                        _settingsModName)
-                    : new TrySetModSettings(_pi).Invoke(collection, _settingsModDirectory, group, current.ToArray(), _settingsModName);
-
-            ImGui.SameLine();
-            ImGui.TextUnformatted(group);
         }
     }
 

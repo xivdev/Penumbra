@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
-using OtterGui.Classes;
-using OtterGui.Services;
+using ImSharp;
+using Luna;
 using Penumbra.Collections.Cache;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
@@ -9,13 +9,12 @@ using Penumbra.Mods.Groups;
 using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.SubMods;
 using Penumbra.Services;
-using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.Mods.Editor;
 
 public class ModMetaEditor(
     ModGroupEditor groupEditor,
-    MetaFileManager metaFileManager) : MetaDictionary, IService
+    MetaFileManager metaFileManager) : MetaDictionary
 {
     public sealed class OtherOptionData : HashSet<string>
     {
@@ -36,7 +35,7 @@ public class ModMetaEditor(
     }
 
     public readonly FrozenDictionary<MetaManipulationType, OtherOptionData> OtherData =
-        Enum.GetValues<MetaManipulationType>().ToFrozenDictionary(t => t, _ => new OtherOptionData());
+        MetaManipulationType.Values.ToFrozenDictionary(t => t, _ => new OtherOptionData());
 
     public bool Changes { get; set; }
 
@@ -48,7 +47,7 @@ public class ModMetaEditor(
 
     public void Load(Mod mod, IModDataContainer currentOption)
     {
-        foreach (var type in Enum.GetValues<MetaManipulationType>())
+        foreach (var type in MetaManipulationType.Values)
             OtherData[type].Clear();
 
         foreach (var option in mod.AllDataContainers)
@@ -91,7 +90,7 @@ public class ModMetaEditor(
             return changes;
         }
 
-        var defaultEntries = new MultiDictionary<IMetaIdentifier, IModDataContainer>();
+        var defaultEntries = new ListDictionary<IMetaIdentifier, IModDataContainer>();
         var actualEntries  = new HashSet<IMetaIdentifier>();
         if (!FilterDefaultValues(mod.AllDataContainers, metaFileManager, defaultEntries, actualEntries))
             return false;
@@ -140,7 +139,7 @@ public class ModMetaEditor(
     }
 
     private static bool FilterDefaultValues(IEnumerable<IModDataContainer> containers, MetaFileManager metaFileManager,
-        MultiDictionary<IMetaIdentifier, IModDataContainer> defaultEntries, HashSet<IMetaIdentifier> actualEntries)
+        ListDictionary<IMetaIdentifier, IModDataContainer> defaultEntries, HashSet<IMetaIdentifier> actualEntries)
     {
         if (!metaFileManager.CharacterUtility.Ready)
         {

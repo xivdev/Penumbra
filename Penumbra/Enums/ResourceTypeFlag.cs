@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.String;
 using Penumbra.String.Functions;
@@ -90,8 +91,8 @@ public enum ResourceCategoryFlag : ushort
 
 public static class ResourceExtensions
 {
-    public static readonly ResourceTypeFlag     AllResourceTypes      = Enum.GetValues<ResourceTypeFlag>().Aggregate((v, f) => v | f);
-    public static readonly ResourceCategoryFlag AllResourceCategories = Enum.GetValues<ResourceCategoryFlag>().Aggregate((v, f) => v | f);
+    public static readonly ResourceTypeFlag     AllResourceTypes      = ResourceTypeFlag.Values.Aggregate((v, f) => v | f);
+    public static readonly ResourceCategoryFlag AllResourceCategories = ResourceCategoryFlag.Values.Aggregate((v, f) => v | f);
 
     public static ResourceTypeFlag ToFlag(this ResourceType type)
         => type switch

@@ -1,13 +1,11 @@
-using OtterGui.Classes;
+using Luna;
 using Penumbra.Api;
 using Penumbra.Interop.Services;
 
 namespace Penumbra.Communication;
 
-/// <summary>
-/// Triggered when the Character Utility becomes ready.
-/// </summary>
-public sealed class CharacterUtilityFinished() : EventWrapper<CharacterUtilityFinished.Priority>(nameof(CharacterUtilityFinished))
+/// <summary> Triggered when the Character Utility becomes ready. </summary>
+public sealed class CharacterUtilityFinished(Logger log) : EventBase<CharacterUtilityFinished.Priority>(nameof(CharacterUtilityFinished), log)
 {
     public enum Priority
     {

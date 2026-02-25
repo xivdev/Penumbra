@@ -1,5 +1,4 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.Hooks.Resources;
@@ -12,7 +11,7 @@ using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
-public unsafe class ResourceLoader : IDisposable, IService
+public unsafe class ResourceLoader : IDisposable, Luna.IService
 {
     private readonly ResourceService          _resources;
     private readonly FileReadService          _fileReadService;
@@ -170,6 +169,8 @@ public unsafe class ResourceLoader : IDisposable, IService
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
+        if (PathResolver.ForbiddenFiles.Contains((uint)hash))
+            return;
 
         // If no replacements are being made, we still want to be able to trigger the event.
         var resolvedData = _resolvedData.Value;
@@ -348,9 +349,9 @@ public unsafe class ResourceLoader : IDisposable, IService
         returnValue = 1;
     }
 
-    private void ResourceDestructorHandler(ResourceHandle* handle)
+    private void ResourceDestructorHandler(in ResourceHandleDestructor.Arguments arguments)
     {
-        _ongoingLoads.TryRemove((nint)handle, out _);
+        _ongoingLoads.TryRemove((nint)arguments.ResourceHandle, out _);
     }
 
     /// <summary> Compute the CRC32 hash for a given path together with potential resource parameters. </summary>

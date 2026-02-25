@@ -22,7 +22,7 @@ public readonly record struct EqdpIdentifier(PrimaryId SetId, EquipSlot Slot, Ge
         => CharacterUtilityData.EqdpIdx(GenderRace, Slot.IsAccessory());
 
     public override string ToString()
-        => $"Eqdp - {SetId} - {Slot.ToName()} - {GenderRace.ToName()}";
+        => $"EQDP - {SetId} - {Slot.ToName()} - {GenderRace.ToName()}";
 
     public bool Validate()
     {

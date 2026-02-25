@@ -1,15 +1,13 @@
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui.Compression;
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 
 namespace Penumbra.Api.Api;
 
-public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
+public sealed class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
@@ -17,9 +15,11 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     private readonly Configuration       _config;
     private readonly ModFileSystem       _modFileSystem;
     private readonly MigrationManager    _migrationManager;
+    private readonly ModConfigUpdater    _modConfigUpdater;
+    private readonly Logger              _log;
 
     public ModsApi(ModManager modManager, ModImportManager modImportManager, Configuration config, ModFileSystem modFileSystem,
-        CommunicatorService communicator, MigrationManager migrationManager)
+        CommunicatorService communicator, MigrationManager migrationManager, Logger log, ModConfigUpdater modConfigUpdater)
     {
         _modManager       = modManager;
         _modImportManager = modImportManager;
@@ -27,17 +27,27 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         _modFileSystem    = modFileSystem;
         _communicator     = communicator;
         _migrationManager = migrationManager;
+        _log              = log;
+        _modConfigUpdater = modConfigUpdater;
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ApiMods);
+        _communicator.PcpCreation.Subscribe(OnPcpCreation, PcpCreation.Priority.ApiMods);
+        _communicator.PcpParsing.Subscribe(OnPcpParsing, PcpParsing.Priority.ApiMods);
     }
 
-    private void OnModPathChanged(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory, DirectoryInfo? newDirectory)
+    private void OnPcpParsing(in PcpParsing.Arguments arguments)
+        => ParsingPcp?.Invoke(arguments.JObject, arguments.Mod.Identifier, arguments.Collection?.Identity.Id ?? Guid.Empty);
+
+    private void OnPcpCreation(in PcpCreation.Arguments arguments)
+        => CreatingPcp?.Invoke(arguments.JObject, arguments.ObjectIndex, arguments.DirectoryPath);
+
+    private void OnModPathChanged(in ModPathChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
-            case ModPathChangeType.Deleted when oldDirectory != null: ModDeleted?.Invoke(oldDirectory.Name); break;
-            case ModPathChangeType.Added when newDirectory != null:   ModAdded?.Invoke(newDirectory.Name); break;
-            case ModPathChangeType.Moved when newDirectory != null && oldDirectory != null:
-                ModMoved?.Invoke(oldDirectory.Name, newDirectory.Name);
+            case ModPathChangeType.Deleted when arguments.OldDirectory is not null: ModDeleted?.Invoke(arguments.OldDirectory.Name); break;
+            case ModPathChangeType.Added when arguments.NewDirectory is not null:   ModAdded?.Invoke(arguments.NewDirectory.Name); break;
+            case ModPathChangeType.Moved when arguments is { NewDirectory: not null, OldDirectory: not null }:
+                ModMoved?.Invoke(arguments.OldDirectory.Name, arguments.NewDirectory.Name);
                 break;
         }
     }
@@ -45,10 +55,12 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
     public void Dispose()
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
+        _communicator.PcpCreation.Unsubscribe(OnPcpCreation);
+        _communicator.PcpParsing.Unsubscribe(OnPcpParsing);
     }
 
     public Dictionary<string, string> GetModList()
-        => _modManager.ToDictionary(m => m.ModPath.Name, m => m.Name.Text);
+        => _modManager.ToDictionary(m => m.ModPath.Name, m => m.Name);
 
     public PenumbraApiEc InstallMod(string modFilePackagePath)
     {
@@ -89,7 +101,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         }
 
         if (_config.UseFileSystemCompression)
-            new FileCompactor(Penumbra.Log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
+            new FileCompactor(_log).StartMassCompact(dir.EnumerateFiles("*.*", SearchOption.AllDirectories),
                 CompressionAlgorithm.Xpress8K, false);
 
         return ApiHelpers.Return(PenumbraApiEc.Success, args);
@@ -104,31 +116,26 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         return ApiHelpers.Return(PenumbraApiEc.Success, ApiHelpers.Args("ModDirectory", modDirectory, "ModName", modName));
     }
 
-    public event Action<string>?         ModDeleted;
-    public event Action<string>?         ModAdded;
-    public event Action<string, string>? ModMoved;
+    public event Action<string>?                  ModDeleted;
+    public event Action<string>?                  ModAdded;
+    public event Action<string, string>?          ModMoved;
+    public event Action<JObject, ushort, string>? CreatingPcp;
+    public event Action<JObject, string, Guid>?   ParsingPcp;
 
-    public event Action<JObject, ushort, string>? CreatingPcp
+    public event Action<string, string, Dictionary<Assembly, (bool MarkUsed, string Note)>>? ModUsageQueried
     {
-        add => _communicator.PcpCreation.Subscribe(value!, PcpCreation.Priority.ModsApi);
-        remove => _communicator.PcpCreation.Unsubscribe(value!);
-    }
-
-    public event Action<JObject, string, Guid>? ParsingPcp
-    {
-        add => _communicator.PcpParsing.Subscribe(value!, PcpParsing.Priority.ModsApi);
-        remove => _communicator.PcpParsing.Unsubscribe(value!);
+        add => _modConfigUpdater.ModUsageQueried += value;
+        remove => _modConfigUpdater.ModUsageQueried -= value;
     }
 
     public (PenumbraApiEc, string, bool, bool) GetModPath(string modDirectory, string modName)
     {
-        if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_modFileSystem.TryGetValue(mod, out var leaf))
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod) || mod.Node is not { } node)
             return (PenumbraApiEc.ModMissing, string.Empty, false, false);
 
-        var fullPath      = leaf.FullName();
-        var isDefault     = ModFileSystem.ModHasDefaultPath(mod, fullPath);
-        var isNameDefault = isDefault || ModFileSystem.ModHasDefaultPath(mod, leaf.Name);
+        var fullPath      = node.FullPath;
+        var isDefault     = mod.Path.IsDefault;
+        var isNameDefault = mod.Path.SortName is null;
         return (PenumbraApiEc.Success, fullPath, !isDefault, !isNameDefault);
     }
 
@@ -137,13 +144,12 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
         if (newPath.Length == 0)
             return PenumbraApiEc.InvalidArgument;
 
-        if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_modFileSystem.TryGetValue(mod, out var leaf))
+        if (!_modManager.TryGetMod(modDirectory, modName, out var mod) || mod.Node is not { } node)
             return PenumbraApiEc.ModMissing;
 
         try
         {
-            _modFileSystem.RenameAndMove(leaf, newPath);
+            _modFileSystem.RenameAndMove(node, newPath);
             return PenumbraApiEc.Success;
         }
         catch
@@ -154,7 +160,7 @@ public class ModsApi : IPenumbraApiMods, IApiService, IDisposable
 
     public Dictionary<string, object?> GetChangedItems(string modDirectory, string modName)
         => _modManager.TryGetMod(modDirectory, modName, out var mod)
-            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToInternalObject())
+            ? mod.ChangedItems.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToInternalObject())
             : [];
 
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> GetChangedItemAdapterDictionary()
