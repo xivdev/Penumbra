@@ -8,7 +8,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public class RspHeightHook : FastHook<RspHeightHook.Delegate>, IDisposable
+public sealed class RspHeightHook : FastHook<RspHeightHook.Delegate>
 {
     public delegate float Delegate(nint cmpResource, SubRace clan, byte gender, byte bodyType, byte height);
 

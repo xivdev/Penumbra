@@ -9,7 +9,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class EstHook : FastHook<EstHook.Delegate>, IDisposable
+public sealed unsafe class EstHook : FastHook<EstHook.Delegate>
 {
     public delegate EstEntry Delegate(ResourceHandle* estResource, uint id, uint genderRace);
 

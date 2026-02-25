@@ -6,7 +6,7 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDisposable
+public sealed unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>
 {
     public delegate void Delegate(DrawObjectData* data, uint slot, nint unk, Model playerModel);
 

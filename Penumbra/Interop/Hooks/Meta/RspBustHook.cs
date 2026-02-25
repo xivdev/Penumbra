@@ -8,7 +8,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class RspBustHook : FastHook<RspBustHook.Delegate>, IDisposable
+public sealed unsafe class RspBustHook : FastHook<RspBustHook.Delegate>
 {
     public delegate float* Delegate(nint cmpResource, float* storage, SubRace race, byte gender, byte bodyType, byte bustSize);
 

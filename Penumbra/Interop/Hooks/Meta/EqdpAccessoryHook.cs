@@ -7,7 +7,7 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>, IDisposable
+public sealed unsafe class EqdpAccessoryHook : FastHook<EqdpAccessoryHook.Delegate>
 {
     public delegate void Delegate(CharacterUtility* utility, EqdpEntry* entry, uint id, uint raceCode);
 

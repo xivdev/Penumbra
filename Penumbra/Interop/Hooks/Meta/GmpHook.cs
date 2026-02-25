@@ -6,7 +6,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
+public sealed unsafe class GmpHook : FastHook<GmpHook.Delegate>
 {
     public delegate ulong Delegate(CharacterUtility* characterUtility, ulong* outputEntry, ushort setId);
 
