@@ -11,14 +11,14 @@ using ImGuiId = ImSharp.ImGuiId;
 
 namespace Penumbra.UI.ModsTab;
 
-public class ModPanelChangedItemsTab(
+public sealed class ModPanelChangedItemsTab(
     ModFileSystem fileSystem,
     ChangedItemDrawer drawer,
     Configuration config,
     ModDataEditor dataEditor)
     : ITab<ModPanelTab>
 {
-    private class ChangedItemsCache : BasicCache
+    private sealed class ChangedItemsCache : BasicCache
     {
         private         Mod?                _lastSelected;
         private         ushort              _lastUpdate;
@@ -220,10 +220,8 @@ public class ModPanelChangedItemsTab(
     {
         _id  = Im.Id.Current;
         _mod = fileSystem.Selection.Selection!.GetValue<Mod>()!;
-        var cache = CacheManager.Instance.GetOrCreateCache(_id, () => new ChangedItemsCache());
         drawer.DrawTypeFilter(false);
-
-        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
+        var cache = CacheManager.Instance.GetOrCreateCache(_id, () => new ChangedItemsCache());
         Im.Separator();
         _buttonSize = new Vector2(Im.Style.ItemSpacing.Y + Im.Style.FrameHeight);
         using var style = ImStyleDouble.CellPadding.Push(Vector2.Zero)
@@ -239,6 +237,7 @@ public class ModPanelChangedItemsTab(
         if (!table)
             return;
 
+        cache.Update(_mod, drawer, config.Filters.ModChangedItemTypeFilter, config.ChangedItemDisplay);
         _starColor = ColorId.ChangedItemPreferenceStar.Value();
         if (cache.AnyExpandable)
         {
