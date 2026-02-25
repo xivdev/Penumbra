@@ -1,5 +1,6 @@
 using ImSharp;
 using Luna;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -46,6 +47,13 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
     {
         if (!Filter.IsEmpty)
             VisibleDirty = true;
+
+        if (arguments.Type is ModSettingChange.MultiEnableState or ModSettingChange.MultiInheritance)
+        {
+            foreach (var mod in AllNodes.Values)
+                mod.Dirty = true;
+            return;
+        }
 
         if (arguments.Mod?.Node is { } node && AllNodes.TryGetValue(node, out var cache))
             cache.Dirty = true;
