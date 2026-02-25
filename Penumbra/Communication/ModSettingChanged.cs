@@ -5,6 +5,7 @@ using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Mods.Settings;
+using Penumbra.UI.ModsTab.Selector;
 
 namespace Penumbra.Communication;
 
@@ -17,6 +18,9 @@ public sealed class ModSettingChanged(Logger log)
         /// <seealso cref="ModSettingsApi.OnModSettingChange"/>
         Api = int.MinValue,
 
+        /// <seealso cref="ModFileSystemCache.OnSettingChangeAfterConflicts"/>
+        ModFileSystemCacheAfterConflicts = -15,
+
         /// <seealso cref="Mods.Manager.ModConfigUpdater.OnModSettingChanged"/>
         ModConfigUpdater = -10,
 
@@ -26,8 +30,8 @@ public sealed class ModSettingChanged(Logger log)
         /// <seealso cref="UI.AdvancedWindow.ItemSwapTab.OnSettingChange"/>
         ItemSwapTab = 0,
 
-        /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnSettingChange"/>
-        ModFileSystemCache = 0,
+        /// <seealso cref="ModFileSystemCache.OnSettingChangeBeforeConflicts"/>
+        ModFileSystemCacheBeforeConflicts = 5,
 
         /// <seealso cref="Mods.ModSelection.OnSettingChange"/>
         ModSelection = 10,

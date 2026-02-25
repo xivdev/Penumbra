@@ -21,7 +21,8 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         Parent.Communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModFileSystemCache);
         Parent.Communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange,
             CollectionInheritanceChanged.Priority.ModFileSystemCache);
-        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModFileSystemCache);
+        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChangeBeforeConflicts, ModSettingChanged.Priority.ModFileSystemCacheBeforeConflicts);
+        Parent.Communicator.ModSettingChanged.Subscribe(OnSettingChangeAfterConflicts, ModSettingChanged.Priority.ModFileSystemCacheAfterConflicts);
         Parent.Communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystemCache);
     }
 
@@ -41,13 +42,31 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             cache.Dirty = true;
     }
 
-    private void OnSettingChange(in ModSettingChanged.Arguments arguments)
+    private void OnSettingChangeBeforeConflicts(in ModSettingChanged.Arguments arguments)
     {
         if (!Filter.IsEmpty)
             VisibleDirty = true;
 
         if (arguments.Mod?.Node is { } node && AllNodes.TryGetValue(node, out var cache))
             cache.Dirty = true;
+
+        HandleConflicts(arguments.Mod);
+    }
+
+    private void OnSettingChangeAfterConflicts(in ModSettingChanged.Arguments arguments)
+        => HandleConflicts(arguments.Mod);
+
+    private void HandleConflicts(Mod? mod)
+    {
+        if (Parent.CollectionManager.Active.Current.Cache is not { } collectionCache || mod is null)
+            return;
+
+        var conflicts = collectionCache.Conflicts(mod);
+        foreach (var conflict in conflicts)
+        {
+            if (conflict.Mod2 is Mod { Node: { } node2 } && AllNodes.TryGetValue(node2, out var cache2))
+                cache2.Dirty = true;
+        }
     }
 
     private void OnInheritanceChange(in CollectionInheritanceChanged.Arguments arguments)
@@ -94,7 +113,7 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
             var priority = Settings?.Priority ?? ModPriority.Default;
             if (priority != Priority)
             {
-                Priority = priority;
+                Priority     = priority;
                 PriorityText = priority.IsDefault ? StringU8.Empty : new StringU8($"[{priority}]");
             }
         }
@@ -203,7 +222,8 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
         base.Dispose(disposing);
         Parent.Communicator.CollectionChange.Unsubscribe(OnCollectionChange);
         Parent.Communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
-        Parent.Communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
+        Parent.Communicator.ModSettingChanged.Unsubscribe(OnSettingChangeBeforeConflicts);
+        Parent.Communicator.ModSettingChanged.Unsubscribe(OnSettingChangeAfterConflicts);
         Parent.Communicator.ModDataChanged.Unsubscribe(OnModDataChange);
     }
 
