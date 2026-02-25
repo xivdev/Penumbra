@@ -13,7 +13,7 @@ using Penumbra.UI.FileEditing.Skeletons;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class FileEditor(
+public sealed class FileEditor(
     ModEditWindow owner,
     CommunicatorService communicator,
     Configuration config,
@@ -138,6 +138,7 @@ public class FileEditor(
                     {
                         if (_defaultFile is null)
                             throw new Exception("File invalid.");
+
                         await compactor.WriteAllBytesAsync(name, await _defaultFile.WriteAsync());
                     }
                     catch (Exception e)

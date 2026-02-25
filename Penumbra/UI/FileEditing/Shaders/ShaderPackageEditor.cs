@@ -10,7 +10,7 @@ using Penumbra.UI.FileEditing.Materials;
 
 namespace Penumbra.UI.FileEditing.Shaders;
 
-public partial class ShaderPackageEditor : IFileEditor
+public sealed partial class ShaderPackageEditor : IFileEditor
 {
     public readonly ShpkFile Shpk;
     public readonly string   FilePath;
@@ -77,8 +77,7 @@ public partial class ShaderPackageEditor : IFileEditor
     }
 
     void IDisposable.Dispose()
-    {
-    }
+    { }
 
     [Flags]
     public enum ColorType : byte
@@ -275,7 +274,7 @@ public partial class ShaderPackageEditor : IFileEditor
             }
         }
 
-        if (Orphans.Count == 0)
+        if (Orphans.Count is 0)
             return;
 
         UpdateOrphanStart(newMaterialParamStart, oldEnd);

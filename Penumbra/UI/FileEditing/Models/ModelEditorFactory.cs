@@ -7,7 +7,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Models;
 
-public class ModelEditorFactory(
+public sealed class ModelEditorFactory(
     ModelManager models,
     ActiveCollections activeCollections,
     IDataManager gameData,

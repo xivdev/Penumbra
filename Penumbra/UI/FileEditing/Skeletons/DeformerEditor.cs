@@ -5,7 +5,7 @@ using Penumbra.GameData.Files;
 
 namespace Penumbra.UI.FileEditing.Skeletons;
 
-public partial class DeformerEditor(Configuration configuration, PbdFile file, string filePath) : IFileEditor
+public sealed partial class DeformerEditor(Configuration configuration, PbdFile file, string filePath) : IFileEditor
 {
     public readonly string FilePath = filePath;
 
@@ -18,8 +18,7 @@ public partial class DeformerEditor(Configuration configuration, PbdFile file, s
     }
 
     void IDisposable.Dispose()
-    {
-    }
+    { }
 
     public bool Valid
         => File.Valid;
@@ -29,11 +28,12 @@ public partial class DeformerEditor(Configuration configuration, PbdFile file, s
 
     public Task<byte[]> WriteAsync()
         => Task.FromResult(File.Write());
-    
+
+    public readonly TextFilter BoneFilter = new();
+
     public GenderRace      SelectedRaceCode = GenderRace.Unknown;
     public RacialDeformer? SelectedDeformer;
     public string?         SelectedBone;
-    public TextFilter      BoneFilter     = new();
     public string          NewBoneName    = string.Empty;
     public string          RaceCodeFilter = string.Empty;
 

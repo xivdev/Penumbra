@@ -4,11 +4,9 @@ using Lumina.Data.Parsing;
 using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
-using Penumbra.Import.Models;
 using Penumbra.Import.Models.Import;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
-using TagButtons = Luna.TagButtons;
 
 namespace Penumbra.UI.FileEditing.Models;
 
@@ -17,17 +15,17 @@ public partial class ModelEditor
     private const int MdlMaterialMaximum = ModelImporter.MaterialLimit;
 
     private const string MdlImportDocumentation =
-        @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-9b49d296-23ab-410a-845b-a3be769b71ea";
+        "https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-9b49d296-23ab-410a-845b-a3be769b71ea";
 
     private const string MdlExportDocumentation =
-        @"https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-25968400-ebe5-4861-b610-cb1556db7ec4";
+        "https://github.com/xivdev/Penumbra/wiki/Model-IO#user-content-25968400-ebe5-4861-b610-cb1556db7ec4";
 
     private string _modelNewMaterial = string.Empty;
 
     private string       _customPath     = string.Empty;
     private Utf8GamePath _customGamePath = Utf8GamePath.Empty;
 
-    private bool   _loadedData = false;
+    private bool   _loadedData;
     public  long[] LodTriCount = [];
 
     public bool DrawToolbar(bool disabled)
@@ -48,7 +46,7 @@ public partial class ModelEditor
 
     public bool DrawPanel(bool disabled)
     {
-        var ret  = Dirty;
+        var ret = Dirty;
         UpdateFile(ret);
         DrawImportExport(disabled);
 
@@ -62,6 +60,7 @@ public partial class ModelEditor
 
         return !disabled && ret;
     }
+
     private void DrawVersionUpdate(bool disabled)
     {
         if (disabled || Mdl.Version is not MdlFile.V5)
@@ -555,25 +554,25 @@ public partial class ModelEditor
         {
             if (table)
             {
-                table.DrawDataPair("Version"u8, $"0x{Mdl.Version:X}");
-                table.DrawDataPair("Radius"u8, Mdl.Radius.ToString(CultureInfo.InvariantCulture));
-                table.DrawDataPair("Model Clip Out Distance"u8, Mdl.ModelClipOutDistance.ToString(CultureInfo.InvariantCulture));
-                table.DrawDataPair("Shadow Clip Out Distance"u8, Mdl.ShadowClipOutDistance.ToString(CultureInfo.InvariantCulture));
-                table.DrawDataPair("LOD Count"u8, Mdl.LodCount);
+                table.DrawDataPair("Version"u8,                       $"0x{Mdl.Version:X}");
+                table.DrawDataPair("Radius"u8,                        Mdl.Radius.ToString(CultureInfo.InvariantCulture));
+                table.DrawDataPair("Model Clip Out Distance"u8,       Mdl.ModelClipOutDistance.ToString(CultureInfo.InvariantCulture));
+                table.DrawDataPair("Shadow Clip Out Distance"u8,      Mdl.ShadowClipOutDistance.ToString(CultureInfo.InvariantCulture));
+                table.DrawDataPair("LOD Count"u8,                     Mdl.LodCount);
                 table.DrawDataPair("Enable Index Buffer Streaming"u8, Mdl.EnableIndexBufferStreaming);
-                table.DrawDataPair("Enable Edge Geometry"u8, Mdl.EnableEdgeGeometry);
-                table.DrawDataPair("Flags 1"u8, Mdl.Flags1);
-                table.DrawDataPair("Flags 2"u8, Mdl.Flags2);
-                table.DrawDataPair("Vertex Declarations"u8, Mdl.VertexDeclarations.Length);
-                table.DrawDataPair("Bone Bounding Boxes"u8, Mdl.BoneBoundingBoxes.Length);
-                table.DrawDataPair("Bone Tables"u8, Mdl.BoneTables.Length);
-                table.DrawDataPair("Element IDs"u8, Mdl.ElementIds.Length);
-                table.DrawDataPair("Extra LoDs"u8, Mdl.ExtraLods.Length);
-                table.DrawDataPair("Meshes"u8, Mdl.Meshes.Length);
-                table.DrawDataPair("Shape Meshes"u8, Mdl.ShapeMeshes.Length);
-                table.DrawDataPair("LoDs"u8, Mdl.Lods.Length);
-                table.DrawDataPair("Vertex Declarations"u8, Mdl.VertexDeclarations.Length);
-                table.DrawDataPair("Stack Size"u8, Mdl.StackSize);
+                table.DrawDataPair("Enable Edge Geometry"u8,          Mdl.EnableEdgeGeometry);
+                table.DrawDataPair("Flags 1"u8,                       Mdl.Flags1);
+                table.DrawDataPair("Flags 2"u8,                       Mdl.Flags2);
+                table.DrawDataPair("Vertex Declarations"u8,           Mdl.VertexDeclarations.Length);
+                table.DrawDataPair("Bone Bounding Boxes"u8,           Mdl.BoneBoundingBoxes.Length);
+                table.DrawDataPair("Bone Tables"u8,                   Mdl.BoneTables.Length);
+                table.DrawDataPair("Element IDs"u8,                   Mdl.ElementIds.Length);
+                table.DrawDataPair("Extra LoDs"u8,                    Mdl.ExtraLods.Length);
+                table.DrawDataPair("Meshes"u8,                        Mdl.Meshes.Length);
+                table.DrawDataPair("Shape Meshes"u8,                  Mdl.ShapeMeshes.Length);
+                table.DrawDataPair("LoDs"u8,                          Mdl.Lods.Length);
+                table.DrawDataPair("Vertex Declarations"u8,           Mdl.VertexDeclarations.Length);
+                table.DrawDataPair("Stack Size"u8,                    Mdl.StackSize);
                 foreach (var (lod, triCount) in LodTriCount.Index())
                     table.DrawDataPair($"LOD #{lod + 1} Triangle Count", triCount);
             }

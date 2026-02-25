@@ -2,7 +2,6 @@ using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
 using Luna;
 using Penumbra.Collections.Manager;
-using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
@@ -18,7 +17,7 @@ using Penumbra.UI.FileEditing.Textures;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ModEditWindowFactory(
+public sealed class ModEditWindowFactory(
     FileDialogService fileDialog,
     ItemSwapTabFactory itemSwapTabFactory,
     IDataManager gameData,

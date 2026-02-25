@@ -11,7 +11,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Models;
 
-public partial class ModelEditor : IFileEditor
+public sealed partial class ModelEditor : IFileEditor
 {
     private readonly ModelManager        _models;
     private readonly ActiveCollections   _activeCollections;
@@ -56,8 +56,7 @@ public partial class ModelEditor : IFileEditor
     }
 
     void IDisposable.Dispose()
-    {
-    }
+    { }
 
     [MemberNotNull(nameof(Mdl), nameof(_attributes))]
     private void Initialize(MdlFile mdl)

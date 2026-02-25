@@ -15,7 +15,7 @@ public partial class ShaderPackageEditor
 
     bool IFileEditor.DrawToolbar(bool disabled)
         => false;
-    
+
     public bool DrawPanel(bool disabled)
     {
         var dummyHeight = new Vector2(Im.Style.TextHeight / 2);

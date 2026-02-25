@@ -62,8 +62,10 @@ public abstract class FileEditingContext
 
         if (Mod is { } mod)
             foreach (var option in mod.AllDataContainers)
+            {
                 foreach (var path in option.Files.Keys.Where(path => path.Path.StartsWith(prefix)))
                     ret.Add(path);
+            }
 
         return ret;
     }

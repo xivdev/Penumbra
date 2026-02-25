@@ -182,7 +182,8 @@ public partial class MaterialEditor
                         ? defaultValue.Length > 0 && !defaultValue.SequenceEqual(buffer[slice])
                         : buffer[slice].ContainsAnyExcept((byte)0);
                     Im.Line.SameInner();
-                    if (ImEx.Icon.Button(LunaStyle.RefreshIcon, "Reset this constant to its default value.\n\nHold Ctrl to unlock."u8, !Im.Io.KeyControl || !canReset))
+                    if (ImEx.Icon.Button(LunaStyle.RefreshIcon, "Reset this constant to its default value.\n\nHold Ctrl to unlock."u8,
+                            !Im.Io.KeyControl || !canReset))
                     {
                         ret = true;
                         if (defaultValue.Length > 0)

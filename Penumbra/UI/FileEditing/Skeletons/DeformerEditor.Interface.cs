@@ -220,7 +220,7 @@ public partial class DeformerEditor
         {
             if (ImEx.Button("Delete"u8, size, "Delete this bone entry."u8, disabled))
             {
-                ret                   |= SelectedDeformer!.DeformMatrices.Remove(SelectedBone!);
+                ret          |= SelectedDeformer!.DeformMatrices.Remove(SelectedBone!);
                 SelectedBone =  null;
             }
         }

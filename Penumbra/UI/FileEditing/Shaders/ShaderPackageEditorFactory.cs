@@ -4,7 +4,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Shaders;
 
-public class ShaderPackageEditorFactory(
+public sealed class ShaderPackageEditorFactory(
     FileDialogService fileDialog,
     IDataManager gameData) : BaseFileEditorFactory(gameData), Luna.IUiService
 {

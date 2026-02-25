@@ -599,7 +599,7 @@ public partial class MaterialEditor
         if (_stainService.GudTemplateCombo.Draw("##dyeTemplate"u8, dye.Template, dye.Channel, StringU8.Empty, out var newSelection,
                 scalarSize + Im.Style.ScrollbarSize / 2, Im.Style.TextHeightWithSpacing, ComboFlags.NoArrowButton))
         {
-            dye.Template = (ushort) newSelection;
+            dye.Template = (ushort)newSelection;
             ret          = true;
         }
 

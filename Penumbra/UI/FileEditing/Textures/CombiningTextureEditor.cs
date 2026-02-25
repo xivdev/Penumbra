@@ -8,7 +8,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Textures;
 
-public partial class CombiningTextureEditor : IFileEditor
+public sealed partial class CombiningTextureEditor : IFileEditor
 {
     private readonly TextureManager      _textures;
     private readonly IDragDropManager    _dragDropManager;
@@ -75,7 +75,7 @@ public partial class CombiningTextureEditor : IFileEditor
         _nextSaveAs     = null;
         _nextAddMipMaps = null;
 
-        using var stream     = new MemoryStream();
+        using var stream = new MemoryStream();
         await _center.SaveAs(TextureType.Tex, _textures, stream, saveAs, addMipMaps);
         return stream.ToArray();
     }

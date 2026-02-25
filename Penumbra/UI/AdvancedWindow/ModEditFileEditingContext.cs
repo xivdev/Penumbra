@@ -12,7 +12,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public sealed class ModEditFileEditingContext(ActiveCollections activeCollections, ModEditor? editor) : FileEditingContext
 {
-    protected override ModCollection? Collection
+    protected override ModCollection Collection
         => activeCollections.Current;
 
     public override ModEditor? Editor

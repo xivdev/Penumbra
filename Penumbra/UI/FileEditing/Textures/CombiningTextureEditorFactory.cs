@@ -9,7 +9,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.FileEditing.Textures;
 
-public class CombiningTextureEditorFactory(
+public sealed class CombiningTextureEditorFactory(
     TextureManager textures,
     IDragDropManager dragDropManager,
     FileDialogService fileDialog,
@@ -26,7 +26,8 @@ public class CombiningTextureEditorFactory(
             ? new TextureSelectCombo(resourceTreeFactory, editor, gameData)
             : null;
 
-        return new(textures, dragDropManager, fileDialog, config, framework, modManager, communicator, textureSelectCombo, context,
+        return new CombiningTextureEditor(textures, dragDropManager, fileDialog, config, framework, modManager, communicator,
+            textureSelectCombo, context,
             inModEditWindow, writable);
     }
 
@@ -58,7 +59,7 @@ public class CombiningTextureEditorFactory(
 
     private static bool IsTexturePath(string path)
         => path.EndsWith(".tex", StringComparison.OrdinalIgnoreCase);
-    
+
     public CombiningTextureEditor CreateForModEditWindow(FileEditingContext? context)
         => Create(context, true, true);
 }

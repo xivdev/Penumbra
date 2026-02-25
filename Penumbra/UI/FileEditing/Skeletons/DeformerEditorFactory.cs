@@ -3,7 +3,7 @@ using Penumbra.GameData.Files;
 
 namespace Penumbra.UI.FileEditing.Skeletons;
 
-public class DeformerEditorFactory(
+public sealed class DeformerEditorFactory(
     IDataManager gameData,
     Configuration configuration) : BaseFileEditorFactory(gameData), Luna.IUiService
 {

@@ -12,21 +12,28 @@ namespace Penumbra.UI.FileEditing.Textures;
 
 public partial class CombiningTextureEditor
 {
-    private static readonly (string, string)[] SaveAsStrings =
+    private static readonly (StringU8, StringU8)[] SaveAsStrings =
     {
-        ("As Is", "Save the current texture with its own format without additional conversion or compression, if possible."),
-        ("RGBA (Uncompressed)",
-            "Save the current texture as an uncompressed BGRA bitmap.\nThis requires the most space but technically offers the best quality."),
-        ("BC1 (Simple Compression for Opaque RGB)",
-            "Save the current texture compressed via BC1/DXT1 compression.\nThis offers a 8:1 compression ratio and is quick with acceptable quality, but only supports RGB, without Alpha.\n\nCan be used for diffuse maps and equipment textures to save extra space."),
-        ("BC3 (Simple Compression for RGBA)",
-            "Save the current texture compressed via BC3/DXT5 compression.\nThis offers a 4:1 compression ratio and is quick with acceptable quality, and fully supports RGBA.\n\nGeneric format that can be used for most textures."),
-        ("BC4 (Simple Compression for Opaque Grayscale)",
-            "Save the current texture compressed via BC4 compression.\nThis offers a 8:1 compression ratio and has almost indistinguishable quality, but only supports Grayscale, without Alpha.\n\nCan be used for face paints and legacy marks."),
-        ("BC5 (Simple Compression for Opaque RG)",
-            "Save the current texture compressed via BC5 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but only supports RG, without B or Alpha.\n\nRecommended for index maps, unrecommended for normal maps."),
-        ("BC7 (Complex Compression for RGBA)",
-            "Save the current texture compressed via BC7 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while.\n\nGeneric format that can be used for most textures."),
+        (new StringU8("As Is"u8),
+            new StringU8("Save the current texture with its own format without additional conversion or compression, if possible."u8)),
+        (new StringU8("RGBA (Uncompressed)"u8),
+            new StringU8(
+                "Save the current texture as an uncompressed BGRA bitmap.\nThis requires the most space but technically offers the best quality."u8)),
+        (new StringU8("BC1 (Simple Compression for Opaque RGB)"u8),
+            new StringU8(
+                "Save the current texture compressed via BC1/DXT1 compression.\nThis offers a 8:1 compression ratio and is quick with acceptable quality, but only supports RGB, without Alpha.\n\nCan be used for diffuse maps and equipment textures to save extra space."u8)),
+        (new StringU8("BC3 (Simple Compression for RGBA)"u8),
+            new StringU8(
+                "Save the current texture compressed via BC3/DXT5 compression.\nThis offers a 4:1 compression ratio and is quick with acceptable quality, and fully supports RGBA.\n\nGeneric format that can be used for most textures."u8)),
+        (new StringU8("BC4 (Simple Compression for Opaque Grayscale)"u8),
+            new StringU8(
+                "Save the current texture compressed via BC4 compression.\nThis offers a 8:1 compression ratio and has almost indistinguishable quality, but only supports Grayscale, without Alpha.\n\nCan be used for face paints and legacy marks."u8)),
+        (new StringU8("BC5 (Simple Compression for Opaque RG)"u8),
+            new StringU8(
+                "Save the current texture compressed via BC5 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but only supports RG, without B or Alpha.\n\nRecommended for index maps, unrecommended for normal maps."u8)),
+        (new StringU8("BC7 (Complex Compression for RGBA)"u8),
+            new StringU8(
+                "Save the current texture compressed via BC7 compression.\nThis offers a 4:1 compression ratio and has almost indistinguishable quality, but may take a while.\n\nGeneric format that can be used for most textures."u8)),
     };
 
     private bool _overlayCollapsed = true;
@@ -68,7 +75,7 @@ public partial class CombiningTextureEditor
 
         return false;
     }
-    
+
     private Vector2 GetChildWidth()
     {
         var windowWidth = Im.Window.MaximumContentRegion.X - Im.Window.MinimumContentRegion.X - Im.Style.TextHeight;
@@ -102,7 +109,7 @@ public partial class CombiningTextureEditor
                     if (_textureSelectCombo is not null
                      && _textureSelectCombo.Draw("##combo"u8,
                             "Select the textures included in this mod on your drive or the ones they replace from the game files."u8, tex.Path,
-                            (_context?.Mod?.ModPath.FullName.Length + 1) ?? 0, out var newPath)
+                            _context?.Mod?.ModPath.FullName.Length + 1 ?? 0, out var newPath)
                      && newPath != tex.Path)
                         tex.Load(_textures, newPath);
                 }
@@ -190,9 +197,7 @@ public partial class CombiningTextureEditor
                             ? "This saves the texture in place. This is not revertible."u8
                             : $"This saves the texture in place. This is not revertible. Hold {_config.DeleteModModifier} to save.",
                         !isActive || !canSaveInPlace || _center.IsLeftCopy && _currentSaveAs is (int)CombinedTexture.TextureSaveType.AsIs))
-                {
                     SaveRequested?.Invoke();
-                }
 
                 Im.Line.Same();
                 if (Im.Button("Save as TEX"u8, buttonSize2))
@@ -316,7 +321,8 @@ public partial class CombiningTextureEditor
     private void DrawOverlayCollapseButton()
     {
         var (label, tooltip) = _overlayCollapsed
-            ? RefTuple.Create(">"u8, "Show a third panel in which you can import an additional texture as an overlay for the primary texture."u8)
+            ? RefTuple.Create(">"u8,
+                "Show a third panel in which you can import an additional texture as an overlay for the primary texture."u8)
             : RefTuple.Create("<"u8, "Hide the overlay texture panel and clear the currently loaded overlay texture, if any."u8);
         if (Im.Button(label, Im.ContentRegion.Available with { X = Im.Style.TextHeight }))
             _overlayCollapsed = !_overlayCollapsed;

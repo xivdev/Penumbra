@@ -27,7 +27,7 @@ using MdlMaterialEditor = Penumbra.Mods.Editor.MdlMaterialEditor;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public partial class ModEditWindow : IndexedWindow, IDisposable
+public sealed partial class ModEditWindow : IndexedWindow, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
@@ -45,9 +45,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
     private readonly FileEditor _materialTab;
     private readonly FileEditor _shaderPackageTab;
     private readonly FileEditor _pbdTab;
-    #if DEBUG
+#if DEBUG
     private readonly FileEditor _newTextureTab;
-    #endif
+#endif
 
     private readonly CombiningTextureEditor _textureEditor;
 
@@ -193,9 +193,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             _modelTab.Reset();
             _shaderPackageTab.Reset();
             _pbdTab.Reset();
-            #if DEBUG
+#if DEBUG
             _newTextureTab.Reset();
-            #endif
+#endif
         });
     }
 
@@ -233,9 +233,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
             if (tab)
                 _textureEditor.DrawPanel(false);
         }
-        #if DEBUG
+#if DEBUG
         _newTextureTab.Draw();
-        #endif
+#endif
         _shaderPackageTab.Draw();
         using (var tab = tabBar.Item("Item Swap"u8))
         {
@@ -600,9 +600,9 @@ public partial class ModEditWindow : IndexedWindow, IDisposable
         _modelTab         = CreateFileEditor("Models",    ".mdl",  ResourceType.Mdl,  modelEditorFactory);
         _shaderPackageTab = CreateFileEditor("Shaders",   ".shpk", ResourceType.Shpk, shaderPackageEditorFactory);
         _pbdTab           = CreateFileEditor("Deformers", ".pbd",  ResourceType.Pbd,  deformerEditorFactory);
-        #if DEBUG
+#if DEBUG
         _newTextureTab = CreateFileEditor("Textures (2)", ".tex", ResourceType.Tex, textureEditorFactory);
-        #endif
+#endif
 
         _textureEditor = textureEditorFactory.CreateForModEditWindow(fileEditingContext);
 
