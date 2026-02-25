@@ -29,7 +29,8 @@ public sealed class RedrawFooter(
         if (!hovered)
             return;
 
-        using var _ = Im.Tooltip.Begin();
+        using var style = Im.Style.PushDefault();
+        using var _     = Im.Tooltip.Begin();
         Im.Text("The supported modifiers for '/penumbra redraw' are:"u8);
         Im.BulletText("nothing, to redraw all characters\n"u8);
         Im.BulletText("'self' or '<me>': your own character\n"u8);
@@ -105,7 +106,8 @@ public sealed class RedrawFooter(
         if (!Im.Item.Hovered(HoveredFlags.AllowWhenDisabled))
             return;
 
-        using var _ = Im.Tooltip.Begin();
+        using var style = Im.Style.PushDefault();
+        using var _     = Im.Tooltip.Begin();
         if (lower.Length > 0)
             Im.Text($"Execute '/penumbra redraw {lower}'.");
         else

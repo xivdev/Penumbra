@@ -72,7 +72,7 @@ public class CollectionSelectHeader(
         Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled,
             "Toggle the temporary settings mode, where all changes you do create temporary settings first and need to be made permanent if desired."u8, true);
         if (!hold)
-            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.");
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, $"\nHold {config.IncognitoModifier} while clicking to toggle.", true);
     }
 
     private enum CollectionState
