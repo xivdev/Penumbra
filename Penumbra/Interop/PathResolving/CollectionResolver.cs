@@ -28,7 +28,7 @@ public sealed unsafe class CollectionResolver(
     TempCollectionManager tempCollections,
     DrawObjectState drawObjectState,
     HumanModelList humanModels)
-    : Luna.IService
+    : IService
 {
     /// <summary>
     /// Get the collection applying to the current player character

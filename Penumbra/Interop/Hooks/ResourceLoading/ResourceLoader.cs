@@ -165,7 +165,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
         Utf8GamePath original, GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
-        if (!_config.EnableMods || returnValue != null)
+        if (!_config.EnableMods || returnValue is not null)
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
@@ -200,7 +200,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
     private void TrackResourceLoad(ResourceHandle* handle, Utf8GamePath original)
     {
-        if (handle->UnkState == 2 && handle->LoadState >= LoadState.Success)
+        if (handle->UnkState is 2 && handle->LoadState >= LoadState.Success)
             return;
 
         _ongoingLoads.TryAdd((nint)handle, original.Clone());
@@ -208,7 +208,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
     private void ResourceStateUpdatedHandler(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte, LoadState) previousState, ref uint returnValue)
     {
-        if (handle->UnkState != 2 || handle->LoadState < LoadState.Success || previousState is { Item1: 2, Item2: >= LoadState.Success })
+        if (handle->UnkState is not 2 || handle->LoadState < LoadState.Success || previousState is { Item1: 2, Item2: >= LoadState.Success })
             return;
 
         if (!_ongoingLoads.TryRemove((nint)handle, out var asyncOriginal))
@@ -228,7 +228,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
     private void ResourceStateUpdatingHandler(ResourceHandle* handle, Utf8GamePath syncOriginal)
     {
-        if (handle->UnkState != 1 || handle->LoadState != LoadState.Success)
+        if (handle->UnkState is not 1 || handle->LoadState is not LoadState.Success)
             return;
 
         if (!_ongoingLoads.TryGetValue((nint)handle, out var asyncOriginal))
@@ -246,14 +246,14 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
     private void ReadSqPackDetour(SeFileDescriptor* fileDescriptor, ref int priority, ref bool isSync, ref byte? returnValue)
     {
-        if (fileDescriptor->ResourceHandle == null)
+        if (fileDescriptor->ResourceHandle is null)
         {
             Penumbra.Log.Verbose(
                 $"[ResourceLoader] Failure to load file from SqPack: invalid File Descriptor: {Marshal.PtrToStringUni((nint)(&fileDescriptor->Utf16FileName))}");
             return;
         }
 
-        if (!fileDescriptor->ResourceHandle->GamePath(out var gamePath) || gamePath.Length == 0)
+        if (!fileDescriptor->ResourceHandle->GamePath(out var gamePath) || gamePath.Length is 0)
         {
             Penumbra.Log.Error("[ResourceLoader] Failure to load file from SqPack: invalid path specified.");
             return;
@@ -320,7 +320,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     /// <inheritdoc cref="_incMode"/>
     private void IncRefProtection(ResourceHandle* handle, ref nint? returnValue)
     {
-        if (handle->RefCount != 0)
+        if (handle->RefCount is not 0)
             return;
 
         _incMode.Value = true;
@@ -333,7 +333,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     /// </summary>
     private static void DecRefProtection(ResourceHandle* handle, ref byte? returnValue)
     {
-        if (handle->RefCount != 0)
+        if (handle->RefCount is not 0)
             return;
 
         try
@@ -350,14 +350,12 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     }
 
     private void ResourceDestructorHandler(in ResourceHandleDestructor.Arguments arguments)
-    {
-        _ongoingLoads.TryRemove((nint)arguments.ResourceHandle, out _);
-    }
+        => _ongoingLoads.TryRemove((nint)arguments.ResourceHandle, out _);
 
     /// <summary> Compute the CRC32 hash for a given path together with potential resource parameters. </summary>
     private static int ComputeHash(CiByteString path, GetResourceParameters* pGetResParams)
     {
-        if (pGetResParams == null || !pGetResParams->IsPartialRead)
+        if (pGetResParams is null || !pGetResParams->IsPartialRead)
             return path.Crc32;
 
         // When the game requests file only partially, crc32 includes that information, in format of:
