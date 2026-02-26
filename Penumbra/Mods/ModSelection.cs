@@ -96,6 +96,9 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
 
         /// <seealso cref="Editor.ModMerger.OnSelectionChange"/>
         ModMerger = 0,
+
+        /// <seealso cref="ModFileSystem.OnModSelectionChanged"/>
+        ModFileSystem = 0,
     }
 
     public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);

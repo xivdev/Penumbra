@@ -11,6 +11,7 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
     private readonly CommunicatorService _communicator;
     private readonly ModFileSystemSaver  _saver;
     private readonly ModSelection        _selection;
+    private bool _skipEvent;
 
     public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage,
         ModSelection selection)
@@ -26,16 +27,31 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
         _saver.Load();
         Selection.Changed += OnSelectionChanged;
         _selection.SelectMod(Selection.Selection?.GetValue<Mod>());
+        _selection.Subscribe(OnModSelectionChanged, ModSelection.Priority.ModFileSystem);
+    }
+
+    private void OnModSelectionChanged(in ModSelection.Arguments arguments)
+    {
+        _skipEvent = true;
+        if (arguments.NewSelection?.Node is {} node)
+            Selection.Select(node);
+        else
+            Selection.UnselectAll();
+        _skipEvent = false;
     }
 
     private void OnSelectionChanged()
-        => _selection.SelectMod(Selection.Selection?.GetValue<Mod>());
+    {
+        if (!_skipEvent)
+            _selection.SelectMod(Selection.Selection?.GetValue<Mod>());
+    }
 
     public void Dispose()
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
         _communicator.ModDiscoveryFinished.Unsubscribe(_saver.Load);
         _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
+        _selection.Unsubscribe(OnModSelectionChanged);
     }
 
     // Update sort order when defaulted mod names change.

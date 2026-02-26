@@ -17,7 +17,7 @@ public sealed class ChangedItemsTab(
     ChangedItemDrawer drawer,
     CommunicatorService communicator,
     Configuration config)
-    : ITab<TabType>
+    : ITab<TabType>, IDisposable
 {
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
@@ -29,10 +29,11 @@ public sealed class ChangedItemsTab(
 
     private readonly ChangedItemFilter _filter = new(drawer, config);
 
-    private sealed class ChangedItemFilter : IFilter<Item>
+    private sealed class ChangedItemFilter : IFilter<Item>, IDisposable
     {
         private readonly ChangedItemDrawer _drawer;
         private readonly FilterConfig      _filterConfig;
+        private          bool              _ownUpdate;
 
         public ChangedItemFilter(ChangedItemDrawer drawer, Configuration config)
         {
@@ -40,6 +41,13 @@ public sealed class ChangedItemsTab(
             _filterConfig = config.Filters;
             if (!config.RememberChangedItemFilters)
                 Clear();
+            _filterConfig.ChangedItemTypeFilterChanged += OnChangedItemTypeFilterChanged;
+        }
+
+        private void OnChangedItemTypeFilterChanged(ChangedItemIconFlag _1, ChangedItemIconFlag _2)
+        {
+            if (!_ownUpdate)
+                FilterChanged?.Invoke();
         }
 
         public bool WouldBeVisible(in Item item, int globalIndex)
@@ -83,7 +91,9 @@ public sealed class ChangedItemsTab(
 
             _filterConfig.ChangedItemModFilter  = string.Empty;
             _filterConfig.ChangedItemItemFilter = string.Empty;
+            _ownUpdate                          = true;
             _filterConfig.ChangedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
+            _ownUpdate                          = false;
             FilterChanged?.Invoke();
             return true;
         }
@@ -92,6 +102,9 @@ public sealed class ChangedItemsTab(
             => _filterConfig.ChangedItemModFilter.Length is 0
              && _filterConfig.ChangedItemItemFilter.Length is 0
              && _filterConfig.ChangedItemTypeFilter is ChangedItemFlagExtensions.DefaultFlags;
+
+        public void Dispose()
+            => _filterConfig.ChangedItemTypeFilterChanged -= OnChangedItemTypeFilterChanged;
     }
 
     private readonly record struct Item(string Label, IIdentifiedObjectData Data, SingleArray<IMod> Mods)
@@ -205,4 +218,7 @@ public sealed class ChangedItemsTab(
         if (!item.Tooltip.IsEmpty)
             Im.Text(item.Tooltip);
     }
+
+    public void Dispose()
+        => _filter.Dispose();
 }

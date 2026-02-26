@@ -143,7 +143,7 @@ public sealed partial class FilterConfig : ConfigurationFile<FilenameService>
     [ConfigProperty]
     private string _changedItemModFilter = string.Empty;
 
-    [ConfigProperty]
+    [ConfigProperty(EventName = "ChangedItemTypeFilterChanged")]
     private ChangedItemIconFlag _changedItemTypeFilter = ChangedItemFlagExtensions.DefaultFlags;
 
     private void WriteChangedItemsTab(JsonTextWriter j)
