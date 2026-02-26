@@ -28,7 +28,8 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     public IReadOnlyDictionary<nint, Utf8GamePath> OngoingLoads
         => _ongoingLoads;
 
-    public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config, PeSigScanner sigScanner,
+    public ResourceLoader(ResourceService resources, FileReadService fileReadService, RsfService rsfService, Configuration config,
+        PeSigScanner sigScanner,
         ResourceHandleDestructor destructor)
     {
         _resources       = resources;
@@ -150,6 +151,14 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
     /// </summary>
     public event ResourceCompleteDelegate? ResourceComplete;
 
+    public delegate void PreLoadFileDelegate(ResourceHandle* resource, CiByteString actualPath, ReadOnlySpan<byte> additionalData);
+
+    /// <summary>
+    ///   Event fired before the SqPack handler loads a file into a resource handle.
+    ///   AdditionalData is either empty or the part of the path inside the leading pipes.
+    /// </summary>
+    public event PreLoadFileDelegate? PreLoadFile;
+
     public void Dispose()
     {
         _resources.ResourceRequested     -= ResourceHandler;
@@ -180,7 +189,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
                 ? (resolvedData.ModCollection.ResolvePath(path), resolvedData)
                 : ResolvePath(path, category, type);
 
-        if (resolvedPath == null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
+        if (resolvedPath is null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
         {
             returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, original, parameters);
             TrackResourceLoad(returnValue, original);
@@ -206,7 +215,8 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
         _ongoingLoads.TryAdd((nint)handle, original.Clone());
     }
 
-    private void ResourceStateUpdatedHandler(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte, LoadState) previousState, ref uint returnValue)
+    private void ResourceStateUpdatedHandler(ResourceHandle* handle, Utf8GamePath syncOriginal, (byte, LoadState) previousState,
+        ref uint returnValue)
     {
         if (handle->UnkState is not 2 || handle->LoadState < LoadState.Success || previousState is { Item1: 2, Item2: >= LoadState.Success })
             return;
@@ -216,10 +226,12 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
 
         var path = handle->CsHandle.FileName;
         if (!syncOriginal.IsEmpty && !asyncOriginal.IsEmpty && !syncOriginal.Equals(asyncOriginal))
-            Penumbra.Log.Warning($"[ResourceLoader] Resource original paths inconsistency: 0x{(nint)handle:X}, of path {path}, sync original {syncOriginal}, async original {asyncOriginal}.");
+            Penumbra.Log.Warning(
+                $"[ResourceLoader] Resource original paths inconsistency: 0x{(nint)handle:X}, of path {path}, sync original {syncOriginal}, async original {asyncOriginal}.");
         var original = !asyncOriginal.IsEmpty ? asyncOriginal : syncOriginal;
 
-        Penumbra.Log.Excessive($"[ResourceLoader] Resource is complete: 0x{(nint)handle:X}, of path {path}, original {original}, state {previousState.Item1}:{previousState.Item2} -> {handle->UnkState}:{handle->LoadState}, sync: {asyncOriginal.IsEmpty}");
+        Penumbra.Log.Excessive(
+            $"[ResourceLoader] Resource is complete: 0x{(nint)handle:X}, of path {path}, original {original}, state {previousState.Item1}:{previousState.Item2} -> {handle->UnkState}:{handle->LoadState}, sync: {asyncOriginal.IsEmpty}");
         if (PathDataHandler.Split(path.AsSpan(), out var actualPath, out var additionalData))
             ResourceComplete?.Invoke(handle, new CiByteString(actualPath), original, additionalData, !asyncOriginal.IsEmpty);
         else
@@ -267,10 +279,12 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
             return;
         }
 
+
         var path = CiByteString.FromSpanUnsafe(actualPath, gamePath.Path.IsNullTerminated, gamePath.Path.IsAsciiLowerCase,
             gamePath.Path.IsAscii);
         fileDescriptor->ResourceHandle->FileNameData   = path.Path;
         fileDescriptor->ResourceHandle->FileNameLength = path.Length;
+        PreLoadFile?.Invoke(fileDescriptor->ResourceHandle, path, data);
         returnValue = DefaultLoadResource(path, fileDescriptor, priority, isSync, data);
         // Return original resource handle path so that they can be loaded separately.
         fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;

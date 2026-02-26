@@ -1,8 +1,10 @@
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
+using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.PathResolving;
@@ -17,17 +19,20 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
     private readonly GameState                _gameState;
     private readonly ResourceLoader           _loader;
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
+    private readonly CollectionStorage        _collections;
 
-    public SubfileHelper(GameState gameState, ResourceLoader loader, ResourceHandleDestructor resourceHandleDestructor)
+    public SubfileHelper(GameState gameState, ResourceLoader loader, ResourceHandleDestructor resourceHandleDestructor,
+        CollectionStorage collections)
     {
         _gameState                = gameState;
         _loader                   = loader;
         _resourceHandleDestructor = resourceHandleDestructor;
+        _collections              = collections;
 
         _loader.ResourceLoaded += SubfileContainerRequested;
+        _loader.PreLoadFile    += SubfileContainerRequested;
         _resourceHandleDestructor.Subscribe(ResourceDestroyed, ResourceHandleDestructor.Priority.SubfileHelper);
     }
-
 
     public IEnumerator<KeyValuePair<nint, ResolveData>> GetEnumerator()
         => _gameState.SubFileCollection.GetEnumerator();
@@ -68,18 +73,38 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
     public void Dispose()
     {
         _loader.ResourceLoaded -= SubfileContainerRequested;
+        _loader.PreLoadFile    -= SubfileContainerRequested;
         _resourceHandleDestructor.Unsubscribe(ResourceDestroyed);
     }
 
     private void SubfileContainerRequested(ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         ResolveData resolveData)
     {
+        // Done after resource load, so possibly on a different thread and later than subfile load.
         switch (handle->FileType)
         {
             case ResourceType.Mtrl:
             case ResourceType.Avfx:
-                if (handle->FileSize == 0)
+                // Only add subfiles if no data is loaded already.
+                if (handle->FileSize is 0)
                     _gameState.SubFileCollection[(nint)handle] = resolveData;
+
+                break;
+        }
+    }
+
+    private void SubfileContainerRequested(ResourceHandle* handle, CiByteString actualPath, ReadOnlySpan<byte> additionalData)
+    {
+        // Done during SQPack load, so guaranteed to be done before the subfiles are loaded.
+        switch (handle->FileType)
+        {
+            case ResourceType.Mtrl:
+                if (PathDataHandler.ReadMtrl(additionalData, out var mtrlData))
+                    _gameState.SubFileCollection[(nint)handle] = new ResolveData(_collections.ByLocalId(mtrlData.Collection));
+                break;
+            case ResourceType.Avfx:
+                if (PathDataHandler.Read(additionalData, out var avfxData))
+                    _gameState.SubFileCollection[(nint)handle] = new ResolveData(_collections.ByLocalId(avfxData.Collection));
 
                 break;
         }
