@@ -6,6 +6,7 @@ using Luna;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
 using MessageService = Penumbra.Services.MessageService;
+using Notification = Luna.Notification;
 
 namespace Penumbra.UI;
 
@@ -16,6 +17,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
 
     private readonly        ModImportManager _modImportManager;
     private readonly        MessageService   _messageService;
+    private readonly        Configuration    _configuration;
     private static readonly Vector2          OneHalf = Vector2.One / 2;
 
     private IActiveNotification? _notification;
@@ -32,7 +34,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
     public bool WasDrawn      { get; private set; }
     public bool PopupWasDrawn { get; private set; }
 
-    public ImportPopup(ModImportManager modImportManager, MessageService messageService)
+    public ImportPopup(ModImportManager modImportManager, MessageService messageService, Configuration configuration)
         : base(WindowLabel,
             WindowFlags.NoCollapse
           | WindowFlags.NoDecoration
@@ -47,6 +49,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
     {
         _modImportManager   = modImportManager;
         _messageService     = messageService;
+        _configuration      = configuration;
         DisableWindowSounds = true;
         IsOpen              = true;
         RespectCloseHotkey  = false;
@@ -75,6 +78,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         if (!_modImportManager.IsImporting(out var import))
             return;
 
+        var notificationHadAlreadyEnded = _notificationEnded;
         (_notificationTitle, _notificationMessage, _notificationProgress, _notificationEnded, _notificationSuccessful) =
             import.ComputeNotificationData();
 
@@ -84,6 +88,8 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         _notification?.MinimizedText   = NotificationMinimizedText;
         _notification?.Progress        = _notificationProgress;
         _notification?.UserDismissable = _notificationEnded;
+        if (_notificationEnded != notificationHadAlreadyEnded)
+            _notification?.InitialDuration = NotificationDuration;
 
         if (_openPopup)
         {
@@ -140,6 +146,11 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
             (true, false) => NotificationType.Error,
         };
 
+    private TimeSpan NotificationDuration
+        => _notificationEnded && _notificationSuccessful && _configuration.AutoDismissModImportSuccessReports
+            ? Notification.DefaultDuration
+            : TimeSpan.MaxValue;
+
     private string NotificationMinimizedText
         => _notificationEnded ? _notificationMessage : _notificationTitle;
 
@@ -150,7 +161,7 @@ public sealed class ImportPopup : Window, INotificationAwareMessage
         => _notificationMessage;
 
     TimeSpan IMessage.NotificationDuration
-        => TimeSpan.MaxValue;
+        => NotificationDuration;
 
     string IMessage.NotificationTitle
         => _notificationTitle;

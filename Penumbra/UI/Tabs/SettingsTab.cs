@@ -639,6 +639,9 @@ public sealed class SettingsTab : ITab<TabType>
             "If your Automatic Import Directory is the same as your Default Mod Export Directory, prevents mods and character packs you export from being reimported or showing a query popup."u8,
             _config.PreventExportLoopback, v => _config.PreventExportLoopback = v);
         DrawFileWatcherPath();
+        Checkbox("Automatically Dismiss Reports of Successful Mod Imports"u8,
+            "Makes reports automatically disappear after a few seconds if all the mods were successfully imported.\nReports that contain errors will still have to be manually dismissed."u8,
+            _config.AutoDismissModImportSuccessReports, v => _config.AutoDismissModImportSuccessReports = v);
     }
 
 
