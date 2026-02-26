@@ -19,16 +19,23 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
 {
     private readonly ActiveCollections   _collections;
     private readonly CommunicatorService _communicator;
+    private readonly ModFileSystem       _modFileSystem;
 
-    public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config)
+    public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config,
+        ModFileSystem modFileSystem)
         : base(nameof(ModSelection), log)
     {
-        _communicator = communicator;
-        _collections  = collections;
+        _communicator  = communicator;
+        _collections   = collections;
+        _modFileSystem = modFileSystem;
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModSelection);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
+        _modFileSystem.Selection.Changed += OnSelectionChanged;
     }
+
+    private void OnSelectionChanged()
+        => SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
 
     public ModSettings           Settings          { get; private set; } = ModSettings.Empty;
     public ModCollection         Collection        { get; private set; } = ModCollection.Empty;
@@ -37,6 +44,14 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     public TemporaryModSettings? TemporarySettings { get; private set; }
 
     public void SelectMod(Mod? mod)
+    {
+        if (mod is null)
+            _modFileSystem.Selection.UnselectAll();
+        else if (mod.Node is { } node)
+            _modFileSystem.Selection.Select(node);
+    }
+
+    private void SelectModInternal(Mod? mod)
     {
         if (mod == Mod)
             return;
@@ -52,6 +67,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
         _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
+        _modFileSystem.Selection.Changed -= OnSelectionChanged;
     }
 
     private void OnCollectionChange(in CollectionChange.Arguments arguments)
@@ -96,9 +112,6 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
 
         /// <seealso cref="Editor.ModMerger.OnSelectionChange"/>
         ModMerger = 0,
-
-        /// <seealso cref="ModFileSystem.OnModSelectionChanged"/>
-        ModFileSystem = 0,
     }
 
     public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);

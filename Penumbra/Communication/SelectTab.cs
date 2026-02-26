@@ -9,7 +9,7 @@ public sealed class SelectTab(Logger log) : EventBase<SelectTab.Arguments, Selec
 {
     public enum Priority
     {
-        /// <seealso cref="UI.Tabs.ConfigTabBar.OnSelectTab"/>
+        /// <seealso cref="global::Penumbra.UI.MainWindow.MainTabBar.OnSelectTab"/>
         MainTabBar = 0,
     }
 

@@ -10,40 +10,17 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
     private readonly ModFileSystemSaver  _saver;
-    private readonly ModSelection        _selection;
-    private bool _skipEvent;
 
-    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage,
-        ModSelection selection)
+    public ModFileSystem(Configuration config, CommunicatorService communicator, SaveService saveService, Logger log, ModStorage modStorage)
         : base("ModFileSystem", log, true)
     {
         _config       = config;
         _communicator = communicator;
-        _selection    = selection;
         _saver        = new ModFileSystemSaver(log, this, saveService, modStorage);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModFileSystem);
         _communicator.ModDiscoveryFinished.Subscribe(_saver.Load, ModDiscoveryFinished.Priority.ModFileSystem);
         _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystem);
         _saver.Load();
-        Selection.Changed += OnSelectionChanged;
-        _selection.SelectMod(Selection.Selection?.GetValue<Mod>());
-        _selection.Subscribe(OnModSelectionChanged, ModSelection.Priority.ModFileSystem);
-    }
-
-    private void OnModSelectionChanged(in ModSelection.Arguments arguments)
-    {
-        _skipEvent = true;
-        if (arguments.NewSelection?.Node is {} node)
-            Selection.Select(node);
-        else
-            Selection.UnselectAll();
-        _skipEvent = false;
-    }
-
-    private void OnSelectionChanged()
-    {
-        if (!_skipEvent)
-            _selection.SelectMod(Selection.Selection?.GetValue<Mod>());
     }
 
     public void Dispose()
@@ -51,7 +28,6 @@ public sealed class ModFileSystem : BaseFileSystem, IDisposable, IRequiredServic
         _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
         _communicator.ModDiscoveryFinished.Unsubscribe(_saver.Load);
         _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
-        _selection.Unsubscribe(OnModSelectionChanged);
     }
 
     // Update sort order when defaulted mod names change.
