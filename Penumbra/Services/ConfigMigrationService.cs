@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Keys;
 using ImSharp;
 using Luna;
 using Newtonsoft.Json;
@@ -73,7 +74,34 @@ public class ConfigMigrationService(SaveService saveService, BackupService backu
         Version7To8();
         Version8To9();
         Version9To10();
+        Version10To11();
         AddColors(config, true);
+    }
+
+    private void Version10To11()
+    {
+        if (_config.Version > 10)
+            return;
+
+        // Migrate keybinds.
+        if (_data["DeleteModModifier"] is JObject deleteModifier)
+        {
+            var modifier1 = deleteModifier["Modifier1"]?["Modifier"]?.Value<ushort>() ?? (ushort)VirtualKey.CONTROL;
+            var modifier2 = deleteModifier["Modifier2"]?["Modifier"]?.Value<ushort>() ?? (ushort)VirtualKey.SHIFT;
+            _config.DeleteModModifier = new DoubleModifier((VirtualKey)modifier1, (VirtualKey)modifier2);
+        }
+
+        if (_data["IncognitoModifier"] is JObject incognitoModifier)
+        {
+            var modifier1 = incognitoModifier["Modifier1"]?["Modifier"]?.Value<ushort>() ?? (ushort)VirtualKey.CONTROL;
+            var modifier2 = incognitoModifier["Modifier2"]?["Modifier"]?.Value<ushort>() ?? 0;
+            _config.IncognitoModifier = new DoubleModifier((VirtualKey)modifier1, (VirtualKey)modifier2);
+        }
+
+        _config.Version           = 11;
+        _config.Ephemeral.Version = 11;
+        _config.Save();
+        _config.Ephemeral.Save();
     }
 
     private void Version9To10()
