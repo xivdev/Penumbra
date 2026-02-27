@@ -71,7 +71,7 @@ public static class PathDataHandler
         if (!ReadBase(additionalData, out data, out var remaining))
             return false;
 
-        if (!int.TryParse(remaining, out var crc32))
+        if (!int.TryParse(remaining, NumberStyles.HexNumber, null, out var crc32))
             return false;
 
         data = data with { OriginalPathCrc32 = crc32 };
