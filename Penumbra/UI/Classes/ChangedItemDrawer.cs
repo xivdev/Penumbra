@@ -16,7 +16,7 @@ namespace Penumbra.UI.Classes;
 public class ChangedItemDrawer : IDisposable, IUiService
 {
     private static readonly string[] LowerNames =
-        ChangedItemFlagExtensions.Order.Select(f => f.ToDescription().ToString().ToLowerInvariant()).ToArray();
+        ChangedItemFlagExtensions.Order.Select(f => f.ToNameU8().ToString().ToLowerInvariant()).ToArray();
 
     public static bool TryParseIndex(ReadOnlySpan<char> input, out ChangedItemIconFlag slot)
     {
@@ -25,7 +25,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
         if (int.TryParse(input, out var idx))
         {
             // We assume users will use 1-based index, but if they enter 0, just use the first.
-            if (idx == 0)
+            if (idx is 0)
             {
                 slot = ChangedItemFlagExtensions.Order[0];
                 return true;
@@ -56,7 +56,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
                 slot |= flag;
         }
 
-        return slot != 0;
+        return slot is not 0;
     }
 
 
@@ -116,7 +116,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
             using var tt = Im.Tooltip.Begin();
             Im.Image.Draw(icon.Id, new Vector2(_smallestIconWidth));
             Im.Line.Same();
-            ImEx.TextFramed(iconFlagType.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
+            ImEx.TextFramed(iconFlagType.ToNameU8(), new Vector2(0, _smallestIconWidth), 0);
         }
     }
 
@@ -239,7 +239,7 @@ public class ChangedItemDrawer : IDisposable, IUiService
                 using var tt = Im.Tooltip.Begin();
                 Im.Image.Draw(icon.Id, new Vector2(_smallestIconWidth));
                 Im.Line.Same();
-                ImEx.TextFramed(type.ToDescription(), new Vector2(0, _smallestIconWidth), 0);
+                ImEx.TextFramed(type.ToNameU8(), new Vector2(0, _smallestIconWidth), 0);
             }
 
             return localRet;

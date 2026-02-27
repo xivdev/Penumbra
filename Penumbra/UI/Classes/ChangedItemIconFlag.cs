@@ -1,28 +1,62 @@
+using Luna.Generators;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 
 namespace Penumbra.UI.Classes;
 
 [Flags]
+[NamedEnum(Utf16: false)]
 public enum ChangedItemIconFlag : uint
 {
-    Head          = 0x00_00_01,
-    Body          = 0x00_00_02,
-    Hands         = 0x00_00_04,
-    Legs          = 0x00_00_08,
-    Feet          = 0x00_00_10,
-    Ears          = 0x00_00_20,
-    Neck          = 0x00_00_40,
-    Wrists        = 0x00_00_80,
-    Finger        = 0x00_01_00,
-    Monster       = 0x00_02_00,
-    Demihuman     = 0x00_04_00,
+    [Name("Head")]
+    Head = 0x00_00_01,
+
+    [Name("Body")]
+    Body = 0x00_00_02,
+
+    [Name("Hands")]
+    Hands = 0x00_00_04,
+
+    [Name("Legs")]
+    Legs = 0x00_00_08,
+
+    [Name("Feet")]
+    Feet = 0x00_00_10,
+
+    [Name("Earrings")]
+    Ears = 0x00_00_20,
+
+    [Name("Necklace")]
+    Neck = 0x00_00_40,
+
+    [Name("Bracelets")]
+    Wrists = 0x00_00_80,
+
+    [Name("Ring")]
+    Finger = 0x00_01_00,
+
+    [Name("Monster")]
+    Monster = 0x00_02_00,
+
+    [Name("Demi-Human")]
+    Demihuman = 0x00_04_00,
+
+    [Name("Customization")]
     Customization = 0x00_08_00,
-    Action        = 0x00_10_00,
-    Mainhand      = 0x00_20_00,
-    Offhand       = 0x00_40_00,
-    Unknown       = 0x00_80_00,
-    Emote         = 0x01_00_00,
+
+    [Name("Action")]
+    Action = 0x00_10_00,
+
+    [Name("Weapon (Mainhand)")]
+    Mainhand = 0x00_20_00,
+
+    [Name("Weapon (Offhand)")]
+    Offhand = 0x00_40_00,
+
+    [Name("Other")]
+    Unknown = 0x00_80_00,
+
+    [Name("Emote")]
+    Emote = 0x01_00_00,
 }
 
 public static class ChangedItemFlagExtensions
@@ -51,28 +85,6 @@ public static class ChangedItemFlagExtensions
     public const           ChangedItemIconFlag AllFlags      = (ChangedItemIconFlag)0x01FFFF;
     public static readonly int                 NumCategories = Order.Count;
     public const           ChangedItemIconFlag DefaultFlags  = AllFlags;
-
-    public static ReadOnlySpan<byte> ToDescription(this ChangedItemIconFlag iconFlag)
-        => iconFlag switch
-        {
-            ChangedItemIconFlag.Head          => EquipSlot.Head.ToNameU8(),
-            ChangedItemIconFlag.Body          => EquipSlot.Body.ToNameU8(),
-            ChangedItemIconFlag.Hands         => EquipSlot.Hands.ToNameU8(),
-            ChangedItemIconFlag.Legs          => EquipSlot.Legs.ToNameU8(),
-            ChangedItemIconFlag.Feet          => EquipSlot.Feet.ToNameU8(),
-            ChangedItemIconFlag.Ears          => EquipSlot.Ears.ToNameU8(),
-            ChangedItemIconFlag.Neck          => EquipSlot.Neck.ToNameU8(),
-            ChangedItemIconFlag.Wrists        => EquipSlot.Wrists.ToNameU8(),
-            ChangedItemIconFlag.Finger        => "Ring"u8,
-            ChangedItemIconFlag.Monster       => "Monster"u8,
-            ChangedItemIconFlag.Demihuman     => "Demi-Human"u8,
-            ChangedItemIconFlag.Customization => "Customization"u8,
-            ChangedItemIconFlag.Action        => "Action"u8,
-            ChangedItemIconFlag.Emote         => "Emote"u8,
-            ChangedItemIconFlag.Mainhand      => "Weapon (Mainhand)"u8,
-            ChangedItemIconFlag.Offhand       => "Weapon (Offhand)"u8,
-            _                                 => "Other"u8,
-        };
 
     public static ChangedItemIcon ToApiIcon(this ChangedItemIconFlag iconFlag)
         => iconFlag switch

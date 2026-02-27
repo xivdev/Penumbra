@@ -44,7 +44,7 @@ public readonly struct ModFilterToken() : IFilterToken<ModFilterTokenType, ModFi
             _                              => false,
         };
 
-    public static void ProcessList(List<ModFilterToken> list)
+    public static bool ProcessList(List<ModFilterToken> list, TokenModifier modifier)
     {
         for (var i = 0; i < list.Count; ++i)
         {
@@ -52,14 +52,22 @@ public readonly struct ModFilterToken() : IFilterToken<ModFilterTokenType, ModFi
             if (entry.Type is not ModFilterTokenType.Category)
                 continue;
 
-            if (ChangedItemDrawer.TryParsePartial(entry.Needle, out var icon))
+            if (ChangedItemDrawer.TryParsePartial(entry.Needle.ToLowerInvariant(), out var icon))
+            {
                 list[i] = entry with
                 {
                     IconFlagFilter = icon,
                     Needle = string.Empty,
                 };
+            }
             else
+            {
                 list.RemoveAt(i--);
+                if (modifier is TokenModifier.Forced)
+                    return true;
+            }
         }
+
+        return false;
     }
 }
