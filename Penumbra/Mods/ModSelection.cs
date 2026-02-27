@@ -32,6 +32,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
         _modFileSystem.Selection.Changed += OnSelectionChanged;
+        SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
     }
 
     private void OnSelectionChanged()
