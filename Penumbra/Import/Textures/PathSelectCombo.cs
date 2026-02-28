@@ -7,7 +7,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.Import.Textures;
 
-public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBase<PathSelectCombo.PathData>
+public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBase<PathSelectCombo.PathData>(new PathFilter())
 {
     public bool Draw(Utf8StringHandler<LabelStringHandlerBuffer> label, Utf8StringHandler<TextStringHandlerBuffer> tooltip, string current,
         int skipPrefix, out string newPath)
@@ -25,7 +25,7 @@ public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBas
         return true;
     }
 
-    public record PathData(StringU8 Path, string SearchPath, bool IsOnPlayer, bool IsGame);
+    public readonly record struct PathData(StringU8 Path, string SearchPath, bool IsOnPlayer, bool IsGame);
     private int    _skipPrefix;
     private string _selected = string.Empty;
 
@@ -68,6 +68,12 @@ public abstract class PathSelectCombo(IDataManager dataManager) : FilterComboBas
 
     protected override bool IsSelected(PathData item, int globalIndex)
         => string.Equals(_selected, item.SearchPath, StringComparison.OrdinalIgnoreCase);
+
+    private sealed class PathFilter : RegexFilterBase<PathData>
+    {
+        protected override string ToFilterString(in PathData item, int globalIndex)
+            => item.SearchPath;
+    }
 }
 
 public sealed class TextureSelectCombo(ResourceTreeFactory resources, ModEditor editor, IDataManager dataManager) : PathSelectCombo(dataManager)
