@@ -91,7 +91,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
 
     private void UpdateSettings()
     {
-        if (Mod == null)
+        if (Mod is null)
         {
             Settings    = ModSettings.Empty;
             Collection  = ModCollection.Empty;
@@ -110,9 +110,6 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     {
         /// <seealso cref="UI.ModsTab.ModPanel.OnSelectionChange"/>
         ModPanel = 0,
-
-        /// <seealso cref="Editor.ModMerger.OnSelectionChange"/>
-        ModMerger = 0,
     }
 
     public readonly record struct Arguments(Mod? OldSelection, Mod? NewSelection);

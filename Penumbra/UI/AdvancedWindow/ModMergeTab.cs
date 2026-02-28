@@ -6,13 +6,14 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IUiService
+public sealed class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IConstructedService
 {
-    private string _newModName = string.Empty;
+    public readonly ModMerger ModMerger   = modMerger;
+    private         string    _newModName = string.Empty;
 
     public void Draw()
     {
-        if (modMerger.MergeFromMod == null)
+        if (ModMerger.MergeFromMod is null)
             return;
 
         using var tab = Im.TabBar.BeginItem("Merge Mods"u8);
@@ -41,7 +42,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
     {
         using var bigGroup     = Im.Group();
         var       minComboSize = 300 * Im.Style.GlobalScale;
-        var       textSize     = Im.Font.CalculateSize($"Merge {modMerger.MergeFromMod!.Name} into ").X;
+        var       textSize     = Im.Font.CalculateSize($"Merge {ModMerger.MergeFromMod!.Name} into ").X;
 
         Im.Cursor.FrameAlign();
 
@@ -52,11 +53,11 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
             if (size - textSize < minComboSize)
             {
                 Im.Text("selected mod"u8, ColorId.FolderLine.Value());
-                Im.Tooltip.OnHover(modMerger.MergeFromMod!.Name);
+                Im.Tooltip.OnHover(ModMerger.MergeFromMod!.Name);
             }
             else
             {
-                Im.Text(modMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
+                Im.Text(ModMerger.MergeFromMod!.Name, ColorId.FolderLine.Value());
             }
 
             Im.Line.NoSpacing();
@@ -68,15 +69,15 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
 
         using (Im.Group())
         {
-            using var disabled    = Im.Disabled(modMerger.MergeFromMod.HasOptions);
+            using var disabled    = Im.Disabled(ModMerger.MergeFromMod.HasOptions);
             var       buttonWidth = (size - Im.Style.ItemSpacing.X) / 2;
-            var       group       = modMerger.MergeToMod?.Groups.FirstOrDefault(g => g.Name == modMerger.OptionGroupName);
-            var color = group != null || modMerger.OptionGroupName.Length is 0 && modMerger.OptionName.Length is 0
+            var       group       = ModMerger.MergeToMod?.Groups.FirstOrDefault(g => g.Name == ModMerger.OptionGroupName);
+            var color = group is not null || ModMerger.OptionGroupName.Length is 0 && ModMerger.OptionName.Length is 0
                 ? Colors.PressEnterWarningBg
                 : LunaStyle.DiscordColor;
             using var style = ImStyleBorder.Frame.Push(color);
             Im.Item.SetNextWidth(buttonWidth);
-            Im.Input.Text("##optionGroupInput"u8, ref modMerger.OptionGroupName, "Target Option Group"u8);
+            Im.Input.Text("##optionGroupInput"u8, ref ModMerger.OptionGroupName, "Target Option Group"u8);
             Im.Tooltip.OnHover(
                 "The name of the new or existing option group to find or create the option in. Leave both group and option name blank for the default option.\n"u8
               + "A red border indicates an existing option group, a blue border indicates a new one."u8);
@@ -85,38 +86,38 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
 
             color = color == LunaStyle.DiscordColor
                 ? LunaStyle.DiscordColor
-                : group == null || group.Options.Any(o => o.Name == modMerger.OptionName)
+                : group is null || group.Options.Any(o => o.Name == ModMerger.OptionName)
                     ? Colors.PressEnterWarningBg
                     : LunaStyle.DiscordColor;
             style.Push(ImGuiColor.Border, color);
             Im.Item.SetNextWidth(buttonWidth);
-            Im.Input.Text("##optionInput"u8, ref modMerger.OptionName, "Target Option Name"u8);
+            Im.Input.Text("##optionInput"u8, ref ModMerger.OptionName, "Target Option Name"u8);
             Im.Tooltip.OnHover(
                 "The name of the new or existing option to merge this mod into. Leave both group and option name blank for the default option.\n"u8
               + "A red border indicates an existing option, a blue border indicates a new one."u8);
         }
 
-        if (modMerger.MergeFromMod.HasOptions)
+        if (ModMerger.MergeFromMod.HasOptions)
             Im.Tooltip.OnHover("You can only specify a target option if the source mod has no true options itself."u8,
                 HoveredFlags.AllowWhenDisabled);
 
         if (ImEx.Button("Merge"u8, new Vector2(size, 0),
-                modMerger.CanMerge ? StringU8.Empty : "Please select a target mod different from the current mod."u8, !modMerger.CanMerge))
-            modMerger.Merge();
+                ModMerger.CanMerge ? StringU8.Empty : "Please select a target mod different from the current mod."u8, !ModMerger.CanMerge))
+            ModMerger.Merge();
     }
 
     private void DrawMergeIntoDesc()
     {
-        Im.TextWrapped(modMerger.MergeFromMod!.HasOptions
+        Im.TextWrapped(ModMerger.MergeFromMod!.HasOptions
             ? "The currently selected mod has options.\n\nThis means, that all of those options will be merged into the target. If merging an option is not possible due to the redirections already existing in an existing option, it will revert all changes and break."u8
             : "The currently selected mod has no true options.\n\nThis means that you can select an existing or new option to merge all its changes into in the target mod. On failure to merge into an existing option, all changes will be reverted."u8);
     }
 
     private void DrawCombo(float width)
     {
-        if (combo.Draw("##ModSelection"u8, modMerger.MergeToMod?.Name ?? "Select the target Mod...", StringU8.Empty, width,
+        if (combo.Draw("##ModSelection"u8, ModMerger.MergeToMod?.Name ?? "Select the target Mod...", StringU8.Empty, width,
                 out var cacheMod))
-            modMerger.MergeToMod = cacheMod.Item;
+            ModMerger.MergeToMod = cacheMod.Item;
     }
 
     private void DrawSplitOff(float size)
@@ -125,26 +126,26 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
         Im.Item.SetNextWidth(size);
         Im.Input.Text("##newModInput"u8, ref _newModName, "New Mod Name..."u8);
         Im.Tooltip.OnHover("Choose a name for the newly created mod. This does not need to be unique."u8);
-        var tt = _newModName.Length == 0
+        var tt = _newModName.Length is 0
             ? "Please enter a name for the newly created mod first."u8
-            : modMerger.SelectedOptions.Count == 0
+            : ModMerger.SelectedOptions.Count is 0
                 ? "Please select at least one option to split off."u8
                 : StringU8.Empty;
         if (ImEx.Button(
-                $"Split Off {modMerger.SelectedOptions.Count} Option{(modMerger.SelectedOptions.Count > 1 ? "s" : string.Empty)}###SplitOff",
+                $"Split Off {ModMerger.SelectedOptions.Count} Option{(ModMerger.SelectedOptions.Count > 1 ? "s"u8 : StringU8.Empty)}###SplitOff",
                 new Vector2(size, 0), tt, tt.Length > 0))
-            modMerger.SplitIntoMod(_newModName);
+            ModMerger.SplitIntoMod(_newModName);
 
         Im.Dummy(Vector2.One);
         var buttonSize = new Vector2((size - 2 * Im.Style.ItemSpacing.X) / 3, 0);
         if (Im.Button("Select All"u8, buttonSize))
-            modMerger.SelectedOptions.UnionWith(modMerger.MergeFromMod!.AllDataContainers);
+            ModMerger.SelectedOptions.UnionWith(ModMerger.MergeFromMod!.AllDataContainers);
         Im.Line.Same();
         if (Im.Button("Unselect All"u8, buttonSize))
-            modMerger.SelectedOptions.Clear();
+            ModMerger.SelectedOptions.Clear();
         Im.Line.Same();
         if (Im.Button("Invert Selection"u8, buttonSize))
-            modMerger.SelectedOptions.SymmetricExceptWith(modMerger.MergeFromMod!.AllDataContainers);
+            ModMerger.SelectedOptions.SymmetricExceptWith(ModMerger.MergeFromMod!.AllDataContainers);
         DrawOptionTable(size);
     }
 
@@ -158,8 +159,8 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
 
     private void DrawOptionTable(float size)
     {
-        var options = modMerger.MergeFromMod!.AllDataContainers.ToList();
-        var height = modMerger.Warnings.Count == 0 && modMerger.Error == null
+        var options = ModMerger.MergeFromMod!.AllDataContainers.ToList();
+        var height = ModMerger.Warnings.Count is 0 && ModMerger.Error is null
             ? Im.ContentRegion.Available.Y - 3 * Im.Style.FrameHeightWithSpacing
             : 8 * Im.Style.FrameHeightWithSpacing;
         height = Math.Min(height, (options.Count + 1) * Im.Style.FrameHeightWithSpacing);
@@ -184,7 +185,7 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
         foreach (var (idx, option) in options.Index())
         {
             using var id       = Im.Id.Push(idx);
-            var       selected = modMerger.SelectedOptions.Contains(option);
+            var       selected = ModMerger.SelectedOptions.Contains(option);
 
             table.NextColumn();
             if (Im.Checkbox("##check"u8, ref selected))
@@ -226,38 +227,38 @@ public class ModMergeTab(ModMerger modMerger, ModComboWithoutCurrent combo) : IU
             void Handle(IModDataContainer option2, bool selected2)
             {
                 if (selected2)
-                    modMerger.SelectedOptions.Add(option2);
+                    ModMerger.SelectedOptions.Add(option2);
                 else
-                    modMerger.SelectedOptions.Remove(option2);
+                    ModMerger.SelectedOptions.Remove(option2);
             }
         }
     }
 
     private void DrawWarnings()
     {
-        if (modMerger.Warnings.Count == 0)
+        if (ModMerger.Warnings.Count is 0)
             return;
 
         Im.Separator();
         Im.Dummy(Vector2.One);
         using var color = ImGuiColor.Text.Push(Colors.TutorialBorder);
-        foreach (var warning in modMerger.Warnings.SkipLast(1))
+        foreach (var warning in ModMerger.Warnings.SkipLast(1))
         {
             Im.TextWrapped(warning);
             Im.Separator();
         }
 
-        Im.TextWrapped(modMerger.Warnings[^1]);
+        Im.TextWrapped(ModMerger.Warnings[^1]);
     }
 
     private void DrawError()
     {
-        if (modMerger.Error == null)
+        if (ModMerger.Error == null)
             return;
 
         Im.Separator();
         Im.Dummy(Vector2.One);
         using var color = ImGuiColor.Text.Push(Colors.RegexWarningBorder);
-        Im.TextWrapped($"{modMerger.Error}");
+        Im.TextWrapped($"{ModMerger.Error}");
     }
 }

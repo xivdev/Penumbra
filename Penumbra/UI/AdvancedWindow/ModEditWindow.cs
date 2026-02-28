@@ -103,6 +103,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
             _modelTab.Reset();
             _materialTab.Reset();
             _shaderPackageTab.Reset();
+            _modMergeTab.ModMerger.ResetMod();
             _pbdTab.Reset();
             _itemSwapTab.UpdateMod(mod, _activeCollections.Current.GetInheritedSettings(mod.Index).Settings);
             UpdateModels();
@@ -628,6 +629,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
         _modelTab.Dispose();
         _shaderPackageTab.Dispose();
         _textureEditor.Dispose();
+        _modMergeTab.ModMerger.Dispose();
     }
 
     private void OnModPathChange(in ModPathChanged.Arguments arguments)

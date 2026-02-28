@@ -23,6 +23,6 @@ public class ModEditorFactory(
         var swapEditor        = new ModSwapEditor(modManager);
         var mdlMaterialEditor = new MdlMaterialEditor(files);
 
-        return new(modNormalizer, metaEditor, files, fileEditor, duplicates, swapEditor, mdlMaterialEditor, compactor);
+        return new ModEditor(modNormalizer, metaEditor, files, fileEditor, duplicates, swapEditor, mdlMaterialEditor, compactor);
     }
 }

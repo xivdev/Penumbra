@@ -36,8 +36,8 @@ public class ModEditor(
         }
     }
 
-    private readonly object _lock = new();
-    private          Task?  _loadingMod;
+    private readonly Lock  _lock = new();
+    private          Task? _loadingMod;
 
     public Mod? Mod      { get; private set; }
     public int  GroupIdx { get; private set; }

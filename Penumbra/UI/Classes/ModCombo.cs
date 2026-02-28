@@ -20,7 +20,7 @@ public class ModCombo(ModStorage modStorage) : SimpleFilterCombo<Mod>(SimpleFilt
         => ModStorage;
 }
 
-public sealed class ModComboWithoutCurrent(ModStorage modStorage, ModMerger modMerger) : ModCombo(modStorage)
+public sealed class ModComboWithoutCurrent(ModStorage modStorage, ModMerger modMerger) : ModCombo(modStorage), IConstructedService
 {
     public override IEnumerable<Mod> GetBaseItems()
         => ModStorage.Where(m => m != modMerger.MergeFromMod);

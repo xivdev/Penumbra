@@ -26,7 +26,6 @@ public sealed class ModEditWindowFactory(
     ResourceTreeFactory resourceTreeFactory,
     MetaFileManager metaFileManager,
     ActiveCollections activeCollections,
-    ModMergeTab modMergeTab,
     CommunicatorService communicator,
     IDragDropManager dragDropManager,
     ResourceTreeViewerFactory resourceTreeViewerFactory,
@@ -37,13 +36,14 @@ public sealed class ModEditWindowFactory(
     ModelEditorFactory modelEditorFactory,
     ShaderPackageEditorFactory shaderPackageEditorFactory,
     DeformerEditorFactory deformerEditorFactory,
-    CombiningTextureEditorFactory textureEditorFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
+    CombiningTextureEditorFactory textureEditorFactory,
+    ModMergerFactory modMergerFactory) : WindowFactory<ModEditWindow>(log, windowSystem), IUiService
 {
     protected override ModEditWindow CreateWindow(int index)
     {
         var editor = editorFactory.Create();
         return new ModEditWindow(fileDialog, itemSwapTabFactory.Create(), gameData, config, editor, resourceTreeFactory, metaFileManager,
-            activeCollections, modMergeTab, communicator, dragDropManager, resourceTreeViewerFactory, framework,
+            activeCollections, modMergerFactory.CreateTab(editor), communicator, dragDropManager, resourceTreeViewerFactory, framework,
             CreateMetaDrawers(editor.MetaEditor), materialEditorFactory, modelEditorFactory, shaderPackageEditorFactory, deformerEditorFactory,
             textureEditorFactory, index);
     }
