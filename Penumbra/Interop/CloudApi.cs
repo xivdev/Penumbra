@@ -25,6 +25,11 @@ public static unsafe partial class CloudApi
             Penumbra.Log.Debug($"{nameof(CfGetSyncRootInfoByPath)} threw EntryPointNotFoundException");
             return false;
         }
+        catch (SEHException e)
+        {
+            Penumbra.Log.Debug($"{nameof(CfGetSyncRootInfoByPath)} threw SEHException:\n{e}");
+            return false;
+        }
 
         Penumbra.Log.Debug($"{nameof(CfGetSyncRootInfoByPath)} returned HRESULT 0x{hr:X8}");
         if (hr < 0)
