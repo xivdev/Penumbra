@@ -227,10 +227,12 @@ public class Penumbra : IDalamudPlugin
         var exists      = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
         var cloudSynced = exists && CloudApi.IsCloudSynced(_config.ModDirectory);
         var hdrEnabler  = _services.GetService<RenderTargetHdrEnabler>();
+        var pi          = _services.GetService<IDalamudPluginInterface>();
         var drive       = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
         sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
+        sb.Append($"> **`Load Reason:                 `** {pi.Reason} at {pi.LoadTimeUTC:g} ({pi.LoadTimeDelta:g})\n");
         sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
         sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsWine() ? "Mac/Linux (Wine)" : "Windows")}\n");

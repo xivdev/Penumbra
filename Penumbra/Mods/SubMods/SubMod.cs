@@ -49,23 +49,23 @@ public static class SubMod
         data.Manipulations.Clear();
 
         var files = (JObject?)json[nameof(data.Files)];
-        if (files != null)
+        if (files is not null)
             foreach (var property in files.Properties())
             {
-                if (Utf8GamePath.FromString(property.Name, out var p))
+                if (Utf8GamePath.FromString(property.Name, out var p) && !p.IsEmpty)
                     data.Files.TryAdd(p, new FullPath(basePath, property.Value.ToObject<Utf8RelPath>()));
             }
 
         var swaps = (JObject?)json[nameof(data.FileSwaps)];
-        if (swaps != null)
+        if (swaps is not null)
             foreach (var property in swaps.Properties())
             {
-                if (Utf8GamePath.FromString(property.Name, out var p))
+                if (Utf8GamePath.FromString(property.Name, out var p) && !p.IsEmpty)
                     data.FileSwaps.TryAdd(p, new FullPath(property.Value.ToObject<string>()!));
             }
 
         var manips = json[nameof(data.Manipulations)]?.ToObject<MetaDictionary>();
-        if (manips != null)
+        if (manips is not null)
             data.Manipulations.UnionWith(manips);
     }
 
