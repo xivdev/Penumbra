@@ -511,7 +511,11 @@ public class ItemSwapTab : IDisposable, ITab
         }
 
         table.NextColumn();
-        _dirty |= selector.Draw("##itemSource"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
+        using (Im.Id.Push((int)_slotFrom))
+        {
+            _dirty |= selector.Draw("##itemSource"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale,
+                out _);
+        }
 
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
         table.DrawFrameColumn($"and put {article2} on {article1}");
@@ -532,7 +536,12 @@ public class ItemSwapTab : IDisposable, ITab
         }
 
         table.NextColumn();
-        _dirty |= selector.Draw("##itemTarget"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale, out _);
+        using (Im.Id.Push((int)_slotTo))
+        {
+            _dirty |= selector.Draw("##itemTarget"u8, selector.CurrentSelection.Name, StringU8.Empty, InputWidth * 2 * Im.Style.GlobalScale,
+                out _);
+        }
+
         if (_affectedItems is not { Count: > 1 })
             return;
 
