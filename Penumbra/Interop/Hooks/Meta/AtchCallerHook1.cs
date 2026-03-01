@@ -8,7 +8,7 @@ namespace Penumbra.Interop.Hooks.Meta;
 
 public sealed unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>
 {
-    public delegate void Delegate(DrawObjectData* data, uint slot, nint unk, Model playerModel);
+    public delegate byte Delegate(DrawObjectData* data, uint slot, nint unk, Model playerModel);
 
     private readonly CollectionResolver _collectionResolver;
     private readonly MetaState          _metaState;
@@ -23,16 +23,17 @@ public sealed unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>
             _metaState.Config.ModsEnabled += Set;
     }
 
-    private void Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel)
+    private byte Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel)
     {
         var collection = playerModel.Valid
             ? _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true)
             : _collectionResolver.DefaultCollection;
         _metaState.AtchCollection.Push(collection);
-        Task.Result.Original(data, slot, unk, playerModel);
+        var ret = Task.Result.Original(data, slot, unk, playerModel);
         _metaState.AtchCollection.Pop();
         Penumbra.Log.Excessive(
-            $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
+            $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X} -> {ret}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
+        return ret;
     }
 
     public override void Dispose()
