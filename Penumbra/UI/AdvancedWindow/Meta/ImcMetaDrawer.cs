@@ -210,9 +210,9 @@ public sealed class ImcMetaDrawer(ModMetaEditor editor, MetaFileManager metaFile
         {
             case ObjectType.Equipment:
             case ObjectType.DemiHuman:
-                ret = Combos.EqpEquipSlot.Draw("##slot"u8, identifier.EquipSlot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out slot);
+                ret = Combos.EqpEquipSlot.Draw("##slotE"u8, identifier.EquipSlot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out slot);
                 break;
-            case ObjectType.Accessory: ret = Combos.AccessorySlot.Draw("##slot"u8, identifier.EquipSlot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out slot); break;
+            case ObjectType.Accessory: ret = Combos.AccessorySlot.Draw("##slotA"u8, identifier.EquipSlot, "Equip Slot"u8, unscaledWidth * Im.Style.GlobalScale, out slot); break;
             default:                   return false;
         }
 
