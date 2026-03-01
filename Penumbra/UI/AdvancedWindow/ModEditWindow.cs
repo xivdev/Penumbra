@@ -202,7 +202,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
 
     public override void Draw()
     {
-        if (Mod is not null && _config.Ephemeral.AdvancedEditingOpenForModPaths.Add(Mod.Identifier))
+        if (_config.Ephemeral.AdvancedEditingOpenForModPaths.Add(Mod!.Identifier))
             _config.Ephemeral.Save();
 
         if (IsLoading)
@@ -216,6 +216,7 @@ public sealed partial class ModEditWindow : IndexedWindow, IDisposable
             return;
         }
 
+        using var id     = Im.Id.Push(Mod!.Identifier);
         using var tabBar = Im.TabBar.Begin("##tabs"u8);
         if (!tabBar)
             return;
