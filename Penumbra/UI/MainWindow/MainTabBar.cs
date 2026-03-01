@@ -46,7 +46,7 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
     {
         NextTab = arguments.Tab;
         if (arguments.Mod?.Node is { } node)
-            _modFileSystem.Selection.Select(node);
+            _modFileSystem.Selection.Select(node, true);
     }
 
     public void Dispose()

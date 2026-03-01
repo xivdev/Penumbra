@@ -49,7 +49,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         if (mod is null)
             _modFileSystem.Selection.UnselectAll();
         else if (mod.Node is { } node)
-            _modFileSystem.Selection.Select(node);
+            _modFileSystem.Selection.Select(node, true);
     }
 
     private void SelectModInternal(Mod? mod)
