@@ -360,4 +360,7 @@ public sealed class ModFilter : TokenizedFilter<ModFilterTokenType, ModFileSyste
 
         return false;
     }
+
+    public override bool IsEmpty
+        => base.IsEmpty && _stateFilter is ModTypeFilterExtensions.UnfilteredStateMods;
 }
