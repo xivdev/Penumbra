@@ -43,7 +43,7 @@ public class DescriptionEditPopup(ModManager modManager) : Luna.IUiService
 
     public void Draw()
     {
-        if (_current == null)
+        if (_current is null)
             return;
 
         if (_opened)

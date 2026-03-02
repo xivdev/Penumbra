@@ -17,9 +17,9 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
 
-    public ModFileSystemDrawer(ModFileSystem fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config,
+    public ModFileSystemDrawer(Services.MessageService messager, ModFileSystem fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config,
         ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator)
-        : base(fileSystem, new ModFilter(modManager, collectionManager.Active, config))
+        : base(messager, fileSystem, new ModFilter(modManager, collectionManager.Active, config))
     {
         ModManager        = modManager;
         CollectionManager = collectionManager;
