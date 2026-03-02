@@ -1,66 +1,46 @@
+using ImSharp;
+using Penumbra.Api.Enums;
 using Penumbra.Mods;
 
 namespace Penumbra.Api;
 
-public sealed class ModAdapter(Mod mod) : IReadOnlyDictionary<string, object?>, IDisposable
+public sealed class ModAdapter(Mod mod) : IReadOnlyList<object?>, IDisposable
 {
     private readonly WeakReference<Mod> _mod = new(mod);
 
-    bool IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value)
-    {
-        (var ret, value) = key switch
+    object? IReadOnlyList<object?>.this[int index]
+        => index switch
         {
-            nameof(Mod.ModPath)          => (true, Mod.ModPath),
-            nameof(Mod.Index)            => (true, Mod.Index),
-            nameof(Mod.Name)             => (true, Mod.Name),
-            nameof(Mod.Identifier)       => (true, Mod.Identifier),
-            nameof(Mod.Author)           => (true, Mod.Author),
-            nameof(Mod.Description)      => (true, Mod.Description),
-            nameof(Mod.Version)          => (true, Mod.Version),
-            nameof(Mod.Website)          => (true, Mod.Website),
-            nameof(Mod.Image)            => (true, Mod.Image),
-            nameof(Mod.ModTags)          => (true, Mod.ModTags),
-            nameof(Mod.RequiredFeatures) => (true, (ulong)Mod.RequiredFeatures),
-            nameof(Mod.Path.SortName)    => (true, Mod.Path.SortName),
-            nameof(Mod.Path.Folder)      => (true, Mod.Path.Folder),
-            "FullPath"                   => (true, Mod.Path.CurrentPath),
-            nameof(Mod.ImportDate)       => (true, DateTimeOffset.FromUnixTimeMilliseconds(Mod.ImportDate)),
-            nameof(Mod.LastConfigEdit)   => (true, DateTimeOffset.FromUnixTimeMilliseconds(Mod.LastConfigEdit)),
-            nameof(Mod.LocalTags)        => (true, Mod.LocalTags),
-            nameof(Mod.Favorite)         => (true, Mod.Favorite),
-            _                            => (false, (object?)null),
+            (int)ModProperty.ModPath          => Mod.ModPath,
+            (int)ModProperty.Index            => Mod.Index,
+            (int)ModProperty.Name             => Mod.Name,
+            (int)ModProperty.Identifier       => Mod.Identifier,
+            (int)ModProperty.Author           => Mod.Author,
+            (int)ModProperty.Description      => Mod.Description,
+            (int)ModProperty.Version          => Mod.Version,
+            (int)ModProperty.Website          => Mod.Website,
+            (int)ModProperty.Image            => Mod.Image,
+            (int)ModProperty.ModTags          => Mod.ModTags,
+            (int)ModProperty.RequiredFeatures => (ulong)Mod.RequiredFeatures,
+            (int)ModProperty.SortName         => Mod.Path.SortName,
+            (int)ModProperty.Folder           => Mod.Path.Folder,
+            (int)ModProperty.FullPath         => Mod.Path.CurrentPath,
+            (int)ModProperty.ImportDate       => DateTimeOffset.FromUnixTimeMilliseconds(Mod.ImportDate),
+            (int)ModProperty.LastConfigEdit   => DateTimeOffset.FromUnixTimeMilliseconds(Mod.LastConfigEdit),
+            (int)ModProperty.LocalTags        => Mod.LocalTags,
+            (int)ModProperty.Favorite         => Mod.Favorite,
+            _                                 => throw new ArgumentOutOfRangeException($"Invalid ModProperty {index}."),
         };
-        return ret;
-    }
 
-    object? IReadOnlyDictionary<string, object?>.this[string key]
-        => ((IReadOnlyDictionary<string, object?>)this).TryGetValue(key, out var v)
-            ? v
-            : throw new ArgumentOutOfRangeException($"The key {key} is not a valid property of a Mod.");
 
-    bool IReadOnlyDictionary<string, object?>.ContainsKey(string key)
-        => throw new NotImplementedException(
-            "Mods only implement IReadOnlyDictionary for IPC and only TryGetValue and the []-accessor are supported.");
-
-    IEnumerable<string> IReadOnlyDictionary<string, object?>.Keys
-        => throw new NotImplementedException(
-            "Mods only implement IReadOnlyDictionary for IPC and only TryGetValue and the []-accessor are supported.");
-
-    IEnumerable<object?> IReadOnlyDictionary<string, object?>.Values
-        => throw new NotImplementedException(
-            "Mods only implement IReadOnlyDictionary for IPC and only TryGetValue and the []-accessor are supported.");
-
-    IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator()
-        => throw new NotImplementedException(
-            "Mods only implement IReadOnlyDictionary for IPC and only TryGetValue and the []-accessor are supported.");
+    IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
+        => ModProperty.Values.Select(i => ((IReadOnlyList<object?>)this)[(int)i]).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
-        => throw new NotImplementedException(
-            "Mods only implement IReadOnlyDictionary for IPC and only TryGetValue and the []-accessor are supported.");
+        => ((IEnumerable<object?>)this).GetEnumerator();
 
-    int IReadOnlyCollection<KeyValuePair<string, object?>>.Count
-        => throw new NotImplementedException(
-            "Mods only implement IReadOnlyDictionary for IPC and only TryGetValue and the []-accessor are supported.");
+    int IReadOnlyCollection<object?>.Count
+        => ModProperty.Values.Count;
 
     private Mod Mod
     {
