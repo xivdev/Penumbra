@@ -41,7 +41,7 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
 
         OpenEventWriter();
         LaunchCrashHandler();
-        if (_eventWriter != null)
+        if (_eventWriter is not null)
             Subscribe();
     }
 
@@ -49,7 +49,7 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
     {
         CloseEventWriter();
         _eventWriter?.Dispose();
-        if (_child != null)
+        if (_child is not null)
         {
             _child.Kill();
             Penumbra.Log.Debug($"Killed crash handler child process {_child.Id}.");
@@ -126,7 +126,7 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
 
     public void CloseCrashHandler()
     {
-        if (_child == null)
+        if (_child is null)
             return;
 
         try
@@ -160,7 +160,7 @@ public sealed class CrashHandlerService : IDisposable, Luna.IService
             info.ArgumentList.Add($"{_validityChecker.Version} ({_validityChecker.CommitHash})");
             info.ArgumentList.Add(_validityChecker.GameVersion);
             _child = Process.Start(info);
-            if (_child == null)
+            if (_child is null)
                 throw new Exception("Child Process could not be created.");
 
             Penumbra.Log.Information($"Opened Crash Handler at {CopiedExe}, PID {_child.Id}.");
