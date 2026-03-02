@@ -36,6 +36,7 @@ public class ModPanel : IDisposable, IPanel
             return;
         }
 
+        using var id = Im.Id.Push(_selection.ModName);
         if (_resetCursor)
         {
             _resetCursor = false;

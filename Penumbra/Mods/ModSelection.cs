@@ -1,3 +1,4 @@
+using ImSharp;
 using Luna;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -38,6 +39,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     private void OnSelectionChanged()
         => SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
 
+    public StringU8              ModName           { get; private set; } = StringU8.Empty;
     public ModSettings           Settings          { get; private set; } = ModSettings.Empty;
     public ModCollection         Collection        { get; private set; } = ModCollection.Empty;
     public Mod?                  Mod               { get; private set; }
@@ -93,12 +95,14 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     {
         if (Mod is null)
         {
+            ModName     = StringU8.Empty;
             Settings    = ModSettings.Empty;
             Collection  = ModCollection.Empty;
             OwnSettings = null;
         }
         else
         {
+            ModName                    = new StringU8(Mod.Name);
             (var settings, Collection) = _collections.Current.GetActualSettings(Mod.Index);
             OwnSettings                = _collections.Current.GetOwnSettings(Mod.Index);
             TemporarySettings          = _collections.Current.GetTempSettings(Mod.Index);
