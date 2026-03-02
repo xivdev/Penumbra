@@ -14,6 +14,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
     private string                      _modName        = string.Empty;
     private string                      _pathInput      = string.Empty;
     private string                      _newInstallPath = string.Empty;
+    private int                         _index          = 0;
     private PenumbraApiEc               _lastReloadEc;
     private PenumbraApiEc               _lastAddEc;
     private PenumbraApiEc               _lastDeleteEc;
@@ -33,6 +34,8 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
     private DateTimeOffset _lastMovedModTime   = DateTimeOffset.UnixEpoch;
     private string         _lastMovedModFrom   = string.Empty;
     private string         _lastMovedModTo     = string.Empty;
+
+    private ModListWrapper? _modAdapter;
 
     public ModsIpcTester(IDalamudPluginInterface pi)
     {
@@ -60,6 +63,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
 
     public void Dispose()
     {
+        _modAdapter?.Dispose();
         DeleteSubscriber.Dispose();
         DeleteSubscriber.Disable();
         AddSubscriber.Dispose();
@@ -78,6 +82,7 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
         Im.Input.Text("##modDir"u8,  ref _modDirectory,   "Mod Directory Name..."u8);
         Im.Input.Text("##modName"u8, ref _modName,        "Mod Name..."u8);
         Im.Input.Text("##path"u8,    ref _pathInput,      "New Path..."u8);
+        Im.Input.Scalar("##index"u8, ref _index);
         using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
@@ -92,6 +97,41 @@ public class ModsIpcTester : Luna.IUiService, IDisposable
                 Im.Popup.Open("Mods"u8);
             }
         }
+
+        using (IpcTester.DrawIntro(GetModListAdapter.LabelU8, "Mod List Adapter"u8))
+        {
+            table.NextColumn();
+            if (Im.SmallButton("Get##ModAdapter"u8))
+                _modAdapter = new GetModListAdapter(_pi).Invoke();
+            if (_modAdapter is not null)
+            {
+                Im.Line.Same();
+                try
+                {
+                    var count = _modAdapter.Value.Count;
+                    Im.Text($"{count} Mods");
+                }
+                catch
+                {
+                    Im.Text("Invalid"u8);
+                }
+            }
+        }
+
+        if (_modAdapter is not null)
+            using (IpcTester.DrawIntro($"Mod {_index}", "Mod Adapter"u8))
+            {
+                table.NextColumn();
+                try
+                {
+                    using var adapter = _modAdapter.Value[_index];
+                    Im.Text($"{adapter.Name} ({adapter.Identifier})");
+                }
+                catch
+                {
+                    Im.Text("Invalid"u8);
+                }
+            }
 
         using (IpcTester.DrawIntro(ReloadMod.LabelU8, "Reload Mod"u8))
         {

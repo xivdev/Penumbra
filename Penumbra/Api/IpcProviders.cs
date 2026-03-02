@@ -47,6 +47,7 @@ public sealed class IpcProviders : IDisposable, IApiService, IRequiredService
             IpcSubscribers.GetMetaManipulations.Provider(pi, api.Meta),
 
             IpcSubscribers.GetModList.Provider(pi, api.Mods),
+            IpcSubscribers.GetModListAdapter.Provider(pi, api.Mods),
             IpcSubscribers.InstallMod.Provider(pi, api.Mods),
             IpcSubscribers.ReloadMod.Provider(pi, api.Mods),
             IpcSubscribers.AddMod.Provider(pi, api.Mods),
