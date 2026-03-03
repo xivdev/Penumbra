@@ -41,8 +41,6 @@ public class ResourceTab(Configuration config, ResourceManagerService resourceMa
         ImGui.NewLine();
         unsafe
         {
-            ImGui.TextUnformatted(
-                $"Static Address: 0x{(ulong)resourceManager.ResourceManagerAddress:X} (+0x{(ulong)resourceManager.ResourceManagerAddress - (ulong)sigScanner.Module.BaseAddress:X})");
             ImGui.TextUnformatted($"Actual Address: 0x{(ulong)resourceManager.ResourceManager:X}");
         }
     }
