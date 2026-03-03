@@ -1,23 +1,17 @@
-using Dalamud.Plugin.Services;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
 using OtterGui.Services;
 using Penumbra.Api.Enums;
-using Penumbra.GameData;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
 
 public unsafe class ResourceManagerService : IRequiredService
 {
-    public ResourceManagerService(IGameInteropProvider interop)
-        => interop.InitializeFromAttributes(this);
-
     /// <summary> The SE Resource Manager as pointer. </summary>
     public ResourceManager* ResourceManager
-        => *ResourceManagerAddress;
+        => global::FFXIVClientStructs.FFXIV.Client.System.Resource.ResourceManager.Instance();
 
     /// <summary> Find a resource in the resource manager by its category, extension and crc-hash. </summary>
     public ResourceHandle* FindResource(ResourceCategory cat, ResourceType ext, uint crc32)
@@ -69,10 +63,6 @@ public unsafe class ResourceManagerService : IRequiredService
             => IterateExtMap(extMap, (_, resourceMap)
                 => IterateResourceMap(resourceMap, action)));
     }
-
-    /// <summary> A static pointer to the SE Resource Manager. </summary>
-    [Signature(Sigs.ResourceManager, ScanType = ScanType.StaticAddress)]
-    internal readonly ResourceManager** ResourceManagerAddress = null;
 
     // Find a key in a StdMap.
     private static TValue* FindInMap<TKey, TValue>(StdMap<TKey, TValue>* map, in TKey key)
