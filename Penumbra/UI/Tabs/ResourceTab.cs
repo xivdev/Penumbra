@@ -1,5 +1,4 @@
 using Dalamud.Bindings.ImGui;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
@@ -13,7 +12,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Tabs;
 
-public class ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
+public class ResourceTab(Configuration config, ResourceManagerService resourceManager)
     : ITab, IUiService
 {
     public ReadOnlySpan<byte> Label
