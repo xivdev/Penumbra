@@ -9,7 +9,7 @@ namespace Penumbra.Meta.Manipulations;
 public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attribute) : IMetaIdentifier
 {
     public void AddChangedItems(ObjectIdentification identifier, IDictionary<string, IIdentifiedObjectData> changedItems)
-        => changedItems.UpdateCountOrSet($"{SubRace.ToName()} {Attribute.ToFullString()}", () => new IdentifiedName());
+        => changedItems.UpdateCountOrSet($"{SubRace.ToName()} {Attribute.ToName()}", () => new IdentifiedName());
 
     public MetaIndex FileIndex()
         => MetaIndex.HumanCmp;
@@ -42,7 +42,7 @@ public readonly record struct RspIdentifier(SubRace SubRace, RspAttribute Attrib
         => MetaManipulationType.Rsp;
 
     public override string ToString()
-        => $"RSP - {SubRace.ToName()} - {Attribute.ToFullString()}";
+        => $"RSP - {SubRace.ToName()} - {Attribute.ToName()}";
 }
 
 [JsonConverter(typeof(Converter))]

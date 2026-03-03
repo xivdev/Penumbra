@@ -1,5 +1,3 @@
-using OtterGui.Services;
-
 namespace Penumbra.Api.Api;
 
 public class PenumbraApi(
@@ -14,10 +12,10 @@ public class PenumbraApi(
     ResolveApi resolve,
     ResourceTreeApi resourceTree,
     TemporaryApi temporary,
-    UiApi ui) : IDisposable, IApiService, IPenumbraApi
+    UiApi ui) : IDisposable, Luna.IApiService, IPenumbraApi
 {
     public const int BreakingVersion = 5;
-    public const int FeatureVersion  = 13;
+    public const int FeatureVersion  = 15;
 
     public void Dispose()
     {

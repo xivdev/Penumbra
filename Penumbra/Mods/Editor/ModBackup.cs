@@ -1,5 +1,6 @@
-using OtterGui.Tasks;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Mods.Editor;
 
@@ -11,15 +12,17 @@ public class ModBackup
 
     public static bool CreatingBackup { get; private set; }
 
-    private readonly Mod    _mod;
-    public readonly  string Name;
-    public readonly  bool   Exists;
+    private readonly ModExportManager _modExport;
+    private readonly Mod              _mod;
+    public readonly  string           Name;
+    public readonly  bool             Exists;
 
     public ModBackup(ModExportManager modExportManager, Mod mod)
     {
-        _mod   = mod;
-        Name   = Path.Combine(modExportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
-        Exists = File.Exists(Name);
+        _modExport = modExportManager;
+        _mod       = mod;
+        Name       = Path.Combine(modExportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
+        Exists     = File.Exists(Name);
     }
 
     /// <summary> Migrate file extensions. </summary>
@@ -71,13 +74,13 @@ public class ModBackup
     }
 
     /// <summary> Create a backup zip without blocking the main thread. </summary>
-    public async void CreateAsync()
+    public async Task CreateAsync()
     {
         if (CreatingBackup)
             return;
 
         CreatingBackup = true;
-        await AsyncTask.Run(Create);
+        await Task.Run(Create);
         CreatingBackup = false;
     }
 
@@ -87,7 +90,8 @@ public class ModBackup
         try
         {
             Delete();
-            ZipFile.CreateFromDirectory(_mod.ModPath.FullName, Name, CompressionLevel.Optimal, false);
+            _modExport.IgnoreExportedFile(Name);
+            ArchiveUtility.CreateFromDirectory(_mod.ModPath.FullName, Name);
             Penumbra.Log.Debug($"Created export file {Name} from {_mod.ModPath.FullName}.");
         }
         catch (Exception e)
@@ -127,7 +131,8 @@ public class ModBackup
                 Penumbra.Log.Debug($"Deleted mod folder {_mod.ModPath.FullName}.");
             }
 
-            ZipFile.ExtractToDirectory(Name, _mod.ModPath.FullName);
+
+            ArchiveUtility.ExtractToDirectory(Name, _mod.ModPath.FullName);
             Penumbra.Log.Debug($"Extracted exported file {Name} to {_mod.ModPath.FullName}.");
             modManager.ReloadMod(_mod);
         }

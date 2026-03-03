@@ -1,58 +1,53 @@
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility;
-using OtterGui.Raii;
-using OtterGui;
-using OtterGui.Services;
-using OtterGui.Widgets;
+using ImSharp;
+using Luna;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelDescriptionTab(
-    ModFileSystemSelector selector,
+    ModSelection selection,
     TutorialService tutorial,
     ModManager modManager,
     PredefinedTagManager predefinedTagsConfig)
-    : ITab, IUiService
+    : ITab<ModPanelTab>
 {
-    private readonly TagButtons _localTags = new();
-    private readonly TagButtons _modTags   = new();
-
     public ReadOnlySpan<byte> Label
         => "Description"u8;
 
+    public ModPanelTab Identifier
+        => ModPanelTab.Description;
+
     public void DrawContent()
     {
-        using var child = ImRaii.Child("##description");
+        using var child = Im.Child.Begin("##description"u8);
         if (!child)
             return;
 
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
-
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
+        Im.ScaledDummy(2, 2);
+        Im.ScaledDummy(2, 2);
         var (predefinedTagsEnabled, predefinedTagButtonOffset) = predefinedTagsConfig.Enabled
-            ? (true, ImGui.GetFrameHeight() + ImGui.GetStyle().WindowPadding.X + (ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0))
+            ? (true, Im.Style.FrameHeight + Im.Style.WindowPadding.X + (Im.Scroll.MaximumY > 0 ? Im.Style.ScrollbarSize : 0))
             : (false, 0);
-        var tagIdx = _localTags.Draw("Local Tags: ",
-            "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
-          + "If the mod already contains a local tag in its own tags, the local tag will be ignored.", selector.Selected!.LocalTags,
+        var tagIdx = TagButtons.Draw("Local Tags: "u8,
+            "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"u8
+          + "If the mod already contains a local tag in its own tags, the local tag will be ignored."u8, selection.Mod!.LocalTags,
             out var editedTag, rightEndOffset: predefinedTagButtonOffset);
         tutorial.OpenTutorial(BasicTutorialSteps.Tags);
         if (tagIdx >= 0)
-            modManager.DataEditor.ChangeLocalTag(selector.Selected!, tagIdx, editedTag);
+            modManager.DataEditor.ChangeLocalTag(selection.Mod!, tagIdx, editedTag);
 
         if (predefinedTagsEnabled)
-            predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selector.Selected!.LocalTags, selector.Selected!.ModTags, true,
-                selector.Selected!);
+            predefinedTagsConfig.DrawAddFromSharedTagsAndUpdateTags(selection.Mod, true);
 
-        if (selector.Selected!.ModTags.Count > 0)
-            _modTags.Draw("Mod Tags: ", "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod.",
-                selector.Selected!.ModTags, out _, false,
-                ImGui.CalcTextSize("Local ").X - ImGui.CalcTextSize("Mod ").X);
+        if (selection.Mod!.ModTags.Count > 0)
+            TagButtons.Draw("Mod Tags: "u8, "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod."u8,
+                selection.Mod!.ModTags, out _, false, Im.Font.CalculateSize("Local "u8).X - Im.Font.CalculateSize("Mod "u8).X);
 
-        ImGui.Dummy(ImGuiHelpers.ScaledVector2(2));
-        ImGui.Separator();
+        Im.ScaledDummy(2, 2);
+        Im.Separator();
 
-        ImGuiUtil.TextWrapped(selector.Selected!.Description);
+        Im.TextWrapped(selection.Mod!.Description);
     }
 }

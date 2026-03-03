@@ -1,13 +1,10 @@
 using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Bindings.ImGui;
-using OtterGui.Custom;
-using Penumbra.Collections;
+using ImSharp;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Gui;
-using Penumbra.GameData.Structs;
 using Penumbra.Services;
 
 namespace Penumbra.UI.CollectionTab;
@@ -17,6 +14,13 @@ public class IndividualAssignmentUi : IDisposable
     private readonly CommunicatorService _communicator;
     private readonly ActorManager        _actors;
     private readonly CollectionManager   _collectionManager;
+
+    private readonly ObjectKindCombo _objectKindCombo = new(
+        ObjectKind.BattleNpc,
+        ObjectKind.EventNpc,
+        ObjectKind.Companion,
+        ObjectKind.MountType,
+        ObjectKind.Ornament);
 
     private WorldCombo _worldCombo     = null!;
     private NpcCombo   _mountCombo     = null!;
@@ -61,7 +65,7 @@ public class IndividualAssignmentUi : IDisposable
 
     public void DrawObjectKindCombo(float width)
     {
-        if (_ready && IndividualHelpers.DrawObjectKindCombo(width, _newKind, out _newKind, ObjectKinds))
+        if (_ready && _objectKindCombo.Draw("##objectKind"u8, ref _newKind, StringU8.Empty, width))
             UpdateIdentifiersInternal();
     }
 
@@ -70,8 +74,8 @@ public class IndividualAssignmentUi : IDisposable
         if (!_ready)
             return;
 
-        ImGui.SetNextItemWidth(width);
-        if (ImGui.InputTextWithHint("##NewCharacter", "Character Name...", ref _newCharacterName, 32))
+        Im.Item.SetNextWidth(width);
+        if (Im.Input.Text("##NewCharacter"u8, ref _newCharacterName, "Character Name..."u8))
             UpdateIdentifiersInternal();
     }
 
@@ -103,15 +107,6 @@ public class IndividualAssignmentUi : IDisposable
     private const string AlreadyAssigned           = "The Individual you specified has already been assigned a collection.";
     private const string NewNpcTooltipEmpty        = "Please select a valid NPC from the drop down menu first.";
 
-    private static readonly IReadOnlyList<ObjectKind> ObjectKinds = new[]
-    {
-        ObjectKind.BattleNpc,
-        ObjectKind.EventNpc,
-        ObjectKind.Companion,
-        ObjectKind.MountType,
-        ObjectKind.Ornament,
-    };
-
     private NpcCombo GetNpcCombo(ObjectKind kind)
         => kind switch
         {
@@ -126,18 +121,18 @@ public class IndividualAssignmentUi : IDisposable
     /// <summary> Create combos when ready. </summary>
     private void SetupCombos()
     {
-        _worldCombo     = new WorldCombo(_actors.Data.Worlds, Penumbra.Log);
-        _mountCombo     = new NpcCombo("##mountCombo",     _actors.Data.Mounts,     Penumbra.Log);
-        _companionCombo = new NpcCombo("##companionCombo", _actors.Data.Companions, Penumbra.Log);
-        _ornamentCombo  = new NpcCombo("##ornamentCombo",  _actors.Data.Ornaments,  Penumbra.Log);
-        _bnpcCombo      = new NpcCombo("##bnpcCombo",      _actors.Data.BNpcs,      Penumbra.Log);
-        _enpcCombo      = new NpcCombo("##enpcCombo",      _actors.Data.ENpcs,      Penumbra.Log);
+        _worldCombo     = new WorldCombo(_actors.Data.Worlds);
+        _mountCombo     = new NpcCombo(new StringU8("##mounts"u8),     _actors.Data.Mounts);
+        _companionCombo = new NpcCombo(new StringU8("##companions"u8), _actors.Data.Companions);
+        _ornamentCombo  = new NpcCombo(new StringU8("##ornaments"u8),  _actors.Data.Ornaments);
+        _bnpcCombo      = new NpcCombo(new StringU8("##bnpc"u8),       _actors.Data.BNpcs);
+        _enpcCombo      = new NpcCombo(new StringU8("##enpc"u8),       _actors.Data.ENpcs);
         _ready          = true;
     }
 
-    private void UpdateIdentifiers(CollectionType type, ModCollection? _1, ModCollection? _2, string _3)
+    private void UpdateIdentifiers(in CollectionChange.Arguments arguments)
     {
-        if (type == CollectionType.Individual)
+        if (arguments.Type is CollectionType.Individual)
             UpdateIdentifiersInternal();
     }
 
@@ -145,7 +140,7 @@ public class IndividualAssignmentUi : IDisposable
     {
         var combo = GetNpcCombo(_newKind);
         PlayerTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Player, _newCharacterName,
-                _worldCombo.CurrentSelection.Key, ObjectKind.None, [], out _playerIdentifiers) switch
+                _worldCombo.Selected.Key, ObjectKind.None, [], out _playerIdentifiers) switch
             {
                 _ when _newCharacterName.Length == 0       => NewPlayerTooltipEmpty,
                 IndividualCollections.AddResult.Invalid    => NewPlayerTooltipInvalid,
@@ -161,17 +156,17 @@ public class IndividualAssignmentUi : IDisposable
                     IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                     _                                          => string.Empty,
                 };
-        if (combo.CurrentSelection.Ids != null)
+        if (combo.Selected.Ids.Length > 0)
         {
             NpcTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Npc, string.Empty, ushort.MaxValue, _newKind,
-                    combo.CurrentSelection.Ids, out _npcIdentifiers) switch
+                    combo.Selected.Ids, out _npcIdentifiers) switch
                 {
                     IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                     _                                          => string.Empty,
                 };
             OwnedTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Owned, _newCharacterName,
-                    _worldCombo.CurrentSelection.Key, _newKind,
-                    combo.CurrentSelection.Ids, out _ownedIdentifiers) switch
+                    _worldCombo.Selected.Key, _newKind,
+                    combo.Selected.Ids, out _ownedIdentifiers) switch
                 {
                     _ when _newCharacterName.Length == 0       => NewPlayerTooltipEmpty,
                     IndividualCollections.AddResult.Invalid    => NewPlayerTooltipInvalid,

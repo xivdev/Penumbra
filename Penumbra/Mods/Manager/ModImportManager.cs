@@ -1,13 +1,19 @@
 using Dalamud.Interface.ImGuiNotification;
-using OtterGui.Classes;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Import;
+using Penumbra.Import.Structs;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor, MigrationManager migrationManager) : IDisposable, IService
+public class ModImportManager(
+    ModManager modManager,
+    Configuration config,
+    DuplicateManager duplicates,
+    ModNormalizer modNormalizer,
+    MigrationManager migrationManager,
+    FileCompactor compactor) : IDisposable, Luna.IService
 {
     private readonly ConcurrentQueue<string[]> _modsToUnpack = new();
 
@@ -26,7 +32,7 @@ public class ModImportManager(ModManager modManager, Configuration config, ModEd
 
     public void TryUnpacking()
     {
-        if (Importing || !_modsToUnpack.TryDequeue(out var newMods))
+        if (Importing && _import!.State is not ImporterState.Done || !_modsToUnpack.TryDequeue(out var newMods))
             return;
 
         var files = newMods.Where(s =>
@@ -43,7 +49,8 @@ public class ModImportManager(ModManager modManager, Configuration config, ModEd
         if (files.Length == 0)
             return;
 
-        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, modEditor, modManager, modEditor.Compactor, migrationManager);
+        _import = new TexToolsImporter(files.Length, files, AddNewMod, config, duplicates, modNormalizer, modManager, compactor,
+            migrationManager, _import);
     }
 
     public bool Importing
@@ -78,9 +85,8 @@ public class ModImportManager(ModManager modManager, Configuration config, ModEd
             return false;
         }
 
-        modManager.AddMod(directory, true);
-        mod = modManager.LastOrDefault();
-        return mod != null && mod.ModPath == directory;
+        mod = modManager.AddMod(directory, true);
+        return mod is not null && mod.ModPath == directory;
     }
 
     public void Dispose()

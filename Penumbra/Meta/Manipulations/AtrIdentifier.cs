@@ -47,7 +47,7 @@ public readonly record struct AtrIdentifier(HumanSlot Slot, PrimaryId? Id, Shape
     public override string ToString()
     {
         var sb = new StringBuilder(64);
-        sb.Append("Shp - ")
+        sb.Append("ATR - ")
             .Append(Attribute);
         if (Slot is HumanSlot.Unknown)
         {

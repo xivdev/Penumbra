@@ -1,6 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using JetBrains.Annotations;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.String;

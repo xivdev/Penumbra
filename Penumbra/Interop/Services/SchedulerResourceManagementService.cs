@@ -3,11 +3,9 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Scheduler.Resource;
 using Lumina.Excel.Sheets;
-using OtterGui.Services;
-using Penumbra.Collections;
+using Luna;
 using Penumbra.Communication;
 using Penumbra.GameData;
-using Penumbra.Mods.Editor;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -41,16 +39,15 @@ public unsafe class SchedulerResourceManagementService : IService, IDisposable
         interop.InitializeFromAttributes(this);
     }
 
-    private void OnResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath gamePath, FullPath oldPath,
-        FullPath newPath, IMod? mod)
+    private void OnResolvedFileChange(in ResolvedFileChanged.Arguments arguments)
     {
-        switch (type)
+        switch (arguments.Type)
         {
             case ResolvedFileChanged.Type.Added:
-                CheckFile(gamePath);
+                CheckFile(arguments.GamePath);
                 return;
             case ResolvedFileChanged.Type.FullRecomputeFinished:
-                foreach (var path in collection.ResolvedFiles.Keys)
+                foreach (var path in arguments.Collection.ResolvedFiles.Keys)
                     CheckFile(path);
                 return;
         }

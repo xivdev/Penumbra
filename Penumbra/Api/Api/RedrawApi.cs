@@ -1,6 +1,6 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -33,7 +33,6 @@ public class RedrawApi(RedrawService redrawService, IFramework framework, Collec
 
     public void RedrawCollectionMembers(Guid collectionId, RedrawType setting)
     {
-
         if (!collections.Storage.ById(collectionId, out var collection))
             collection = ModCollection.Empty;
         framework.RunOnFrameworkThread(() =>

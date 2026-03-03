@@ -1,11 +1,7 @@
-using Dalamud.Interface;
-using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Table;
 using Dalamud.Plugin;
-using Dalamud.Bindings.ImGui;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
+using Luna;
 using Penumbra.Api.Helpers;
 using Penumbra.Api.IpcSubscribers;
 
@@ -55,82 +51,99 @@ public class PluginStateIpcTester : IUiService, IDisposable
 
     public void Draw()
     {
-        using var _ = ImRaii.TreeNode("Plugin State");
-        if (!_)
+        using var tree = Im.Tree.Node("Plugin State"u8);
+        if (!tree)
             return;
 
-        if (ImUtf8.InputText("Required Features"u8, ref _requiredFeatureString))
+        if (Im.Input.Text("Required Features"u8, ref _requiredFeatureString))
             _requiredFeatures = _requiredFeatureString.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin(StringU8.Empty, 3, TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        DrawList(IpcSubscribers.Initialized.Label, "Last Initialized", _initializedList);
-        DrawList(IpcSubscribers.Disposed.Label,    "Last Disposed",    _disposedList);
+        DrawList(IpcSubscribers.Initialized.Label, "Last Initialized"u8, _initializedList);
+        DrawList(IpcSubscribers.Disposed.Label,    "Last Disposed"u8,    _disposedList);
 
-        IpcTester.DrawIntro(ApiVersion.Label, "Current Version");
-        var (breaking, features) = new ApiVersion(_pi).Invoke();
-        ImGui.TextUnformatted($"{breaking}.{features:D4}");
-
-        IpcTester.DrawIntro(GetEnabledState.Label, "Current State");
-        ImGui.TextUnformatted($"{new GetEnabledState(_pi).Invoke()}");
-
-        IpcTester.DrawIntro(IpcSubscribers.EnabledChange.Label, "Last Change");
-        ImGui.TextUnformatted(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never");
-
-        IpcTester.DrawIntro(SupportedFeatures.Label, "Supported Features");
-        ImUtf8.Text(string.Join(", ", new SupportedFeatures(_pi).Invoke()));
-
-        IpcTester.DrawIntro(CheckSupportedFeatures.Label, "Missing Features");
-        ImUtf8.Text(string.Join(", ", new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
-
-        DrawConfigPopup();
-        IpcTester.DrawIntro(GetConfiguration.Label, "Configuration");
-        if (ImGui.Button("Get"))
+        using (IpcTester.DrawIntro(ApiVersion.LabelU8, "Current Version"u8))
         {
-            _currentConfiguration = new GetConfiguration(_pi).Invoke();
-            ImGui.OpenPopup("Config Popup");
+            var (breaking, features) = new ApiVersion(_pi).Invoke();
+            table.DrawColumn($"{breaking}.{features:D4}");
         }
 
-        IpcTester.DrawIntro(GetModDirectory.Label, "Current Mod Directory");
-        ImGui.TextUnformatted(new GetModDirectory(_pi).Invoke());
-
-        IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.Label, "Last Mod Directory Change");
-        ImGui.TextUnformatted(_lastModDirectoryTime > DateTimeOffset.MinValue
-            ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"
-            : "None");
-
-        void DrawList(string label, string text, List<DateTimeOffset> list)
+        using (IpcTester.DrawIntro(GetEnabledState.LabelU8, "Current State"u8))
         {
-            IpcTester.DrawIntro(label, text);
-            if (list.Count == 0)
+            table.DrawColumn($"{new GetEnabledState(_pi).Invoke()}");
+        }
+
+        using (IpcTester.DrawIntro(IpcSubscribers.EnabledChange.LabelU8, "Last Change"u8))
+        {
+            table.DrawColumn(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never"u8);
+        }
+
+        using (IpcTester.DrawIntro(SupportedFeatures.LabelU8, "Supported Features"u8))
+        {
+            table.DrawColumn(StringU8.Join(", "u8, new SupportedFeatures(_pi).Invoke()));
+        }
+
+        using (IpcTester.DrawIntro(CheckSupportedFeatures.LabelU8, "Missing Features"u8))
+            table.DrawColumn(StringU8.Join(", "u8, new CheckSupportedFeatures(_pi).Invoke(_requiredFeatures)));
+
+        using (IpcTester.DrawIntro(GetConfiguration.LabelU8, "Configuration"u8))
+        {
+            DrawConfigPopup();
+            table.NextColumn();
+            if (Im.SmallButton("Get"u8))
             {
-                ImGui.TextUnformatted("Never");
+                _currentConfiguration = new GetConfiguration(_pi).Invoke();
+                Im.Popup.Open("Config Popup"u8);
+            }
+        }
+
+        using (IpcTester.DrawIntro(GetModDirectory.LabelU8, "Current Mod Directory"u8))
+        {
+            table.DrawColumn(new GetModDirectory(_pi).Invoke());
+        }
+
+        using (IpcTester.DrawIntro(IpcSubscribers.ModDirectoryChanged.LabelU8, "Last Mod Directory Change"u8))
+        {
+            table.DrawColumn(_lastModDirectoryTime > DateTimeOffset.MinValue
+                ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"
+                : "None"u8);
+        }
+
+        return;
+
+        static void DrawList(string label, ReadOnlySpan<byte> text, List<DateTimeOffset> list)
+        {
+            using var _ = IpcTester.DrawIntro(label, text);
+            if (list.Count is 0)
+            {
+                Im.Table.DrawColumn("Never"u8);
             }
             else
             {
-                ImGui.TextUnformatted(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
-                if (list.Count > 1 && ImGui.IsItemHovered())
-                    ImGui.SetTooltip(string.Join("\n",
-                        list.SkipLast(1).Select(t => t.LocalDateTime.ToString(CultureInfo.CurrentCulture))));
+                Im.Table.DrawColumn(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
+                if (list.Count > 1 && Im.Item.Hovered())
+                    Im.Tooltip.Set(
+                        StringU8.Join((byte)'\n', list.SkipLast(1).Select(t => t.LocalDateTime.ToString(CultureInfo.CurrentCulture))));
             }
         }
     }
 
     private void DrawConfigPopup()
     {
-        ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
-        using var popup = ImRaii.Popup("Config Popup");
+        Im.Window.SetNextSize(ImEx.ScaledVector(500, 500));
+        using var popup = Im.Popup.Begin("Config Popup"u8);
         if (!popup)
             return;
 
-        using (ImRaii.PushFont(UiBuilder.MonoFont))
+        using (Im.Font.PushMono())
         {
-            ImGuiUtil.TextWrapped(_currentConfiguration);
+            Im.TextWrapped(_currentConfiguration);
         }
 
-        if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
-            ImGui.CloseCurrentPopup();
+        if (Im.Button("Close"u8, -Vector2.UnitX) || !Im.Window.Focused())
+            Im.Popup.CloseCurrent();
     }
 
     private void UpdateModDirectoryChanged(string path, bool valid)

@@ -1,5 +1,4 @@
 using Lumina.Data.Parsing;
-using OtterGui.Extensions;
 using Penumbra.GameData.Files.ModelStructs;
 using SharpGLTF.Schema2;
 
@@ -191,7 +190,7 @@ public class MeshImporter(IEnumerable<Node> nodes, IoNotifier notifier)
 
         var usedJoints = new HashSet<ushort>();
 
-        foreach (var (primitive, primitiveIndex) in node.Mesh.Primitives.WithIndex())
+        foreach (var (primitiveIndex, primitive) in node.Mesh.Primitives.Index())
         {
             // Per glTF specification, an asset with a skin MUST contain skinning attributes on its meshes.
             var joints0Accessor = primitive.GetVertexAccessor("JOINTS_0")?.AsVector4Array();

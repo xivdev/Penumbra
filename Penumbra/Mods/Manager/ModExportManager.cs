@@ -1,26 +1,27 @@
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.Mods.Editor;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModExportManager : IDisposable, IService
+public class ModExportManager : IDisposable, Luna.IService
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
     private readonly ModManager          _modManager;
+    private readonly FileWatcher         _fileWatcher;
 
     private DirectoryInfo? _exportDirectory;
 
     public DirectoryInfo ExportDirectory
         => _exportDirectory ?? _modManager.BasePath;
 
-    public ModExportManager(Configuration config, CommunicatorService communicator, ModManager modManager)
+    public ModExportManager(Configuration config, CommunicatorService communicator, ModManager modManager, FileWatcher fileWatcher)
     {
         _config       = config;
         _communicator = communicator;
         _modManager   = modManager;
+        _fileWatcher  = fileWatcher;
         UpdateExportDirectory(_config.ExportDirectory, false);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModExportManager);
     }
@@ -28,6 +29,18 @@ public class ModExportManager : IDisposable, IService
     /// <inheritdoc cref="UpdateExportDirectory(string, bool)"/>
     public void UpdateExportDirectory(string newDirectory)
         => UpdateExportDirectory(newDirectory, true);
+
+    public Task CreateAsync(Mod mod)
+    {
+        var backup = new ModBackup(this, mod);
+        return backup.CreateAsync();
+    }
+
+    public void IgnoreExportedFile(string fullPath)
+    {
+        if (_config.PreventExportLoopback)
+            _fileWatcher.IgnoreFile(fullPath);
+    }
 
     /// <summary>
     /// Update the export directory to a new directory. Can also reset it to null with empty input.
@@ -80,14 +93,13 @@ public class ModExportManager : IDisposable, IService
         => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
     /// <summary> Automatically migrate the backup file to the new name if any exists. </summary>
-    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
-        DirectoryInfo? newDirectory)
+    private void OnModPathChange(in ModPathChanged.Arguments arguments)
     {
-        if (type is not ModPathChangeType.Moved || oldDirectory == null || newDirectory == null)
+        if (arguments.Type is not ModPathChangeType.Moved || arguments.OldDirectory is null || arguments.NewDirectory is null)
             return;
 
-        mod.ModPath = oldDirectory;
-        new ModBackup(this, mod).Move(null, newDirectory.Name);
-        mod.ModPath = newDirectory;
+        arguments.Mod.ModPath = arguments.OldDirectory;
+        new ModBackup(this, arguments.Mod).Move(null, arguments.NewDirectory.Name);
+        arguments.Mod.ModPath = arguments.NewDirectory;
     }
 }

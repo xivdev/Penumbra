@@ -1,98 +1,97 @@
-using Dalamud.Bindings.ImGui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
-using OtterGui;
-using OtterGui.Services;
-using OtterGui.Text;
+using ImSharp;
 using Penumbra.Interop.Hooks;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs.Debug;
 
-public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, DalamudConfigService dalamudConfig, Configuration config) : IUiService
+public class RenderTargetDrawer(RenderTargetHdrEnabler renderTargetHdrEnabler, DalamudConfigService dalamudConfig, Configuration config)
+    : Luna.IUiService
 {
     private void DrawStatistics()
     {
-        using (ImUtf8.Group())
+        using (Im.Group())
         {
-            ImUtf8.Text("Wait For Plugins (Now)");
-            ImUtf8.Text("Wait For Plugins (First Launch)");
+            Im.Text("Wait For Plugins (Now)"u8);
+            Im.Text("Wait For Plugins (First Launch)"u8);
 
-            ImUtf8.Text("HDR Enabled (Now)");
-            ImUtf8.Text("HDR Enabled (First Launch)");
+            Im.Text("HDR Enabled (Now)"u8);
+            Im.Text("HDR Enabled (First Launch)"u8);
 
-            ImUtf8.Text("HDR Hook Overriden (Now)");
-            ImUtf8.Text("HDR Hook Overriden (First Launch)");
+            Im.Text("HDR Hook Overriden (Now)"u8);
+            Im.Text("HDR Hook Overriden (First Launch)"u8);
 
-            ImUtf8.Text("HDR Detour Called");
-            ImUtf8.Text("Penumbra Reload Count");
+            Im.Text("HDR Detour Called"u8);
+            Im.Text("Penumbra Reload Count"u8);
         }
-        ImGui.SameLine();
-        using (ImUtf8.Group())
+
+        Im.Line.Same();
+        using (Im.Group())
         {
-            ImUtf8.Text($"{(dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool w) ? w.ToString() : "Unknown")}");
-            ImUtf8.Text($"{renderTargetHdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"}");
+            Im.Text($"{(dalamudConfig.GetDalamudConfig(DalamudConfigService.WaitingForPluginsOption, out bool w) ? w.ToString() : "Unknown")}");
+            Im.Text($"{renderTargetHdrEnabler.FirstLaunchWaitForPluginsState?.ToString() ?? "Unknown"}");
 
-            ImUtf8.Text($"{config.HdrRenderTargets}");
-            ImUtf8.Text($"{renderTargetHdrEnabler.FirstLaunchHdrState}");
+            Im.Text($"{config.HdrRenderTargets}");
+            Im.Text($"{renderTargetHdrEnabler.FirstLaunchHdrState}");
 
-            ImUtf8.Text($"{HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize}");
-            ImUtf8.Text($"{!renderTargetHdrEnabler.FirstLaunchHdrHookOverrideState}");
+            Im.Text($"{HookOverrides.Instance.PostProcessing.RenderTargetManagerInitialize}");
+            Im.Text($"{!renderTargetHdrEnabler.FirstLaunchHdrHookOverrideState}");
 
-            ImUtf8.Text($"{renderTargetHdrEnabler.HdrEnabledSuccess}");
-            ImUtf8.Text($"{renderTargetHdrEnabler.PenumbraReloadCount}");
+            Im.Text($"{renderTargetHdrEnabler.HdrEnabledSuccess}");
+            Im.Text($"{renderTargetHdrEnabler.PenumbraReloadCount}");
         }
     }
 
     /// <summary> Draw information about render targets. </summary>
     public unsafe void Draw()
     {
-        if (!ImUtf8.CollapsingHeader("Render Targets"u8))
+        if (!Im.Tree.Header("Render Targets"u8))
             return;
 
         DrawStatistics();
-        ImUtf8.Dummy(0);
-        ImGui.Separator();
-        ImUtf8.Dummy(0);
+        Im.Dummy(0);
+        Im.Separator();
+        Im.Dummy(0);
         var report = renderTargetHdrEnabler.TextureReport;
-        if (report == null)
+        if (report is null)
         {
-            ImUtf8.Text("The RenderTargetManager report has not been gathered."u8);
-            ImUtf8.Text("Please restart the game with Debug Mode and Wait for Plugins on Startup enabled to fill this section."u8);
+            Im.Text("The RenderTargetManager report has not been gathered."u8);
+            Im.Text("Please restart the game with Debug Mode and Wait for Plugins on Startup enabled to fill this section."u8);
             return;
         }
 
-        using var table = ImUtf8.Table("##RenderTargetTable"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit);
+        using var table = Im.Table.Begin("##RenderTargetTable"u8, 5, TableFlags.RowBackground | TableFlags.SizingFixedFit);
         if (!table)
             return;
 
-        ImUtf8.TableSetupColumn("Offset"u8,                  ImGuiTableColumnFlags.WidthStretch, 0.15f);
-        ImUtf8.TableSetupColumn("Creation Order"u8,          ImGuiTableColumnFlags.WidthStretch, 0.15f);
-        ImUtf8.TableSetupColumn("Original Texture Format"u8, ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Current Texture Format"u8,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
-        ImUtf8.TableSetupColumn("Comment"u8,                 ImGuiTableColumnFlags.WidthStretch, 0.3f);
-        ImGui.TableHeadersRow();
+        table.SetupColumn("Offset"u8,                  TableColumnFlags.WidthStretch, 0.15f);
+        table.SetupColumn("Creation Order"u8,          TableColumnFlags.WidthStretch, 0.15f);
+        table.SetupColumn("Original Texture Format"u8, TableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("Current Texture Format"u8,  TableColumnFlags.WidthStretch, 0.2f);
+        table.SetupColumn("Comment"u8,                 TableColumnFlags.WidthStretch, 0.3f);
+        table.HeaderRow();
 
         foreach (var record in report)
         {
-            ImUtf8.DrawTableColumn($"0x{record.Offset:X}");
-            ImUtf8.DrawTableColumn($"{record.CreationOrder}");
-            ImUtf8.DrawTableColumn($"{record.OriginalTextureFormat}");
-            ImGui.TableNextColumn();
+            table.DrawColumn($"0x{record.Offset:X}");
+            table.DrawColumn($"{record.CreationOrder}");
+            table.DrawColumn($"{record.OriginalTextureFormat}");
+            table.NextColumn();
             var texture = *(Texture**)((nint)RenderTargetManager.Instance()
               + record.Offset);
-            if (texture != null)
+            if (texture is not null)
             {
-                using var color = Dalamud.Interface.Utility.Raii.ImRaii.PushColor(ImGuiCol.Text, ImGuiUtil.HalfBlendText(0xFF),
+                using var color = ImGuiColor.Text.Push(ImGuiColor.Text.Get().HalfBlend(Rgba32.Red),
                     texture->TextureFormat != record.OriginalTextureFormat);
-                ImUtf8.Text($"{texture->TextureFormat}");
+                Im.Text($"{texture->TextureFormat}");
             }
 
-            ImGui.TableNextColumn();
+            table.NextColumn();
             var forcedConfig = RenderTargetHdrEnabler.GetForcedTextureConfig(record.CreationOrder);
             if (forcedConfig.HasValue)
-                ImUtf8.Text(forcedConfig.Value.Comment);
+                Im.Text(forcedConfig.Value.Comment);
         }
     }
 }

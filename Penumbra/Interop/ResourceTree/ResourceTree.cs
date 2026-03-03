@@ -9,6 +9,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Hooks.PostProcessing;
 using Penumbra.UI;
+using Penumbra.UI.Classes;
 using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 using CustomizeIndex = Dalamud.Game.ClientState.Objects.Enums.CustomizeIndex;
 using ModelType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase.ModelType;
@@ -192,7 +193,7 @@ public class ResourceTree(
     {
         var genericContext = globalContext.CreateContext(&human->CharacterBase);
 
-        var cache = globalContext.Collection._cache;
+        var cache = globalContext.Collection.Cache;
         if (cache is not null
          && cache.CustomResources.TryGetValue(PreBoneDeformerReplacer.PreBoneDeformerPath, out var pbdHandle)
          && genericContext.CreateNodeFromPbd(pbdHandle.ResourceHandle) is { } pbdNode)

@@ -1,13 +1,13 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using OtterGui.Services;
+using ImSharp;
 using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Services;
 
-public unsafe class CharacterUtility : IDisposable, IRequiredService
+public unsafe class CharacterUtility : IDisposable, Luna.IRequiredService
 {
     public record struct InternalIndex(int Value);
 
@@ -29,7 +29,7 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
 
     public bool Ready { get; private set; }
 
-    public readonly CharacterUtilityFinished LoadingFinished = new();
+    public readonly CharacterUtilityFinished LoadingFinished;
 
     public nint DefaultHumanPbdResource               { get; private set; }
     public nint DefaultTransparentResource            { get; private set; }
@@ -42,8 +42,7 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
     /// The relevant indices depend on which meta manipulations we allow for.
     /// The defines are set in the project configuration.
     /// </summary>
-    public static readonly MetaIndex[]
-        RelevantIndices = Enum.GetValues<MetaIndex>();
+    public static readonly MetaIndex[] RelevantIndices = MetaIndex.Values.ToArray();
 
     public static readonly InternalIndex[] ReverseIndices
         = Enumerable.Range(0, CharacterUtilityData.TotalNumResources)
@@ -57,14 +56,16 @@ public unsafe class CharacterUtility : IDisposable, IRequiredService
 
     private readonly IFramework _framework;
 
-    public CharacterUtility(IFramework framework, IGameInteropProvider interop)
+    public CharacterUtility(IFramework framework, IGameInteropProvider interop, CharacterUtilityFinished finished)
     {
+        LoadingFinished = finished;
         interop.InitializeFromAttributes(this);
         _lists = Enumerable.Range(0, RelevantIndices.Length)
             .Select(idx => new MetaList(new InternalIndex(idx)))
             .ToArray();
-        _framework      =  framework;
-        LoadingFinished.Subscribe(() => Penumbra.Log.Debug("Loading of CharacterUtility finished."), CharacterUtilityFinished.Priority.OnFinishedLoading);
+        _framework = framework;
+        LoadingFinished.Subscribe(() => Penumbra.Log.Debug("Loading of CharacterUtility finished."),
+            CharacterUtilityFinished.Priority.OnFinishedLoading);
         LoadDefaultResources(null!);
         if (!Ready)
             _framework.Update += LoadDefaultResources;

@@ -1,6 +1,5 @@
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
-using OtterGui.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
@@ -12,7 +11,7 @@ namespace Penumbra.Interop.Hooks.ResourceLoading;
 /// we use the fixed size buffers of their formats to only store pointers to the actual path instead.
 /// Then we translate the stored pointer to the path in CreateFileW, if the prefix matches.
 /// </summary>
-public unsafe class CreateFileWHook : IDisposable, IRequiredService
+public unsafe class CreateFileWHook : IDisposable, Luna.IRequiredService
 {
     public const int Size = 28;
 

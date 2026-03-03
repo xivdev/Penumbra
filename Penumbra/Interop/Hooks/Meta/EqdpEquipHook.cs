@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -7,7 +7,7 @@ using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>, IDisposable
+public sealed unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>
 {
     public delegate void Delegate(CharacterUtility* utility, EqdpEntry* entry, uint id, uint raceCode);
 
@@ -18,7 +18,7 @@ public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>, IDisposabl
         _metaState = metaState;
         Task       = hooks.CreateHook<Delegate>("GetEqdpEquipEntry", Sigs.GetEqdpEquipEntry, Detour, metaState.Config.EnableMods && !HookOverrides.Instance.Meta.EqdpEquipHook);
         if (!HookOverrides.Instance.Meta.EqdpEquipHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private void Detour(CharacterUtility* utility, EqdpEntry* entry, uint setId, uint raceCode)
@@ -31,6 +31,9 @@ public unsafe class EqdpEquipHook : FastHook<EqdpEquipHook.Delegate>, IDisposabl
             $"[GetEqdpEquipEntry] Invoked on 0x{(ulong)utility:X} with {setId}, {(GenderRace)raceCode}, returned {(ushort)*entry:B10}.");
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

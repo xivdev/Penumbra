@@ -1,6 +1,4 @@
-using OtterGui.Classes;
-using OtterGui.Log;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Mods;
 using Penumbra.Mods.Groups;
 
@@ -13,7 +11,7 @@ public interface ISavable : ISavable<FilenameService>
 { }
 
 public sealed class SaveService(Logger log, FrameworkManager framework, FilenameService fileNames, BackupService backupService)
-    : SaveServiceBase<FilenameService>(log, framework, fileNames, backupService.Awaiter), IService
+    : BaseSaveService<FilenameService>(log, framework, fileNames, backupService.Awaiter), IService
 {
     /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
     public void SaveAllOptionGroups(Mod mod, bool backup, bool onlyAscii)

@@ -1,9 +1,7 @@
-using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.GameFonts;
 using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Plugin;
-using OtterGui;
-using OtterGui.Raii;
+using ImSharp;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -19,7 +17,7 @@ public class ModPanelHeader : IDisposable
 
     private readonly CommunicatorService _communicator;
     private          float               _lastPreSettingsHeight;
-    private          bool                _dirty                 = true;
+    private          bool                _dirty = true;
 
     public ModPanelHeader(IDalamudPluginInterface pi, CommunicatorService communicator)
     {
@@ -35,20 +33,20 @@ public class ModPanelHeader : IDisposable
     public void Draw()
     {
         UpdateModData();
-        var height     = ImGui.GetContentRegionAvail().Y;
+        var height    = Im.ContentRegion.Available.Y;
         var maxHeight = 3 * height / 4;
         using var child = _lastPreSettingsHeight > maxHeight && _communicator.PreSettingsTabBarDraw.HasSubscribers
-            ? ImRaii.Child("HeaderChild", new Vector2(ImGui.GetContentRegionAvail().X, maxHeight), false)
-            : null;
-        using (ImRaii.Group())
+            ? Im.Child.Begin("HeaderChild"u8, Im.ContentRegion.Available with { Y = maxHeight })
+            : default;
+        using (Im.Group())
         {
             var offset = DrawModName();
             DrawVersion(offset);
             DrawSecondRow(offset);
         }
 
-        _communicator.PreSettingsTabBarDraw.Invoke(_mod.Identifier, ImGui.GetItemRectSize().X, _nameWidth);
-        _lastPreSettingsHeight = ImGui.GetCursorPosY();
+        _communicator.PreSettingsTabBarDraw.Invoke(new PreSettingsTabBarDraw.Arguments(_mod, Im.Item.Size.X, _nameWidth));
+        _lastPreSettingsHeight = Im.Cursor.Position.Y;
     }
 
     public void ChangeMod(Mod mod)
@@ -74,16 +72,16 @@ public class ModPanelHeader : IDisposable
         {
             using var f = _nameFont.Push();
             _modName      = name;
-            _modNameWidth = ImGui.CalcTextSize(name).X + 2 * (ImGui.GetStyle().FramePadding.X + 2 * UiHelpers.Scale);
+            _modNameWidth = Im.Font.CalculateSize(name).X + 2 * (Im.Style.FramePadding.X + 2 * Im.Style.GlobalScale);
         }
 
         // Author
         if (_mod.Author != _modAuthor)
         {
-            var author = _mod.Author.IsEmpty ? string.Empty : $"by  {_mod.Author}";
-            _modAuthor      = _mod.Author.Text;
-            _modAuthorWidth = ImGui.CalcTextSize(author).X;
-            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
+            var author = _mod.Author.Length is 0 ? string.Empty : $"by  {_mod.Author}";
+            _modAuthor      = _mod.Author;
+            _modAuthorWidth = Im.Font.CalculateSize(author).X;
+            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + Im.Style.ItemSpacing.X;
         }
 
         // Version
@@ -91,7 +89,7 @@ public class ModPanelHeader : IDisposable
         if (version != _modVersion)
         {
             _modVersion      = version;
-            _modVersionWidth = ImGui.CalcTextSize(version).X;
+            _modVersionWidth = Im.Font.CalculateSize(version).X;
         }
 
         // Website
@@ -102,9 +100,9 @@ public class ModPanelHeader : IDisposable
              && (uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp);
             _modWebsiteButton = _websiteValid ? "Open Website" : _modWebsite.Length == 0 ? string.Empty : $"from  {_modWebsite}";
             _modWebsiteButtonWidth = _websiteValid
-                ? ImGui.CalcTextSize(_modWebsiteButton).X + 2 * ImGui.GetStyle().FramePadding.X
-                : ImGui.CalcTextSize(_modWebsiteButton).X;
-            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
+                ? Im.Font.CalculateSize(_modWebsiteButton).X + 2 * Im.Style.FramePadding.X
+                : Im.Font.CalculateSize(_modWebsiteButton).X;
+            _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + Im.Style.ItemSpacing.X;
         }
     }
 
@@ -137,33 +135,30 @@ public class ModPanelHeader : IDisposable
     /// </summary>
     private float DrawModName()
     {
-        var decidingWidth = Math.Max(_secondRowWidth, ImGui.GetWindowWidth());
+        var decidingWidth = Math.Max(_secondRowWidth, Im.Window.Width);
         var offsetWidth   = (decidingWidth - _modNameWidth) / 2;
         var offsetVersion = _modVersion.Length > 0
-            ? _modVersionWidth + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X
+            ? _modVersionWidth + Im.Style.ItemSpacing.X + Im.Style.WindowPadding.X
             : 0;
         var offset = Math.Max(offsetWidth, offsetVersion);
         if (offset > 0)
-        {
-            ImGui.SetCursorPosX(offset);
-        }
+            Im.Cursor.X = offset;
 
-        using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.MetaInfoText);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, 2 * UiHelpers.Scale);
+        using var style = ImStyleBorder.Frame.Push(Colors.MetaInfoText, 2 * Im.Style.GlobalScale);
         using var f     = _nameFont.Push();
-        ImGuiUtil.DrawTextButton(_modName, Vector2.Zero, 0);
-        _nameWidth = ImGui.GetItemRectSize().X;
+        ImEx.TextFramed(_modName, Vector2.Zero, 0);
+        _nameWidth = Im.Item.Size.X;
         return offset;
     }
 
     /// <summary> Draw the version in the top-right corner. </summary>
     private void DrawVersion(float offset)
     {
-        var oldPos = ImGui.GetCursorPos();
-        ImGui.SetCursorPos(new Vector2(2 * offset + _modNameWidth - _modVersionWidth - ImGui.GetStyle().WindowPadding.X,
-            ImGui.GetStyle().FramePadding.Y));
-        ImGuiUtil.TextColored(Colors.MetaInfoText, _modVersion);
-        ImGui.SetCursorPos(oldPos);
+        var oldPos = Im.Cursor.Position;
+        Im.Cursor.Position = new Vector2(2 * offset + _modNameWidth - _modVersionWidth - Im.Style.WindowPadding.X,
+            Im.Style.FramePadding.Y);
+        Im.Text(_modVersion, Colors.MetaInfoText);
+        Im.Cursor.Position = oldPos;
     }
 
     /// <summary>
@@ -178,37 +173,35 @@ public class ModPanelHeader : IDisposable
         {
             if (_modWebsiteButton.Length == 0)
             {
-                ImGui.NewLine();
+                Im.Line.New();
                 return;
             }
 
-            offset += (_modNameWidth - _modWebsiteButtonWidth) / 2;
-            ImGui.SetCursorPosX(offset);
+            offset      += (_modNameWidth - _modWebsiteButtonWidth) / 2;
+            Im.Cursor.X =  offset;
             DrawWebsite();
         }
         else if (_modWebsiteButton.Length == 0)
         {
-            offset += (_modNameWidth - _modAuthorWidth) / 2;
-            ImGui.SetCursorPosX(offset);
+            offset      += (_modNameWidth - _modAuthorWidth) / 2;
+            Im.Cursor.X =  offset;
             DrawAuthor();
         }
         else if (_secondRowWidth < _modNameWidth)
         {
-            ImGui.SetCursorPosX(offset);
+            Im.Cursor.X = offset;
             DrawAuthor();
-            ImGui.SameLine(offset + _modNameWidth - _modWebsiteButtonWidth);
+            Im.Line.Same(offset + _modNameWidth - _modWebsiteButtonWidth);
             DrawWebsite();
         }
         else
         {
             offset -= (_secondRowWidth - _modNameWidth) / 2;
             if (offset > 0)
-            {
-                ImGui.SetCursorPosX(offset);
-            }
+                Im.Cursor.X = offset;
 
             DrawAuthor();
-            ImGui.SameLine();
+            Im.Line.Same();
             DrawWebsite();
         }
     }
@@ -216,11 +209,9 @@ public class ModPanelHeader : IDisposable
     /// <summary> Draw the author text. </summary>
     private void DrawAuthor()
     {
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        ImGuiUtil.TextColored(Colors.MetaInfoText, "by ");
-        ImGui.SameLine();
-        style.Pop();
-        ImGui.TextUnformatted(_modAuthor);
+        Im.Text("by "u8, Colors.MetaInfoText);
+        Im.Line.NoSpacing();
+        Im.Text(_modAuthor);
     }
 
     /// <summary>
@@ -231,7 +222,7 @@ public class ModPanelHeader : IDisposable
     {
         if (_websiteValid)
         {
-            if (ImGui.SmallButton(_modWebsiteButton))
+            if (Im.SmallButton(_modWebsiteButton))
             {
                 try
                 {
@@ -247,23 +238,21 @@ public class ModPanelHeader : IDisposable
                 }
             }
 
-            ImGuiUtil.HoverTooltip(_modWebsite);
+            Im.Tooltip.OnHover(_modWebsite);
         }
         else
         {
-            using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-            ImGuiUtil.TextColored(Colors.MetaInfoText, "from ");
-            ImGui.SameLine();
-            style.Pop();
-            ImGui.TextUnformatted(_modWebsite);
+            Im.Text("from "u8, Colors.MetaInfoText);
+            Im.Line.NoSpacing();
+            Im.Text(_modWebsite);
         }
     }
 
     /// <summary> Just update the data when any relevant field changes. </summary>
-    private void OnModDataChange(ModDataChangeType changeType, Mod mod, string? _2)
+    private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
         const ModDataChangeType relevantChanges =
             ModDataChangeType.Author | ModDataChangeType.Name | ModDataChangeType.Website | ModDataChangeType.Version;
-        _dirty     = (changeType & relevantChanges) != 0;
+        _dirty = (arguments.Type & relevantChanges) is not 0;
     }
 }

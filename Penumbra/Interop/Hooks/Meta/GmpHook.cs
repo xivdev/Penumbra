@@ -1,14 +1,12 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using Lumina.Data.Parsing.Uld;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
+public sealed unsafe class GmpHook : FastHook<GmpHook.Delegate>
 {
     public delegate ulong Delegate(CharacterUtility* characterUtility, ulong* outputEntry, ushort setId);
 
@@ -20,7 +18,7 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
         Task = hooks.CreateHook<Delegate>("GetGmpEntry", Sigs.GetGmpEntry, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.GmpHook);
         if (!HookOverrides.Instance.Meta.GmpHook)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
     private ulong Detour(CharacterUtility* characterUtility, ulong* outputEntry, ushort setId)
@@ -38,6 +36,9 @@ public unsafe class GmpHook : FastHook<GmpHook.Delegate>, IDisposable
         return ret;
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

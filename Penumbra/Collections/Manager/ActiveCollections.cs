@@ -1,9 +1,8 @@
 using Dalamud.Interface.ImGuiNotification;
+using ImSharp;
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
-using OtterGui.Extensions;
-using OtterGui.Services;
 using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
@@ -18,7 +17,7 @@ public class ActiveCollectionData : IService
     public ModCollection Default   { get; internal set; } = ModCollection.Empty;
     public ModCollection Interface { get; internal set; } = ModCollection.Empty;
 
-    public readonly ModCollection?[] SpecialCollections = new ModCollection?[Enum.GetValues<Api.Enums.ApiCollectionType>().Length - 3];
+    public readonly ModCollection?[] SpecialCollections = new ModCollection?[Api.Enums.ApiCollectionType.Values.Count - 3];
 }
 
 public class ActiveCollections : ISavable, IDisposable, IService
@@ -128,7 +127,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
             return false;
 
         SpecialCollections[(int)collectionType] = Default;
-        _communicator.CollectionChange.Invoke(collectionType, null, Default, string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(collectionType, null, Default, string.Empty));
         return true;
     }
 
@@ -143,14 +142,14 @@ public class ActiveCollections : ISavable, IDisposable, IService
             return;
 
         SpecialCollections[(int)collectionType] = null;
-        _communicator.CollectionChange.Invoke(collectionType, old, null, string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(collectionType, old, null, string.Empty));
     }
 
     /// <summary>Create an individual collection if possible. </summary>
     public void CreateIndividualCollection(params ActorIdentifier[] identifiers)
     {
         if (Individuals.Add(identifiers, Default))
-            _communicator.CollectionChange.Invoke(CollectionType.Individual, null, Default, Individuals.Last().DisplayName);
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Individual, null, Default, Individuals.Last().DisplayName));
     }
 
     /// <summary> Remove an individual collection if it exists. </summary>
@@ -161,7 +160,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
 
         var (name, old) = Individuals[individualIndex];
         if (Individuals.Delete(individualIndex))
-            _communicator.CollectionChange.Invoke(CollectionType.Individual, old, null, name);
+            _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(CollectionType.Individual, old, null, name));
     }
 
     /// <summary> Move an individual collection from one index to another. </summary>
@@ -224,31 +223,23 @@ public class ActiveCollections : ISavable, IDisposable, IService
 
         switch (collectionType)
         {
-            case CollectionType.Default:
-                Default = collection;
-                break;
-            case CollectionType.Interface:
-                Interface = collection;
-                break;
-            case CollectionType.Current:
-                Current = collection;
-                break;
+            case CollectionType.Default:   Default   = collection; break;
+            case CollectionType.Interface: Interface = collection; break;
+            case CollectionType.Current:   Current   = collection; break;
             case CollectionType.Individual:
                 if (!Individuals.ChangeCollection(individualIndex, collection))
                     return;
 
                 break;
-            default:
-                SpecialCollections[(int)collectionType] = collection;
-                break;
+            default: SpecialCollections[(int)collectionType] = collection; break;
         }
 
         UpdateCurrentCollectionInUse();
-        _communicator.CollectionChange.Invoke(collectionType, oldCollection, collection,
-            collectionType == CollectionType.Individual ? Individuals[individualIndex].DisplayName : string.Empty);
+        _communicator.CollectionChange.Invoke(new CollectionChange.Arguments(collectionType, oldCollection, collection,
+            collectionType == CollectionType.Individual ? Individuals[individualIndex].DisplayName : string.Empty));
     }
 
-    public string ToFilename(FilenameService fileNames)
+    public string ToFilePath(FilenameService fileNames)
         => fileNames.ActiveCollectionsFile;
 
     public string TypeName
@@ -266,8 +257,8 @@ public class ActiveCollections : ISavable, IDisposable, IService
             { nameof(Interface), Interface.Identity.Id },
             { nameof(Current), Current.Identity.Id },
         };
-        foreach (var (type, collection) in SpecialCollections.WithIndex().Where(p => p.Value != null)
-                     .Select(p => ((CollectionType)p.Index, p.Value!)))
+        foreach (var (type, collection) in SpecialCollections.Index().Where(p => p.Item != null)
+                     .Select(p => ((CollectionType)p.Index, p.Item!)))
             jObj.Add(type.ToString(), collection.Identity.Id);
 
         jObj.Add(nameof(Individuals), Individuals.ToJObject());
@@ -285,37 +276,38 @@ public class ActiveCollections : ISavable, IDisposable, IService
             .SelectMany(c => c.Inheritance.FlatHierarchy).Contains(Current);
 
     /// <summary> Save if any of the active collections is changed and set new collections to Current. </summary>
-    private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string _3)
+    private void OnCollectionChange(in CollectionChange.Arguments arguments)
     {
-        if (collectionType is CollectionType.Inactive)
+        if (arguments.Type is CollectionType.Inactive)
         {
-            if (newCollection != null)
+            if (arguments.NewCollection is not null)
             {
-                SetCollection(newCollection, CollectionType.Current);
+                SetCollection(arguments.NewCollection, CollectionType.Current);
             }
-            else if (oldCollection != null)
+            else if (arguments.OldCollection != null)
             {
-                if (oldCollection == Default)
+                if (arguments.OldCollection == Default)
                     SetCollection(ModCollection.Empty, CollectionType.Default);
-                if (oldCollection == Interface)
+                if (arguments.OldCollection == Interface)
                     SetCollection(ModCollection.Empty, CollectionType.Interface);
-                if (oldCollection == Current)
-                    SetCollection(Default.Identity.Index > ModCollection.Empty.Identity.Index ? Default : _storage.DefaultNamed, CollectionType.Current);
+                if (arguments.OldCollection == Current)
+                    SetCollection(Default.Identity.Index > ModCollection.Empty.Identity.Index ? Default : _storage.DefaultNamed,
+                        CollectionType.Current);
 
                 for (var i = 0; i < SpecialCollections.Length; ++i)
                 {
-                    if (oldCollection == SpecialCollections[i])
+                    if (arguments.OldCollection == SpecialCollections[i])
                         SetCollection(ModCollection.Empty, (CollectionType)i);
                 }
 
                 for (var i = 0; i < Individuals.Count; ++i)
                 {
-                    if (oldCollection == Individuals[i].Collection)
+                    if (arguments.OldCollection == Individuals[i].Collection)
                         SetCollection(ModCollection.Empty, CollectionType.Individual, i);
                 }
             }
         }
-        else if (collectionType is not CollectionType.Temporary)
+        else if (arguments.Type is not CollectionType.Temporary)
         {
             _saveService.DelaySave(this);
         }
@@ -329,7 +321,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of {"Base Collection"} {defaultName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -344,7 +336,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(interfaceName, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of Interface Collection {interfaceName} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -359,7 +351,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ByName(currentName, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
+                $"Last choice of Selected Collection {currentName} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
                 NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
@@ -404,7 +396,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(defaultId, out var defaultCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.DefaultCollection} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of {"Base Collection"} {defaultId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Default       = ModCollection.Empty;
             configChanged = true;
@@ -419,7 +411,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(interfaceId, out var interfaceCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.InterfaceCollection} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
+                $"Last choice of {"Interface Collection"} {interfaceId} is not available, reset to {ModCollection.Empty.Identity.Name}.",
                 NotificationType.Warning);
             Interface     = ModCollection.Empty;
             configChanged = true;
@@ -434,7 +426,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
         if (!_storage.ById(currentId, out var currentCollection))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Last choice of {TutorialService.SelectedCollection} {currentId} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
+                $"Last choice of Selected Collection {currentId} is not available, reset to {ModCollectionIdentity.DefaultCollectionName}.",
                 NotificationType.Warning);
             Current       = _storage.DefaultNamed;
             configChanged = true;
@@ -491,15 +483,9 @@ public class ActiveCollections : ISavable, IDisposable, IService
         var changed       = false;
         switch (version)
         {
-            case 1:
-                changed = LoadCollectionsV1(jObject);
-                break;
-            case 2:
-                changed = LoadCollectionsV2(jObject);
-                break;
-            case 0 when configChanged:
-                changed = LoadCollectionsNew();
-                break;
+            case 1:                    changed = LoadCollectionsV1(jObject); break;
+            case 2:                    changed = LoadCollectionsV2(jObject); break;
+            case 0 when configChanged: changed = LoadCollectionsNew(); break;
             case 0:
                 Penumbra.Messager.NotificationMessage("Active Collections File has unknown version and will be reset.",
                     NotificationType.Warning);
@@ -543,7 +529,7 @@ public class ActiveCollections : ISavable, IDisposable, IService
                     return string.Empty;
 
                 var racial = false;
-                foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+                foreach (var race in SubRace.Values.Skip(1))
                 {
                     var m = ByType(CollectionTypeExtensions.FromParts(race, Gender.Male, false));
                     if (m != null && m != yourself)

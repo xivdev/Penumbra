@@ -1,6 +1,5 @@
-using OtterGui.Classes;
-using OtterGui.Filesystem;
-using OtterGui.Services;
+using Luna;
+using Penumbra.Communication;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.Settings;
 using Penumbra.Mods.SubMods;
@@ -17,7 +16,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
         var singleGroup = group.ConvertToSingle();
         group.Mod.Groups[idx] = singleGroup;
         SaveService.QueueSave(new ModSaveGroup(singleGroup, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.GroupTypeChanged, singleGroup.Mod, singleGroup, null, null, -1));
     }
 
     /// <summary> Change the internal priority of the given option. </summary>
@@ -28,7 +27,7 @@ public sealed class MultiModGroupEditor(CommunicatorService communicator, SaveSe
 
         option.Priority = newPriority;
         SaveService.QueueSave(new ModSaveGroup(option.Group, Config.ReplaceNonAsciiOnImport));
-        Communicator.ModOptionChanged.Invoke(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, -1);
+        Communicator.ModOptionChanged.Invoke(new ModOptionChanged.Arguments(ModOptionChangeType.PriorityChanged, option.Mod, option.Group, option, null, -1));
     }
 
     protected override MultiModGroup CreateGroup(Mod mod, string newName, ModPriority priority, SaveType saveType = SaveType.ImmediateSync)

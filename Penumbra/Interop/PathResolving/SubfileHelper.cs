@@ -1,10 +1,10 @@
-using OtterGui.Services;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Hooks.Resources;
 using Penumbra.Interop.Structs;
-using Penumbra.String.Classes;
+using Penumbra.String;
 
 namespace Penumbra.Interop.PathResolving;
 
@@ -13,22 +13,24 @@ namespace Penumbra.Interop.PathResolving;
 /// Those are loaded synchronously.
 /// Thus, we need to ensure the correct files are loaded when a material is loaded.
 /// </summary>
-public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>, IService
+public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<nint, ResolveData>>, Luna.IService
 {
     private readonly GameState                _gameState;
     private readonly ResourceLoader           _loader;
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
+    private readonly CollectionStorage        _collections;
 
-    public SubfileHelper(GameState gameState, ResourceLoader loader, ResourceHandleDestructor resourceHandleDestructor)
+    public SubfileHelper(GameState gameState, ResourceLoader loader, ResourceHandleDestructor resourceHandleDestructor,
+        CollectionStorage collections)
     {
         _gameState                = gameState;
         _loader                   = loader;
         _resourceHandleDestructor = resourceHandleDestructor;
+        _collections              = collections;
 
-        _loader.ResourceLoaded += SubfileContainerRequested;
+        _loader.PreLoadFile += SubfileContainerRequested;
         _resourceHandleDestructor.Subscribe(ResourceDestroyed, ResourceHandleDestructor.Priority.SubfileHelper);
     }
-
 
     public IEnumerator<KeyValuePair<nint, ResolveData>> GetEnumerator()
         => _gameState.SubFileCollection.GetEnumerator();
@@ -68,24 +70,27 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
 
     public void Dispose()
     {
-        _loader.ResourceLoaded -= SubfileContainerRequested;
+        _loader.PreLoadFile -= SubfileContainerRequested;
         _resourceHandleDestructor.Unsubscribe(ResourceDestroyed);
     }
 
-    private void SubfileContainerRequested(ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
-        ResolveData resolveData)
+    private void SubfileContainerRequested(ResourceHandle* handle, CiByteString actualPath, ReadOnlySpan<byte> additionalData)
     {
+        // Done during SQPack load, so guaranteed to be done before the subfiles are loaded.
         switch (handle->FileType)
         {
             case ResourceType.Mtrl:
+                if (PathDataHandler.ReadMtrl(additionalData, out var mtrlData))
+                    _gameState.SubFileCollection[(nint)handle] = new ResolveData(_collections.ByLocalId(mtrlData.Collection));
+                break;
             case ResourceType.Avfx:
-                if (handle->FileSize == 0)
-                    _gameState.SubFileCollection[(nint)handle] = resolveData;
+                if (PathDataHandler.Read(additionalData, out var avfxData))
+                    _gameState.SubFileCollection[(nint)handle] = new ResolveData(_collections.ByLocalId(avfxData.Collection));
 
                 break;
         }
     }
 
-    private void ResourceDestroyed(ResourceHandle* handle)
-        => _gameState.SubFileCollection.TryRemove((nint)handle, out _);
+    private void ResourceDestroyed(in ResourceHandleDestructor.Arguments arguments)
+        => _gameState.SubFileCollection.TryRemove((nint)arguments.ResourceHandle, out _);
 }

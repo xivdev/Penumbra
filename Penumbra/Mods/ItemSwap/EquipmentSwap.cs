@@ -1,3 +1,4 @@
+using ImSharp;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -45,13 +46,13 @@ public static class EquipmentSwap
         var mtrlVariantTo = imcEntry.MaterialId;
         var skipFemale    = false;
         var skipMale      = false;
-        foreach (var gr in Enum.GetValues<GenderRace>())
+        foreach (var gr in GenderRace.Values)
         {
             switch (gr.Split().Item1)
             {
-                case Gender.Male when skipMale:        continue;
-                case Gender.Female when skipFemale:    continue;
-                case Gender.MaleNpc when skipMale:     continue;
+                case Gender.Male when skipMale:
+                case Gender.Female when skipFemale:
+                case Gender.MaleNpc when skipMale:
                 case Gender.FemaleNpc when skipFemale: continue;
             }
 
@@ -137,13 +138,13 @@ public static class EquipmentSwap
 
             var skipFemale = false;
             var skipMale   = false;
-            foreach (var gr in Enum.GetValues<GenderRace>())
+            foreach (var gr in GenderRace.Values)
             {
                 switch (gr.Split().Item1)
                 {
-                    case Gender.Male when skipMale:        continue;
-                    case Gender.Female when skipFemale:    continue;
-                    case Gender.MaleNpc when skipMale:     continue;
+                    case Gender.Male when skipMale:
+                    case Gender.Female when skipFemale:
+                    case Gender.MaleNpc when skipMale:
                     case Gender.FemaleNpc when skipFemale: continue;
                 }
 
@@ -460,8 +461,11 @@ public static class EquipmentSwap
         }
 
         var mtrl = FileSwap.CreateSwap(manager, ResourceType.Mtrl, redirections, pathFrom, pathTo);
-        var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
-        mtrl.ChildSwaps.Add(shpk);
+        if (manager.Config.IncludeShpkInSwap)
+        {
+            var shpk = CreateShader(manager, redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged);
+            mtrl.ChildSwaps.Add(shpk);
+        }
 
         foreach (ref var texture in mtrl.AsMtrl()!.Textures.AsSpan())
         {

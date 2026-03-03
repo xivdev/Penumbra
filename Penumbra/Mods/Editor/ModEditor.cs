@@ -1,5 +1,4 @@
-using OtterGui.Compression;
-using OtterGui.Services;
+using Luna;
 using Penumbra.Mods.Groups;
 using Penumbra.Mods.SubMods;
 
@@ -14,7 +13,7 @@ public class ModEditor(
     ModSwapEditor swapEditor,
     MdlMaterialEditor mdlMaterialEditor,
     FileCompactor compactor)
-    : IDisposable, IService
+    : IDisposable
 {
     public readonly ModNormalizer     ModNormalizer     = modNormalizer;
     public readonly ModMetaEditor     MetaEditor        = metaEditor;
@@ -37,8 +36,8 @@ public class ModEditor(
         }
     }
 
-    private readonly object _lock = new();
-    private          Task?  _loadingMod;
+    private readonly Lock  _lock = new();
+    private          Task? _loadingMod;
 
     public Mod? Mod      { get; private set; }
     public int  GroupIdx { get; private set; }
@@ -58,6 +57,7 @@ public class ModEditor(
             MetaEditor.Load(Mod!, Option!);
             Duplicates.Clear();
             MdlMaterialEditor.ScanModels(Mod!);
+            OptionLoaded?.Invoke();
         });
     }
 
@@ -82,13 +82,14 @@ public class ModEditor(
             MetaEditor.Load(Mod!, Option!);
             FileEditor.Clear();
             Duplicates.Clear();
+            OptionLoaded?.Invoke();
         });
     }
 
     /// <summary> Load the correct option by indices for the currently loaded mod if possible, unload if not.  </summary>
     private void LoadOption(int groupIdx, int dataIdx, bool message)
     {
-        if (Mod != null && Mod.Groups.Count > groupIdx)
+        if (Mod is not null && Mod.Groups.Count > groupIdx)
         {
             if (groupIdx == -1 && dataIdx == 0)
             {
@@ -120,6 +121,8 @@ public class ModEditor(
             Penumbra.Log.Error($"Loading invalid option {groupIdx} {dataIdx} for Mod {Mod?.Name ?? "Unknown"}.");
     }
 
+    public event Action? OptionLoaded;
+
     public void Clear()
     {
         Duplicates.Clear();
@@ -128,6 +131,7 @@ public class ModEditor(
         MetaEditor.Clear();
         Mod = null;
         LoadOption(0, 0, false);
+        OptionLoaded?.Invoke();
     }
 
     public void Dispose()
@@ -147,7 +151,7 @@ public class ModEditor(
         foreach (var subDir in baseDir.GetDirectories())
         {
             ClearEmptySubDirectories(subDir);
-            if (subDir.GetFiles().Length == 0 && subDir.GetDirectories().Length == 0)
+            if (subDir.GetFiles().Length is 0 && subDir.GetDirectories().Length is 0)
                 subDir.Delete();
         }
     }

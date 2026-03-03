@@ -1,10 +1,9 @@
-using OtterGui.Services;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Services;
 
-public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections) : IService
+public class CleanupService(SaveService saveService, ModManager mods, CollectionManager collections) : Luna.IService
 {
     private CancellationTokenSource _cancel = new();
     private Task?                   _task;
@@ -68,7 +67,7 @@ public class CleanupService(SaveService saveService, ModManager mods, Collection
         _cancel = new CancellationTokenSource();
         _task = Task.Run(() =>
         {
-            var configFiles = Directory.EnumerateFiles(saveService.FileNames.ConfigDirectory, "*.json.bak", SearchOption.AllDirectories)
+            var configFiles = Directory.EnumerateFiles(saveService.FileNames.ConfigurationDirectory, "*.json.bak", SearchOption.AllDirectories)
                 .ToList();
             Progress = 0.1;
             if (_cancel.IsCancellationRequested)

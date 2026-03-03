@@ -1,10 +1,6 @@
-using Dalamud.Interface;
-using Dalamud.Bindings.ImGui;
+using ImSharp;
+using Luna;
 using Newtonsoft.Json.Linq;
-using OtterGui;
-using OtterGui.Raii;
-using OtterGui.Text;
-using Penumbra.Api.Api;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Editor;
@@ -40,27 +36,24 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
             _initialized = true;
         }
 
-        using var id = ImUtf8.PushId((int)Identifier.Type);
+        using var id = Im.Id.Push((int)Identifier.Type);
         DrawNew();
 
-        var height    = ColumnHeight;
-        var skips     = ImGuiClip.GetNecessarySkipsAtPos(height, ImGui.GetCursorPosY(), Count);
-        if (skips < Count)
+        var       height  = ColumnHeight;
+        using var clipper = new Im.ListClipper(Count, height);
+        foreach (var (index, (identifier, value)) in clipper.Iterate(Enumerate().Index()))
         {
-            var remainder = ImGuiClip.ClippedTableDraw(Enumerate(), skips, DrawLine, Count);
-            if (remainder > 0)
-                ImGuiClip.DrawEndDummy(remainder, height);
+            id.Push(index);
+            DrawEntry(identifier, value);
+            id.Pop();
         }
-
-        void DrawLine((TIdentifier Identifier, TEntry Value) pair)
-            => DrawEntry(pair.Identifier, pair.Value);
     }
 
     public abstract ReadOnlySpan<byte> Label      { get; }
     public abstract int                NumColumns { get; }
 
     public virtual float ColumnHeight
-        => ImUtf8.FrameHeightSpacing;
+        => Im.Style.FrameHeightWithSpacing;
 
     protected abstract void DrawNew();
     protected abstract void Initialize();
@@ -78,10 +71,9 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         bool border)
     {
         int tmp = currentId;
-        ImGui.SetNextItemWidth(unscaledWidth * ImUtf8.GlobalScale);
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, UiHelpers.Scale, border);
-        using var color = ImRaii.PushColor(ImGuiCol.Border, Colors.RegexWarningBorder, border);
-        if (ImUtf8.InputScalar(label, ref tmp))
+        Im.Item.SetNextWidth(unscaledWidth * Im.Style.GlobalScale);
+        using var style = ImStyleBorder.Frame.Push(Colors.RegexWarningBorder, Im.Style.GlobalScale, border);
+        if (Im.Input.Scalar(label, ref tmp))
             tmp = Math.Clamp(tmp, minId, maxId);
 
         newId = (ushort)tmp;
@@ -96,17 +88,16 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
         out T newValue, T minValue, T maxValue, float speed, bool addDefault) where T : unmanaged, INumber<T>
     {
         newValue = currentValue;
-        using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
-            defaultValue != currentValue);
-        ImGui.SetNextItemWidth(width);
-        if (ImUtf8.DragScalar(label, ref newValue, minValue, maxValue, speed))
+        var       c     = defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
+        using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
+        Im.Item.SetNextWidth(width);
+        if (Im.Drag(label, ref newValue, minValue, maxValue, speed))
             newValue = newValue <= minValue ? minValue : newValue >= maxValue ? maxValue : newValue;
 
         if (addDefault)
-            ImUtf8.HoverTooltip($"{tooltip}\nDefault Value: {defaultValue}");
+            Im.Tooltip.OnHover($"{tooltip}\nDefault Value: {defaultValue}");
         else
-            ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
+            Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
 
         return newValue != currentValue;
     }
@@ -118,12 +109,11 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected static bool Checkmark(ReadOnlySpan<byte> label, ReadOnlySpan<byte> tooltip, bool currentValue, bool defaultValue,
         out bool newValue)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
-            defaultValue != currentValue);
+        var       c     = defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
+        using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
-        ImUtf8.Checkbox(label, ref newValue);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
+        Im.Checkbox(label, ref newValue);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
         return newValue != currentValue;
     }
 
@@ -134,32 +124,32 @@ public abstract class MetaDrawer<TIdentifier, TEntry>(ModMetaEditor editor, Meta
     protected static bool Checkmark(ReadOnlySpan<byte> label, ReadOnlySpan<char> tooltip, bool currentValue, bool defaultValue,
         out bool newValue)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
-            defaultValue != currentValue);
+        var       c     = defaultValue != currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value();
+        using var color = ImGuiColor.FrameBackground.Push(c, defaultValue != currentValue);
         newValue = currentValue;
-        ImUtf8.Checkbox(label, ref newValue);
-        ImUtf8.HoverTooltip(ImGuiHoveredFlags.AllowWhenDisabled, tooltip);
+        Im.Checkbox(label, ref newValue);
+        Im.Tooltip.OnHover(HoveredFlags.AllowWhenDisabled, tooltip);
         return newValue != currentValue;
     }
 
     protected void DrawMetaButtons(TIdentifier identifier, TEntry entry)
     {
-        ImGui.TableNextColumn();
-        CopyToClipboardButton("Copy this manipulation to clipboard."u8, new Lazy<JToken?>(() => new JArray { MetaDictionary.Serialize(identifier, entry)! }));
+        Im.Table.NextColumn();
+        CopyToClipboardButton("Copy this manipulation to clipboard."u8,
+            new Lazy<JToken?>(() => new JArray { MetaDictionary.Serialize(identifier, entry)! }));
 
-        ImGui.TableNextColumn();
-        if (ImUtf8.IconButton(FontAwesomeIcon.Trash, "Delete this meta manipulation."u8))
+        Im.Table.NextColumn();
+        if (ImEx.Icon.Button(LunaStyle.DeleteIcon, "Delete this meta manipulation."u8))
             Editor.Changes |= Editor.Remove(identifier);
     }
 
     protected void CopyToClipboardButton(ReadOnlySpan<byte> tooltip, Lazy<JToken?> manipulations)
     {
-        if (!ImUtf8.IconButton(FontAwesomeIcon.Clipboard, tooltip))
+        if (!ImEx.Icon.Button(LunaStyle.ToClipboardIcon, tooltip))
             return;
 
-        var text = Functions.ToCompressedBase64(manipulations.Value, 0);
+        var text = CompressionFunctions.ToCompressedBase64(manipulations.Value, 0);
         if (text.Length > 0)
-            ImGui.SetClipboardText(text);
+            Im.Clipboard.Set(text);
     }
 }

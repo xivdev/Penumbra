@@ -62,9 +62,9 @@ public readonly record struct ImcIdentifier(
     public override string ToString()
         => ObjectType switch
         {
-            ObjectType.Equipment or ObjectType.Accessory => $"Imc - {PrimaryId} - {EquipSlot.ToName()} - {Variant}",
-            ObjectType.DemiHuman => $"Imc - {PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
-            _ => $"Imc - {PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
+            ObjectType.Equipment or ObjectType.Accessory => $"IMC - {PrimaryId} - {EquipSlot.ToName()} - {Variant}",
+            ObjectType.DemiHuman => $"IMC - {PrimaryId} - DemiHuman - {SecondaryId} - {EquipSlot.ToName()} - {Variant}",
+            _ => $"IMC - {PrimaryId} - {ObjectType.ToName()} - {SecondaryId} - {BodySlot} - {Variant}",
         };
 
 

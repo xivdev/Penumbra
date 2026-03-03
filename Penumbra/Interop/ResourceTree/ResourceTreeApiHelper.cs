@@ -4,11 +4,22 @@ using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.String.Classes;
 using Penumbra.UI;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
 internal static class ResourceTreeApiHelper
 {
+    public static HashSet<string> GetPlayerResourcesOfType(ResourceTreeFactory factory, ResourceType type)
+    {
+        var resources = GetResourcesOfType(factory.FromObjectTable(ResourceTreeFactory.Flags.LocalPlayerRelatedOnly), type)
+            .Values
+            .SelectMany(r => r.Values)
+            .Select(r => r.Item1);
+
+        return new HashSet<string>(resources, StringComparer.OrdinalIgnoreCase);
+    }
+
     public static Dictionary<ushort, Dictionary<string, HashSet<string>>> GetResourcePathDictionaries(
         IEnumerable<(ICharacter, ResourceTree)> resourceTrees)
     {

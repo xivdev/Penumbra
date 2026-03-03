@@ -1,14 +1,14 @@
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using OtterGui.Services;
+using Luna;
 using Penumbra.GameData;
 using Penumbra.GameData.Interop;
 using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Interop.Hooks.Meta;
 
-public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDisposable
+public sealed unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>
 {
-    public delegate void Delegate(DrawObjectData* data, uint slot, nint unk, Model playerModel);
+    public delegate byte Delegate(DrawObjectData* data, uint slot, nint unk, Model playerModel);
 
     private readonly CollectionResolver _collectionResolver;
     private readonly MetaState          _metaState;
@@ -20,19 +20,25 @@ public unsafe class AtchCallerHook1 : FastHook<AtchCallerHook1.Delegate>, IDispo
         Task = hooks.CreateHook<Delegate>("AtchCaller1", Sigs.AtchCaller1, Detour,
             metaState.Config.EnableMods && !HookOverrides.Instance.Meta.AtchCaller1);
         if (!HookOverrides.Instance.Meta.AtchCaller1)
-            _metaState.Config.ModsEnabled += Toggle;
+            _metaState.Config.ModsEnabled += Set;
     }
 
-    private void Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel)
+    private byte Detour(DrawObjectData* data, uint slot, nint unk, Model playerModel)
     {
-        var collection = playerModel.Valid ? _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true) : _collectionResolver.DefaultCollection;
+        var collection = playerModel.Valid
+            ? _collectionResolver.IdentifyCollection(playerModel.AsDrawObject, true)
+            : _collectionResolver.DefaultCollection;
         _metaState.AtchCollection.Push(collection);
-        Task.Result.Original(data, slot, unk, playerModel);
+        var ret = Task.Result.Original(data, slot, unk, playerModel);
         _metaState.AtchCollection.Pop();
         Penumbra.Log.Excessive(
-            $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
+            $"[AtchCaller1] Invoked on 0x{(ulong)data:X} with {slot}, {unk:X}, 0x{playerModel.Address:X} -> {ret}, identified to {collection.ModCollection.Identity.AnonymizedName}.");
+        return ret;
     }
 
-    public void Dispose()
-        => _metaState.Config.ModsEnabled -= Toggle;
+    public override void Dispose()
+    {
+        _metaState.Config.ModsEnabled -= Set;
+        base.Dispose();
+    }
 }

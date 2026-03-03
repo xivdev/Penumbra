@@ -1,5 +1,5 @@
 using Lumina.Data.Parsing;
-using OtterGui.Extensions;
+using Luna;
 using SharpGLTF.Schema2;
 
 namespace Penumbra.Import.Models.Import;
@@ -156,9 +156,9 @@ public class PrimitiveImporter
             // Record which morph targets have values for this vertex, if any.
             var index = vertexIndex;
             var changedMorphs = morphModifiedVertices
-                .WithIndex()
+                .Index()
                 .Where(pair => _vertexAttributes.Any(attribute => attribute.HasMorph(pair.Index, index)))
-                .Select(pair => pair.Value);
+                .Select(pair => pair.Item);
             foreach (var modifiedVertices in changedMorphs)
                 modifiedVertices.Add(vertexIndex);
         }
@@ -173,7 +173,7 @@ public class PrimitiveImporter
 
         var morphShapeValues = new List<List<MdlStructs.ShapeValueStruct>>();
 
-        foreach (var (modifiedVertices, morphIndex) in morphModifiedVertices.WithIndex())
+        foreach (var (morphIndex, modifiedVertices) in morphModifiedVertices.Index())
         {
             // For a given mesh, each shape key contains a list of shape value mappings.
             var shapeValues = new List<MdlStructs.ShapeValueStruct>();
@@ -185,8 +185,8 @@ public class PrimitiveImporter
                     _streams[attribute.Stream].AddRange(attribute.BuildMorph(morphIndex, vertexIndex));
 
                 // Find any indices that target this vertex index and create a mapping.
-                var targetingIndices = _indices.WithIndex()
-                    .SelectWhere(pair => (pair.Value == vertexIndex, pair.Index));
+                var targetingIndices = _indices.Index()
+                    .SelectWhere(pair => (pair.Item == vertexIndex, pair.Index));
                 shapeValues.AddRange(targetingIndices.Select(targetingIndex => new MdlStructs.ShapeValueStruct
                 {
                     BaseIndicesIndex     = (ushort)targetingIndex,

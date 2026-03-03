@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -14,24 +13,13 @@ public class CrashHandler
 
         try
         {
-            using var reader = new GameEventLogReader(pid);
-            var       parent = Process.GetProcessById(pid);
-            using var handle = parent.SafeHandle;
-            parent.WaitForExit();
-            int exitCode;
-            try
-            {
-                exitCode = parent.ExitCode;
-            }
-            catch
-            {
-                exitCode = -1;
-            }
+            using var reader   = new GameEventLogReader(pid);
+            var       exitCode = Win32Interop.WaitForExit((uint)pid);
 
-            var       obj = reader.Dump("Crash", pid, exitCode, args[2], args[3]);
+            var       obj = reader.Dump("Crash", pid, (int)exitCode, args[2], args[3]);
             using var fs  = File.Open(args[0], FileMode.Create);
             using var w   = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
-            obj.WriteTo(w, new JsonSerializerOptions() { WriteIndented = true });
+            obj.WriteTo(w, new JsonSerializerOptions { WriteIndented = true });
         }
         catch (Exception ex)
         {

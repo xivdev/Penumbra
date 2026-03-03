@@ -1,4 +1,4 @@
-<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+<Project Sdk="Dalamud.NET.Sdk/14.0.2">
     <PropertyGroup>
         <AssemblyTitle>Penumbra</AssemblyTitle>
         <Company>absolute gangstas</Company>
@@ -7,11 +7,13 @@
         <FileVersion>9.0.0.1</FileVersion>
         <AssemblyVersion>9.0.0.1</AssemblyVersion>
         <OutputPath>bin\$(Configuration)\</OutputPath>
+        <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
         <DefineConstants>PROFILING;</DefineConstants>
         <Use_DalamudPackager>false</Use_DalamudPackager>
+        <Use_Dalamud_ImGui>false</Use_Dalamud_ImGui>
     </PropertyGroup>
 
     <ItemGroup>
@@ -50,18 +52,19 @@
     <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.5.2" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
-        <PackageReference Include="SharpCompress" Version="0.40.0" />
+        <PackageReference Include="SharpCompress" Version="0.44.1" />
         <PackageReference Include="SharpGLTF.Core" Version="1.0.5" />
         <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.5" />
         <PackageReference Include="PeNet" Version="5.1.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
         <ProjectReference Include="..\Penumbra.CrashHandler\Penumbra.CrashHandler.csproj" />
         <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
         <ProjectReference Include="..\Penumbra.Api\Penumbra.Api.csproj" />
         <ProjectReference Include="..\Penumbra.String\Penumbra.String.csproj" />
+
+        <ProjectReference Include="..\Luna\Luna.Generators\Luna.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">

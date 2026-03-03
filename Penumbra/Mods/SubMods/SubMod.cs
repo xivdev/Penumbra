@@ -1,6 +1,6 @@
+using Luna;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Extensions;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
@@ -49,23 +49,23 @@ public static class SubMod
         data.Manipulations.Clear();
 
         var files = (JObject?)json[nameof(data.Files)];
-        if (files != null)
+        if (files is not null)
             foreach (var property in files.Properties())
             {
-                if (Utf8GamePath.FromString(property.Name, out var p))
+                if (Utf8GamePath.FromString(property.Name, out var p) && !p.IsEmpty)
                     data.Files.TryAdd(p, new FullPath(basePath, property.Value.ToObject<Utf8RelPath>()));
             }
 
         var swaps = (JObject?)json[nameof(data.FileSwaps)];
-        if (swaps != null)
+        if (swaps is not null)
             foreach (var property in swaps.Properties())
             {
-                if (Utf8GamePath.FromString(property.Name, out var p))
+                if (Utf8GamePath.FromString(property.Name, out var p) && !p.IsEmpty)
                     data.FileSwaps.TryAdd(p, new FullPath(property.Value.ToObject<string>()!));
             }
 
         var manips = json[nameof(data.Manipulations)]?.ToObject<MetaDictionary>();
-        if (manips != null)
+        if (manips is not null)
             data.Manipulations.UnionWith(manips);
     }
 
@@ -81,9 +81,8 @@ public static class SubMod
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void WriteModContainer(JsonWriter j, JsonSerializer serializer, IModDataContainer data, DirectoryInfo basePath)
     {
-        // #TODO: remove comments when TexTools updated.
-        //if (data.Files.Count > 0)
-        //{
+        if (data.Files.Count > 0)
+        {
             j.WritePropertyName(nameof(data.Files));
             j.WriteStartObject();
             foreach (var (gamePath, file) in data.Files)
@@ -96,10 +95,10 @@ public static class SubMod
             }
 
             j.WriteEndObject();
-        //}
+        }
 
-        //if (data.FileSwaps.Count > 0)
-        //{
+        if (data.FileSwaps.Count > 0)
+        {
             j.WritePropertyName(nameof(data.FileSwaps));
             j.WriteStartObject();
             foreach (var (gamePath, file) in data.FileSwaps)
@@ -109,13 +108,13 @@ public static class SubMod
             }
 
             j.WriteEndObject();
-        //}
+        }
 
-        //if (data.Manipulations.Count > 0)
-        //{
+        if (data.Manipulations.Count > 0)
+        {
             j.WritePropertyName(nameof(data.Manipulations));
             serializer.Serialize(j, data.Manipulations);
-        //}
+        }
     }
 
     /// <summary> Write the data for a selectable mod option on a JsonWriter. </summary>
