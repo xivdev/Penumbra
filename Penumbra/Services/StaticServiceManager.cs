@@ -38,28 +38,4 @@ public static class StaticServiceManager
         services.BuildProvider();
         return services;
     }
-
-    private static ServiceManager AddDalamudServices(this ServiceManager services, IDalamudPluginInterface pi)
-        => services.AddExistingService(pi)
-            .AddExistingService(pi.UiBuilder)
-            .AddDalamudService<ICommandManager>(pi)
-            .AddDalamudService<IDataManager>(pi)
-            .AddDalamudService<IClientState>(pi)
-            .AddDalamudService<IPlayerState>(pi)
-            .AddDalamudService<IChatGui>(pi)
-            .AddDalamudService<IFramework>(pi)
-            .AddDalamudService<ICondition>(pi)
-            .AddDalamudService<ITargetManager>(pi)
-            .AddDalamudService<IObjectTable>(pi)
-            .AddDalamudService<ITitleScreenMenu>(pi)
-            .AddDalamudService<IGameGui>(pi)
-            .AddDalamudService<IKeyState>(pi)
-            .AddDalamudService<ISigScanner>(pi)
-            .AddDalamudService<IDragDropManager>(pi)
-            .AddDalamudService<ITextureProvider>(pi)
-            .AddDalamudService<ITextureSubstitutionProvider>(pi)
-            .AddDalamudService<IGameInteropProvider>(pi)
-            .AddDalamudService<IPluginLog>(pi)
-            .AddDalamudService<INotificationManager>(pi)
-            .AddDalamudService<ISeStringEvaluator>(pi);
 }
