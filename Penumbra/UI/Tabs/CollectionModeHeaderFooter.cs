@@ -29,7 +29,7 @@ public sealed class CollectionModeHeader(Configuration config, TutorialService t
 
     public void Draw(Vector2 size)
     {
-        var withSpacing = Im.Style.FrameHeightWithSpacing;
+        var withSpacing = Im.Style.FrameHeight + Im.Style.ItemSpacing.X;
         var buttonSize  = new Vector2((Im.ContentRegion.Available.X - withSpacing) / 4f, Im.Style.FrameHeight);
 
         var       tabSelectedColor = Im.Style[ImGuiColor.TabSelected];

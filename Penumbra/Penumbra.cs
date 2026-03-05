@@ -1,3 +1,4 @@
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using ImSharp;
@@ -25,6 +26,7 @@ using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 using DynamisIpc = Luna.DynamisIpc;
 using MessageService = Penumbra.Services.MessageService;
 using MouseButton = Penumbra.Api.Enums.MouseButton;
+using Notification = Luna.Notification;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra;
@@ -100,6 +102,14 @@ public class Penumbra : IDalamudPlugin
 
             if (_characterUtility.Ready)
                 _residentResources.Reload();
+
+            if (pluginInterface.Reason is PluginLoadReason.Update or PluginLoadReason.Reload)
+            {
+                Messager.AddMessage(
+                    new Notification(
+                        "Penumbra seems to have been updated right now.\n\nIf you encounter any issues, please try restarting the game before reporting them.",
+                        TimeSpan.FromSeconds(30), NotificationType.Info), false, true, false, true);
+            }
         }
         catch (Exception ex)
         {
