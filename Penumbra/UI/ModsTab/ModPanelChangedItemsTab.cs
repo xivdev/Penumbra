@@ -12,7 +12,7 @@ using ImGuiId = ImSharp.ImGuiId;
 namespace Penumbra.UI.ModsTab;
 
 public sealed class ModPanelChangedItemsTab(
-    ModFileSystem fileSystem,
+    ModSelection selection,
     ChangedItemDrawer drawer,
     Configuration config,
     ModDataEditor dataEditor)
@@ -208,7 +208,7 @@ public sealed class ModPanelChangedItemsTab(
         => ModPanelTab.ChangedItems;
 
     public bool IsVisible
-        => fileSystem.Selection.Selection?.GetValue<Mod>()?.ChangedItems.Count > 0;
+        => selection.Mod?.ChangedItems.Count > 0;
 
     private Mod _mod = null!;
 
@@ -218,8 +218,9 @@ public sealed class ModPanelChangedItemsTab(
 
     public void DrawContent()
     {
+        using var id = Im.Id.Push(selection.ModName);
         _id  = Im.Id.Current;
-        _mod = fileSystem.Selection.Selection!.GetValue<Mod>()!;
+        _mod = selection.Mod!;
         drawer.DrawTypeFilter(false);
         var cache = CacheManager.Instance.GetOrCreateCache(_id, () => new ChangedItemsCache());
         Im.Separator();

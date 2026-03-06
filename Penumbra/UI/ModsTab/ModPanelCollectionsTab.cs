@@ -26,6 +26,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
 
     public void DrawContent()
     {
+        using var id = Im.Id.Push(selection.ModName);
         var (direct, inherited) = CountUsage(selection.Mod!);
         Im.Line.New();
         switch (direct)
@@ -53,7 +54,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
 
         foreach (var (idx, (collection, parent, color, state)) in _cache.Index())
         {
-            using var id = Im.Id.Push(idx);
+            id.Push(idx);
             table.DrawColumn(collection.Identity.Name);
 
             table.NextColumn();
@@ -94,6 +95,7 @@ public class ModPanelCollectionsTab(CollectionManager manager, ModSelection sele
             }
 
             table.DrawColumn(parent == collection ? StringU8.Empty : parent.Identity.Name);
+            id.Pop();
         }
     }
 

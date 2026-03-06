@@ -21,6 +21,7 @@ public class ModPanelDescriptionTab(
 
     public void DrawContent()
     {
+        using var id    = Im.Id.Push(selection.ModName);
         using var child = Im.Child.Begin("##description"u8);
         if (!child)
             return;

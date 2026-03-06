@@ -35,6 +35,7 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModSelect
 
     public void DrawContent()
     {
+        using var id    = Im.Id.Push(selection.ModName);
         using var table = Im.Table.Begin("conflicts"u8, 3, TableFlags.RowBackground | TableFlags.ScrollY, Im.ContentRegion.Available);
         if (!table)
             return;
@@ -58,8 +59,9 @@ public class ModPanelConflictsTab(CollectionManager collectionManager, ModSelect
                      .OrderByDescending(GetPriority)
                      .ThenBy(c => c.Mod2.Name, StringComparer.OrdinalIgnoreCase).Index())
         {
-            using var id = Im.Id.Push(index);
+            id.Push(index);
             DrawConflictRow(table, conflict, priorityWidth, buttonSize);
+            id.Pop();
         }
     }
 
