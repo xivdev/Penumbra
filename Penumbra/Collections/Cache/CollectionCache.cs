@@ -7,6 +7,7 @@ using Penumbra.Mods.Editor;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using Penumbra.GameData.Data;
+using Penumbra.Interop.PathResolving;
 
 namespace Penumbra.Collections.Cache;
 
@@ -188,7 +189,8 @@ public sealed class CollectionCache : IDisposable
                     Penumbra.Log.Warning(
                         $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
                 else
-                    _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(ResolvedFileChanged.Type.Removed, _collection, path, FullPath.Empty, mp.Path, mp.Mod));
+                    _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(ResolvedFileChanged.Type.Removed, _collection, path,
+                        FullPath.Empty, mp.Path, mp.Mod));
             }
         }
 
@@ -280,6 +282,14 @@ public sealed class CollectionCache : IDisposable
 
     private static bool IsRedirectionSupported(Utf8GamePath path, IMod mod)
     {
+        if (PathResolver.ForbiddenFiles.ContainsKey((uint)path.Path.Crc32))
+        {
+            Penumbra.Messager.NotificationMessage(
+                $"Redirection of the file\n\t{path}\nfor\n\t{mod.Name}\nis disallowed because this file is too generically used to change.\n\nPlease tell the mod creator to find a different way to achieve the intended change.",
+                NotificationType.Warning);
+            return false;
+        }
+
         var ext = path.Extension().AsciiToLower().ToString();
         switch (ext)
         {
@@ -289,7 +299,8 @@ public sealed class CollectionCache : IDisposable
                     NotificationType.Warning);
                 return false;
             case ".lvb" or ".lgb" or ".sgb":
-                Penumbra.Messager.NotificationMessage($"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.\n\nThis mod will probably not work correctly.",
+                Penumbra.Messager.NotificationMessage(
+                    $"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.\n\nThis mod will probably not work correctly.",
                     NotificationType.Warning);
                 return false;
             default: return true;
@@ -528,18 +539,10 @@ public sealed class CollectionCache : IDisposable
         {
             switch (Type)
             {
-                case 0:
-                    Cache.RemoveModSync(Mod, AddMetaChanges);
-                    break;
-                case 1:
-                    Cache.AddModSync(Mod, AddMetaChanges);
-                    break;
-                case 2:
-                    Cache.ReloadModSync(Mod, AddMetaChanges);
-                    break;
-                case 3:
-                    Cache.ForceFileSync(Path, FullPath);
-                    break;
+                case 0: Cache.RemoveModSync(Mod, AddMetaChanges); break;
+                case 1: Cache.AddModSync(Mod, AddMetaChanges); break;
+                case 2: Cache.ReloadModSync(Mod, AddMetaChanges); break;
+                case 3: Cache.ForceFileSync(Path, FullPath); break;
             }
         }
     }

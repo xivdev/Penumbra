@@ -178,7 +178,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
-        if (PathResolver.ForbiddenFiles.Contains((uint)hash))
+        if (PathResolver.ForbiddenFiles.ContainsKey((uint)hash))
             return;
 
         // If no replacements are being made, we still want to be able to trigger the event.

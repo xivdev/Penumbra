@@ -1,7 +1,6 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Plugin.Services;
 using Lumina.Excel.Sheets;
 using Penumbra.GameData.Data;

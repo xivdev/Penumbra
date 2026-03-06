@@ -5,15 +5,16 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Processing;
+using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.PathResolving;
 
 public class PathResolver : IDisposable, Luna.IService
 {
-    private readonly Configuration      _config;
-    private readonly CollectionManager  _collectionManager;
-    private readonly ResourceLoader     _loader;
+    private readonly Configuration     _config;
+    private readonly CollectionManager _collectionManager;
+    private readonly ResourceLoader    _loader;
 
     private readonly SubfileHelper             _subfileHelper;
     private readonly PathState                 _pathState;
@@ -22,18 +23,23 @@ public class PathResolver : IDisposable, Luna.IService
     private readonly CollectionResolver        _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
 
-    public static FrozenSet<uint> ForbiddenFiles = ((uint[])
+    public static readonly FrozenDictionary<uint, CiByteString> ForbiddenFiles = (((uint, CiByteString)[])
     [
-        0x90E4EE2F, // common/graphics/texture/dummy.tex
-        0x84815A1A, // chara/common/texture/white.tex
-        0x749091FB, // chara/common/texture/black.tex
-        0x5CB9681A, // chara/common/texture/id_16.tex
-        0x7E78D000, // chara/common/texture/red.tex
-        0xBDC0BFD3, // chara/common/texture/green.tex
-        0xC410E850, // chara/common/texture/blue.tex
-        0xD5CFA221, // chara/common/texture/null_normal.tex
-        0xBE48CA67, // chara/common/texture/skin_mask.tex
-    ]).ToFrozenSet();
+        (0x90E4EE2F, new CiByteString("common/graphics/texture/dummy.tex"u8,    MetaDataComputation.All)),
+        (0x84815A1A, new CiByteString("chara/common/texture/white.tex"u8,       MetaDataComputation.All)),
+        (0x749091FB, new CiByteString("chara/common/texture/black.tex"u8,       MetaDataComputation.All)),
+        (0x5CB9681A, new CiByteString("chara/common/texture/id_16.tex"u8,       MetaDataComputation.All)),
+        (0x7E78D000, new CiByteString("chara/common/texture/red.tex"u8,         MetaDataComputation.All)),
+        (0xBDC0BFD3, new CiByteString("chara/common/texture/green.tex"u8,       MetaDataComputation.All)),
+        (0xC410E850, new CiByteString("chara/common/texture/blue.tex"u8,        MetaDataComputation.All)),
+        (0xD5CFA221, new CiByteString("chara/common/texture/null_normal.tex"u8, MetaDataComputation.All)),
+        (0xBE48CA67, new CiByteString("chara/common/texture/skin_mask.tex"u8,   MetaDataComputation.All)),
+    ]).ToFrozenDictionary(p => p.Item1, p =>
+    {
+        Debug.Assert((uint)p.Item2.Crc32 == p.Item1,
+            $"Invalid hash computation in forbidden files for {p.Item2} ({p.Item1:X} vs {p.Item2.Crc32:X}).");
+        return p.Item2;
+    });
 
     public PathResolver(Configuration config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,
@@ -85,9 +91,9 @@ public class PathResolver : IDisposable, Luna.IService
                 // None of these files are ever associated with specific characters,
                 // always use the default resolver for now,
                 // except that common/font is conceptually more UI.
-                ResourceCategory.Common   => path.Path.StartsWith("common/font"u8) ? ResolveUi(path) : DefaultResolver(path),
-                _                         => DefaultResolver(path),
-            }
+                ResourceCategory.Common => path.Path.StartsWith("common/font"u8) ? ResolveUi(path) : DefaultResolver(path),
+                _                       => DefaultResolver(path),
+            },
         };
     }
 
