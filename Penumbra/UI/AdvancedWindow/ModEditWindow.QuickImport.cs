@@ -155,7 +155,7 @@ public partial class ModEditWindow
                 throw new InvalidOperationException();
 
             var directory = Path.GetDirectoryName(_targetPath);
-            if (directory != null)
+            if (directory is not null)
                 Directory.CreateDirectory(directory);
             _editor.Compactor.WriteAllBytes(_targetPath!, _file!.Write());
             _editor.FileEditor.Revert(_editor.Mod!, _editor.Option!);
