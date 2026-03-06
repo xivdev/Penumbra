@@ -285,7 +285,7 @@ public sealed class CollectionCache : IDisposable
         if (PathResolver.ForbiddenFiles.ContainsKey((uint)path.Path.Crc32))
         {
             Penumbra.Messager.NotificationMessage(
-                $"Redirection of the file\n\t{path}\nfor\n\t{mod.Name}\nis disallowed because this file is too generically used to change.\n\nPlease tell the mod creator to find a different way to achieve the intended change.",
+                $"Redirection of the file\n\t{path}\nfor the mod\n\t{mod.Name}\nis disallowed because this file is too generically used to change.\n\nPlease tell the mod creator to find a different way to achieve the intended change.",
                 NotificationType.Warning);
             return false;
         }
