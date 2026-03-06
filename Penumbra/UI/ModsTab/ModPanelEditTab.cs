@@ -11,7 +11,6 @@ using Penumbra.UI.ModsTab.Groups;
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab(
-    ModSelection selection,
     ModManager modManager,
     ModFileSystem fileSystem,
     Services.MessageService messager,

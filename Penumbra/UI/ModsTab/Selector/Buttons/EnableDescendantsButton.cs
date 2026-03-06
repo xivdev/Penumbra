@@ -7,14 +7,14 @@ namespace Penumbra.UI.ModsTab.Selector;
 /// <param name="drawer"> The file system drawer. </param>
 /// <param name="setTo"> Whether the drawer should enable or disable the descendants. </param>
 /// <param name="inherit"> Whether the drawer should inherit all descendants instead of enabling or disabling them. </param>
-public sealed class SetDescendantsButton(ModFileSystemDrawer drawer, bool setTo, bool inherit = false) : BaseButton<IFileSystemFolder>
+public sealed class SetDescendantsButton(ModFileSystemDrawer drawer, bool setTo, bool? inherit) : BaseButton<IFileSystemFolder>
 {
     private readonly StringU8 _label = new((inherit, setTo) switch
     {
-        (true, true)  => "Inherit Descendants"u8,
-        (true, false) => "Stop Inheriting Descendants"u8,
-        (_, true)     => "Enable Descendants"u8,
-        (_, false)    => "Disable Descendants"u8,
+        (true, _)     => "Inherit Descendants"u8,
+        (false, _)    => "Stop Inheriting Descendants"u8,
+        (null, true)  => "Enable Descendants"u8,
+        (null, false) => "Disable Descendants"u8,
     });
 
     /// <inheritdoc/>

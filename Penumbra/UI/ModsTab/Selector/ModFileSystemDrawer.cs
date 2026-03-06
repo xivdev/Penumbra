@@ -2,6 +2,7 @@ using Luna;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
@@ -17,7 +18,8 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     public readonly TutorialService     Tutorial;
     public readonly CommunicatorService Communicator;
 
-    public ModFileSystemDrawer(Services.MessageService messager, ModFileSystem fileSystem, ModManager modManager, CollectionManager collectionManager, Configuration config,
+    public ModFileSystemDrawer(Services.MessageService messager, ModFileSystem fileSystem, ModManager modManager,
+        CollectionManager collectionManager, Configuration config,
         ModImportManager modImport, FileDialogService fileService, TutorialService tutorial, CommunicatorService communicator)
         : base(messager, fileSystem, new ModFilter(modManager, collectionManager.Active, config))
     {
@@ -36,12 +38,12 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
         MainContext.AddButton(new ClearDefaultImportFolderButton(this), -10);
         MainContext.AddButton(new ClearQuickMoveFoldersButtons(this),   -20);
 
-        FolderContext.AddButton(new SetDescendantsButton(this, true),        11);
-        FolderContext.AddButton(new SetDescendantsButton(this, false),       10);
-        FolderContext.AddButton(new SetDescendantsButton(this, true,  true), 6);
-        FolderContext.AddButton(new SetDescendantsButton(this, false, true), 5);
-        FolderContext.AddButton(new SetDefaultImportFolderButton(this),      -50);
-        FolderContext.AddButton(new SetQuickMoveFoldersButtons(this),        -70);
+        FolderContext.AddButton(new SetDescendantsButton(this, true,  null),  11);
+        FolderContext.AddButton(new SetDescendantsButton(this, false, null),  10);
+        FolderContext.AddButton(new SetDescendantsButton(this, true,  true),  6);
+        FolderContext.AddButton(new SetDescendantsButton(this, true,  false), 5);
+        FolderContext.AddButton(new SetDefaultImportFolderButton(this),       -50);
+        FolderContext.AddButton(new SetQuickMoveFoldersButtons(this),         -70);
 
         DataContext.AddButton(new ToggleFavoriteButton(this),          10);
         DataContext.AddButton(new TemporaryButtons(this),              20);
@@ -60,7 +62,7 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
     protected override FileSystemCache<ModFileSystemCache.ModData> CreateCache()
         => new ModFileSystemCache(this);
 
-    public void SetDescendants(IFileSystemFolder folder, bool enabled, bool inherit = false)
+    public void SetDescendants(IFileSystemFolder folder, bool enabled, bool? inherit)
     {
         var mods = folder.GetDescendants().OfType<IFileSystemData<Mod>>().Select(l =>
         {
@@ -69,10 +71,30 @@ public sealed class ModFileSystemDrawer : FileSystemDrawer<ModFileSystemCache.Mo
             return l.Value;
         });
 
-        if (inherit)
-            CollectionManager.Editor.SetMultipleModInheritances(CollectionManager.Active.Current, mods, enabled);
+        if (Config.DefaultTemporaryMode)
+        {
+            var collection = CollectionManager.Active.Current;
+            foreach (var mod in folder.GetDescendants().OfType<IFileSystemData<Mod>>())
+            {
+                if (!CollectionManager.Editor.CanSetTemporarySettings(collection, mod.Value, 0))
+                    continue;
+
+                var settings = new TemporaryModSettings(mod.Value, collection.GetActualSettings(mod.Value.Index).Settings)
+                {
+                    ForceInherit = inherit ?? false,
+                };
+                if (!inherit.HasValue)
+                    settings.Enabled = enabled;
+                CollectionManager.Editor.SetTemporarySettings(collection, mod.Value, settings);
+            }
+        }
         else
-            CollectionManager.Editor.SetMultipleModStates(CollectionManager.Active.Current, mods, enabled);
+        {
+            if (inherit.HasValue)
+                CollectionManager.Editor.SetMultipleModInheritances(CollectionManager.Active.Current, mods, inherit.Value);
+            else
+                CollectionManager.Editor.SetMultipleModStates(CollectionManager.Active.Current, mods, enabled);
+        }
     }
 
     public void Dispose()
