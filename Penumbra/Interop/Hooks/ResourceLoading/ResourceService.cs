@@ -44,7 +44,7 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     {
         var hash = path.Crc32;
         return GetResourceHandler(true, ResourceManager.Instance(),
-            &category,                  &type, &hash, path.Path, null, 0, 0, 0);
+            &category,                  &type, &hash, path.Path, null, 0, null, 0);
     }
 
     public SafeResourceHandle GetSafeResource(ResourceCategory category, ResourceType type, CiByteString path)
@@ -78,11 +78,11 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     public event GetResourcePreDelegate? ResourceRequested;
 
     private delegate ResourceHandle* GetResourceSyncPrototype(ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, nint unk7, uint unk8);
+        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, byte* file, uint line);
 
     private delegate ResourceHandle* GetResourceAsyncPrototype(ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, byte isUnknown, nint unk8,
-        uint unk9);
+        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, byte hasHandleLock, byte* file,
+        uint line);
 
     [Signature(Sigs.GetResourceSync, DetourName = nameof(GetResourceSyncDetour))]
     private readonly Hook<GetResourceSyncPrototype> _getResourceSyncHook = null!;
@@ -91,27 +91,27 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
     private readonly Hook<GetResourceAsyncPrototype> _getResourceAsyncHook = null!;
 
     private ResourceHandle* GetResourceSyncDetour(ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
-        int* resourceHash, byte* path, GetResourceParameters* pGetResParams, nint unk8, uint unk9)
-        => GetResourceHandler(true, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, 0, unk8, unk9);
+        int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte* file, uint line)
+        => GetResourceHandler(true, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, 0, file, line);
 
     private ResourceHandle* GetResourceAsyncDetour(ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
-        int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte isUnk, nint unk8, uint unk9)
-        => GetResourceHandler(false, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk, unk8, unk9);
+        int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte hasHandleLock, byte* file, uint line)
+        => GetResourceHandler(false, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, hasHandleLock, file, line);
 
     /// <summary>
     /// Resources can be obtained synchronously and asynchronously. We need to change behaviour in both cases.
     /// Both work basically the same, so we can reduce the main work to one function used by both hooks.
     /// </summary>
     private ResourceHandle* GetResourceHandler(bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte isUnk, nint unk8, uint unk9)
+        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, byte hasHandleLock, byte* file, uint line)
     {
         if (!Utf8GamePath.FromPointer(path, MetaDataComputation.CiCrc32, out var gamePath))
         {
             Penumbra.Log.Error("[ResourceService] Could not create GamePath from resource path.");
             return isSync
-                ? _getResourceSyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, unk8, unk9)
-                : _getResourceAsyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk, unk8,
-                    unk9);
+                ? _getResourceSyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, file, line)
+                : _getResourceAsyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, hasHandleLock, file,
+                    line);
         }
 
         if (gamePath.IsEmpty)
@@ -127,14 +127,13 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
         if (returnValue != null)
             return returnValue;
 
-        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, isUnk, unk8,
-            unk9);
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, original, pGetResParams, hasHandleLock, file,
+            line);
     }
 
     /// <summary> Call the original GetResource function. </summary>
     public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, CiByteString path,
-        Utf8GamePath original,
-        GetResourceParameters* resourceParameters = null, byte unk = 0, nint unk8 = 0, uint unk9 = 0)
+        Utf8GamePath original, GetResourceParameters* resourceParameters = null, byte hasHandleLock = 0, byte* file = null, uint line = 0)
     {
         var previous = _currentGetResourcePath.Value;
         try
@@ -142,9 +141,9 @@ public unsafe class ResourceService : IDisposable, Luna.IRequiredService
             _currentGetResourcePath.Value = original;
             return sync
                 ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
-                    resourceParameters, unk8, unk9)
+                    resourceParameters, file, line)
                 : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
-                    resourceParameters, unk, unk8, unk9);
+                    resourceParameters, hasHandleLock, file, line);
         }
         finally
         {
