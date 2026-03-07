@@ -9,6 +9,7 @@ public enum ManagementTabType
 {
     UnusedMods,
     DuplicateMods,
+    ForbiddenFiles,
     Cleanup,
 }
 
@@ -75,8 +76,9 @@ public sealed class ManagementTab : TabBar<ManagementTabType>, ITab<TabType>
         EphemeralConfig config,
         UnusedModsTab unusedMods,
         DuplicateModsTab duplicateMods,
+        ForbiddenFilesTab forbiddenFiles,
         CleanupTab cleanup)
-        : base("Management", log, unusedMods, duplicateMods, cleanup)
+        : base("Management", log, unusedMods, duplicateMods, forbiddenFiles, cleanup)
     {
         NextTab = config.SelectedManagementTab;
         TabSelected.Subscribe((in tab) => config.SelectedManagementTab = tab, 0);

@@ -103,13 +103,11 @@ public class Penumbra : IDalamudPlugin
             if (_characterUtility.Ready)
                 _residentResources.Reload();
 
-            if (pluginInterface.Reason is PluginLoadReason.Update or PluginLoadReason.Reload)
-            {
+            if (pluginInterface.Reason is PluginLoadReason.Update)
                 Messager.AddMessage(
                     new Notification(
                         "Penumbra seems to have been updated right now.\n\nIf you encounter any issues, please try restarting the game before reporting them.",
                         TimeSpan.FromSeconds(30), NotificationType.Info), false, true, false, true);
-            }
         }
         catch (Exception ex)
         {

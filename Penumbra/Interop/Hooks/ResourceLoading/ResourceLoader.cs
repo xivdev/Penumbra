@@ -7,6 +7,7 @@ using Penumbra.Interop.SafeHandles;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.UI.ManagementTab;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 
 namespace Penumbra.Interop.Hooks.ResourceLoading;
@@ -178,7 +179,7 @@ public unsafe class ResourceLoader : IDisposable, Luna.IService
             return;
 
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
-        if (PathResolver.ForbiddenFiles.ContainsKey((uint)hash))
+        if (ForbiddenFilesTab.ForbiddenFiles.ContainsKey((uint)hash))
             return;
 
         // If no replacements are being made, we still want to be able to trigger the event.

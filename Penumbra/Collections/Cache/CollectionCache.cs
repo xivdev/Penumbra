@@ -280,32 +280,27 @@ public sealed class CollectionCache : IDisposable
             _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(type, collection, key, value, old, mod));
     }
 
-    private static bool IsRedirectionSupported(Utf8GamePath path, IMod mod)
+    private sealed class ForbiddenFileNotification : Luna.Notification
     {
-        if (PathResolver.ForbiddenFiles.ContainsKey((uint)path.Path.Crc32))
-        {
-            Penumbra.Messager.NotificationMessage(
-                $"Redirection of the file\n\t{path}\nfor the mod\n\t{mod.Name}\nis disallowed because this file is too generically used to change.\n\nPlease tell the mod creator to find a different way to achieve the intended change.",
-                NotificationType.Warning);
-            return false;
-        }
 
-        var ext = path.Extension().AsciiToLower().ToString();
-        switch (ext)
-        {
-            case ".atch" or ".eqp" or ".eqdp" or ".est" or ".gmp" or ".cmp" or ".imc":
-                Penumbra.Messager.NotificationMessage(
-                    $"Redirection of {ext} files for {mod.Name} is unsupported. This probably means that the mod is outdated and may not work correctly.\n\nPlease tell the mod creator to use the corresponding meta manipulations instead.",
-                    NotificationType.Warning);
-                return false;
-            case ".lvb" or ".lgb" or ".sgb":
-                Penumbra.Messager.NotificationMessage(
-                    $"Redirection of {ext} files for {mod.Name} is unsupported as this breaks the game.\n\nThis mod will probably not work correctly.",
-                    NotificationType.Warning);
-                return false;
-            default: return true;
-        }
+        public ForbiddenFileNotification(string content, NotificationType type = NotificationType.Warning)
+            : base(content, type)
+        { }
+
+        public ForbiddenFileNotification(string content, TimeSpan duration, NotificationType type = NotificationType.Warning)
+            : base(content, duration, type)
+        { }
+
+        public ForbiddenFileNotification(Exception ex, string content1, string content2, NotificationType type = NotificationType.Error)
+            : base(ex, content1, content2, type)
+        { }
+
+        public ForbiddenFileNotification(Exception ex, string content1, string content2, TimeSpan duration, NotificationType type = NotificationType.Error)
+            : base(ex, content1, content2, duration, type)
+        { }
     }
+
+
 
     // Add a specific file redirection, handling potential conflicts.
     // For different mods, higher mod priority takes precedence before option group priority,
@@ -316,7 +311,7 @@ public sealed class CollectionCache : IDisposable
         if (!CheckFullPath(path, file))
             return;
 
-        if (!IsRedirectionSupported(path, mod))
+        if (!_manager.ForbiddenNotification.IsRedirectionSupported(path, mod, _collection.Identity.Index <= 0))
             return;
 
         try

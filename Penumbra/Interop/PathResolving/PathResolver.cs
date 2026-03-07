@@ -1,11 +1,9 @@
-using System.Collections.Frozen;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.Hooks.ResourceLoading;
 using Penumbra.Interop.Processing;
-using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.PathResolving;
@@ -22,24 +20,6 @@ public class PathResolver : IDisposable, Luna.IService
     private readonly GameState                 _gameState;
     private readonly CollectionResolver        _collectionResolver;
     private readonly GamePathPreProcessService _preprocessor;
-
-    public static readonly FrozenDictionary<uint, CiByteString> ForbiddenFiles = (((uint, CiByteString)[])
-    [
-        (0x90E4EE2F, new CiByteString("common/graphics/texture/dummy.tex"u8,    MetaDataComputation.All)),
-        (0x84815A1A, new CiByteString("chara/common/texture/white.tex"u8,       MetaDataComputation.All)),
-        (0x749091FB, new CiByteString("chara/common/texture/black.tex"u8,       MetaDataComputation.All)),
-        (0x5CB9681A, new CiByteString("chara/common/texture/id_16.tex"u8,       MetaDataComputation.All)),
-        (0x7E78D000, new CiByteString("chara/common/texture/red.tex"u8,         MetaDataComputation.All)),
-        (0xBDC0BFD3, new CiByteString("chara/common/texture/green.tex"u8,       MetaDataComputation.All)),
-        (0xC410E850, new CiByteString("chara/common/texture/blue.tex"u8,        MetaDataComputation.All)),
-        (0xD5CFA221, new CiByteString("chara/common/texture/null_normal.tex"u8, MetaDataComputation.All)),
-        (0xBE48CA67, new CiByteString("chara/common/texture/skin_mask.tex"u8,   MetaDataComputation.All)),
-    ]).ToFrozenDictionary(p => p.Item1, p =>
-    {
-        Debug.Assert((uint)p.Item2.Crc32 == p.Item1,
-            $"Invalid hash computation in forbidden files for {p.Item2} ({p.Item1:X} vs {p.Item2.Crc32:X}).");
-        return p.Item2;
-    });
 
     public PathResolver(Configuration config, CollectionManager collectionManager, ResourceLoader loader,
         SubfileHelper subfileHelper, PathState pathState, MetaState metaState, CollectionResolver collectionResolver, GameState gameState,

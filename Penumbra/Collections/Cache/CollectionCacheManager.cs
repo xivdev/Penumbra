@@ -12,21 +12,23 @@ using Penumbra.Mods.Manager.OptionEditor;
 using Penumbra.Mods.Settings;
 using Penumbra.Services;
 using Penumbra.String.Classes;
+using Penumbra.UI;
 
 namespace Penumbra.Collections.Cache;
 
 public class CollectionCacheManager : IDisposable, IService
 {
-    private readonly  FrameworkManager    _framework;
-    private readonly  CommunicatorService _communicator;
-    private readonly  TempModManager      _tempMods;
-    private readonly  ModStorage          _modStorage;
-    private readonly  CollectionStorage   _storage;
-    private readonly  ActiveCollections   _active;
-    internal readonly Configuration       Config;
-    internal readonly ResolvedFileChanged ResolvedFileChanged;
-    internal readonly MetaFileManager     MetaFileManager;
-    internal readonly ResourceLoader      ResourceLoader;
+    private readonly  FrameworkManager          _framework;
+    private readonly  CommunicatorService       _communicator;
+    private readonly  TempModManager            _tempMods;
+    private readonly  ModStorage                _modStorage;
+    private readonly  CollectionStorage         _storage;
+    private readonly  ActiveCollections         _active;
+    internal readonly Configuration             Config;
+    internal readonly ResolvedFileChanged       ResolvedFileChanged;
+    internal readonly MetaFileManager           MetaFileManager;
+    internal readonly ResourceLoader            ResourceLoader;
+    internal readonly ForbiddenFileNotification ForbiddenNotification;
 
     private readonly ConcurrentQueue<CollectionCache.ChangeData> _changeQueue = new();
 
@@ -40,18 +42,19 @@ public class CollectionCacheManager : IDisposable, IService
 
     public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator, TempModManager tempMods, ModStorage modStorage,
         MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage, ResourceLoader resourceLoader,
-        Configuration config)
+        Configuration config, ForbiddenFileNotification forbiddenNotification)
     {
-        _framework          = framework;
-        _communicator       = communicator;
-        _tempMods           = tempMods;
-        _modStorage         = modStorage;
-        MetaFileManager     = metaFileManager;
-        _active             = active;
-        _storage            = storage;
-        ResourceLoader      = resourceLoader;
-        Config              = config;
-        ResolvedFileChanged = _communicator.ResolvedFileChanged;
+        _framework            = framework;
+        _communicator         = communicator;
+        _tempMods             = tempMods;
+        _modStorage           = modStorage;
+        MetaFileManager       = metaFileManager;
+        _active               = active;
+        _storage              = storage;
+        ResourceLoader        = resourceLoader;
+        Config                = config;
+        ForbiddenNotification = forbiddenNotification;
+        ResolvedFileChanged   = _communicator.ResolvedFileChanged;
 
         if (!_active.Individuals.IsLoaded)
             _active.Individuals.Loaded += CreateNecessaryCaches;
