@@ -316,8 +316,9 @@ public sealed class FileEditor(
 
         public Combo(Func<IEnumerable<FileRegistry>> getFiles)
         {
-            _getFiles = getFiles;
-            Filter    = new FileFilter();
+            _getFiles                = getFiles;
+            Filter                   = new FileFilter();
+            DirtyCacheOnClosingPopup = true;
         }
 
         protected override IEnumerable<FileRegistry> GetItems()

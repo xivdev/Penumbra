@@ -47,6 +47,6 @@ public class MessageService(Luna.Logger log, IChatGui chat, INotificationManager
 
         AddTaggedMessage($"{fullPath}.{messageComplement}",
             new Luna.Notification(
-                $"Cowardly refusing to load replacement for {originalGamePath.Filename().ToString().ToLowerInvariant()} by {mod.Name}{(messageComplement.Length > 0 ? ":\n" : ".")}{messageComplement}", TimeSpan.FromSeconds(10)));
+                $"Cowardly refusing to load replacement for\n\t{originalGamePath.Filename().ToString().ToLowerInvariant()}\nby\n\t{mod.Name}{(messageComplement.Length > 0 ? ":\n" : ".")}{messageComplement}", TimeSpan.FromSeconds(10)));
     }
 }

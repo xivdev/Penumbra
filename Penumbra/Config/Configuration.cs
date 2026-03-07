@@ -72,7 +72,7 @@ public partial class Configuration : IPluginConfiguration, ISavable, IService
     public bool        DefaultTemporaryMode                 { get; set; } = false;
     public bool        EnableDirectoryWatch                 { get; set; } = false;
     public bool        EnableAutomaticModImport             { get; set; } = false;
-    public bool        AutoDismissModImportSuccessReports   { get; set; } = false;
+    public bool        AutoDismissModImportSuccessReports   { get; set; } = true;
     public bool        PreventExportLoopback                { get; set; } = true;
     public bool        EnableCustomShapes                   { get; set; } = true;
 

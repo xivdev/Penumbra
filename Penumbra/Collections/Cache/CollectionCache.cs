@@ -105,7 +105,7 @@ public sealed class CollectionCache : IDisposable
     // Reverse resolve multiple paths at once for efficiency.
     public HashSet<Utf8GamePath>[] ReverseResolvePaths(IReadOnlyCollection<string> fullPaths)
     {
-        if (fullPaths.Count == 0)
+        if (fullPaths.Count is 0)
             return [];
 
         var ret  = new HashSet<Utf8GamePath>[fullPaths.Count];
@@ -276,7 +276,7 @@ public sealed class CollectionCache : IDisposable
     private void InvokeResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath key, FullPath value,
         FullPath old, IMod? mod)
     {
-        if (Calculating == -1)
+        if (Calculating is -1)
             _manager.ResolvedFileChanged.Invoke(new ResolvedFileChanged.Arguments(type, collection, key, value, old, mod));
     }
 
