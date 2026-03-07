@@ -29,6 +29,12 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
 
     private void OnModDataChange(in ModDataChanged.Arguments arguments)
     {
+        if (arguments.Type.HasFlag(ModDataChangeType.Deletion))
+        {
+            Dirty |= IManagedCache.DirtyFlags.Custom;
+            return;
+        }
+
         const ModDataChangeType relevantFlags =
             ModDataChangeType.Name
           | ModDataChangeType.Author
@@ -216,13 +222,13 @@ public sealed class ModFileSystemCache : FileSystemCache<ModFileSystemCache.ModD
 
     public override void Update()
     {
-        if (ColorsDirty)
-        {
-            CollapsedFolderColor =  ColorId.FolderCollapsed.Value().ToVector();
-            ExpandedFolderColor  =  ColorId.FolderExpanded.Value().ToVector();
-            LineColor            =  ColorId.FolderLine.Value().ToVector();
-            Dirty                &= ~IManagedCache.DirtyFlags.Colors;
-        }
+        if (!ColorsDirty)
+            return;
+
+        CollapsedFolderColor =  ColorId.FolderCollapsed.Value().ToVector();
+        ExpandedFolderColor  =  ColorId.FolderExpanded.Value().ToVector();
+        LineColor            =  ColorId.FolderLine.Value().ToVector();
+        Dirty                &= ~IManagedCache.DirtyFlags.Colors;
     }
 
     protected override void Dispose(bool disposing)
