@@ -20,6 +20,9 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
     private readonly ResourceHandleDestructor _resourceHandleDestructor;
     private readonly CollectionStorage        _collections;
 
+    public IReadOnlyDictionary<(uint Crc32, ModCollection Collection), ResolveData> EarmarkedFiles
+        => _earmarkedFiles;
+
     public SubfileHelper(GameState gameState, ResourceLoader loader, ResourceHandleDestructor resourceHandleDestructor,
         CollectionStorage collections)
     {
@@ -74,6 +77,13 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
         _resourceHandleDestructor.Unsubscribe(ResourceDestroyed);
     }
 
+    private readonly ConcurrentDictionary<(uint Crc32, ModCollection Collection), ResolveData> _earmarkedFiles = [];
+
+    /// <summary> Earmark requested files by actual path and resolve data to retrieve the associated player. </summary>
+    /// <remarks> Currently used by <see cref="Interop.Processing.AvfxPathPreProcessor"/> to help sync tools to associate the subfiles with the correct game object for their transient cache.</remarks>
+    public void EarmarkFile(CiByteString actualPath, ResolveData resolveData)
+        => _earmarkedFiles[((uint)actualPath.Crc32, resolveData.ModCollection)] = resolveData;
+
     private void SubfileContainerRequested(ResourceHandle* handle, CiByteString actualPath, ReadOnlySpan<byte> additionalData)
     {
         // Done during SQPack load, so guaranteed to be done before the subfiles are loaded.
@@ -81,11 +91,22 @@ public sealed unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyV
         {
             case ResourceType.Mtrl:
                 if (PathDataHandler.ReadMtrl(additionalData, out var mtrlData))
-                    _gameState.SubFileCollection[(nint)handle] = new ResolveData(_collections.ByLocalId(mtrlData.Collection));
+                {
+                    var collection = _collections.ByLocalId(mtrlData.Collection);
+                    _gameState.SubFileCollection[(nint)handle] = _earmarkedFiles.TryRemove(((uint)actualPath.Crc32, collection), out var data)
+                        ? data
+                        : new ResolveData(collection);
+                }
+
                 break;
             case ResourceType.Avfx:
                 if (PathDataHandler.Read(additionalData, out var avfxData))
-                    _gameState.SubFileCollection[(nint)handle] = new ResolveData(_collections.ByLocalId(avfxData.Collection));
+                {
+                    var collection = _collections.ByLocalId(avfxData.Collection);
+                    _gameState.SubFileCollection[(nint)handle] = _earmarkedFiles.TryRemove(((uint)actualPath.Crc32, collection), out var data)
+                        ? data
+                        : new ResolveData(collection);
+                }
 
                 break;
         }

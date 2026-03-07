@@ -652,6 +652,24 @@ public sealed class DebugTab : Window, ITab<TabType>
             }
         }
 
+        using (var subfileTree = Im.Tree.Node("Earmarked Subfile Files"u8))
+        {
+            if (subfileTree)
+            {
+                using var table = Im.Table.Begin("###EarmarkedTable"u8, 3, TableFlags.SizingFixedFit);
+                if (table)
+                {
+                    foreach (var ((crc, collection), resolve) in _subfileHelper.EarmarkedFiles)
+                    {
+                        table.DrawColumn($"0x{crc:X}");
+                        table.DrawColumn(resolve.ModCollection.Identity.Name);
+                        table.NextColumn();
+                        Penumbra.Dynamis.DrawPointer(resolve.AssociatedGameObject);
+                    }
+                }
+            }
+        }
+
         using (var identifiedTree = Im.Tree.Node("Identified Collections"u8))
         {
             if (identifiedTree)
