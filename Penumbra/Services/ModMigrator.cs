@@ -49,7 +49,7 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
             {
                 foreach (var (gamePath, file) in container.Files)
                 {
-                    switch (ResourceTypeExtensions.FromExtension(gamePath.Extension().Span))
+                    switch (ResourceType.FromExtension(gamePath.Extension().Span))
                     {
                         case ResourceType.Tex:  _textures.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
                         case ResourceType.Mdl:  _models.TryAdd(file.FullName, (gamePath.ToString(), container)); break;
@@ -312,8 +312,8 @@ public class ModMigrator(IDataManager gameData, TextureManager textures) : IServ
         if (fromExists && toExists)
             return;
 
-        if (ResourceTypeExtensions.FromExtension(Path.GetExtension(swapFrom.AsSpan())) is not ResourceType.Tex
-         || ResourceTypeExtensions.FromExtension(Path.GetExtension(swapTo.AsSpan())) is not ResourceType.Tex)
+        if (ResourceType.FromExtension(Path.GetExtension(swapFrom.AsSpan())) is not ResourceType.Tex
+         || ResourceType.FromExtension(Path.GetExtension(swapTo.AsSpan())) is not ResourceType.Tex)
         {
             _messages.Add(
                 $"Could not migrate file swap {swapFrom} -> {swapTo} in {container.Mod.Name}: {container.GetFullName()}. Only textures may be migrated.{(fromExists ? "\n\tSource File does not exist." : "")}{(toExists ? "\n\tTarget File does not exist." : "")}");

@@ -69,7 +69,7 @@ public sealed class CombiningTextureEditorFactory(
         => throw new NotSupportedException();
 
     private static bool IsTexturePath(string path)
-        => ModFileCollection.GetPathResourceType(path) is ResourceType.Atex or ResourceType.Tex;
+        => ResourceType.FromPath(path) is ResourceType.Atex or ResourceType.Tex;
 
     public CombiningTextureEditor CreateForModEditWindow(FileEditingContext? context)
         => Create(context, true, true);

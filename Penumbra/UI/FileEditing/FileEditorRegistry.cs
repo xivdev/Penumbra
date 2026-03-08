@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.Api.Enums;
-using Penumbra.Mods.Editor;
 using Penumbra.UI.FileEditing.Materials;
 using Penumbra.UI.FileEditing.Models;
 using Penumbra.UI.FileEditing.Shaders;
@@ -135,20 +134,20 @@ public class FileEditorRegistry : Luna.IUiService
         => GetFactoriesForFile(path, gamePath).Any();
 
     public IFileEditor CreateForFile(string path, bool writable, string? gamePath, FileEditingContext? context)
-        => GetPreferred(ModFileCollection.GetPathResourceType(path), GetFactoriesForFile(path, gamePath))
+        => GetPreferred(ResourceType.FromPath(path), GetFactoriesForFile(path, gamePath))
             .CreateForFile(path, writable, gamePath, context);
 
     public IEnumerable<IFileEditorFactory> GetFactoriesForFile(string path, string? gamePath)
-        => GetFactoriesForType(ModFileCollection.GetPathResourceType(path)).Where(factory => factory.SupportsFile(path, gamePath));
+        => GetFactoriesForType(ResourceType.FromPath(path)).Where(factory => factory.SupportsFile(path, gamePath));
 
     public bool SupportsGameFile(string path)
         => GetFactoriesForGameFile(path).Any();
 
     public IFileEditor CreateForGameFile(string path, FileEditingContext? context)
-        => GetPreferred(ModFileCollection.GetPathResourceType(path), GetFactoriesForGameFile(path)).CreateForGameFile(path, context);
+        => GetPreferred(ResourceType.FromPath(path), GetFactoriesForGameFile(path)).CreateForGameFile(path, context);
 
     public IEnumerable<IFileEditorFactory> GetFactoriesForGameFile(string path)
-        => GetFactoriesForType(ModFileCollection.GetPathResourceType(path)).Where(factory => factory.SupportsGameFile(path));
+        => GetFactoriesForType(ResourceType.FromPath(path)).Where(factory => factory.SupportsGameFile(path));
 
     public unsafe bool SupportsResourceHandle(ResourceHandle* handle, string? gamePath)
         => GetFactoriesForResourceHandle(handle, gamePath).Any();

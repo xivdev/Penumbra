@@ -27,7 +27,7 @@ public sealed class ModEditFileEditingContext(ActiveCollections activeCollection
     public override FileRegistry? TryFindFileRegistry(Mod mod, Utf8RelPath relPath)
         => editor is not null
          && editor.Mod == mod
-         && editor.Files.GetByType(ModFileCollection.GetPathResourceType(relPath.Path.Span))
+         && editor.Files.GetByType(ResourceType.FromPath(relPath.Path.Span))
                 .FindFirst(r => relPath.Equals(r.RelPath), out var registry)
                 ? registry
                 : null;

@@ -2,7 +2,6 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.Api.Enums;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Mods.Editor;
 
 namespace Penumbra.UI.FileEditing;
 
@@ -57,7 +56,7 @@ public abstract class BaseFileEditorFactory(IDataManager gameData) : IFileEditor
         => SupportedResourceTypes switch
         {
             null          => true,
-            var supported => supported.Contains(ModFileCollection.GetPathResourceType(path)),
+            var supported => supported.Contains(ResourceType.FromPath(path)),
         };
 
     public abstract IFileEditor CreateForData(byte[] data, string path, bool writable, string? gamePath, FileEditingContext? context);

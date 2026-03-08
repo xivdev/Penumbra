@@ -120,7 +120,7 @@ public class ModFileCollection : IDisposable
                 continue;
 
             _available.Add(registry);
-            DoGetByType(GetPathResourceType(registry.File.FullName)).Add(registry);
+            DoGetByType(ResourceType.FromPath(registry.File.FullName)).Add(registry);
         }
     }
 
@@ -180,29 +180,5 @@ public class ModFileCollection : IDisposable
                 }
             }
         }
-    }
-
-    public static ResourceType GetPathResourceType(ReadOnlySpan<byte> path)
-    {
-        // This is mostly an adaptation of Path.GetExtension to ROS<byte>.
-        var length = path.Length;
-        for (var index = length - 1; index >= 0; --index)
-        {
-            var c = path[index];
-            if (c is (byte)'.')
-                return index != length - 1 ? ResourceTypeExtensions.FromExtension(path[(index + 1)..]) : ResourceType.Unknown;
-            if (c is (byte)'/' or (byte)'\\')
-                break;
-        }
-
-        return ResourceType.Unknown;
-    }
-
-    public static ResourceType GetPathResourceType(ReadOnlySpan<char> path)
-    {
-        var extension = Path.GetExtension(path);
-        return extension.IsEmpty
-            ? ResourceType.Unknown
-            : ResourceTypeExtensions.FromExtension(extension[1..]);
     }
 }
