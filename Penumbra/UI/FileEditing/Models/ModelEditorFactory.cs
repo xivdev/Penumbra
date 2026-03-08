@@ -1,5 +1,6 @@
 using Dalamud.Interface.DragDrop;
 using Dalamud.Plugin.Services;
+using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Models;
@@ -15,9 +16,16 @@ public sealed class ModelEditorFactory(
     FileDialogService fileDialog,
     IDragDropManager dragDropManager) : BaseFileEditorFactory(gameData), Luna.IUiService
 {
-    public override bool SupportsPath(string path)
-        => path.EndsWith(".mdl", StringComparison.OrdinalIgnoreCase);
+    public override string Identifier
+        => typeof(ModelEditor).FullName!;
 
-    public override IFileEditor CreateForData(byte[] data, string path, bool writable, FileEditingContext? context)
-        => new ModelEditor(models, activeCollections, GameData, config, fileDialog, dragDropManager, context, new MdlFile(data), path);
+    public override string DisplayName
+        => "Penumbra Model Editor";
+
+    public override IEnumerable<ResourceType> SupportedResourceTypes
+        => [ResourceType.Mdl];
+
+    public override IFileEditor CreateForData(byte[] data, string path, bool writable, string? gamePath, FileEditingContext? context)
+        => new ModelEditor(models, activeCollections, GameData, config, fileDialog, dragDropManager, context, new MdlFile(data), path,
+            gamePath);
 }

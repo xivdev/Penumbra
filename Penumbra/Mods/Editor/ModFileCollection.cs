@@ -8,13 +8,8 @@ namespace Penumbra.Mods.Editor;
 
 public class ModFileCollection : IDisposable
 {
-    private readonly ObservableList<FileRegistry> _available = [];
-    private readonly ObservableList<FileRegistry> _mtrl      = [];
-    private readonly ObservableList<FileRegistry> _mdl       = [];
-    private readonly ObservableList<FileRegistry> _tex       = [];
-    private readonly ObservableList<FileRegistry> _shpk      = [];
-    private readonly ObservableList<FileRegistry> _pbd       = [];
-    private readonly ObservableList<FileRegistry> _atch      = [];
+    private readonly ObservableList<FileRegistry>                           _available = [];
+    private readonly Dictionary<ResourceType, ObservableList<FileRegistry>> _byType    = [];
 
     private readonly SortedSet<FullPath>   _missing   = [];
     private readonly HashSet<Utf8GamePath> _usedPaths = [];
@@ -28,24 +23,6 @@ public class ModFileCollection : IDisposable
     public IObservableList<FileRegistry> Available
         => Ready ? _available : [];
 
-    public IObservableList<FileRegistry> Mtrl
-        => Ready ? _mtrl : [];
-
-    public IObservableList<FileRegistry> Mdl
-        => Ready ? _mdl : [];
-
-    public IObservableList<FileRegistry> Tex
-        => Ready ? _tex : [];
-
-    public IObservableList<FileRegistry> Shpk
-        => Ready ? _shpk : [];
-
-    public IObservableList<FileRegistry> Pbd
-        => Ready ? _pbd : [];
-
-    public IObservableList<FileRegistry> Atch
-        => Ready ? _atch : [];
-
     public bool Ready { get; private set; } = true;
 
     public IObservableList<FileRegistry> GetByType(ResourceType type)
@@ -53,15 +30,20 @@ public class ModFileCollection : IDisposable
             ? type switch
             {
                 ResourceType.Unknown => _available,
-                ResourceType.Mtrl    => _mtrl,
-                ResourceType.Mdl     => _mdl,
-                ResourceType.Tex     => _tex,
-                ResourceType.Shpk    => _shpk,
-                ResourceType.Pbd     => _pbd,
-                ResourceType.Atch    => _atch,
-                _                    => [],
+                _                    => DoGetByType(type),
             }
             : [];
+
+    private ObservableList<FileRegistry> DoGetByType(ResourceType type)
+    {
+        if (!_byType.TryGetValue(type, out var files))
+        {
+            files = [];
+            _byType.Add(type, files);
+        }
+
+        return files;
+    }
 
     public void UpdateAll(Mod mod, IModDataContainer option)
     {
@@ -138,27 +120,16 @@ public class ModFileCollection : IDisposable
                 continue;
 
             _available.Add(registry);
-            switch (Path.GetExtension(registry.File.FullName).ToLowerInvariant())
-            {
-                case ".mtrl": _mtrl.Add(registry); break;
-                case ".mdl":  _mdl.Add(registry); break;
-                case ".tex":  _tex.Add(registry); break;
-                case ".shpk": _shpk.Add(registry); break;
-                case ".pbd":  _pbd.Add(registry); break;
-                case ".atch": _atch.Add(registry); break;
-            }
+            DoGetByType(GetPathResourceType(registry.File.FullName)).Add(registry);
         }
     }
 
     private void ClearFiles()
     {
         _available.Clear();
-        _mtrl.Clear();
-        _mdl.Clear();
-        _tex.Clear();
-        _shpk.Clear();
-        _pbd.Clear();
-        _atch.Clear();
+        foreach (var files in _byType.Values)
+            files.Clear();
+        _byType.Clear();
     }
 
     private void ClearPaths(bool clearRegistries, CancellationToken tok)
@@ -209,5 +180,29 @@ public class ModFileCollection : IDisposable
                 }
             }
         }
+    }
+
+    public static ResourceType GetPathResourceType(ReadOnlySpan<byte> path)
+    {
+        // This is mostly an adaptation of Path.GetExtension to ROS<byte>.
+        var length = path.Length;
+        for (var index = length - 1; index >= 0; --index)
+        {
+            var c = path[index];
+            if (c is (byte)'.')
+                return index != length - 1 ? ResourceTypeExtensions.FromExtension(path[(index + 1)..]) : ResourceType.Unknown;
+            if (c is (byte)'/' or (byte)'\\')
+                break;
+        }
+
+        return ResourceType.Unknown;
+    }
+
+    public static ResourceType GetPathResourceType(ReadOnlySpan<char> path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.IsEmpty
+            ? ResourceType.Unknown
+            : ResourceTypeExtensions.FromExtension(extension[1..]);
     }
 }

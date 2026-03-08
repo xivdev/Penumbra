@@ -337,23 +337,23 @@ public sealed class TextureManager(IDataManager gameData, Logger logger, ITextur
     public (BaseImage, TextureType) Load(string path)
         => Path.GetExtension(path).ToLowerInvariant() switch
         {
-            ".dds" => (LoadDds(path), TextureType.Dds),
-            ".png" => (LoadImageSharp(path), TextureType.Png),
-            ".tga" => (LoadImageSharp(path), TextureType.Targa),
-            ".bmp" => (LoadImageSharp(path), TextureType.Bitmap),
-            ".tex" => (LoadTex(path), TextureType.Tex),
-            _      => throw new Exception($"Extension {Path.GetExtension(path)} unknown."),
+            ".dds"            => (LoadDds(path), TextureType.Dds),
+            ".png"            => (LoadImageSharp(path), TextureType.Png),
+            ".tga"            => (LoadImageSharp(path), TextureType.Targa),
+            ".bmp"            => (LoadImageSharp(path), TextureType.Bitmap),
+            ".tex" or ".atex" => (LoadTex(path), TextureType.Tex),
+            _                 => throw new Exception($"Extension {Path.GetExtension(path)} unknown."),
         };
 
     public static TextureType GetTextureTypeForPath(string path)
         => Path.GetExtension(path).ToLowerInvariant() switch
         {
-            ".dds" => TextureType.Dds,
-            ".png" => TextureType.Png,
-            ".tga" => TextureType.Targa,
-            ".bmp" => TextureType.Bitmap,
-            ".tex" => TextureType.Tex,
-            _      => TextureType.Unknown,
+            ".dds"            => TextureType.Dds,
+            ".png"            => TextureType.Png,
+            ".tga"            => TextureType.Targa,
+            ".bmp"            => TextureType.Bitmap,
+            ".tex" or ".atex" => TextureType.Tex,
+            _                 => TextureType.Unknown,
         };
 
     /// <summary> Load a .tex file from game data or drive depending on if the path is rooted. </summary>

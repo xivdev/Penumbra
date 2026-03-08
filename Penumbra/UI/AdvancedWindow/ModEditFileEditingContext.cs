@@ -24,10 +24,11 @@ public sealed class ModEditFileEditingContext(ActiveCollections activeCollection
     public override IModDataContainer? Option
         => editor?.Option;
 
-    public override FileRegistry? TryFindFileRegistry(ResourceType type, Mod mod, Utf8RelPath relPath)
+    public override FileRegistry? TryFindFileRegistry(Mod mod, Utf8RelPath relPath)
         => editor is not null
          && editor.Mod == mod
-         && editor.Files.GetByType(type).FindFirst(r => relPath.Equals(r.RelPath), out var registry)
+         && editor.Files.GetByType(ModFileCollection.GetPathResourceType(relPath.Path.Span))
+                .FindFirst(r => relPath.Equals(r.RelPath), out var registry)
                 ? registry
                 : null;
 }

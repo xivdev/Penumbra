@@ -24,7 +24,7 @@ public class TexHeaderDrawer(IDragDropManager dragDrop) : Luna.IUiService
 
     private void DrawDragDrop()
     {
-        dragDrop.CreateImGuiSource("TexFileDragDrop", m => m.Files.Count == 1 && m.Extensions.Contains(".tex"), m =>
+        dragDrop.CreateImGuiSource("TexFileDragDrop", m => m.Files.Count == 1 && (m.Extensions.Contains(".tex") || m.Extensions.Contains(".atex")), m =>
         {
             Im.Text($"Dragging {m.Files[0]}...");
             return true;
