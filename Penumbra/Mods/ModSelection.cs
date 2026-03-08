@@ -21,18 +21,21 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
     private readonly ActiveCollections   _collections;
     private readonly CommunicatorService _communicator;
     private readonly ModFileSystem       _modFileSystem;
+    private readonly UiNavigator         _navigator;
 
     public ModSelection(Logger log, CommunicatorService communicator, ModManager mods, ActiveCollections collections, EphemeralConfig config,
-        ModFileSystem modFileSystem)
+        ModFileSystem modFileSystem, UiNavigator navigator)
         : base(nameof(ModSelection), log)
     {
         _communicator  = communicator;
         _collections   = collections;
         _modFileSystem = modFileSystem;
+        _navigator     = navigator;
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModSelection);
         _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModSelection);
         _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModSelection);
         _modFileSystem.Selection.Changed += OnSelectionChanged;
+        _navigator.ModSelector           += SelectMod;
         SelectModInternal(_modFileSystem.Selection.Selection?.GetValue<Mod>());
     }
 
@@ -71,6 +74,7 @@ public class ModSelection : EventBase<ModSelection.Arguments, ModSelection.Prior
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
         _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
         _modFileSystem.Selection.Changed -= OnSelectionChanged;
+        _navigator.ModSelector           -= SelectMod;
     }
 
     private void OnCollectionChange(in CollectionChange.Arguments arguments)

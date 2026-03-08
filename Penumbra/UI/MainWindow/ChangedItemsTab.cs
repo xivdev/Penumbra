@@ -16,6 +16,7 @@ public sealed class ChangedItemsTab(
     CollectionSelectHeader collectionHeader,
     ChangedItemDrawer drawer,
     CommunicatorService communicator,
+    UiNavigator navigator,
     Configuration config)
     : ITab<TabType>, IDisposable
 {
@@ -208,7 +209,7 @@ public sealed class ChangedItemsTab(
         if (Im.Selectable(item.Mod, false, SelectableFlags.None, _buttonSize with { X = 0 })
          && Im.Io.KeyControl
          && item.Mods[0] is Mod mod)
-            communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
+            navigator.MoveTo(mod);
 
         if (!Im.Item.Hovered())
             return;

@@ -1,8 +1,6 @@
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Communication;
-using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 using Penumbra.UI.Tabs.Debug;
@@ -12,9 +10,8 @@ namespace Penumbra.UI.MainWindow;
 
 public sealed class MainTabBar : TabBar<TabType>, IDisposable
 {
-    private readonly ModFileSystem   _modFileSystem;
     private readonly EphemeralConfig _config;
-    private readonly SelectTab       _selectTab;
+    private readonly UiNavigator     _navigator;
 
     public MainTabBar(Logger log,
         SettingsTab settings,
@@ -26,33 +23,25 @@ public sealed class MainTabBar : TabBar<TabType>, IDisposable
         ResourceTab resources,
         Watcher watcher,
         OnScreenTab onScreen,
-        MessagesTab messages, 
+        MessagesTab messages,
         ManagementTab.ManagementTab management,
-        EphemeralConfig config, 
-        CommunicatorService communicator, 
-        ModFileSystem modFileSystem)
+        EphemeralConfig config,
+        UiNavigator navigator)
         : base(nameof(MainTabBar), log, settings, collections, mods, changedItems, effectiveChanges, onScreen,
             resources, watcher, debug, messages, management)
     {
         _config        = config;
-        _modFileSystem = modFileSystem;
-        _selectTab     = communicator.SelectTab;
+        _navigator     = navigator;
 
-        _selectTab.Subscribe(OnSelectTab, SelectTab.Priority.MainTabBar);
+        _navigator.MainTabBar += OnSelectTab;
         TabSelected.Subscribe(OnTabSelected, 0);
     }
 
-    private void OnSelectTab(in SelectTab.Arguments arguments)
-    {
-        NextTab = arguments.Tab;
-        if (arguments.Mod?.Node is { } node)
-            _modFileSystem.Selection.Select(node, true);
-    }
+    private void OnSelectTab(TabType tab)
+        => NextTab = tab;
 
     public void Dispose()
-    {
-        _selectTab.Unsubscribe(OnSelectTab);
-    }
+        => _navigator.MainTabBar -= OnSelectTab;
 
     private void OnTabSelected(in TabType type)
     {

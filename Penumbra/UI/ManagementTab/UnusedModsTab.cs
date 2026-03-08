@@ -1,11 +1,9 @@
 using ImSharp;
 using ImSharp.Table;
 using Luna;
-using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.ManagementTab;
@@ -15,7 +13,7 @@ public sealed class UnusedModsTab(
     ModManager manager,
     Configuration config,
     ModExportManager exports,
-    CommunicatorService communicator) : ITab<ManagementTabType>
+    UiNavigator navigator) : ITab<ManagementTabType>
 {
     public ReadOnlySpan<byte> Label
         => "Unused Mods"u8;
@@ -23,7 +21,7 @@ public sealed class UnusedModsTab(
     public ManagementTabType Identifier
         => ManagementTabType.UnusedMods;
 
-    private readonly Table _table       = new(modConfigUpdater, manager, config, exports, communicator);
+    private readonly Table _table       = new(modConfigUpdater, manager, config, exports, navigator);
     private          int   _defaultDays = 30;
 
     public void PostTabButton()
@@ -65,9 +63,9 @@ public sealed class UnusedModsTab(
         ModManager manager,
         Configuration config,
         ModExportManager exports,
-        CommunicatorService communicator) : TableBase<CacheItem, Table.Cache>(new StringU8("unused"u8),
+        UiNavigator navigator) : TableBase<CacheItem, Table.Cache>(new StringU8("unused"u8),
         new ButtonColumn(manager, config, exports),
-        new NameColumn(communicator), new LastEditColumn(), new ModSizeColumn(), new PathColumn(), new NotesColumn())
+        new NameColumn(navigator), new LastEditColumn(), new ModSizeColumn(), new PathColumn(), new NotesColumn())
     {
         public bool HideNodes
         {
@@ -310,11 +308,11 @@ public sealed class UnusedModsTab(
 
     private sealed class NameColumn : TextColumn<CacheItem>
     {
-        private readonly CommunicatorService _communicator;
+        private readonly UiNavigator _navigator;
 
-        public NameColumn(CommunicatorService communicator)
+        public NameColumn(UiNavigator navigator)
         {
-            _communicator =  communicator;
+            _navigator = navigator;
             Label         =  new StringU8("Mod Name"u8);
             Flags         |= TableColumnFlags.WidthStretch;
         }
@@ -338,7 +336,7 @@ public sealed class UnusedModsTab(
                 Im.Tooltip.OnHover(item.ModName);
             Im.Tooltip.OnHover("\nClick to move to mod."u8);
             if (clicked)
-                _communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, item.Mod));
+                _navigator.MoveTo(item.Mod);
         }
     }
 

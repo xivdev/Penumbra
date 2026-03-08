@@ -15,7 +15,7 @@ namespace Penumbra.UI;
 
 public sealed class ForbiddenFileNotification(
     Services.MessageService service,
-    CommunicatorService communicator)
+    UiNavigator navigator)
     : INotificationAwareMessage, IService
 {
     private IActiveNotification? _currentNotification;
@@ -106,11 +106,10 @@ public sealed class ForbiddenFileNotification(
         var width = Im.ContentRegion.Available with { Y = 0 };
         width.X = (width.X - Im.Style.ItemInnerSpacing.X) / 2;
         if (Im.Button("Open Messages"u8, width))
-            communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Messages, null));
+            navigator.OpenTo(TabType.Messages);
         Im.Line.SameInner();
         if (Im.Button("Open Management"u8, width))
-            communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Management, null));
-        // TODO: managementTab.NextTab = ManagementTabType.ForbiddenFiles;
+            navigator.OpenTo(ManagementTabType.ForbiddenFiles);
     }
 
     void INotificationAwareMessage.OnNotificationCreated(IActiveNotification notification)

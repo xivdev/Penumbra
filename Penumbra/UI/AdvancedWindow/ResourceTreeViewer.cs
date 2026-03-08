@@ -5,7 +5,6 @@ using Dalamud.Plugin.Services;
 using ImSharp;
 using Lumina.Data;
 using Luna;
-using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
@@ -25,11 +24,11 @@ public class ResourceTreeViewer(
     int actionCapacity,
     Action onRefresh,
     Action<ResourceNode, IWritable?, Vector2> drawActions,
-    CommunicatorService communicator,
     PcpService pcpService,
     IDataManager gameData,
     FileDialogService fileDialog,
-    FileCompactor compactor)
+    FileCompactor compactor,
+    UiNavigator navigator)
 {
     private const ResourceTreeFactory.Flags ResourceTreeFactoryFlags =
         ResourceTreeFactory.Flags.WithUiData | ResourceTreeFactory.Flags.WithOwnership;
@@ -369,7 +368,7 @@ public class ResourceTreeViewer(
                 if (Im.Item.Clicked())
                     Im.Clipboard.Set(resourceNode.FullPath.ToPath());
                 if (hasMod && Im.Item.RightClicked() && Im.Io.KeyControl)
-                    communicator.SelectTab.Invoke(new SelectTab.Arguments(TabType.Mods, mod));
+                    navigator.OpenTo(mod);
 
                 Im.Tooltip.OnHover(default,
                     $"{resourceNode.FullPath.ToPath()}\n\nClick to copy to clipboard.{(hasMod ? "\nControl + Right-Click to jump to mod." : string.Empty)}{GetAdditionalDataSuffix(resourceNode.AdditionalData)}",

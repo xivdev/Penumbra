@@ -2,27 +2,25 @@ using Penumbra.Api.Enums;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.UI;
-using Penumbra.UI.MainWindow;
 using Penumbra.UI.Integration;
-using Penumbra.UI.Tabs;
 
 namespace Penumbra.Api.Api;
 
 public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
 {
     private readonly CommunicatorService         _communicator;
-    private readonly MainWindow                  _mainWindow;
+    private readonly UiNavigator                 _navigator;
     private readonly ModManager                  _modManager;
-	private readonly IntegrationSettingsRegistry _integrationSettings;
+    private readonly IntegrationSettingsRegistry _integrationSettings;
 
-    public UiApi(CommunicatorService communicator, MainWindow mainWindow, ModManager modManager, IntegrationSettingsRegistry integrationSettings)
+    public UiApi(CommunicatorService communicator, ModManager modManager, IntegrationSettingsRegistry integrationSettings,
+        UiNavigator navigator)
     {
         _communicator        = communicator;
-        _mainWindow          = mainWindow;
         _modManager          = modManager;
-		_integrationSettings = integrationSettings;
-		
+        _integrationSettings = integrationSettings;
+        _navigator           = navigator;
+
         _communicator.ChangedItemHover.Subscribe(OnChangedItemHover, ChangedItemHover.Priority.Default);
         _communicator.ChangedItemClick.Subscribe(OnChangedItemClick, ChangedItemClick.Priority.Default);
         _communicator.PreSettingsTabBarDraw.Subscribe(OnPreSettingsTabBarDraw, Communication.PreSettingsTabBarDraw.Priority.Default);
@@ -62,27 +60,30 @@ public class UiApi : IPenumbraApiUi, Luna.IApiService, IDisposable
 
     public PenumbraApiEc OpenMainWindow(TabType tab, string modDirectory, string modName)
     {
-        _mainWindow.IsOpen = true;
         if (!Enum.IsDefined(tab))
             return PenumbraApiEc.InvalidArgument;
 
-        if (tab == TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0))
+        if (tab is TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0))
         {
             if (_modManager.TryGetMod(modDirectory, modName, out var mod))
-                _communicator.SelectTab.Invoke(new SelectTab.Arguments(tab, mod));
+                _navigator.OpenTo(mod);
             else
                 return PenumbraApiEc.ModMissing;
         }
-        else if (tab != TabType.None)
+        else if (tab is not TabType.None)
         {
-            _communicator.SelectTab.Invoke(new SelectTab.Arguments(tab, null));
+            _navigator.OpenTo(tab);
+        }
+        else
+        {
+            _navigator.SetMainWindow(true);
         }
 
         return PenumbraApiEc.Success;
     }
 
     public void CloseMainWindow()
-        => _mainWindow.IsOpen = false;
+        => _navigator.SetMainWindow(false);
 
     private void OnChangedItemClick(in ChangedItemClick.Arguments arguments)
     {

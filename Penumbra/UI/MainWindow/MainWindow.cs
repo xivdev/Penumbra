@@ -1,6 +1,7 @@
 using Dalamud.Plugin;
 using ImSharp;
 using Luna;
+using Penumbra.Communication;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using TabType = Penumbra.Api.Enums.TabType;
@@ -13,20 +14,23 @@ public sealed class MainWindow : Window
     private readonly Configuration           _config;
     private readonly ValidityChecker         _validityChecker;
     private readonly GlobalModImporter       _globalModImporter;
+    private readonly UiNavigator             _navigator;
     private          Penumbra?               _penumbra;
     private          MainTabBar              _configTabs = null!;
     private          string?                 _lastException;
 
     public MainWindow(IDalamudPluginInterface pi, Configuration config, ValidityChecker checker,
-        TutorialService tutorial, GlobalModImporter globalModImporter)
+        TutorialService tutorial, GlobalModImporter globalModImporter, UiNavigator navigator)
         : base(GetLabel(checker))
     {
         _pluginInterface   = pi;
         _config            = config;
         _validityChecker   = checker;
         _globalModImporter = globalModImporter;
+        _navigator         = navigator;
 
-        RespectCloseHotkey = true;
+        _navigator.ToggleMainWindow += OnToggleMainWindow;
+        RespectCloseHotkey          =  true;
         tutorial.UpdateTutorialStep();
         IsOpen = _config.OpenWindowAtStart;
     }
@@ -158,4 +162,7 @@ public sealed class MainWindow : Window
             Im.Line.New();
         }
     }
+
+    private void OnToggleMainWindow(bool open)
+        => IsOpen = open;
 }

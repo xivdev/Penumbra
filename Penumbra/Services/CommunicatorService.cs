@@ -71,9 +71,6 @@ public class CommunicatorService(ServiceManager services) : IService
     /// <inheritdoc cref="Communication.ChangedItemClick"/>
     public readonly ChangedItemClick ChangedItemClick = services.GetService<ChangedItemClick>();
 
-    /// <inheritdoc cref="Communication.SelectTab"/>
-    public readonly SelectTab SelectTab = services.GetService<SelectTab>();
-
     /// <inheritdoc cref="Communication.ResolvedFileChanged"/>
     public readonly ResolvedFileChanged ResolvedFileChanged = services.GetService<ResolvedFileChanged>();
 

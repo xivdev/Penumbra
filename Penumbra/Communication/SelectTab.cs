@@ -1,20 +1,64 @@
 using Luna;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
+using Penumbra.UI.ManagementTab;
+using Penumbra.UI.ModsTab;
 
 namespace Penumbra.Communication;
 
-/// <summary> Trigger to select a tab and mod in the Config Window. </summary>
-public sealed class SelectTab(Logger log) : EventBase<SelectTab.Arguments, SelectTab.Priority>(nameof(SelectTab), log)
+public sealed class UiNavigator : IUiService
 {
-    public enum Priority
+    public event Action<bool>?              ToggleMainWindow;
+    public event Action<TabType>?           MainTabBar;
+    public event Action<ManagementTabType>? ManagementTabBar;
+    public event Action<ModPanelTab>?       ModPanelTabBar;
+    public event Action<Mod?>?              ModSelector;
+
+    public void MoveTo(TabType tab)
+        => MainTabBar?.Invoke(tab);
+
+    public void MoveTo(ManagementTabType tab)
     {
-        /// <seealso cref="global::Penumbra.UI.MainWindow.MainTabBar.OnSelectTab"/>
-        MainTabBar = 0,
+        MoveTo(TabType.Management);
+        ManagementTabBar?.Invoke(tab);
     }
 
-    /// <summary> The arguments for a SelectTab event. </summary>
-    /// <param name="Tab"> The selected tab. </param>
-    /// <param name="Mod"> The selected mod, if any. </param>
-    public readonly record struct Arguments(TabType Tab, Mod? Mod);
+    public void MoveTo(ModPanelTab tab)
+    {
+        MoveTo(TabType.Mods);
+        ModPanelTabBar?.Invoke(tab);
+    }
+
+    public void MoveTo(Mod? mod)
+    {
+        MoveTo(TabType.Mods);
+        ModSelector?.Invoke(mod);
+    }
+
+    public void SetMainWindow(bool open)
+        => ToggleMainWindow?.Invoke(open);
+
+    public void OpenTo(TabType tab)
+    {
+        SetMainWindow(true);
+        MoveTo(tab);
+    }
+
+    public void OpenTo(ManagementTabType tab)
+    {
+        SetMainWindow(true);
+        MoveTo(tab);
+    }
+
+    public void OpenTo(ModPanelTab tab)
+    {
+        SetMainWindow(true);
+        MoveTo(tab);
+    }
+
+    public void OpenTo(Mod? mod)
+    {
+        SetMainWindow(true);
+        MoveTo(mod);
+    }
 }

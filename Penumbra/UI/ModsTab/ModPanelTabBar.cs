@@ -1,5 +1,6 @@
 using ImSharp;
 using Luna;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.AdvancedWindow;
@@ -18,26 +19,29 @@ public enum ModPanelTab
     Edit,
 };
 
-public class ModPanelTabBar : TabBar<ModPanelTab>
+public class ModPanelTabBar : TabBar<ModPanelTab>, IDisposable
 {
     public readonly  ModPanelSettingsTab Settings;
     public readonly  ModPanelEditTab     Edit;
     private readonly ModManager          _modManager;
     private readonly TutorialService     _tutorial;
+    private readonly UiNavigator         _navigator;
 
     private Mod? _lastMod;
 
     public ModPanelTabBar(ModEditWindowFactory modEditWindowFactory, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
         ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
-        TutorialService tutorial, ModPanelCollectionsTab collections, Logger log, EphemeralConfig config)
+        TutorialService tutorial, ModPanelCollectionsTab collections, Logger log, EphemeralConfig config, UiNavigator navigator)
         : base(nameof(ModPanelTabBar), log, settings, description, conflicts, changedItems, collections, edit)
     {
-        Flags       = TabBarFlags.NoTooltip | TabBarFlags.FittingPolicyScroll;
-        Settings    = settings;
-        Edit        = edit;
-        _modManager = modManager;
-        _tutorial   = tutorial;
-        NextTab     = config.SelectedModPanelTab;
+        Flags                     =  TabBarFlags.NoTooltip | TabBarFlags.FittingPolicyScroll;
+        Settings                  =  settings;
+        Edit                      =  edit;
+        _modManager               =  modManager;
+        _tutorial                 =  tutorial;
+        _navigator                =  navigator;
+        NextTab                   =  config.SelectedModPanelTab;
+        _navigator.ModPanelTabBar += OnNavigation;
         Buttons.AddButton(new AdvancedEditingButton(this, modEditWindowFactory), 0);
         TabSelected.Subscribe((in v) => config.SelectedModPanelTab = v, 0);
     }
@@ -101,4 +105,10 @@ public class ModPanelTabBar : TabBar<ModPanelTab>
         if (hovered)
             Im.Tooltip.Set("Favorite"u8);
     }
+
+    public void Dispose()
+        => _navigator.ModPanelTabBar -= OnNavigation;
+
+    private void OnNavigation(ModPanelTab tab)
+        => NextTab = tab;
 }
